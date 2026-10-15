@@ -1104,9 +1104,30 @@ namespace Ozikol_BCC.Domain.Enum
         /// </summary>
         public enum BcpMessageChannel
         {
+            /// <summary>
+            /// Transactional email channel.
+            /// </summary>
             Email = 0,
+
+            /// <summary>
+            /// Carrier SMS text alert channel.
+            /// </summary>
             Sms = 1,
-            InAppNotification = 2
+
+            /// <summary>
+            /// In-app notification feed and real-time socket channel.
+            /// </summary>
+            InAppNotification = 2,
+
+            /// <summary>
+            /// Native mobile and desktop push notification channel (OneSignal / FCM).
+            /// </summary>
+            Push = 3,
+
+            /// <summary>
+            /// Transactional WhatsApp message channel.
+            /// </summary>
+            WhatsApp = 4
         }
 
         /// <summary>

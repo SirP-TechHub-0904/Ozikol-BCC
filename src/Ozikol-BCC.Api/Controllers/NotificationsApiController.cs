@@ -173,6 +173,36 @@ namespace Ozikol_BCC.Api.Controllers
 
             /// <summary>Optional structured JSON metadata.</summary>
             public string? MetadataJson { get; set; }
+
+            /// <summary>Optional in-app title override.</summary>
+            public string? InAppTitle { get; set; }
+
+            /// <summary>Optional in-app message body override.</summary>
+            public string? InAppBody { get; set; }
+
+            /// <summary>Optional push lock-screen title override (max 50 chars).</summary>
+            public string? PushTitle { get; set; }
+
+            /// <summary>Optional push lock-screen body override (max 140 chars).</summary>
+            public string? PushBody { get; set; }
+
+            /// <summary>Optional email subject line override.</summary>
+            public string? EmailSubject { get; set; }
+
+            /// <summary>Optional custom rich HTML email body.</summary>
+            public string? EmailHtmlBody { get; set; }
+
+            /// <summary>Optional plain-text SMS message (strictly 160 GSM chars).</summary>
+            public string? SmsMessage { get; set; }
+
+            /// <summary>Optional WhatsApp markdown message (*bold*, _italic_).</summary>
+            public string? WhatsAppMessage { get; set; }
+
+            /// <summary>Optional system event type name (e.g. "LoginOtp", "SystemAnnouncement") to auto-render channel templates.</summary>
+            public string? EventType { get; set; }
+
+            /// <summary>Optional dynamic token placeholders dictionary for template rendering.</summary>
+            public Dictionary<string, string>? Placeholders { get; set; }
         }
 
         /// <summary>
@@ -452,6 +482,12 @@ namespace Ozikol_BCC.Api.Controllers
 
             var tenantKey = Request.Headers["X-Tenant-Key"].ToString();
 
+            BcpEventType? eventType = null;
+            if (!string.IsNullOrWhiteSpace(request.EventType) && Enum.TryParse<BcpEventType>(request.EventType, true, out var parsedEvt))
+            {
+                eventType = parsedEvt;
+            }
+
             var payload = new NotificationDispatchPayload
             {
                 TargetType = targetType,
@@ -468,7 +504,17 @@ namespace Ozikol_BCC.Api.Controllers
                 Category = category,
                 Priority = priority,
                 MetadataJson = request.MetadataJson,
-                SendEmailCopy = request.SendEmailCopy
+                SendEmailCopy = request.SendEmailCopy,
+                EventType = eventType,
+                Placeholders = request.Placeholders,
+                InAppTitle = request.InAppTitle,
+                InAppBody = request.InAppBody,
+                PushTitle = request.PushTitle,
+                PushBody = request.PushBody,
+                EmailSubject = request.EmailSubject,
+                EmailHtmlBody = request.EmailHtmlBody,
+                SmsMessage = request.SmsMessage,
+                WhatsAppMessage = request.WhatsAppMessage
             };
 
             var dispatchResult = await _notificationDispatcher.DispatchAsync(payload);

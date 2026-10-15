@@ -212,6 +212,124 @@ import { ApiService } from '../../../core/services/api.service';
             </div>
           </div>
 
+          <!-- Channel-Specific Message Customization (Optional overrides for Push, SMS, Email, WhatsApp) -->
+          <div class="channel-custom-panel">
+            <button type="button" class="btn-toggle-channel-custom" (click)="customChannelsExpanded = !customChannelsExpanded">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="material-symbols-outlined">{{ customChannelsExpanded ? 'expand_less' : 'tune' }}</span>
+                <span style="font-weight:700;">Customize Channel Messages & Templates (SMS, Push, WhatsApp, Email)</span>
+              </div>
+              <span class="custom-badge">{{ customChannelsExpanded ? 'Hide Overrides' : 'Fine-Tune Copies' }}</span>
+            </button>
+
+            <div *ngIf="customChannelsExpanded" class="channel-custom-body">
+              <div class="channel-tabs">
+                <button type="button" class="ch-tab" [class.active]="activeCustomTab === 'push'" (click)="activeCustomTab = 'push'">
+                  <span class="material-symbols-outlined">notifications_active</span>
+                  <span>Push Lock-Screen</span>
+                </button>
+                <button type="button" class="ch-tab" [class.active]="activeCustomTab === 'sms'" (click)="activeCustomTab = 'sms'">
+                  <span class="material-symbols-outlined">sms</span>
+                  <span>Carrier SMS (160 char limit)</span>
+                </button>
+                <button type="button" class="ch-tab" [class.active]="activeCustomTab === 'email'" (click)="activeCustomTab = 'email'">
+                  <span class="material-symbols-outlined">mail</span>
+                  <span>Email & Anti-Spam</span>
+                </button>
+                <button type="button" class="ch-tab" [class.active]="activeCustomTab === 'whatsapp'" (click)="activeCustomTab = 'whatsapp'">
+                  <span class="material-symbols-outlined">chat</span>
+                  <span>WhatsApp Markdown</span>
+                </button>
+              </div>
+
+              <!-- Push Tab -->
+              <div *ngIf="activeCustomTab === 'push'" class="channel-tab-content">
+                <div class="form-group">
+                  <div style="display:flex; justify-content:space-between;">
+                    <label>Push Notification Title (Max 50 chars)</label>
+                    <span class="char-count" [class.over]="(model.pushTitle || model.title).length > 50">
+                      {{ (model.pushTitle || model.title).length }}/50
+                    </span>
+                  </div>
+                  <input type="text" [(ngModel)]="model.pushTitle" name="pushTitle" placeholder="Defaults to main title (e.g. Security Alert)" class="form-input" maxlength="70" />
+                </div>
+                <div class="form-group">
+                  <div style="display:flex; justify-content:space-between;">
+                    <label>Push Notification Body (Lock-screen recommended max 140 chars)</label>
+                    <span class="char-count" [class.over]="(model.pushBody || model.message).length > 140">
+                      {{ (model.pushBody || model.message).length }}/140
+                    </span>
+                  </div>
+                  <textarea [(ngModel)]="model.pushBody" name="pushBody" rows="2" placeholder="Defaults to main message content..." class="form-textarea" maxlength="200"></textarea>
+                </div>
+                <div class="lockscreen-preview">
+                  <div class="lockscreen-header">
+                    <span class="material-symbols-outlined text-blue">phone_iphone</span>
+                    <span>Mobile Lock-Screen Notification Preview</span>
+                  </div>
+                  <div class="lockscreen-bubble">
+                    <div style="font-weight:700; font-size:12px;">{{ companyName }} • {{ model.severity }}</div>
+                    <div style="font-weight:600; font-size:13px; color:#0f172a; margin-top:2px;">{{ (model.pushTitle || model.title || 'Title') | slice:0:50 }}</div>
+                    <div style="font-size:12px; color:#475569; margin-top:2px;">{{ (model.pushBody || model.message || 'Message preview...') | slice:0:140 }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SMS Tab -->
+              <div *ngIf="activeCustomTab === 'sms'" class="channel-tab-content">
+                <div class="form-group">
+                  <div style="display:flex; justify-content:space-between;">
+                    <label>Carrier SMS Content (Plain Text Only, GSM 7-bit)</label>
+                    <span class="char-count" [class.over]="getSmsTextLength() > 160">
+                      {{ getSmsTextLength() }}/160 characters ({{ getSmsSegments() }} segment{{ getSmsSegments() > 1 ? 's' : '' }})
+                    </span>
+                  </div>
+                  <textarea [(ngModel)]="model.smsMessage" name="smsMessage" rows="3" placeholder="Leave empty to auto-format: [{{companyName}}] Title: Body" class="form-textarea"></textarea>
+                  <div *ngIf="getSmsTextLength() > 160" class="warning-text">
+                    ⚠️ Message exceeds 160 characters. Carriers will split this into {{ getSmsSegments() }} SMS messages, increasing delivery costs.
+                  </div>
+                </div>
+                <div class="sms-preview-bubble">
+                  <span class="sms-sender">From: {{ companyName | slice:0:11 }}</span>
+                  <div class="sms-body">{{ getEffectiveSmsText() }}</div>
+                </div>
+              </div>
+
+              <!-- Email Tab -->
+              <div *ngIf="activeCustomTab === 'email'" class="channel-tab-content">
+                <div class="form-group">
+                  <div style="display:flex; justify-content:space-between;">
+                    <label>Email Subject Line</label>
+                    <span *ngIf="isAllCaps(model.emailSubject || model.title)" class="spam-badge">
+                      ⚠️ ALL CAPS Subject Hurts Deliverability
+                    </span>
+                  </div>
+                  <input type="text" [(ngModel)]="model.emailSubject" name="emailSubject" placeholder="Defaults to: [{{model.severity.toUpperCase()}}] {{model.title}}" class="form-input" />
+                  <div *ngIf="getSpamKeywordWarning(model.emailSubject || model.title)" class="warning-text">
+                    ⚠️ {{ getSpamKeywordWarning(model.emailSubject || model.title) }}
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Custom HTML Body (Optional)</label>
+                  <textarea [(ngModel)]="model.emailHtmlBody" name="emailHtmlBody" rows="3" placeholder="Leave empty to use standard responsive branded template with severity colors..." class="form-textarea font-mono"></textarea>
+                </div>
+              </div>
+
+              <!-- WhatsApp Tab -->
+              <div *ngIf="activeCustomTab === 'whatsapp'" class="channel-tab-content">
+                <div class="form-group">
+                  <label>WhatsApp Message (*bold*, _italic_, bullet points)</label>
+                  <textarea [(ngModel)]="model.whatsAppMessage" name="whatsAppMessage" rows="3" placeholder="Leave empty to auto-format with WhatsApp markdown..." class="form-textarea"></textarea>
+                </div>
+                <div class="wa-preview-bubble">
+                  <div class="wa-title">*{{ (model.title || 'Headline') }}*</div>
+                  <div class="wa-msg">{{ model.whatsAppMessage || model.message || 'Notification content...' }}</div>
+                  <div *ngIf="model.actionUrl" class="wa-link">👉 *Open in Workspace:* {{ model.actionUrl }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="form-actions">
             <button type="submit" [disabled]="submitting" class="btn-dispatch">
               <span class="material-symbols-outlined">{{ submitting ? 'hourglass_top' : 'send' }}</span>
@@ -477,6 +595,109 @@ import { ApiService } from '../../../core/services/api.service';
     .btn-icon-del { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; }
     .btn-icon-del:hover { color: #ef4444; }
     .empty-cell { text-align: center; padding: 28px; color: #64748b; }
+    .channel-custom-panel {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      border: 1px solid var(--md-sys-color-outline, #cbd5e1);
+      border-radius: 12px;
+      background: var(--md-sys-color-surface-variant, #f8fafc);
+      overflow: hidden;
+    }
+    .btn-toggle-channel-custom {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13.5px;
+      color: var(--md-sys-color-on-surface, #0f172a);
+    }
+    .custom-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0050e5;
+      background: rgba(0, 80, 229, 0.1);
+      padding: 4px 10px;
+      border-radius: 100px;
+    }
+    .channel-custom-body {
+      padding: 16px;
+      border-top: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      background: #ffffff;
+    }
+    .channel-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .ch-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: none;
+      border: 1px solid transparent;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+    }
+    .ch-tab.active {
+      background: rgba(0, 80, 229, 0.08);
+      color: #0050e5;
+      border-color: #93c5fd;
+    }
+    .char-count { font-size: 11px; font-weight: 600; color: #64748b; }
+    .char-count.over { color: #ef4444; font-weight: 700; }
+    .spam-badge { font-size: 11px; font-weight: 700; color: #ef4444; background: #fef2f2; padding: 2px 6px; border-radius: 4px; }
+    .warning-text { font-size: 11.5px; color: #d97706; margin-top: 4px; font-weight: 600; }
+    .lockscreen-preview {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 12px;
+      color: #ffffff;
+    }
+    .lockscreen-header { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94a3b8; font-weight: 600; margin-bottom: 8px; }
+    .lockscreen-bubble {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #0f172a;
+    }
+    .sms-preview-bubble {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 12px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .sms-sender { font-weight: 700; color: #0050e5; display: block; margin-bottom: 4px; }
+    .sms-body { color: #334155; }
+    .wa-preview-bubble {
+      background: #dcf8c6;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 12px;
+      color: #111b21;
+      font-size: 13px;
+      line-height: 1.4;
+      max-width: 400px;
+      border: 1px solid #b2d8a0;
+    }
+    .wa-title { font-weight: 700; margin-bottom: 4px; }
+    .wa-msg { white-space: pre-wrap; }
+    .wa-link { color: #00a884; font-weight: 600; margin-top: 6px; }
+    .font-mono { font-family: monospace; font-size: 12px; }
   `]
 })
 export class NotificationsManagementComponent implements OnInit {
@@ -497,8 +718,53 @@ export class NotificationsManagementComponent implements OnInit {
     sendPush: false,
     sendEmailCopy: false,
     sendSms: false,
-    sendWhatsApp: false
+    sendWhatsApp: false,
+    pushTitle: '',
+    pushBody: '',
+    emailSubject: '',
+    emailHtmlBody: '',
+    smsMessage: '',
+    whatsAppMessage: ''
   };
+
+  customChannelsExpanded = false;
+  activeCustomTab: 'push' | 'sms' | 'email' | 'whatsapp' = 'push';
+
+  readonly spamBlacklist = [
+    '100% Free', 'Earn Money Fast', 'No Risk', 'Act Now', 'Guaranteed Return',
+    'Click Here Now', 'Winner', 'Risk Free', 'Double Your Cash', 'Million Dollars'
+  ];
+
+  isAllCaps(text: string): boolean {
+    if (!text || text.length < 8) return false;
+    return text === text.toUpperCase() && /[A-Z]/.test(text);
+  }
+
+  getSpamKeywordWarning(text: string): string | null {
+    if (!text) return null;
+    for (const kw of this.spamBlacklist) {
+      if (text.toLowerCase().includes(kw.toLowerCase())) {
+        return `Subject contains spam trigger phrase "${kw}". This may cause mailbox filters to junk the message.`;
+      }
+    }
+    return null;
+  }
+
+  getEffectiveSmsText(): string {
+    if (this.model.smsMessage) return this.model.smsMessage;
+    const prefix = `[${this.companyName.toUpperCase().slice(0, 8)}] `;
+    return `${prefix}${this.model.title || 'Title'}: ${this.model.message || 'Message'}`;
+  }
+
+  getSmsTextLength(): number {
+    return this.getEffectiveSmsText().length;
+  }
+
+  getSmsSegments(): number {
+    const len = this.getSmsTextLength();
+    if (len <= 160) return 1;
+    return Math.ceil(len / 153);
+  }
 
   membersList: any[] = [];
   categoriesList: any[] = [];

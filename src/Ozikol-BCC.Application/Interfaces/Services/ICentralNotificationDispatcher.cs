@@ -108,6 +108,82 @@ namespace Ozikol_BCC.Application.Interfaces.Services
         /// If true, forces a high-fidelity transactional email copy to be dispatched.
         /// </summary>
         public bool SendEmailCopy { get; set; }
+
+        /// <summary>
+        /// Optional system event type to load registered channel templates from IMessageTemplateService.
+        /// </summary>
+        public BcpEventType? EventType { get; set; }
+
+        /// <summary>
+        /// Dynamic placeholder dictionary (e.g. {{FullName}}, {{WorkspaceName}}, {{ActionUrl}}) for template rendering.
+        /// </summary>
+        public Dictionary<string, string>? Placeholders { get; set; }
+
+        /// <summary>
+        /// In-App channel specific title override. Defaults to Title if not specified.
+        /// </summary>
+        public string? InAppTitle { get; set; }
+
+        /// <summary>
+        /// In-App channel specific body override. Defaults to Message if not specified.
+        /// </summary>
+        public string? InAppBody { get; set; }
+
+        /// <summary>
+        /// Push notification title override, optimized for mobile/desktop lock screens (max 40-50 chars).
+        /// </summary>
+        public string? PushTitle { get; set; }
+
+        /// <summary>
+        /// Push notification body override, formatted for mobile/desktop lock screens (max 120-140 chars).
+        /// </summary>
+        public string? PushBody { get; set; }
+
+        /// <summary>
+        /// Push notification custom data dictionary for mobile/desktop deep linking and background handlers.
+        /// </summary>
+        public Dictionary<string, string>? PushData { get; set; }
+
+        /// <summary>
+        /// Email subject line override (must comply with anti-spam standards; no ALL CAPS, no spam keywords).
+        /// </summary>
+        public string? EmailSubject { get; set; }
+
+        /// <summary>
+        /// Custom rich HTML email body override. If null, the dispatcher automatically renders a responsive
+        /// severity-branded HTML layout using the canonical color token.
+        /// </summary>
+        public string? EmailHtmlBody { get; set; }
+
+        /// <summary>
+        /// Plain-text email fallback body for legacy or text-only mail clients.
+        /// </summary>
+        public string? EmailPlainText { get; set; }
+
+        /// <summary>
+        /// SMS text message override, strictly formatted for single 160-character GSM 7-bit segment delivery.
+        /// </summary>
+        public string? SmsMessage { get; set; }
+
+        /// <summary>
+        /// Optional custom SMS sender ID (e.g. "OZIKOL").
+        /// </summary>
+        public string? SmsSenderId { get; set; }
+
+        /// <summary>
+        /// WhatsApp message override, formatted with WhatsApp markdown (*bold*, _italic_, bullet points).
+        /// </summary>
+        public string? WhatsAppMessage { get; set; }
+
+        /// <summary>
+        /// Optional WhatsApp Business approved HSM template name for Meta Cloud API dispatch.
+        /// </summary>
+        public string? WhatsAppTemplateName { get; set; }
+
+        /// <summary>
+        /// Positional template parameter values ({{1}}, {{2}}, etc.) for Meta WhatsApp Business approved HSM templates.
+        /// </summary>
+        public List<string>? WhatsAppTemplateParameters { get; set; }
     }
 
     /// <summary>
