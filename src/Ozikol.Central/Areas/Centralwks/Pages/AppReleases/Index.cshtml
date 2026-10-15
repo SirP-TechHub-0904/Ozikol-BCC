@@ -1,0 +1,402 @@
+@page "/centralwks/app-releases"
+@model Ozikol.Central.Areas.Centralwks.Pages.AppReleases.IndexModel
+@{
+    ViewData["Title"] = "App Releases & In-App Updates";
+    ViewData["BreadcrumbSection"] = "System";
+}
+
+<div class="admin-page-header" style="width: 100%; margin-bottom: 24px;">
+    <div class="admin-title-group">
+        <h1 class="admin-title" style="display: flex; align-items: center; gap: 10px;">
+            <span>Client Application Releases &amp; OTA Updates</span>
+            <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5; border: 1px solid rgba(99, 102, 241, 0.25); font-size: 11.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px;">
+                Central Works
+            </span>
+        </h1>
+        <p class="admin-subtitle">Publish and manage client installers, OTA auto-updates, mandatory version gates, and binary package integrity for Windows, macOS, Android, iOS, and Web.</p>
+    </div>
+    <div class="admin-actions" style="display: flex; gap: 10px; align-items: center;">
+        <button type="button" onclick="openReleaseModal()" class="btn-admin btn-admin-primary" style="padding: 9px 18px; font-size: 13.5px; display: inline-flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="font-size: 19px;">add_circle</span>
+            <span>Publish New Release</span>
+        </button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="admin-alert admin-alert-success" style="width: 100%; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: var(--radius-md);">
+        <span class="material-symbols-outlined alert-icon" style="font-size: 20px;">check_circle</span>
+        <div class="alert-message" style="font-size: 13.5px; font-weight: 500;">@Model.StatusMessage</div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="admin-alert admin-alert-danger" style="width: 100%; margin-bottom: 24px; display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: #dc2626;">
+        <span class="material-symbols-outlined alert-icon" style="font-size: 20px;">error</span>
+        <div class="alert-message" style="font-size: 13.5px; font-weight: 500;">@Model.ErrorMessage</div>
+    </div>
+}
+
+@* ── KPI Summary Cards ── *@
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="admin-card" style="padding: 18px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(99, 102, 241, 0.12); color: #4f46e5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">system_update</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); font-weight: 500;">Total Releases</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--admin-text);">@Model.TotalReleasesCount</div>
+        </div>
+    </div>
+
+    <div class="admin-card" style="padding: 18px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(14, 165, 233, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">desktop_windows</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); font-weight: 500;">Windows</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--admin-text);">@Model.WindowsReleasesCount</div>
+        </div>
+    </div>
+
+    <div class="admin-card" style="padding: 18px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.12); color: #059669; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">android</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); font-weight: 500;">Android</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--admin-text);">@Model.AndroidReleasesCount</div>
+        </div>
+    </div>
+
+    <div class="admin-card" style="padding: 18px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(168, 85, 247, 0.12); color: #9333ea; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">laptop_mac</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); font-weight: 500;">macOS</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--admin-text);">@Model.MacOsReleasesCount</div>
+        </div>
+    </div>
+
+    <div class="admin-card" style="padding: 18px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; gap: 14px;">
+        <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(245, 158, 11, 0.12); color: #d97706; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 24px;">phone_iphone</span>
+        </div>
+        <div>
+            <div style="font-size: 12px; color: var(--admin-text-muted); font-weight: 500;">iOS</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--admin-text);">@Model.IosReleasesCount</div>
+        </div>
+    </div>
+</div>
+
+@* ── Filters and Controls ── *@
+<div class="admin-card" style="padding: 16px 20px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <span style="font-size: 12.5px; font-weight: 600; color: var(--admin-text-muted); margin-right: 4px;">Platform:</span>
+        <a href="/centralwks/app-releases?channel=@Model.SelectedChannel" class="btn-admin @(string.IsNullOrEmpty(Model.SelectedPlatform) || Model.SelectedPlatform == "all" ? "btn-admin-primary" : "btn-admin-secondary")" style="padding: 4px 12px; font-size: 12px; border-radius: 999px;">All</a>
+        <a href="/centralwks/app-releases?platform=windows&channel=@Model.SelectedChannel" class="btn-admin @(Model.SelectedPlatform == "windows" ? "btn-admin-primary" : "btn-admin-secondary")" style="padding: 4px 12px; font-size: 12px; border-radius: 999px;">Windows</a>
+        <a href="/centralwks/app-releases?platform=android&channel=@Model.SelectedChannel" class="btn-admin @(Model.SelectedPlatform == "android" ? "btn-admin-primary" : "btn-admin-secondary")" style="padding: 4px 12px; font-size: 12px; border-radius: 999px;">Android</a>
+        <a href="/centralwks/app-releases?platform=macos&channel=@Model.SelectedChannel" class="btn-admin @(Model.SelectedPlatform == "macos" ? "btn-admin-primary" : "btn-admin-secondary")" style="padding: 4px 12px; font-size: 12px; border-radius: 999px;">macOS</a>
+        <a href="/centralwks/app-releases?platform=ios&channel=@Model.SelectedChannel" class="btn-admin @(Model.SelectedPlatform == "ios" ? "btn-admin-primary" : "btn-admin-secondary")" style="padding: 4px 12px; font-size: 12px; border-radius: 999px;">iOS</a>
+        <a href="/centralwks/app-releases?platform=web&channel=@Model.SelectedChannel" class="btn-admin @(Model.SelectedPlatform == "web" ? "btn-admin-primary" : "btn-admin-secondary")" style="padding: 4px 12px; font-size: 12px; border-radius: 999px;">Web</a>
+    </div>
+
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <span style="font-size: 12.5px; font-weight: 600; color: var(--admin-text-muted);">Channel:</span>
+        <select onchange="window.location.href='/centralwks/app-releases?platform=@Model.SelectedPlatform&channel=' + this.value" class="form-select" style="font-size: 12.5px; padding: 4px 10px; height: 32px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-sm);">
+            <option value="all" selected="@(string.IsNullOrEmpty(Model.SelectedChannel) || Model.SelectedChannel == "all")">All Channels</option>
+            <option value="stable" selected="@(Model.SelectedChannel == "stable")">Stable</option>
+            <option value="beta" selected="@(Model.SelectedChannel == "beta")">Beta</option>
+            <option value="canary" selected="@(Model.SelectedChannel == "canary")">Canary</option>
+        </select>
+    </div>
+</div>
+
+@* ── Releases Table ── *@
+<div class="admin-card" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); overflow: hidden;">
+    <div style="overflow-x: auto;">
+        <table class="table admin-table" style="width: 100%; margin: 0; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--admin-bg-surface-elevated); border-bottom: 1px solid var(--admin-border); text-align: left; font-size: 12px; color: var(--admin-text-muted); text-transform: uppercase; letter-spacing: 0.03em;">
+                    <th style="padding: 14px 20px;">Platform &amp; Channel</th>
+                    <th style="padding: 14px 16px;">Version</th>
+                    <th style="padding: 14px 16px;">Build</th>
+                    <th style="padding: 14px 16px;">Min Required</th>
+                    <th style="padding: 14px 16px;">Type</th>
+                    <th style="padding: 14px 16px;">Size</th>
+                    <th style="padding: 14px 16px;">Published</th>
+                    <th style="padding: 14px 16px;">Status</th>
+                    <th style="padding: 14px 20px; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Releases.Any())
+                {
+                    <tr>
+                        <td colspan="9" style="padding: 48px 24px; text-align: center; color: var(--admin-text-muted);">
+                            <span class="material-symbols-outlined" style="font-size: 40px; color: var(--admin-text-dim); display: block; margin-bottom: 8px;">cloud_off</span>
+                            <div style="font-size: 14px; font-weight: 500;">No application releases found.</div>
+                            <div style="font-size: 12.5px; margin-top: 4px;">Click "Publish New Release" to create a new client installer package.</div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var release in Model.Releases)
+                    {
+                        var platformIcon = release.Platform switch
+                        {
+                            "windows" => "desktop_windows",
+                            "macos" => "laptop_mac",
+                            "android" => "android",
+                            "ios" => "phone_iphone",
+                            "linux" => "terminal",
+                            _ => "language"
+                        };
+
+                        var channelBadgeStyle = release.Channel switch
+                        {
+                            "stable" => "background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25);",
+                            "beta" => "background: rgba(14, 165, 233, 0.12); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.25);",
+                            _ => "background: rgba(168, 85, 247, 0.12); color: #9333ea; border: 1px solid rgba(168, 85, 247, 0.25);"
+                        };
+
+                        var fileSizeFormatted = release.FileSizeBytes > 0 
+                            ? $"{(release.FileSizeBytes / (1024.0 * 1024.0)):F1} MB" 
+                            : "—";
+
+                        <tr style="border-bottom: 1px solid var(--admin-border); font-size: 13px;">
+                            <td style="padding: 14px 20px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="material-symbols-outlined" style="font-size: 20px; color: var(--admin-primary);">@platformIcon</span>
+                                    <div>
+                                        <div style="font-weight: 600; color: var(--admin-text); text-transform: capitalize;">@release.Platform</div>
+                                        <span class="badge" style="font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 4px; @channelBadgeStyle">
+                                            @release.Channel
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="padding: 14px 16px; font-family: monospace; font-weight: 600; color: var(--admin-text);">
+                                v@release.Version
+                            </td>
+                            <td style="padding: 14px 16px; color: var(--admin-text-muted);">
+                                #@release.BuildNumber
+                            </td>
+                            <td style="padding: 14px 16px; font-family: monospace; font-size: 12px; color: var(--admin-text-muted);">
+                                v@release.MinSupportedVersion
+                            </td>
+                            <td style="padding: 14px 16px;">
+                                @if (release.IsMandatory)
+                                {
+                                    <span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.25); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px;">
+                                        Mandatory
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge" style="background: rgba(148, 163, 184, 0.12); color: #64748b; border: 1px solid rgba(148, 163, 184, 0.25); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px;">
+                                        Optional
+                                    </span>
+                                }
+                            </td>
+                            <td style="padding: 14px 16px; color: var(--admin-text-muted); font-size: 12.5px;">
+                                @fileSizeFormatted
+                            </td>
+                            <td style="padding: 14px 16px; color: var(--admin-text-muted); font-size: 12px;">
+                                @release.PublishedAtUtc.ToString("dd MMM yyyy")
+                            </td>
+                            <td style="padding: 14px 16px;">
+                                <form method="post" asp-page-handler="ToggleActive" asp-route-id="@release.Id" style="margin: 0; display: inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" style="background: none; border: none; padding: 0; cursor: pointer;">
+                                        @if (release.IsActive)
+                                        {
+                                            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;">
+                                                <span style="width: 6px; height: 6px; border-radius: 50%; background: #059669;"></span> Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #64748b; border: 1px solid rgba(148, 163, 184, 0.25); font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;">
+                                                <span style="width: 6px; height: 6px; border-radius: 50%; background: #64748b;"></span> Inactive
+                                            </span>
+                                        }
+                                    </button>
+                                </form>
+                            </td>
+                            <td style="padding: 14px 20px; text-align: right;">
+                                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                    <a href="@release.DownloadUrl" target="_blank" rel="noopener noreferrer" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px; border: 1px solid var(--admin-border);" title="Direct Download">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">download</span>
+                                    </a>
+                                    <button type="button" onclick='populateEditModal(@Html.Raw(System.Text.Json.JsonSerializer.Serialize(release)))' class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px; border: 1px solid var(--admin-border);" title="Edit Release">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+                                    </button>
+                                    <form method="post" asp-page-handler="Delete" asp-route-id="@release.Id" style="margin: 0; display: inline;" onsubmit="return confirm('Are you sure you want to permanently delete release v@release.Version (@release.Platform)?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 4px 8px; font-size: 12px; color: var(--admin-danger); border: 1px solid var(--admin-border);" title="Delete Release">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* ── Create / Edit Release Modal ── *@
+<div id="releaseModal" style="display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 1050; align-items: center; justify-content: center; padding: 20px;">
+    <div class="admin-card" style="max-width: 680px; width: 100%; max-height: 90vh; overflow-y: auto; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
+            <h2 id="modalTitle" style="font-size: 16px; font-weight: 700; color: var(--admin-text); margin: 0;">Publish Application Release</h2>
+            <button type="button" onclick="closeReleaseModal()" style="background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                <span class="material-symbols-outlined" style="font-size: 20px;">close</span>
+            </button>
+        </div>
+
+        <form method="post" asp-page-handler="SaveRelease" style="padding: 24px;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="releaseId" asp-for="Input.Id" />
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <label asp-for="Input.Platform" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">Target Platform *</label>
+                    <select asp-for="Input.Platform" id="releasePlatform" class="form-select" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);">
+                        <option value="windows">Windows (.exe / .msix)</option>
+                        <option value="android">Android (.apk / .aab)</option>
+                        <option value="macos">macOS (.dmg / .app)</option>
+                        <option value="ios">iOS (App Store / TestFlight)</option>
+                        <option value="linux">Linux (.tar.gz / .deb)</option>
+                        <option value="web">Web Application</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label asp-for="Input.Channel" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">Distribution Channel *</label>
+                    <select asp-for="Input.Channel" id="releaseChannel" class="form-select" style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);">
+                        <option value="stable">Stable (General Availability)</option>
+                        <option value="beta">Beta (Preview Testers)</option>
+                        <option value="canary">Canary (Bleeding Edge)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <label asp-for="Input.Version" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">Semantic Version *</label>
+                    <input asp-for="Input.Version" id="releaseVersion" class="form-control" placeholder="e.g. 1.0.0" 
+                           style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace;" required />
+                </div>
+
+                <div>
+                    <label asp-for="Input.BuildNumber" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">Build Number *</label>
+                    <input asp-for="Input.BuildNumber" id="releaseBuildNumber" type="number" min="1" class="form-control" placeholder="e.g. 1" 
+                           style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" required />
+                </div>
+
+                <div>
+                    <label asp-for="Input.MinSupportedVersion" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">Min Supported Version</label>
+                    <input asp-for="Input.MinSupportedVersion" id="releaseMinSupported" class="form-control" placeholder="e.g. 1.0.0" 
+                           style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace;" />
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label asp-for="Input.DownloadUrl" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">Installer / Store Download URL *</label>
+                <input asp-for="Input.DownloadUrl" id="releaseDownloadUrl" class="form-control" placeholder="https://downloads.example.com/ozikol-v1.0.0-setup.exe" 
+                       style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px;" required />
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <label asp-for="Input.Sha256Checksum" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">SHA-256 Checksum (Optional)</label>
+                    <input asp-for="Input.Sha256Checksum" id="releaseSha256" class="form-control" placeholder="e.g. 7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069" 
+                           style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 12px;" />
+                </div>
+
+                <div>
+                    <label asp-for="Input.FileSizeBytes" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">File Size (Bytes)</label>
+                    <input asp-for="Input.FileSizeBytes" id="releaseFileSizeBytes" type="number" min="0" class="form-control" placeholder="e.g. 45000000" 
+                           style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label asp-for="Input.ReleaseNotes" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">Changelog &amp; Release Notes (Markdown)</label>
+                <textarea asp-for="Input.ReleaseNotes" id="releaseNotes" rows="4" class="form-control" 
+                          placeholder="### What's New&#10;- Offline cache resilience and instant search&#10;- Dual logging telemetry updates" 
+                          style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 24px; padding: 12px 16px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md);">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="releaseIsMandatory" asp-for="Input.IsMandatory" class="form-check-input" style="width: 18px; height: 18px; accent-color: var(--admin-danger);" />
+                    <label for="releaseIsMandatory" style="font-size: 13px; font-weight: 600; color: var(--admin-text); cursor: pointer; margin: 0;">Mandatory Update (Forces user to install)</label>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="releaseIsActive" asp-for="Input.IsActive" class="form-check-input" style="width: 18px; height: 18px; accent-color: var(--admin-primary);" />
+                    <label for="releaseIsActive" style="font-size: 13px; font-weight: 600; color: var(--admin-text); cursor: pointer; margin: 0;">Active for Distribution</label>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button type="button" onclick="closeReleaseModal()" class="btn-admin btn-admin-secondary" style="padding: 9px 20px; font-size: 13px; border: 1px solid var(--admin-border);">Cancel</button>
+                <button type="submit" class="btn-admin btn-admin-primary" style="padding: 9px 24px; font-size: 13px;">Save &amp; Publish</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openReleaseModal() {
+        document.getElementById('modalTitle').textContent = 'Publish Application Release';
+        document.getElementById('releaseId').value = '';
+        document.getElementById('releasePlatform').value = 'windows';
+        document.getElementById('releaseChannel').value = 'stable';
+        document.getElementById('releaseVersion').value = '';
+        document.getElementById('releaseBuildNumber').value = '1';
+        document.getElementById('releaseMinSupported').value = '1.0.0';
+        document.getElementById('releaseDownloadUrl').value = '';
+        document.getElementById('releaseSha256').value = '';
+        document.getElementById('releaseFileSizeBytes').value = '0';
+        document.getElementById('releaseNotes').value = '';
+        document.getElementById('releaseIsMandatory').checked = false;
+        document.getElementById('releaseIsActive').checked = true;
+
+        var modal = document.getElementById('releaseModal');
+        modal.style.display = 'flex';
+    }
+
+    function closeReleaseModal() {
+        var modal = document.getElementById('releaseModal');
+        modal.style.display = 'none';
+    }
+
+    function populateEditModal(release) {
+        document.getElementById('modalTitle').textContent = 'Edit Application Release: v' + release.Version + ' (' + release.Platform + ')';
+        document.getElementById('releaseId').value = release.Id;
+        document.getElementById('releasePlatform').value = release.Platform;
+        document.getElementById('releaseChannel').value = release.Channel;
+        document.getElementById('releaseVersion').value = release.Version;
+        document.getElementById('releaseBuildNumber').value = release.BuildNumber;
+        document.getElementById('releaseMinSupported').value = release.MinSupportedVersion || '1.0.0';
+        document.getElementById('releaseDownloadUrl').value = release.DownloadUrl;
+        document.getElementById('releaseSha256').value = release.Sha256Checksum || '';
+        document.getElementById('releaseFileSizeBytes').value = release.FileSizeBytes || 0;
+        document.getElementById('releaseNotes').value = release.ReleaseNotes || '';
+        document.getElementById('releaseIsMandatory').checked = !!release.IsMandatory;
+        document.getElementById('releaseIsActive').checked = !!release.IsActive;
+
+        var modal = document.getElementById('releaseModal');
+        modal.style.display = 'flex';
+    }
+</script>
