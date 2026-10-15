@@ -6,6 +6,7 @@ import '../network/api_client.dart';
 import '../storage/secure_storage_service.dart';
 import '../storage/tenant_cache_service.dart';
 import '../../features/workspace_auth/state/workspace_state.dart';
+import 'app_logger.dart';
 
 /// Central Crash Reporter & Startup Self-Healing ("Safe Mode") Engine.
 /// Protects against startup crash loops caused by corrupted local cache or disk drift.
@@ -71,6 +72,7 @@ class CrashReporterService {
 
       final platform = kIsWeb ? 'web' : (Platform.isWindows ? 'windows' : (Platform.isAndroid ? 'android' : 'ios'));
       final activeTenant = _storageService.getActiveTenantKey();
+      final breadcrumbs = AppLogger.getRecentLogsAsText();
 
       await _apiClient.dio.post(
         '/api/AppUpdates/crash-report',
@@ -82,6 +84,7 @@ class CrashReporterService {
           'stackTrace': sanitizedStack,
           'activeTenantKey': activeTenant,
           'occurredAtUtc': DateTime.now().toUtc().toIso8601String(),
+          'diagnosticMetadata': breadcrumbs.isNotEmpty ? breadcrumbs : null,
         },
       );
     } catch (_) {

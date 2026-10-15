@@ -39,6 +39,7 @@
     <ProjectReference Include="..\Ozikol-BCC.Infrastructure\Ozikol-BCC.Infrastructure.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.PaymentServices\Ozikol-BCC.PaymentServices.csproj" />
     <ProjectReference Include="..\Ozikol-BCC.Persistence.EF.SQL\Ozikol-BCC.Persistence.EF.SQL.csproj" />
+    <ProjectReference Include="..\Ozikol-BCC.Telemetry.Sentry\Ozikol-BCC.Telemetry.Sentry.csproj" />
   </ItemGroup>
 
 </Project>

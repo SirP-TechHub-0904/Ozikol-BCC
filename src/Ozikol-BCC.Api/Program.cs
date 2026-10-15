@@ -17,6 +17,8 @@ using Ozikol_BCC.Infrastructure.Extensions;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Persistence.EF.SQL.Extensions;
+using Ozikol_BCC.Telemetry.Sentry.Extensions;
+using Ozikol_BCC.Api.Middleware;
 
 namespace Ozikol_BCC.Api
 {
@@ -27,6 +29,7 @@ namespace Ozikol_BCC.Api
         {
             DotNetEnv.Env.TraversePath().Load();
             var builder = WebApplication.CreateBuilder(args);
+            builder.WebHost.UseOzikolSentry("Ozikol-BCC.Api");
 
             // 1. Core Services & Infrastructure
             builder.Services.AddAWSService<IAmazonS3>();
@@ -233,6 +236,8 @@ namespace Ozikol_BCC.Api
             });
 
             var app = builder.Build();
+
+            app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
             app.UseCors("AllowAngularApp");
 
