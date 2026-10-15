@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import 'glass_container.dart';
 
 /// Screen displayed when global maintenance mode is engaged dynamically from the Central DB.
+/// Clean, modern layout matching the repository UI kit standards.
 class MaintenanceScreen extends StatelessWidget {
   final String? message;
   final VoidCallback onRefresh;
@@ -18,14 +18,28 @@ class MaintenanceScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
-            child: GlassContainer(
-              borderRadius: 24,
+            child: Container(
               padding: const EdgeInsets.all(36),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(isDark ? 60 : 12),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -53,7 +67,7 @@ class MaintenanceScreen extends StatelessWidget {
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -0.5,
-                      color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
+                      color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -64,7 +78,7 @@ class MaintenanceScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.5,
-                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      color: isDark ? AppColors.gray400 : AppColors.gray600,
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -74,7 +88,7 @@ class MaintenanceScreen extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: onRefresh,

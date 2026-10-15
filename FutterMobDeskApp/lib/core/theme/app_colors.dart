@@ -40,8 +40,8 @@ class AppColors {
   static const Color outlineDark = Color(0xFF334155);
 
   // Spatial Glassmorphism Fills & Borders
-  static const Color glassLight = Color(0xBF255255); // ~75% white
-  static const Color glassBorderLight = Color(0x66FFFFFF); // 40% white border
+  static const Color glassLight = Color(0xF0FFFFFF); // ~94% white clean surface
+  static const Color glassBorderLight = Color(0x1F0F172A); // subtle 12% border
   static const Color glassDark = Color(0xBF0F172A); // ~75% slate-900
   static const Color glassBorderDark = Color(0x26FFFFFF); // 15% white border
 

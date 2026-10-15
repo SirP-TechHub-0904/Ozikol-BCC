@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/auth_header.dart';
+import '../../../core/widgets/contextual_info_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
-import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../dashboard/presentation/dashboard_shell_screen.dart';
 import '../state/workspace_state.dart';
 
-/// Screen 2: Branded login screen for the resolved organization workspace.
+/// Clean, branded authentication screen for the resolved organization workspace.
+/// Incorporates the clean UI kit architecture with wave-clipped AuthHeader,
+/// pristine white/dark container surfaces, and frictionless single-sign-on input validation.
 class WorkspaceLoginScreen extends ConsumerStatefulWidget {
   final Workspace workspace;
 
@@ -63,171 +66,200 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
     final ws = widget.workspace;
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 18,
-            color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: GlassContainer(
-              borderRadius: 24,
-              padding: const EdgeInsets.all(36),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Organization Avatar & Identity
-                    Center(
-                      child: TenantAvatar(
-                        logoUrl: ws.logoUrl,
-                        name: ws.displayName,
-                        size: 64,
-                        borderRadius: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            // Wave Header with Organization Branding & Back Button
+            AuthHeader(
+              title: ws.displayName,
+              subtitle: 'Sign in to access your organization workspace',
+              showBackButton: true,
+              onBackTap: () => Navigator.of(context).pop(),
+              emblem: TenantAvatar(
+                logoUrl: ws.logoUrl,
+                name: ws.displayName,
+                size: 50,
+                borderRadius: 14,
+              ),
+              badge: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(45),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withAlpha(70)),
+                ),
+                child: Text(
+                  ws.primaryDomain,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
 
-                    // Organization Title
-                    Text(
-                      ws.displayName,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
-                        color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    // Domain Badge
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(isDark ? 40 : 20),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.primary.withAlpha(60),
+            // Main Credentials Card
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    child: Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.surfaceDark : Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(isDark ? 60 : 12),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
                           ),
-                        ),
-                        child: Text(
-                          ws.primaryDomain,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Error Banner
-                    if (state.errorMessage != null) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withAlpha(isDark ? 40 : 25),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.error.withAlpha(80)),
-                        ),
-                        child: Row(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 18),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                state.errorMessage!,
-                                style: const TextStyle(
-                                  color: AppColors.error,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
+                            // Section Title with Contextual Info Icon
+                            Row(
+                              children: [
+                                Text(
+                                  'Authentication',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.4,
+                                    color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
+                                const ContextualInfoButton(
+                                  title: 'Workspace Authentication',
+                                  purpose: 'Authenticates your identity against your tenant user directory and claims token.',
+                                  expectedInputs: 'Use your organization work email and password.',
+                                  impact: 'Issues a scoped JWT bearer token with tenant role permissions.',
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Enter your organization credentials to proceed.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark ? AppColors.gray400 : AppColors.gray600,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Error Banner
+                            if (state.errorMessage != null) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.error.withAlpha(isDark ? 40 : 20),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: AppColors.error.withAlpha(80)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 18),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        state.errorMessage!,
+                                        style: const TextStyle(
+                                          color: AppColors.error,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                            ],
+
+                            // Work Email Input Field
+                            CustomTextField(
+                              controller: _emailController,
+                              label: 'Work Email',
+                              placeholder: 'name@company.com',
+                              keyboardType: TextInputType.emailAddress,
+                              prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20, color: AppColors.primary),
+                              textInputAction: TextInputAction.next,
+                              validator: (val) {
+                                if (val == null || val.trim().isEmpty) {
+                                  return 'Please enter your work email.';
+                                }
+                                if (!val.contains('@') || !val.contains('.')) {
+                                  return 'Please enter a valid email address.';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Password Input Field
+                            CustomTextField(
+                              controller: _passwordController,
+                              label: 'Password',
+                              placeholder: '••••••••',
+                              isPassword: true,
+                              prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) => _handleSignIn(),
+                              validator: (val) {
+                                if (val == null || val.isEmpty) {
+                                  return 'Please enter your password.';
+                                }
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Sign In Action Button
+                            PrimaryButton(
+                              text: 'Sign In to Workspace',
+                              height: 52,
+                              borderRadius: 14,
+                              isLoading: state.isLoading,
+                              icon: const Icon(Icons.login_rounded, size: 18),
+                              onPressed: _handleSignIn,
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Switch Organization Action
+                            Center(
+                              child: TextButton.icon(
+                                icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                                label: const Text('Change Organization'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: isDark ? AppColors.gray400 : AppColors.gray600,
+                                  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                ),
+                                onPressed: () => Navigator.of(context).pop(),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
-                    ],
-
-                    // Work Email Field
-                    CustomTextField(
-                      controller: _emailController,
-                      label: 'Work Email',
-                      placeholder: 'name@company.com',
-                      keyboardType: TextInputType.emailAddress,
-                      prefixIcon: const Icon(Icons.mail_outline_rounded, size: 19, color: Color(0xFF64748B)),
-                      validator: (val) {
-                        if (val == null || val.trim().isEmpty) {
-                          return 'Please enter your work email.';
-                        }
-                        if (!val.contains('@') || !val.contains('.')) {
-                          return 'Please enter a valid email address.';
-                        }
-                        return null;
-                      },
                     ),
-                    const SizedBox(height: 18),
-
-                    // Password Field
-                    CustomTextField(
-                      controller: _passwordController,
-                      label: 'Password',
-                      placeholder: '••••••••',
-                      isPassword: true,
-                      prefixIcon: const Icon(Icons.lock_outline_rounded, size: 19, color: Color(0xFF64748B)),
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _handleSignIn(),
-                      validator: (val) {
-                        if (val == null || val.isEmpty) {
-                          return 'Please enter your password.';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Sign In Button
-                    PrimaryButton(
-                      text: 'Sign In to Workspace',
-                      isLoading: state.isLoading,
-                      icon: const Icon(Icons.login_rounded, size: 18),
-                      onPressed: _handleSignIn,
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Change Workspace Link
-                    Center(
-                      child: TextButton.icon(
-                        icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                        label: const Text('Change Organization'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                        ),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
