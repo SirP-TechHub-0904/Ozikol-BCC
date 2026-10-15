@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ozikol_app/core/storage/secure_storage_service.dart';
 import 'package:ozikol_app/core/storage/tenant_cache_service.dart';
 import 'package:ozikol_app/core/theme/app_theme.dart';
+import 'package:ozikol_app/core/theme/theme_provider.dart';
 import 'package:ozikol_app/core/widgets/offline_status_bar.dart';
+import 'package:ozikol_app/core/widgets/theme_mode_switcher.dart';
 import 'package:ozikol_app/features/notifications/domain/notification_model.dart';
 import 'package:ozikol_app/features/notifications/presentation/notifications_sheet.dart';
 import 'package:ozikol_app/features/workspace_auth/presentation/workspace_entry_screen.dart';
@@ -182,4 +184,61 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('You are offline. Showing cached workspace data.'), findsNothing);
   });
+
+  test('ThemeModeNotifier updates state, toggles, and persists preferences to SecureStorageService', () async {
+    final storage = SecureStorageService.inMemory();
+    final notifier = ThemeModeNotifier(storage);
+
+    // Initial state is system default
+    expect(notifier.state, ThemeMode.system);
+
+    // Set to dark mode
+    await notifier.setThemeMode(ThemeMode.dark);
+    expect(notifier.state, ThemeMode.dark);
+    expect(storage.getThemeMode(), 'dark');
+
+    // Set to light mode
+    await notifier.setThemeMode(ThemeMode.light);
+    expect(notifier.state, ThemeMode.light);
+    expect(storage.getThemeMode(), 'light');
+
+    // Create fresh notifier to test persisted load
+    final restoredNotifier = ThemeModeNotifier(storage);
+    expect(restoredNotifier.state, ThemeMode.light);
+  });
+
+  testWidgets('ThemeModeSwitcher renders segmented controls and updates theme mode upon selection', (WidgetTester tester) async {
+    final storage = SecureStorageService.inMemory();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          storageServiceProvider.overrideWithValue(storage),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: ThemeModeSwitcher(),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Verify all 3 mode tooltips/icons exist
+    expect(find.byTooltip('Light Mode'), findsOneWidget);
+    expect(find.byTooltip('System Default'), findsOneWidget);
+    expect(find.byTooltip('Dark Mode'), findsOneWidget);
+
+    // Tap dark mode
+    await tester.tap(find.byTooltip('Dark Mode'));
+    await tester.pumpAndSettle();
+    expect(storage.getThemeMode(), 'dark');
+
+    // Tap light mode
+    await tester.tap(find.byTooltip('Light Mode'));
+    await tester.pumpAndSettle();
+    expect(storage.getThemeMode(), 'light');
+  });
 }
+

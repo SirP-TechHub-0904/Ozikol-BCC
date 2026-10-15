@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/primary_button.dart';
+import '../../../core/widgets/theme_mode_switcher.dart';
 import '../state/workspace_state.dart';
 import 'workspace_login_screen.dart';
 
@@ -135,21 +136,28 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Server Environment Configuration Toggle (Top-Right)
+          // Top-Right Header Actions (Theme Switcher & Environment Settings)
           Positioned(
             top: 14,
             right: 14,
             child: SafeArea(
-              child: Tooltip(
-                message: 'Configure API Server Environment',
-                child: IconButton(
-                  icon: Icon(
-                    Icons.settings_ethernet_rounded,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                    size: 20,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const ThemeModeSwitcher(compact: true),
+                  const SizedBox(width: 8),
+                  Tooltip(
+                    message: 'Configure API Server Environment',
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.settings_ethernet_rounded,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        size: 20,
+                      ),
+                      onPressed: _showServerSettingsDialog,
+                    ),
                   ),
-                  onPressed: _showServerSettingsDialog,
-                ),
+                ],
               ),
             ),
           ),

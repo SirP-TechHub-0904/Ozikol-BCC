@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/offline_status_bar.dart';
 import '../../../core/widgets/tenant_avatar.dart';
+import '../../../core/widgets/theme_mode_switcher.dart';
 import '../../workspace_auth/presentation/workspace_entry_screen.dart';
 import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
 import '../../workspace_auth/state/workspace_state.dart';
@@ -108,6 +109,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
               ],
             ),
             actions: [
+              const ThemeModeSwitcher(compact: true),
               Consumer(
                 builder: (context, ref, _) {
                   final notifState = ref.watch(notificationProvider);
@@ -467,6 +469,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
                       );
                     },
                   ),
+                  const SizedBox(width: 12),
+                  const ThemeModeSwitcher(),
                 ],
               ),
             ),

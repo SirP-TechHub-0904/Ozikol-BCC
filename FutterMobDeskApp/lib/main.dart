@@ -6,6 +6,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'core/storage/secure_storage_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
 import 'features/dashboard/presentation/dashboard_shell_screen.dart';
 import 'features/workspace_auth/presentation/workspace_entry_screen.dart';
 import 'features/workspace_auth/state/workspace_state.dart';
@@ -56,13 +57,14 @@ class OzikolApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final workspaceState = ref.watch(workspaceStateProvider);
     final configAsync = ref.watch(clientConfigProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
       title: 'Ozikol MIS',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       home: configAsync.when(
         data: (config) {
           if (config.isMaintenanceMode) {

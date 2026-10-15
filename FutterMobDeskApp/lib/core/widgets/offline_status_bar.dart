@@ -23,13 +23,22 @@ class OfflineStatusBar extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bannerBg = isDark ? const Color(0xFF451A03).withAlpha(180) : const Color(0xFFFEF3C7);
+    final borderColor = isDark ? const Color(0xFF78350F) : const Color(0xFFFDE68A);
+    final iconColor = isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309);
+    final textColor = isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E);
+    final btnBg = isDark ? const Color(0xFF78350F).withAlpha(140) : Colors.white.withAlpha(180);
+    final btnBorder = isDark ? const Color(0xFF92400E) : const Color(0xFFFCD34D);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: const BoxDecoration(
-        color: Color(0xFFFEF3C7), // Warm amber tint
+      decoration: BoxDecoration(
+        color: bannerBg,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFFDE68A), width: 1),
+          bottom: BorderSide(color: borderColor, width: 1),
         ),
       ),
       child: SafeArea(
@@ -37,19 +46,19 @@ class OfflineStatusBar extends ConsumerWidget {
         bottom: false,
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.wifi_off_rounded,
-              color: Color(0xFFB45309), // Amber 700
+              color: iconColor,
               size: 16,
             ),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text(
                 'You are offline. Showing cached workspace data.',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF92400E), // Amber 800
+                  color: textColor,
                 ),
               ),
             ),
@@ -70,18 +79,18 @@ class OfflineStatusBar extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(180),
+                  color: btnBg,
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFFCD34D)),
+                  border: Border.all(color: btnBorder),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.refresh_rounded, size: 12, color: Color(0xFF92400E)),
-                    SizedBox(width: 4),
+                    Icon(Icons.refresh_rounded, size: 12, color: textColor),
+                    const SizedBox(width: 4),
                     Text(
                       'Retry',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF92400E)),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor),
                     ),
                   ],
                 ),

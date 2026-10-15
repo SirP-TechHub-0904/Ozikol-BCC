@@ -196,6 +196,25 @@ class SecureStorageService {
       _memoryStore[_customBaseUrlPrefs] = url.trim();
     }
   }
+
+  static const String _themeModePrefs = 'ozikol_app_theme_mode';
+
+  /// Retrieves the saved theme mode preference ('system', 'light', 'dark')
+  String? getThemeMode() {
+    if (_prefs != null) {
+      return _prefs.getString(_themeModePrefs);
+    }
+    return _memoryStore[_themeModePrefs];
+  }
+
+  /// Persists the theme mode preference ('system', 'light', 'dark')
+  Future<void> setThemeMode(String mode) async {
+    if (_prefs != null) {
+      await _prefs.setString(_themeModePrefs, mode);
+    } else {
+      _memoryStore[_themeModePrefs] = mode;
+    }
+  }
 }
 
 /// Global provider for SecureStorageService (defaults to in-memory for testing, overridden in main)
