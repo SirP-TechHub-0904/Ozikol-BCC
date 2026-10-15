@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +11,7 @@ class SecureStorageService {
   static const String _activeTenantKeyPrefs = 'ozikol_active_tenant_key';
   static const String _workspacesStorageKey = 'ozikol_enrolled_workspaces_json';
   static const String _tokenPrefix = 'ozikol_token_';
+  static const String _systemDeviceIdKey = 'ozikol_system_device_id';
 
   final FlutterSecureStorage? _secureStorage;
   final SharedPreferences? _prefs;
@@ -252,6 +254,32 @@ class SecureStorageService {
     } else {
       _memoryStore[key] = value.toString();
     }
+  }
+
+  /// Retrieves or generates a persistent unique system/device identifier (UUID v4)
+  Future<String> getOrCreateSystemDeviceId() async {
+    String? deviceId = _secureStorage != null
+        ? await _secureStorage.read(key: _systemDeviceIdKey)
+        : _memoryStore[_systemDeviceIdKey];
+
+    if (deviceId == null || deviceId.isEmpty) {
+      deviceId = _generateUuidV4();
+      if (_secureStorage != null) {
+        await _secureStorage.write(key: _systemDeviceIdKey, value: deviceId);
+      } else {
+        _memoryStore[_systemDeviceIdKey] = deviceId;
+      }
+    }
+    return deviceId;
+  }
+
+  static String _generateUuidV4() {
+    final random = Random.secure();
+    final values = List<int>.generate(16, (i) => random.nextInt(256));
+    values[6] = (values[6] & 0x0f) | 0x40; // Version 4
+    values[8] = (values[8] & 0x3f) | 0x80; // Variant 10
+    final hex = values.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20, 32)}';
   }
 }
 

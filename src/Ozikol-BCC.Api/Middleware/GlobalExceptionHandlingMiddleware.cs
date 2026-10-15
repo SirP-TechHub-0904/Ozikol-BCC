@@ -48,23 +48,39 @@ public class GlobalExceptionHandlingMiddleware
             var path = context.Request.Path.Value ?? string.Empty;
             var method = context.Request.Method;
 
+            var clientContext = Ozikol_BCC.Application.Common.ClientContextHelper.Resolve(context);
+            var effectiveTenantKey = !string.IsNullOrWhiteSpace(tenantKey) ? tenantKey : clientContext.TenantKey;
+
             _logger.LogError(
                 ex,
-                "Unhandled API Exception on {Method} {Path} (Tenant: {TenantKey}, TraceId: {TraceId}): {Message}",
+                "Unhandled API Exception on {Method} {Path} (Tenant: {TenantKey}, TraceId: {TraceId}, IP: {Ip}, SystemId: {SystemId}, User: {UserEmail}): {Message}",
                 method,
                 path,
-                string.IsNullOrWhiteSpace(tenantKey) ? "None" : tenantKey,
+                string.IsNullOrWhiteSpace(effectiveTenantKey) ? "None" : effectiveTenantKey,
                 context.TraceIdentifier,
+                clientContext.IpAddress,
+                clientContext.SystemId ?? "None",
+                clientContext.UserEmail ?? clientContext.UserId ?? "Anonymous",
                 ex.Message);
 
             // Trigger background crash alert without blocking client response
-            _ = DispatchCrashAlertEmailAsync(context, ex, tenantKey, path, method);
+            _ = DispatchCrashAlertEmailAsync(context, ex, effectiveTenantKey ?? string.Empty, path, method);
 
-            // Stream structured diagnostic event to Central MongoDB
+            // Stream structured diagnostic event to Central MongoDB with rich telemetry
             var logCollector = context.RequestServices.GetService<Ozikol_BCC.Application.Interfaces.Services.ICentralLogCollector>();
             if (logCollector != null)
             {
-                _ = logCollector.LogSystemExceptionAsync(ex, path, method, tenantKey, context.TraceIdentifier);
+                _ = logCollector.LogSystemExceptionAsync(
+                    ex,
+                    path,
+                    method,
+                    effectiveTenantKey,
+                    context.TraceIdentifier,
+                    ipAddress: clientContext.IpAddress,
+                    systemId: clientContext.SystemId,
+                    userId: clientContext.UserId,
+                    userEmail: clientContext.UserEmail,
+                    userAgent: clientContext.UserAgent);
             }
 
             await HandleExceptionAsync(context, ex);

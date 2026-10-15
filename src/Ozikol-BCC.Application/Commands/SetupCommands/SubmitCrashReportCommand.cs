@@ -50,6 +50,26 @@ namespace Ozikol_BCC.Application.Commands.SetupCommands
         /// Gets or sets additional sanitized diagnostic metadata (device model, screen resolution, free memory).
         /// </summary>
         public string? DiagnosticMetadata { get; set; }
+
+        /// <summary>
+        /// Gets or sets the persistent unique system/device identifier of the client machine.
+        /// </summary>
+        public string? SystemId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the unique user identifier if signed in during the crash.
+        /// </summary>
+        public string? UserId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the user email address if signed in during the crash.
+        /// </summary>
+        public string? UserEmail { get; set; }
+
+        /// <summary>
+        /// Gets or sets the originating client IP address.
+        /// </summary>
+        public string? IpAddress { get; set; }
     }
 
     /// <summary>

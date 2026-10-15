@@ -33,7 +33,19 @@ export class AuthInterceptor implements HttpInterceptor {
 
     const trustToken = localStorage.getItem('device_trust_token');
 
-    const headers: { [key: string]: string } = {};
+    // Retrieve or generate persistent unique client system/device ID
+    let systemDeviceId = localStorage.getItem('system_device_id');
+    if (!systemDeviceId) {
+      systemDeviceId = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : 'web-' + Math.random().toString(36).substring(2, 15) + '-' + Date.now();
+      localStorage.setItem('system_device_id', systemDeviceId);
+    }
+
+    const headers: { [key: string]: string } = {
+      'X-System-Id': systemDeviceId,
+      'X-Platform': 'Web'
+    };
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }

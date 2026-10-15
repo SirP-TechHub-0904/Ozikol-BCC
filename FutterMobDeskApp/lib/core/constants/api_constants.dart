@@ -38,6 +38,8 @@ class ApiConstants {
   static const String headerTenantKey = 'X-Tenant-Key';
   static const String headerTenantDomain = 'X-Tenant-Domain';
   static const String headerAuthorization = 'Authorization';
+  static const String headerSystemId = 'X-System-Id';
+  static const String headerPlatform = 'X-Platform';
 
   // Timeouts
   static const Duration connectTimeout = Duration(seconds: 15);

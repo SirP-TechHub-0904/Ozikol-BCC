@@ -87,6 +87,42 @@ namespace Ozikol_BCC.Application.Models.Logging
         public string? Breadcrumbs { get; set; }
 
         /// <summary>
+        /// Gets or sets the originating client IP address.
+        /// </summary>
+        [BsonElement("ipAddress")]
+        public string? IpAddress { get; set; }
+
+        /// <summary>
+        /// Gets or sets the persistent unique client system or device identifier.
+        /// </summary>
+        [BsonElement("systemId")]
+        public string? SystemId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the unique identifier of the user who triggered or experienced the event.
+        /// </summary>
+        [BsonElement("userId")]
+        public string? UserId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the email address of the user who triggered or experienced the event.
+        /// </summary>
+        [BsonElement("userEmail")]
+        public string? UserEmail { get; set; }
+
+        /// <summary>
+        /// Gets or sets the client runtime platform (e.g., "windows", "android", "web", "ios").
+        /// </summary>
+        [BsonElement("platform")]
+        public string? Platform { get; set; }
+
+        /// <summary>
+        /// Gets or sets the client User-Agent header string.
+        /// </summary>
+        [BsonElement("userAgent")]
+        public string? UserAgent { get; set; }
+
+        /// <summary>
         /// Gets or sets additional arbitrary diagnostic metadata.
         /// </summary>
         [BsonElement("metadata")]

@@ -14,13 +14,18 @@ namespace Ozikol_BCC.Application.Interfaces.Services
     public interface ICentralLogCollector
     {
         /// <summary>
-        /// Logs an uncaught server exception or critical runtime crash into MongoDB.
+        /// Logs an uncaught server exception or critical runtime crash into MongoDB with complete client and identity context.
         /// </summary>
         /// <param name="ex">The intercepted exception.</param>
         /// <param name="route">The request URL path.</param>
         /// <param name="method">The HTTP request method.</param>
         /// <param name="tenantKey">The active workspace tenant key if any.</param>
         /// <param name="traceId">The correlation or trace identifier.</param>
+        /// <param name="ipAddress">Originating client IP address.</param>
+        /// <param name="systemId">Persistent unique client machine/device identifier.</param>
+        /// <param name="userId">Unique authenticated user identifier if available.</param>
+        /// <param name="userEmail">Authenticated user email address if available.</param>
+        /// <param name="userAgent">Client User-Agent header string.</param>
         /// <param name="metadata">Optional contextual key-value pairs.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         Task LogSystemExceptionAsync(
@@ -29,6 +34,11 @@ namespace Ozikol_BCC.Application.Interfaces.Services
             string method,
             string? tenantKey,
             string traceId,
+            string? ipAddress = null,
+            string? systemId = null,
+            string? userId = null,
+            string? userEmail = null,
+            string? userAgent = null,
             Dictionary<string, object?>? metadata = null,
             CancellationToken cancellationToken = default);
 
@@ -62,5 +72,12 @@ namespace Ozikol_BCC.Application.Interfaces.Services
         /// <param name="document">The pre-constructed central log document.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         Task LogTraceAsync(CentralLogDocument document, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Logs a platform-wide administrative or security audit event directly to Central MongoDB.
+        /// </summary>
+        /// <param name="document">The structured central log document.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        Task LogCentralEventAsync(CentralLogDocument document, CancellationToken cancellationToken = default);
     }
 }

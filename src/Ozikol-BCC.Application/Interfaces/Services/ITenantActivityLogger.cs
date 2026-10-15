@@ -18,6 +18,9 @@ public interface ITenantActivityLogger
     /// <param name="targetProfileId">Optional profile ID of the member being modified or affected.</param>
     /// <param name="targetFullName">Optional full name of the member being modified or affected.</param>
     /// <param name="metadata">Optional contextual metadata serialized into JSON.</param>
+    /// <param name="explicitUserId">Optional explicit user ID (used when caller is not yet in HttpContext claims, e.g. login).</param>
+    /// <param name="explicitUserEmail">Optional explicit user email address.</param>
+    /// <param name="explicitUserName">Optional explicit user display name.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task LogAsync(
         string actionType,
@@ -26,5 +29,8 @@ public interface ITenantActivityLogger
         string? targetProfileId = null,
         string? targetFullName = null,
         object? metadata = null,
+        string? explicitUserId = null,
+        string? explicitUserEmail = null,
+        string? explicitUserName = null,
         CancellationToken cancellationToken = default);
 }

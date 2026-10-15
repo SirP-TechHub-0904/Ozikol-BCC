@@ -26,12 +26,18 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly IMediator _mediator;
         private readonly DashboardDbContext _db;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? _activityLogger;
 
-        public SettingsApiController(IMediator mediator, DashboardDbContext db, ICloudinaryService cloudinaryService)
+        public SettingsApiController(
+            IMediator mediator,
+            DashboardDbContext db,
+            ICloudinaryService cloudinaryService,
+            Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? activityLogger = null)
         {
             _mediator = mediator;
             _db = db;
             _cloudinaryService = cloudinaryService;
+            _activityLogger = activityLogger;
         }
 
         /// <summary>
@@ -228,6 +234,12 @@ namespace Ozikol_BCC.Api.Controllers
             config.AlumniAlias = !string.IsNullOrWhiteSpace(dto.AlumniAlias) ? dto.AlumniAlias.Trim() : "Alumni";
 
             await _db.SaveChangesAsync();
+
+            if (_activityLogger != null)
+            {
+                await _activityLogger.LogAsync("UPDATE_TERMINOLOGY_ALIASES", "Updated workspace custom terminology aliases.", "Settings", metadata: dto);
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(dto, "Terminology aliases updated successfully."));
         }
 
@@ -367,6 +379,12 @@ namespace Ozikol_BCC.Api.Controllers
             site.UpdatedAtUtc = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
+
+            if (_activityLogger != null)
+            {
+                await _activityLogger.LogAsync("UPDATE_BRAND_SETTINGS", "Updated workspace branding identity, colors, and logos.", "Settings", metadata: dto);
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(dto, "Brand identity updated successfully."));
         }
 

@@ -54,6 +54,11 @@ namespace Ozikol_BCC.Application.Services.Logging
             string method,
             string? tenantKey,
             string traceId,
+            string? ipAddress = null,
+            string? systemId = null,
+            string? userId = null,
+            string? userEmail = null,
+            string? userAgent = null,
             Dictionary<string, object?>? metadata = null,
             CancellationToken cancellationToken = default)
         {
@@ -67,6 +72,11 @@ namespace Ozikol_BCC.Application.Services.Logging
                 TraceId = traceId,
                 Route = route,
                 HttpMethod = method,
+                IpAddress = ipAddress,
+                SystemId = systemId,
+                UserId = userId,
+                UserEmail = userEmail,
+                UserAgent = userAgent,
                 Message = $"{ex.GetType().FullName}: {ex.Message}",
                 StackTrace = ex.StackTrace,
                 Metadata = metadata
@@ -85,6 +95,11 @@ namespace Ozikol_BCC.Application.Services.Logging
                 Category = "ClientCrash",
                 Application = $"ClientApp-{report.Platform}",
                 TenantKey = report.ActiveTenantKey,
+                Platform = report.Platform,
+                IpAddress = report.IpAddress,
+                SystemId = report.SystemId,
+                UserId = report.UserId,
+                UserEmail = report.UserEmail,
                 Message = report.ExceptionMessage,
                 StackTrace = report.StackTrace,
                 Breadcrumbs = report.DiagnosticMetadata,
@@ -97,6 +112,12 @@ namespace Ozikol_BCC.Application.Services.Logging
             };
 
             await LogTraceAsync(doc, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public async Task LogCentralEventAsync(CentralLogDocument document, CancellationToken cancellationToken = default)
+        {
+            await LogTraceAsync(document, cancellationToken);
         }
 
         /// <inheritdoc />
@@ -245,7 +266,24 @@ namespace Ozikol_BCC.Application.Services.Logging
                         var indexKeys = Builders<CentralLogDocument>.IndexKeys.Ascending(doc => doc.TimestampUtc);
                         var indexOptions = new CreateIndexOptions { ExpireAfter = TimeSpan.FromDays(30), Name = "ttl_30d_timestamp" };
                         var indexModel = new CreateIndexModel<CentralLogDocument>(indexKeys, indexOptions);
-                        await collection.Indexes.CreateOneAsync(indexModel, cancellationToken: cancellationToken);
+
+                        var systemIdIndex = new CreateIndexModel<CentralLogDocument>(
+                            Builders<CentralLogDocument>.IndexKeys.Ascending(doc => doc.SystemId),
+                            new CreateIndexOptions { Name = "idx_systemId", Sparse = true });
+
+                        var userIndex = new CreateIndexModel<CentralLogDocument>(
+                            Builders<CentralLogDocument>.IndexKeys.Ascending(doc => doc.UserId).Ascending(doc => doc.UserEmail),
+                            new CreateIndexOptions { Name = "idx_userId_email", Sparse = true });
+
+                        var ipIndex = new CreateIndexModel<CentralLogDocument>(
+                            Builders<CentralLogDocument>.IndexKeys.Ascending(doc => doc.IpAddress),
+                            new CreateIndexOptions { Name = "idx_ipAddress", Sparse = true });
+
+                        var tenantIndex = new CreateIndexModel<CentralLogDocument>(
+                            Builders<CentralLogDocument>.IndexKeys.Ascending(doc => doc.TenantKey).Descending(doc => doc.TimestampUtc),
+                            new CreateIndexOptions { Name = "idx_tenant_timestamp", Sparse = true });
+
+                        await collection.Indexes.CreateManyAsync(new[] { indexModel, systemIdIndex, userIndex, ipIndex, tenantIndex }, cancellationToken: cancellationToken);
                         _ttlIndexCreated = true;
                     }
                 }

@@ -45,21 +45,18 @@ public class TenantActivityLogger : ITenantActivityLogger
         string? targetProfileId = null,
         string? targetFullName = null,
         object? metadata = null,
+        string? explicitUserId = null,
+        string? explicitUserEmail = null,
+        string? explicitUserName = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var httpContext = _httpContextAccessor.HttpContext;
-            var user = httpContext?.User;
+            var clientContext = Ozikol_BCC.Application.Common.ClientContextHelper.Resolve(_httpContextAccessor.HttpContext);
 
-            string? currentUserId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                ?? user?.FindFirst("sub")?.Value;
-
-            string? currentUserName = user?.FindFirst(ClaimTypes.Name)?.Value
-                ?? user?.FindFirst("name")?.Value
-                ?? user?.Identity?.Name;
-
-            string? ipAddress = httpContext?.Connection?.RemoteIpAddress?.ToString();
+            string? effectiveUserId = !string.IsNullOrWhiteSpace(explicitUserId) ? explicitUserId : clientContext.UserId;
+            string? effectiveUserEmail = !string.IsNullOrWhiteSpace(explicitUserEmail) ? explicitUserEmail : clientContext.UserEmail;
+            string? effectiveUserName = !string.IsNullOrWhiteSpace(explicitUserName) ? explicitUserName : clientContext.UserName;
 
             string? metadataJson = null;
             if (metadata != null)
@@ -80,12 +77,15 @@ public class TenantActivityLogger : ITenantActivityLogger
                 ActionType = actionType,
                 Description = description,
                 Module = module,
-                PerformedByProfileId = currentUserId,
-                PerformedByFullName = currentUserName,
+                PerformedByProfileId = effectiveUserId,
+                PerformedByFullName = effectiveUserName,
+                PerformedByUserEmail = effectiveUserEmail,
                 TargetProfileId = targetProfileId,
                 TargetFullName = targetFullName,
                 Date = DateTime.UtcNow,
-                IpAddress = ipAddress,
+                IpAddress = clientContext.IpAddress,
+                SystemId = clientContext.SystemId,
+                UserAgent = clientContext.UserAgent,
                 MetadataJson = metadataJson
             };
 

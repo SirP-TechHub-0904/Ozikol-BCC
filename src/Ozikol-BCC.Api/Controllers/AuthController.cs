@@ -182,8 +182,10 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            var ipAddress = Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? HttpContext.Connection.RemoteIpAddress?.ToString();
-            var userAgent = Request.Headers.UserAgent.ToString();
+            var clientContext = Ozikol_BCC.Application.Common.ClientContextHelper.Resolve(HttpContext);
+            var ipAddress = clientContext.IpAddress;
+            var systemId = clientContext.SystemId;
+            var userAgent = clientContext.UserAgent ?? Request.Headers.UserAgent.ToString();
 
             var result = await activeSignInManager.CheckPasswordSignInAsync(user, model.Password, lockoutOnFailure: !passwordValid);
             _logger.LogInformation("🔑 [Login] CheckPasswordSignInAsync result: Succeeded={Succeeded}, IsLockedOut={IsLockedOut}, IsNotAllowed={IsNotAllowed}, RequiresTwoFactor={RequiresTwoFactor}",
@@ -196,8 +198,10 @@ namespace Ozikol_BCC.Api.Controllers
                     activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                     {
                         Id = Guid.CreateVersion7(),
+                        UserId = user.Id,
                         Email = user.Email!,
                         IpAddress = ipAddress,
+                        SystemId = systemId,
                         Status = "Locked Out",
                         UserAgent = userAgent,
                         Timestamp = DateTime.UtcNow
@@ -215,8 +219,10 @@ namespace Ozikol_BCC.Api.Controllers
                     activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                     {
                         Id = Guid.CreateVersion7(),
+                        UserId = user.Id,
                         Email = user.Email!,
                         IpAddress = ipAddress,
+                        SystemId = systemId,
                         Status = "Failed (Invalid Credentials)",
                         UserAgent = userAgent,
                         Timestamp = DateTime.UtcNow
@@ -311,8 +317,10 @@ namespace Ozikol_BCC.Api.Controllers
                 activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                 {
                     Id = Guid.CreateVersion7(),
+                    UserId = user.Id,
                     Email = user.Email!,
                     IpAddress = ipAddress,
+                    SystemId = systemId,
                     Status = $"MFA Challenge Pending ({provider})",
                     UserAgent = userAgent,
                     Timestamp = DateTime.UtcNow
@@ -371,11 +379,29 @@ namespace Ozikol_BCC.Api.Controllers
                 activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                 {
                     Id = Guid.CreateVersion7(),
+                    UserId = user.Id,
                     Email = user.Email!,
                     IpAddress = ipAddress,
+                    SystemId = systemId,
                     Status = "Success",
                     UserAgent = userAgent,
                     Timestamp = DateTime.UtcNow
+                });
+
+                // Also record high-level workspace activity log with complete identity & client context
+                activeDbContext.BcpActivityLogs.Add(new BcpActivityLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    ActionType = "LOGIN_SUCCESS",
+                    Description = $"User '{user.Email}' signed in successfully.",
+                    Module = "Authentication",
+                    PerformedByProfileId = user.Id,
+                    PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    PerformedByUserEmail = user.Email,
+                    Date = DateTime.UtcNow,
+                    IpAddress = ipAddress,
+                    SystemId = systemId,
+                    UserAgent = userAgent
                 });
 
                 // In-App Notification about new device sign in
