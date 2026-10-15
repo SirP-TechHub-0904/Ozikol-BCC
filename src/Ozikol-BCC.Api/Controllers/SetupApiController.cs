@@ -32,5 +32,19 @@ namespace Ozikol_BCC.Api.Controllers
             var status = await _mediator.Send(new GetSetupStatusQuery());
             return Ok(ApiResponse<SetupStatusDto>.SuccessResponse(status, "Tenant setup status retrieved."));
         }
+
+        /// <summary>
+        /// Gets dynamic client application configuration and third-party integration keys.
+        /// Distributed to Angular Web, Flutter Desktop, and Flutter Mobile clients during initial startup.
+        /// </summary>
+        /// <response code="200">Returns dynamic public client configuration parameters.</response>
+        [HttpGet("client-config")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(ApiResponse<ClientAppConfigDto>), 200)]
+        public async Task<IActionResult> GetClientConfig()
+        {
+            var config = await _mediator.Send(new GetClientAppConfigQuery());
+            return Ok(ApiResponse<ClientAppConfigDto>.SuccessResponse(config, "Client application configuration retrieved successfully."));
+        }
     }
 }

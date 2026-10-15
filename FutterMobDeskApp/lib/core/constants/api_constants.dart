@@ -25,6 +25,7 @@ class ApiConstants {
   static const String resendOtpEndpoint = '/api/Auth/resend-otp';
   static const String tenantsEndpoint = '/api/Tenants';
   static const String resolveTenantEndpoint = '/api/Tenants/resolve';
+  static const String clientConfigEndpoint = '/api/Setup/client-config';
 
   // Workspace & Dashboard Endpoints
   static const String workspaceDashboardEndpoint = '/api/WorkspaceApi/dashboard';

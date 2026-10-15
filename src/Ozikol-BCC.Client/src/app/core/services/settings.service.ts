@@ -24,6 +24,16 @@ export interface FeatureFlags {
   enableAts: boolean;
 }
 
+export interface ClientAppConfig {
+  platformName: string;
+  oneSignalAppId?: string;
+  sentryDsn?: string;
+  cloudflareTurnstileSiteKey?: string;
+  isMaintenanceMode: boolean;
+  maintenanceMessage?: string;
+  minimumAppVersion: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -51,9 +61,26 @@ export class SettingsService {
   });
   public features$ = this.featuresSubject.asObservable();
 
+  private clientConfigSubject = new BehaviorSubject<ClientAppConfig>({
+    platformName: 'Ozikol',
+    isMaintenanceMode: false,
+    minimumAppVersion: '1.0.0'
+  });
+  public clientConfig$ = this.clientConfigSubject.asObservable();
+
   constructor(private api: ApiService) {}
 
   public loadSettings(): void {
+    // 0. Load Central Master Dynamic Client Config
+    this.api.get<any>('SetupApi/client-config').subscribe({
+      next: (res) => {
+        if (res && res.isSuccess && res.data) {
+          this.clientConfigSubject.next(res.data);
+        }
+      },
+      error: (err) => console.warn('Using default fallback client config.', err)
+    });
+
     // 1. Load Database Brand Settings
     this.api.get<any>('SettingsApi/brand').subscribe({
       next: (res) => {

@@ -9,6 +9,8 @@ import 'core/theme/app_theme.dart';
 import 'features/dashboard/presentation/dashboard_shell_screen.dart';
 import 'features/workspace_auth/presentation/workspace_entry_screen.dart';
 import 'features/workspace_auth/state/workspace_state.dart';
+import 'core/services/client_config_service.dart';
+import 'core/widgets/maintenance_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,6 +55,7 @@ class OzikolApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final workspaceState = ref.watch(workspaceStateProvider);
+    final configAsync = ref.watch(clientConfigProvider);
 
     return MaterialApp(
       title: 'Ozikol MIS',
@@ -60,15 +63,33 @@ class OzikolApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-      home: workspaceState.isLoading
-          ? const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            )
-          : (workspaceState.hasActiveSession
+      home: configAsync.when(
+        data: (config) {
+          if (config.isMaintenanceMode) {
+            return MaintenanceScreen(
+              message: config.maintenanceMessage,
+              onRefresh: () => ref.refresh(clientConfigProvider),
+            );
+          }
+          if (workspaceState.isLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return workspaceState.hasActiveSession
               ? const DashboardShellScreen()
-              : const WorkspaceEntryScreen()),
+              : const WorkspaceEntryScreen();
+        },
+        loading: () => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+        error: (error, stackTrace) {
+          // If config fetch fails, continue safely with cached/default state
+          return workspaceState.hasActiveSession
+              ? const DashboardShellScreen()
+              : const WorkspaceEntryScreen();
+        },
+      ),
     );
   }
 }

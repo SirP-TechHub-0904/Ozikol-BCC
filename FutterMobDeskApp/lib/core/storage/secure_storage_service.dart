@@ -141,4 +141,30 @@ class SecureStorageService {
       }
     }
   }
+
+  static const String _clientConfigKey = 'ozikol_cached_client_config_json';
+
+  /// Saves the dynamically fetched client application configuration
+  Future<void> saveClientConfig(Map<String, dynamic> configJson) async {
+    final encoded = jsonEncode(configJson);
+    if (_secureStorage != null) {
+      await _secureStorage.write(key: _clientConfigKey, value: encoded);
+    } else {
+      _memoryStore[_clientConfigKey] = encoded;
+    }
+  }
+
+  /// Retrieves the cached client application configuration
+  Future<Map<String, dynamic>?> getCachedClientConfig() async {
+    try {
+      final raw = _secureStorage != null
+          ? await _secureStorage.read(key: _clientConfigKey)
+          : _memoryStore[_clientConfigKey];
+
+      if (raw == null || raw.isEmpty) return null;
+      return jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
 }
