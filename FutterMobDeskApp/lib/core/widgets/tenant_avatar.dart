@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'tenant_cached_image.dart';
 
-/// Renders a company workspace avatar.
-/// Gracefully falls back to a branded monogram badge (initials) if no logo URL exists.
+/// Renders a company workspace avatar with multi-tenant offline disk caching.
+/// Gracefully falls back to a branded monogram badge (initials) if no logo URL exists or network fails.
 class TenantAvatar extends StatelessWidget {
   final String? logoUrl;
   final String name;
+  final String? tenantKey;
   final double size;
   final double borderRadius;
   final Color? backgroundColor;
@@ -14,6 +16,7 @@ class TenantAvatar extends StatelessWidget {
     super.key,
     this.logoUrl,
     required this.name,
+    this.tenantKey,
     this.size = 48.0,
     this.borderRadius = 14.0,
     this.backgroundColor,
@@ -46,13 +49,14 @@ class TenantAvatar extends StatelessWidget {
             color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
           ),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(borderRadius),
-          child: Image.network(
-            logoUrl!,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => _buildFallbackMonogram(isDark),
-          ),
+        child: TenantCachedImage(
+          imageUrl: logoUrl,
+          tenantKey: tenantKey ?? name,
+          width: size,
+          height: size,
+          borderRadius: borderRadius,
+          fit: BoxFit.contain,
+          fallbackWidget: _buildFallbackMonogram(isDark),
         ),
       );
     }

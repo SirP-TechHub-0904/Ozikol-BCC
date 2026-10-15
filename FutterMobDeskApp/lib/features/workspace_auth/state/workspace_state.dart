@@ -2,7 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/storage/secure_storage_service.dart';
+import '../../../core/storage/tenant_cache_service.dart';
 import '../data/workspace_repository.dart';
+
+export '../../../core/storage/secure_storage_service.dart' show storageServiceProvider;
 
 /// State of the multi-workspace management engine
 class WorkspaceState {
@@ -45,8 +48,9 @@ class WorkspaceState {
 class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
   final SecureStorageService _storageService;
   final WorkspaceRepository _repository;
+  final TenantCacheService? _cacheService;
 
-  WorkspaceNotifier(this._storageService, this._repository) : super(const WorkspaceState()) {
+  WorkspaceNotifier(this._storageService, this._repository, [this._cacheService]) : super(const WorkspaceState()) {
     init();
   }
 
@@ -156,9 +160,10 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     }
   }
 
-  /// Signs out of the specified workspace and removes session
+  /// Signs out of the specified workspace, purges its partitioned cache, and removes session
   Future<void> logoutWorkspace(String tenantKey) async {
     await _storageService.removeWorkspace(tenantKey);
+    await _cacheService?.clearTenant(tenantKey);
     final list = await _storageService.getWorkspaces();
     final active = await _storageService.getActiveWorkspace();
 
@@ -178,9 +183,6 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
 // Global Riverpod Providers
 // ---------------------------------------------------------------------------
 
-final storageServiceProvider = Provider<SecureStorageService>((ref) {
-  return SecureStorageService.inMemory();
-});
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   final storage = ref.watch(storageServiceProvider);
@@ -195,5 +197,6 @@ final workspaceRepositoryProvider = Provider<WorkspaceRepository>((ref) {
 final workspaceStateProvider = StateNotifierProvider<WorkspaceNotifier, WorkspaceState>((ref) {
   final storage = ref.watch(storageServiceProvider);
   final repo = ref.watch(workspaceRepositoryProvider);
-  return WorkspaceNotifier(storage, repo);
+  final cache = ref.watch(tenantCacheServiceProvider);
+  return WorkspaceNotifier(storage, repo, cache);
 });

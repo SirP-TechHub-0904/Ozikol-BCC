@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/storage/tenant_cache_service.dart';
 import '../../workspace_auth/state/workspace_state.dart';
 import '../domain/notification_model.dart';
 
-/// Notification UI state holding items, unread counter, and active filter.
+/// Notification UI state holding items, unread counter, active filter, and cache/offline flags.
 class NotificationState {
   final bool isLoading;
+  final bool isFromCache;
+  final bool isOffline;
   final int unreadCount;
   final List<NotificationItem> items;
   final String activeFilter; // 'all', 'unread', or severity name
@@ -12,6 +15,8 @@ class NotificationState {
 
   const NotificationState({
     this.isLoading = false,
+    this.isFromCache = false,
+    this.isOffline = false,
     this.unreadCount = 0,
     this.items = const [],
     this.activeFilter = 'all',
@@ -20,6 +25,8 @@ class NotificationState {
 
   NotificationState copyWith({
     bool? isLoading,
+    bool? isFromCache,
+    bool? isOffline,
     int? unreadCount,
     List<NotificationItem>? items,
     String? activeFilter,
@@ -27,6 +34,8 @@ class NotificationState {
   }) {
     return NotificationState(
       isLoading: isLoading ?? this.isLoading,
+      isFromCache: isFromCache ?? this.isFromCache,
+      isOffline: isOffline ?? this.isOffline,
       unreadCount: unreadCount ?? this.unreadCount,
       items: items ?? this.items,
       activeFilter: activeFilter ?? this.activeFilter,
@@ -45,7 +54,8 @@ class NotificationState {
   }
 }
 
-/// State notifier managing notifications fetching, mark-read, and live feeds.
+/// State notifier managing notifications fetching, mark-read, and live feeds
+/// with multi-tenant partitioned caching and stale-while-revalidate resilience.
 class NotificationNotifier extends StateNotifier<NotificationState> {
   final Ref _ref;
 
@@ -53,28 +63,63 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     loadFeed();
   }
 
-  /// Loads real-time feed from GET /api/Notifications/feed with optimistic fallback.
+  /// Loads feed using Stale-While-Revalidate:
+  /// Serves cached tenant notifications immediately, then revalidates in the background.
   Future<void> loadFeed() async {
-    state = state.copyWith(isLoading: true, error: null);
+    final cacheService = _ref.read(tenantCacheServiceProvider);
+
+    // 1. Check partitioned cache: Serve cached items instantly without spinner delay
+    final cachedData = cacheService.get<Map<String, dynamic>>('feed', allowStale: true);
+    if (cachedData != null) {
+      try {
+        final cachedUnread = cachedData['unreadCount'] as int? ?? 0;
+        final rawItems = cachedData['items'] as List<dynamic>? ?? [];
+        final cachedItems = rawItems
+            .map((item) => NotificationItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+
+        state = state.copyWith(
+          isLoading: false,
+          isFromCache: true,
+          items: cachedItems,
+          unreadCount: cachedUnread,
+        );
+      } catch (_) {
+        // Corrupted cache handled gracefully
+      }
+    } else {
+      state = state.copyWith(isLoading: true, error: null);
+    }
+
+    // 2. Revalidate against network in background
     try {
       final client = _ref.read(apiClientProvider);
       final response = await client.dio.get('/api/Notifications/feed');
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data['data'] as Map<String, dynamic>?;
-        final unreadCount = data?['unreadCount'] as int? ?? 0;
-        final rawItems = data?['items'] as List<dynamic>? ?? [];
+        if (data != null) {
+          // Persist fresh data into tenant-partitioned cache (TTL: 24h)
+          await cacheService.put('feed', data, ttl: const Duration(hours: 24));
 
-        final items = rawItems
-            .map((item) => NotificationItem.fromJson(item as Map<String, dynamic>))
-            .toList();
+          final unreadCount = data['unreadCount'] as int? ?? 0;
+          final rawItems = data['items'] as List<dynamic>? ?? [];
+          final items = rawItems
+              .map((item) => NotificationItem.fromJson(item as Map<String, dynamic>))
+              .toList();
 
-        state = state.copyWith(
-          isLoading: false,
-          unreadCount: unreadCount,
-          items: items.isNotEmpty ? items : _getSampleNotifications(),
-        );
-      } else {
+          state = state.copyWith(
+            isLoading: false,
+            isFromCache: false,
+            isOffline: false,
+            unreadCount: unreadCount,
+            items: items.isNotEmpty ? items : _getSampleNotifications(),
+          );
+          return;
+        }
+      }
+
+      if (state.items.isEmpty) {
         state = state.copyWith(
           isLoading: false,
           items: _getSampleNotifications(),
@@ -82,9 +127,10 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         );
       }
     } catch (_) {
-      // Fallback to sample items for smooth UI preview in offline/disconnected mode
+      // Offline resilience: Retain cached items with isOffline indicator
       state = state.copyWith(
         isLoading: false,
+        isOffline: true,
         items: state.items.isNotEmpty ? state.items : _getSampleNotifications(),
         unreadCount: state.items.where((i) => !i.isRead).length,
       );
@@ -107,12 +153,13 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
     final newUnread = updated.where((n) => !n.isRead).length;
     state = state.copyWith(items: updated, unreadCount: newUnread);
+    await _syncCache();
 
     try {
       final client = _ref.read(apiClientProvider);
       await client.dio.put('/api/Notifications/$id/read');
     } catch (_) {
-      // Optimistic update retained
+      // Optimistic cache update retained
     }
   }
 
@@ -120,25 +167,39 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> markAllAsRead() async {
     final updated = state.items.map((n) => n.copyWith(isRead: true)).toList();
     state = state.copyWith(items: updated, unreadCount: 0);
+    await _syncCache();
 
     try {
       final client = _ref.read(apiClientProvider);
       await client.dio.put('/api/Notifications/mark-all-read');
     } catch (_) {
-      // Optimistic update retained
+      // Optimistic cache update retained
     }
   }
 
   /// Clears all notifications.
   Future<void> clearAll() async {
     state = state.copyWith(items: [], unreadCount: 0);
+    await _syncCache();
 
     try {
       final client = _ref.read(apiClientProvider);
       await client.dio.delete('/api/Notifications/clear-all');
     } catch (_) {
-      // Optimistic update retained
+      // Optimistic cache update retained
     }
+  }
+
+  /// Serializes the active notification state to the tenant-partitioned cache
+  Future<void> _syncCache() async {
+    try {
+      final cacheService = _ref.read(tenantCacheServiceProvider);
+      final serializable = {
+        'unreadCount': state.unreadCount,
+        'items': state.items.map((n) => n.toJson()).toList(),
+      };
+      await cacheService.put('feed', serializable, ttl: const Duration(hours: 24));
+    } catch (_) {}
   }
 
   /// Ingests a live incoming notification received from SignalR or push notification.

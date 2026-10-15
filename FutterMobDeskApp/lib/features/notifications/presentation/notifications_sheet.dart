@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/offline_status_bar.dart';
 import '../data/notification_service.dart';
 import '../domain/notification_model.dart';
 
@@ -84,6 +85,9 @@ class NotificationsSheet extends ConsumerWidget {
       child: SafeArea(
         child: Column(
           children: [
+            // Offline Status Bar with manual refresh trigger
+            OfflineStatusBar(onRetry: () => notifier.loadFeed()),
+
             // Topbar Header
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 20, 16, 12),
@@ -113,6 +117,20 @@ class NotificationsSheet extends ConsumerWidget {
                       child: Text(
                         '${state.unreadCount}',
                         style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ),
+                  if (state.isFromCache)
+                    Container(
+                      margin: const EdgeInsets.only(left: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withAlpha(isDark ? 40 : 20),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.blue.withAlpha(60)),
+                      ),
+                      child: const Text(
+                        'Cached',
+                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Colors.blue),
                       ),
                     ),
                   const Spacer(),

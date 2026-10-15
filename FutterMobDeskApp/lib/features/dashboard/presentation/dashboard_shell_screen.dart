@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/offline_status_bar.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../workspace_auth/presentation/workspace_entry_screen.dart';
 import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
@@ -68,16 +69,21 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
                 // 2. Feature Navigation Sidebar (250px)
                 _buildDesktopSidebar(isDark, activeWs),
 
-                // 3. Main Dynamic Content Canvas
+                // 3. Main Dynamic Content Canvas with Offline Resilience Bar
                 Expanded(
-                  child: _buildMainCanvas(isDark, activeWs),
+                  child: Column(
+                    children: [
+                      const OfflineStatusBar(),
+                      Expanded(child: _buildMainCanvas(isDark, activeWs)),
+                    ],
+                  ),
                 ),
               ],
             ),
           );
         }
 
-        // Mobile Layout
+        // Mobile Layout with Offline Resilience Bar
         return Scaffold(
           appBar: AppBar(
             backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
@@ -144,7 +150,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
             ],
           ),
           drawer: _buildMobileDrawer(isDark, activeWs),
-          body: _buildMobileBody(isDark, activeWs),
+          body: Column(
+            children: [
+              const OfflineStatusBar(),
+              Expanded(child: _buildMobileBody(isDark, activeWs)),
+            ],
+          ),
         );
       },
     );

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:ozikol_app/core/storage/secure_storage_service.dart';
+import 'package:ozikol_app/core/storage/tenant_cache_service.dart';
 import 'package:ozikol_app/core/theme/app_theme.dart';
+import 'package:ozikol_app/core/widgets/offline_status_bar.dart';
 import 'package:ozikol_app/features/notifications/domain/notification_model.dart';
 import 'package:ozikol_app/features/notifications/presentation/notifications_sheet.dart';
 import 'package:ozikol_app/features/workspace_auth/presentation/workspace_entry_screen.dart';
@@ -100,5 +103,83 @@ void main() {
     expect(find.text('Payment Gateway Synchronized'), findsOneWidget);
     expect(find.text('Bio Link Tree Module Released'), findsOneWidget);
     expect(find.text('Scheduled Cloud Maintenance'), findsOneWidget);
+  });
+
+  test('TenantCacheService enforces strict multi-tenant partition isolation and stale retrieval', () async {
+    final storage = SecureStorageService.inMemory();
+    final cache = TenantCacheService.inMemory(storage);
+
+    // 1. Put data for tenant_acme
+    await cache.put('profile', {'org': 'Acme Corporation'}, tenantKey: 'acme');
+
+    // 2. Put data for tenant_globex
+    await cache.put('profile', {'org': 'Globex Industries'}, tenantKey: 'globex');
+
+    // 3. Verify strict isolation: acme cannot read globex and vice-versa
+    final acmeData = cache.get<Map<String, dynamic>>('profile', tenantKey: 'acme');
+    final globexData = cache.get<Map<String, dynamic>>('profile', tenantKey: 'globex');
+
+    expect(acmeData?['org'], 'Acme Corporation');
+    expect(globexData?['org'], 'Globex Industries');
+
+    // 4. Test TTL and stale-while-revalidate
+    await cache.put('temp_key', 'fresh_value', tenantKey: 'acme', ttl: const Duration(milliseconds: 10));
+    await Future.delayed(const Duration(milliseconds: 20));
+
+    // Normal get returns null because expired
+    expect(cache.get<String>('temp_key', tenantKey: 'acme'), isNull);
+    // Stale-while-revalidate returns expired value
+    expect(cache.get<String>('temp_key', tenantKey: 'acme', allowStale: true), 'fresh_value');
+
+    // 5. Test clearTenant wipes only acme data, preserving globex data
+    await cache.clearTenant('acme');
+    expect(cache.get<Map<String, dynamic>>('profile', tenantKey: 'acme', allowStale: true), isNull);
+    expect(cache.get<Map<String, dynamic>>('profile', tenantKey: 'globex'), isNotNull);
+  });
+
+  testWidgets('OfflineStatusBar renders alert and retry button when offline', (WidgetTester tester) async {
+    bool retryTriggered = false;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: OfflineStatusBar(
+              forceOffline: true,
+              onRetry: () => retryTriggered = true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Verify offline text and icon
+    expect(find.text('You are offline. Showing cached workspace data.'), findsOneWidget);
+    expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+
+    // Tap retry
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(retryTriggered, isTrue);
+  });
+
+  testWidgets('OfflineStatusBar renders nothing when online', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: OfflineStatusBar(
+              forceOffline: false,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.text('You are offline. Showing cached workspace data.'), findsNothing);
   });
 }

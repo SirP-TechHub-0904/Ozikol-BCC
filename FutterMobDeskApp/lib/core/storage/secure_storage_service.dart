@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/workspace.dart';
@@ -196,3 +197,9 @@ class SecureStorageService {
     }
   }
 }
+
+/// Global provider for SecureStorageService (defaults to in-memory for testing, overridden in main)
+final storageServiceProvider = Provider<SecureStorageService>((ref) {
+  return SecureStorageService.inMemory();
+});
+

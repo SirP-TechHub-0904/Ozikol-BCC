@@ -133,4 +133,23 @@ class NotificationItem {
       createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'message': message,
+      'actionUrl': actionUrl,
+      'isRead': isRead,
+      'module': module,
+      'icon': icon,
+      'category': category,
+      'priority': priority,
+      'severity': severity.name,
+      'severityCode': severity.code,
+      'metadataJson': metadataJson,
+      'isBroadcast': isBroadcast,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
 }
