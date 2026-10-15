@@ -78,23 +78,28 @@ namespace Ozikol_BCC.Application.Commands.SetupCommands
     public class SubmitCrashReportCommandHandler : IRequestHandler<SubmitCrashReportCommand, bool>
     {
         private readonly ILogger<SubmitCrashReportCommandHandler> _logger;
+        private readonly Ozikol_BCC.Application.Interfaces.Services.ICentralLogCollector _logCollector;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SubmitCrashReportCommandHandler"/> class.
         /// </summary>
         /// <param name="logger">Structured logger instance.</param>
-        public SubmitCrashReportCommandHandler(ILogger<SubmitCrashReportCommandHandler> logger)
+        /// <param name="logCollector">Central MongoDB log collector.</param>
+        public SubmitCrashReportCommandHandler(
+            ILogger<SubmitCrashReportCommandHandler> logger,
+            Ozikol_BCC.Application.Interfaces.Services.ICentralLogCollector logCollector)
         {
             _logger = logger;
+            _logCollector = logCollector;
         }
 
         /// <summary>
-        /// Ingests and records the client crash report.
+        /// Ingests and records the client crash report into MongoDB.
         /// </summary>
         /// <param name="request">The crash report command.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>True if recorded successfully.</returns>
-        public Task<bool> Handle(SubmitCrashReportCommand request, CancellationToken cancellationToken)
+        public async Task<bool> Handle(SubmitCrashReportCommand request, CancellationToken cancellationToken)
         {
             var r = request.Report;
             _logger.LogError(
@@ -106,7 +111,10 @@ namespace Ozikol_BCC.Application.Commands.SetupCommands
                 r.ExceptionMessage,
                 r.StackTrace);
 
-            return Task.FromResult(true);
+            // Persist structured crash document into Central MongoDB
+            await _logCollector.LogClientCrashAsync(r, cancellationToken);
+
+            return true;
         }
     }
 }

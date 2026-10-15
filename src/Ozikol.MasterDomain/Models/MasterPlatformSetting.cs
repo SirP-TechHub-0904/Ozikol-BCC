@@ -179,6 +179,25 @@ namespace Ozikol.MasterDomain.Models
         public string MinimumAppVersion { get; set; } = "1.0.0";
 
         /// <summary>
+        /// Gets or sets the MongoDB connection string used strictly for central system logs and telemetry.
+        /// Resolved dynamically from the Master Catalog database so no secrets are stored on client apps.
+        /// </summary>
+        [MaxLength(1000)]
+        public string? MongoLogsConnectionString { get; set; }
+
+        /// <summary>
+        /// Gets or sets the MongoDB database name dedicated to central logs (e.g., "OzikolLogsDb").
+        /// </summary>
+        [MaxLength(100)]
+        public string MongoLogsDatabaseName { get; set; } = "OzikolLogsDb";
+
+        /// <summary>
+        /// Gets or sets the primary MongoDB collection name for central system events (e.g., "central_system_logs").
+        /// </summary>
+        [MaxLength(100)]
+        public string MongoLogsCollectionName { get; set; } = "central_system_logs";
+
+        /// <summary>
         /// Gets or sets the UTC timestamp when these settings were last modified.
         /// </summary>
         public DateTime UpdatedUtc { get; set; } = DateTime.UtcNow;

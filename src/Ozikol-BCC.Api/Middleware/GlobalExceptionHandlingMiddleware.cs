@@ -60,6 +60,13 @@ public class GlobalExceptionHandlingMiddleware
             // Trigger background crash alert without blocking client response
             _ = DispatchCrashAlertEmailAsync(context, ex, tenantKey, path, method);
 
+            // Stream structured diagnostic event to Central MongoDB
+            var logCollector = context.RequestServices.GetService<Ozikol_BCC.Application.Interfaces.Services.ICentralLogCollector>();
+            if (logCollector != null)
+            {
+                _ = logCollector.LogSystemExceptionAsync(ex, path, method, tenantKey, context.TraceIdentifier);
+            }
+
             await HandleExceptionAsync(context, ex);
         }
     }
