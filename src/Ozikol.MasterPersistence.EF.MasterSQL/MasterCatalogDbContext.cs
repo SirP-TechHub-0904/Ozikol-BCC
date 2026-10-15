@@ -61,6 +61,12 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterVoucherApplication> MasterVoucherApplications { get; set; } = null!;
 
     /// <summary>
+    /// Master client application release records powering in-app OTA updates and distribution.
+    /// </summary>
+    public DbSet<MasterClientRelease> MasterClientReleases { get; set; } = null!;
+
+
+    /// <summary>
     /// Audit log entries tracking all administrative actions across the platform.
     /// </summary>
     public DbSet<MasterAuditLog> MasterAuditLogs { get; set; } = null!;

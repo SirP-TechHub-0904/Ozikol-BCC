@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/contextual_info_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/primary_button.dart';
@@ -241,16 +242,29 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                         ),
                         const SizedBox(height: 24),
 
-                        // Title & Subtitle
-                        Text(
-                          'Enter Workspace',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.5,
-                            color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
-                          ),
+                        // Title & Subtitle with Contextual Info Icon
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Enter Workspace',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                                color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const ContextualInfoButton(
+                              title: 'Workspace Access & Resolution',
+                              purpose: 'Connects your client device to your isolated tenant organization database and microservices.',
+                              expectedInputs: 'Enter your company access code (e.g. acmecorp) or full custom domain (e.g. acme.ozikol.cloud).',
+                              impact: 'Loads your organization branding, logo, security policies, and sets the active workspace context.',
+                              bestPractices: 'Ask your organization administrator for your access code if you do not know your custom subdomain.',
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         Text(

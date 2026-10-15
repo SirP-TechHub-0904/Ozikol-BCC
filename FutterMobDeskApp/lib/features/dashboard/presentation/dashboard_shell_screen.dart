@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/in_app_update_service.dart';
+import '../../../core/widgets/contextual_info_button.dart';
 import '../../../core/widgets/glass_container.dart';
 import '../../../core/widgets/offline_status_bar.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../../core/widgets/theme_mode_switcher.dart';
+import '../../../core/widgets/update_banner.dart';
 import '../../workspace_auth/presentation/workspace_entry_screen.dart';
 import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
 import '../../workspace_auth/state/workspace_state.dart';
@@ -154,6 +157,17 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
           drawer: _buildMobileDrawer(isDark, activeWs),
           body: Column(
             children: [
+              Consumer(
+                builder: (context, ref, _) {
+                  final updateAsync = ref.watch(appUpdateCheckProvider);
+                  return updateAsync.maybeWhen(
+                    data: (res) => res.hasUpdate && res.updateInfo != null
+                        ? UpdateBanner(updateInfo: res.updateInfo!)
+                        : const SizedBox.shrink(),
+                    orElse: () => const SizedBox.shrink(),
+                  );
+                },
+              ),
               const OfflineStatusBar(),
               Expanded(child: _buildMobileBody(isDark, activeWs)),
             ],
@@ -364,12 +378,27 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
   Widget _buildMainCanvas(bool isDark, dynamic activeWs) {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Spatial Welcome Banner
+      body: Column(
+        children: [
+          Consumer(
+            builder: (context, ref, _) {
+              final updateAsync = ref.watch(appUpdateCheckProvider);
+              return updateAsync.maybeWhen(
+                data: (res) => res.hasUpdate && res.updateInfo != null
+                    ? UpdateBanner(updateInfo: res.updateInfo!)
+                    : const SizedBox.shrink(),
+                orElse: () => const SizedBox.shrink(),
+              );
+            },
+          ),
+          const OfflineStatusBar(),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Spatial Welcome Banner
             GlassContainer(
               borderRadius: 20,
               padding: const EdgeInsets.all(28),
@@ -477,13 +506,25 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
             const SizedBox(height: 28),
 
             // Responsive KPI Widgets Showcase
-            Text(
-              'Workspace Overview',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
-              ),
+            Row(
+              children: [
+                Text(
+                  'Workspace Overview',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const ContextualInfoButton(
+                  title: 'Workspace Metrics & Operations',
+                  purpose: 'Summarizes key operational telemetry, active member counts, and recurring feature subscription revenue for the active tenant organization.',
+                  expectedInputs: 'Automated live feed aggregated across financial records and member registrations.',
+                  impact: 'Reflects real-time transactional performance across web, desktop, and mobile channels.',
+                  bestPractices: 'Monitor active feature subscriptions and recurring revenue weekly to track tenant organization growth.',
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -504,8 +545,11 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  ],
+),
+);
+}
 
   Widget _buildKpiCard(String title, String value, String sub, IconData icon, Color color, double width) {
     return Container(

@@ -215,6 +215,44 @@ class SecureStorageService {
       _memoryStore[_themeModePrefs] = mode;
     }
   }
+
+  /// Retrieves a boolean preference
+  bool getBool(String key, {bool defaultValue = false}) {
+    if (_prefs != null) {
+      return _prefs.getBool(key) ?? defaultValue;
+    }
+    final val = _memoryStore[key];
+    if (val == null) return defaultValue;
+    return val.toLowerCase() == 'true';
+  }
+
+  /// Persists a boolean preference
+  Future<void> setBool(String key, bool value) async {
+    if (_prefs != null) {
+      await _prefs.setBool(key, value);
+    } else {
+      _memoryStore[key] = value.toString();
+    }
+  }
+
+  /// Retrieves an integer preference
+  int getInt(String key, {int defaultValue = 0}) {
+    if (_prefs != null) {
+      return _prefs.getInt(key) ?? defaultValue;
+    }
+    final val = _memoryStore[key];
+    if (val == null) return defaultValue;
+    return int.tryParse(val) ?? defaultValue;
+  }
+
+  /// Persists an integer preference
+  Future<void> setInt(String key, int value) async {
+    if (_prefs != null) {
+      await _prefs.setInt(key, value);
+    } else {
+      _memoryStore[key] = value.toString();
+    }
+  }
 }
 
 /// Global provider for SecureStorageService (defaults to in-memory for testing, overridden in main)

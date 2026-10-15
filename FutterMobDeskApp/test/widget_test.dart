@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ozikol_app/core/storage/secure_storage_service.dart';
 import 'package:ozikol_app/core/storage/tenant_cache_service.dart';
 import 'package:ozikol_app/core/theme/app_theme.dart';
+import 'package:ozikol_app/core/models/app_update_info.dart';
 import 'package:ozikol_app/core/theme/theme_provider.dart';
+import 'package:ozikol_app/core/widgets/contextual_info_button.dart';
 import 'package:ozikol_app/core/widgets/offline_status_bar.dart';
 import 'package:ozikol_app/core/widgets/theme_mode_switcher.dart';
+import 'package:ozikol_app/core/widgets/update_banner.dart';
 import 'package:ozikol_app/features/notifications/domain/notification_model.dart';
 import 'package:ozikol_app/features/notifications/presentation/notifications_sheet.dart';
 import 'package:ozikol_app/features/workspace_auth/presentation/workspace_entry_screen.dart';
@@ -239,6 +242,110 @@ void main() {
     await tester.tap(find.byTooltip('Light Mode'));
     await tester.pumpAndSettle();
     expect(storage.getThemeMode(), 'light');
+  });
+
+  test('AppUpdateInfo serialization and deserialization preserves all metadata fields', () {
+    final original = AppUpdateInfo(
+      hasUpdate: true,
+      isMandatory: false,
+      latestVersion: '1.2.0',
+      latestBuildNumber: 42,
+      minSupportedVersion: '1.0.0',
+      releaseNotes: '• Major update\n• New feature set',
+      downloadUrl: 'https://releases.ozikol.cloud/Ozikol-Setup-1.2.0.exe',
+      sha256Checksum: 'abcdef123456',
+      fileSizeBytes: 52428800,
+      publishedAtUtc: DateTime.utc(2026, 10, 15),
+      platform: 'windows',
+      channel: 'stable',
+    );
+
+    final json = original.toJson();
+    final parsed = AppUpdateInfo.fromJson(json);
+
+    expect(parsed.hasUpdate, isTrue);
+    expect(parsed.isMandatory, isFalse);
+    expect(parsed.latestVersion, '1.2.0');
+    expect(parsed.latestBuildNumber, 42);
+    expect(parsed.minSupportedVersion, '1.0.0');
+    expect(parsed.downloadUrl, 'https://releases.ozikol.cloud/Ozikol-Setup-1.2.0.exe');
+    expect(parsed.fileSizeBytes, 52428800);
+    expect(parsed.platform, 'windows');
+    expect(parsed.channel, 'stable');
+  });
+
+  testWidgets('UpdateBanner renders release version and opens UpdateDialog on click', (WidgetTester tester) async {
+    const info = AppUpdateInfo(
+      hasUpdate: true,
+      isMandatory: false,
+      latestVersion: '1.1.0',
+      latestBuildNumber: 26,
+      minSupportedVersion: '1.0.0',
+      releaseNotes: '• Multi-tenant updates\n• Security patches',
+      downloadUrl: 'https://releases.ozikol.cloud/setup.exe',
+      sha256Checksum: '',
+      fileSizeBytes: 48000000,
+      platform: 'windows',
+      channel: 'stable',
+    );
+
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: UpdateBanner(updateInfo: info),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Verify banner content
+    expect(find.text('Ozikol MIS v1.1.0 is available.'), findsOneWidget);
+    expect(find.text('Update Now'), findsOneWidget);
+
+    // Tap Update Now to open dialog
+    await tester.tap(find.text('Update Now'));
+    await tester.pumpAndSettle();
+
+    // Verify dialog content
+    expect(find.text('Update Ready: v1.1.0'), findsOneWidget);
+    expect(find.text('Release Notes:'), findsOneWidget);
+    expect(find.text('Update & Restart'), findsOneWidget);
+    expect(find.text('Later'), findsOneWidget);
+  });
+
+  testWidgets('ContextualInfoButton renders info icon and opens 4-pillar guidance', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ContextualInfoButton(
+            title: 'Workspace Metrics & Operations',
+            purpose: 'Summarizes key operational telemetry and active tenant health.',
+            expectedInputs: 'Automated live feed aggregated across financial records.',
+            impact: 'Reflects real-time transactional performance.',
+            bestPractices: 'Review feature subscriptions weekly.',
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Verify info icon
+    expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
+
+    // Tap info icon
+    await tester.tap(find.byIcon(Icons.info_outline_rounded));
+    await tester.pumpAndSettle();
+
+    // Verify 4-pillar sections
+    expect(find.text('Workspace Metrics & Operations'), findsOneWidget);
+    expect(find.text('Purpose & Overview'), findsOneWidget);
+    expect(find.text('Guidelines & Formats'), findsOneWidget);
+    expect(find.text('Business Impact'), findsOneWidget);
+    expect(find.text('Best Practices'), findsOneWidget);
   });
 }
 

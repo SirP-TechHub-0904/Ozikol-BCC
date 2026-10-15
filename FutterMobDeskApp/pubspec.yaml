@@ -43,6 +43,8 @@ dependencies:
   intl: ^0.20.3
   cached_network_image: ^3.4.1
   connectivity_plus: ^7.3.2
+  crypto: ^3.0.6
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
