@@ -5,6 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'core/storage/secure_storage_service.dart';
+import 'core/storage/tenant_cache_service.dart';
+import 'core/network/api_client.dart';
+import 'core/services/crash_reporter_service.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'features/dashboard/presentation/dashboard_shell_screen.dart';
@@ -37,13 +41,33 @@ void main() async {
     }
   }
 
-  // Initialize secure storage service
+  // Initialize secure storage service and multi-tenant cache
   final storageService = await SecureStorageService.create();
+  final cacheService = await TenantCacheService.create(storageService);
+  final apiClient = ApiClient(storageService);
+  final crashReporter = CrashReporterService(apiClient, storageService, cacheService);
+
+  // Initialize startup stability monitor
+  await crashReporter.initStartupCrashMonitor();
+
+  // Wire global crash telemetry
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    crashReporter.reportCrash(details.exception, details.stack);
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    crashReporter.reportCrash(error, stack);
+    return true;
+  };
 
   runApp(
     ProviderScope(
       overrides: [
         storageServiceProvider.overrideWithValue(storageService),
+        tenantCacheServiceProvider.overrideWithValue(cacheService),
+        apiClientProvider.overrideWithValue(apiClient),
+        crashReporterServiceProvider.overrideWithValue(crashReporter),
       ],
       child: const OzikolApp(),
     ),
@@ -57,6 +81,7 @@ class OzikolApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final workspaceState = ref.watch(workspaceStateProvider);
     final configAsync = ref.watch(clientConfigProvider);
+    final crashReporter = ref.watch(crashReporterServiceProvider);
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
@@ -65,6 +90,42 @@ class OzikolApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      builder: (context, child) {
+        if (!crashReporter.isSafeMode) return child ?? const SizedBox.shrink();
+        return Column(
+          children: [
+            Material(
+              color: AppColors.error,
+              child: SafeArea(
+                bottom: false,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shield_outlined, color: Colors.white, size: 18),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Safe Mode active: Repeated crashes detected. Cache isolated.',
+                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          await crashReporter.recoverFromCrashLoop();
+                          ref.invalidate(workspaceStateProvider);
+                        },
+                        child: const Text('Reset Cache', style: TextStyle(color: Colors.white, decoration: TextDecoration.underline)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Expanded(child: child ?? const SizedBox.shrink()),
+          ],
+        );
+      },
       home: configAsync.when(
         data: (config) {
           if (config.isMaintenanceMode) {
