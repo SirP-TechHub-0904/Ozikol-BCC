@@ -143,3 +143,46 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **Zero Hung or Zombie Background Tasks**: Never leave background tasks running indefinitely. If any background task (e.g., builds, tests, git operations, or shell commands) runs longer than required or appears idle/unresponsive, the agent MUST immediately terminate (`kill`) it via `manage_task` to keep the user's chat thread unblocked.
 * **Non-Blocking Git Operations**: Never leave git operations (`git push`, `git pull`, `git fetch`) hanging in the background where credential prompts or network latency can stall silently. If a remote git command does not complete within 15–20 seconds, terminate it immediately and report the outcome to the user.
 * **Proactive Queue Health Check**: The agent must never finish an interaction while leaving orphaned, silent background processes running that cause incoming user messages to wait in a pending queue. Always verify and terminate stale background processes before concluding.
+
+---
+
+## 12. Feature-by-Feature Cross-Platform Parity (Mandatory)
+* **Unified Cross-Platform Delivery**: Every new feature or domain capability MUST be implemented and verified cohesively across all target platforms:
+  * **Web Client**: Angular Admin Dashboard (`src/Ozikol-BCC.Client`)
+  * **Desktop**: Flutter Desktop (Windows `.exe`, macOS `.app`, Linux)
+  * **Mobile**: Flutter Mobile (Android `.apk`/App Bundle, iOS)
+  * **Backend**: ASP.NET Core Web API (`src/Ozikol-BCC.Api`) and Application layer
+* **No Platform Left Behind**: Never deliver a feature to web while leaving mobile/desktop unhandled or vice versa. Ensure business logic, data models, validation, and real-time feeds achieve 1-to-1 operational parity.
+
+---
+
+## 13. Interactive Tour Guides & Contextual Info Icons (Mandatory)
+* **Screen & Menu Tour Guides**:
+  * Every major module, menu item, and top-level screen MUST provide an interactive walkthrough / Tour Guide that introduces the screen's core capabilities, workflow steps, and action triggers.
+  * Tour completion state MUST be persisted locally per tenant/workspace (e.g. `has_completed_tour_{screenKey}`) so users are not repeatedly interrupted after finishing the walkthrough.
+  * Every screen MUST offer a clean Replay Tour / Help action (`(?)`) so users can re-trigger the walkthrough at any time.
+* **Contextual Section Info Icons (`(i)`)**:
+  * Every key section, card, KPI block, table header, or complex form group MUST include a standardized contextual Info Icon (`(i)`).
+  * Tapping or hovering the info icon displays an intuitive popover (desktop) or bottom sheet (mobile) explaining:
+    * **Purpose**: Why this section or data matters.
+    * **Expected Inputs / Formats**: Specific requirements and examples.
+    * **Impact**: How actions taken in this section affect tenant billing, notifications, or members.
+    * **Best Practices**: Actionable domain advice for administrators.
+
+---
+
+## 14. Automated Working Code Commit Standard (Mandatory)
+* **Immediate Working Commit**: As soon as code modifications for a feature, sub-task, or phase are confirmed working (builds with 0 errors across .NET, passes 100% of unit/widget tests, and reports 0 lints), the agent MUST immediately create a Conventional Commit on the dedicated task branch.
+* **No Accumulation of Working Code**: Never let working, verified changes accumulate uncommitted across multiple conversational turns. Commit proactively so the repository maintains a clean, recoverable history at every milestone.
+
+---
+
+## 15. Platform-Specific Native Code Implementation (Mandatory)
+* **Complete Native Implementations**: Whenever a feature requires native platform code, the agent MUST write the exact, production-ready code directly into the target platform directories:
+  * **Android**: `AndroidManifest.xml` (permissions, queries, services), `build.gradle` (SDK versions, dependencies), and Kotlin/Java native handlers.
+  * **iOS**: `Info.plist` (privacy keys, usage descriptions, schemes), `Podfile`, and Swift native AppDelegate plugins.
+  * **Windows Desktop**: `windows/runner/main.cpp`, `Runner.rc`, application manifest, and CMake dependencies.
+  * **macOS Desktop**: `macos/Runner/Info.plist`, `Base.lproj/MainMenu.xib`, and Swift AppDelegate configurations.
+  * **Web**: `web/index.html` (meta tags, viewport, service worker scripts), manifest, and asset linkages.
+* **Zero Native Stubs**: Never assume platform code will be added "later", and never leave empty stub methods or placeholder comments where native configuration is required.
+
