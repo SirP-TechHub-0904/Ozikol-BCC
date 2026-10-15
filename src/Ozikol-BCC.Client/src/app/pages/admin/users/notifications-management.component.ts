@@ -117,7 +117,19 @@ import { ApiService } from '../../../core/services/api.service';
 
             <!-- Right Column: Metadata & Channels -->
             <div class="form-col">
-              <div class="form-grid-2">
+              <div class="form-grid-3">
+                <div class="form-group">
+                  <label>Severity Level</label>
+                  <select [(ngModel)]="model.severity" name="severity" class="form-select">
+                    <option value="Error">Error (#F06548)</option>
+                    <option value="Failed">Failed (#F7B84B)</option>
+                    <option value="Success">Success (#0AB39C)</option>
+                    <option value="NewFeature">New Feature (#38BDF8)</option>
+                    <option value="Update">Update (#1F6BFF)</option>
+                    <option value="Maintenance">Maintenance (#9333EA)</option>
+                  </select>
+                </div>
+
                 <div class="form-group">
                   <label>Category</label>
                   <select [(ngModel)]="model.category" name="category" class="form-select">
@@ -157,12 +169,31 @@ import { ApiService } from '../../../core/services/api.service';
                 <input type="text" [(ngModel)]="model.actionUrl" name="actionUrl" placeholder="e.g. /users/workspace/security" class="form-input" />
               </div>
 
-              <!-- Multi-Channel Dispatch Checkbox -->
-              <div class="form-group email-copy-group" *ngIf="model.targetType === 'SingleUser'">
-                <label class="checkbox-label">
-                  <input type="checkbox" [(ngModel)]="model.sendEmailCopy" name="sendEmailCopy" />
-                  <span>Also dispatch an official Email copy to member</span>
-                </label>
+              <!-- Multi-Channel Delivery Channels Selection -->
+              <div class="form-group channels-section">
+                <label class="section-label" style="display:block; margin-bottom:8px; font-weight:700;">Delivery Channels</label>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="model.sendInApp" name="sendInApp" />
+                    <span>In-App Feed & SignalR Real-Time Socket</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="model.sendPush" name="sendPush" />
+                    <span>Mobile & Desktop Native Push (OneSignal / FCM)</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="model.sendEmailCopy" name="sendEmailCopy" />
+                    <span>Transactional Email via Postmark Suite</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="model.sendSms" name="sendSms" />
+                    <span>Carrier SMS Text Alert</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" [(ngModel)]="model.sendWhatsApp" name="sendWhatsApp" />
+                    <span>Transactional WhatsApp Message</span>
+                  </label>
+                </div>
               </div>
 
               <!-- Live Preview Card -->
@@ -200,6 +231,7 @@ import { ApiService } from '../../../core/services/api.service';
               <tr>
                 <th>Type / Recipient</th>
                 <th>Notification Details</th>
+                <th>Severity</th>
                 <th>Priority</th>
                 <th>Category</th>
                 <th>Date Dispatched</th>
@@ -217,6 +249,11 @@ import { ApiService } from '../../../core/services/api.service';
                   <strong>{{ item.title }}</strong>
                   <div class="sub-desc">{{ item.message }}</div>
                 </td>
+                <td>
+                  <span class="severity-pill" [style.background-color]="(item.severityColor || '#1F6BFF') + '22'" [style.color]="item.severityColor || '#1F6BFF'" [style.border]="'1px solid ' + (item.severityColor || '#1F6BFF')" [style.padding]="'3px 8px'" [style.border-radius]="'100px'" [style.font-size]="'11px'" [style.font-weight]="'700'">
+                    {{ item.severity || 'Update' }}
+                  </span>
+                </td>
                 <td><span class="priority-pill" [ngClass]="item.priority?.toLowerCase()">{{ item.priority }}</span></td>
                 <td><span class="cat-pill">{{ item.category }}</span></td>
                 <td class="date-cell">{{ item.createdAt | date:'short' }}</td>
@@ -227,7 +264,7 @@ import { ApiService } from '../../../core/services/api.service';
                 </td>
               </tr>
               <tr *ngIf="!historyList.length">
-                <td colspan="6" class="empty-cell">No notifications dispatched yet.</td>
+                <td colspan="7" class="empty-cell">No notifications dispatched yet.</td>
               </tr>
             </tbody>
           </table>
@@ -455,7 +492,12 @@ export class NotificationsManagementComponent implements OnInit {
     icon: 'notifications',
     priority: 'Normal',
     category: 'General',
-    sendEmailCopy: false
+    severity: 'Update',
+    sendInApp: true,
+    sendPush: false,
+    sendEmailCopy: false,
+    sendSms: false,
+    sendWhatsApp: false
   };
 
   membersList: any[] = [];
@@ -529,6 +571,7 @@ export class NotificationsManagementComponent implements OnInit {
       this.model.message = `Security Reminder: Please note that ${cName} administrators will never ask for your password, PIN, or OTP verification code. Never share your verification codes with anyone.`;
       this.model.category = 'Security';
       this.model.priority = 'High';
+      this.model.severity = 'Error';
       this.model.module = 'Security';
       this.model.icon = 'shield_lock';
       this.model.actionUrl = '/users/workspace/security';
@@ -537,6 +580,7 @@ export class NotificationsManagementComponent implements OnInit {
       this.model.message = `Wishing you a productive and joyful week ahead! Thank you for being a valued member of ${cName}.`;
       this.model.category = 'General';
       this.model.priority = 'Normal';
+      this.model.severity = 'Success';
       this.model.module = 'Community';
       this.model.icon = 'celebration';
       this.model.actionUrl = '/dashboard/workspace';
@@ -545,6 +589,7 @@ export class NotificationsManagementComponent implements OnInit {
       this.model.message = `We are checking in on your experience and milestones. If you need any assistance, guidance, or support, please reach out to the ${cName} management team.`;
       this.model.category = 'Membership';
       this.model.priority = 'Normal';
+      this.model.severity = 'Update';
       this.model.module = 'Users';
       this.model.icon = 'favorite';
       this.model.actionUrl = '/users/workspace/profile';
@@ -554,6 +599,7 @@ export class NotificationsManagementComponent implements OnInit {
       this.model.message = 'System maintenance is scheduled for tonight at 10:00 PM UTC. Platform services will remain available with minor intermittency.';
       this.model.category = 'System';
       this.model.priority = 'Normal';
+      this.model.severity = 'Maintenance';
       this.model.module = 'Announcement';
       this.model.icon = 'campaign';
       this.model.actionUrl = '/dashboard/console';
@@ -563,6 +609,7 @@ export class NotificationsManagementComponent implements OnInit {
       this.model.message = `Please join us for our upcoming virtual general assembly meeting. We will discuss key community milestones, updates, and upcoming events.`;
       this.model.category = 'General';
       this.model.priority = 'High';
+      this.model.severity = 'Update';
       this.model.module = 'Events';
       this.model.icon = 'event';
       this.model.actionUrl = '/groups/workspace';
@@ -572,6 +619,7 @@ export class NotificationsManagementComponent implements OnInit {
       this.model.message = `Please take a moment to review our updated workspace conduct and operational guidelines to ensure a productive and collaborative environment.`;
       this.model.category = 'System';
       this.model.priority = 'Normal';
+      this.model.severity = 'Update';
       this.model.module = 'Policy';
       this.model.icon = 'info';
       this.model.actionUrl = '/dashboard/workspace';

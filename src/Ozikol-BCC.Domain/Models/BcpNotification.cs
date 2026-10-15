@@ -48,6 +48,17 @@ namespace Ozikol_BCC.Domain.Models
         public BcpMessagePriority Priority { get; set; } = BcpMessagePriority.Normal;
 
         /// <summary>
+        /// Standard 6-tier severity for the notification (Error, Failed, Success, NewFeature, Update, Maintenance).
+        /// Dictates color branding, alert banners, and visual accent badges across web, mobile, and desktop.
+        /// </summary>
+        public NotificationSeverity Severity { get; set; } = NotificationSeverity.Update;
+
+        /// <summary>
+        /// Optional structured metadata JSON payload for deep linking, workspace switching, or action buttons.
+        /// </summary>
+        public string? MetadataJson { get; set; }
+
+        /// <summary>
         /// The event type that triggered this notification.
         /// </summary>
         public BcpEventType? EventType { get; set; }

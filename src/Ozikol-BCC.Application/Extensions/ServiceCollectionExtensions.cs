@@ -35,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<Ozikol_BCC.Application.Services.IMessageTemplateService, Ozikol_BCC.Application.Services.MessageTemplateService>();
         services.Configure<Ozikol_BCC.Application.Configuration.CloudflareR2Settings>(configuration.GetSection("CloudflareR2"));
         services.AddScoped<Ozikol_BCC.Application.Services.Cloudflare.ICloudflareR2StorageService, Ozikol_BCC.Application.Services.Cloudflare.CloudflareR2StorageService>();
+        services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher, Ozikol_BCC.Application.Services.Notifications.CentralNotificationDispatcher>();
         services.AddScoped<Ozikol_BCC.Application.Services.LoggerLibrary>();
         services.AddTransient<Ozikol_BCC.Application.Seeders.DefaultTenantSeeder>();
         return services;

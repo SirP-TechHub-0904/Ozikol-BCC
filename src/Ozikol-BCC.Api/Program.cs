@@ -10,6 +10,7 @@ using Microsoft.OpenApi.Models;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Application;
+using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Api.Hubs;
 using Ozikol_BCC.Infrastructure.Extensions;
@@ -268,6 +269,7 @@ namespace Ozikol_BCC.Api
                 options.WithModels(false);
             });
             app.MapHub<GroupChatHub>("/hubs/group-chat");
+            app.MapHub<NotificationHub>("/hubs/notifications");
 
             await app.RunAsync();
         }

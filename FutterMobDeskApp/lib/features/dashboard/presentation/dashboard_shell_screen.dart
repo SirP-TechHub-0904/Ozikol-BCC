@@ -6,6 +6,8 @@ import '../../../core/widgets/tenant_avatar.dart';
 import '../../workspace_auth/presentation/workspace_entry_screen.dart';
 import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
 import '../../workspace_auth/state/workspace_state.dart';
+import '../../notifications/data/notification_service.dart';
+import '../../notifications/presentation/notifications_sheet.dart';
 
 /// Adaptive dashboard shell accommodating desktop window layouts (multi-pane)
 /// and mobile viewports (bottom navigation + drawer).
@@ -100,9 +102,39 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
               ],
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.notifications_none_rounded),
-                onPressed: () {},
+              Consumer(
+                builder: (context, ref, _) {
+                  final notifState = ref.watch(notificationProvider);
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_none_rounded),
+                        tooltip: 'Notifications',
+                        onPressed: () => NotificationsSheet.show(context),
+                      ),
+                      if (notifState.unreadCount > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: AppColors.error,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                            child: Center(
+                              child: Text(
+                                '${notifState.unreadCount > 99 ? '99+' : notifState.unreadCount}',
+                                style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               IconButton(
                 icon: const Icon(Icons.swap_horiz_rounded),
@@ -376,6 +408,53 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen> {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(width: 12),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final notifState = ref.watch(notificationProvider);
+                      return InkWell(
+                        onTap: () => NotificationsSheet.show(context),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  const Icon(Icons.notifications_outlined, size: 18),
+                                  if (notifState.unreadCount > 0)
+                                    Positioned(
+                                      right: -2,
+                                      top: -2,
+                                      child: Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.error,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Alerts (${notifState.unreadCount})',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

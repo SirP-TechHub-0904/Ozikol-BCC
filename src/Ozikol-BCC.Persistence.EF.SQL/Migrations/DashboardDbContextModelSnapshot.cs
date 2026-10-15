@@ -2626,10 +2626,16 @@ namespace OzikolBCC.Persistence.EF.SQL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Module")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Severity")
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
