@@ -186,3 +186,16 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * **Web**: `web/index.html` (meta tags, viewport, service worker scripts), manifest, and asset linkages.
 * **Zero Native Stubs**: Never assume platform code will be added "later", and never leave empty stub methods or placeholder comments where native configuration is required.
 
+---
+
+## 16. Unified Multi-Channel Notification Pool Architecture (Mandatory)
+* **Single Notification Pool Ingestion**: All user-facing communications and alerts across all channels—**In-App Notifications**, **Email Sending**, **WhatsApp Messages**, and **SMS Alerts**—MUST be routed and dispatched through the unified notification pool architecture (`ICentralNotificationDispatcher`, `BcpNotification`, `BcpEmailQueue`, `BcpSmsQueue`).
+* **Zero Direct/Ad-Hoc Dispatches in Business Handlers**: Feature handlers, controllers, background services, and UI flows MUST NEVER directly instantiate or invoke low-level email clients (e.g. raw Postmark), SMS gateways, or WhatsApp HTTP webhooks in an ad-hoc or blocking manner. All outbound events must be enqueued into the tenant's notification and message queue pool.
+* **Multi-Channel Fallback & Routing**:
+  * **In-App Notifications**: Stored in `[dbo].[BcpNotifications]` with canonical 6-tier severity levels (`info`, `success`, `warning`, `danger`, `urgent`, `critical`), deep-link action URLs, and unread badges. Streamed to Web and Flutter clients in real-time.
+  * **Email Dispatch**: Enqueued into `[dbo].[BcpEmailQueue]` with Postmark template support, anti-spam blacklist validation, and responsive HTML layouts.
+  * **SMS Alerts**: Enqueued into `[dbo].[BcpSmsQueue]` with sender ID compliance, character count validation, and transaction tracking.
+  * **WhatsApp Alerts**: Managed through the unified notification queue with template verification and status tracking.
+* **Audit & Idempotency Protection**: Every notification pool entry MUST record the originating `TenantKey`, `UserId`, `SystemId`, `Category`, `Priority`, and timestamp to guarantee zero message loss, deduplication, and complete delivery telemetry.
+
+
