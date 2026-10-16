@@ -58,14 +58,23 @@ class AppDrawer extends StatelessWidget {
   /// Explicit close callback (defaults to Navigator.pop).
   final VoidCallback? onClose;
 
-  /// Width of the drawer / sidebar (defaults to 260px).
+  /// Width of the drawer / sidebar (defaults to 250px).
   final double width;
+
+  /// Width of the sidebar when collapsed into icon-rail mode (defaults to 68px).
+  final double collapsedWidth;
 
   /// Background color (defaults to theme surface).
   final Color? backgroundColor;
 
   /// When true, acts as a permanent desktop sidebar (no close button, flat border).
   final bool isPermanentSidebar;
+
+  /// When true, collapses the sidebar into an icon-only navigation rail.
+  final bool isCollapsed;
+
+  /// Optional callback invoked when the user toggles the sidebar collapse state.
+  final VoidCallback? onToggleCollapse;
 
   /// Creates an adaptive [AppDrawer].
   const AppDrawer({
@@ -74,15 +83,19 @@ class AppDrawer extends StatelessWidget {
     this.footer,
     this.sections = const [],
     this.onClose,
-    this.width = 260,
+    this.width = 250,
+    this.collapsedWidth = 68,
     this.backgroundColor,
     this.isPermanentSidebar = false,
+    this.isCollapsed = false,
+    this.onToggleCollapse,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final effectiveBg = backgroundColor ?? (isDark ? AppColors.surfaceDark : AppColors.surfaceLight);
+    final effectiveWidth = isCollapsed ? collapsedWidth : width;
 
     final content = SafeArea(
       child: Column(
@@ -108,36 +121,62 @@ class AppDrawer extends StatelessWidget {
 
           if (header != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              padding: EdgeInsets.fromLTRB(
+                isCollapsed ? 4 : 16,
+                12,
+                isCollapsed ? 4 : 16,
+                12,
+              ),
               child: header!,
             ),
 
           // Navigation Sections
           Expanded(
             child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: isCollapsed ? 6 : 12,
+                vertical: 8,
+              ),
               itemCount: sections.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
+              separatorBuilder: (context, index) => SizedBox(height: isCollapsed ? 10 : 16),
               itemBuilder: (context, index) {
                 final section = sections[index];
 
                 return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: isCollapsed ? CrossAxisAlignment.center : CrossAxisAlignment.start,
                   children: [
                     if (section.title != null && section.title!.trim().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                        child: Text(
-                          section.title!.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                            color: isDark ? AppColors.gray500 : AppColors.gray600,
+                      if (!isCollapsed)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                          child: Text(
+                            section.title!.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                              color: isDark ? AppColors.gray500 : AppColors.gray600,
+                            ),
+                          ),
+                        )
+                      else
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: isDark
+                                ? AppColors.outlineDark.withValues(alpha: 0.4)
+                                : const Color(0xFFE2E8F0),
+                            indent: 6,
+                            endIndent: 6,
                           ),
                         ),
-                      ),
-                    ...section.items.map((item) => _DrawerItemTile(item: item, isDark: isDark)),
+                    ...section.items.map((item) => _DrawerItemTile(
+                          item: item,
+                          isDark: isDark,
+                          isCollapsed: isCollapsed,
+                        )),
                   ],
                 );
               },
@@ -147,7 +186,7 @@ class AppDrawer extends StatelessWidget {
           // Optional Footer
           if (footer != null)
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(isCollapsed ? 6 : 16),
               child: footer!,
             ),
         ],
@@ -155,8 +194,12 @@ class AppDrawer extends StatelessWidget {
     );
 
     if (isPermanentSidebar) {
-      return Container(
-        width: width,
+      final targetWidth = isCollapsed ? collapsedWidth : width;
+
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOutCubic,
+        width: effectiveWidth,
         decoration: BoxDecoration(
           color: effectiveBg,
           border: Border(
@@ -166,7 +209,17 @@ class AppDrawer extends StatelessWidget {
             ),
           ),
         ),
-        child: content,
+        child: ClipRect(
+          child: OverflowBox(
+            minWidth: targetWidth,
+            maxWidth: targetWidth,
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: targetWidth,
+              child: content,
+            ),
+          ),
+        ),
       );
     }
 
@@ -184,10 +237,12 @@ class AppDrawer extends StatelessWidget {
 class _DrawerItemTile extends StatelessWidget {
   final AppDrawerItem item;
   final bool isDark;
+  final bool isCollapsed;
 
   const _DrawerItemTile({
     required this.item,
     required this.isDark,
+    this.isCollapsed = false,
   });
 
   @override
@@ -195,6 +250,55 @@ class _DrawerItemTile extends StatelessWidget {
     final activeBg = isDark ? AppColors.primary.withValues(alpha: 0.15) : AppColors.primaryContainer;
     final activeFg = AppColors.primary;
     final defaultFg = isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight;
+
+    if (isCollapsed) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Tooltip(
+            message: item.title,
+            preferBelow: false,
+            waitDuration: const Duration(milliseconds: 200),
+            child: Material(
+              color: item.isSelected ? activeBg : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                onTap: item.onTap,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 44,
+                  height: 40,
+                  alignment: Alignment.center,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        item.icon,
+                        size: 20,
+                        color: item.isSelected ? activeFg : (isDark ? AppColors.gray400 : AppColors.gray600),
+                      ),
+                      if (item.trailing != null)
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Material(
       color: item.isSelected ? activeBg : Colors.transparent,
@@ -215,6 +319,8 @@ class _DrawerItemTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: item.isSelected ? FontWeight.w700 : FontWeight.w500,

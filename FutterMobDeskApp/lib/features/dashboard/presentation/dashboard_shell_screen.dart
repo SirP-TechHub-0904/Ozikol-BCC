@@ -32,7 +32,15 @@ class DashboardShellScreen extends ConsumerStatefulWidget {
 class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     with SingleTickerProviderStateMixin {
   int _selectedNavIndex = 2; // 2 = Console Dashboard
+  bool _isSidebarCollapsed = false;
   late AnimationController _refreshAnimController;
+
+  /// Toggles the desktop sidebar between expanded (250px) and collapsed (68px) rail mode.
+  void _toggleSidebarCollapse() {
+    setState(() {
+      _isSidebarCollapsed = !_isSidebarCollapsed;
+    });
+  }
 
   @override
   void initState() {
@@ -126,13 +134,25 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               // 1. Far Left Multi-Tenant Workspace Switcher Dock (68px)
               const WorkspaceSwitcherDock(),
 
-              // 2. Persistent Navigation Sidebar (250px) - Matches Angular BCC Admin
+              // 2. Persistent Navigation Sidebar (250px expanded / 68px collapsed) - Matches Angular BCC Admin
               AppDrawer(
                 isPermanentSidebar: true,
+                isCollapsed: _isSidebarCollapsed,
                 width: 250,
-                header: _buildDesktopSidebarHeader(isDark, activeWs),
+                collapsedWidth: 68,
+                onToggleCollapse: _toggleSidebarCollapse,
+                header: _buildDesktopSidebarHeader(
+                  isDark,
+                  activeWs,
+                  isCollapsed: _isSidebarCollapsed,
+                  onToggle: _toggleSidebarCollapse,
+                ),
                 sections: _buildNavigationSections(isDark),
-                footer: _buildDesktopSidebarFooter(isDark, activeWs),
+                footer: _buildDesktopSidebarFooter(
+                  isDark,
+                  activeWs,
+                  isCollapsed: _isSidebarCollapsed,
+                ),
               ),
 
               // 3. Main Workspace Canvas
@@ -361,6 +381,19 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       ),
       child: Row(
         children: [
+          // Sidebar minimize / maximize toggle button
+          IconButton(
+            icon: Icon(
+              _isSidebarCollapsed ? Icons.menu_rounded : Icons.menu_open_rounded,
+              size: 20,
+              color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+            ),
+            tooltip: _isSidebarCollapsed ? 'Maximize sidebar' : 'Minimize sidebar',
+            splashRadius: 18,
+            onPressed: _toggleSidebarCollapse,
+          ),
+          const SizedBox(width: 8),
+
           // Search workspace bar
           Container(
             width: 320,
@@ -1591,9 +1624,45 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   // SIDEBAR & DRAWER SECTIONS (Matches Angular BCC Admin Sidebar)
   // =========================================================================
 
-  Widget _buildDesktopSidebarHeader(bool isDark, dynamic activeWs) {
+  Widget _buildDesktopSidebarHeader(
+    bool isDark,
+    dynamic activeWs, {
+    bool isCollapsed = false,
+    VoidCallback? onToggle,
+  }) {
+    if (isCollapsed) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TenantAvatar(
+              logoUrl: activeWs?.logoUrl,
+              name: activeWs?.displayName ?? 'Ozikol',
+              size: 34,
+              borderRadius: 8,
+            ),
+            const SizedBox(height: 6),
+            if (onToggle != null)
+              IconButton(
+                icon: Icon(
+                  Icons.keyboard_double_arrow_right_rounded,
+                  size: 18,
+                  color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                ),
+                tooltip: 'Maximize sidebar',
+                splashRadius: 18,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                padding: EdgeInsets.zero,
+                onPressed: onToggle,
+              ),
+          ],
+        ),
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Row(
         children: [
           TenantAvatar(
@@ -1606,6 +1675,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   activeWs?.displayName ?? 'Ozikol BCC',
@@ -1629,13 +1699,73 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ],
             ),
           ),
+          if (onToggle != null)
+            IconButton(
+              icon: Icon(
+                Icons.keyboard_double_arrow_left_rounded,
+                size: 18,
+                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+              ),
+              tooltip: 'Minimize sidebar',
+              splashRadius: 18,
+              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+              padding: EdgeInsets.zero,
+              onPressed: onToggle,
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildDesktopSidebarFooter(bool isDark, dynamic activeWs) {
+  Widget _buildDesktopSidebarFooter(
+    bool isDark,
+    dynamic activeWs, {
+    bool isCollapsed = false,
+  }) {
     final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+
+    if (isCollapsed) {
+      return Container(
+        padding: const EdgeInsets.only(top: 8),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: borderColor)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.help_outline_rounded,
+                size: 18,
+                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+              ),
+              tooltip: 'Help & Support',
+              splashRadius: 18,
+              onPressed: () {},
+            ),
+            const SizedBox(height: 2),
+            IconButton(
+              icon: Icon(
+                Icons.logout_rounded,
+                size: 18,
+                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+              ),
+              tooltip: 'Sign Out',
+              splashRadius: 18,
+              onPressed: () {
+                if (activeWs != null) {
+                  ref.read(workspaceStateProvider.notifier).logoutWorkspace(activeWs.tenantKey);
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()),
+                    (route) => false,
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.only(top: 10),

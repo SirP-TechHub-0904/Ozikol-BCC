@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ozikol_app/core/widgets/app_drawer.dart';
 import 'package:ozikol_app/features/dashboard/models/dashboard_metrics.dart';
 import 'package:ozikol_app/features/dashboard/presentation/dashboard_shell_screen.dart';
 
@@ -106,6 +107,100 @@ void main() {
 
       // 7. Verify Floating Ozi AI button
       expect(find.text('Ozi AI'), findsOneWidget);
+    });
+
+    testWidgets('DashboardShellScreen minimizes and maximizes sidebar via toggle buttons', (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: DashboardShellScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 1. Initially expanded: 'Workspace Vault' is visible, minimize buttons are present
+      expect(find.text('Workspace Vault'), findsOneWidget);
+      expect(find.byTooltip('Minimize sidebar'), findsWidgets);
+
+      // 2. Click 'Minimize sidebar' from the top bar
+      await tester.tap(find.byTooltip('Minimize sidebar').first);
+      await tester.pumpAndSettle();
+
+      // 3. Sidebar is now collapsed into icon rail:
+      // 'Workspace Vault' is removed from view, and 'Maximize sidebar' appears
+      expect(find.text('Workspace Vault'), findsNothing);
+      expect(find.byTooltip('Maximize sidebar'), findsWidgets);
+
+      // 4. Click 'Maximize sidebar'
+      await tester.tap(find.byTooltip('Maximize sidebar').first);
+      await tester.pumpAndSettle();
+
+      // 5. Sidebar is restored back to expanded mode
+      expect(find.text('Workspace Vault'), findsOneWidget);
+      expect(find.byTooltip('Minimize sidebar'), findsWidgets);
+    });
+
+    testWidgets('AppDrawer renders expanded mode with section titles and collapsed rail mode with centered icons', (tester) async {
+      bool tapped = false;
+
+      final sections = [
+        AppDrawerSection(
+          title: 'COMMAND CENTER',
+          items: [
+            AppDrawerItem(
+              icon: Icons.dashboard_rounded,
+              title: 'Console Dashboard',
+              isSelected: true,
+              onTap: () => tapped = true,
+            ),
+          ],
+        ),
+      ];
+
+      // Test expanded mode
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AppDrawer(
+              isPermanentSidebar: true,
+              isCollapsed: false,
+              sections: sections,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('COMMAND CENTER'), findsOneWidget);
+      expect(find.text('Console Dashboard'), findsOneWidget);
+
+      // Test collapsed mode
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: AppDrawer(
+              isPermanentSidebar: true,
+              isCollapsed: true,
+              sections: sections,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // In collapsed mode, section text is hidden, icon is present with tooltip
+      expect(find.text('COMMAND CENTER'), findsNothing);
+      expect(find.byIcon(Icons.dashboard_rounded), findsOneWidget);
+
+      // Tap item in collapsed mode
+      await tester.tap(find.byIcon(Icons.dashboard_rounded));
+      expect(tapped, isTrue);
     });
   });
 }
