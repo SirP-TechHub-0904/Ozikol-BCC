@@ -64,7 +64,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   }
 
   /// Loads feed using Stale-While-Revalidate:
-  /// Serves cached tenant notifications immediately, then revalidates in the background.
+  /// Serves cached tenant notifications immediately, then revalidates in the background against tenant DB.
   Future<void> loadFeed() async {
     final cacheService = _ref.read(tenantCacheServiceProvider);
 
@@ -72,11 +72,13 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     final cachedData = cacheService.get<Map<String, dynamic>>('feed', allowStale: true);
     if (cachedData != null) {
       try {
-        final cachedUnread = cachedData['unreadCount'] as int? ?? 0;
         final rawItems = cachedData['items'] as List<dynamic>? ?? [];
         final cachedItems = rawItems
             .map((item) => NotificationItem.fromJson(item as Map<String, dynamic>))
+            // Filter out any legacy dummy sample notifications
+            .where((item) => !item.id.startsWith('notif-'))
             .toList();
+        final cachedUnread = cachedItems.where((i) => !i.isRead).length;
 
         state = state.copyWith(
           isLoading: false,
@@ -113,25 +115,21 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
             isFromCache: false,
             isOffline: false,
             unreadCount: unreadCount,
-            items: items.isNotEmpty ? items : _getSampleNotifications(),
+            items: items, // Strictly tenant DB items, zero dummy fallback!
           );
           return;
         }
       }
 
-      if (state.items.isEmpty) {
-        state = state.copyWith(
-          isLoading: false,
-          items: _getSampleNotifications(),
-          unreadCount: 3,
-        );
-      }
+      state = state.copyWith(
+        isLoading: false,
+      );
     } catch (_) {
       // Offline resilience: Retain cached items with isOffline indicator
       state = state.copyWith(
         isLoading: false,
         isOffline: true,
-        items: state.items.isNotEmpty ? state.items : _getSampleNotifications(),
+        items: state.items,
         unreadCount: state.items.where((i) => !i.isRead).length,
       );
     }
@@ -207,73 +205,6 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     final updated = [item, ...state.items];
     final unread = updated.where((n) => !n.isRead).length;
     state = state.copyWith(items: updated, unreadCount: unread);
-  }
-
-  /// High-fidelity default sample notifications demonstrating the 6 canonical severities.
-  static List<NotificationItem> _getSampleNotifications() {
-    final now = DateTime.now();
-    return [
-      NotificationItem(
-        id: 'notif-1',
-        title: 'Payment Gateway Synchronized',
-        message: 'Paystack webhook successfully verified 12 pending subscriber invoices.',
-        severity: NotificationSeverity.success,
-        category: 'Finance',
-        module: 'Billing',
-        isRead: false,
-        createdAt: now.subtract(const Duration(minutes: 5)),
-      ),
-      NotificationItem(
-        id: 'notif-2',
-        title: 'Bio Link Tree Module Released',
-        message: 'New modular capability "Bio Link Hub & Public Microsite" is now available for activation.',
-        severity: NotificationSeverity.newFeature,
-        category: 'General',
-        module: 'Features',
-        isRead: false,
-        createdAt: now.subtract(const Duration(minutes: 42)),
-      ),
-      NotificationItem(
-        id: 'notif-3',
-        title: 'Scheduled Cloud Maintenance',
-        message: 'Global tenant DB routine optimization scheduled for Sunday at 02:00 UTC (approx. 5 mins).',
-        severity: NotificationSeverity.maintenance,
-        category: 'System',
-        module: 'Infrastructure',
-        isRead: false,
-        createdAt: now.subtract(const Duration(hours: 2)),
-      ),
-      NotificationItem(
-        id: 'notif-4',
-        title: 'Membership Policy Revision',
-        message: 'Updated compliance and data privacy guidelines have been deployed to your workspace.',
-        severity: NotificationSeverity.update,
-        category: 'Account',
-        module: 'Compliance',
-        isRead: true,
-        createdAt: now.subtract(const Duration(hours: 6)),
-      ),
-      NotificationItem(
-        id: 'notif-5',
-        title: 'SMS Delivery Allocation Warning',
-        message: 'SMS wallet balance is below 50 units. Top up via billing portal to prevent broadcast delays.',
-        severity: NotificationSeverity.failed,
-        category: 'Communication',
-        module: 'MassSMS',
-        isRead: true,
-        createdAt: now.subtract(const Duration(days: 1)),
-      ),
-      NotificationItem(
-        id: 'notif-6',
-        title: 'Automated Bot Challenge Triggered',
-        message: 'Cloudflare Turnstile blocked 3 consecutive unauthorized credential guessing attempts.',
-        severity: NotificationSeverity.error,
-        category: 'Security',
-        module: 'Security',
-        isRead: true,
-        createdAt: now.subtract(const Duration(days: 2)),
-      ),
-    ];
   }
 }
 

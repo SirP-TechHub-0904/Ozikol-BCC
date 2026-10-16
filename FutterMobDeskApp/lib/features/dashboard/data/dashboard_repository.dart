@@ -23,10 +23,10 @@ class DashboardRepository {
           return DashboardMetrics.fromJson(data);
         }
       }
-      return DashboardMetrics.sample();
+      return DashboardMetrics.empty();
     } catch (_) {
-      // Return sample telemetry on network interruption or unconfigured database
-      return DashboardMetrics.sample();
+      // Return clean empty telemetry on network interruption or unconfigured database
+      return DashboardMetrics.empty();
     }
   }
 }
@@ -52,8 +52,8 @@ class DashboardMetricsNotifier extends StateNotifier<AsyncValue<DashboardMetrics
       final metrics = await _repository.fetchMetrics();
       state = AsyncValue.data(metrics);
     } catch (_) {
-      // Fallback to sample data gracefully
-      state = AsyncValue.data(DashboardMetrics.sample());
+      // Fallback to clean zero state gracefully without dummy data
+      state = AsyncValue.data(DashboardMetrics.empty());
     }
   }
 }

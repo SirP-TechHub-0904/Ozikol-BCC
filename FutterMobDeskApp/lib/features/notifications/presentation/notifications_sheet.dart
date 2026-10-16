@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/offline_status_bar.dart';
+import '../../../core/localization/language_provider.dart';
 import '../data/notification_service.dart';
 import '../domain/notification_model.dart';
 
@@ -102,9 +103,9 @@ class NotificationsSheet extends ConsumerWidget {
                     child: const Icon(Icons.notifications_active_rounded, color: AppColors.primary, size: 20),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Notifications',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  Text(
+                    'notif.title'.tr(ref, fallback: 'Notifications'),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(width: 8),
                   if (state.unreadCount > 0)
@@ -128,25 +129,25 @@ class NotificationsSheet extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: Colors.blue.withAlpha(60)),
                       ),
-                      child: const Text(
-                        'Cached',
-                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Colors.blue),
+                      child: Text(
+                        'notif.cached'.tr(ref, fallback: 'Cached'),
+                        style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Colors.blue),
                       ),
                     ),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.done_all_rounded, size: 20),
-                    tooltip: 'Mark all as read',
+                    tooltip: 'notif.mark_all_read'.tr(ref, fallback: 'Mark all as read'),
                     onPressed: state.unreadCount > 0 ? () => notifier.markAllAsRead() : null,
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_sweep_outlined, size: 20),
-                    tooltip: 'Clear all',
+                    tooltip: 'notif.clear_all'.tr(ref, fallback: 'Clear all'),
                     onPressed: state.items.isNotEmpty ? () => notifier.clearAll() : null,
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded, size: 20),
-                    tooltip: 'Close',
+                    tooltip: 'btn.close'.tr(ref, fallback: 'Close'),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -159,9 +160,9 @@ class NotificationsSheet extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
               child: Row(
                 children: [
-                  _buildFilterChip('all', 'All (${state.items.length})', null, state.activeFilter, notifier, isDark),
+                  _buildFilterChip('all', '${'notif.all'.tr(ref, fallback: 'All')} (${state.items.length})', null, state.activeFilter, notifier, isDark),
                   const SizedBox(width: 8),
-                  _buildFilterChip('unread', 'Unread (${state.unreadCount})', null, state.activeFilter, notifier, isDark),
+                  _buildFilterChip('unread', '${'notif.unread'.tr(ref, fallback: 'Unread')} (${state.unreadCount})', null, state.activeFilter, notifier, isDark),
                   const SizedBox(width: 8),
                   ...NotificationSeverity.values.map((sev) {
                     final count = state.items.where((n) => n.severity == sev).length;
@@ -186,14 +187,14 @@ class NotificationsSheet extends ConsumerWidget {
             // Notifications List / Empty State
             Expanded(
               child: state.filteredItems.isEmpty
-                  ? _buildEmptyState(state.activeFilter, isDark)
+                  ? _buildEmptyState(state.activeFilter, isDark, ref)
                   : ListView.separated(
                       padding: const EdgeInsets.all(20),
                       itemCount: state.filteredItems.length,
                       separatorBuilder: (context, index) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final notif = state.filteredItems[index];
-                        return _buildNotificationCard(notif, notifier, isDark);
+                        return _buildNotificationCard(notif, notifier, isDark, ref);
                       },
                     ),
             ),
@@ -244,7 +245,7 @@ class NotificationsSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotificationCard(NotificationItem notif, NotificationNotifier notifier, bool isDark) {
+  Widget _buildNotificationCard(NotificationItem notif, NotificationNotifier notifier, bool isDark, WidgetRef ref) {
     final sev = notif.severity;
     final timeAgo = _formatTimeAgo(notif.createdAt);
 
@@ -372,7 +373,7 @@ class NotificationsSheet extends ConsumerWidget {
                     if (!notif.isRead) notifier.markAsRead(notif.id);
                   },
                   icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-                  label: const Text('View Action', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  label: Text('notif.view_action'.tr(ref, fallback: 'View Action'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                   style: TextButton.styleFrom(
                     foregroundColor: sev.color,
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -392,7 +393,7 @@ class NotificationsSheet extends ConsumerWidget {
 );
 }
 
-  Widget _buildEmptyState(String filter, bool isDark) {
+  Widget _buildEmptyState(String filter, bool isDark, WidgetRef ref) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -411,12 +412,17 @@ class NotificationsSheet extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            filter == 'all' ? 'All caught up!' : 'No notifications in this filter',
+            filter == 'all'
+                ? 'notif.empty_title'.tr(ref, fallback: 'All caught up!')
+                : 'notif.no_filter_title'.tr(ref, fallback: 'No notifications in this filter'),
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
           Text(
-            'New alerts, updates, and maintenance advisories\nwill appear right here in real time.',
+            'notif.empty_desc'.tr(
+              ref,
+              fallback: 'New alerts, updates, and maintenance advisories\nwill appear right here in real time.',
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12,

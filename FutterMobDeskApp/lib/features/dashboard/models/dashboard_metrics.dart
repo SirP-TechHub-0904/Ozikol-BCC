@@ -14,10 +14,10 @@ class DashboardMetrics {
   const DashboardMetrics({
     this.resolvedDomain = '',
     this.resolvedDatabase = '',
-    this.totalMembers = 1,
-    this.totalActiveMembers = 1,
+    this.totalMembers = 0,
+    this.totalActiveMembers = 0,
     this.totalGroups = 0,
-    this.totalPublishedPages = 18,
+    this.totalPublishedPages = 0,
     this.totalSliders = 0,
     this.totalFaqs = 0,
     this.recentUsers = const [],
@@ -40,10 +40,10 @@ class DashboardMetrics {
     return DashboardMetrics(
       resolvedDomain: json['resolvedDomain']?.toString() ?? '',
       resolvedDatabase: json['resolvedDatabase']?.toString() ?? '',
-      totalMembers: json['totalMembers'] as int? ?? (users.isNotEmpty ? users.length : 1),
-      totalActiveMembers: json['totalActiveMembers'] as int? ?? 1,
+      totalMembers: json['totalMembers'] as int? ?? users.length,
+      totalActiveMembers: json['totalActiveMembers'] as int? ?? (users.isNotEmpty ? users.length : 0),
       totalGroups: json['totalGroups'] as int? ?? 0,
-      totalPublishedPages: json['totalPublishedPages'] as int? ?? 18,
+      totalPublishedPages: json['totalPublishedPages'] as int? ?? 0,
       totalSliders: json['totalSliders'] as int? ?? 0,
       totalFaqs: json['totalFaqs'] as int? ?? 0,
       recentUsers: users,
@@ -51,25 +51,14 @@ class DashboardMetrics {
     );
   }
 
-  /// Default fallback sample telemetry when offline or unpopulated
+  /// Clean empty telemetry state when unpopulated or starting up (strictly 0 dummy data).
+  factory DashboardMetrics.empty() {
+    return const DashboardMetrics();
+  }
+
+  /// Deprecated legacy alias: strictly returns clean empty state without dummy records.
   factory DashboardMetrics.sample() {
-    return DashboardMetrics(
-      totalMembers: 1,
-      totalActiveMembers: 1,
-      totalGroups: 0,
-      totalPublishedPages: 18,
-      totalSliders: 0,
-      totalFaqs: 0,
-      recentUsers: [
-        RecentUserItem(
-          id: '1',
-          fullName: 'Onwuka Peter',
-          email: 'admin@gmail.com',
-          category: 'Member',
-        ),
-      ],
-      recentActivities: [],
-    );
+    return const DashboardMetrics();
   }
 }
 

@@ -88,7 +88,7 @@ void main() {
     expect(NotificationSeverity.maintenance.color, const Color(0xFF9333EA));
   });
 
-  testWidgets('NotificationsSheet renders header, severity filters, and notification cards', (WidgetTester tester) async {
+  testWidgets('NotificationsSheet renders header, severity filters, and clean empty state when tenant has no notifications', (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
         child: MaterialApp(
@@ -104,16 +104,12 @@ void main() {
 
     // Verify Title and Filter Chips
     expect(find.text('Notifications'), findsOneWidget);
-    expect(find.textContaining('All ('), findsOneWidget);
-    expect(find.textContaining('Unread ('), findsOneWidget);
-    expect(find.textContaining('Error ('), findsOneWidget);
-    expect(find.textContaining('Success ('), findsOneWidget);
-    expect(find.textContaining('Maintenance ('), findsOneWidget);
+    expect(find.textContaining('All (0)'), findsOneWidget);
+    expect(find.textContaining('Unread (0)'), findsOneWidget);
 
-    // Verify Sample Notification Cards Rendered
-    expect(find.text('Payment Gateway Synchronized'), findsOneWidget);
-    expect(find.text('Bio Link Tree Module Released'), findsOneWidget);
-    expect(find.text('Scheduled Cloud Maintenance'), findsOneWidget);
+    // Verify Clean Localized Empty State Rendered (Strict Zero Dummy Data)
+    expect(find.text('All caught up!'), findsOneWidget);
+    expect(find.textContaining('New alerts, updates, and maintenance advisories'), findsOneWidget);
   });
 
   test('TenantCacheService enforces strict multi-tenant partition isolation and stale retrieval', () async {

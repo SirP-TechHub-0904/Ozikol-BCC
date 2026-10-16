@@ -196,7 +196,21 @@ class AppTranslations {
       'badge.live': 'LIVE',
       'badge.active': 'Active',
       'badge.online': 'Online',
-      'badge.offline': 'Offline'
+      'badge.offline': 'Offline',
+
+      // Notification Center & Alerts
+      'notif.title': 'Notifications',
+      'notif.empty_title': 'All caught up!',
+      'notif.empty_desc': 'New alerts, updates, and maintenance advisories will appear right here in real time.',
+      'notif.no_filter_title': 'No notifications in this filter',
+      'notif.mark_all_read': 'Mark all as read',
+      'notif.clear_all': 'Clear all',
+      'notif.all': 'All',
+      'notif.unread': 'Unread',
+      'notif.view_action': 'View Action',
+      'notif.cached': 'Cached',
+      'kpi.no_members': 'No registered members yet.',
+      'kpi.no_audits': 'No audit actions logged yet.'
     },
     'fr': {
       // Shell & Mode Navigation
@@ -345,7 +359,21 @@ class AppTranslations {
       'badge.live': 'EN LIGNE',
       'badge.active': 'Actif',
       'badge.online': 'En ligne',
-      'badge.offline': 'Hors ligne'
+      'badge.offline': 'Hors ligne',
+
+      // Notification Center & Alerts
+      'notif.title': 'Notifications',
+      'notif.empty_title': 'Tout est à jour !',
+      'notif.empty_desc': 'Les nouvelles alertes, mises à jour et avis de maintenance apparaîtront ici en temps réel.',
+      'notif.no_filter_title': 'Aucune notification dans ce filtre',
+      'notif.mark_all_read': 'Tout marquer comme lu',
+      'notif.clear_all': 'Tout effacer',
+      'notif.all': 'Toutes',
+      'notif.unread': 'Non lues',
+      'notif.view_action': "Voir l'action",
+      'notif.cached': 'En cache',
+      'kpi.no_members': 'Aucun membre enregistré pour le moment.',
+      'kpi.no_audits': 'Aucune action de sécurité enregistrée.'
     },
     'es': {
       // Shell & Mode Navigation
@@ -494,7 +522,21 @@ class AppTranslations {
       'badge.live': 'EN VIVO',
       'badge.active': 'Activo',
       'badge.online': 'En línea',
-      'badge.offline': 'Desconectado'
+      'badge.offline': 'Desconectado',
+
+      // Notification Center & Alerts
+      'notif.title': 'Notificaciones',
+      'notif.empty_title': '¡Todo al día!',
+      'notif.empty_desc': 'Las nuevas alertas, actualizaciones y avisos de mantenimiento aparecerán aquí en tiempo real.',
+      'notif.no_filter_title': 'Sin notificaciones en este filtro',
+      'notif.mark_all_read': 'Marcar todo como leído',
+      'notif.clear_all': 'Borrar todo',
+      'notif.all': 'Todas',
+      'notif.unread': 'No leídas',
+      'notif.view_action': 'Ver acción',
+      'notif.cached': 'En caché',
+      'kpi.no_members': 'Aún no hay miembros registrados.',
+      'kpi.no_audits': 'No hay acciones de auditoría registradas.'
     },
     'de': {
       // Shell & Mode Navigation
@@ -643,7 +685,21 @@ class AppTranslations {
       'badge.live': 'LIVE',
       'badge.active': 'Aktiv',
       'badge.online': 'Online',
-      'badge.offline': 'Offline'
+      'badge.offline': 'Offline',
+
+      // Notification Center & Alerts
+      'notif.title': 'Benachrichtigungen',
+      'notif.empty_title': 'Alles erledigt!',
+      'notif.empty_desc': 'Neue Benachrichtigungen, Updates und Wartungshinweise erscheinen hier in Echtzeit.',
+      'notif.no_filter_title': 'Keine Benachrichtigungen in diesem Filter',
+      'notif.mark_all_read': 'Alle als gelesen markieren',
+      'notif.clear_all': 'Alle löschen',
+      'notif.all': 'Alle',
+      'notif.unread': 'Ungelesen',
+      'notif.view_action': 'Aktion anzeigen',
+      'notif.cached': 'Zwischengespeichert',
+      'kpi.no_members': 'Noch keine registrierten Mitglieder.',
+      'kpi.no_audits': 'Noch keine Audit-Aktivitäten protokolliert.'
     }
   };
 

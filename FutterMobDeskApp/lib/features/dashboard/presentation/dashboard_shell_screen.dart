@@ -135,7 +135,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final isOnline = connStatus == ConnectivityStatus.online;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeWs = state.activeWorkspace;
-    final metrics = metricsAsync.value ?? DashboardMetrics.sample();
+    final metrics = metricsAsync.value ?? DashboardMetrics.empty();
     final isTelemetryLoading = metricsAsync.isLoading;
 
     if (isTelemetryLoading && !_refreshAnimController.isAnimating) {
@@ -3536,7 +3536,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          activeWs?.userFullName ?? 'Onwuka Peter',
+                          activeWs?.userFullName ?? 'Workspace Member',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,

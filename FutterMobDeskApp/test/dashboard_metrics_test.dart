@@ -47,14 +47,13 @@ void main() {
       expect(metrics.recentActivities.first.action, 'LOGIN');
     });
 
-    test('DashboardMetrics.sample() provides canonical fallback telemetry', () {
-      final sample = DashboardMetrics.sample();
+    test('DashboardMetrics.empty() provides strict zero dummy telemetry', () {
+      final empty = DashboardMetrics.empty();
 
-      expect(sample.totalMembers, 1);
-      expect(sample.totalPublishedPages, 18);
-      expect(sample.recentUsers.length, 1);
-      expect(sample.recentUsers.first.fullName, 'Onwuka Peter');
-      expect(sample.recentUsers.first.email, 'admin@gmail.com');
+      expect(empty.totalMembers, 0);
+      expect(empty.totalPublishedPages, 0);
+      expect(empty.recentUsers.length, 0);
+      expect(empty.recentActivities.length, 0);
     });
 
     testWidgets('DashboardShellScreen renders Console Dashboard, 6 Health Counters, and Quick Actions',
@@ -244,7 +243,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 5. Tap User Profile Pill to open Account & Workspace Profile dialog
-      await tester.tap(find.text('SuperAdmin'));
+      await tester.tap(find.text('Member'));
       await tester.pumpAndSettle();
       expect(find.text('Active Workspace'), findsOneWidget);
       expect(find.text('Primary Domain'), findsOneWidget);

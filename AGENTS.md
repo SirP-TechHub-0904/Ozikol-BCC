@@ -238,5 +238,44 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * If a token is not defined in the active language dictionary, the engine MUST automatically fall back to the English dictionary.
   * If absent from English as well, it MUST gracefully fall back to the provided fallback argument or token key, preventing runtime crashes or blank UI elements.
 
+---
+
+## 18. Strict Zero Dummy Data Policy (Mandatory)
+* **Strict Prohibition of Dummy / Mock / Fallback Records**:
+  * NEVER return, render, or inject fake, mock, simulated, sample, or hardcoded dummy records across ANY platform (Angular Web Client, Flutter Desktop/Mobile, ASP.NET Core API).
+  * This strictly applies to notifications, feeds, user directories, tables, KPI metrics, telemetry counters, audit logs, messages, billing transactions, cards, and dropdowns.
+  * Functions like `_getSampleNotifications()`, mock array fallbacks, or sample seed cards in production client code are strictly prohibited and must NEVER be introduced or retained.
+* **100% Tenant Database Sourcing**:
+  * ALL data displayed in the application MUST be queried live from the active Tenant Database (or Central Master Database where specifically dealing with catalog/tenant metadata).
+  * If a tenant database query returns zero records (empty table or list), the system MUST return empty collections (`[]`) without falling back to sample or mock records.
+* **High-Aesthetic Localized Empty States**:
+  * When a data query yields 0 records, the UI MUST render a clean, high-aesthetic empty state with:
+    1. A relevant contextual icon (e.g. `notifications_none_rounded`, `inbox`, `person_off`).
+    2. A clear, localized headline (e.g. `'notif.empty_title'.tr(ref)` -> `"All caught up!"` or `"No records found"`).
+    3. A helpful, localized descriptive prompt (e.g. `'notif.empty_desc'.tr(ref)` -> `"New alerts, updates, and maintenance advisories will appear right here in real time."`).
+    4. An optional contextual action button if applicable (e.g. create or refresh).
+* **Test Isolation**:
+  * Mock data or fixtures may ONLY exist inside explicit test suites (`/test/`, `*Test.cs`, `*.spec.ts`) and must NEVER bleed into production models, services, repositories, or UI widgets.
+
+---
+
+## 19. Proactive Multi-Channel Notification & Communication Dispatch (Mandatory)
+* **Active Event-Driven Notification Consideration**:
+  * Whenever designing, implementing, or updating any feature, security workflow, user management process, administrative action, or transactional state change, the agent MUST proactively identify and implement multi-channel communications.
+  * Key triggering events include:
+    * **Identity & Access**: User registration, role assignments, password reset, 2FA enable/disable, login from new device/location, account lockouts.
+    * **Administration & Governance**: Status change, user suspension, member deletion, category reassignments.
+    * **Billing & Operations**: Subscription renewals, license threshold alerts, payment gateway verifications, maintenance windows.
+    * **User Workspaces**: Mentions, group invites, direct messages, broadcast announcements.
+* **Multi-Channel Orchestration via Unified Ingestion**:
+  * All communications MUST route through `ICentralNotificationDispatcher` (`DispatchNotificationRequest` / `NotificationDispatchPayload`) to ensure tenant-partitioned execution across:
+    * **In-App Alerts**: Stored in tenant DB `[dbo].[BcpNotifications]` and broadcasted immediately via SignalR WebSocket for instant bell-badge increments and slide-over/dropdown toast notifications.
+    * **Transactional Email**: Dispatched via Postmark queue with anti-spam blacklist validation and professional HTML responsive layouts.
+    * **SMS Carrier Alerts**: Queued via `[dbo].[BcpSmsQueue]` with character count limits and carrier compliance.
+    * **WhatsApp Notifications**: Dispatched through the verified messaging pipeline.
+* **Zero Direct Third-Party Client Coupling**:
+  * Domain services and controllers must NEVER directly call external Postmark/Twilio/Meta HTTP endpoints. All events must be enqueued into the tenant database queues to ensure retry resilience, idempotency, and complete telemetry logging.
+
+
 
 
