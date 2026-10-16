@@ -202,5 +202,56 @@ void main() {
       await tester.tap(find.byIcon(Icons.dashboard_rounded));
       expect(tapped, isTrue);
     });
+
+    testWidgets('DashboardShellScreen renders Powered by Ozikol, Online notice, and functional top bar dialogs', (tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: DashboardShellScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 1. Verify "Powered by Ozikol" in the sidebar footer
+      expect(find.text('Powered by Ozikol'), findsOneWidget);
+
+      // 2. Verify Online status notice in top bar
+      expect(find.text('Online'), findsOneWidget);
+
+      // 3. Tap Calendar icon to open Calendar dialog
+      await tester.tap(find.byIcon(Icons.calendar_today_outlined));
+      await tester.pumpAndSettle();
+      expect(find.text('Calendar & Schedules'), findsOneWidget);
+      expect(find.text('Daily Telemetry & Membership Sync'), findsOneWidget);
+
+      // Close Calendar dialog
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      // 4. Tap Help icon to open Help & Knowledge Base dialog
+      await tester.tap(find.byIcon(Icons.help_outline_rounded).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Help & Knowledge Base'), findsOneWidget);
+
+      // Close Help dialog
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      // 5. Tap User Profile Pill to open Account & Workspace Profile dialog
+      await tester.tap(find.text('SuperAdmin'));
+      await tester.pumpAndSettle();
+      expect(find.text('Active Workspace'), findsOneWidget);
+      expect(find.text('Primary Domain'), findsOneWidget);
+
+      // Close Profile dialog
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+    });
   });
 }

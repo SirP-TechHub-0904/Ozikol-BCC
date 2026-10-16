@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/services/connectivity_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/in_app_update_service.dart';
 import '../../../core/widgets/app_badge.dart';
@@ -72,6 +73,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final notifState = ref.watch(notificationProvider);
     final updateAsync = ref.watch(appUpdateCheckProvider);
     final metricsAsync = ref.watch(dashboardMetricsProvider);
+    final connStatus = ref.watch(connectivityStatusProvider);
+    final isOnline = connStatus == ConnectivityStatus.online;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeWs = state.activeWorkspace;
     final metrics = metricsAsync.value ?? DashboardMetrics.sample();
@@ -96,6 +99,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             updateAsync: updateAsync,
             metrics: metrics,
             isLoading: isTelemetryLoading,
+            isOnline: isOnline,
           );
         }
 
@@ -107,6 +111,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           updateAsync: updateAsync,
           metrics: metrics,
           isLoading: isTelemetryLoading,
+          isOnline: isOnline,
         );
       },
     );
@@ -124,6 +129,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     required AsyncValue<dynamic> updateAsync,
     required DashboardMetrics metrics,
     required bool isLoading,
+    required bool isOnline,
   }) {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
@@ -159,7 +165,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 child: Column(
                   children: [
                     // Top Application Bar matching Angular Web Header
-                    _buildDesktopTopBar(context, isDark, activeWs, notifCount),
+                    _buildDesktopTopBar(
+                      context,
+                      isDark,
+                      activeWs,
+                      notifCount,
+                      isOnline: isOnline,
+                    ),
 
                     // In-App Update Banner
                     updateAsync.maybeWhen(
@@ -248,6 +260,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     required AsyncValue<dynamic> updateAsync,
     required DashboardMetrics metrics,
     required bool isLoading,
+    required bool isOnline,
   }) {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
@@ -269,15 +282,30 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    activeWs?.displayName ?? 'Console Dashboard',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          activeWs?.displayName ?? 'Console Dashboard',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                        ),
+                      ),
+                    ],
                   ),
                   Text(
                     'Business Command Center',
@@ -366,8 +394,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     BuildContext context,
     bool isDark,
     dynamic activeWs,
-    int notifCount,
-  ) {
+    int notifCount, {
+    bool isOnline = true,
+  }) {
     final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
     final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
 
@@ -428,18 +457,18 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
           const Spacer(),
 
-          // Utility Action Icons (Calendar, Help, Fullscreen, Dark Mode, Notifications)
+          // Utility Action Icons (Calendar, Help, Dark Mode, Notifications)
           _buildTopIconBtn(
             icon: Icons.calendar_today_outlined,
             tooltip: 'Calendar & Schedules',
             isDark: isDark,
-            onTap: () {},
+            onTap: () => _showCalendarDialog(context, isDark),
           ),
           _buildTopIconBtn(
             icon: Icons.help_outline_rounded,
             tooltip: 'Help & Knowledge Base',
             isDark: isDark,
-            onTap: () {},
+            onTap: () => _showHelpSupportDialog(context, isDark),
           ),
           _buildTopIconBtn(
             icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
@@ -457,50 +486,87 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
           const SizedBox(width: 14),
 
-          // User Profile Pill (OP - Onwuka Peter - SuperAdmin)
-          Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  _getUserInitials(activeWs?.userFullName),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
+          // Live Online / Offline Presence Notice Badge
+          _buildOnlineOfflineStatusPill(isDark, isOnline),
+
+          const SizedBox(width: 14),
+
+          // User Profile Pill (OP - Onwuka Peter - SuperAdmin) - Clickable with Presence Dot
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () => _showUserProfileDialog(context, isDark, activeWs),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            _getUserInitials(activeWs?.userFullName),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: -1,
+                          bottom: -1,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: isOnline ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDark ? AppColors.surfaceDark : Colors.white,
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          activeWs?.userFullName ?? 'Workspace Admin',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          'SuperAdmin',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 10),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    activeWs?.userFullName ?? 'Workspace Admin',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
-                    ),
-                  ),
-                  Text(
-                    'SuperAdmin',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -1708,7 +1774,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               tooltip: 'Help & Support',
               splashRadius: 18,
-              onPressed: () {},
+              onPressed: () => _showHelpSupportDialog(context, isDark),
             ),
             const SizedBox(height: 2),
             IconButton(
@@ -1743,15 +1809,20 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         children: [
           Row(
             children: [
-              Icon(
-                Icons.hub_outlined,
-                size: 16,
-                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+              Image.asset(
+                isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
+                width: 15,
+                height: 15,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.bolt_rounded,
+                  size: 15,
+                  color: AppColors.primary,
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'MC Workspace Console v1.0.0',
+                  'Powered by Ozikol',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -1766,7 +1837,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             children: [
               Expanded(
                 child: TextButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _showHelpSupportDialog(context, isDark),
                   icon: const Icon(Icons.help_outline_rounded, size: 14),
                   label: const Text(
                     'Help & Support',
@@ -2088,5 +2159,664 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         );
       },
     );
+  }
+
+  // =========================================================================
+  // TOP BAR INTERACTION MODALS & PRESENCE INDICATORS
+  // =========================================================================
+
+  /// Live presence indicator pill reflecting network connectivity state.
+  Widget _buildOnlineOfflineStatusPill(bool isDark, bool isOnline) {
+    final bg = isOnline
+        ? const Color(0xFF22C55E).withValues(alpha: 0.12)
+        : const Color(0xFFEF4444).withValues(alpha: 0.12);
+    final border = isOnline
+        ? const Color(0xFF22C55E).withValues(alpha: 0.3)
+        : const Color(0xFFEF4444).withValues(alpha: 0.3);
+    final fg = isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
+
+    return Tooltip(
+      message: isOnline
+          ? 'Network Online • Real-Time Connected to Ozikol Cloud'
+          : 'Network Offline • Showing Cached Workspace Data',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: fg,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              isOnline ? 'Online' : 'Offline',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: fg,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Displays the interactive Calendar & Schedules modal dialog.
+  void _showCalendarDialog(BuildContext context, bool isDark) {
+    final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+
+    final now = DateTime.now();
+    final dateStr = '${_monthName(now.month)} ${now.day}, ${now.year}';
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: dialogBg,
+        child: Container(
+          width: 520,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_today_rounded,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Calendar & Schedules',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          'Workspace Operations • $dateStr',
+                          style: TextStyle(fontSize: 12, color: subColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: subColor),
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'UPCOMING WORKSPACE SCHEDULES',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: subColor,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildCalendarEventItem(
+                isDark,
+                title: 'Daily Telemetry & Membership Sync',
+                time: '08:00 AM UTC • Automated',
+                category: 'HEALTH',
+                categoryColor: const Color(0xFF16A34A),
+              ),
+              const SizedBox(height: 8),
+              _buildCalendarEventItem(
+                isDark,
+                title: 'CMS Page Cache & Asset Purge',
+                time: '12:00 PM UTC • Scheduled',
+                category: 'CMS',
+                categoryColor: const Color(0xFF0284C7),
+              ),
+              const SizedBox(height: 8),
+              _buildCalendarEventItem(
+                isDark,
+                title: 'Tenant Security & Access Audit Review',
+                time: 'Tomorrow, 09:30 AM • Operations',
+                category: 'SECURITY',
+                categoryColor: const Color(0xFFF59E0B),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: borderColor),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Close'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(dialogCtx).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Opening Follow-Up scheduler...')),
+                      );
+                    },
+                    icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                    label: const Text(
+                      'New Event',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Displays the Help & Knowledge Base modal dialog.
+  void _showHelpSupportDialog(BuildContext context, bool isDark) {
+    final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: dialogBg,
+        child: Container(
+          width: 540,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.help_outline_rounded,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Help & Knowledge Base',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                          ),
+                        ),
+                        Text(
+                          'Ozikol Business Command Center Documentation',
+                          style: TextStyle(fontSize: 12, color: subColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: subColor),
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.search_rounded, size: 18, color: subColor),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Search documentation, guides, and FAQs...',
+                        style: TextStyle(fontSize: 13, color: subColor),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'QUICK GUIDANCE & WORKFLOWS',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: subColor,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildHelpTopicTile(
+                isDark,
+                icon: Icons.dashboard_outlined,
+                title: 'Console Dashboard Telemetry',
+                description: 'Understand live counters, health metrics, and audit log activities.',
+              ),
+              const SizedBox(height: 6),
+              _buildHelpTopicTile(
+                isDark,
+                icon: Icons.layers_outlined,
+                title: 'Dynamic Web Page & Hero Customizer',
+                description: 'Build sections, configure brand tokens, and publish HTML templates.',
+              ),
+              const SizedBox(height: 6),
+              _buildHelpTopicTile(
+                isDark,
+                icon: Icons.domain_rounded,
+                title: 'Multi-Tenant Workspace & Domains',
+                description: 'Manage custom domains, database partitioning, and tenant vaults.',
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Need assistance? Contact support@ozikol.cloud',
+                      style: TextStyle(fontSize: 11, color: subColor),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    child: const Text('Done', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Displays the user profile, role credentials, and presence details modal dialog.
+  void _showUserProfileDialog(BuildContext context, bool isDark, dynamic activeWs) {
+    final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+    final connStatus = ref.read(connectivityStatusProvider);
+    final isOnline = connStatus == ConnectivityStatus.online;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: dialogBg,
+        child: Container(
+          width: 420,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          _getUserInitials(activeWs?.userFullName),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: isOnline ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: dialogBg, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          activeWs?.userFullName ?? 'Onwuka Peter',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'SuperAdmin',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              isOnline ? 'Online' : 'Offline Mode',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: subColor),
+                    onPressed: () => Navigator.of(dialogCtx).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Divider(color: borderColor, height: 1),
+              const SizedBox(height: 16),
+              _buildProfileDetailRow(
+                isDark,
+                icon: Icons.business_rounded,
+                label: 'Active Workspace',
+                value: activeWs?.displayName ?? 'Ozikol BCC',
+              ),
+              const SizedBox(height: 10),
+              _buildProfileDetailRow(
+                isDark,
+                icon: Icons.language_rounded,
+                label: 'Primary Domain',
+                value: activeWs?.primaryDomain ?? 'mb-cocacola.localhost:4200',
+              ),
+              const SizedBox(height: 10),
+              _buildProfileDetailRow(
+                isDark,
+                icon: Icons.wifi_rounded,
+                label: 'Network Status',
+                value: isOnline ? 'Online • Real-Time Connected' : 'Offline • Local Cache Active',
+                valueColor: isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(dialogCtx).pop();
+                        _showMobileWorkspaceSheet(context);
+                      },
+                      icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                      label: const Text('Switch Tenant'),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: borderColor),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(dialogCtx).pop();
+                        if (activeWs != null) {
+                          ref.read(workspaceStateProvider.notifier).logoutWorkspace(activeWs.tenantKey);
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()),
+                            (route) => false,
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.logout_rounded, size: 16, color: Colors.white),
+                      label: const Text('Sign Out', style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEF4444),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalendarEventItem(
+    bool isDark, {
+    required String title,
+    required String time,
+    required String category,
+    required Color categoryColor,
+  }) {
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+    final cardBg = isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC);
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: categoryColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              category,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: categoryColor,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                ),
+                Text(time, style: TextStyle(fontSize: 11, color: subColor)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHelpTopicTile(
+    bool isDark, {
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+    final cardBg = isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC);
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TextStyle(fontSize: 11, color: subColor),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileDetailRow(
+    bool isDark, {
+    required IconData icon,
+    required String label,
+    required String value,
+    Color? valueColor,
+  }) {
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: subColor),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: TextStyle(fontSize: 12, color: subColor),
+        ),
+        const SizedBox(width: 8),
+        const Spacer(),
+        Flexible(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: valueColor ?? textColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[(month - 1).clamp(0, 11)];
   }
 }
