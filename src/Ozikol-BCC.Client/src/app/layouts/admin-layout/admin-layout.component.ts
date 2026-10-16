@@ -1630,8 +1630,8 @@ export class AdminLayoutComponent implements OnInit {
       }
     });
 
-    this.signalR.aliasesUpdated$.subscribe(() => {
-      this.loadTerminologyAliases();
+    this.signalR.aliasesUpdated$.subscribe((data: any) => {
+      this.loadTerminologyAliases(data);
     });
 
     // Check saved theme
@@ -1867,21 +1867,7 @@ export class AdminLayoutComponent implements OnInit {
       error: () => {}
     });
 
-    this.api.get<any>('SettingsApi/aliases').subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.categoryAlias = res.data.categoryAlias || 'User Categories';
-          this.subCategoryAlias = res.data.subCategoryAlias || 'Sub-Categories';
-          this.groupAlias = res.data.groupAlias || 'Groups & Communities';
-          this.alumniAlias = res.data.alumniAlias || 'Alumni';
-          localStorage.setItem('alias_category', this.categoryAlias);
-          localStorage.setItem('alias_subcategory', this.subCategoryAlias);
-          localStorage.setItem('alias_group', this.groupAlias);
-          localStorage.setItem('alias_alumni', this.alumniAlias);
-        }
-      },
-      error: () => {}
-    });
+    this.loadTerminologyAliases();
 
     this.api.get<any>('UsersApi/profile').subscribe({
       next: (res) => {
@@ -1928,6 +1914,40 @@ export class AdminLayoutComponent implements OnInit {
           if (this.tenantKey) {
             localStorage.setItem('tenant_key', this.tenantKey);
           }
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  /**
+   * Loads custom terminology aliases (Category, Sub-Category, Group, Alumni) from the API or SignalR payload.
+   * @param data Optional live SignalR payload containing updated aliases.
+   */
+  loadTerminologyAliases(data?: any): void {
+    if (data) {
+      this.categoryAlias = data.categoryAlias || this.categoryAlias || 'User Categories';
+      this.subCategoryAlias = data.subCategoryAlias || this.subCategoryAlias || 'Sub-Categories';
+      this.groupAlias = data.groupAlias || this.groupAlias || 'Groups & Communities';
+      this.alumniAlias = data.alumniAlias || this.alumniAlias || 'Alumni';
+      localStorage.setItem('alias_category', this.categoryAlias);
+      localStorage.setItem('alias_subcategory', this.subCategoryAlias);
+      localStorage.setItem('alias_group', this.groupAlias);
+      localStorage.setItem('alias_alumni', this.alumniAlias);
+      return;
+    }
+
+    this.api.get<any>('SettingsApi/aliases').subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.categoryAlias = res.data.categoryAlias || 'User Categories';
+          this.subCategoryAlias = res.data.subCategoryAlias || 'Sub-Categories';
+          this.groupAlias = res.data.groupAlias || 'Groups & Communities';
+          this.alumniAlias = res.data.alumniAlias || 'Alumni';
+          localStorage.setItem('alias_category', this.categoryAlias);
+          localStorage.setItem('alias_subcategory', this.subCategoryAlias);
+          localStorage.setItem('alias_group', this.groupAlias);
+          localStorage.setItem('alias_alumni', this.alumniAlias);
         }
       },
       error: () => {}
