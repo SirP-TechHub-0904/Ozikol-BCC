@@ -134,6 +134,7 @@ class OzikolApp extends ConsumerWidget {
                 children: [
                   DesktopTitleBar(
                     title: activeWs != null ? '${activeWs.displayName} - Ozikol BCC' : 'Ozikol',
+                    iconUrl: activeWs?.iconUrl,
                     logoUrl: activeWs?.logoUrl,
                   ),
                   Expanded(child: content),

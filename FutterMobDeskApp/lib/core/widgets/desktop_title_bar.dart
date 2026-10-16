@@ -11,6 +11,9 @@ class DesktopTitleBar extends StatefulWidget {
   /// Optional title displayed on the left of the title bar.
   final String title;
 
+  /// Optional URL of the tenant's uploaded square company icon (preferred for title bar).
+  final String? iconUrl;
+
   /// Optional URL of the tenant's uploaded company logo.
   final String? logoUrl;
 
@@ -23,6 +26,7 @@ class DesktopTitleBar extends StatefulWidget {
   const DesktopTitleBar({
     super.key,
     this.title = 'Ozikol',
+    this.iconUrl,
     this.logoUrl,
     this.backgroundColor,
     this.isDarkTheme,
@@ -89,6 +93,10 @@ class _DesktopTitleBarState extends State<DesktopTitleBar> with WindowListener {
     final defaultBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
 
+    final effectiveImageUrl = (widget.iconUrl != null && widget.iconUrl!.trim().isNotEmpty)
+        ? widget.iconUrl
+        : widget.logoUrl;
+
     return Material(
       type: MaterialType.transparency,
       child: Container(
@@ -111,23 +119,34 @@ class _DesktopTitleBarState extends State<DesktopTitleBar> with WindowListener {
                     padding: const EdgeInsets.only(left: 12),
                     child: Row(
                       children: [
-                        if (widget.logoUrl != null && widget.logoUrl!.trim().isNotEmpty)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
+                        if (effectiveImageUrl != null && effectiveImageUrl.trim().isNotEmpty)
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                                width: 0.8,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(2),
                             child: TenantCachedImage(
-                              imageUrl: widget.logoUrl!,
-                              width: 18,
-                              height: 18,
+                              imageUrl: effectiveImageUrl,
+                              width: 16,
+                              height: 16,
+                              borderRadius: 2,
                               fit: BoxFit.contain,
                               fallbackWidget: Image.asset(
                                 'assets/images/oz-logo-white.png',
-                                width: 18,
-                                height: 18,
+                                width: 16,
+                                height: 16,
                                 color: isDark ? Colors.white : AppColors.primary,
                                 colorBlendMode: BlendMode.srcIn,
                                 errorBuilder: (context, error, stackTrace) => Icon(
                                   Icons.dashboard_rounded,
-                                  size: 16,
+                                  size: 14,
                                   color: isDark ? Colors.white : AppColors.primary,
                                 ),
                               ),
