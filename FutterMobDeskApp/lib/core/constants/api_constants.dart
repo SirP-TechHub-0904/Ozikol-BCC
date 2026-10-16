@@ -36,6 +36,10 @@ class ApiConstants {
   static const String workspaceDashboardEndpoint = '/api/WorkspaceApi/dashboard';
   static const String notificationsEndpoint = '/api/WorkspaceApi/notifications';
 
+  // SignalR Real-Time Hub Endpoints
+  static const String notificationHubEndpoint = '/hubs/notifications';
+  static const String groupChatHubEndpoint = '/hubs/group-chat';
+
   // Request Headers
   static const String headerTenantKey = 'X-Tenant-Key';
   static const String headerTenantDomain = 'X-Tenant-Domain';

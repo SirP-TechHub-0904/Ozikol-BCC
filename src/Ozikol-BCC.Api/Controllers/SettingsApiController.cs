@@ -6,11 +6,14 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Ozikol_BCC.Api.Hubs;
 using Ozikol_BCC.Api.Models;
+using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Application.Queries.SettingsQueries;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -27,17 +30,23 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly DashboardDbContext _db;
         private readonly ICloudinaryService _cloudinaryService;
         private readonly Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? _activityLogger;
+        private readonly IHubContext<NotificationHub>? _notificationHub;
+        private readonly IHubContext<GroupChatHub>? _groupChatHub;
 
         public SettingsApiController(
             IMediator mediator,
             DashboardDbContext db,
             ICloudinaryService cloudinaryService,
-            Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? activityLogger = null)
+            Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? activityLogger = null,
+            IHubContext<NotificationHub>? notificationHub = null,
+            IHubContext<GroupChatHub>? groupChatHub = null)
         {
             _mediator = mediator;
             _db = db;
             _cloudinaryService = cloudinaryService;
             _activityLogger = activityLogger;
+            _notificationHub = notificationHub;
+            _groupChatHub = groupChatHub;
         }
 
         /// <summary>
@@ -235,6 +244,9 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _db.SaveChangesAsync();
 
+            // Broadcast real-time terminology aliases update to all connected clients in this tenant
+            await BroadcastToTenantAsync("TenantAliasesUpdated", dto);
+
             if (_activityLogger != null)
             {
                 await _activityLogger.LogAsync("UPDATE_TERMINOLOGY_ALIASES", "Updated workspace custom terminology aliases.", "Settings", metadata: dto);
@@ -380,6 +392,20 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _db.SaveChangesAsync();
 
+            // Broadcast real-time brand identity update to all connected clients across Web, Desktop, and Mobile
+            var brandBroadcastPayload = new
+            {
+                companyName = site.CompanyName,
+                companyNameAbbreviation = site.CompanyNameAbbreviation,
+                companyLogoUrl = site.CompanyLogoUrl,
+                companyWhiteLogoUrl = site.CompanyWhiteLogoUrl,
+                companyIconUrl = site.CompanyIconUrl,
+                primaryColor = "#0050e5",
+                secondaryColor = "#1f6bff",
+                updatedAtUtc = site.UpdatedAtUtc
+            };
+            await BroadcastToTenantAsync("TenantBrandUpdated", brandBroadcastPayload);
+
             if (_activityLogger != null)
             {
                 await _activityLogger.LogAsync("UPDATE_BRAND_SETTINGS", "Updated workspace branding identity, colors, and logos.", "Settings", metadata: dto);
@@ -405,9 +431,48 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPut("appearance")]
         [Authorize]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        public IActionResult UpdateAppearanceSettings([FromBody] AppearanceUpdateRequestDto dto)
+        public async Task<IActionResult> UpdateAppearanceSettings([FromBody] AppearanceUpdateRequestDto dto)
         {
+            // Broadcast real-time appearance update to all connected clients in this tenant
+            await BroadcastToTenantAsync("TenantAppearanceUpdated", dto);
             return Ok(ApiResponse<object>.SuccessResponse(dto, "Appearance settings updated successfully."));
+        }
+
+        /// <summary>
+        /// Helper to broadcast a named event and payload to all sockets connected to this tenant's real-time room.
+        /// </summary>
+        private async Task BroadcastToTenantAsync(string eventName, object payload)
+        {
+            try
+            {
+                var tenantKey = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
+                if (string.IsNullOrWhiteSpace(tenantKey))
+                {
+                    tenantKey = HttpContext.Request.Headers["X-Tenant-Domain"].ToString()?.Trim();
+                }
+                if (string.IsNullOrWhiteSpace(tenantKey))
+                {
+                    tenantKey = User?.FindFirst("tenant_key")?.Value ?? User?.FindFirst("TenantKey")?.Value;
+                }
+
+                if (!string.IsNullOrWhiteSpace(tenantKey))
+                {
+                    var groupName = $"tenant_{tenantKey.ToLowerInvariant()}";
+                    if (_notificationHub != null)
+                    {
+                        await _notificationHub.Clients.Group(groupName).SendAsync(eventName, payload);
+                    }
+                    if (_groupChatHub != null)
+                    {
+                        await _groupChatHub.Clients.Group(groupName).SendAsync(eventName, payload);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Real-time broadcast failures should never block the primary HTTP transaction
+                Console.WriteLine($"[SignalR Broadcast Warning] Failed to dispatch {eventName}: {ex.Message}");
+            }
         }
 
         /// <summary>

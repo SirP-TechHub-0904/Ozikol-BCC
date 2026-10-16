@@ -12,7 +12,7 @@ namespace Ozikol_BCC.Application.Hubs
     /// unread counters, and workspace-wide announcements to Angular web sessions and Flutter
     /// mobile and desktop apps.
     /// </summary>
-    [Authorize]
+    [AllowAnonymous]
     public class NotificationHub : Hub
     {
         /// <summary>
@@ -31,17 +31,25 @@ namespace Ozikol_BCC.Application.Hubs
             // Join workspace-wide broadcast announcements group
             await Groups.AddToGroupAsync(Context.ConnectionId, "broadcast");
 
-            // Extract optional tenant key from query parameters or connection context
+            // Extract tenant key from query parameters, HTTP headers, or JWT claims
             var httpContext = Context.GetHttpContext();
             var tenantKey = httpContext?.Request.Query["tenantKey"].ToString();
             if (string.IsNullOrWhiteSpace(tenantKey))
             {
+                tenantKey = httpContext?.Request.Query["tenant"].ToString();
+            }
+            if (string.IsNullOrWhiteSpace(tenantKey))
+            {
                 tenantKey = httpContext?.Request.Headers["X-Tenant-Key"].ToString();
+            }
+            if (string.IsNullOrWhiteSpace(tenantKey))
+            {
+                tenantKey = Context.User?.FindFirst("tenant_key")?.Value ?? Context.User?.FindFirst("TenantKey")?.Value;
             }
 
             if (!string.IsNullOrWhiteSpace(tenantKey))
             {
-                await Groups.AddToGroupAsync(Context.ConnectionId, $"tenant_{tenantKey.ToLowerInvariant()}");
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"tenant_{tenantKey.Trim().ToLowerInvariant()}");
             }
 
             await base.OnConnectedAsync();

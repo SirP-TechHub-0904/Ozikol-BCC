@@ -16,6 +16,7 @@ import 'features/workspace_auth/presentation/workspace_entry_screen.dart';
 import 'features/workspace_auth/presentation/workspace_login_screen.dart';
 import 'features/workspace_auth/state/workspace_state.dart';
 import 'core/services/client_config_service.dart';
+import 'core/services/realtime_sync_service.dart';
 import 'core/services/windows_clipboard_fix.dart';
 import 'core/services/windows_jump_list_service.dart';
 import 'core/widgets/desktop_title_bar.dart';
@@ -116,6 +117,17 @@ class OzikolApp extends ConsumerWidget {
     final configAsync = ref.watch(clientConfigProvider);
     final crashReporter = ref.watch(crashReporterServiceProvider);
     final themeMode = ref.watch(themeModeProvider);
+
+    // Synchronize duplex real-time push connection with active workspace session
+    ref.listen<WorkspaceState>(workspaceStateProvider, (previous, next) {
+      final prevTenant = previous?.activeWorkspace?.tenantKey;
+      final nextTenant = next.activeWorkspace?.tenantKey;
+      if (nextTenant != null && nextTenant != prevTenant) {
+        ref.read(realtimeSyncServiceProvider).connect(explicitTenantKey: nextTenant);
+      } else if (nextTenant == null && prevTenant != null) {
+        ref.read(realtimeSyncServiceProvider).disconnect();
+      }
+    });
 
     return MaterialApp(
       title: 'Ozikol',

@@ -73,6 +73,27 @@ namespace Ozikol_BCC.Api.Hubs
             // Add to personal user channel for real-time auth/security notifications
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
 
+            // Extract and join tenant workspace room
+            var httpContext = Context.GetHttpContext();
+            var tenantKey = httpContext?.Request.Query["tenant"].ToString();
+            if (string.IsNullOrWhiteSpace(tenantKey))
+            {
+                tenantKey = httpContext?.Request.Query["tenantKey"].ToString();
+            }
+            if (string.IsNullOrWhiteSpace(tenantKey))
+            {
+                tenantKey = httpContext?.Request.Headers["X-Tenant-Key"].ToString();
+            }
+            if (string.IsNullOrWhiteSpace(tenantKey))
+            {
+                tenantKey = Context.User?.FindFirst("tenant_key")?.Value ?? Context.User?.FindFirst("TenantKey")?.Value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(tenantKey))
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"tenant_{tenantKey.Trim().ToLowerInvariant()}");
+            }
+
             await base.OnConnectedAsync();
         }
 

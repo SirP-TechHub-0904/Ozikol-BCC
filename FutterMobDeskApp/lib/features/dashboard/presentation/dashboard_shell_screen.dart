@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/connectivity_service.dart';
+import '../../../core/services/realtime_sync_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/in_app_update_service.dart';
 import '../../../core/widgets/app_badge.dart';
@@ -53,6 +54,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(realtimeSyncServiceProvider).connect();
+    });
   }
 
   @override

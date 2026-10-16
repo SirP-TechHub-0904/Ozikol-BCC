@@ -1595,11 +1595,43 @@ export class AdminLayoutComponent implements OnInit {
     // 1. Live verify and refresh session against backend DB
     this.verifyAndRefreshSession();
 
-    // 2. Real-time SignalR security listener
+    // 2. Real-time SignalR security & branding listener
     this.signalR.startConnection();
     this.signalR.permissionUpdated$.subscribe((data) => {
       console.log('[AdminLayout] Live real-time permission update received via SignalR -> Syncing session...', data);
       this.verifyAndRefreshSession();
+    });
+
+    this.signalR.brandUpdated$.subscribe((data: any) => {
+      console.log('[AdminLayout] Live real-time brand update received via SignalR -> Syncing brand...', data);
+      if (data) {
+        if (data.companyName) {
+          this.brandName = data.companyName;
+          document.title = `${this.brandName} - Console`;
+          localStorage.setItem('tenant_name', data.companyName);
+        }
+        if (data.companyNameAbbreviation) {
+          this.brandAbbreviation = data.companyNameAbbreviation;
+          localStorage.setItem('tenant_abbreviation', data.companyNameAbbreviation);
+        } else if (data.companyName) {
+          this.brandAbbreviation = this.computeAbbreviation(data.companyName);
+          localStorage.setItem('tenant_abbreviation', this.brandAbbreviation);
+        }
+        if (data.companyLogoUrl !== undefined) {
+          this.brandLogoUrl = data.companyLogoUrl || '';
+          if (this.brandLogoUrl) localStorage.setItem('tenant_logo', this.brandLogoUrl);
+          else localStorage.removeItem('tenant_logo');
+        }
+        if (data.companyIconUrl !== undefined) {
+          this.brandIconUrl = data.companyIconUrl || '';
+          if (this.brandIconUrl) localStorage.setItem('tenant_icon', this.brandIconUrl);
+          else localStorage.removeItem('tenant_icon');
+        }
+      }
+    });
+
+    this.signalR.aliasesUpdated$.subscribe(() => {
+      this.loadTerminologyAliases();
     });
 
     // Check saved theme

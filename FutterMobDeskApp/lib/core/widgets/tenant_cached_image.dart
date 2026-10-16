@@ -42,8 +42,8 @@ class TenantCachedImage extends StatelessWidget {
       final effectiveTenant = (tenantKey ?? 'global').toLowerCase().trim();
       final partitionedKey = 'tenant_${effectiveTenant}_$imageUrl';
 
-      await CachedNetworkImage.evictFromCache(imageUrl, cacheKey: partitionedKey);
-      await CachedNetworkImage.evictFromCache(imageUrl);
+      await CachedNetworkImage.evictFromCache(imageUrl, cacheKey: partitionedKey).catchError((_) => false);
+      await CachedNetworkImage.evictFromCache(imageUrl).catchError((_) => false);
       PaintingBinding.instance.imageCache.evict(NetworkImage(imageUrl));
     } catch (_) {
       // Gracefully ignore eviction errors

@@ -209,6 +209,65 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     }
   }
 
+  /// <summary>
+  /// Applies real-time tenant branding push updates received via SignalR ("TenantBrandUpdated").
+  /// Evicts obsolete image caches from both disk and in-memory bitmap stores, updates active/pending
+  /// workspace models, and persists the latest identity to local secure storage.
+  /// </summary>
+  /// <param name="tenantKey">The target tenant key identifying the workspace partition.</param>
+  /// <param name="companyName">Updated tenant business or brand name.</param>
+  /// <param name="companyLogoUrl">Updated high-resolution brand logo image URL.</param>
+  /// <param name="companyIconUrl">Updated compact square brand icon image URL.</param>
+  /// <returns>A future that completes when disk caches are evicted and state is updated.</returns>
+  Future<void> applyLiveBranding({
+    required String tenantKey,
+    String? companyName,
+    String? companyLogoUrl,
+    String? companyIconUrl,
+  }) async {
+    final active = state.activeWorkspace;
+    final pending = state.pendingWorkspace;
+
+    // Check if either active or pending workspace matches this tenant partition
+    final matchesActive = active != null && active.tenantKey.toLowerCase() == tenantKey.toLowerCase();
+    final matchesPending = pending != null && pending.tenantKey.toLowerCase() == tenantKey.toLowerCase();
+
+    if (!matchesActive && !matchesPending) return;
+
+    final targetWs = matchesActive ? active : pending!;
+
+    // Evict previous and incoming image URLs from CachedNetworkImage disk cache
+    if (targetWs.logoUrl != null) await TenantCachedImage.evictImage(targetWs.logoUrl, tenantKey: targetWs.tenantKey);
+    if (targetWs.iconUrl != null) await TenantCachedImage.evictImage(targetWs.iconUrl, tenantKey: targetWs.tenantKey);
+    if (companyLogoUrl != null) await TenantCachedImage.evictImage(companyLogoUrl, tenantKey: targetWs.tenantKey);
+    if (companyIconUrl != null) await TenantCachedImage.evictImage(companyIconUrl, tenantKey: targetWs.tenantKey);
+
+    // Invalidate Flutter's in-memory decoded bitmap caches to guarantee immediate visual refresh
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+
+    final updated = targetWs.copyWith(
+      organizationName: (companyName != null && companyName.trim().isNotEmpty) ? companyName.trim() : targetWs.organizationName,
+      logoUrl: companyLogoUrl,
+      clearLogoUrl: companyLogoUrl == null || companyLogoUrl.isEmpty,
+      iconUrl: companyIconUrl,
+      clearIconUrl: companyIconUrl == null || companyIconUrl.isEmpty,
+    );
+
+    // Persist new branding to secure storage so subsequent restarts load the updated identity
+    await _storageService.saveRememberedWorkspace(updated);
+    await _storageService.saveWorkspace(updated);
+    final list = await _storageService.getWorkspaces();
+
+    if (matchesActive && matchesPending) {
+      state = state.copyWith(activeWorkspace: updated, pendingWorkspace: updated, enrolledWorkspaces: list);
+    } else if (matchesActive) {
+      state = state.copyWith(activeWorkspace: updated, enrolledWorkspaces: list);
+    } else {
+      state = state.copyWith(pendingWorkspace: updated, enrolledWorkspaces: list);
+    }
+  }
+
   /// Cancels bypass mode and returns the user to the initial WorkspaceEntryScreen
   void cancelBypass() {
     state = state.copyWith(
