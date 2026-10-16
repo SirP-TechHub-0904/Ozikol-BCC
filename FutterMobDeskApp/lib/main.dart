@@ -29,6 +29,10 @@ void main(List<String> args) async {
   WindowsClipboardFix.initialize();
   WindowsJumpListService.initialize();
 
+  // Cap in-memory image cache to prevent Android lowmemorykiller (LMK) terminations
+  PaintingBinding.instance.imageCache.maximumSize = 100;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 30 << 20; // 30 MB
+
   // Desktop window configuration (Windows, macOS, Linux)
   if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
     try {
