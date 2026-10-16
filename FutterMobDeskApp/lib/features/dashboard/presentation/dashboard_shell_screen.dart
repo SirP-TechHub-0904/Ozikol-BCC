@@ -39,6 +39,7 @@ class DashboardShellScreen extends ConsumerStatefulWidget {
 
 class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     with SingleTickerProviderStateMixin {
+  final GlobalKey<ScaffoldState> _mobileScaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedNavIndex = 2; // 2 = Console Dashboard
   bool _isSidebarCollapsed = false;
   late AnimationController _refreshAnimController;
@@ -145,6 +146,11 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+        // If the mobile navigation drawer is currently open, close it instead of prompting to exit the app
+        if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+          _mobileScaffoldKey.currentState?.closeDrawer();
+          return;
+        }
         final shouldQuit = await ExitConfirmationDialog.show(context);
         if (shouldQuit) {
           SystemNavigator.pop();
@@ -334,6 +340,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     required bool isOnline,
   }) {
     return Scaffold(
+      key: _mobileScaffoldKey,
       backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
       appBar: AppTopBar(
         leadingType: AppTopBarLeadingType.menu,
@@ -432,6 +439,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ],
       ),
       drawer: AppDrawer(
+        onClose: () => _mobileScaffoldKey.currentState?.closeDrawer(),
         header: _buildDesktopSidebarHeader(isDark, activeWs),
         sections: _buildNavigationSections(isDark),
         footer: _buildDesktopSidebarFooter(isDark, activeWs),

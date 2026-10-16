@@ -100,34 +100,38 @@ class AppDrawer extends StatelessWidget {
     final content = SafeArea(
       child: Column(
         children: [
-          // Header & Mobile Close Button
-          if (!isPermanentSidebar) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 8, 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    onPressed: onClose ?? () => Navigator.of(context).maybePop(),
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          if (header != null)
+          // Header Row with Logo and Mobile Close Button (at the very top of sidebar)
+          if (header != null || !isPermanentSidebar)
             Padding(
               padding: EdgeInsets.fromLTRB(
-                isCollapsed ? 4 : 16,
-                12,
-                isCollapsed ? 4 : 16,
-                12,
+                isCollapsed ? 4 : 12,
+                8,
+                isCollapsed ? 4 : 8,
+                8,
               ),
-              child: header!,
+              child: Row(
+                children: [
+                  if (header != null)
+                    Expanded(child: header!),
+                  if (!isPermanentSidebar)
+                    IconButton(
+                      tooltip: 'Close Menu',
+                      onPressed: onClose ??
+                          () {
+                            if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {
+                              Scaffold.of(context).closeDrawer();
+                            } else if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            }
+                          },
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                      ),
+                    ),
+                ],
+              ),
             ),
 
           // Navigation Sections
