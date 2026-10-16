@@ -207,4 +207,36 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * **WhatsApp Alerts**: Managed through the unified notification queue with template verification and status tracking.
 * **Audit & Idempotency Protection**: Every notification pool entry MUST record the originating `TenantKey`, `UserId`, `SystemId`, `Category`, `Priority`, and timestamp to guarantee zero message loss, deduplication, and complete delivery telemetry.
 
+---
+
+## 17. Multi-Language Localization & Translation Engine Standards (Mandatory)
+* **Strict Universal Translation Adherence**:
+  * Every user-facing UI text, title, header, button, subtitle, form field label, placeholder, tooltip, table column header, filter pill, status badge, empty-state illustration note, confirmation dialog, contextual help guide, and notification in both the **Administration Console** and **Users Workspace** MUST strictly use the translation engine.
+  * **Zero Hardcoded Text (Strict Prohibition)**: NEVER write raw English string literals directly inside HTML templates, Razor views, or Flutter widget trees. Every string MUST be bound via standard translation tokens:
+    * **Web (Angular)**: Use the `| translate` pipe in templates (e.g. `{{ 'nav.console_dashboard' | translate }}` or `[placeholder]="'shell.search_placeholder' | translate"`).
+    * **Desktop & Mobile (Flutter)**: Use the reactive Riverpod translation extension (e.g. `'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard')`).
+* **Central Pattern `.oz-lang-switcher` Component Parity**:
+  * The language switcher UI across all applications MUST faithfully replicate the **Ozikol Central** design system:
+    * **Pill Trigger Button**: Features a rounded pill (`border-radius: 9999px`), frosted glass background (`rgba(255, 255, 255, 0.75)` on light, `rgba(30, 41, 59, 0.75)` on dark), subtle borders, country flag emoji, uppercase ISO code (e.g. `🇬🇧 EN`, `🇫🇷 FR`, `🇪🇸 ES`, `🇩🇪 DE`), and a 180° animated rotating chevron arrow.
+    * **Desktop Viewports**: Floating frosted glass dropdown menu with flags, native names, subtle hover transitions, and Royal Blue (`#0050E5`) active checkmark indicators.
+    * **Mobile Viewports**: Adaptive modal bottom sheet (`showModalBottomSheet`) with a grab handle bar, translated header (`Select Language`), language list with flags, native names, English subtitles, and Royal Blue active checkmarks.
+    * **Local Persistence**: Language selections MUST persist locally across restarts (`localStorage.getItem('bcp_language')` on Web, `SecureStorageService.getLanguage()` on Mobile/Desktop).
+* **Four Canonical Supported Languages**:
+  * **English (`en`)**: `🇬🇧 EN` (`English`) — Default base language.
+  * **French (`fr`)**: `🇫🇷 FR` (`Français`).
+  * **Spanish (`es`)**: `🇪🇸 ES` (`Español`).
+  * **German (`de`)**: `🇩🇪 DE` (`Deutsch`).
+* **Standard Hierarchical Token Namespaces**:
+  * `shell.*`: Shell labels, mode switcher (`shell.console`, `shell.workspace`), topbar search placeholders, user menu actions, footer credits.
+  * `nav.*`: Navigation groups, sidebar sections, menu categories, screen headers.
+  * `btn.*`: Action triggers (e.g. `btn.refresh_telemetry`, `btn.register_new_member`, `btn.save_changes`, `btn.cancel`, `btn.continue`).
+  * `billing.*`: Central subscription notices, entitlements review triggers, license status notices.
+  * `kpi.*`: Performance counters, health scores, audit trail headings, active subscriber metrics.
+  * `badge.*`: Role indicators (`badge.superadmin`, `badge.admin`, `badge.member`), service states (`badge.operational`, `badge.live`, `badge.active`).
+  * `form.*` & `modal.*`: Form labels, validation error alerts, dialog titles, prompt instructions.
+* **Fail-Safe Fallback Contract**:
+  * If a token is not defined in the active language dictionary, the engine MUST automatically fall back to the English dictionary.
+  * If absent from English as well, it MUST gracefully fall back to the provided fallback argument or token key, preventing runtime crashes or blank UI elements.
+
+
 
