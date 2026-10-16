@@ -8,9 +8,10 @@ using Ozikol_BCC.Application.Dtos.NotifyDtos;
 namespace Ozikol_BCC.Application.Hubs
 {
     /// <summary>
-    /// Real-time SignalR notification and messaging hub. Streams live in-app notifications,
-    /// unread counters, and workspace-wide announcements to Angular web sessions and Flutter
-    /// mobile and desktop apps.
+    /// Real-time SignalR Application and Notification Hub (/hubs/notifications).
+    /// Acts as the primary persistent server-to-app real-time pipeline for Ozikol Business Command Center (BCC).
+    /// Streams live in-app notifications, unread counters, tenant branding changes, appearance settings,
+    /// custom terminology aliases, and dashboard telemetry metrics across Angular Web, Desktop, and Mobile clients.
     /// </summary>
     [AllowAnonymous]
     public class NotificationHub : Hub

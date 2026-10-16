@@ -6,7 +6,6 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Ozikol_BCC.Api.Hubs;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Application.Queries.SettingsQueries;
@@ -31,22 +30,19 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ICloudinaryService _cloudinaryService;
         private readonly Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? _activityLogger;
         private readonly IHubContext<NotificationHub>? _notificationHub;
-        private readonly IHubContext<GroupChatHub>? _groupChatHub;
 
         public SettingsApiController(
             IMediator mediator,
             DashboardDbContext db,
             ICloudinaryService cloudinaryService,
             Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? activityLogger = null,
-            IHubContext<NotificationHub>? notificationHub = null,
-            IHubContext<GroupChatHub>? groupChatHub = null)
+            IHubContext<NotificationHub>? notificationHub = null)
         {
             _mediator = mediator;
             _db = db;
             _cloudinaryService = cloudinaryService;
             _activityLogger = activityLogger;
             _notificationHub = notificationHub;
-            _groupChatHub = groupChatHub;
         }
 
         /// <summary>
@@ -461,10 +457,6 @@ namespace Ozikol_BCC.Api.Controllers
                     if (_notificationHub != null)
                     {
                         await _notificationHub.Clients.Group(groupName).SendAsync(eventName, payload);
-                    }
-                    if (_groupChatHub != null)
-                    {
-                        await _groupChatHub.Clients.Group(groupName).SendAsync(eventName, payload);
                     }
                 }
             }
