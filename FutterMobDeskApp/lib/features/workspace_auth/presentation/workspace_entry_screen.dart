@@ -978,7 +978,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               children: [
                 Image.asset(
                   isDark ? 'assets/images/ozikol-white.png' : 'assets/images/ozikol.png',
-                  height: 20,
+                  height: 26,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) => const Text(
                     'OZIKOL',
