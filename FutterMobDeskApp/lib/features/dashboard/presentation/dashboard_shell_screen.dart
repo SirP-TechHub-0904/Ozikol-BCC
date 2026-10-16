@@ -60,13 +60,53 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     super.dispose();
   }
 
-  void _triggerRefresh() {
+  bool _isRefreshing = false;
+
+  /// Remakes all requests across the workspace:
+  /// 1. Tenant organization branding (logo, icon, organization name) via /api/SettingsApi/brand
+  /// 2. Dashboard operational metrics, member counters, and telemetry audit trail via /api/DashboardApi/metrics
+  /// 3. Unread notification counters and feed via /api/Notifications/feed
+  Future<void> _triggerRefresh() async {
+    if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
     _refreshAnimController.repeat();
-    ref.read(dashboardMetricsProvider.notifier).refresh().whenComplete(() {
+
+    try {
+      // 1. Refresh tenant organization branding and custom assets
+      await ref.read(workspaceStateProvider.notifier).refreshWorkspaceBranding();
+
+      // 2. Refetch dashboard metrics and audit trail
+      await ref.read(dashboardMetricsProvider.notifier).refresh();
+
+      // 3. Refetch notifications feed and unread count
+      await ref.read(notificationProvider.notifier).loadFeed();
+
+      // Brief animation dwell so spin feels responsive and organic
+      await Future.delayed(const Duration(milliseconds: 600));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+                SizedBox(width: 8),
+                Text('Workspace branding, telemetry, and metrics refreshed.'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      // Gracefully handle network errors
+    } finally {
       if (mounted) {
         _refreshAnimController.reset();
+        setState(() => _isRefreshing = false);
       }
-    });
+    }
   }
 
   @override
@@ -325,6 +365,15 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ),
         actions: [
           AppTopBarAction(
+            icon: Icons.refresh_rounded,
+            tooltip: 'Refresh Workspace & Telemetry',
+            onTap: () {
+              if (!_isRefreshing) {
+                _triggerRefresh();
+              }
+            },
+          ),
+          AppTopBarAction(
             icon: Icons.notifications_none_rounded,
             tooltip: 'Notifications',
             badge: notifCount > 0
@@ -459,7 +508,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
           const Spacer(),
 
-          // Utility Action Icons (Calendar, Help, Dark Mode, Notifications)
+          // Utility Action Icons (Refresh, Calendar, Help, Dark Mode, Notifications)
+          _buildTopRefreshBtn(isDark),
           _buildTopIconBtn(
             icon: Icons.calendar_today_outlined,
             tooltip: 'Calendar & Schedules',
@@ -571,6 +621,24 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTopRefreshBtn(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: IconButton(
+        icon: RotationTransition(
+          turns: _refreshAnimController,
+          child: Icon(
+            Icons.refresh_rounded,
+            size: 20,
+            color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+          ),
+        ),
+        tooltip: 'Refresh Workspace & Telemetry',
+        onPressed: _isRefreshing ? null : _triggerRefresh,
       ),
     );
   }

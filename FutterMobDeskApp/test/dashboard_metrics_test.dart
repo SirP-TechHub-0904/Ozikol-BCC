@@ -252,6 +252,12 @@ void main() {
       // Close Profile dialog
       await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
+
+      // 6. Tap Top Bar Refresh button
+      expect(find.byTooltip('Refresh Workspace & Telemetry'), findsWidgets);
+      await tester.tap(find.byTooltip('Refresh Workspace & Telemetry').first);
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 700));
     });
   });
 }

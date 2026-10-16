@@ -159,29 +159,39 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     }
   }
 
-  /// Asynchronously probes the tenant's uploaded company branding (icon + logo) and updates workspace state
+  /// Asynchronously probes the tenant's uploaded company branding (icon + logo + name) and updates workspace state
   Future<void> _probeAndApplyBranding(Workspace ws, {required bool isPending}) async {
     try {
       final branding = await _repository.probeTenantBranding(ws.tenantKey);
-      if (branding.iconUrl != null || branding.logoUrl != null) {
+      if (branding.iconUrl != null || branding.logoUrl != null || branding.organizationName != null) {
         final updated = ws.copyWith(
           iconUrl: branding.iconUrl ?? ws.iconUrl,
           logoUrl: branding.logoUrl ?? ws.logoUrl,
+          organizationName: branding.organizationName ?? ws.organizationName,
         );
         await _storageService.saveRememberedWorkspace(updated);
         await _storageService.saveWorkspace(updated);
+        final list = await _storageService.getWorkspaces();
         if (isPending) {
           if (state.pendingWorkspace?.tenantKey == ws.tenantKey) {
-            state = state.copyWith(pendingWorkspace: updated);
+            state = state.copyWith(pendingWorkspace: updated, enrolledWorkspaces: list);
           }
         } else {
           if (state.activeWorkspace?.tenantKey == ws.tenantKey) {
-            state = state.copyWith(activeWorkspace: updated);
+            state = state.copyWith(activeWorkspace: updated, enrolledWorkspaces: list);
           }
         }
       }
     } catch (_) {
       // Gracefully ignore network probe errors
+    }
+  }
+
+  /// Forces a fresh reload of the active workspace's tenant branding (logo, icon, name) from /api/SettingsApi/brand
+  Future<void> refreshWorkspaceBranding() async {
+    final active = state.activeWorkspace;
+    if (active != null) {
+      await _probeAndApplyBranding(active, isPending: false);
     }
   }
 

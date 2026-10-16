@@ -254,9 +254,11 @@ class WorkspaceRepository {
         if (d is Map) {
           final logo = (d['companyLogoUrl'] ?? d['companyWhiteLogoUrl'] ?? d['logoUrl'])?.toString().trim();
           final icon = (d['companyIconUrl'] ?? d['iconUrl'] ?? d['faviconUrl'])?.toString().trim();
+          final orgName = (d['companyName'] ?? d['brandName'] ?? d['organizationName'])?.toString().trim();
           return TenantBranding(
             logoUrl: (logo != null && logo.isNotEmpty) ? logo : null,
             iconUrl: (icon != null && icon.isNotEmpty) ? icon : null,
+            organizationName: (orgName != null && orgName.isNotEmpty) ? orgName : null,
           );
         }
       }
@@ -283,6 +285,7 @@ class WorkspaceRepository {
 class TenantBranding {
   final String? logoUrl;
   final String? iconUrl;
+  final String? organizationName;
 
-  const TenantBranding({this.logoUrl, this.iconUrl});
+  const TenantBranding({this.logoUrl, this.iconUrl, this.organizationName});
 }
