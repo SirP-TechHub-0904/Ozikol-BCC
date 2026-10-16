@@ -35,6 +35,7 @@ class WorkspaceState {
   WorkspaceState copyWith({
     List<Workspace>? enrolledWorkspaces,
     Workspace? activeWorkspace,
+    bool clearActive = false,
     Workspace? pendingWorkspace,
     bool clearPending = false,
     bool? isInitializing,
@@ -46,7 +47,7 @@ class WorkspaceState {
   }) {
     return WorkspaceState(
       enrolledWorkspaces: enrolledWorkspaces ?? this.enrolledWorkspaces,
-      activeWorkspace: activeWorkspace ?? this.activeWorkspace,
+      activeWorkspace: clearActive ? null : (activeWorkspace ?? this.activeWorkspace),
       pendingWorkspace: clearPending ? null : (pendingWorkspace ?? this.pendingWorkspace),
       isInitializing: isInitializing ?? this.isInitializing,
       isLoading: isLoading ?? this.isLoading,
@@ -328,6 +329,24 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
       final active = await _storageService.getActiveWorkspace();
       state = state.copyWith(activeWorkspace: active);
     }
+  }
+
+  /// Signs out of the active user session in the specified workspace without removing the workspace enrollment.
+  /// Clears the auth token while preserving organization details, setting it as pendingWorkspace
+  /// so the user lands cleanly on that workspace's WorkspaceLoginScreen.
+  Future<void> signOutSession(String tenantKey) async {
+    await _storageService.clearAuthToken(tenantKey);
+    await _cacheService?.clearTenant(tenantKey);
+    final workspaces = await _storageService.getWorkspaces();
+    final match = workspaces.where((w) => w.tenantKey.toLowerCase() == tenantKey.toLowerCase()).firstOrNull;
+    final targetWorkspace = (match ?? state.activeWorkspace)?.copyWith(clearAuthToken: true);
+
+    state = state.copyWith(
+      enrolledWorkspaces: workspaces,
+      clearActive: true,
+      pendingWorkspace: targetWorkspace,
+      shouldBypassEntryScreen: true,
+    );
   }
 
   /// Signs out of the specified workspace, purges its partitioned cache, and removes session

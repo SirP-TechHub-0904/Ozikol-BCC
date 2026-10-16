@@ -145,6 +145,28 @@ class SecureStorageService {
     }
   }
 
+  /// Clears the authentication token for the given tenant workspace without removing workspace enrollment.
+  Future<void> clearAuthToken(String tenantKey) async {
+    final tokenKey = '$_tokenPrefix${tenantKey.toLowerCase()}';
+    if (_secureStorage != null) {
+      await _secureStorage.delete(key: tokenKey);
+    } else {
+      _memoryStore.remove(tokenKey);
+    }
+
+    final list = await getWorkspaces();
+    final index = list.indexWhere((w) => w.tenantKey.toLowerCase() == tenantKey.toLowerCase());
+    if (index >= 0) {
+      list[index] = list[index].copyWith(clearAuthToken: true);
+      final encoded = jsonEncode(list.map((w) => w.toJson()).toList());
+      if (_secureStorage != null) {
+        await _secureStorage.write(key: _workspacesStorageKey, value: encoded);
+      } else {
+        _memoryStore[_workspacesStorageKey] = encoded;
+      }
+    }
+  }
+
   static const String _rememberOrganizationPrefs = 'ozikol_remember_organization';
   static const String _rememberedOrganizationCodePrefs = 'ozikol_remembered_org_code';
   static const String _rememberedWorkspaceJsonPrefs = 'ozikol_remembered_workspace_json';

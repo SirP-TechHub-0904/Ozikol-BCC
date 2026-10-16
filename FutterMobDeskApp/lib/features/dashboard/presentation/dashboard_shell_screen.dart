@@ -10,8 +10,10 @@ import '../../../core/widgets/contextual_info_button.dart';
 import '../../../core/widgets/offline_status_bar.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../../core/widgets/update_banner.dart';
+import '../../../core/models/workspace.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../workspace_auth/presentation/workspace_entry_screen.dart';
+import '../../workspace_auth/presentation/workspace_login_screen.dart';
 import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
 import '../../workspace_auth/state/workspace_state.dart';
 import '../../notifications/data/notification_service.dart';
@@ -1750,6 +1752,25 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     );
   }
 
+  /// Signs out of the current user session and returns to the organization's WorkspaceLoginScreen.
+  Future<void> _handleSignOut(dynamic activeWs) async {
+    if (activeWs == null) return;
+    final ws = activeWs is Workspace ? activeWs : null;
+    await ref.read(workspaceStateProvider.notifier).signOutSession(activeWs.tenantKey);
+    if (!mounted) return;
+    if (ws != null) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => WorkspaceLoginScreen(workspace: ws)),
+        (route) => false,
+      );
+    } else {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()),
+        (route) => false,
+      );
+    }
+  }
+
   Widget _buildDesktopSidebarFooter(
     bool isDark,
     dynamic activeWs, {
@@ -1785,54 +1806,35 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               tooltip: 'Sign Out',
               splashRadius: 18,
-              onPressed: () {
-                if (activeWs != null) {
-                  ref.read(workspaceStateProvider.notifier).logoutWorkspace(activeWs.tenantKey);
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()),
-                    (route) => false,
-                  );
-                }
-              },
+              onPressed: () => _handleSignOut(activeWs),
             ),
+            const SizedBox(height: 6),
+            Tooltip(
+              message: 'Powered by Ozikol',
+              child: Image.asset(
+                isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
+                width: 16,
+                height: 16,
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.bolt_rounded,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
           ],
         ),
       );
     }
 
     return Container(
-      padding: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: borderColor)),
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Image.asset(
-                isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
-                width: 15,
-                height: 15,
-                errorBuilder: (context, error, stackTrace) => const Icon(
-                  Icons.bolt_rounded,
-                  size: 15,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Powered by Ozikol',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -1852,17 +1854,38 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               IconButton(
                 icon: const Icon(Icons.logout_rounded, size: 16),
                 tooltip: 'Sign Out',
-                onPressed: () {
-                  if (activeWs != null) {
-                    ref.read(workspaceStateProvider.notifier).logoutWorkspace(activeWs.tenantKey);
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()),
-                      (route) => false,
-                    );
-                  }
-                },
+                onPressed: () => _handleSignOut(activeWs),
               ),
             ],
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(
+              children: [
+                Image.asset(
+                  isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
+                  width: 14,
+                  height: 14,
+                  errorBuilder: (context, error, stackTrace) => const Icon(
+                    Icons.bolt_rounded,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Powered by Ozikol',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -2644,13 +2667,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     child: ElevatedButton.icon(
                       onPressed: () {
                         Navigator.of(dialogCtx).pop();
-                        if (activeWs != null) {
-                          ref.read(workspaceStateProvider.notifier).logoutWorkspace(activeWs.tenantKey);
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()),
-                            (route) => false,
-                          );
-                        }
+                        _handleSignOut(activeWs);
                       },
                       icon: const Icon(Icons.logout_rounded, size: 16, color: Colors.white),
                       label: const Text('Sign Out', style: TextStyle(color: Colors.white)),

@@ -459,5 +459,37 @@ void main() {
     expect(notifier.state.shouldBypassEntryScreen, isFalse);
     expect(notifier.state.pendingWorkspace, isNull);
   });
+
+  test('WorkspaceNotifier signOutSession retains workspace enrollment and targets WorkspaceLoginScreen', () async {
+    final storage = SecureStorageService.inMemory();
+    final workspace = Workspace(
+      tenantKey: 'paulc',
+      organizationName: 'Paul Corp',
+      primaryDomain: 'paulc.localhost:4200',
+      authToken: 'sample-jwt-token',
+      lastAccessed: DateTime(2026, 1, 1),
+    );
+    await storage.saveWorkspace(workspace);
+    await storage.setActiveTenantKey('paulc');
+
+    final client = ApiClient(storage);
+    final repo = WorkspaceRepository(client);
+    final notifier = WorkspaceNotifier(storage, repo);
+
+    await notifier.init();
+    expect(notifier.state.hasActiveSession, isTrue);
+
+    // Call signOutSession
+    await notifier.signOutSession('paulc');
+
+    // Active session is ended, but workspace enrollment is preserved and set as pending for login
+    expect(notifier.state.hasActiveSession, isFalse);
+    expect(notifier.state.pendingWorkspace?.tenantKey, 'paulc');
+    expect(notifier.state.shouldBypassEntryScreen, isTrue);
+
+    // Verify token was wiped from secure storage
+    final activeFromStorage = await storage.getActiveWorkspace();
+    expect(activeFromStorage?.authToken, isNull);
+  });
 }
 
