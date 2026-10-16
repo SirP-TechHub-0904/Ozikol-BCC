@@ -48,7 +48,6 @@ void main(List<String> args) async {
   if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
     try {
       await windowManager.ensureInitialized();
-      await windowManager.setPreventClose(true);
       const windowOptions = WindowOptions(
         size: Size(1200, 800),
         minimumSize: Size(960, 640),
