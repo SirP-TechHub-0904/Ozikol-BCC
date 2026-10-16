@@ -35,6 +35,21 @@ class TenantCachedImage extends StatelessWidget {
     return 'tenant_${effectiveTenant}_${imageUrl!}';
   }
 
+  /// Evicts an image URL from both CachedNetworkImage disk cache and Flutter's in-memory decoded image cache.
+  static Future<void> evictImage(String? imageUrl, {String? tenantKey}) async {
+    if (imageUrl == null || imageUrl.trim().isEmpty) return;
+    try {
+      final effectiveTenant = (tenantKey ?? 'global').toLowerCase().trim();
+      final partitionedKey = 'tenant_${effectiveTenant}_$imageUrl';
+
+      await CachedNetworkImage.evictFromCache(imageUrl, cacheKey: partitionedKey);
+      await CachedNetworkImage.evictFromCache(imageUrl);
+      PaintingBinding.instance.imageCache.evict(NetworkImage(imageUrl));
+    } catch (_) {
+      // Gracefully ignore eviction errors
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (imageUrl == null || imageUrl!.trim().isEmpty) {

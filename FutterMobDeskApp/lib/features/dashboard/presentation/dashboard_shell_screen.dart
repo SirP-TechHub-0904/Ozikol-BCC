@@ -9,6 +9,7 @@ import '../../../core/widgets/app_top_bar.dart';
 import '../../../core/widgets/contextual_info_button.dart';
 import '../../../core/widgets/offline_status_bar.dart';
 import '../../../core/widgets/tenant_avatar.dart';
+import '../../../core/widgets/tenant_cached_image.dart';
 import '../../../core/widgets/update_banner.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/theme/theme_provider.dart';
@@ -72,6 +73,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     _refreshAnimController.repeat();
 
     try {
+      // Evict in-memory and disk image caches so updated brand assets re-render immediately
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+
       // 1. Refresh tenant organization branding and custom assets
       await ref.read(workspaceStateProvider.notifier).refreshWorkspaceBranding();
 
@@ -85,6 +90,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       await Future.delayed(const Duration(milliseconds: 600));
 
       if (mounted) {
+        setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Row(
@@ -312,8 +318,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           children: [
             if (activeWs != null) ...[
               TenantAvatar(
+                iconUrl: activeWs.iconUrl,
                 logoUrl: activeWs.logoUrl,
                 name: activeWs.displayName,
+                tenantKey: activeWs.tenantKey,
                 size: 32,
                 borderRadius: 8,
               ),
@@ -472,6 +480,22 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onPressed: _toggleSidebarCollapse,
           ),
           const SizedBox(width: 8),
+
+          // Brand Emblem Icon (matching Angular Web BCC Admin topbar parity)
+          if (activeWs != null) ...[
+            Tooltip(
+              message: '${activeWs.displayName} Workspace',
+              child: TenantAvatar(
+                iconUrl: activeWs.iconUrl,
+                logoUrl: activeWs.logoUrl,
+                name: activeWs.displayName,
+                tenantKey: activeWs.tenantKey,
+                size: 28,
+                borderRadius: 7,
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
 
           // Search workspace bar
           Container(
@@ -1769,10 +1793,67 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         padding: const EdgeInsets.symmetric(vertical: 8),
         alignment: Alignment.center,
         child: TenantAvatar(
+          iconUrl: activeWs?.iconUrl,
           logoUrl: activeWs?.logoUrl,
           name: activeWs?.displayName ?? 'Ozikol',
+          tenantKey: activeWs?.tenantKey,
           size: 34,
           borderRadius: 8,
+        ),
+      );
+    }
+
+    final hasLogo = activeWs?.logoUrl != null && (activeWs!.logoUrl as String).trim().isNotEmpty;
+
+    if (hasLogo) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        alignment: Alignment.centerLeft,
+        child: TenantCachedImage(
+          imageUrl: activeWs.logoUrl,
+          tenantKey: activeWs?.tenantKey,
+          height: 38,
+          fit: BoxFit.contain,
+          fallbackWidget: Row(
+            children: [
+              TenantAvatar(
+                iconUrl: activeWs?.iconUrl,
+                logoUrl: activeWs?.logoUrl,
+                name: activeWs?.displayName ?? 'Ozikol',
+                tenantKey: activeWs?.tenantKey,
+                size: 34,
+                borderRadius: 8,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      activeWs?.displayName ?? 'Ozikol BCC',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    Text(
+                      'Workspace Vault',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -1782,8 +1863,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       child: Row(
         children: [
           TenantAvatar(
+            iconUrl: activeWs?.iconUrl,
             logoUrl: activeWs?.logoUrl,
             name: activeWs?.displayName ?? 'Ozikol',
+            tenantKey: activeWs?.tenantKey,
             size: 34,
             borderRadius: 8,
           ),
@@ -2218,7 +2301,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ...state.enrolledWorkspaces.map((ws) {
                 final isCurrent = ws.tenantKey == state.activeWorkspace?.tenantKey;
                 return ListTile(
-                  leading: TenantAvatar(logoUrl: ws.logoUrl, name: ws.displayName, size: 36),
+                  leading: TenantAvatar(
+                    iconUrl: ws.iconUrl,
+                    logoUrl: ws.logoUrl,
+                    name: ws.displayName,
+                    tenantKey: ws.tenantKey,
+                    size: 36,
+                  ),
                   title: Text(ws.displayName, style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: const Text('Organization Workspace', style: TextStyle(fontSize: 12)),
                   trailing: isCurrent

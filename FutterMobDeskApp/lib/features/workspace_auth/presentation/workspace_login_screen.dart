@@ -90,6 +90,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                 iconUrl: ws.iconUrl,
                 logoUrl: ws.logoUrl,
                 name: ws.displayName,
+                tenantKey: ws.tenantKey,
                 size: 54,
                 borderRadius: 14,
               ),

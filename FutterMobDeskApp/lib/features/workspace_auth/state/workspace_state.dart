@@ -1,9 +1,11 @@
+import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/windows_jump_list_service.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../core/storage/tenant_cache_service.dart';
+import '../../../core/widgets/tenant_cached_image.dart';
 import '../data/workspace_repository.dart';
 
 export '../../../core/storage/secure_storage_service.dart' show storageServiceProvider;
@@ -163,10 +165,22 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
   Future<void> _probeAndApplyBranding(Workspace ws, {required bool isPending}) async {
     try {
       final branding = await _repository.probeTenantBranding(ws.tenantKey);
-      if (branding.iconUrl != null || branding.logoUrl != null || branding.organizationName != null) {
+
+      // Evict any existing cached images for both previous and fresh URLs so uploads display immediately
+      if (ws.logoUrl != null) await TenantCachedImage.evictImage(ws.logoUrl, tenantKey: ws.tenantKey);
+      if (ws.iconUrl != null) await TenantCachedImage.evictImage(ws.iconUrl, tenantKey: ws.tenantKey);
+      if (branding.logoUrl != null) await TenantCachedImage.evictImage(branding.logoUrl, tenantKey: ws.tenantKey);
+      if (branding.iconUrl != null) await TenantCachedImage.evictImage(branding.iconUrl, tenantKey: ws.tenantKey);
+
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+
+      if (branding.isResolved) {
         final updated = ws.copyWith(
-          iconUrl: branding.iconUrl ?? ws.iconUrl,
-          logoUrl: branding.logoUrl ?? ws.logoUrl,
+          iconUrl: branding.iconUrl,
+          clearIconUrl: branding.iconUrl == null,
+          logoUrl: branding.logoUrl,
+          clearLogoUrl: branding.logoUrl == null,
           organizationName: branding.organizationName ?? ws.organizationName,
         );
         await _storageService.saveRememberedWorkspace(updated);

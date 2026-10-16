@@ -663,8 +663,10 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                           child: Row(
                                             children: [
                                               TenantAvatar(
+                                                iconUrl: ws.iconUrl,
                                                 logoUrl: ws.logoUrl,
                                                 name: ws.displayName,
+                                                tenantKey: ws.tenantKey,
                                                 size: 34,
                                                 borderRadius: 10,
                                               ),
@@ -1016,7 +1018,14 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                               runSpacing: 8,
                               children: state.enrolledWorkspaces.map((ws) {
                                 return ActionChip(
-                                  avatar: TenantAvatar(logoUrl: ws.logoUrl, name: ws.displayName, size: 20, borderRadius: 6),
+                                  avatar: TenantAvatar(
+                                    iconUrl: ws.iconUrl,
+                                    logoUrl: ws.logoUrl,
+                                    name: ws.displayName,
+                                    tenantKey: ws.tenantKey,
+                                    size: 20,
+                                    borderRadius: 6,
+                                  ),
                                   label: Text(ws.displayName, style: const TextStyle(fontSize: 12)),
                                   onPressed: () => _handleContinue(ws.tenantKey),
                                 );

@@ -244,21 +244,48 @@ class WorkspaceRepository {
       final res = await _dio.get(
         ApiConstants.brandSettingsEndpoint,
         options: Options(
-          headers: {ApiConstants.headerTenantKey: tenantKey},
-          sendTimeout: const Duration(seconds: 4),
-          receiveTimeout: const Duration(seconds: 4),
+          headers: {
+            ApiConstants.headerTenantKey: tenantKey,
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+          sendTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
         ),
       );
       if (res.statusCode == 200 && res.data is Map) {
-        final d = res.data['data'];
-        if (d is Map) {
-          final logo = (d['companyLogoUrl'] ?? d['companyWhiteLogoUrl'] ?? d['logoUrl'])?.toString().trim();
-          final icon = (d['companyIconUrl'] ?? d['iconUrl'] ?? d['faviconUrl'])?.toString().trim();
-          final orgName = (d['companyName'] ?? d['brandName'] ?? d['organizationName'])?.toString().trim();
+        final raw = res.data['data'] ?? res.data['Data'] ?? res.data;
+        if (raw is Map) {
+          final logo = (raw['companyLogoUrl'] ??
+                  raw['companyWhiteLogoUrl'] ??
+                  raw['logoUrl'] ??
+                  raw['CompanyLogoUrl'] ??
+                  raw['CompanyWhiteLogoUrl'] ??
+                  raw['LogoUrl'])
+              ?.toString()
+              .trim();
+          final icon = (raw['companyIconUrl'] ??
+                  raw['iconUrl'] ??
+                  raw['faviconUrl'] ??
+                  raw['CompanyIconUrl'] ??
+                  raw['IconUrl'] ??
+                  raw['FaviconUrl'])
+              ?.toString()
+              .trim();
+          final orgName = (raw['companyName'] ??
+                  raw['brandName'] ??
+                  raw['organizationName'] ??
+                  raw['CompanyName'] ??
+                  raw['BrandName'] ??
+                  raw['OrganizationName'])
+              ?.toString()
+              .trim();
           return TenantBranding(
             logoUrl: (logo != null && logo.isNotEmpty) ? logo : null,
             iconUrl: (icon != null && icon.isNotEmpty) ? icon : null,
             organizationName: (orgName != null && orgName.isNotEmpty) ? orgName : null,
+            isResolved: true,
           );
         }
       }
@@ -286,6 +313,12 @@ class TenantBranding {
   final String? logoUrl;
   final String? iconUrl;
   final String? organizationName;
+  final bool isResolved;
 
-  const TenantBranding({this.logoUrl, this.iconUrl, this.organizationName});
+  const TenantBranding({
+    this.logoUrl,
+    this.iconUrl,
+    this.organizationName,
+    this.isResolved = false,
+  });
 }
