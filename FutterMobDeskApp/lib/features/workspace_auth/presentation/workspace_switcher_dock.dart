@@ -101,7 +101,6 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
             ),
           ),
 
-          const Divider(height: 1, indent: 14, endIndent: 14),
           const SizedBox(height: 12),
 
           // "+ Add Workspace" Button
