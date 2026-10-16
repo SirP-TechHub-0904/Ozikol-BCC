@@ -23,6 +23,8 @@ import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
 import '../../workspace_auth/state/workspace_state.dart';
 import '../../notifications/data/notification_service.dart';
 import '../../notifications/presentation/notifications_sheet.dart';
+import '../../../core/localization/language_provider.dart';
+import '../../../core/widgets/oz_lang_switcher.dart';
 import '../data/dashboard_repository.dart';
 import '../models/dashboard_metrics.dart';
 
@@ -406,6 +408,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ),
         actions: [
           AppTopBarAction(
+            icon: Icons.language_rounded,
+            tooltip: 'shell.select_language'.tr(ref, fallback: 'Select Language'),
+            customWidget: const OzLangSwitcher(compact: true),
+            onTap: () {},
+          ),
+          AppTopBarAction(
             icon: Icons.refresh_rounded,
             tooltip: _isRefreshing ? 'Refreshing...' : 'Refresh Workspace & Telemetry',
             customWidget: _isRefreshing
@@ -575,7 +583,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Search workspace...',
+                        'shell.search_placeholder'.tr(ref, fallback: 'Search workspace...'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -591,6 +599,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
 
           const Spacer(),
+
+          // Central Pattern Multi-Language Switcher Component
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 6),
+            child: OzLangSwitcher(),
+          ),
 
           // Utility Action Icons (Refresh, Calendar, Help, Dark Mode, Notifications)
           _buildTopRefreshBtn(isDark),
@@ -864,7 +878,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Console Dashboard',
+          'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard'),
           style: TextStyle(
             fontSize: isMobile ? 20 : 24,
             fontWeight: FontWeight.w800,
@@ -909,7 +923,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                   ),
                 ),
           label: Text(
-            _isRefreshing ? 'Refreshing...' : 'Refresh Telemetry',
+            _isRefreshing ? 'Refreshing...' : 'btn.refresh_telemetry'.tr(ref, fallback: 'Refresh Telemetry'),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -936,9 +950,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             );
           },
           icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
-          label: const Text(
-            'New Web Page',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
+          label: Text(
+            'btn.new_web_page'.tr(ref, fallback: 'New Web Page'),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primary,
@@ -999,7 +1013,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Core Performance & Health Counters',
+                        'kpi.core_performance'.tr(ref, fallback: 'Core Performance & Health Counters'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1032,14 +1046,14 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     color: const Color(0xFF22C55E).withValues(alpha: 0.3),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF16A34A)),
-                    SizedBox(width: 5),
+                    const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF16A34A)),
+                    const SizedBox(width: 5),
                     Text(
-                      'All Services Operational',
-                      style: TextStyle(
+                      'kpi.all_operational'.tr(ref, fallback: 'All Services Operational'),
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF16A34A),
@@ -2234,13 +2248,15 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const OzLangSwitcher(compact: true),
+            const SizedBox(height: 4),
             IconButton(
               icon: Icon(
                 Icons.help_outline_rounded,
                 size: 18,
                 color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
               ),
-              tooltip: 'Help & Support',
+              tooltip: 'shell.help_support'.tr(ref, fallback: 'Help & Support'),
               splashRadius: 18,
               onPressed: () => _showHelpSupportDialog(context, isDark),
             ),
@@ -2251,13 +2267,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 size: 18,
                 color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
               ),
-              tooltip: 'Sign Out',
+              tooltip: 'shell.sign_out'.tr(ref, fallback: 'Sign Out'),
               splashRadius: 18,
               onPressed: () => _handleSignOut(activeWs),
             ),
             const SizedBox(height: 6),
             Tooltip(
-              message: 'Powered by Ozikol',
+              message: 'shell.powered_by'.tr(ref, fallback: 'Powered by Ozikol'),
               child: Image.asset(
                 isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
                 width: 16,
@@ -2282,15 +2298,38 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       ),
       child: Column(
         children: [
+          // Language Switcher Row in Drawer
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'shell.select_language'.tr(ref, fallback: 'Language'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const OzLangSwitcher(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
           Row(
             children: [
               Expanded(
                 child: TextButton.icon(
                   onPressed: () => _showHelpSupportDialog(context, isDark),
                   icon: const Icon(Icons.help_outline_rounded, size: 14),
-                  label: const Text(
-                    'Help & Support',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                  label: Text(
+                    'shell.help_support'.tr(ref, fallback: 'Help & Support'),
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                   ),
                   style: TextButton.styleFrom(
                     alignment: Alignment.centerLeft,
@@ -2300,7 +2339,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               IconButton(
                 icon: const Icon(Icons.logout_rounded, size: 16),
-                tooltip: 'Sign Out',
+                tooltip: 'shell.sign_out'.tr(ref, fallback: 'Sign Out'),
                 onPressed: () => _handleSignOut(activeWs),
               ),
             ],
@@ -2311,7 +2350,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Powered by Ozikol',
+                'shell.powered_by'.tr(ref, fallback: 'Powered by Ozikol'),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -2345,7 +2384,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         items: [
           AppDrawerItem(
             icon: Icons.dashboard_rounded,
-            title: 'Console Dashboard',
+            title: 'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard'),
             isSelected: _selectedNavIndex == 0,
             onTap: () => setState(() => _selectedNavIndex = 0),
           ),
@@ -2358,7 +2397,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
           AppDrawerItem(
             icon: Icons.shield_outlined,
-            title: 'Security Audit',
+            title: 'nav.security_audit'.tr(ref, fallback: 'Security Audit'),
             trailing: _buildPillBadge('AUDIT', AppColors.primary),
             isSelected: _selectedNavIndex == 2,
             onTap: () => setState(() => _selectedNavIndex = 2),
@@ -2370,7 +2409,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         items: [
           AppDrawerItem(
             icon: Icons.tune_outlined,
-            title: 'Brand & Settings',
+            title: 'nav.brand_settings'.tr(ref, fallback: 'Brand & Settings'),
             trailing: _buildPillBadge('HOT', const Color(0xFFEA580C)),
             isSelected: _selectedNavIndex == 3,
             onTap: () => setState(() => _selectedNavIndex = 3),
@@ -2396,7 +2435,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           items: [
             AppDrawerItem(
               icon: Icons.payment_outlined,
-              title: 'Feature Billing & Licenses',
+              title: 'nav.feature_billing'.tr(ref, fallback: 'Feature Billing & Licenses'),
               trailing: _buildPillBadge('CENTRAL', AppColors.primary),
               isSelected: _selectedNavIndex == 5,
               onTap: () => setState(() => _selectedNavIndex = 5),
@@ -2408,7 +2447,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         items: [
           AppDrawerItem(
             icon: Icons.people_outline_rounded,
-            title: 'User Directory & Roles',
+            title: 'nav.user_directory'.tr(ref, fallback: 'User Directory & Roles'),
             isSelected: _selectedNavIndex == 6,
             onTap: () => setState(() => _selectedNavIndex = 6),
           ),
@@ -2431,13 +2470,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         items: [
           AppDrawerItem(
             icon: Icons.space_dashboard_outlined,
-            title: 'Personal Dashboard',
+            title: 'nav.workspace_home'.tr(ref, fallback: 'Personal Dashboard'),
             isSelected: _selectedNavIndex == 0,
             onTap: () => setState(() => _selectedNavIndex = 0),
           ),
           AppDrawerItem(
             icon: Icons.account_circle_outlined,
-            title: 'My Profile & Credentials',
+            title: 'nav.my_profile'.tr(ref, fallback: 'My Profile & Credentials'),
             isSelected: _selectedNavIndex == 1,
             onTap: () => setState(() => _selectedNavIndex = 1),
           ),
@@ -2448,7 +2487,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         items: [
           AppDrawerItem(
             icon: Icons.groups_outlined,
-            title: 'Group Channels',
+            title: 'nav.groups_directory'.tr(ref, fallback: 'Group Channels'),
             isSelected: _selectedNavIndex == 2,
             onTap: () => setState(() => _selectedNavIndex = 2),
           ),

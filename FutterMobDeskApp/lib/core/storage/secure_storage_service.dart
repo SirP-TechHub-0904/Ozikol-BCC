@@ -323,6 +323,25 @@ class SecureStorageService {
     }
   }
 
+  static const String _languagePrefs = 'ozikol_app_language';
+
+  /// Retrieves the saved language code preference ('en', 'fr', 'es', 'de')
+  String? getLanguage() {
+    if (_prefs != null) {
+      return _prefs.getString(_languagePrefs);
+    }
+    return _memoryStore[_languagePrefs];
+  }
+
+  /// Persists the language code preference
+  Future<void> setLanguage(String lang) async {
+    if (_prefs != null) {
+      await _prefs.setString(_languagePrefs, lang);
+    } else {
+      _memoryStore[_languagePrefs] = lang;
+    }
+  }
+
   /// Retrieves a boolean preference
   bool getBool(String key, {bool defaultValue = false}) {
     if (_prefs != null) {

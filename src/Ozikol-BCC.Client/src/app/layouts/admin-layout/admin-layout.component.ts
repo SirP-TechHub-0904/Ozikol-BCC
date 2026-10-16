@@ -8,6 +8,8 @@ import { SignalRService } from '../../core/services/signalr.service';
 import { AiAssistantComponent } from '../../shared/components/ai-assistant/ai-assistant.component';
 import { AiAssistantContextService } from '../../core/services/ai-assistant-context.service';
 import { FirstRunSetupModalComponent } from '../../shared/components/first-run-setup-modal/first-run-setup-modal.component';
+import { TranslationService, SupportedLanguage, LanguageOption, SUPPORTED_LANGUAGES } from '../../core/services/translation.service';
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 
 interface TaskTab {
   title: string;
@@ -25,7 +27,7 @@ interface PinnedItem {
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent],
+  imports: [CommonModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent, TranslatePipe],
   template: `
     <!-- Sidebar / Navigation Drawer -->
     <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isConsoleActive ? 'console' : 'workspace'">
@@ -40,11 +42,11 @@ interface PinnedItem {
       <div class="sidebar-mode-switcher" *ngIf="isAdmin">
         <button type="button" class="mode-switch-btn" [class.active]="isConsoleActive" (click)="setConsoleMode('console')">
           <span class="material-symbols-outlined mode-switch-icon">admin_panel_settings</span>
-          <span class="mode-switch-text">Console</span>
+          <span class="mode-switch-text">{{ 'shell.console' | translate }}</span>
         </button>
         <button type="button" class="mode-switch-btn" [class.active]="!isConsoleActive" (click)="setConsoleMode('workspace')">
           <span class="material-symbols-outlined mode-switch-icon">person</span>
-          <span class="mode-switch-text">Workspace</span>
+          <span class="mode-switch-text">{{ 'shell.workspace' | translate }}</span>
         </button>
       </div>
 
@@ -805,11 +807,28 @@ interface PinnedItem {
           </button>
           <div class="topbar-search-box">
             <span class="material-symbols-outlined search-icon">search</span>
-            <input type="text" placeholder="Search workspace..." aria-label="Search">
+            <input type="text" [placeholder]="'shell.search_placeholder' | translate" aria-label="Search">
           </div>
         </div>
 
         <div class="topbar-right">
+          <!-- Central Pattern Multi-Language Switcher Component -->
+          <div class="oz-lang-switcher" id="ozLangSwitcher" (click)="$event.stopPropagation()">
+            <button type="button" class="oz-lang-btn" (click)="toggleDropdown('language', $event)" [attr.aria-expanded]="activeDropdown === 'language'" aria-label="Select Language" [title]="'Select Language (' + currentLangOption.name + ')'">
+              <span class="oz-lang-flag">{{ currentLangOption.shortLabel }}</span>
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 1L5 5L9 1"/>
+              </svg>
+            </button>
+            <div class="oz-lang-menu" *ngIf="activeDropdown === 'language'">
+              <a href="javascript:void(0)" *ngFor="let opt of supportedLanguages" (click)="selectLanguage(opt.code); closeDropdowns()" class="oz-lang-item" [class.active]="currentLang === opt.code">
+                <span class="oz-flag-icon">{{ opt.flag }}</span>
+                <span class="oz-lang-name">{{ opt.nativeName }}</span>
+                <span class="material-symbols-outlined check-icon" *ngIf="currentLang === opt.code">check</span>
+              </a>
+            </div>
+          </div>
+
           <!-- 12-App Grid Launcher -->
           <div class="apps-grid-wrapper">
             <button type="button" class="topbar-action-btn" (click)="toggleDropdown('apps', $event)" title="Apps Launcher">
@@ -973,11 +992,11 @@ interface PinnedItem {
               </div>
               <a href="javascript:void(0)" (click)="toggleConsoleMode(); closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
                 <span class="material-symbols-outlined">{{ isConsoleActive ? 'badge' : 'admin_panel_settings' }}</span>
-                <span>{{ isConsoleActive ? 'Switch to Users Workspace' : 'Switch to Admin Console' }}</span>
+                <span>{{ isConsoleActive ? ('shell.switch_to_workspace' | translate) : ('shell.switch_to_console' | translate) }}</span>
               </a>
               <a routerLink="/users/workspace/profile" (click)="closeDropdowns()" class="dropdown-item">
                 <span class="material-symbols-outlined">account_circle</span>
-                <span>My Profile</span>
+                <span>{{ 'nav.my_profile' | translate }}</span>
               </a>
               <a routerLink="/admin/settings" (click)="closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
                 <span class="material-symbols-outlined">settings</span>
@@ -990,7 +1009,7 @@ interface PinnedItem {
               <div class="dropdown-divider"></div>
               <button type="button" (click)="onLogout()" class="dropdown-item text-danger">
                 <span class="material-symbols-outlined">logout</span>
-                <span>Sign Out</span>
+                <span>{{ 'shell.sign_out' | translate }}</span>
               </button>
             </div>
           </div>
@@ -1002,12 +1021,12 @@ interface PinnedItem {
         <div class="banner-content">
           <span class="material-symbols-outlined banner-icon">warning</span>
           <div class="banner-text">
-            <span class="banner-title">Central Feature Subscription Notice:</span>
+            <span class="banner-title">{{ 'billing.notice_title' | translate }}</span>
             <span class="banner-desc">{{ getExpirationBannerText() }}</span>
           </div>
         </div>
         <div class="banner-actions">
-          <a routerLink="/settings/console" class="banner-btn">Review Entitlements</a>
+          <a routerLink="/settings/console" class="banner-btn">{{ 'billing.review_entitlements' | translate }}</a>
         </div>
       </div>
 
@@ -1620,6 +1639,132 @@ interface PinnedItem {
     .banner-btn:hover {
       background: #b45309;
     }
+
+    /* Central Pattern Multi-Language Switcher */
+    .oz-lang-switcher {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .oz-lang-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--text-color, #475569);
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 9999px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+      line-height: 1;
+    }
+    :host-context(.dark-mode) .oz-lang-btn {
+      color: #cbd5e1;
+      background: rgba(30, 41, 59, 0.7);
+      border-color: #334155;
+    }
+    .oz-lang-btn:hover {
+      background: var(--bg-hover, #f1f5f9);
+      border-color: #cbd5e1;
+      color: var(--text-heading, #0f172a);
+    }
+    :host-context(.dark-mode) .oz-lang-btn:hover {
+      background: #1e293b;
+      border-color: #475569;
+      color: #ffffff;
+    }
+    .oz-lang-btn[aria-expanded="true"] {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 2px rgba(0, 80, 229, 0.15);
+    }
+    .oz-lang-btn svg {
+      transition: transform 0.2s ease;
+    }
+    .oz-lang-btn[aria-expanded="true"] svg {
+      transform: rotate(180deg);
+    }
+    .oz-lang-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .oz-lang-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 170px;
+      background: #ffffff;
+      border: 1px solid var(--border-color, #e2e8f0);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      padding: 6px;
+      z-index: 1050;
+      animation: ozFadeSlideDown 0.18s ease-out;
+    }
+    :host-context(.dark-mode) .oz-lang-menu {
+      background: #18191f;
+      border-color: #2e384d;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    @keyframes ozFadeSlideDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .oz-lang-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-color, #334155);
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.15s ease, color 0.15s ease;
+      cursor: pointer;
+    }
+    :host-context(.dark-mode) .oz-lang-item {
+      color: #94a3b8;
+    }
+    .oz-lang-item:hover {
+      background: #f1f5f9;
+      color: #0050e5;
+    }
+    :host-context(.dark-mode) .oz-lang-item:hover {
+      background: #252836;
+      color: #60a5fa;
+    }
+    .oz-lang-item.active {
+      background: #eef2ff;
+      color: #0050e5;
+      font-weight: 600;
+    }
+    :host-context(.dark-mode) .oz-lang-item.active {
+      background: rgba(0, 80, 229, 0.15);
+      color: #60a5fa;
+    }
+    .oz-flag-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+    .oz-lang-name {
+      flex: 1;
+      white-space: nowrap;
+    }
+    .check-icon {
+      font-size: 16px;
+      color: #0050e5;
+      margin-left: auto;
+    }
+    :host-context(.dark-mode) .check-icon {
+      color: #60a5fa;
+    }
   `]
 })
 export class AdminLayoutComponent implements OnInit {
@@ -1768,8 +1913,25 @@ export class AdminLayoutComponent implements OnInit {
     private router: Router, 
     private toast: ToastService,
     private signalR: SignalRService,
-    private aiAssistantService: AiAssistantContextService
+    private aiAssistantService: AiAssistantContextService,
+    public translation: TranslationService
   ) {}
+
+  public get currentLang(): SupportedLanguage {
+    return this.translation.currentLanguage;
+  }
+
+  public get currentLangOption(): LanguageOption {
+    return this.translation.currentLanguageOption;
+  }
+
+  public get supportedLanguages(): LanguageOption[] {
+    return this.translation.supportedLanguages;
+  }
+
+  public selectLanguage(lang: SupportedLanguage): void {
+    this.translation.setLanguage(lang);
+  }
 
   ngOnInit(): void {
     // Subscribe to global AI assistant layout and open state
@@ -2196,7 +2358,8 @@ export class AdminLayoutComponent implements OnInit {
     if (!target.closest('.apps-grid-wrapper') &&
         !target.closest('.calendar-wrapper') &&
         !target.closest('.notifications-wrapper') &&
-        !target.closest('.user-profile-wrapper')) {
+        !target.closest('.user-profile-wrapper') &&
+        !target.closest('.oz-lang-switcher')) {
       this.closeDropdowns();
     }
   }
