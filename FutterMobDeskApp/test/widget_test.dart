@@ -605,5 +605,112 @@ void main() {
     final rememberedCode = storage.getRememberedOrganizationCode();
     expect(rememberedCode, isNull);
   });
+
+  testWidgets('WorkspaceEntryScreen displays enrolled workspace cards with clickable body and 3-dot menu', (WidgetTester tester) async {
+    final storage = SecureStorageService.inMemory();
+    final ws1 = Workspace(
+      tenantKey: 'mb-cocacola',
+      organizationName: 'MB Cocacola',
+      primaryDomain: 'mb.localhost:4200',
+      lastAccessed: DateTime(2026, 1, 1),
+    );
+    final ws2 = Workspace(
+      tenantKey: 'paulc',
+      organizationName: 'paulc Coperate company',
+      primaryDomain: 'paulc.localhost:4200',
+      lastAccessed: DateTime(2026, 1, 2),
+    );
+    await storage.saveWorkspace(ws1);
+    await storage.saveWorkspace(ws2);
+
+    final client = ApiClient(storage);
+    final repo = WorkspaceRepository(client);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          storageServiceProvider.overrideWithValue(storage),
+          apiClientProvider.overrideWithValue(client),
+          workspaceRepositoryProvider.overrideWithValue(repo),
+        ],
+        child: const MaterialApp(
+          home: WorkspaceEntryScreen(),
+        ),
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpAndSettle();
+
+    // Verify both workspace names exist in the previously connected list
+    expect(find.text('MB Cocacola'), findsWidgets);
+    expect(find.text('paulc Coperate company'), findsWidgets);
+
+    // Verify 3-dot buttons exist for enrolled workspaces
+    final threeDotFinders = find.byIcon(Icons.more_vert_rounded);
+    expect(threeDotFinders, findsWidgets);
+
+    // Tap 3-dot menu on first workspace
+    await tester.tap(threeDotFinders.first);
+    await tester.pumpAndSettle();
+
+    // Verify dropdown menu displays "Continue" and "Remove Workspace"
+    expect(find.text('Continue'), findsWidgets);
+    expect(find.text('Remove Workspace'), findsOneWidget);
+
+    // Tap "Remove Workspace" from dropdown
+    await tester.tap(find.text('Remove Workspace'));
+    await tester.pumpAndSettle();
+
+    // Verify confirmation dialog appears
+    expect(find.text('Are you sure you want to remove "MB Cocacola" from your connected workspaces? You can reconnect anytime by entering the organization access code.'), findsOneWidget);
+
+    // Tap "Remove" button in dialog
+    final removeConfirmFinder = find.widgetWithText(ElevatedButton, 'Remove');
+    expect(removeConfirmFinder, findsOneWidget);
+    await tester.tap(removeConfirmFinder);
+    await tester.pumpAndSettle();
+
+    // Verify "MB Cocacola" is removed and only "paulc Coperate company" remains
+    expect(find.text('MB Cocacola'), findsNothing);
+    expect(find.text('paulc Coperate company'), findsWidgets);
+
+    // Verify removal persisted in storage
+    final remaining = await storage.getWorkspaces();
+    expect(remaining.length, 1);
+    expect(remaining.first.tenantKey, 'paulc');
+  });
+
+  test('WorkspaceNotifier removeEnrolledWorkspace removes workspace and updates enrolled list', () async {
+    final storage = SecureStorageService.inMemory();
+    final ws = Workspace(
+      tenantKey: 'org-test',
+      organizationName: 'Test Org',
+      primaryDomain: 'test.localhost:4200',
+      lastAccessed: DateTime(2026, 1, 1),
+    );
+    await storage.saveWorkspace(ws);
+    await storage.setRememberOrganizationEnabled(true);
+    await storage.setRememberedOrganizationCode('org-test');
+
+    final client = ApiClient(storage);
+    final repo = WorkspaceRepository(client);
+    final notifier = WorkspaceNotifier(storage, repo);
+
+    await notifier.init();
+    expect(notifier.state.enrolledWorkspaces.length, 1);
+
+    await notifier.removeEnrolledWorkspace('org-test');
+    expect(notifier.state.enrolledWorkspaces, isEmpty);
+
+    final rememberedCode = storage.getRememberedOrganizationCode();
+    expect(rememberedCode, isNull);
+  });
 }
 

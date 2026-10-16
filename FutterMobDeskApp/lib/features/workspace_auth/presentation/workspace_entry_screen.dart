@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/models/workspace.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_tour_dialog.dart';
 import '../../../core/widgets/contextual_info_button.dart';
@@ -63,6 +64,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ref.read(workspaceStateProvider.notifier).clearError();
+        ref.read(workspaceStateProvider.notifier).probeAllEnrolledBranding();
       }
     });
     _startCarouselTimer();
@@ -182,6 +184,235 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
         ref.read(workspaceStateProvider.notifier).clearError();
       }
     }
+  }
+
+  /// <summary>
+  /// Displays a confirmation dialog before removing a workspace from the enrolled list.
+  /// </summary>
+  /// <param name="ws">The workspace to remove.</param>
+  Future<void> _confirmRemoveWorkspace(Workspace ws) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(
+            color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+          ),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: AppColors.error.withAlpha(25),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: AppColors.error,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Remove Workspace',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to remove "${ws.displayName}" from your connected workspaces? You can reconnect anytime by entering the organization access code.',
+          style: TextStyle(
+            fontSize: 13,
+            color: isDark ? AppColors.gray300 : AppColors.gray700,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: isDark ? AppColors.gray400 : AppColors.gray600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text(
+              'Remove',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(workspaceStateProvider.notifier).removeEnrolledWorkspace(ws.tenantKey);
+    }
+  }
+
+  /// <summary>
+  /// Renders a previously connected workspace item card with a clickable body to continue
+  /// and an options dropdown menu (3 dots) to continue or remove the workspace.
+  /// </summary>
+  /// <param name="ws">The enrolled workspace metadata.</param>
+  /// <param name="isDark">Whether dark mode is currently active.</param>
+  /// <returns>A stylized responsive card widget.</returns>
+  Widget _buildEnrolledWorkspaceCard(Workspace ws, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _handleContinue(ws.tenantKey),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceVariantDark : AppColors.gray50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+              ),
+            ),
+            child: Row(
+              children: [
+                // Workspace Avatar (with cached logo/icon or fallback initials)
+                TenantAvatar(
+                  iconUrl: ws.iconUrl,
+                  logoUrl: ws.logoUrl,
+                  name: ws.displayName,
+                  tenantKey: ws.tenantKey,
+                  size: 36,
+                  borderRadius: 10,
+                ),
+                const SizedBox(width: 12),
+
+                // Workspace Name and Subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        ws.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Connected Workspace',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? AppColors.gray400 : AppColors.gray500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 3-Dot Options Dropdown (Continue, Remove Workspace)
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert_rounded,
+                    size: 20,
+                    color: isDark ? AppColors.gray400 : AppColors.gray600,
+                  ),
+                  tooltip: 'Workspace options',
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(
+                      color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                    ),
+                  ),
+                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                  elevation: 6,
+                  onSelected: (action) {
+                    if (action == 'continue') {
+                      _handleContinue(ws.tenantKey);
+                    } else if (action == 'remove') {
+                      _confirmRemoveWorkspace(ws);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem<String>(
+                      value: 'continue',
+                      height: 40,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.login_rounded,
+                            size: 16,
+                            color: isDark ? Colors.white : AppColors.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Continue',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : AppColors.gray950,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(height: 1),
+                    PopupMenuItem<String>(
+                      value: 'remove',
+                      height: 40,
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 16,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Remove Workspace',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.error,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildRememberOrganizationCheckbox(bool isDark) {
@@ -645,61 +876,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 16),
-                                  ...state.enrolledWorkspaces.map((ws) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: InkWell(
-                                        onTap: () => _handleContinue(ws.tenantKey),
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                          decoration: BoxDecoration(
-                                            color: isDark ? AppColors.surfaceVariantDark : AppColors.gray50,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              TenantAvatar(
-                                                iconUrl: ws.iconUrl,
-                                                logoUrl: ws.logoUrl,
-                                                name: ws.displayName,
-                                                tenantKey: ws.tenantKey,
-                                                size: 34,
-                                                borderRadius: 10,
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      ws.displayName,
-                                                      style: TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight: FontWeight.w700,
-                                                        color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      'Connected Workspace',
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        color: isDark ? AppColors.gray400 : AppColors.gray500,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.primary),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }),
+                                  ...state.enrolledWorkspaces.map(
+                                    (ws) => _buildEnrolledWorkspaceCard(ws, isDark),
+                                  ),
                                 ],
                               ],
                             ),
@@ -1013,23 +1192,10 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? AppColors.gray400 : AppColors.gray600),
                             ),
                             const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: state.enrolledWorkspaces.map((ws) {
-                                return ActionChip(
-                                  avatar: TenantAvatar(
-                                    iconUrl: ws.iconUrl,
-                                    logoUrl: ws.logoUrl,
-                                    name: ws.displayName,
-                                    tenantKey: ws.tenantKey,
-                                    size: 20,
-                                    borderRadius: 6,
-                                  ),
-                                  label: Text(ws.displayName, style: const TextStyle(fontSize: 12)),
-                                  onPressed: () => _handleContinue(ws.tenantKey),
-                                );
-                              }).toList(),
+                            Column(
+                              children: state.enrolledWorkspaces
+                                  .map((ws) => _buildEnrolledWorkspaceCard(ws, isDark))
+                                  .toList(),
                             ),
                           ],
                         ],

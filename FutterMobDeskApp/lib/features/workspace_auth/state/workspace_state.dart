@@ -146,11 +146,15 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
         isLoading: false,
       );
 
-      // Asynchronously probe and apply company branding (icon and logo) if missing from initial state
-      if (bypassTarget != null && (bypassTarget.iconUrl == null || bypassTarget.iconUrl!.isEmpty)) {
+      // Asynchronously probe and apply company branding for bypass/active and all enrolled workspaces
+      if (bypassTarget != null) {
         _probeAndApplyBranding(bypassTarget, isPending: true);
-      } else if (active != null && (active.iconUrl == null || active.iconUrl!.isEmpty)) {
+      }
+      if (active != null) {
         _probeAndApplyBranding(active, isPending: false);
+      }
+      if (workspaces.isNotEmpty) {
+        probeAllEnrolledBranding();
       }
     } catch (e) {
       state = state.copyWith(
@@ -228,13 +232,16 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     final active = state.activeWorkspace;
     final pending = state.pendingWorkspace;
 
-    // Check if either active or pending workspace matches this tenant partition
+    // Check if active, pending, or ANY enrolled workspace matches this tenant partition
     final matchesActive = active != null && active.tenantKey.toLowerCase() == tenantKey.toLowerCase();
     final matchesPending = pending != null && pending.tenantKey.toLowerCase() == tenantKey.toLowerCase();
+    final enrolledMatch = state.enrolledWorkspaces.where(
+      (w) => w.tenantKey.toLowerCase() == tenantKey.toLowerCase(),
+    ).firstOrNull;
 
-    if (!matchesActive && !matchesPending) return;
+    if (!matchesActive && !matchesPending && enrolledMatch == null) return;
 
-    final targetWs = matchesActive ? active : pending!;
+    final targetWs = (matchesActive ? active : (matchesPending ? pending : enrolledMatch))!;
 
     // Evict previous and incoming image URLs from CachedNetworkImage disk cache
     if (targetWs.logoUrl != null) await TenantCachedImage.evictImage(targetWs.logoUrl, tenantKey: targetWs.tenantKey);
@@ -255,7 +262,9 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     );
 
     // Persist new branding to secure storage so subsequent restarts load the updated identity
-    await _storageService.saveRememberedWorkspace(updated);
+    if (matchesActive || matchesPending) {
+      await _storageService.saveRememberedWorkspace(updated);
+    }
     await _storageService.saveWorkspace(updated);
     final list = await _storageService.getWorkspaces();
 
@@ -263,8 +272,64 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
       state = state.copyWith(activeWorkspace: updated, pendingWorkspace: updated, enrolledWorkspaces: list);
     } else if (matchesActive) {
       state = state.copyWith(activeWorkspace: updated, enrolledWorkspaces: list);
-    } else {
+    } else if (matchesPending) {
       state = state.copyWith(pendingWorkspace: updated, enrolledWorkspaces: list);
+    } else {
+      state = state.copyWith(enrolledWorkspaces: list);
+    }
+  }
+
+  /// <summary>
+  /// Asynchronously probes the backend brand settings for all enrolled workspaces.
+  /// Updates local storage, evicts any modified cached images, and updates the reactive
+  /// workspace state so that previously connected cards immediately display the latest logos and names.
+  /// </summary>
+  /// <returns>A future that completes when all enrolled workspaces have been checked.</returns>
+  Future<void> probeAllEnrolledBranding() async {
+    final workspaces = List<Workspace>.from(state.enrolledWorkspaces);
+    if (workspaces.isEmpty) return;
+
+    bool anyUpdated = false;
+    for (final ws in workspaces) {
+      try {
+        final branding = await _repository.probeTenantBranding(ws.tenantKey);
+        if (branding.isResolved) {
+          final isLogoChanged = branding.logoUrl != ws.logoUrl;
+          final isIconChanged = branding.iconUrl != ws.iconUrl;
+          final isNameChanged = branding.organizationName != null &&
+              branding.organizationName!.trim().isNotEmpty &&
+              branding.organizationName != ws.organizationName;
+
+          if (isLogoChanged || isIconChanged || isNameChanged) {
+            // Evict stale image caches
+            if (isLogoChanged && ws.logoUrl != null) {
+              await TenantCachedImage.evictImage(ws.logoUrl, tenantKey: ws.tenantKey);
+            }
+            if (isIconChanged && ws.iconUrl != null) {
+              await TenantCachedImage.evictImage(ws.iconUrl, tenantKey: ws.tenantKey);
+            }
+
+            final updated = ws.copyWith(
+              logoUrl: branding.logoUrl,
+              clearLogoUrl: branding.logoUrl == null,
+              iconUrl: branding.iconUrl,
+              clearIconUrl: branding.iconUrl == null,
+              organizationName: isNameChanged ? branding.organizationName : ws.organizationName,
+            );
+            await _storageService.saveWorkspace(updated);
+            anyUpdated = true;
+          }
+        }
+      } catch (_) {
+        // Silently continue for offline/unreachable workspaces
+      }
+    }
+
+    if (anyUpdated) {
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
+      final freshList = await _storageService.getWorkspaces();
+      state = state.copyWith(enrolledWorkspaces: freshList);
     }
   }
 
@@ -448,6 +513,32 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
   Future<void> logoutWorkspace(String tenantKey) async {
     await _storageService.removeWorkspace(tenantKey);
     await _cacheService?.clearTenant(tenantKey);
+    final list = await _storageService.getWorkspaces();
+    final active = await _storageService.getActiveWorkspace();
+    _syncJumpList(list);
+
+    state = state.copyWith(
+      enrolledWorkspaces: list,
+      activeWorkspace: active,
+    );
+  }
+
+  /// <summary>
+  /// Removes an enrolled workspace from local storage, purges its partitioned cache,
+  /// and updates the list of previously connected workspaces.
+  /// </summary>
+  /// <param name="tenantKey">The tenant identifier of the workspace to forget/remove.</param>
+  /// <returns>A future that completes when the workspace has been removed from storage.</returns>
+  Future<void> removeEnrolledWorkspace(String tenantKey) async {
+    await _storageService.removeWorkspace(tenantKey);
+    await _cacheService?.clearTenant(tenantKey);
+
+    // Also clear remembered organization if this was the remembered workspace
+    final rememberedCode = _storageService.getRememberedOrganizationCode();
+    if (rememberedCode != null && rememberedCode.toLowerCase() == tenantKey.toLowerCase()) {
+      await _storageService.clearRememberedOrganization();
+    }
+
     final list = await _storageService.getWorkspaces();
     final active = await _storageService.getActiveWorkspace();
     _syncJumpList(list);
