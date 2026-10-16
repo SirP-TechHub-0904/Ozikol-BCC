@@ -131,7 +131,7 @@ class OzikolApp extends ConsumerWidget {
     });
 
     return MaterialApp(
-      title: 'Ozikol',
+      title: 'Ozikol BCC',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -140,13 +140,13 @@ class OzikolApp extends ConsumerWidget {
         final content = child ?? const SizedBox.shrink();
         final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
-        final activeWs = workspaceState.activeWorkspace ?? workspaceState.pendingWorkspace;
+        final activeWs = workspaceState.hasActiveSession ? workspaceState.activeWorkspace : null;
 
         Widget body = isDesktop
             ? Column(
                 children: [
                   DesktopTitleBar(
-                    title: activeWs != null ? '${activeWs.displayName} - Ozikol BCC' : 'Ozikol',
+                    title: activeWs != null ? '${activeWs.displayName} - Ozikol BCC' : 'Ozikol BCC',
                     iconUrl: activeWs?.iconUrl,
                     logoUrl: activeWs?.logoUrl,
                   ),

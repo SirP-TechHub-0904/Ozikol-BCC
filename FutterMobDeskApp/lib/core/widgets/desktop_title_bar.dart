@@ -26,7 +26,7 @@ class DesktopTitleBar extends StatefulWidget {
 
   const DesktopTitleBar({
     super.key,
-    this.title = 'Ozikol',
+    this.title = 'Ozikol BCC',
     this.iconUrl,
     this.logoUrl,
     this.backgroundColor,

@@ -272,26 +272,30 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
   /// <summary>
   /// Renders a previously connected workspace item card with a clickable body to continue
-  /// and an options dropdown menu (3 dots) to continue or remove the workspace.
+  /// and a refined, uniform 3-dot micro-action button with a smart dropdown menu.
   /// </summary>
   /// <param name="ws">The enrolled workspace metadata.</param>
   /// <param name="isDark">Whether dark mode is currently active.</param>
   /// <returns>A stylized responsive card widget.</returns>
   Widget _buildEnrolledWorkspaceCard(Workspace ws, bool isDark) {
+    final borderColor = isDark ? AppColors.outlineDark : AppColors.outlineLight;
+    final cardBg = isDark ? AppColors.surfaceVariantDark.withAlpha(140) : AppColors.gray50;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _handleContinue(ws.tenantKey),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceVariantDark : AppColors.gray50,
-              borderRadius: BorderRadius.circular(12),
+              color: cardBg,
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                color: borderColor,
+                width: 1,
               ),
             ),
             child: Row(
@@ -302,7 +306,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                   logoUrl: ws.logoUrl,
                   name: ws.displayName,
                   tenantKey: ws.tenantKey,
-                  size: 36,
+                  size: 38,
                   borderRadius: 10,
                 ),
                 const SizedBox(width: 12),
@@ -336,22 +340,23 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                   ),
                 ),
 
-                // 3-Dot Options Dropdown (Continue, Remove Workspace)
+                const SizedBox(width: 8),
+
+                // 3-Dot Options Dropdown (Refined micro-button matching border lines)
                 PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.more_vert_rounded,
-                    size: 20,
-                    color: isDark ? AppColors.gray400 : AppColors.gray600,
-                  ),
                   tooltip: 'Workspace options',
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                      color: borderColor,
+                      width: 1,
                     ),
                   ),
                   color: isDark ? AppColors.surfaceDark : Colors.white,
-                  elevation: 6,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 8,
+                  shadowColor: Colors.black.withAlpha(30),
+                  offset: const Offset(0, 38),
                   onSelected: (action) {
                     if (action == 'continue') {
                       _handleContinue(ws.tenantKey);
@@ -359,47 +364,90 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                       _confirmRemoveWorkspace(ws);
                     }
                   },
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.surfaceDark : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: borderColor,
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.more_vert_rounded,
+                        size: 18,
+                        color: isDark ? AppColors.gray300 : AppColors.gray600,
+                      ),
+                    ),
+                  ),
                   itemBuilder: (context) => [
                     PopupMenuItem<String>(
                       value: 'continue',
-                      height: 40,
+                      height: 38,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.login_rounded,
-                            size: 16,
-                            color: isDark ? Colors.white : AppColors.primary,
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.primary.withAlpha(35) : const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.login_rounded,
+                                size: 14,
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           Text(
                             'Continue',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : AppColors.gray950,
+                              color: isDark ? Colors.white : AppColors.gray900,
+                              letterSpacing: 0.1,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const PopupMenuDivider(height: 1),
+                    _CustomMenuDivider(isDark: isDark),
                     PopupMenuItem<String>(
                       value: 'remove',
-                      height: 40,
+                      height: 38,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.delete_outline_rounded,
-                            size: 16,
-                            color: AppColors.error,
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.error.withAlpha(35) : const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 14,
+                                color: AppColors.error,
+                              ),
+                            ),
                           ),
                           const SizedBox(width: 10),
                           const Text(
                             'Remove Workspace',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               color: AppColors.error,
+                              letterSpacing: 0.1,
                             ),
                           ),
                         ],
@@ -1272,3 +1320,35 @@ class _FeatureSlide {
     required this.badgeText,
   });
 }
+
+/// <summary>
+/// A subtle horizontal divider for PopupMenuButton dropdowns that matches
+/// the card and panel border lines without harsh solid black dividers.
+/// </summary>
+class _CustomMenuDivider extends PopupMenuEntry<String> {
+  /// Whether dark mode is currently active.
+  final bool isDark;
+
+  const _CustomMenuDivider({required this.isDark});
+
+  @override
+  double get height => 9.0;
+
+  @override
+  bool represents(String? value) => false;
+
+  @override
+  State<_CustomMenuDivider> createState() => _CustomMenuDividerState();
+}
+
+class _CustomMenuDividerState extends State<_CustomMenuDivider> {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      color: widget.isDark ? AppColors.outlineDark : AppColors.outlineLight,
+    );
+  }
+}
+
