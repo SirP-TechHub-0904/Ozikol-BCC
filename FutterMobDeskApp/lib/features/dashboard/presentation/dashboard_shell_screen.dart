@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/realtime_sync_service.dart';
@@ -8,6 +9,7 @@ import '../../../core/widgets/app_badge.dart';
 import '../../../core/widgets/app_drawer.dart';
 import '../../../core/widgets/app_top_bar.dart';
 import '../../../core/widgets/contextual_info_button.dart';
+import '../../../core/widgets/exit_confirmation_dialog.dart';
 import '../../../core/widgets/offline_status_bar.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../../core/widgets/tenant_cached_image.dart';
@@ -138,12 +140,33 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       _refreshAnimController.reset();
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 900;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldQuit = await ExitConfirmationDialog.show(context);
+        if (shouldQuit) {
+          SystemNavigator.pop();
+        }
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth >= 900;
 
-        if (isDesktop) {
-          return _buildDesktopLayout(
+          if (isDesktop) {
+            return _buildDesktopLayout(
+              context,
+              isDark: isDark,
+              activeWs: activeWs,
+              notifCount: notifState.unreadCount,
+              updateAsync: updateAsync,
+              metrics: metrics,
+              isLoading: isTelemetryLoading,
+              isOnline: isOnline,
+            );
+          }
+
+          return _buildMobileLayout(
             context,
             isDark: isDark,
             activeWs: activeWs,
@@ -153,19 +176,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             isLoading: isTelemetryLoading,
             isOnline: isOnline,
           );
-        }
-
-        return _buildMobileLayout(
-          context,
-          isDark: isDark,
-          activeWs: activeWs,
-          notifCount: notifState.unreadCount,
-          updateAsync: updateAsync,
-          metrics: metrics,
-          isLoading: isTelemetryLoading,
-          isOnline: isOnline,
-        );
-      },
+        },
+      ),
     );
   }
 

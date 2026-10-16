@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import '../theme/app_colors.dart';
+import 'exit_confirmation_dialog.dart';
 import 'tenant_cached_image.dart';
 
 /// Clean, frameless desktop title bar providing native window controls
@@ -44,6 +45,7 @@ class _DesktopTitleBarState extends State<DesktopTitleBar> with WindowListener {
     super.initState();
     if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
       windowManager.addListener(this);
+      windowManager.setPreventClose(true);
       _checkMaximizedState();
     }
   }
@@ -54,6 +56,34 @@ class _DesktopTitleBarState extends State<DesktopTitleBar> with WindowListener {
       windowManager.removeListener(this);
     }
     super.dispose();
+  }
+
+  bool _isConfirmingClose = false;
+
+  /// Handles desktop close requests from caption button or OS window signals by showing reconfirmation dialog.
+  Future<void> _handleCloseRequest(BuildContext context) async {
+    if (_isConfirmingClose) return;
+    _isConfirmingClose = true;
+
+    try {
+      final shouldQuit = await ExitConfirmationDialog.show(context);
+      if (shouldQuit) {
+        // User confirmed exit: Destroy native window and exit cleanly
+        await windowManager.destroy();
+      }
+    } catch (_) {
+      // In testing or fallback environments
+    } finally {
+      _isConfirmingClose = false;
+    }
+  }
+
+  @override
+  void onWindowClose() async {
+    final isPrevent = await windowManager.isPreventClose();
+    if (isPrevent && mounted) {
+      _handleCloseRequest(context);
+    }
   }
 
   Future<void> _checkMaximizedState() async {
@@ -205,7 +235,7 @@ class _DesktopTitleBarState extends State<DesktopTitleBar> with WindowListener {
                   tooltip: 'Close',
                   isClose: true,
                   iconColor: iconColor,
-                  onPressed: () => windowManager.close(),
+                  onPressed: () => _handleCloseRequest(context),
                 ),
               ],
             ),
