@@ -9,6 +9,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Route("api/Setup")]
     [AllowAnonymous]
     [Tags("1. Setup & Platform Initialization")]
     public class SetupApiController : ControllerBase

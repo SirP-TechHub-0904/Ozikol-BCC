@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Central color palette for Ozikol MIS platform.
+/// Central color palette for Ozikol BCC platform.
 /// Strictly aligned with Materialdesignui design tokens (#0050e5, #0f172a).
 class AppColors {
   AppColors._();

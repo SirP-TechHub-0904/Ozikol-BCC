@@ -10,9 +10,15 @@ import 'package:ozikol_app/core/widgets/contextual_info_button.dart';
 import 'package:ozikol_app/core/widgets/offline_status_bar.dart';
 import 'package:ozikol_app/core/widgets/theme_mode_switcher.dart';
 import 'package:ozikol_app/core/widgets/update_banner.dart';
+import 'package:flutter/services.dart';
+import 'package:ozikol_app/core/widgets/custom_text_field.dart';
+import 'package:ozikol_app/core/models/workspace.dart';
+import 'package:ozikol_app/core/network/api_client.dart';
 import 'package:ozikol_app/features/notifications/domain/notification_model.dart';
 import 'package:ozikol_app/features/notifications/presentation/notifications_sheet.dart';
+import 'package:ozikol_app/features/workspace_auth/data/workspace_repository.dart';
 import 'package:ozikol_app/features/workspace_auth/presentation/workspace_entry_screen.dart';
+import 'package:ozikol_app/features/workspace_auth/state/workspace_state.dart';
 
 void main() {
   testWidgets('WorkspaceEntryScreen renders branding, placeholder, and validates input', (WidgetTester tester) async {
@@ -30,17 +36,16 @@ void main() {
 
     // 2. Verify "Enter Workspace" title and subtitle exist
     expect(find.text('Enter Workspace'), findsOneWidget);
-    expect(find.text('Domain or Access Code'), findsOneWidget);
-    expect(find.text('e.g. acmecorp or acme.ozikol.cloud'), findsOneWidget);
+    expect(find.text('Organization Code'), findsWidgets);
 
     // 3. Verify Continue button exists
-    final continueButton = find.widgetWithText(ElevatedButton, 'Continue');
+    final continueButton = find.text('Continue');
     expect(continueButton, findsOneWidget);
 
     // 4. Tap Continue with empty input and verify validation error appears
     await tester.tap(continueButton);
     await tester.pumpAndSettle();
-    expect(find.text('Please enter your organization code or domain.'), findsOneWidget);
+    expect(find.text('Please enter your organization code.'), findsOneWidget);
 
     // 5. Enter a company access code and verify text is updated
     final inputFinder = find.byType(TextFormField);
@@ -302,7 +307,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify banner content
-    expect(find.text('Ozikol MIS v1.1.0 is available.'), findsOneWidget);
+    expect(find.text('Ozikol BCC v1.1.0 is available.'), findsOneWidget);
     expect(find.text('Update Now'), findsOneWidget);
 
     // Tap Update Now to open dialog
@@ -346,6 +351,113 @@ void main() {
     expect(find.text('Guidelines & Formats'), findsOneWidget);
     expect(find.text('Business Impact'), findsOneWidget);
     expect(find.text('Best Practices'), findsOneWidget);
+  });
+
+  testWidgets('CustomTextField supports paste from clipboard and clear actions', (WidgetTester tester) async {
+    String clipboardStore = 'rozzy-touchxcx.localhost:4200';
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (MethodCall methodCall) async {
+      if (methodCall.method == 'Clipboard.getData') {
+        return <String, dynamic>{'text': clipboardStore};
+      }
+      if (methodCall.method == 'Clipboard.setData') {
+        clipboardStore = methodCall.arguments['text'] as String;
+        return null;
+      }
+      return null;
+    });
+
+    final controller = TextEditingController();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CustomTextField(
+            controller: controller,
+            label: 'Access Code or URL',
+            placeholder: 'Access Code or URL',
+            showPasteButton: true,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 1. When empty, paste button is visible
+    expect(find.byIcon(Icons.content_paste_rounded), findsOneWidget);
+
+    // 2. Tap paste button
+    await tester.tap(find.byIcon(Icons.content_paste_rounded));
+    await tester.pumpAndSettle();
+
+    // 3. Controller should now contain the pasted text
+    expect(controller.text, 'rozzy-touchxcx.localhost:4200');
+
+    // 4. Clear button should now be visible
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+
+    // 5. Tap clear button
+    await tester.tap(find.byIcon(Icons.close_rounded));
+    await tester.pumpAndSettle();
+
+    // 6. Text is cleared
+    expect(controller.text, '');
+  });
+
+  testWidgets('WorkspaceEntryScreen renders Remember this organization checkbox and toggles', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: const WorkspaceEntryScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify checkbox and label exist
+    expect(find.text('Remember this organization in future'), findsWidgets);
+    final checkboxFinder = find.byType(Checkbox);
+    expect(checkboxFinder, findsWidgets);
+
+    // Initial value is checked
+    Checkbox checkbox = tester.widget(checkboxFinder.first);
+    expect(checkbox.value, isTrue);
+
+    // Tap checkbox to toggle
+    await tester.tap(checkboxFinder.first);
+    await tester.pumpAndSettle();
+
+    checkbox = tester.widget(checkboxFinder.first);
+    expect(checkbox.value, isFalse);
+  });
+
+  test('WorkspaceNotifier bypasses entry screen when organization is remembered', () async {
+    final storage = SecureStorageService.inMemory();
+    await storage.setRememberOrganizationEnabled(true);
+    await storage.setRememberedOrganizationCode('acme-globalbn');
+    await storage.saveRememberedWorkspace(
+      Workspace(
+        tenantKey: 'acme-globalbn',
+        organizationName: 'Acme Global',
+        primaryDomain: 'acme-globalbn.localhost:4200',
+        lastAccessed: DateTime(2026, 1, 1),
+      ),
+    );
+
+    final client = ApiClient(storage);
+    final repo = WorkspaceRepository(client);
+    final notifier = WorkspaceNotifier(storage, repo);
+
+    await notifier.init();
+
+    // Verify bypass is enabled and pending workspace points to remembered organization
+    expect(notifier.state.shouldBypassEntryScreen, isTrue);
+    expect(notifier.state.pendingWorkspace?.tenantKey, 'acme-globalbn');
+
+    // Verify cancelBypass resets the state to entry screen
+    notifier.cancelBypass();
+    expect(notifier.state.shouldBypassEntryScreen, isFalse);
+    expect(notifier.state.pendingWorkspace, isNull);
   });
 }
 

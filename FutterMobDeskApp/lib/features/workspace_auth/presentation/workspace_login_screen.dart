@@ -59,6 +59,15 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
     }
   }
 
+  void _handleChangeOrganization() {
+    ref.read(workspaceStateProvider.notifier).clearError();
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      ref.read(workspaceStateProvider.notifier).cancelBypass();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(workspaceStateProvider);
@@ -76,28 +85,12 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
               title: ws.displayName,
               subtitle: 'Sign in to access your organization workspace',
               showBackButton: true,
-              onBackTap: () => Navigator.of(context).pop(),
+              onBackTap: _handleChangeOrganization,
               emblem: TenantAvatar(
                 logoUrl: ws.logoUrl,
                 name: ws.displayName,
                 size: 50,
                 borderRadius: 14,
-              ),
-              badge: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(45),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withAlpha(70)),
-                ),
-                child: Text(
-                  ws.primaryDomain,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
               ),
             ),
 
@@ -132,6 +125,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                           children: [
                             // Section Title with Contextual Info Icon
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
                                   'Authentication',
@@ -154,6 +148,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                             const SizedBox(height: 6),
                             Text(
                               'Enter your organization credentials to proceed.',
+                              textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,
                                 color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -197,6 +192,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                               placeholder: 'name@company.com',
                               keyboardType: TextInputType.emailAddress,
                               prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20, color: AppColors.primary),
+                              showPasteButton: true,
                               textInputAction: TextInputAction.next,
                               validator: (val) {
                                 if (val == null || val.trim().isEmpty) {
@@ -248,7 +244,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                                   foregroundColor: isDark ? AppColors.gray400 : AppColors.gray600,
                                   textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                                 ),
-                                onPressed: () => Navigator.of(context).pop(),
+                                onPressed: _handleChangeOrganization,
                               ),
                             ),
                           ],

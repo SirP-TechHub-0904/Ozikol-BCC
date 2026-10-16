@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Central theme configuration for Ozikol MIS Mobile & Desktop apps.
+/// Central theme configuration for Ozikol BCC Mobile & Desktop apps.
 /// Supports Material 3 with full light & dark mode support and custom typography.
 class AppTheme {
   AppTheme._();

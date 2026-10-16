@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_tour_dialog.dart';
 import '../../../core/widgets/contextual_info_button.dart';
@@ -13,8 +13,8 @@ import '../state/workspace_state.dart';
 import 'workspace_login_screen.dart';
 
 /// Clean, responsive Landing & Workspace Entry Screen for Mobile and Desktop.
-/// Completely replaces legacy boilerplate designs with modern enterprise branding,
-/// an interactive capability showcase carousel, and frictionless multi-tenant resolution.
+/// Incorporates pure white Ozikol enterprise branding, natural welcoming copy,
+/// real-time connectivity status, and frictionless multi-tenant workspace resolution.
 class WorkspaceEntryScreen extends ConsumerStatefulWidget {
   const WorkspaceEntryScreen({super.key});
 
@@ -29,35 +29,81 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
   int _carouselIndex = 0;
   Timer? _carouselTimer;
 
+  bool _rememberOrganization = true;
+  bool _isOnline = true;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+
   static const List<_FeatureSlide> _slides = [
     _FeatureSlide(
-      title: 'Modular Enterprise Ecosystem',
+      badgeText: 'WORKSPACE',
+      title: 'All Your Work in One Place',
       subtitle:
-          'Connect to your organization workspace with isolated tenant databases, custom domains, and zero cross-tenant leakage.',
-      icon: Icons.domain_rounded,
-      badgeText: 'MULTI-TENANT ISOLATION',
+          'Connect to your organization and access your tools, projects, and team data in one simple workspace.',
+      icon: Icons.business_center_rounded,
     ),
     _FeatureSlide(
-      title: 'Unified Multi-Channel Pool',
+      badgeText: 'NOTIFICATIONS',
+      title: 'Stay Updated in Real Time',
       subtitle:
-          'Seamless notifications and alerts across In-App feeds, Postmark email, WhatsApp webhooks, and SMS with 6-tier severity.',
-      icon: Icons.mark_email_read_rounded,
-      badgeText: 'UNIFIED NOTIFICATIONS',
+          'Receive instant notifications, alerts, and messages across email, in-app feeds, and chat right as they happen.',
+      icon: Icons.notifications_active_rounded,
     ),
     _FeatureSlide(
-      title: 'Real-Time Telemetry & Sync',
+      badgeText: 'SYNC & SPEED',
+      title: 'Fast and Reliable Everywhere',
       subtitle:
-          'Sub-second synchronization, Sentry crash diagnostics, and robust offline caching built for mobile and desktop.',
-      icon: Icons.sensors_rounded,
-      badgeText: 'REAL-TIME TELEMETRY',
+          'Everything stays in sync across your desktop, phone, and tablet so you can work seamlessly without interruption.',
+      icon: Icons.bolt_rounded,
     ),
   ];
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(workspaceStateProvider.notifier).clearError();
+      }
+    });
     _startCarouselTimer();
+    _initConnectivity();
     _checkTourGuide();
+    _loadRememberedOrganization();
+  }
+
+  Future<void> _loadRememberedOrganization() async {
+    try {
+      final storage = ref.read(storageServiceProvider);
+      final isRemembered = storage.isRememberOrganizationEnabled();
+      final code = storage.getRememberedOrganizationCode();
+      if (mounted) {
+        setState(() {
+          _rememberOrganization = isRemembered;
+          if (_controller.text.isEmpty && code != null && code.isNotEmpty) {
+            _controller.text = code;
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _initConnectivity() async {
+    try {
+      final results = await Connectivity().checkConnectivity();
+      if (mounted) {
+        setState(() {
+          _isOnline = !results.contains(ConnectivityResult.none) && results.isNotEmpty;
+        });
+      }
+    } catch (_) {}
+
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+      if (mounted) {
+        setState(() {
+          _isOnline = !results.contains(ConnectivityResult.none) && results.isNotEmpty;
+        });
+      }
+    });
   }
 
   void _startCarouselTimer() {
@@ -88,9 +134,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
       screenTitle: 'Workspace Access & Landing Tour',
       steps: const [
         TourStep(
-          title: 'Enter Organization Code or Domain',
+          title: 'Enter Organization Access Code',
           description:
-              'Type your company access code (e.g. acmecorp) or custom subdomain to securely resolve your organization.',
+              'Type your company access code (e.g. acmecorp) to securely connect to your organization.',
           icon: Icons.apartment_rounded,
         ),
         TourStep(
@@ -112,103 +158,10 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
   @override
   void dispose() {
     _carouselTimer?.cancel();
+    _connectivitySubscription?.cancel();
     _pageController.dispose();
     _controller.dispose();
     super.dispose();
-  }
-
-  void _showServerSettingsDialog() {
-    final storage = ref.read(storageServiceProvider);
-    final currentCustom = storage.getCustomBaseUrl();
-    final customController = TextEditingController(text: currentCustom ?? '');
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return AlertDialog(
-          backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.dns_rounded, color: AppColors.primary, size: 22),
-              SizedBox(width: 10),
-              Text('API Server Environment', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Active Base URL:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
-              const SizedBox(height: 4),
-              SelectableText(
-                currentCustom ?? ApiConstants.defaultBaseUrl,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.primary),
-              ),
-              const Divider(height: 24),
-              const Text('Switch Environment:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                leading: const Icon(Icons.computer_rounded, color: AppColors.success),
-                title: const Text('Local .NET API (Development)'),
-                subtitle: Text(ApiConstants.defaultBaseUrl, style: const TextStyle(fontSize: 11)),
-                onTap: () async {
-                  await storage.setCustomBaseUrl(null);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  setState(() {});
-                },
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                leading: const Icon(Icons.cloud_outlined, color: AppColors.primary),
-                title: const Text('Production Cloud (Online)'),
-                subtitle: const Text(ApiConstants.productionBaseUrl, style: TextStyle(fontSize: 11)),
-                onTap: () async {
-                  await storage.setCustomBaseUrl(ApiConstants.productionBaseUrl);
-                  if (ctx.mounted) Navigator.pop(ctx);
-                  setState(() {});
-                },
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: customController,
-                decoration: const InputDecoration(
-                  labelText: 'Custom Server / LAN IP',
-                  hintText: 'e.g. http://192.168.1.50:51025',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final txt = customController.text.trim();
-                await storage.setCustomBaseUrl(txt.isNotEmpty ? txt : null);
-                if (ctx.mounted) Navigator.pop(ctx);
-                setState(() {});
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              child: const Text('Save Custom'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   Future<void> _handleContinue([String? directCode]) async {
@@ -217,23 +170,70 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     if (code.isEmpty) return;
 
     final notifier = ref.read(workspaceStateProvider.notifier);
-    final resolved = await notifier.verifyWorkspace(code);
+    final resolved = await notifier.verifyWorkspace(code, remember: _rememberOrganization);
 
     if (resolved != null && mounted) {
-      Navigator.of(context).push(
+      await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => WorkspaceLoginScreen(workspace: resolved),
         ),
       );
+      if (mounted) {
+        ref.read(workspaceStateProvider.notifier).clearError();
+      }
     }
+  }
+
+  Widget _buildRememberOrganizationCheckbox(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 4),
+      child: InkWell(
+        onTap: () => setState(() => _rememberOrganization = !_rememberOrganization),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: Checkbox(
+                  value: _rememberOrganization,
+                  activeColor: AppColors.primary,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                  side: BorderSide(
+                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    width: 1.5,
+                  ),
+                  onChanged: (val) {
+                    setState(() => _rememberOrganization = val ?? true);
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  'Remember this organization in future',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(workspaceStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final storage = ref.watch(storageServiceProvider);
-    final activeBaseUrl = storage.getCustomBaseUrl() ?? ApiConstants.defaultBaseUrl;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -241,8 +241,8 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
         builder: (context, constraints) {
           final isDesktop = constraints.maxWidth >= 900;
           return isDesktop
-              ? _buildDesktopLayout(context, state, isDark, activeBaseUrl)
-              : _buildMobileLayout(context, state, isDark, activeBaseUrl);
+              ? _buildDesktopLayout(context, state, isDark)
+              : _buildMobileLayout(context, state, isDark);
         },
       ),
     );
@@ -255,7 +255,6 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     BuildContext context,
     WorkspaceState state,
     bool isDark,
-    String activeBaseUrl,
   ) {
     return Row(
       children: [
@@ -295,50 +294,46 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Top Brand Identity
+                        // Top Brand Identity with Pure White Ozikol Logo
                         Row(
                           children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(40),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white.withAlpha(60)),
+                            Image.asset(
+                              'assets/images/ozikol-white.png',
+                              height: 32,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => const Text(
+                                'OZIKOL',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: 1.2,
+                                ),
                               ),
-                              child: const Icon(Icons.cloud_done_rounded, color: Colors.white, size: 24),
                             ),
                             const SizedBox(width: 14),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'OZIKOL MIS',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                                Text(
-                                  'Enterprise Multi-Tenant Cloud Platform',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white.withAlpha(190),
-                                  ),
-                                ),
-                              ],
+                            Container(
+                              height: 24,
+                              width: 1,
+                              color: Colors.white.withAlpha(70),
+                            ),
+                            const SizedBox(width: 14),
+                            Text(
+                              'Business Command Center',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.white.withAlpha(190),
+                              ),
                             ),
                           ],
                         ),
 
                         const Spacer(),
 
-                        // Feature Showcase Carousel
+                        // Feature Showcase Carousel with Natural English Copy
                         SizedBox(
-                          height: 250,
+                          height: 230,
                           child: PageView.builder(
                             controller: _pageController,
                             itemCount: _slides.length,
@@ -413,14 +408,14 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
                         const Spacer(),
 
-                        // KPI Metrics Cards
+                        // 3 Bottom Cards (Plain, Natural English)
                         Row(
                           children: [
-                            _buildKpiCard('99.99%', 'Cloud Uptime', Icons.verified_rounded),
+                            _buildFeatureCard('Fast & Secure', 'Encrypted workspace', Icons.shield_outlined),
                             const SizedBox(width: 14),
-                            _buildKpiCard('Zero Loss', 'Notification Pool', Icons.all_inbox_rounded),
+                            _buildFeatureCard('Always Synced', 'Across all devices', Icons.sync_rounded),
                             const SizedBox(width: 14),
-                            _buildKpiCard('< 1.2s', 'Sync Latency', Icons.bolt_rounded),
+                            _buildFeatureCard('24/7 Available', 'Work anytime', Icons.access_time_rounded),
                           ],
                         ),
                       ],
@@ -446,45 +441,39 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        // Environment Selector Pill
-                        InkWell(
-                          onTap: _showServerSettingsDialog,
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isDark ? AppColors.surfaceVariantDark : AppColors.gray100,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                        // Online / Offline Status Indicator Pill
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.surfaceVariantDark : AppColors.gray100,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: _isOnline ? AppColors.success : AppColors.error,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.success,
-                                    shape: BoxShape.circle,
-                                  ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _isOnline ? 'Online' : 'Offline',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: _isOnline
+                                      ? AppColors.success
+                                      : AppColors.error,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  activeBaseUrl.contains('51025')
-                                      ? 'Local .NET Dev'
-                                      : (activeBaseUrl.contains('cloud') ? 'Production Cloud' : 'Custom Server'),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? AppColors.gray300 : AppColors.gray700,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(Icons.arrow_drop_down_rounded, size: 18, color: isDark ? AppColors.gray400 : AppColors.gray500),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -533,7 +522,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                     const ContextualInfoButton(
                                       title: 'Workspace Resolution',
                                       purpose: 'Connects this client application to your isolated tenant database and permissions layer.',
-                                      expectedInputs: 'Enter your company access code (e.g. acmecorp) or your custom web domain (e.g. acme.ozikol.cloud).',
+                                      expectedInputs: 'Enter your organization access code (e.g. acmecorp).',
                                       impact: 'Loads your organization security policies, tenant branding, and routes notifications appropriately.',
                                       bestPractices: 'Contact your organization administrator if you are unsure of your access code.',
                                     ),
@@ -541,7 +530,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Sign in using your organization access code or custom web domain.',
+                                  'Sign in using your organization access code.',
                                   style: TextStyle(
                                     fontSize: 14,
                                     height: 1.4,
@@ -579,17 +568,18 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                   const SizedBox(height: 20),
                                 ],
 
-                                // Input Field
+                                // Input Field with requested placeholder and label
                                 CustomTextField(
                                   controller: _controller,
-                                  label: 'Domain or Access Code',
-                                  placeholder: 'e.g. acmecorp or acme.ozikol.cloud',
+                                  label: 'Organization Code',
+                                  placeholder: 'e.g. acmecorp',
                                   prefixIcon: const Icon(Icons.apartment_rounded, size: 20, color: AppColors.primary),
+                                  showPasteButton: true,
                                   textInputAction: TextInputAction.done,
                                   onSubmitted: (_) => _handleContinue(),
                                   validator: (val) {
                                     if (val == null || val.trim().isEmpty) {
-                                      return 'Please enter your organization code or domain.';
+                                      return 'Please enter your organization code.';
                                     }
                                     return null;
                                   },
@@ -608,7 +598,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
-                                        'Use your assigned organization code or full web domain.',
+                                        'Enter your organization access code.',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: isDark ? AppColors.gray400 : AppColors.gray500,
@@ -617,11 +607,15 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 24),
+                                const SizedBox(height: 10),
+
+                                // Remember this organization in future
+                                _buildRememberOrganizationCheckbox(isDark),
+                                const SizedBox(height: 18),
 
                                 // Continue Action Button
                                 PrimaryButton(
-                                  text: 'Continue to Workspace',
+                                  text: 'Continue',
                                   height: 52,
                                   borderRadius: 14,
                                   isLoading: state.isLoading,
@@ -688,7 +682,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                                       ),
                                                     ),
                                                     Text(
-                                                      ws.primaryDomain,
+                                                      'Connected Workspace',
                                                       style: TextStyle(
                                                         fontSize: 11,
                                                         color: isDark ? AppColors.gray400 : AppColors.gray500,
@@ -713,14 +707,16 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                     ),
                   ),
 
-                  // Bottom Active Server Status
+                  // Bottom Brand Footer (Clean, no internal server route exposed)
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      'Server connected to: $activeBaseUrl',
+                      'Powered by Ozikol',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                         color: isDark ? AppColors.gray500 : AppColors.gray400,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ),
@@ -740,38 +736,58 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     BuildContext context,
     WorkspaceState state,
     bool isDark,
-    String activeBaseUrl,
   ) {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return SafeArea(
       child: Column(
         children: [
-          // Top Navigation Bar
+          // Top Navigation Bar with Online Status
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withAlpha(isDark ? 40 : 25),
-                    borderRadius: BorderRadius.circular(10),
+                Image.asset(
+                  isDark ? 'assets/images/ozikol-white.png' : 'assets/images/ozikol.png',
+                  height: 20,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) => const Text(
+                    'OZIKOL',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.8),
                   ),
-                  child: const Icon(Icons.cloud_done_rounded, color: AppColors.primary, size: 20),
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  'OZIKOL MIS',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5),
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.dns_rounded, size: 20),
-                  onPressed: _showServerSettingsDialog,
-                  tooltip: 'Server Environment',
+                // Online/Offline Status Dot
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceVariantDark : AppColors.gray100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: _isOnline ? AppColors.success : AppColors.error,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        _isOnline ? 'Online' : 'Offline',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: _isOnline ? AppColors.success : AppColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 6),
                 const ThemeModeSwitcher(compact: true),
                 IconButton(
                   icon: const Icon(Icons.help_outline_rounded, size: 20),
@@ -927,13 +943,13 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                               const ContextualInfoButton(
                                 title: 'Workspace Resolution',
                                 purpose: 'Connects your device to your isolated tenant database.',
-                                expectedInputs: 'Company code (e.g. acmecorp) or domain (e.g. acme.ozikol.cloud).',
+                                expectedInputs: 'Enter your organization access code (e.g. acmecorp).',
                               ),
                             ],
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Enter your company code or web domain.',
+                            'Enter your organization access code.',
                             style: TextStyle(
                               fontSize: 13,
                               color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -960,19 +976,21 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
                           CustomTextField(
                             controller: _controller,
-                            label: 'Domain or Access Code',
-                            placeholder: 'e.g. acmecorp or acme.ozikol.cloud',
+                            label: 'Organization Code',
+                            placeholder: 'e.g. acmecorp',
                             prefixIcon: const Icon(Icons.apartment_rounded, size: 20, color: AppColors.primary),
+                            showPasteButton: true,
                             textInputAction: TextInputAction.done,
                             onSubmitted: (_) => _handleContinue(),
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) {
-                                return 'Please enter your organization code or domain.';
+                                return 'Please enter your organization code.';
                               }
                               return null;
                             },
                           ),
-                          const SizedBox(height: 20),
+                          _buildRememberOrganizationCheckbox(isDark),
+                          const SizedBox(height: 18),
 
                           PrimaryButton(
                             text: 'Continue',
@@ -1009,6 +1027,16 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 20),
+                  Text(
+                    'Powered by Ozikol',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? AppColors.gray500 : AppColors.gray400,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1018,7 +1046,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     );
   }
 
-  Widget _buildKpiCard(String metric, String label, IconData icon) {
+  Widget _buildFeatureCard(String title, String subtitle, IconData icon) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1033,16 +1061,17 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
             Icon(icon, color: Colors.white, size: 18),
             const SizedBox(height: 8),
             Text(
-              metric,
+              title,
               style: const TextStyle(
-                fontSize: 17,
+                fontSize: 15,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
                 letterSpacing: -0.3,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
-              label,
+              subtitle,
               style: TextStyle(
                 fontSize: 11,
                 color: Colors.white.withAlpha(190),

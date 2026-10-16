@@ -24,7 +24,9 @@ public class TenantScopeMiddleware
             path.StartsWith("/scalar", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/openapi", StringComparison.OrdinalIgnoreCase) ||
             path.StartsWith("/favicon", StringComparison.OrdinalIgnoreCase) ||
-            path.StartsWith("/health", StringComparison.OrdinalIgnoreCase))
+            path.StartsWith("/health", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/tenants", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/setup", StringComparison.OrdinalIgnoreCase))
         {
             await _next(httpContext);
             return;
@@ -65,11 +67,11 @@ public class TenantScopeMiddleware
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("========================================================================");
-            Console.WriteLine($"[MASTER ROUTING ERROR] {method} {path}");
+            Console.WriteLine($"[ROUTING ERROR] {method} {path}");
             Console.WriteLine($"  * Incoming Host URL : {host}");
             Console.WriteLine($"  * Origin / Referer  : {(string.IsNullOrEmpty(origin) ? "(Direct)" : origin)}");
             Console.WriteLine($"  * Requested Target  : {targetLookup}");
-            Console.WriteLine($"  * Result            : 404 NOT FOUND (No active tenant matching this domain/subdomain)");
+            Console.WriteLine($"  * Result            : 404 NOT FOUND (No active workspace matching this domain/subdomain)");
             Console.WriteLine("========================================================================");
             Console.ResetColor();
 
@@ -78,8 +80,8 @@ public class TenantScopeMiddleware
             await httpContext.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
             {
                 statusCode = 404,
-                error = "TenantNotFound",
-                message = "Workspace not found.",
+                error = "WorkspaceNotFound",
+                message = "Workspace could not be found. Please check your access code or web address.",
                 timestamp = DateTime.UtcNow
             }));
             return;

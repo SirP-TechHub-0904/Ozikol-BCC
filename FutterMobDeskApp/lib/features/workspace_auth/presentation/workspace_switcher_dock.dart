@@ -41,7 +41,7 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
                 final isActive = ws.tenantKey.toLowerCase() == state.activeWorkspace?.tenantKey.toLowerCase();
 
                 return Tooltip(
-                  message: '${ws.displayName}\n(${ws.primaryDomain})',
+                  message: ws.displayName,
                   waitDuration: const Duration(milliseconds: 300),
                   child: InkWell(
                     onTap: () => notifier.switchWorkspace(ws.tenantKey),

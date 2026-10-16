@@ -264,7 +264,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (masterTenant == null)
             {
-                return NotFound(ApiResponse<object>.FailureResponse("Tenant was not found in Master Catalog."));
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));
             }
 
             // Sanitize custom domain
@@ -307,7 +307,7 @@ namespace Ozikol_BCC.Api.Controllers
                 CreatedUtc = masterTenant.CreatedUtc
             };
 
-            return Ok(ApiResponse<MasterTenantDetailsDto>.SuccessResponse(tenantDetails, "Custom domain updated successfully in Master Catalog."));
+            return Ok(ApiResponse<MasterTenantDetailsDto>.SuccessResponse(tenantDetails, "Custom domain updated successfully."));
         }
     }
 }

@@ -44,7 +44,7 @@ class UpdateBanner extends ConsumerWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Ozikol MIS v${updateInfo.latestVersion} is available.',
+                'Ozikol BCC v${updateInfo.latestVersion} is available.',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

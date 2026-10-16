@@ -43,7 +43,7 @@ class AppTopBarAction {
   });
 }
 
-/// Universal top application bar for Ozikol MIS screens.
+/// Universal top application bar for Ozikol BCC (Business Command Center) screens.
 /// Adapts seamlessly across desktop windows and mobile screens with dark mode support.
 class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
   /// Leading widget style (menu, back, avatar, or none).

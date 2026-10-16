@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.ozikol" "\0"
-            VALUE "FileDescription", "ozikol_app" "\0"
+            VALUE "FileDescription", "Ozikol" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "ozikol_app" "\0"
+            VALUE "InternalName", "Ozikol" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.ozikol. All rights reserved." "\0"
-            VALUE "OriginalFilename", "ozikol_app.exe" "\0"
-            VALUE "ProductName", "ozikol_app" "\0"
+            VALUE "OriginalFilename", "Ozikol.exe" "\0"
+            VALUE "ProductName", "Ozikol" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

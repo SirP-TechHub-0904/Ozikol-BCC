@@ -13,12 +13,18 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'features/dashboard/presentation/dashboard_shell_screen.dart';
 import 'features/workspace_auth/presentation/workspace_entry_screen.dart';
+import 'features/workspace_auth/presentation/workspace_login_screen.dart';
 import 'features/workspace_auth/state/workspace_state.dart';
 import 'core/services/client_config_service.dart';
+import 'core/services/windows_clipboard_fix.dart';
+import 'core/widgets/desktop_title_bar.dart';
 import 'core/widgets/maintenance_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Windows 11 clipboard history paste stream interceptor
+  WindowsClipboardFix.initialize();
 
   // Desktop window configuration (Windows, macOS, Linux)
   if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
@@ -28,9 +34,10 @@ void main() async {
         size: Size(1200, 800),
         minimumSize: Size(960, 640),
         center: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         skipTaskbar: false,
-        title: 'Ozikol Management Information System',
+        titleBarStyle: TitleBarStyle.hidden,
+        title: 'Ozikol',
       );
       await windowManager.waitUntilReadyToShow(windowOptions, () async {
         await windowManager.show();
@@ -85,46 +92,65 @@ class OzikolApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp(
-      title: 'Ozikol MIS',
+      title: 'Ozikol',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       builder: (context, child) {
-        if (!crashReporter.isSafeMode) return child ?? const SizedBox.shrink();
-        return Column(
-          children: [
-            Material(
-              color: AppColors.error,
-              child: SafeArea(
-                bottom: false,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.shield_outlined, color: Colors.white, size: 18),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Safe Mode active: Repeated crashes detected. Cache isolated.',
-                          style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+        final content = child ?? const SizedBox.shrink();
+        final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
+        final activeWs = workspaceState.activeWorkspace ?? workspaceState.pendingWorkspace;
+
+        Widget body = isDesktop
+            ? Column(
+                children: [
+                  DesktopTitleBar(
+                    title: activeWs != null ? '${activeWs.displayName} - Ozikol BCC' : 'Ozikol',
+                    logoUrl: activeWs?.logoUrl,
+                  ),
+                  Expanded(child: content),
+                ],
+              )
+            : content;
+
+        if (crashReporter.isSafeMode) {
+          body = Column(
+            children: [
+              Material(
+                color: AppColors.error,
+                child: SafeArea(
+                  bottom: false,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.shield_outlined, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Safe Mode active: Repeated crashes detected. Cache isolated.',
+                            style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
                         ),
-                      ),
-                      TextButton(
-                        onPressed: () async {
-                          await crashReporter.recoverFromCrashLoop();
-                          ref.invalidate(workspaceStateProvider);
-                        },
-                        child: const Text('Reset Cache', style: TextStyle(color: Colors.white, decoration: TextDecoration.underline)),
-                      ),
-                    ],
+                        TextButton(
+                          onPressed: () async {
+                            await crashReporter.recoverFromCrashLoop();
+                            ref.invalidate(workspaceStateProvider);
+                          },
+                          child: const Text('Reset Cache', style: TextStyle(color: Colors.white, decoration: TextDecoration.underline)),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Expanded(child: child ?? const SizedBox.shrink()),
-          ],
-        );
+              Expanded(child: body),
+            ],
+          );
+        }
+        return body;
       },
       home: configAsync.when(
         data: (config) {
@@ -134,23 +160,31 @@ class OzikolApp extends ConsumerWidget {
               onRefresh: () => ref.refresh(clientConfigProvider),
             );
           }
-          if (workspaceState.isLoading) {
+          if (workspaceState.isInitializing) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );
           }
-          return workspaceState.hasActiveSession
-              ? const DashboardShellScreen()
-              : const WorkspaceEntryScreen();
+          if (workspaceState.hasActiveSession) {
+            return const DashboardShellScreen();
+          }
+          if (workspaceState.shouldBypassEntryScreen && workspaceState.pendingWorkspace != null) {
+            return WorkspaceLoginScreen(workspace: workspaceState.pendingWorkspace!);
+          }
+          return const WorkspaceEntryScreen();
         },
         loading: () => const Scaffold(
           body: Center(child: CircularProgressIndicator()),
         ),
         error: (error, stackTrace) {
           // If config fetch fails, continue safely with cached/default state
-          return workspaceState.hasActiveSession
-              ? const DashboardShellScreen()
-              : const WorkspaceEntryScreen();
+          if (workspaceState.hasActiveSession) {
+            return const DashboardShellScreen();
+          }
+          if (workspaceState.shouldBypassEntryScreen && workspaceState.pendingWorkspace != null) {
+            return WorkspaceLoginScreen(workspace: workspaceState.pendingWorkspace!);
+          }
+          return const WorkspaceEntryScreen();
         },
       ),
     );

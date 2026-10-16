@@ -26,11 +26,13 @@ class ApiConstants {
   static const String sessionEndpoint = '/api/Auth/me';
   static const String verifyOtpEndpoint = '/api/Auth/verify-otp';
   static const String resendOtpEndpoint = '/api/Auth/resend-otp';
-  static const String tenantsEndpoint = '/api/Tenants';
-  static const String resolveTenantEndpoint = '/api/Tenants/resolve';
-  static const String clientConfigEndpoint = '/api/Setup/client-config';
+  static const String tenantsEndpoint = '/api/TenantsApi';
+  static const String resolveTenantEndpoint = '/api/TenantsApi/resolve';
+  static const String clientConfigEndpoint = '/api/SetupApi/client-config';
+  static const String brandSettingsEndpoint = '/api/Settings/brand-settings';
 
   // Workspace & Dashboard Endpoints
+  static const String dashboardMetricsEndpoint = '/api/DashboardApi/metrics';
   static const String workspaceDashboardEndpoint = '/api/WorkspaceApi/dashboard';
   static const String notificationsEndpoint = '/api/WorkspaceApi/notifications';
 

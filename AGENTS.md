@@ -79,6 +79,15 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 ---
 
 ## 7. Product Terminology & Domain Language (Mandatory)
+* **Brand & System Terminology (BCC = Business Command Center, NEVER "MIS")**:
+  * The system is officially named **Ozikol Business Command Center** (**Ozikol BCC**).
+  * **STRICT PROHIBITION**: NEVER use "MIS" or "Management Information System" in UI text, headers, titles, placeholders, banners, update notices, code comments, documentation, or implementation plans.
+  * Always use **Business Command Center** or **BCC** wherever the platform, product suite, or client applications are referenced.
+* **Universal Brand Color (Royal Blue #0050E5, Zero Red Branding)**:
+  * The single official brand primary color across ALL applications (Central Web, Angular BCC Admin, Flutter Desktop/Mobile) is **Royal Blue (`#0050E5`)**.
+  * **Strict Prohibition**: Red (`#E5173F` or any variant) is NEVER to be used for logos, primary buttons, active navigation indicators, marketing hero bars, or branding elements.
+  * Red is reserved strictly and exclusively for system errors, danger alerts, and destructive deletion actions (`#EF4444` / `#DC2626`).
+  * Canonical logo assets must always be `ozikol.png` / `oz-logo.png` (blue on light) or `ozikol-white.png` / `oz-logo-white.png` (white on dark). Never create or use `-red` asset files.
 * **Feature & Capability Terminology (No "Fleet")**: Always use **Features**, **Modular Capabilities**, **Tenants**, or **Tenant Organizations**. NEVER use the word "fleet" in UI text, headings, badges, telemetry labels, code comments, documentation, or implementation plans.
 * **MRR (Monthly Recurring Revenue)**: Clearly represent MRR as Monthly Subscription Revenue / Recurring Feature Revenue generated from paid feature add-ons and tenant plans.
 

@@ -138,7 +138,7 @@ interface DnsRecordEntry {
                 <span class="material-symbols-outlined" [class.spin-icon]="saving">
                   {{ saving ? 'sync' : 'save' }}
                 </span>
-                <span>{{ saving ? 'Updating Master Catalog...' : 'Save &amp; Bind Domain' }}</span>
+                <span>{{ saving ? 'Updating Domain Routing...' : 'Save &amp; Bind Domain' }}</span>
               </button>
 
               <button
@@ -184,7 +184,7 @@ interface DnsRecordEntry {
                 </div>
                 <div class="probe-item">
                   <span class="material-symbols-outlined text-green">check_circle</span>
-                  <span>Master Catalog Tenant Routing Synchronized</span>
+                  <span>Tenant Domain Routing Synchronized</span>
                 </div>
               </div>
             </div>
@@ -881,7 +881,7 @@ export class CustomDomainComponent implements OnInit {
           detail: { customDomain: cleanDomain }
         }));
 
-        this.toast.success(`Custom domain '${cleanDomain}' linked successfully in Master Catalog!`, 'Domain Bound');
+        this.toast.success(`Custom domain '${cleanDomain}' linked successfully!`, 'Domain Bound');
       },
       error: (err) => {
         this.saving = false;

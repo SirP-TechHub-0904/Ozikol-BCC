@@ -145,6 +145,89 @@ class SecureStorageService {
     }
   }
 
+  static const String _rememberOrganizationPrefs = 'ozikol_remember_organization';
+  static const String _rememberedOrganizationCodePrefs = 'ozikol_remembered_org_code';
+  static const String _rememberedWorkspaceJsonPrefs = 'ozikol_remembered_workspace_json';
+
+  /// Whether "Remember this organization" is enabled
+  bool isRememberOrganizationEnabled() {
+    if (_prefs != null) {
+      return _prefs.getBool(_rememberOrganizationPrefs) ?? true;
+    }
+    return _memoryStore[_rememberOrganizationPrefs] != 'false';
+  }
+
+  /// Sets whether "Remember this organization" is enabled
+  Future<void> setRememberOrganizationEnabled(bool enabled) async {
+    if (_prefs != null) {
+      await _prefs.setBool(_rememberOrganizationPrefs, enabled);
+    } else {
+      _memoryStore[_rememberOrganizationPrefs] = enabled.toString();
+    }
+  }
+
+  /// Gets the remembered organization code / identifier
+  String? getRememberedOrganizationCode() {
+    if (_prefs != null) {
+      return _prefs.getString(_rememberedOrganizationCodePrefs);
+    }
+    return _memoryStore[_rememberedOrganizationCodePrefs];
+  }
+
+  /// Sets the remembered organization code / identifier
+  Future<void> setRememberedOrganizationCode(String? code) async {
+    if (_prefs != null) {
+      if (code == null) {
+        await _prefs.remove(_rememberedOrganizationCodePrefs);
+      } else {
+        await _prefs.setString(_rememberedOrganizationCodePrefs, code);
+      }
+    } else {
+      if (code == null) {
+        _memoryStore.remove(_rememberedOrganizationCodePrefs);
+      } else {
+        _memoryStore[_rememberedOrganizationCodePrefs] = code;
+      }
+    }
+  }
+
+  /// Saves the remembered workspace metadata for immediate bypass on subsequent launches
+  Future<void> saveRememberedWorkspace(Workspace? workspace) async {
+    final raw = workspace != null ? jsonEncode(workspace.toJson()) : null;
+    if (_prefs != null) {
+      if (raw == null) {
+        await _prefs.remove(_rememberedWorkspaceJsonPrefs);
+      } else {
+        await _prefs.setString(_rememberedWorkspaceJsonPrefs, raw);
+      }
+    } else {
+      if (raw == null) {
+        _memoryStore.remove(_rememberedWorkspaceJsonPrefs);
+      } else {
+        _memoryStore[_rememberedWorkspaceJsonPrefs] = raw;
+      }
+    }
+  }
+
+  /// Gets the remembered workspace metadata
+  Workspace? getRememberedWorkspace() {
+    try {
+      final raw = _prefs != null
+          ? _prefs.getString(_rememberedWorkspaceJsonPrefs)
+          : _memoryStore[_rememberedWorkspaceJsonPrefs];
+      if (raw == null || raw.isEmpty) return null;
+      return Workspace.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Clears remembered organization bypass preferences
+  Future<void> clearRememberedOrganization() async {
+    await setRememberedOrganizationCode(null);
+    await saveRememberedWorkspace(null);
+  }
+
   static const String _clientConfigKey = 'ozikol_cached_client_config_json';
 
   /// Saves the dynamically fetched client application configuration

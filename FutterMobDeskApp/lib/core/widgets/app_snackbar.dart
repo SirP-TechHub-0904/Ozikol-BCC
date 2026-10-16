@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
-/// Central floating notification toast / snackbar dispatcher for Ozikol MIS.
+/// Central floating notification toast / snackbar dispatcher for Ozikol BCC.
 /// Provides consistent visual feedback for success, error, warning, and info states.
 class AppSnackBar {
   AppSnackBar._();

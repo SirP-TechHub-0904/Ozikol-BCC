@@ -388,8 +388,8 @@
 
         <!-- Step B: Interactive Seed Default Website Choice View -->
         <div id="seedChoiceView" style="display: none; text-align: center;">
-            <div style="width: 58px; height: 58px; border-radius: 18px; background: var(--ozikol-primary-subtle, rgba(229, 23, 63, 0.08)); border: 1.5px solid var(--ozikol-primary-border, rgba(229, 23, 63, 0.25)); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
-                <span class="material-symbols-outlined" style="font-size: 28px; color: var(--ozikol-primary, #e5173f);">auto_awesome</span>
+            <div style="width: 58px; height: 58px; border-radius: 18px; background: var(--ozikol-primary-subtle, rgba(0, 80, 229, 0.08)); border: 1.5px solid var(--ozikol-primary-border, rgba(0, 80, 229, 0.25)); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: var(--ozikol-primary, #0050e5);">auto_awesome</span>
             </div>
             <h2 style="font-size: 21px; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.3px;">Initialize Default Website?</h2>
             <p style="font-size: 13.5px; color: #64748b; margin: 0 auto 22px; line-height: 1.5; max-width: 400px;">
@@ -397,7 +397,7 @@
             </p>
 
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button type="button" id="btnSeedYes" onclick="submitSeedChoice(true)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; background: var(--ozikol-primary, #e5173f); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px var(--ozikol-primary-glow, rgba(229, 23, 63, 0.35)); transition: all 0.2s;">
+                <button type="button" id="btnSeedYes" onclick="submitSeedChoice(true)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; background: var(--ozikol-primary, #0050e5); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px var(--ozikol-primary-glow, rgba(0, 80, 229, 0.35)); transition: all 0.2s;">
                     <span>🚀 Yes, Seed Default Website (Recommended)</span>
                 </button>
                 <button type="button" id="btnSeedNo" onclick="submitSeedChoice(false)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
@@ -405,8 +405,8 @@
                 </button>
             </div>
 
-            <div id="seedingProgressStatus" style="display: none; margin-top: 16px; font-size: 13px; color: var(--ozikol-primary, #e5173f); font-weight: 600; align-items: center; justify-content: center; gap: 8px;">
-                <div style="width: 14px; height: 14px; border: 2px solid var(--ozikol-primary, #e5173f); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+            <div id="seedingProgressStatus" style="display: none; margin-top: 16px; font-size: 13px; color: var(--ozikol-primary, #0050e5); font-weight: 600; align-items: center; justify-content: center; gap: 8px;">
+                <div style="width: 14px; height: 14px; border: 2px solid var(--ozikol-primary, #0050e5); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
                 <span>Applying turnkey website suite...</span>
             </div>
         </div>
@@ -419,8 +419,8 @@
     to { transform: rotate(360deg); }
 }
 #btnSeedYes:hover {
-    background: var(--ozikol-primary-hover, #cc1033) !important;
-    box-shadow: 0 6px 20px rgba(229, 23, 63, 0.45) !important;
+    background: var(--ozikol-primary-hover, #003db3) !important;
+    box-shadow: 0 6px 20px rgba(0, 80, 229, 0.45) !important;
 }
 #btnSeedNo:hover {
     background: #f1f5f9 !important;

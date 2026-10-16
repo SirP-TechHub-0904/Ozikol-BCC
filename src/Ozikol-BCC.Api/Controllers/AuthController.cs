@@ -455,6 +455,21 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
+            // Resolve uploaded tenant brand logo if configured in tenant settings
+            string? logoUrl = null;
+            if (activeDbContext != null)
+            {
+                try
+                {
+                    var siteSetting = await activeDbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+                    logoUrl = siteSetting?.CompanyLogoUrl ?? siteSetting?.LogoUrl;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Could not query tenant MisWebsiteSettings for logo URL.");
+                }
+            }
+
             var responseData = new LoginResponseModel
             {
                 Token = token,
@@ -464,6 +479,7 @@ namespace Ozikol_BCC.Api.Controllers
                 AvatarUrl = user.AvatarUrl,
                 TenantKey = resolvedTenantKey,
                 OrganizationName = resolvedOrgName,
+                LogoUrl = logoUrl,
                 MustChangePassword = user.MustChangePassword,
                 RequiresOnboarding = requiresOnboarding,
                 OnboardingStep = onboardingStep,
@@ -1636,6 +1652,12 @@ namespace Ozikol_BCC.Api.Controllers
         public string? AvatarUrl { get; set; }
         public string? TenantKey { get; set; }
         public string? OrganizationName { get; set; }
+
+        /// <summary>
+        /// Dedicated company logo URL uploaded in BCC Admin settings, or null if using monogram initials.
+        /// </summary>
+        public string? LogoUrl { get; set; }
+
         public bool MustChangePassword { get; set; }
 
         /// <summary>

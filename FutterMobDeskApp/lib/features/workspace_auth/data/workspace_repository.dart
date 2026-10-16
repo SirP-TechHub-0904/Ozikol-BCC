@@ -11,25 +11,54 @@ class WorkspaceRepository {
 
   Dio get _dio => _apiClient.dio;
 
-  /// Resolves a workspace by Company Access Code, Default Subdomain, or Custom Domain.
-  /// Normalizes input (e.g. "acme", "acme.ozikol.cloud", "portal.acme.com").
+  /// Resolves a workspace by Organization Access Code, Subdomain, or Custom Web Address.
+  /// Normalizes input (e.g. "acme", "acme.ozikol.cloud", "portal.acme.com", "https://rozzy-touchxcx.localhost:4200/").
   Future<Workspace> resolveWorkspace(String rawInput) async {
     final cleanInput = _cleanIdentifier(rawInput);
     if (cleanInput.isEmpty) {
-      throw Exception('Please enter a valid Company Access Code or Domain.');
+      throw Exception('Please enter a valid organization access code or web domain.');
     }
 
+    final hostWithoutPort = cleanInput.split(':')[0];
+    final subdomain = _extractSubdomain(hostWithoutPort);
+
     try {
-      // 1. First probe the Master Catalog tenants endpoint with the identifier
-      final response = await _dio.get(
-        ApiConstants.tenantsEndpoint,
-        options: Options(
-          headers: {
-            ApiConstants.headerTenantKey: cleanInput,
-            ApiConstants.headerTenantDomain: cleanInput,
-          },
-        ),
-      );
+      // 1. First probe the dedicated single-tenant resolution endpoint
+      try {
+        final resolveResponse = await _dio.get(
+          ApiConstants.resolveTenantEndpoint,
+          queryParameters: {'identifier': cleanInput},
+        );
+
+        if (resolveResponse.statusCode == 200 && resolveResponse.data != null) {
+          final resData = resolveResponse.data;
+          Map? item;
+          if (resData is Map && resData['data'] is Map && resData['data']['tenantKey'] != null) {
+            item = resData['data'] as Map;
+          } else if (resData is Map && resData['tenantKey'] != null) {
+            item = resData;
+          }
+
+          if (item != null) {
+            final tKey = item['tenantKey']?.toString() ?? cleanInput;
+            final logo = item['logoUrl'] ?? await _probeTenantLogo(tKey);
+            return Workspace(
+              tenantKey: tKey,
+              organizationName: item['organizationName'] ?? tKey,
+              primaryDomain: item['primaryDomain'] ?? '$tKey.ozikol.cloud',
+              customDomain: item['customDomain'],
+              logoUrl: logo,
+              lastAccessed: DateTime.now(),
+              isActive: item['isActive'] ?? true,
+            );
+          }
+        }
+      } catch (_) {
+        // Fall back gracefully to querying registered tenants catalog
+      }
+
+      // 2. Query registered tenants catalog and match locally
+      final response = await _dio.get(ApiConstants.tenantsEndpoint);
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
@@ -40,24 +69,40 @@ class WorkspaceRepository {
           list = data;
         }
 
-        // Search for matching tenant key, primary domain, or custom domain
+        // Search for matching tenant key, primary domain, custom domain, or website URL
         for (final item in list) {
           final tKey = (item['tenantKey'] ?? '').toString().toLowerCase();
           final pDom = (item['primaryDomain'] ?? '').toString().toLowerCase();
           final cDom = (item['customDomain'] ?? '').toString().toLowerCase();
-          final search = cleanInput.toLowerCase();
+          final webUrl = (item['websiteUrl'] ?? '').toString().toLowerCase();
 
-          if (tKey == search ||
-              pDom == search ||
-              cDom == search ||
-              pDom.startsWith('$search.') ||
-              search.startsWith('$tKey.')) {
+          final pDomHost = pDom.split(':')[0];
+          final cDomHost = cDom.split(':')[0];
+
+          final isKeyMatch = tKey == cleanInput ||
+              tKey == hostWithoutPort ||
+              (subdomain.isNotEmpty && tKey == subdomain);
+
+          final isPrimaryMatch = pDom == cleanInput ||
+              pDomHost == hostWithoutPort ||
+              (subdomain.isNotEmpty && pDomHost.startsWith('$subdomain.'));
+
+          final isCustomMatch = cDom.isNotEmpty &&
+              (cDom == cleanInput || cDomHost == hostWithoutPort);
+
+          final isWebsiteMatch = webUrl.isNotEmpty &&
+              (webUrl.contains(hostWithoutPort) ||
+                  (subdomain.isNotEmpty && webUrl.contains(subdomain)));
+
+          if (isKeyMatch || isPrimaryMatch || isCustomMatch || isWebsiteMatch) {
+            final matchedKey = (item['tenantKey'] ?? cleanInput).toString();
+            final logo = item['logoUrl'] ?? await _probeTenantLogo(matchedKey);
             return Workspace(
-              tenantKey: item['tenantKey'] ?? cleanInput,
-              organizationName: item['organizationName'] ?? cleanInput,
-              primaryDomain: item['primaryDomain'] ?? '$cleanInput.ozikol.cloud',
+              tenantKey: matchedKey,
+              organizationName: item['organizationName'] ?? matchedKey,
+              primaryDomain: item['primaryDomain'] ?? '$matchedKey.ozikol.cloud',
               customDomain: item['customDomain'],
-              logoUrl: item['logoUrl'],
+              logoUrl: logo,
               lastAccessed: DateTime.now(),
               isActive: item['isActive'] ?? true,
             );
@@ -65,28 +110,24 @@ class WorkspaceRepository {
         }
       }
 
-      // 2. Direct fallback resolution if tenant lookup is directly matching tenant key
-      return Workspace(
-        tenantKey: cleanInput,
-        organizationName: cleanInput.toUpperCase(),
-        primaryDomain: cleanInput.contains('.') ? cleanInput : '$cleanInput.ozikol.cloud',
-        lastAccessed: DateTime.now(),
-        isActive: true,
-      );
+      // If search yields no match
+      throw Exception('Workspace "$rawInput" could not be found. Please check your access code or web address.');
     } on DioException catch (dioErr) {
-      if (dioErr.response?.statusCode == 404) {
-        throw Exception('Workspace "$cleanInput" was not found in the Master Catalog.');
+      if (dioErr.type == DioExceptionType.connectionTimeout ||
+          dioErr.type == DioExceptionType.receiveTimeout ||
+          dioErr.type == DioExceptionType.sendTimeout ||
+          dioErr.type == DioExceptionType.connectionError) {
+        throw Exception('Unable to connect to the Ozikol server. Please check your network connection.');
       }
-      // If server returned another error or is currently offline in dev, allow proceeding with formatted identifier
-      return Workspace(
-        tenantKey: cleanInput,
-        organizationName: cleanInput.toUpperCase(),
-        primaryDomain: cleanInput.contains('.') ? cleanInput : '$cleanInput.ozikol.cloud',
-        lastAccessed: DateTime.now(),
-        isActive: true,
-      );
+
+      if (dioErr.response?.statusCode == 404) {
+        throw Exception('Workspace "$rawInput" could not be found. Please check your access code or web address.');
+      }
+
+      throw Exception('Unable to verify workspace at this time. Please try again.');
     } catch (e) {
-      throw Exception('Failed to connect to workspace: ${e.toString()}');
+      final msg = e.toString().replaceFirst('Exception: ', '').trim();
+      throw Exception(msg);
     }
   }
 
@@ -112,35 +153,110 @@ class WorkspaceRepository {
 
       if (response.statusCode == 200 && response.data != null) {
         final resData = response.data;
-        if (resData['success'] == true && resData['data'] != null) {
-          return resData['data'] as Map<String, dynamic>;
+        if (resData is Map) {
+          final isSuccessful = resData['isSuccess'] == true ||
+              resData['success'] == true ||
+              resData['IsSuccess'] == true ||
+              (resData['data'] != null &&
+                  (resData['errors'] == null ||
+                      (resData['errors'] is List && (resData['errors'] as List).isEmpty)));
+
+          if (isSuccessful && resData['data'] is Map) {
+            return Map<String, dynamic>.from(resData['data'] as Map);
+          }
+
+          if (resData['token'] != null) {
+            return Map<String, dynamic>.from(resData);
+          }
+
+          final msg = resData['message']?.toString();
+          if (msg != null && msg.trim().isNotEmpty && !isSuccessful) {
+            throw Exception(msg);
+          }
         }
-        throw Exception(resData['message'] ?? 'Login failed. Please check credentials.');
+        throw Exception('Unable to sign in. Please verify your credentials.');
       }
 
-      throw Exception('Server returned status code ${response.statusCode}');
+      throw Exception('Unable to sign in. Please verify your credentials.');
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError) {
+        throw Exception('Unable to connect to the authentication server. Please check your network connection.');
+      }
+
       final msg = e.response?.data is Map && e.response?.data['message'] != null
-          ? e.response?.data['message']
-          : 'Invalid credentials or inactive workspace account.';
+          ? e.response?.data['message'].toString()
+          : 'Invalid email or password. Please verify your credentials.';
+      throw Exception(msg);
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '').trim();
       throw Exception(msg);
     }
   }
 
-  /// Cleans an incoming domain or code string
+  /// Cleans an incoming domain, URL, or code string
   static String _cleanIdentifier(String raw) {
     var cleaned = raw.trim().toLowerCase();
-    cleaned = cleaned.replaceAll('https://', '').replaceAll('http://', '').replaceAll('www.', '');
+    cleaned = cleaned
+        .replaceAll('https://', '')
+        .replaceAll('http://', '')
+        .replaceAll('www.', '');
+
     if (cleaned.contains('/')) {
       cleaned = cleaned.split('/')[0];
     }
-    if (cleaned.contains(':')) {
-      cleaned = cleaned.split(':')[0];
+    if (cleaned.contains('?')) {
+      cleaned = cleaned.split('?')[0];
     }
-    // If entered as an email like "admin@acmecorp.com"
     if (cleaned.contains('@')) {
       cleaned = cleaned.split('@')[1];
     }
     return cleaned;
+  }
+
+  /// Extracts the leading tenant subdomain candidate from a hostname string
+  static String _extractSubdomain(String host) {
+    final clean = host.toLowerCase().trim();
+    if (clean.contains('.')) {
+      final parts = clean.split('.');
+      if (parts.length >= 2) {
+        final sub = parts[0];
+        if (sub != 'localhost' &&
+            sub != '127' &&
+            sub != 'www' &&
+            sub != 'api' &&
+            sub != 'admin' &&
+            sub != 'central') {
+          return sub;
+        }
+      }
+    }
+    return '';
+  }
+
+  /// Probes the tenant's brand settings endpoint to resolve any uploaded company logo
+  Future<String?> _probeTenantLogo(String tenantKey) async {
+    try {
+      final res = await _dio.get(
+        ApiConstants.brandSettingsEndpoint,
+        options: Options(
+          headers: {ApiConstants.headerTenantKey: tenantKey},
+          sendTimeout: const Duration(seconds: 3),
+          receiveTimeout: const Duration(seconds: 3),
+        ),
+      );
+      if (res.statusCode == 200 && res.data is Map) {
+        final d = res.data['data'];
+        if (d is Map) {
+          final logo = (d['companyLogoUrl'] ?? d['logoUrl'])?.toString().trim();
+          if (logo != null && logo.isNotEmpty) return logo;
+        }
+      }
+    } catch (_) {
+      // Gracefully ignore failure and fall back to monogram initials
+    }
+    return null;
   }
 }
