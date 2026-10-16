@@ -33,6 +33,9 @@ class AppTopBarAction {
   /// Custom icon color (defaults to theme foreground).
   final Color? iconColor;
 
+  /// Optional custom widget to replace the default icon (e.g. loading spinner).
+  final Widget? customWidget;
+
   /// Creates a top bar action button configuration.
   const AppTopBarAction({
     required this.icon,
@@ -40,6 +43,7 @@ class AppTopBarAction {
     this.badge,
     this.tooltip,
     this.iconColor,
+    this.customWidget,
   });
 }
 
@@ -245,11 +249,12 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
       clipBehavior: Clip.none,
       children: [
         IconButton(
-          icon: Icon(
-            action.icon,
-            color: action.iconColor ?? (isDark ? AppColors.gray300 : AppColors.gray700),
-            size: 22,
-          ),
+          icon: action.customWidget ??
+              Icon(
+                action.icon,
+                color: action.iconColor ?? (isDark ? AppColors.gray300 : AppColors.gray700),
+                size: 22,
+              ),
           onPressed: action.onTap,
           tooltip: action.tooltip,
         ),

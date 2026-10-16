@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -307,6 +308,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             right: 24,
             child: _buildOziAiFloatingButton(isDark),
           ),
+
+          // Full Workspace Refresh Loading Overlay
+          if (_isRefreshing)
+            Positioned.fill(
+              child: _buildRefreshingOverlay(isDark),
+            ),
         ],
       ),
     );
@@ -390,7 +397,19 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         actions: [
           AppTopBarAction(
             icon: Icons.refresh_rounded,
-            tooltip: 'Refresh Workspace & Telemetry',
+            tooltip: _isRefreshing ? 'Refreshing...' : 'Refresh Workspace & Telemetry',
+            customWidget: _isRefreshing
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isDark ? Colors.white : AppColors.primary,
+                      ),
+                    ),
+                  )
+                : null,
             onTap: () {
               if (!_isRefreshing) {
                 _triggerRefresh();
@@ -455,6 +474,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             right: 16,
             child: _buildOziAiFloatingButton(isDark),
           ),
+
+          // Full Workspace Refresh Loading Overlay
+          if (_isRefreshing)
+            Positioned.fill(
+              child: _buildRefreshingOverlay(isDark),
+            ),
         ],
       ),
       bottomNavigationBar: _buildMobileBottomBar(isDark),
@@ -669,16 +694,97 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: IconButton(
-        icon: RotationTransition(
-          turns: _refreshAnimController,
-          child: Icon(
-            Icons.refresh_rounded,
-            size: 20,
-            color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+        icon: _isRefreshing
+            ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? Colors.white : AppColors.primary,
+                  ),
+                ),
+              )
+            : RotationTransition(
+                turns: _refreshAnimController,
+                child: Icon(
+                  Icons.refresh_rounded,
+                  size: 20,
+                  color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                ),
+              ),
+        tooltip: _isRefreshing ? 'Refreshing...' : 'Refresh Workspace & Telemetry',
+        onPressed: _isRefreshing ? null : _triggerRefresh,
+      ),
+    );
+  }
+
+  /// <summary>
+  /// Renders a full-screen semi-transparent loading overlay during active workspace refresh.
+  /// Blocks interaction while displaying a modern glassmorphic status card with progress indicator.
+  /// </summary>
+  /// <param name="isDark">Whether dark mode is currently active.</param>
+  /// <returns>A centered overlay widget with glassmorphism blur and progress feedback.</returns>
+  Widget _buildRefreshingOverlay(bool isDark) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        color: (isDark ? Colors.black : Colors.white).withAlpha(140),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(isDark ? 80 : 30),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Refreshing Workspace...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.onBackgroundLight,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Synchronizing branding, telemetry, and metrics',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? AppColors.gray400 : AppColors.gray500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-        tooltip: 'Refresh Workspace & Telemetry',
-        onPressed: _isRefreshing ? null : _triggerRefresh,
       ),
     );
   }
@@ -755,17 +861,28 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       children: [
         // Refresh Telemetry button
         OutlinedButton.icon(
-          onPressed: _triggerRefresh,
-          icon: RotationTransition(
-            turns: _refreshAnimController,
-            child: Icon(
-              Icons.refresh_rounded,
-              size: 16,
-              color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
-            ),
-          ),
+          onPressed: _isRefreshing ? null : _triggerRefresh,
+          icon: _isRefreshing
+              ? SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? Colors.white : AppColors.primary,
+                    ),
+                  ),
+                )
+              : RotationTransition(
+                  turns: _refreshAnimController,
+                  child: Icon(
+                    Icons.refresh_rounded,
+                    size: 16,
+                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                  ),
+                ),
           label: Text(
-            'Refresh Telemetry',
+            _isRefreshing ? 'Refreshing...' : 'Refresh Telemetry',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
