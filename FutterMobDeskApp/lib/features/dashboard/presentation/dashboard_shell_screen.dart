@@ -27,6 +27,7 @@ import '../../../core/localization/language_provider.dart';
 import '../../../core/widgets/oz_lang_switcher.dart';
 import '../data/dashboard_repository.dart';
 import '../models/dashboard_metrics.dart';
+import 'widgets/user_profile_end_drawer.dart';
 
 /// Clean adaptive dashboard shell delivering 1-to-1 operational and visual parity
 /// with the Ozikol BCC Angular Web Console Dashboard (`/dashboard/console`).
@@ -151,6 +152,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         // If the mobile navigation drawer is currently open, close it instead of prompting to exit the app
         if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
           _mobileScaffoldKey.currentState?.closeDrawer();
+          return;
+        }
+        if (_mobileScaffoldKey.currentState?.isEndDrawerOpen ?? false) {
+          _mobileScaffoldKey.currentState?.closeEndDrawer();
           return;
         }
         final shouldQuit = await ExitConfirmationDialog.show(context);
@@ -408,12 +413,6 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ),
         actions: [
           AppTopBarAction(
-            icon: Icons.language_rounded,
-            tooltip: 'shell.select_language'.tr(ref, fallback: 'Select Language'),
-            customWidget: const OzLangSwitcher(compact: true),
-            onTap: () {},
-          ),
-          AppTopBarAction(
             icon: Icons.refresh_rounded,
             tooltip: _isRefreshing ? 'Refreshing...' : 'Refresh Workspace & Telemetry',
             customWidget: _isRefreshing
@@ -443,17 +442,64 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onTap: () => NotificationsSheet.show(context),
           ),
           AppTopBarAction(
-            icon: Icons.swap_horiz_rounded,
-            tooltip: 'Switch Workspace',
-            onTap: () => _showMobileWorkspaceSheet(context),
+            icon: Icons.person_rounded,
+            tooltip: 'profile.user_profile'.tr(ref, fallback: 'User Profile & Settings'),
+            customWidget: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => _mobileScaffoldKey.currentState?.openEndDrawer(),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      _getUserInitials(activeWs?.userFullName),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: -1,
+                    bottom: -1,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isOnline ? const Color(0xFF22C55E) : const Color(0xFFDC2626),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? AppColors.surfaceDark : Colors.white,
+                          width: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            onTap: () => _mobileScaffoldKey.currentState?.openEndDrawer(),
           ),
         ],
       ),
       drawer: AppDrawer(
         onClose: () => _mobileScaffoldKey.currentState?.closeDrawer(),
-        header: _buildDesktopSidebarHeader(isDark, activeWs),
+        header: _buildDesktopSidebarHeader(isDark, activeWs, isMobile: true),
         sections: _buildNavigationSections(isDark, activeWs),
-        footer: _buildDesktopSidebarFooter(isDark, activeWs),
+        footer: _buildDesktopSidebarFooter(isDark, activeWs, isMobile: true),
+      ),
+      endDrawer: UserProfileEndDrawer(
+        activeWorkspace: activeWs is Workspace ? activeWs : null,
+        onSwitchWorkspace: () => _showMobileWorkspaceSheet(context),
+        onSignOut: () => _handleSignOut(activeWs),
       ),
       body: Stack(
         children: [
@@ -1961,6 +2007,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     bool isDark,
     dynamic activeWs, {
     bool isCollapsed = false,
+    bool isMobile = false,
   }) {
     if (isCollapsed) {
       return Column(
@@ -2105,8 +2152,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
           ),
 
-        // Mode Switcher Widget (Strictly shown for Admin / Privileged Roles)
-        if (canAccessAdmin)
+        // Mode Switcher Widget (Strictly shown on Desktop for Admin / Privileged Roles; omitted on Mobile)
+        if (!isMobile && canAccessAdmin)
           Padding(
             padding: const EdgeInsets.fromLTRB(10, 2, 10, 8),
             child: Container(
@@ -2236,6 +2283,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     bool isDark,
     dynamic activeWs, {
     bool isCollapsed = false,
+    bool isMobile = false,
   }) {
     final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
 
@@ -2286,6 +2334,42 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
             ),
             const SizedBox(height: 4),
+          ],
+        ),
+      );
+    }
+
+    if (isMobile) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: borderColor)),
+        ),
+        child: Row(
+          children: [
+            Image.asset(
+              isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
+              width: 16,
+              height: 16,
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.bolt_rounded,
+                size: 16,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'shell.powered_by'.tr(ref, fallback: 'Powered by Ozikol BCC'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                ),
+              ),
+            ),
           ],
         ),
       );

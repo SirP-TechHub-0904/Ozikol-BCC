@@ -68,6 +68,18 @@ class AppTranslations {
       'shell.switch_workspace': 'Switch Workspace',
       'shell.refresh_workspace': 'Refresh Workspace & Telemetry',
 
+      // User Profile & Right Float Drawer
+      'profile.user_profile': 'User Profile',
+      'profile.active_workspace': 'ORGANIZATION NAMESPACE',
+      'profile.switch_organization': 'Switch Organization',
+      'profile.workspace_mode': 'WORKSPACE MODE',
+      'profile.account_security': 'ACCOUNT & SECURITY',
+      'profile.manage_account': 'Manage Account & Profile',
+      'profile.two_factor_auth': 'Two-Factor Authentication (2FA)',
+      'profile.two_factor_status_enabled': '2FA Active',
+      'profile.linked_devices': 'Linked Devices & Sessions',
+      'profile.activity_logs': 'User Activity Logs',
+
       // Navigation Groups & Items
       'nav.website': 'Website',
       'nav.home': 'Home',
@@ -230,6 +242,18 @@ class AppTranslations {
       'shell.notifications': 'Notifications',
       'shell.switch_workspace': "Changer d'espace",
       'shell.refresh_workspace': 'Actualiser télémétrie',
+
+      // User Profile & Right Float Drawer
+      'profile.user_profile': "Profil de l'utilisateur",
+      'profile.active_workspace': "ESPACE D'ORGANISATION",
+      'profile.switch_organization': "Changer d'organisation",
+      'profile.workspace_mode': "MODE DE L'ESPACE",
+      'profile.account_security': 'COMPTE & SÉCURITÉ',
+      'profile.manage_account': 'Gérer le compte et profil',
+      'profile.two_factor_auth': 'Authentification à deux facteurs (2FA)',
+      'profile.two_factor_status_enabled': '2FA Actif',
+      'profile.linked_devices': 'Appareils liés et sessions',
+      'profile.activity_logs': "Journaux d'activité",
 
       // Navigation Groups & Items
       'nav.website': 'Site Web',
@@ -394,6 +418,18 @@ class AppTranslations {
       'shell.switch_workspace': 'Cambiar Espacio',
       'shell.refresh_workspace': 'Actualizar telemetría',
 
+      // User Profile & Right Float Drawer
+      'profile.user_profile': 'Perfil de Usuario',
+      'profile.active_workspace': 'ESPACIO DE ORGANIZACIÓN',
+      'profile.switch_organization': 'Cambiar de Organización',
+      'profile.workspace_mode': 'MODO DE ESPACIO',
+      'profile.account_security': 'CUENTA Y SEGURIDAD',
+      'profile.manage_account': 'Administrar cuenta y perfil',
+      'profile.two_factor_auth': 'Autenticación de dos factores (2FA)',
+      'profile.two_factor_status_enabled': '2FA Activo',
+      'profile.linked_devices': 'Dispositivos vinculados y sesiones',
+      'profile.activity_logs': 'Registros de actividad',
+
       // Navigation Groups & Items
       'nav.website': 'Sitio Web',
       'nav.home': 'Inicio',
@@ -556,6 +592,18 @@ class AppTranslations {
       'shell.notifications': 'Benachrichtigungen',
       'shell.switch_workspace': 'Arbeitsbereich wechseln',
       'shell.refresh_workspace': 'Telemetrie aktualisieren',
+
+      // User Profile & Right Float Drawer
+      'profile.user_profile': 'Benutzerprofil',
+      'profile.active_workspace': 'ORGANISATIONSBEREICH',
+      'profile.switch_organization': 'Organisation wechseln',
+      'profile.workspace_mode': 'ARBEITSBEREICH-MODUS',
+      'profile.account_security': 'KONTO & SICHERHEIT',
+      'profile.manage_account': 'Konto & Profil verwalten',
+      'profile.two_factor_auth': 'Zwei-Faktor-Authentifizierung (2FA)',
+      'profile.two_factor_status_enabled': '2FA Aktiv',
+      'profile.linked_devices': 'Verknüpfte Geräte & Sitzungen',
+      'profile.activity_logs': 'Benutzeraktivitätsprotokolle',
 
       // Navigation Groups & Items
       'nav.website': 'Webseite',
