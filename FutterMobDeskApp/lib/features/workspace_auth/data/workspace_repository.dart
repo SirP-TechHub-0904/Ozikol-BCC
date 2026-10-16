@@ -41,7 +41,7 @@ class WorkspaceRepository {
 
           if (item != null) {
             final tKey = item['tenantKey']?.toString() ?? cleanInput;
-            final logo = item['logoUrl'] ?? await _probeTenantLogo(tKey);
+            final logo = item['logoUrl'] ?? await probeTenantLogo(tKey);
             return Workspace(
               tenantKey: tKey,
               organizationName: item['organizationName'] ?? tKey,
@@ -96,7 +96,7 @@ class WorkspaceRepository {
 
           if (isKeyMatch || isPrimaryMatch || isCustomMatch || isWebsiteMatch) {
             final matchedKey = (item['tenantKey'] ?? cleanInput).toString();
-            final logo = item['logoUrl'] ?? await _probeTenantLogo(matchedKey);
+            final logo = item['logoUrl'] ?? await probeTenantLogo(matchedKey);
             return Workspace(
               tenantKey: matchedKey,
               organizationName: item['organizationName'] ?? matchedKey,
@@ -237,20 +237,20 @@ class WorkspaceRepository {
   }
 
   /// Probes the tenant's brand settings endpoint to resolve any uploaded company logo
-  Future<String?> _probeTenantLogo(String tenantKey) async {
+  Future<String?> probeTenantLogo(String tenantKey) async {
     try {
       final res = await _dio.get(
         ApiConstants.brandSettingsEndpoint,
         options: Options(
           headers: {ApiConstants.headerTenantKey: tenantKey},
-          sendTimeout: const Duration(seconds: 3),
-          receiveTimeout: const Duration(seconds: 3),
+          sendTimeout: const Duration(seconds: 4),
+          receiveTimeout: const Duration(seconds: 4),
         ),
       );
       if (res.statusCode == 200 && res.data is Map) {
         final d = res.data['data'];
         if (d is Map) {
-          final logo = (d['companyLogoUrl'] ?? d['logoUrl'])?.toString().trim();
+          final logo = (d['companyLogoUrl'] ?? d['companyWhiteLogoUrl'] ?? d['logoUrl'])?.toString().trim();
           if (logo != null && logo.isNotEmpty) return logo;
         }
       }

@@ -44,17 +44,26 @@ class TenantAvatar extends StatelessWidget {
         width: size,
         height: size,
         decoration: BoxDecoration(
+          color: backgroundColor ?? Colors.white,
           borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(
             color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(isDark ? 50 : 20),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
+        padding: const EdgeInsets.all(4),
         child: TenantCachedImage(
           imageUrl: logoUrl,
           tenantKey: tenantKey ?? name,
-          width: size,
-          height: size,
-          borderRadius: borderRadius,
+          width: size - 8,
+          height: size - 8,
+          borderRadius: borderRadius > 4 ? borderRadius - 4 : 0,
           fit: BoxFit.contain,
           fallbackWidget: _buildFallbackMonogram(isDark),
         ),

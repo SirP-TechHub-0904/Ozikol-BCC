@@ -142,12 +142,42 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
         isInitializing: false,
         isLoading: false,
       );
+
+      // Asynchronously probe and apply company logo if missing from initial state
+      if (bypassTarget != null && (bypassTarget.logoUrl == null || bypassTarget.logoUrl!.isEmpty)) {
+        _probeAndApplyLogo(bypassTarget, isPending: true);
+      } else if (active != null && (active.logoUrl == null || active.logoUrl!.isEmpty)) {
+        _probeAndApplyLogo(active, isPending: false);
+      }
     } catch (e) {
       state = state.copyWith(
         isInitializing: false,
         isLoading: false,
         errorMessage: e.toString(),
       );
+    }
+  }
+
+  /// Asynchronously probes the tenant's uploaded company logo and updates workspace state
+  Future<void> _probeAndApplyLogo(Workspace ws, {required bool isPending}) async {
+    try {
+      final logo = await _repository.probeTenantLogo(ws.tenantKey);
+      if (logo != null && logo.isNotEmpty) {
+        final updated = ws.copyWith(logoUrl: logo);
+        await _storageService.saveRememberedWorkspace(updated);
+        await _storageService.saveWorkspace(updated);
+        if (isPending) {
+          if (state.pendingWorkspace?.tenantKey == ws.tenantKey) {
+            state = state.copyWith(pendingWorkspace: updated);
+          }
+        } else {
+          if (state.activeWorkspace?.tenantKey == ws.tenantKey) {
+            state = state.copyWith(activeWorkspace: updated);
+          }
+        }
+      }
+    } catch (_) {
+      // Gracefully ignore network probe errors
     }
   }
 

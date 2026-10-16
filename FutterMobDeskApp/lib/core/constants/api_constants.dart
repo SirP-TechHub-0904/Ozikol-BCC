@@ -29,7 +29,7 @@ class ApiConstants {
   static const String tenantsEndpoint = '/api/TenantsApi';
   static const String resolveTenantEndpoint = '/api/TenantsApi/resolve';
   static const String clientConfigEndpoint = '/api/SetupApi/client-config';
-  static const String brandSettingsEndpoint = '/api/Settings/brand-settings';
+  static const String brandSettingsEndpoint = '/api/SettingsApi/brand';
 
   // Workspace & Dashboard Endpoints
   static const String dashboardMetricsEndpoint = '/api/DashboardApi/metrics';
