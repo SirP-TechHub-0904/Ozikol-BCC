@@ -1861,30 +1861,16 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            child: Row(
-              children: [
-                Image.asset(
-                  isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
-                  width: 14,
-                  height: 14,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.bolt_rounded,
-                    size: 14,
-                    color: AppColors.primary,
-                  ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Powered by Ozikol',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Powered by Ozikol',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
