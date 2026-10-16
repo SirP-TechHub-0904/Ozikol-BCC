@@ -13,6 +13,7 @@ using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Microsoft.AspNetCore.SignalR;
+using Ozikol_BCC.Infrastructure.TenantSupport;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -30,19 +31,42 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ICloudinaryService _cloudinaryService;
         private readonly Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? _activityLogger;
         private readonly IHubContext<NotificationHub>? _notificationHub;
+        private readonly ITenantFeatureGateService? _featureGateService;
+        private readonly ITenantProvider? _tenantProvider;
 
         public SettingsApiController(
             IMediator mediator,
             DashboardDbContext db,
             ICloudinaryService cloudinaryService,
             Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? activityLogger = null,
-            IHubContext<NotificationHub>? notificationHub = null)
+            IHubContext<NotificationHub>? notificationHub = null,
+            ITenantFeatureGateService? featureGateService = null,
+            ITenantProvider? tenantProvider = null)
         {
             _mediator = mediator;
             _db = db;
             _cloudinaryService = cloudinaryService;
             _activityLogger = activityLogger;
             _notificationHub = notificationHub;
+            _featureGateService = featureGateService;
+            _tenantProvider = tenantProvider;
+        }
+
+        private string? ResolveCurrentTenantKey()
+        {
+            var candidate = _tenantProvider?.CurrentTenant;
+            if (!string.IsNullOrWhiteSpace(candidate)) return candidate;
+
+            var headerKey = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
+            if (!string.IsNullOrWhiteSpace(headerKey)) return headerKey;
+
+            var host = HttpContext.Request.Host.Host.ToLowerInvariant();
+            var parts = host.Split('.');
+            if (parts.Length > 1 && !new[] { "localhost", "127", "www", "api", "central", "admin" }.Contains(parts[0]))
+            {
+                return parts[0];
+            }
+            return null;
         }
 
         /// <summary>
@@ -532,14 +556,59 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves status of platform feature flags.
+        /// Retrieves status of platform feature flags dynamically evaluated against Central Master Catalog subscriptions.
         /// </summary>
         [HttpGet("features")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
-        public IActionResult GetFeatureFlags()
+        public async Task<IActionResult> GetFeatureFlags(CancellationToken cancellationToken)
         {
-            var data = new { enableChat = true, enableEVoting = true, enableGrants = true, enableAts = true };
-            return Ok(ApiResponse<object>.SuccessResponse(data, "Feature flags retrieved."));
+            var tenantKey = ResolveCurrentTenantKey();
+            if (!string.IsNullOrWhiteSpace(tenantKey) && _featureGateService != null)
+            {
+                var entitlements = await _featureGateService.GetTenantFeatureEntitlementsAsync(tenantKey, cancellationToken);
+                var activeCodes = entitlements.ActiveFeatureCodes;
+
+                var dynamicData = new
+                {
+                    enableChat = activeCodes.Contains("bcp-community-messenger"),
+                    enableEVoting = activeCodes.Contains("bcp-elections-evoting"),
+                    enableGrants = activeCodes.Contains("bcp-grant-ledger") || activeCodes.Contains("bcp-proposal-pipeline"),
+                    enableAts = activeCodes.Contains("bcp-recruitment-hiring"),
+                    activeFeatures = activeCodes.ToList(),
+                    features = entitlements.Features
+                };
+                return Ok(ApiResponse<object>.SuccessResponse(dynamicData, "Tenant feature entitlements retrieved."));
+            }
+
+            var fallback = new
+            {
+                enableChat = true,
+                enableEVoting = true,
+                enableGrants = true,
+                enableAts = true,
+                activeFeatures = new List<string>(),
+                features = new Dictionary<string, object>()
+            };
+            return Ok(ApiResponse<object>.SuccessResponse(fallback, "Default feature flags retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves upcoming modular capability expiration notices.
+        /// Strictly visible to tenant administrators (SuperAdmin, Admin).
+        /// </summary>
+        [HttpGet("feature-expirations")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
+        [ProducesResponseType(typeof(ApiResponse<List<FeatureExpirationNoticeDto>>), 200)]
+        public async Task<IActionResult> GetFeatureExpirations(CancellationToken cancellationToken)
+        {
+            var tenantKey = ResolveCurrentTenantKey();
+            if (string.IsNullOrWhiteSpace(tenantKey) || _featureGateService == null)
+            {
+                return Ok(ApiResponse<List<FeatureExpirationNoticeDto>>.SuccessResponse(new List<FeatureExpirationNoticeDto>(), "No feature expirations detected."));
+            }
+
+            var notices = await _featureGateService.GetExpiringFeaturesAsync(tenantKey, daysThreshold: 14, cancellationToken);
+            return Ok(ApiResponse<List<FeatureExpirationNoticeDto>>.SuccessResponse(notices, "Feature expirations retrieved."));
         }
 
         /// <summary>

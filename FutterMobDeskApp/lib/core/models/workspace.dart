@@ -11,6 +11,9 @@ class Workspace {
   final String? userEmail;
   final String? userFullName;
   final List<String> userRoles;
+  final Map<String, dynamic> effectivePermissions;
+  final List<String> licensedFeatures;
+  final String activeConsoleMode;
   final DateTime lastAccessed;
   final bool isActive;
 
@@ -26,6 +29,9 @@ class Workspace {
     this.userEmail,
     this.userFullName,
     this.userRoles = const [],
+    this.effectivePermissions = const {},
+    this.licensedFeatures = const [],
+    this.activeConsoleMode = 'administration',
     required this.lastAccessed,
     this.isActive = true,
   });
@@ -52,6 +58,65 @@ class Workspace {
   /// Whether the workspace currently has a valid session token
   bool get isAuthenticated => authToken != null && authToken!.trim().isNotEmpty;
 
+  /// Whether the current authenticated user holds the SuperAdmin role
+  bool get isSuperAdmin =>
+      userRoles.any((r) => r.toLowerCase() == 'superadmin') ||
+      (effectivePermissions['isSuperAdmin'] == true);
+
+  /// Whether the current authenticated user holds Admin or SuperAdmin role
+  bool get isAdmin =>
+      isSuperAdmin ||
+      userRoles.any((r) => r.toLowerCase() == 'admin') ||
+      (effectivePermissions['isAdmin'] == true);
+
+  /// Whether the user has global editing mutation rights across all features
+  bool get hasGlobalEdit =>
+      isSuperAdmin ||
+      isAdmin ||
+      (effectivePermissions['hasGlobalEdit'] == true) ||
+      userRoles.any((r) => r.toLowerCase() == 'globaledit');
+
+  /// Whether the user holds any administrative or feature-scoped role that permits access to the Administration Console
+  bool get canAccessAdminConsole =>
+      isAdmin ||
+      isSuperAdmin ||
+      hasGlobalEdit ||
+      (effectivePermissions['canAccessAdminConsole'] == true) ||
+      (effectivePermissions['features'] is Map &&
+          (effectivePermissions['features'] as Map).isNotEmpty) ||
+      userRoles.any((r) => [
+            'identitymanager',
+            'cmsmanager',
+            'editor',
+            'featureedit'
+          ].contains(r.toLowerCase()));
+
+  /// Verifies if a modular capability is active and licensed for this tenant organization
+  bool isFeatureActive(String code) =>
+      licensedFeatures.isEmpty || licensedFeatures.contains(code);
+
+  /// Checks if the user has mutation/editing permission for a given feature code
+  bool canEditFeature(String code) {
+    if (isSuperAdmin || isAdmin || hasGlobalEdit) return true;
+    final feats = effectivePermissions['features'];
+    if (feats is Map) {
+      final level = feats[code]?.toString();
+      if (level != null && level.toLowerCase() == 'featureedit') return true;
+    }
+    return false;
+  }
+
+  /// Checks if the user is in view-only / ReadOnly mode for a given feature code
+  bool isFeatureReadOnly(String code) {
+    if (isSuperAdmin || isAdmin || hasGlobalEdit) return false;
+    final feats = effectivePermissions['features'];
+    if (feats is Map) {
+      final level = feats[code]?.toString();
+      if (level != null && level.toLowerCase() == 'readonly') return true;
+    }
+    return false;
+  }
+
   Workspace copyWith({
     String? tenantKey,
     String? organizationName,
@@ -67,6 +132,9 @@ class Workspace {
     String? userEmail,
     String? userFullName,
     List<String>? userRoles,
+    Map<String, dynamic>? effectivePermissions,
+    List<String>? licensedFeatures,
+    String? activeConsoleMode,
     DateTime? lastAccessed,
     bool? isActive,
   }) {
@@ -82,6 +150,9 @@ class Workspace {
       userEmail: userEmail ?? this.userEmail,
       userFullName: userFullName ?? this.userFullName,
       userRoles: userRoles ?? this.userRoles,
+      effectivePermissions: effectivePermissions ?? this.effectivePermissions,
+      licensedFeatures: licensedFeatures ?? this.licensedFeatures,
+      activeConsoleMode: activeConsoleMode ?? this.activeConsoleMode,
       lastAccessed: lastAccessed ?? this.lastAccessed,
       isActive: isActive ?? this.isActive,
     );
@@ -100,6 +171,9 @@ class Workspace {
       'userEmail': userEmail,
       'userFullName': userFullName,
       'userRoles': userRoles,
+      'effectivePermissions': effectivePermissions,
+      'licensedFeatures': licensedFeatures,
+      'activeConsoleMode': activeConsoleMode,
       'lastAccessed': lastAccessed.toIso8601String(),
       'isActive': isActive,
     };
@@ -118,6 +192,9 @@ class Workspace {
       userEmail: json['userEmail'] as String?,
       userFullName: json['userFullName'] as String?,
       userRoles: (json['userRoles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      effectivePermissions: json['effectivePermissions'] as Map<String, dynamic>? ?? const {},
+      licensedFeatures: (json['licensedFeatures'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      activeConsoleMode: json['activeConsoleMode'] as String? ?? 'administration',
       lastAccessed: json['lastAccessed'] != null
           ? DateTime.tryParse(json['lastAccessed'] as String) ?? DateTime.now()
           : DateTime.now(),

@@ -41,6 +41,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly Ozikol_BCC.Application.Services.IOtpVerificationService? _otpService;
         private readonly IServiceScopeFactory? _serviceScopeFactory;
         private readonly IRecaptchaService? _recaptchaService;
+        private readonly ITenantFeatureGateService? _featureGateService;
 
         public AuthController(
             IMediator mediator,
@@ -54,7 +55,8 @@ namespace Ozikol_BCC.Api.Controllers
             Ozikol_BCC.Application.Services.IMemberIdGeneratorService? memberIdGenerator = null,
             Ozikol_BCC.Application.Services.IOtpVerificationService? otpService = null,
             IServiceScopeFactory? serviceScopeFactory = null,
-            IRecaptchaService? recaptchaService = null)
+            IRecaptchaService? recaptchaService = null,
+            ITenantFeatureGateService? featureGateService = null)
         {
             _mediator = mediator;
             _userManager = userManager;
@@ -68,6 +70,65 @@ namespace Ozikol_BCC.Api.Controllers
             _otpService = otpService;
             _serviceScopeFactory = serviceScopeFactory;
             _recaptchaService = recaptchaService;
+            _featureGateService = featureGateService;
+        }
+
+        private static EffectiveUserPermissionsDto ComputeEffectivePermissions(List<string> roles)
+        {
+            var isSuperAdmin = roles.Any(r => string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase));
+            var isAdmin = isSuperAdmin || roles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase));
+            var hasGlobalEdit = isSuperAdmin || isAdmin || roles.Any(r => string.Equals(r, "GlobalEdit", StringComparison.OrdinalIgnoreCase) || string.Equals(r, "Global Edit", StringComparison.OrdinalIgnoreCase));
+
+            var features = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var role in roles)
+            {
+                if (role.StartsWith("FeatureEdit:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var code = role["FeatureEdit:".Length..].Trim();
+                    features[code] = "FeatureEdit";
+                }
+                else if (role.StartsWith("ReadOnly:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var code = role["ReadOnly:".Length..].Trim();
+                    if (!features.ContainsKey(code) || features[code] != "FeatureEdit")
+                    {
+                        features[code] = "ReadOnly";
+                    }
+                }
+                else if (role.StartsWith("Feature:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var rest = role["Feature:".Length..].Trim();
+                    if (rest.EndsWith(":ReadOnly", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var code = rest[..^":ReadOnly".Length].Trim();
+                        if (!features.ContainsKey(code) || features[code] != "FeatureEdit")
+                        {
+                            features[code] = "ReadOnly";
+                        }
+                    }
+                    else if (rest.EndsWith(":Edit", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var code = rest[..^":Edit".Length].Trim();
+                        features[code] = "FeatureEdit";
+                    }
+                    else
+                    {
+                        features[rest] = "FeatureEdit";
+                    }
+                }
+            }
+
+            var canAccessAdminConsole = isSuperAdmin || isAdmin || hasGlobalEdit || features.Count > 0 || roles.Any(r => new[] { "IdentityManager", "CmsManager", "Editor" }.Contains(r, StringComparer.OrdinalIgnoreCase));
+
+            return new EffectiveUserPermissionsDto
+            {
+                IsSuperAdmin = isSuperAdmin,
+                IsAdmin = isAdmin,
+                HasGlobalEdit = hasGlobalEdit,
+                CanAccessAdminConsole = canAccessAdminConsole,
+                Features = features
+            };
         }
 
         [HttpGet("me")]
@@ -86,6 +147,21 @@ namespace Ozikol_BCC.Api.Controllers
             var resolvedTenantKey = _tenantProvider?.CurrentTenant;
             var freshToken = await GenerateJwtTokenAsync(user, resolvedTenantKey, currentRoles);
 
+            var effectivePerms = ComputeEffectivePermissions(currentRoles);
+            var licensedFeatures = new List<string>();
+            if (!string.IsNullOrEmpty(resolvedTenantKey) && _featureGateService != null)
+            {
+                try
+                {
+                    var ent = await _featureGateService.GetTenantFeatureEntitlementsAsync(resolvedTenantKey);
+                    licensedFeatures = ent.ActiveFeatureCodes.ToList();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not resolve dynamic tenant features for {TenantKey}", resolvedTenantKey);
+                }
+            }
+
             var data = new
             {
                 UserId = user.Id,
@@ -95,7 +171,9 @@ namespace Ozikol_BCC.Api.Controllers
                 MemberId = user.MemberId,
                 Designation = user.Designation,
                 Roles = currentRoles,
-                IsAdmin = currentRoles.Any(r => new[] { "SuperAdmin", "Admin", "IdentityManager", "CmsManager" }.Contains(r, StringComparer.OrdinalIgnoreCase)),
+                IsAdmin = effectivePerms.IsAdmin,
+                EffectivePermissions = effectivePerms,
+                LicensedTenantFeatures = licensedFeatures,
                 Token = freshToken
             };
 
@@ -470,6 +548,21 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
+            var effectivePermsOnLogin = ComputeEffectivePermissions(userRoles);
+            var licensedFeaturesOnLogin = new List<string>();
+            if (!string.IsNullOrEmpty(resolvedTenantKey) && _featureGateService != null)
+            {
+                try
+                {
+                    var ent = await _featureGateService.GetTenantFeatureEntitlementsAsync(resolvedTenantKey);
+                    licensedFeaturesOnLogin = ent.ActiveFeatureCodes.ToList();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not resolve dynamic tenant features on login for {TenantKey}", resolvedTenantKey);
+                }
+            }
+
             var responseData = new LoginResponseModel
             {
                 Token = token,
@@ -483,7 +576,9 @@ namespace Ozikol_BCC.Api.Controllers
                 MustChangePassword = user.MustChangePassword,
                 RequiresOnboarding = requiresOnboarding,
                 OnboardingStep = onboardingStep,
-                Roles = userRoles
+                Roles = userRoles,
+                EffectivePermissions = effectivePermsOnLogin,
+                LicensedTenantFeatures = licensedFeaturesOnLogin
             };
 
             return Ok(ApiResponse<LoginResponseModel>.SuccessResponse(responseData, "Authentication successful."));
@@ -1671,6 +1766,28 @@ namespace Ozikol_BCC.Api.Controllers
         public int OnboardingStep { get; set; } = 1;
 
         public List<string> Roles { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Granular effective permissions (isSuperAdmin, isAdmin, hasGlobalEdit, features dictionary).
+        /// </summary>
+        public EffectiveUserPermissionsDto EffectivePermissions { get; set; } = new();
+
+        /// <summary>
+        /// List of active licensed modular feature codes for the user's organization.
+        /// </summary>
+        public List<string> LicensedTenantFeatures { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Effective granular permissions mapped from roles, capability modifiers, and feature tags.
+    /// </summary>
+    public class EffectiveUserPermissionsDto
+    {
+        public bool IsSuperAdmin { get; set; }
+        public bool IsAdmin { get; set; }
+        public bool HasGlobalEdit { get; set; }
+        public bool CanAccessAdminConsole { get; set; }
+        public Dictionary<string, string> Features { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     }
 
     public class VerifyLoginMfaRequest

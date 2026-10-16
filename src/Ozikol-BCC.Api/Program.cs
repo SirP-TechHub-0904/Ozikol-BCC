@@ -55,6 +55,7 @@ namespace Ozikol_BCC.Api
                     sqlOpts.CommandTimeout(60);
                 }));
             builder.Services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
+            builder.Services.AddScoped<ITenantFeatureGateService, Ozikol_BCC.Api.Services.TenantFeatureGateService>();
             builder.Services.AddMemoryCache();
 
             builder.Services.AddHttpClient();

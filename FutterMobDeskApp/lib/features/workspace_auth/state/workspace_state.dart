@@ -422,6 +422,12 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
           workspace.logoUrl;
       final orgName = result['organizationName'] as String? ?? workspace.organizationName;
 
+      final effectivePerms = (result['effectivePermissions'] as Map<String, dynamic>?) ?? {};
+      final licensedFeatures = (result['licensedTenantFeatures'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+      final canAccessAdmin = (effectivePerms['canAccessAdminConsole'] == true) ||
+          roles.any((r) => ['superadmin', 'admin', 'identitymanager', 'cmsmanager', 'editor', 'featureedit'].contains(r.toLowerCase()));
+      final defaultMode = canAccessAdmin ? 'administration' : 'workspace';
+
       final updatedWorkspace = workspace.copyWith(
         organizationName: orgName,
         logoUrl: logo,
@@ -430,6 +436,9 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
         userEmail: email,
         userFullName: fullName,
         userRoles: roles,
+        effectivePermissions: effectivePerms,
+        licensedFeatures: licensedFeatures,
+        activeConsoleMode: defaultMode,
         lastAccessed: DateTime.now(),
       );
 
@@ -546,6 +555,19 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     state = state.copyWith(
       enrolledWorkspaces: list,
       activeWorkspace: active,
+    );
+  }
+
+  /// Switches active console mode between 'administration' and 'workspace'
+  Future<void> switchConsoleMode(String mode) async {
+    final active = state.activeWorkspace;
+    if (active == null) return;
+    final updated = active.copyWith(activeConsoleMode: mode);
+    await _storageService.saveWorkspace(updated);
+    final updatedList = await _storageService.getWorkspaces();
+    state = state.copyWith(
+      activeWorkspace: updated,
+      enrolledWorkspaces: updatedList,
     );
   }
 

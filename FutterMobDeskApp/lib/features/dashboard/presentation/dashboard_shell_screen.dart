@@ -223,7 +223,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                   activeWs,
                   isCollapsed: _isSidebarCollapsed,
                 ),
-                sections: _buildNavigationSections(isDark),
+                sections: _buildNavigationSections(isDark, activeWs),
                 footer: _buildDesktopSidebarFooter(
                   isDark,
                   activeWs,
@@ -254,6 +254,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
                     // Offline Network Resilience Bar
                     const OfflineStatusBar(),
+
+                    // Central Feature Expiration Notice (Strictly visible to BCC Admins in Admin mode)
+                    _buildFeatureExpirationBanner(isDark, activeWs),
 
                     // Main Console Dashboard Content Canvas
                     Expanded(
@@ -441,7 +444,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       drawer: AppDrawer(
         onClose: () => _mobileScaffoldKey.currentState?.closeDrawer(),
         header: _buildDesktopSidebarHeader(isDark, activeWs),
-        sections: _buildNavigationSections(isDark),
+        sections: _buildNavigationSections(isDark, activeWs),
         footer: _buildDesktopSidebarFooter(isDark, activeWs),
       ),
       body: Stack(
@@ -455,6 +458,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 orElse: () => const SizedBox.shrink(),
               ),
               const OfflineStatusBar(),
+              _buildFeatureExpirationBanner(isDark, activeWs, isMobile: true),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -490,7 +494,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
         ],
       ),
-      bottomNavigationBar: _buildMobileBottomBar(isDark),
+      bottomNavigationBar: _buildMobileBottomBar(isDark, activeWs),
     );
   }
 
@@ -1945,117 +1949,253 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     bool isCollapsed = false,
   }) {
     if (isCollapsed) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        alignment: Alignment.center,
-        child: TenantAvatar(
-          iconUrl: activeWs?.iconUrl,
-          logoUrl: activeWs?.logoUrl,
-          name: activeWs?.displayName ?? 'Ozikol',
-          tenantKey: activeWs?.tenantKey,
-          size: 34,
-          borderRadius: 8,
-        ),
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            alignment: Alignment.center,
+            child: TenantAvatar(
+              iconUrl: activeWs?.iconUrl,
+              logoUrl: activeWs?.logoUrl,
+              name: activeWs?.displayName ?? 'Ozikol',
+              tenantKey: activeWs?.tenantKey,
+              size: 34,
+              borderRadius: 8,
+            ),
+          ),
+          if (activeWs?.canAccessAdminConsole ?? false)
+            IconButton(
+              iconSize: 18,
+              tooltip: activeWs?.activeConsoleMode == 'administration'
+                  ? 'Switch to Users Workspace'
+                  : 'Switch to Administration Console',
+              icon: Icon(
+                activeWs?.activeConsoleMode == 'administration'
+                    ? Icons.admin_panel_settings_rounded
+                    : Icons.person_rounded,
+                color: AppColors.primary,
+              ),
+              onPressed: () {
+                final next = activeWs?.activeConsoleMode == 'administration'
+                    ? 'workspace'
+                    : 'administration';
+                ref.read(workspaceStateProvider.notifier).switchConsoleMode(next);
+              },
+            ),
+        ],
       );
     }
 
     final hasLogo = activeWs?.logoUrl != null && (activeWs!.logoUrl as String).trim().isNotEmpty;
+    final canAccessAdmin = activeWs?.canAccessAdminConsole ?? false;
+    final isAdministration = activeWs?.activeConsoleMode != 'workspace';
 
-    if (hasLogo) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        alignment: Alignment.centerLeft,
-        child: TenantCachedImage(
-          imageUrl: activeWs.logoUrl,
-          tenantKey: activeWs?.tenantKey,
-          height: 38,
-          fit: BoxFit.contain,
-          fallbackWidget: Row(
-            children: [
-              TenantAvatar(
-                iconUrl: activeWs?.iconUrl,
-                logoUrl: activeWs?.logoUrl,
-                name: activeWs?.displayName ?? 'Ozikol',
-                tenantKey: activeWs?.tenantKey,
-                size: 34,
-                borderRadius: 8,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      activeWs?.displayName ?? 'Ozikol BCC',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                    Text(
-                      'Workspace Vault',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          TenantAvatar(
-            iconUrl: activeWs?.iconUrl,
-            logoUrl: activeWs?.logoUrl,
-            name: activeWs?.displayName ?? 'Ozikol',
-            tenantKey: activeWs?.tenantKey,
-            size: 34,
-            borderRadius: 8,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  activeWs?.displayName ?? 'Ozikol BCC',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (hasLogo)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            alignment: Alignment.centerLeft,
+            child: TenantCachedImage(
+              imageUrl: activeWs.logoUrl,
+              tenantKey: activeWs?.tenantKey,
+              height: 38,
+              fit: BoxFit.contain,
+              fallbackWidget: Row(
+                children: [
+                  TenantAvatar(
+                    iconUrl: activeWs?.iconUrl,
+                    logoUrl: activeWs?.logoUrl,
+                    name: activeWs?.displayName ?? 'Ozikol',
+                    tenantKey: activeWs?.tenantKey,
+                    size: 34,
+                    borderRadius: 8,
                   ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          activeWs?.displayName ?? 'Ozikol BCC',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        Text(
+                          'Workspace Vault',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                TenantAvatar(
+                  iconUrl: activeWs?.iconUrl,
+                  logoUrl: activeWs?.logoUrl,
+                  name: activeWs?.displayName ?? 'Ozikol',
+                  tenantKey: activeWs?.tenantKey,
+                  size: 34,
+                  borderRadius: 8,
                 ),
-                Text(
-                  'Workspace Vault',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        activeWs?.displayName ?? 'Ozikol BCC',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      Text(
+                        'Workspace Vault',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+
+        // Mode Switcher Widget (Strictly shown for Admin / Privileged Roles)
+        if (canAccessAdmin)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 2, 10, 8),
+            child: Container(
+              height: 32,
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.backgroundDark : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Administration Tab
+                  Expanded(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(6),
+                      onTap: () {
+                        if (activeWs?.activeConsoleMode != 'administration') {
+                          ref.read(workspaceStateProvider.notifier).switchConsoleMode('administration');
+                        }
+                      },
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isAdministration ? AppColors.primary : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.admin_panel_settings_rounded,
+                              size: 13,
+                              color: isAdministration
+                                  ? Colors.white
+                                  : (isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Admin',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isAdministration
+                                    ? Colors.white
+                                    : (isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Workspace Tab
+                  Expanded(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(6),
+                      onTap: () {
+                        if (activeWs?.activeConsoleMode != 'workspace') {
+                          ref.read(workspaceStateProvider.notifier).switchConsoleMode('workspace');
+                        }
+                      },
+                      child: Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: !isAdministration ? AppColors.primary : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.person_rounded,
+                              size: 13,
+                              color: !isAdministration
+                                  ? Colors.white
+                                  : (isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Workspace',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: !isAdministration
+                                    ? Colors.white
+                                    : (isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -2185,165 +2325,163 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     );
   }
 
-  List<AppDrawerSection> _buildNavigationSections(bool isDark) {
+  List<AppDrawerSection> _buildNavigationSections(bool isDark, dynamic activeWs) {
+    final canAccessAdmin = activeWs == null || (activeWs?.canAccessAdminConsole ?? false);
+    final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
+
+    if (isAdministration) {
+      return _buildAdminConsoleSections(isDark, activeWs);
+    }
+
+    return _buildUsersWorkspaceSections(isDark, activeWs);
+  }
+
+  /// Builds the clean Administration Console navigation tree for administrators and managers.
+  /// Web-only CMS and HTML website builder items are omitted to maintain a fast, focused native app.
+  List<AppDrawerSection> _buildAdminConsoleSections(bool isDark, dynamic activeWs) {
     return [
       AppDrawerSection(
-        title: 'WEBSITE',
+        title: 'EXECUTIVE COMMAND',
         items: [
           AppDrawerItem(
-            icon: Icons.home_outlined,
-            title: 'Home',
+            icon: Icons.dashboard_rounded,
+            title: 'Console Dashboard',
             isSelected: _selectedNavIndex == 0,
             onTap: () => setState(() => _selectedNavIndex = 0),
           ),
           AppDrawerItem(
-            icon: Icons.link_rounded,
-            title: 'Link Domain',
-            trailing: _buildPillBadge('SETUP', const Color(0xFFF59E0B)),
+            icon: Icons.insights_rounded,
+            title: 'Analytics & Telemetry',
+            trailing: _buildPillBadge('LIVE', const Color(0xFF16A34A)),
+            isSelected: _selectedNavIndex == 1,
+            onTap: () => setState(() => _selectedNavIndex = 1),
+          ),
+          AppDrawerItem(
+            icon: Icons.shield_outlined,
+            title: 'Security Audit',
+            trailing: _buildPillBadge('AUDIT', AppColors.primary),
+            isSelected: _selectedNavIndex == 2,
+            onTap: () => setState(() => _selectedNavIndex = 2),
+          ),
+        ],
+      ),
+      AppDrawerSection(
+        title: 'CONFIGURATION & BRAND',
+        items: [
+          AppDrawerItem(
+            icon: Icons.tune_outlined,
+            title: 'Brand & Settings',
+            trailing: _buildPillBadge('HOT', const Color(0xFFEA580C)),
+            isSelected: _selectedNavIndex == 3,
+            onTap: () => setState(() => _selectedNavIndex = 3),
+          ),
+        ],
+      ),
+      if (activeWs?.isFeatureActive('bcp-store-ecommerce') ?? true)
+        AppDrawerSection(
+          title: 'COMMERCE & OPERATIONS',
+          items: [
+            AppDrawerItem(
+              icon: Icons.shopping_bag_outlined,
+              title: 'Commerce Studio',
+              trailing: _buildPillBadge('NEW', const Color(0xFF0D9488)),
+              isSelected: _selectedNavIndex == 4,
+              onTap: () => setState(() => _selectedNavIndex = 4),
+            ),
+          ],
+        ),
+      if (activeWs?.isAdmin ?? false)
+        AppDrawerSection(
+          title: 'FINANCE & LICENSES',
+          items: [
+            AppDrawerItem(
+              icon: Icons.payment_outlined,
+              title: 'Feature Billing & Licenses',
+              trailing: _buildPillBadge('CENTRAL', AppColors.primary),
+              isSelected: _selectedNavIndex == 5,
+              onTap: () => setState(() => _selectedNavIndex = 5),
+            ),
+          ],
+        ),
+      AppDrawerSection(
+        title: 'USER DIRECTORY',
+        items: [
+          AppDrawerItem(
+            icon: Icons.people_outline_rounded,
+            title: 'User Directory & Roles',
+            isSelected: _selectedNavIndex == 6,
+            onTap: () => setState(() => _selectedNavIndex = 6),
+          ),
+          AppDrawerItem(
+            icon: Icons.admin_panel_settings_outlined,
+            title: 'Identity Control',
+            isSelected: _selectedNavIndex == 7,
+            onTap: () => setState(() => _selectedNavIndex = 7),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  /// Builds the personal Users Workspace navigation tree for regular members and personal tasks.
+  List<AppDrawerSection> _buildUsersWorkspaceSections(bool isDark, dynamic activeWs) {
+    return [
+      AppDrawerSection(
+        title: 'WORKSPACE HUB',
+        items: [
+          AppDrawerItem(
+            icon: Icons.space_dashboard_outlined,
+            title: 'Personal Dashboard',
+            isSelected: _selectedNavIndex == 0,
+            onTap: () => setState(() => _selectedNavIndex = 0),
+          ),
+          AppDrawerItem(
+            icon: Icons.account_circle_outlined,
+            title: 'My Profile & Credentials',
             isSelected: _selectedNavIndex == 1,
             onTap: () => setState(() => _selectedNavIndex = 1),
           ),
         ],
       ),
       AppDrawerSection(
-        title: 'COMMAND CENTER',
+        title: 'COMMUNITY & COLLABORATION',
         items: [
           AppDrawerItem(
-            icon: Icons.dashboard_rounded,
-            title: 'Console Dashboard',
+            icon: Icons.groups_outlined,
+            title: 'Group Channels',
             isSelected: _selectedNavIndex == 2,
             onTap: () => setState(() => _selectedNavIndex = 2),
           ),
+          if (activeWs?.isFeatureActive('bcp-community-messenger') ?? true)
+            AppDrawerItem(
+              icon: Icons.forum_outlined,
+              title: 'Direct Messages',
+              trailing: _buildPillBadge('LIVE', const Color(0xFF16A34A)),
+              isSelected: _selectedNavIndex == 3,
+              onTap: () => setState(() => _selectedNavIndex = 3),
+            ),
           AppDrawerItem(
-            icon: Icons.payment_outlined,
-            title: 'Feature Billing',
-            trailing: _buildPillBadge('SOON', const Color(0xFF94A3B8)),
-            isSelected: _selectedNavIndex == 3,
-            onTap: () => setState(() => _selectedNavIndex = 3),
-          ),
-          AppDrawerItem(
-            icon: Icons.shield_outlined,
-            title: 'Security Audit',
-            trailing: _buildPillBadge('SOON', const Color(0xFF94A3B8)),
+            icon: Icons.calendar_month_outlined,
+            title: 'Calendar & Events',
             isSelected: _selectedNavIndex == 4,
             onTap: () => setState(() => _selectedNavIndex = 4),
           ),
         ],
       ),
       AppDrawerSection(
-        title: 'CONTENT CMS STUDIO',
+        title: 'PERSONAL TOOLS',
         items: [
           AppDrawerItem(
-            icon: Icons.layers_outlined,
-            title: 'CMS Studio',
-            trailing: _buildPillBadge('LIVE', const Color(0xFF16A34A)),
+            icon: Icons.folder_open_outlined,
+            title: 'My Documents & Vault',
             isSelected: _selectedNavIndex == 5,
             onTap: () => setState(() => _selectedNavIndex = 5),
           ),
           AppDrawerItem(
-            icon: Icons.dynamic_form_outlined,
-            title: 'Manage Forms',
+            icon: Icons.notifications_none_rounded,
+            title: 'Notifications Feed',
             isSelected: _selectedNavIndex == 6,
             onTap: () => setState(() => _selectedNavIndex = 6),
-          ),
-          AppDrawerItem(
-            icon: Icons.view_quilt_outlined,
-            title: 'My Templates',
-            isSelected: _selectedNavIndex == 7,
-            onTap: () => setState(() => _selectedNavIndex = 7),
-          ),
-          AppDrawerItem(
-            icon: Icons.storefront_outlined,
-            title: 'UI Marketplace',
-            trailing: _buildPillBadge('SOON', const Color(0xFF94A3B8)),
-            isSelected: _selectedNavIndex == 8,
-            onTap: () => setState(() => _selectedNavIndex = 8),
-          ),
-          AppDrawerItem(
-            icon: Icons.tune_outlined,
-            title: 'Brand & Settings',
-            trailing: _buildPillBadge('HOT', const Color(0xFFEA580C)),
-            isSelected: _selectedNavIndex == 9,
-            onTap: () => setState(() => _selectedNavIndex = 9),
-          ),
-          AppDrawerItem(
-            icon: Icons.language_rounded,
-            title: 'Custom Domain',
-            trailing: _buildPillBadge('SETUP', const Color(0xFFF59E0B)),
-            isSelected: _selectedNavIndex == 10,
-            onTap: () => setState(() => _selectedNavIndex = 10),
-          ),
-        ],
-      ),
-      AppDrawerSection(
-        title: 'COMMERCE & STORE STUDIO',
-        items: [
-          AppDrawerItem(
-            icon: Icons.shopping_bag_outlined,
-            title: 'Commerce Studio',
-            trailing: _buildPillBadge('NEW', const Color(0xFF0D9488)),
-            isSelected: _selectedNavIndex == 11,
-            onTap: () => setState(() => _selectedNavIndex = 11),
-          ),
-        ],
-      ),
-      AppDrawerSection(
-        title: 'IDENTITY ADMINISTRATION',
-        items: [
-          AppDrawerItem(
-            icon: Icons.admin_panel_settings_outlined,
-            title: 'Identity Control',
-            isSelected: _selectedNavIndex == 12,
-            onTap: () => setState(() => _selectedNavIndex = 12),
-          ),
-        ],
-      ),
-      AppDrawerSection(
-        title: 'USER MANAGEMENT',
-        items: [
-          AppDrawerItem(
-            icon: Icons.people_outline_rounded,
-            title: 'User Directory',
-            isSelected: _selectedNavIndex == 13,
-            onTap: () => setState(() => _selectedNavIndex = 13),
-          ),
-        ],
-      ),
-      AppDrawerSection(
-        title: 'PEOPLE & COMMUNITY',
-        items: [
-          AppDrawerItem(
-            icon: Icons.groups_outlined,
-            title: 'Group',
-            isSelected: _selectedNavIndex == 14,
-            onTap: () => setState(() => _selectedNavIndex = 14),
-          ),
-          AppDrawerItem(
-            icon: Icons.school_outlined,
-            title: 'Alumni Suite',
-            isSelected: _selectedNavIndex == 15,
-            onTap: () => setState(() => _selectedNavIndex = 15),
-          ),
-          AppDrawerItem(
-            icon: Icons.forum_outlined,
-            title: 'Ozikol Chat Messenger',
-            trailing: _buildPillBadge('LIVE', const Color(0xFF16A34A)),
-            isSelected: _selectedNavIndex == 16,
-            onTap: () => setState(() => _selectedNavIndex = 16),
-          ),
-          AppDrawerItem(
-            icon: Icons.calendar_month_outlined,
-            title: 'Calendar & Follow-Ups',
-            trailing: _buildPillBadge('SOON', const Color(0xFF94A3B8)),
-            isSelected: _selectedNavIndex == 17,
-            onTap: () => setState(() => _selectedNavIndex = 17),
-          ),
-          AppDrawerItem(
-            icon: Icons.phone_in_talk_outlined,
-            title: 'GoCall AI Dispatch',
-            trailing: _buildPillBadge('SOON', const Color(0xFF94A3B8)),
-            isSelected: _selectedNavIndex == 18,
-            onTap: () => setState(() => _selectedNavIndex = 18),
           ),
         ],
       ),
@@ -2369,7 +2507,48 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     );
   }
 
-  Widget _buildMobileBottomBar(bool isDark) {
+  Widget _buildMobileBottomBar(bool isDark, dynamic activeWs) {
+    final canAccessAdmin = activeWs == null || (activeWs?.canAccessAdminConsole ?? false);
+    final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
+
+    final items = isAdministration
+        ? const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_rounded),
+              label: 'Console',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.insights_rounded),
+              label: 'Analytics',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people_outline_rounded),
+              label: 'Directory',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings_outlined),
+              label: 'Settings',
+            ),
+          ]
+        : const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.space_dashboard_outlined),
+              label: 'Dashboard',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.groups_outlined),
+              label: 'Channels',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calendar_month_outlined),
+              label: 'Events',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.account_circle_outlined),
+              label: 'Profile',
+            ),
+          ];
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : Colors.white,
@@ -2380,7 +2559,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ),
       ),
       child: BottomNavigationBar(
-        currentIndex: _selectedNavIndex.clamp(0, 3),
+        currentIndex: _selectedNavIndex.clamp(0, items.length - 1),
         onTap: (index) => setState(() => _selectedNavIndex = index),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -2389,22 +2568,75 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         type: BottomNavigationBarType.fixed,
         selectedFontSize: 11,
         unselectedFontSize: 11,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_rounded),
-            label: 'Console',
+        items: items,
+      ),
+    );
+  }
+
+  /// Feature Expiration Alert Banner visible strictly to administrators in Administration mode.
+  Widget _buildFeatureExpirationBanner(bool isDark, dynamic activeWs, {bool isMobile = false}) {
+    if (activeWs == null || !(activeWs.isAdmin as bool) || activeWs.activeConsoleMode == 'workspace') {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: EdgeInsets.fromLTRB(
+        isMobile ? 16 : 28,
+        isMobile ? 8 : 12,
+        isMobile ? 16 : 28,
+        isMobile ? 4 : 4,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF2D2010) : const Color(0xFFFFFBEB),
+        border: Border.all(
+          color: isDark ? const Color(0xFF78350F) : const Color(0xFFFDE68A),
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Central Feature Subscriptions Active (Admin Notice)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFB45309),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Organization capabilities are governed by Central Master Catalog licenses.',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: isDark ? const Color(0xFFD97706) : const Color(0xFF92400E),
+                  ),
+                ),
+              ],
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.layers_outlined),
-            label: 'CMS',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people_outline_rounded),
-            label: 'Members',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            label: 'Settings',
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF59E0B),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: const Text(
+              'LICENSES',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: 0.4,
+              ),
+            ),
           ),
         ],
       ),
