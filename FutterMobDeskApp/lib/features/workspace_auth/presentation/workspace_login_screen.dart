@@ -9,6 +9,7 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../dashboard/presentation/dashboard_shell_screen.dart';
 import '../state/workspace_state.dart';
+import 'workspace_entry_screen.dart';
 
 /// Clean, branded authentication screen for the resolved organization workspace.
 /// Incorporates the clean UI kit architecture with wave-clipped AuthHeader,
@@ -59,12 +60,26 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
     }
   }
 
-  void _handleChangeOrganization() {
-    ref.read(workspaceStateProvider.notifier).clearError();
+  /// <summary>
+  /// Handles the user request to switch or change to another organization workspace.
+  /// Cancels bypass state, purges remembered organization from storage, and safely
+  /// navigates back to the <see cref="WorkspaceEntryScreen"/>.
+  /// </summary>
+  /// <returns>A future representing the asynchronous navigation operation.</returns>
+  Future<void> _handleChangeOrganization() async {
+    final notifier = ref.read(workspaceStateProvider.notifier);
+    notifier.clearError();
+    await notifier.cancelBypass(clearRemembered: true);
+
+    if (!mounted) return;
+
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     } else {
-      ref.read(workspaceStateProvider.notifier).cancelBypass();
+      await Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()),
+        (route) => false,
+      );
     }
   }
 
@@ -74,7 +89,14 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final ws = widget.workspace;
 
-    return Scaffold(
+    return PopScope(
+      canPop: Navigator.of(context).canPop(),
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _handleChangeOrganization();
+        }
+      },
+      child: Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         top: false,
@@ -260,6 +282,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }

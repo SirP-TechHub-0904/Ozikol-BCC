@@ -268,13 +268,25 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     }
   }
 
-  /// Cancels bypass mode and returns the user to the initial WorkspaceEntryScreen
-  void cancelBypass() {
+  /// <summary>
+  /// Cancels bypass mode, resets the pending workspace selection, and optionally clears
+  /// the remembered organization from local device storage so the user returns to the
+  /// initial WorkspaceEntryScreen.
+  /// </summary>
+  /// <param name="clearRemembered">Whether to wipe the remembered organization bypass preferences from local device storage.</param>
+  /// <returns>A future that completes when storage has been updated.</returns>
+  Future<void> cancelBypass({bool clearRemembered = true}) async {
+    // 1. Immediately reset in-memory bypass and pending workspace state synchronously
     state = state.copyWith(
       shouldBypassEntryScreen: false,
       clearPending: true,
       clearError: true,
     );
+
+    // 2. Persistently clear remembered organization in secure storage to prevent re-bypassing on restart
+    if (clearRemembered) {
+      await _storageService.clearRememberedOrganization();
+    }
   }
 
   /// Sets whether the organization should be remembered

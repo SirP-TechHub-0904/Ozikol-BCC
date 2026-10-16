@@ -18,6 +18,7 @@ import 'package:ozikol_app/features/notifications/domain/notification_model.dart
 import 'package:ozikol_app/features/notifications/presentation/notifications_sheet.dart';
 import 'package:ozikol_app/features/workspace_auth/data/workspace_repository.dart';
 import 'package:ozikol_app/features/workspace_auth/presentation/workspace_entry_screen.dart';
+import 'package:ozikol_app/features/workspace_auth/presentation/workspace_login_screen.dart';
 import 'package:ozikol_app/features/workspace_auth/state/workspace_state.dart';
 
 void main() {
@@ -490,6 +491,64 @@ void main() {
     // Verify token was wiped from secure storage
     final activeFromStorage = await storage.getActiveWorkspace();
     expect(activeFromStorage?.authToken, isNull);
+  });
+
+  testWidgets('WorkspaceLoginScreen Change Organization button clears bypass and returns to WorkspaceEntryScreen', (WidgetTester tester) async {
+    final storage = SecureStorageService.inMemory();
+    final workspace = Workspace(
+      tenantKey: 'acme-corp',
+      organizationName: 'Acme Global',
+      primaryDomain: 'acme.localhost:4200',
+      lastAccessed: DateTime(2026, 1, 1),
+    );
+    await storage.saveWorkspace(workspace);
+    await storage.setRememberOrganizationEnabled(true);
+    await storage.setRememberedOrganizationCode('acme-corp');
+    await storage.saveRememberedWorkspace(workspace);
+
+    final client = ApiClient(storage);
+    final repo = WorkspaceRepository(client);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          storageServiceProvider.overrideWithValue(storage),
+          apiClientProvider.overrideWithValue(client),
+          workspaceRepositoryProvider.overrideWithValue(repo),
+        ],
+        child: MaterialApp(
+          home: WorkspaceLoginScreen(workspace: workspace),
+        ),
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpAndSettle();
+
+    // Verify WorkspaceLoginScreen is displayed with Change Organization button
+    final changeOrgFinder = find.text('Change Organization');
+    expect(changeOrgFinder, findsOneWidget);
+    expect(find.text('Sign In to Workspace'), findsOneWidget);
+
+    // Scroll into view if needed and tap Change Organization button
+    await tester.ensureVisible(changeOrgFinder);
+    await tester.pumpAndSettle();
+    await tester.tap(changeOrgFinder);
+    await tester.pumpAndSettle();
+
+    // Verify navigation landed on WorkspaceEntryScreen
+    expect(find.byType(WorkspaceEntryScreen), findsOneWidget);
+    expect(find.text('Enter Workspace'), findsOneWidget);
+
+    // Verify remembered organization code was cleared in storage
+    final rememberedCode = storage.getRememberedOrganizationCode();
+    expect(rememberedCode, isNull);
   });
 }
 
