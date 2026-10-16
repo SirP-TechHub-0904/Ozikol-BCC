@@ -709,7 +709,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                             ),
                           ),
                           Text(
-                            'SuperAdmin',
+                            _getUserRoleBadge(activeWs),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -2376,14 +2376,18 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }
 
   /// Builds the clean Administration Console navigation tree for administrators and managers.
-  /// Web-only CMS and HTML website builder items are omitted to maintain a fast, focused native app.
+  /// Web-only CMS and HTML website builder items (Suite 00) are omitted to maintain a fast, focused native app.
+  /// On Mobile & Desktop, User Management (Suite 01) comes immediately after Executive Command / Dashboard.
   List<AppDrawerSection> _buildAdminConsoleSections(bool isDark, dynamic activeWs) {
+    final soonBadge = _buildPillBadge('badge.soon'.tr(ref, fallback: 'Soon'), isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8));
+
     return [
+      // Core Executive Command & Governance Hub
       AppDrawerSection(
-        title: 'EXECUTIVE COMMAND',
+        title: 'suite.core_command'.tr(ref, fallback: 'Executive Command & Governance'),
         items: [
           AppDrawerItem(
-            icon: Icons.dashboard_rounded,
+            icon: Icons.space_dashboard_rounded,
             title: 'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard'),
             isSelected: _selectedNavIndex == 0,
             onTap: () => setState(() => _selectedNavIndex = 0),
@@ -2402,11 +2406,6 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             isSelected: _selectedNavIndex == 2,
             onTap: () => setState(() => _selectedNavIndex = 2),
           ),
-        ],
-      ),
-      AppDrawerSection(
-        title: 'CONFIGURATION & BRAND',
-        items: [
           AppDrawerItem(
             icon: Icons.tune_outlined,
             title: 'nav.brand_settings'.tr(ref, fallback: 'Brand & Settings'),
@@ -2414,48 +2413,356 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             isSelected: _selectedNavIndex == 3,
             onTap: () => setState(() => _selectedNavIndex = 3),
           ),
+          AppDrawerItem(
+            icon: Icons.language_rounded,
+            title: 'nav.custom_domain'.tr(ref, fallback: 'Custom Domain'),
+            isSelected: _selectedNavIndex == 4,
+            onTap: () => setState(() => _selectedNavIndex = 4),
+          ),
+          AppDrawerItem(
+            icon: Icons.payment_outlined,
+            title: 'nav.feature_billing'.tr(ref, fallback: 'Feature Billing & Licenses'),
+            trailing: _buildPillBadge('CENTRAL', AppColors.primary),
+            isSelected: _selectedNavIndex == 5,
+            onTap: () => setState(() => _selectedNavIndex = 5),
+          ),
         ],
       ),
-      if (activeWs?.isFeatureActive('bcp-store-ecommerce') ?? true)
-        AppDrawerSection(
-          title: 'COMMERCE & OPERATIONS',
-          items: [
-            AppDrawerItem(
-              icon: Icons.shopping_bag_outlined,
-              title: 'Commerce Studio',
-              trailing: _buildPillBadge('NEW', const Color(0xFF0D9488)),
-              isSelected: _selectedNavIndex == 4,
-              onTap: () => setState(() => _selectedNavIndex = 4),
-            ),
-          ],
-        ),
-      if (activeWs?.isAdmin ?? false)
-        AppDrawerSection(
-          title: 'FINANCE & LICENSES',
-          items: [
-            AppDrawerItem(
-              icon: Icons.payment_outlined,
-              title: 'nav.feature_billing'.tr(ref, fallback: 'Feature Billing & Licenses'),
-              trailing: _buildPillBadge('CENTRAL', AppColors.primary),
-              isSelected: _selectedNavIndex == 5,
-              onTap: () => setState(() => _selectedNavIndex = 5),
-            ),
-          ],
-        ),
+
+      // SUITE 01: People, Community & Collaboration (immediately follows Executive Command)
       AppDrawerSection(
-        title: 'USER DIRECTORY',
+        title: 'suite.people_community'.tr(ref, fallback: 'People, Community & Collaboration'),
         items: [
           AppDrawerItem(
             icon: Icons.people_outline_rounded,
-            title: 'nav.user_directory'.tr(ref, fallback: 'User Directory & Roles'),
+            title: 'nav.user_management'.tr(ref, fallback: 'User Management & Directory'),
             isSelected: _selectedNavIndex == 6,
             onTap: () => setState(() => _selectedNavIndex = 6),
           ),
           AppDrawerItem(
             icon: Icons.admin_panel_settings_outlined,
-            title: 'Identity Control',
+            title: 'nav.identity_control'.tr(ref, fallback: 'Identity & Access Control'),
             isSelected: _selectedNavIndex == 7,
             onTap: () => setState(() => _selectedNavIndex = 7),
+          ),
+          AppDrawerItem(
+            icon: Icons.verified_user_outlined,
+            title: 'nav.roles_permissions'.tr(ref, fallback: 'Roles & Permissions'),
+            isSelected: _selectedNavIndex == 8,
+            onTap: () => setState(() => _selectedNavIndex = 8),
+          ),
+          AppDrawerItem(
+            icon: Icons.mail_outline_rounded,
+            title: 'nav.user_invitations'.tr(ref, fallback: 'Member Invitations'),
+            isSelected: _selectedNavIndex == 9,
+            onTap: () => setState(() => _selectedNavIndex = 9),
+          ),
+          AppDrawerItem(
+            icon: Icons.policy_outlined,
+            title: 'nav.global_policies'.tr(ref, fallback: 'Global Security Policies'),
+            isSelected: _selectedNavIndex == 10,
+            onTap: () => setState(() => _selectedNavIndex = 10),
+          ),
+          AppDrawerItem(
+            icon: Icons.groups_outlined,
+            title: 'nav.groups_directory'.tr(ref, fallback: 'Group Channels'),
+            isSelected: _selectedNavIndex == 11,
+            onTap: () => setState(() => _selectedNavIndex = 11),
+          ),
+          AppDrawerItem(
+            icon: Icons.forum_outlined,
+            title: 'nav.chat_messenger'.tr(ref, fallback: 'Ozikol Chat Messenger'),
+            trailing: _buildPillBadge('LIVE', const Color(0xFF16A34A)),
+            isSelected: _selectedNavIndex == 12,
+            onTap: () => setState(() => _selectedNavIndex = 12),
+          ),
+          AppDrawerItem(
+            icon: Icons.school_outlined,
+            title: 'nav.alumni_network'.tr(ref, fallback: 'Alumni Network'),
+            isSelected: _selectedNavIndex == 13,
+            onTap: () => setState(() => _selectedNavIndex = 13),
+          ),
+          AppDrawerItem(
+            icon: Icons.feedback_outlined,
+            title: 'nav.whistleblowing'.tr(ref, fallback: 'Whistleblowing & Feedback'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 14,
+            onTap: () => setState(() => _selectedNavIndex = 14),
+          ),
+        ],
+      ),
+
+      // SUITE 02: Workforce, Shifts & Scheduling
+      AppDrawerSection(
+        title: 'suite.workforce_shifts'.tr(ref, fallback: 'Workforce, Shifts & Scheduling'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.calendar_month_outlined,
+            title: 'nav.staff_rota'.tr(ref, fallback: 'Staff & Volunteer Rota'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 15,
+            onTap: () => setState(() => _selectedNavIndex = 15),
+          ),
+          AppDrawerItem(
+            icon: Icons.swap_horiz_rounded,
+            title: 'nav.shift_swaps'.tr(ref, fallback: 'Shift Swaps & Leave'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 16,
+            onTap: () => setState(() => _selectedNavIndex = 16),
+          ),
+          AppDrawerItem(
+            icon: Icons.timer_outlined,
+            title: 'nav.attendance_tracking'.tr(ref, fallback: 'Attendance & Clock-In'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 17,
+            onTap: () => setState(() => _selectedNavIndex = 17),
+          ),
+          AppDrawerItem(
+            icon: Icons.event_repeat_rounded,
+            title: 'nav.calendar_followups'.tr(ref, fallback: 'Calendar & Follow-Ups'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 18,
+            onTap: () => setState(() => _selectedNavIndex = 18),
+          ),
+        ],
+      ),
+
+      // SUITE 03: Data Collection, Reports & Forms
+      AppDrawerSection(
+        title: 'suite.reports_forms'.tr(ref, fallback: 'Data Collection, Reports & Forms'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.summarize_outlined,
+            title: 'nav.dynamic_reports'.tr(ref, fallback: 'Dynamic Reports'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 19,
+            onTap: () => setState(() => _selectedNavIndex = 19),
+          ),
+          AppDrawerItem(
+            icon: Icons.dynamic_form_outlined,
+            title: 'nav.forms_surveys'.tr(ref, fallback: 'Forms & Surveys'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 20,
+            onTap: () => setState(() => _selectedNavIndex = 20),
+          ),
+          AppDrawerItem(
+            icon: Icons.fact_check_outlined,
+            title: 'nav.reference_forms'.tr(ref, fallback: 'Reference Form System'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 21,
+            onTap: () => setState(() => _selectedNavIndex = 21),
+          ),
+          AppDrawerItem(
+            icon: Icons.menu_book_outlined,
+            title: 'nav.knowledge_base'.tr(ref, fallback: 'Knowledge Base'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 22,
+            onTap: () => setState(() => _selectedNavIndex = 22),
+          ),
+        ],
+      ),
+
+      // SUITE 04: Events, Ticketing & Training
+      AppDrawerSection(
+        title: 'suite.events_training'.tr(ref, fallback: 'Events, Ticketing & Training'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.confirmation_number_outlined,
+            title: 'nav.event_ticketing'.tr(ref, fallback: 'Event Ticketing & Passes'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 23,
+            onTap: () => setState(() => _selectedNavIndex = 23),
+          ),
+          AppDrawerItem(
+            icon: Icons.record_voice_over_outlined,
+            title: 'nav.speaker_sessions'.tr(ref, fallback: 'Speaker & Session Tracks'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 24,
+            onTap: () => setState(() => _selectedNavIndex = 24),
+          ),
+          AppDrawerItem(
+            icon: Icons.people_outline_rounded,
+            title: 'nav.attendee_management'.tr(ref, fallback: 'Attendee Management'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 25,
+            onTap: () => setState(() => _selectedNavIndex = 25),
+          ),
+        ],
+      ),
+
+      // SUITE 05: Finance, Contributions & Revenue
+      AppDrawerSection(
+        title: 'suite.finance_revenue'.tr(ref, fallback: 'Finance, Contributions & Revenue'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'nav.invoicing_dues'.tr(ref, fallback: 'Invoicing & Member Dues'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 26,
+            onTap: () => setState(() => _selectedNavIndex = 26),
+          ),
+          AppDrawerItem(
+            icon: Icons.account_balance_outlined,
+            title: 'nav.embedded_banking'.tr(ref, fallback: 'Embedded Banking & Rails'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 27,
+            onTap: () => setState(() => _selectedNavIndex = 27),
+          ),
+          AppDrawerItem(
+            icon: Icons.request_quote_outlined,
+            title: 'nav.grant_ledger'.tr(ref, fallback: 'Proposal & Grant Ledger'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 28,
+            onTap: () => setState(() => _selectedNavIndex = 28),
+          ),
+        ],
+      ),
+
+      // SUITE 06: Operations, Logistics & Facilities
+      AppDrawerSection(
+        title: 'suite.operations_logistics'.tr(ref, fallback: 'Operations, Logistics & Facilities'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.storefront_outlined,
+            title: 'Commerce Studio',
+            trailing: _buildPillBadge('NEW', const Color(0xFF0D9488)),
+            isSelected: _selectedNavIndex == 29,
+            onTap: () => setState(() => _selectedNavIndex = 29),
+          ),
+          AppDrawerItem(
+            icon: Icons.how_to_vote_outlined,
+            title: 'nav.elections_voting'.tr(ref, fallback: 'Elections & E-Voting'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 30,
+            onTap: () => setState(() => _selectedNavIndex = 30),
+          ),
+          AppDrawerItem(
+            icon: Icons.meeting_room_outlined,
+            title: 'nav.facilities_equipment'.tr(ref, fallback: 'Facilities & Equipment Checkout'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 31,
+            onTap: () => setState(() => _selectedNavIndex = 31),
+          ),
+        ],
+      ),
+
+      // SUITE 07: Communication, AI & Support
+      AppDrawerSection(
+        title: 'suite.communication_ai'.tr(ref, fallback: 'Communication, AI & Support'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.campaign_outlined,
+            title: 'nav.notification_studio'.tr(ref, fallback: 'Notification Studio'),
+            isSelected: _selectedNavIndex == 32,
+            onTap: () => setState(() => _selectedNavIndex = 32),
+          ),
+          AppDrawerItem(
+            icon: Icons.phone_in_talk_outlined,
+            title: 'nav.gocall_dispatch'.tr(ref, fallback: 'GoCall AI Dispatch'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 33,
+            onTap: () => setState(() => _selectedNavIndex = 33),
+          ),
+          AppDrawerItem(
+            icon: Icons.support_agent_outlined,
+            title: 'nav.helpdesk_support'.tr(ref, fallback: 'Helpdesk & Support Desk'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 34,
+            onTap: () => setState(() => _selectedNavIndex = 34),
+          ),
+        ],
+      ),
+
+      // SUITE 08: Governance, Compliance & Safeguarding
+      AppDrawerSection(
+        title: 'suite.compliance_governance'.tr(ref, fallback: 'Governance, Compliance & Safeguarding'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.folder_zip_outlined,
+            title: 'nav.document_vault'.tr(ref, fallback: 'Document Vault & Archive'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 35,
+            onTap: () => setState(() => _selectedNavIndex = 35),
+          ),
+          AppDrawerItem(
+            icon: Icons.school_outlined,
+            title: 'nav.lms_training'.tr(ref, fallback: 'Learning Management (LMS)'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 36,
+            onTap: () => setState(() => _selectedNavIndex = 36),
+          ),
+          AppDrawerItem(
+            icon: Icons.verified_outlined,
+            title: 'nav.certificate_verification'.tr(ref, fallback: 'Certificate Verification'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 37,
+            onTap: () => setState(() => _selectedNavIndex = 37),
+          ),
+          AppDrawerItem(
+            icon: Icons.badge_outlined,
+            title: 'nav.kyc_verification'.tr(ref, fallback: 'KYC Verification'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 38,
+            onTap: () => setState(() => _selectedNavIndex = 38),
+          ),
+        ],
+      ),
+
+      // SUITE 09: Demographics, Census & Analytics
+      AppDrawerSection(
+        title: 'suite.demographics_census'.tr(ref, fallback: 'Demographics, Census & Analytics'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.map_outlined,
+            title: 'nav.community_census'.tr(ref, fallback: 'Community Census & Mapping'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 39,
+            onTap: () => setState(() => _selectedNavIndex = 39),
+          ),
+          AppDrawerItem(
+            icon: Icons.pin_drop_outlined,
+            title: 'nav.field_surveyor'.tr(ref, fallback: 'Field Surveyor Tools'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 40,
+            onTap: () => setState(() => _selectedNavIndex = 40),
+          ),
+          AppDrawerItem(
+            icon: Icons.badge_outlined,
+            title: 'nav.digital_id_cards'.tr(ref, fallback: 'Digital Member ID Cards'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 41,
+            onTap: () => setState(() => _selectedNavIndex = 41),
+          ),
+        ],
+      ),
+
+      // Member Workspace Cross-Link Hub
+      AppDrawerSection(
+        title: 'suite.member_workspace'.tr(ref, fallback: 'Personal Workspace Hub'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.assignment_ind_outlined,
+            title: 'nav.my_cv_biography'.tr(ref, fallback: 'My CV Biography'),
+            isSelected: _selectedNavIndex == 42,
+            onTap: () => setState(() => _selectedNavIndex = 42),
+          ),
+          AppDrawerItem(
+            icon: Icons.chat_bubble_outline_rounded,
+            title: 'nav.chat_messenger'.tr(ref, fallback: 'Ozikol Chat Messenger'),
+            isSelected: _selectedNavIndex == 43,
+            onTap: () => setState(() => _selectedNavIndex = 43),
+          ),
+          AppDrawerItem(
+            icon: Icons.groups_outlined,
+            title: 'nav.groups_directory'.tr(ref, fallback: 'Groups Directory'),
+            isSelected: _selectedNavIndex == 44,
+            onTap: () => setState(() => _selectedNavIndex = 44),
+          ),
+          AppDrawerItem(
+            icon: Icons.school_outlined,
+            title: 'nav.alumni_network'.tr(ref, fallback: 'Alumni Network'),
+            isSelected: _selectedNavIndex == 45,
+            onTap: () => setState(() => _selectedNavIndex = 45),
           ),
         ],
       ),
@@ -2464,63 +2771,147 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
   /// Builds the personal Users Workspace navigation tree for regular members and personal tasks.
   List<AppDrawerSection> _buildUsersWorkspaceSections(bool isDark, dynamic activeWs) {
+    final soonBadge = _buildPillBadge('badge.soon'.tr(ref, fallback: 'Soon'), isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8));
+
     return [
       AppDrawerSection(
-        title: 'WORKSPACE HUB',
+        title: 'suite.member_workspace'.tr(ref, fallback: 'Personal Workspace Hub'),
         items: [
           AppDrawerItem(
             icon: Icons.space_dashboard_outlined,
-            title: 'nav.workspace_home'.tr(ref, fallback: 'Personal Dashboard'),
+            title: 'nav.workspace_home'.tr(ref, fallback: 'Workspace Home'),
             isSelected: _selectedNavIndex == 0,
             onTap: () => setState(() => _selectedNavIndex = 0),
           ),
           AppDrawerItem(
-            icon: Icons.account_circle_outlined,
-            title: 'nav.my_profile'.tr(ref, fallback: 'My Profile & Credentials'),
+            icon: Icons.person_outline_rounded,
+            title: 'nav.my_profile'.tr(ref, fallback: 'My Profile'),
             isSelected: _selectedNavIndex == 1,
             onTap: () => setState(() => _selectedNavIndex = 1),
           ),
-        ],
-      ),
-      AppDrawerSection(
-        title: 'COMMUNITY & COLLABORATION',
-        items: [
           AppDrawerItem(
-            icon: Icons.groups_outlined,
-            title: 'nav.groups_directory'.tr(ref, fallback: 'Group Channels'),
+            icon: Icons.assignment_ind_outlined,
+            title: 'nav.my_cv_biography'.tr(ref, fallback: 'My CV Biography'),
             isSelected: _selectedNavIndex == 2,
             onTap: () => setState(() => _selectedNavIndex = 2),
           ),
-          if (activeWs?.isFeatureActive('bcp-community-messenger') ?? true)
-            AppDrawerItem(
-              icon: Icons.forum_outlined,
-              title: 'Direct Messages',
-              trailing: _buildPillBadge('LIVE', const Color(0xFF16A34A)),
-              isSelected: _selectedNavIndex == 3,
-              onTap: () => setState(() => _selectedNavIndex = 3),
-            ),
           AppDrawerItem(
-            icon: Icons.calendar_month_outlined,
-            title: 'Calendar & Events',
+            icon: Icons.insights_rounded,
+            title: 'nav.my_kpis'.tr(ref, fallback: 'My KPIs & Performance'),
+            isSelected: _selectedNavIndex == 3,
+            onTap: () => setState(() => _selectedNavIndex = 3),
+          ),
+          AppDrawerItem(
+            icon: Icons.lock_outline_rounded,
+            title: 'nav.security_password'.tr(ref, fallback: 'Security & Password'),
             isSelected: _selectedNavIndex == 4,
             onTap: () => setState(() => _selectedNavIndex = 4),
+          ),
+          AppDrawerItem(
+            icon: Icons.notifications_none_rounded,
+            title: 'nav.notifications_alerts'.tr(ref, fallback: 'Notifications & Alerts'),
+            isSelected: _selectedNavIndex == 5,
+            onTap: () => setState(() => _selectedNavIndex = 5),
           ),
         ],
       ),
       AppDrawerSection(
-        title: 'PERSONAL TOOLS',
+        title: 'suite.people_community'.tr(ref, fallback: 'People, Community & Collaboration'),
         items: [
           AppDrawerItem(
-            icon: Icons.folder_open_outlined,
-            title: 'My Documents & Vault',
-            isSelected: _selectedNavIndex == 5,
-            onTap: () => setState(() => _selectedNavIndex = 5),
-          ),
-          AppDrawerItem(
-            icon: Icons.notifications_none_rounded,
-            title: 'Notifications Feed',
+            icon: Icons.forum_outlined,
+            title: 'nav.chat_messenger'.tr(ref, fallback: 'Ozikol Chat Messenger'),
+            trailing: _buildPillBadge('LIVE', const Color(0xFF16A34A)),
             isSelected: _selectedNavIndex == 6,
             onTap: () => setState(() => _selectedNavIndex = 6),
+          ),
+          AppDrawerItem(
+            icon: Icons.groups_outlined,
+            title: 'nav.groups_directory'.tr(ref, fallback: 'Groups Directory'),
+            isSelected: _selectedNavIndex == 7,
+            onTap: () => setState(() => _selectedNavIndex = 7),
+          ),
+          AppDrawerItem(
+            icon: Icons.school_outlined,
+            title: 'nav.alumni_network'.tr(ref, fallback: 'Alumni Network'),
+            isSelected: _selectedNavIndex == 8,
+            onTap: () => setState(() => _selectedNavIndex = 8),
+          ),
+          AppDrawerItem(
+            icon: Icons.calendar_month_outlined,
+            title: 'Alumni Cohorts & Sets',
+            isSelected: _selectedNavIndex == 9,
+            onTap: () => setState(() => _selectedNavIndex = 9),
+          ),
+        ],
+      ),
+      AppDrawerSection(
+        title: 'suite.workforce_shifts'.tr(ref, fallback: 'Workforce, Shifts & Scheduling'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.calendar_today_outlined,
+            title: 'nav.staff_rota'.tr(ref, fallback: 'Staff & Volunteer Rota'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 10,
+            onTap: () => setState(() => _selectedNavIndex = 10),
+          ),
+          AppDrawerItem(
+            icon: Icons.schedule_rounded,
+            title: 'nav.attendance_tracking'.tr(ref, fallback: 'Attendance & Clock-In'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 11,
+            onTap: () => setState(() => _selectedNavIndex = 11),
+          ),
+        ],
+      ),
+      AppDrawerSection(
+        title: 'suite.finance_revenue'.tr(ref, fallback: 'Finance, Contributions & Revenue'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.shopping_bag_outlined,
+            title: 'nav.my_purchases'.tr(ref, fallback: 'My Purchases'),
+            isSelected: _selectedNavIndex == 12,
+            onTap: () => setState(() => _selectedNavIndex = 12),
+          ),
+          AppDrawerItem(
+            icon: Icons.confirmation_number_outlined,
+            title: 'nav.event_ticketing'.tr(ref, fallback: 'Event Ticketing & Passes'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 13,
+            onTap: () => setState(() => _selectedNavIndex = 13),
+          ),
+          AppDrawerItem(
+            icon: Icons.payments_outlined,
+            title: 'nav.invoicing_dues'.tr(ref, fallback: 'Invoicing & Member Dues'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 14,
+            onTap: () => setState(() => _selectedNavIndex = 14),
+          ),
+        ],
+      ),
+      AppDrawerSection(
+        title: 'suite.compliance_governance'.tr(ref, fallback: 'Governance, Compliance & Safeguarding'),
+        items: [
+          AppDrawerItem(
+            icon: Icons.badge_outlined,
+            title: 'nav.digital_id_cards'.tr(ref, fallback: 'Digital Member ID Cards'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 15,
+            onTap: () => setState(() => _selectedNavIndex = 15),
+          ),
+          AppDrawerItem(
+            icon: Icons.verified_outlined,
+            title: 'nav.certificate_verification'.tr(ref, fallback: 'Certificate Verification'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 16,
+            onTap: () => setState(() => _selectedNavIndex = 16),
+          ),
+          AppDrawerItem(
+            icon: Icons.support_agent_outlined,
+            title: 'nav.helpdesk_support'.tr(ref, fallback: 'Helpdesk & Support Desk'),
+            trailing: soonBadge,
+            isSelected: _selectedNavIndex == 17,
+            onTap: () => setState(() => _selectedNavIndex = 17),
           ),
         ],
       ),
@@ -3161,9 +3552,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                                 color: AppColors.primary.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(4),
                               ),
-                              child: const Text(
-                                'SuperAdmin',
-                                style: TextStyle(
+                              child: Text(
+                                _getUserRoleBadge(activeWs),
+                                style: const TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.primary,
@@ -3214,7 +3605,31 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 value: isOnline ? 'Online • Real-Time Connected' : 'Offline • Local Cache Active',
                 valueColor: isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(dialogCtx).pop();
+                    _showPrivilegesDialog(context, isDark, activeWs);
+                  },
+                  icon: const Icon(Icons.verified_user_outlined, size: 16, color: AppColors.primary),
+                  label: Text(
+                    'rbac.view_privileges'.tr(ref, fallback: 'View Privileges & Access'),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.primary),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -3405,5 +3820,330 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return months[(month - 1).clamp(0, 11)];
+  }
+
+  /// Resolves the user's role badge (SuperAdmin, Administrator, or Member).
+  String _getUserRoleBadge(dynamic activeWs) {
+    if (activeWs == null) return 'Member';
+    final roles = (activeWs.userRoles as List<dynamic>?)?.map((r) => r.toString().toLowerCase()).toList() ?? [];
+    if (activeWs.isSuperAdmin == true || roles.contains('superadmin') || roles.contains('systemadministrator')) {
+      return 'SuperAdmin';
+    }
+    if (activeWs.isAdmin == true || roles.any((r) => ['admin', 'administrator', 'identitymanager', 'cmsmanager', 'storemanager'].contains(r))) {
+      return 'Administrator';
+    }
+    return 'Member';
+  }
+
+  /// Displays the account roles, granted capabilities, and unlocked suites modal dialog or bottom sheet.
+  void _showPrivilegesDialog(BuildContext context, bool isDark, dynamic activeWs) {
+    final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
+    final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
+    final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
+    final roleBadge = _getUserRoleBadge(activeWs);
+
+    final List<String> roles = (activeWs?.userRoles as List<dynamic>?)?.map((r) => r.toString()).toList() ?? [];
+    if (roles.isEmpty) {
+      roles.add(roleBadge);
+    }
+
+    final List<String> capabilities = roleBadge == 'SuperAdmin'
+        ? [
+            'Full System Executive Administration',
+            'Identity & RBAC Governance',
+            'Security Audit & User Forensics',
+            'Emergency 2FA Bypass & Log Analysis',
+            'Suite Entitlements & Feature Billing',
+            'Remote Session Kill & Revocation',
+            'Brand Configuration & Custom Domains',
+            'Cross-Platform Parity Management',
+          ]
+        : roleBadge == 'Administrator'
+            ? [
+                'User Directory & Invitation Dispatch',
+                'Content CMS & Category Publishing',
+                'Role Assignment & Membership Control',
+                'Broadcast Studio Notifications',
+                'Commerce Products & Order Management',
+                'Community & Cohort Moderation',
+                'Personal Workspace & Collaborative Tools',
+                'Audit Log Verification',
+              ]
+            : [
+                'Personal Workspace & Profile',
+                'Dynamic CV Biography Portfolio',
+                'Encrypted Real-Time Chat Messenger',
+                'Community Groups & Cohort Forums',
+                'Alumni Directory Access',
+                'Personal Order & Purchase History',
+                'Two-Factor Authentication Setup',
+                'Account Security & Active Session View',
+              ];
+
+    final List<Map<String, dynamic>> accessibleSuites = roleBadge == 'SuperAdmin'
+        ? [
+            {'name': 'Executive Command & Governance', 'icon': Icons.space_dashboard_rounded},
+            {'name': 'Suite 01: People & Community', 'icon': Icons.groups_outlined},
+            {'name': 'Suite 02: Workforce & Shifts', 'icon': Icons.calendar_month_outlined},
+            {'name': 'Suite 03: Reports & Forms', 'icon': Icons.summarize_outlined},
+            {'name': 'Suite 04: Events & Ticketing', 'icon': Icons.confirmation_number_outlined},
+            {'name': 'Suite 05: Finance & Revenue', 'icon': Icons.account_balance_wallet_outlined},
+            {'name': 'Suite 06: Operations & Logistics', 'icon': Icons.storefront_outlined},
+            {'name': 'Suite 07: Communication & AI', 'icon': Icons.campaign_outlined},
+            {'name': 'Suite 08: Governance & Compliance', 'icon': Icons.folder_zip_outlined},
+            {'name': 'Suite 09: Demographics & Census', 'icon': Icons.map_outlined},
+            {'name': 'Personal Workspace Hub', 'icon': Icons.person_outline_rounded},
+          ]
+        : roleBadge == 'Administrator'
+            ? [
+                {'name': 'Executive Command & Governance', 'icon': Icons.space_dashboard_rounded},
+                {'name': 'Suite 01: People & Community', 'icon': Icons.groups_outlined},
+                {'name': 'Suite 06: Operations & Logistics', 'icon': Icons.storefront_outlined},
+                {'name': 'Suite 07: Communication & AI', 'icon': Icons.campaign_outlined},
+                {'name': 'Personal Workspace Hub', 'icon': Icons.person_outline_rounded},
+              ]
+            : [
+                {'name': 'Personal Workspace Hub', 'icon': Icons.person_outline_rounded},
+                {'name': 'Community Channels & Groups', 'icon': Icons.groups_outlined},
+                {'name': 'Chat Messenger', 'icon': Icons.chat_bubble_outline_rounded},
+                {'name': 'Alumni Network', 'icon': Icons.school_outlined},
+                {'name': 'My Purchases & Dues', 'icon': Icons.shopping_bag_outlined},
+              ];
+
+    Widget buildContent(BuildContext ctx) => SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.verified_user_rounded,
+                  color: AppColors.primary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'rbac.privileges_modal_title'.tr(ref, fallback: 'Account Roles & Security Privileges'),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${activeWs?.userFullName ?? 'Member'} • $roleBadge',
+                      style: TextStyle(fontSize: 12, color: subColor, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.close_rounded, color: subColor),
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Divider(color: borderColor, height: 1),
+          const SizedBox(height: 16),
+
+          // Section 1: Assigned Roles
+          Row(
+            children: [
+              const Icon(Icons.badge_outlined, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'rbac.assigned_roles'.tr(ref, fallback: 'Assigned Platform Roles'),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: roles.map((role) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  role,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Section 2: Unlocked Capabilities
+          Row(
+            children: [
+              const Icon(Icons.lock_open_rounded, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'rbac.unlocked_capabilities'.tr(ref, fallback: 'Granted System Capabilities'),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Column(
+            children: capabilities.map((cap) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          cap,
+                          style: TextStyle(fontSize: 12, color: textColor),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Section 3: Accessible Suites
+          Row(
+            children: [
+              const Icon(Icons.grid_view_rounded, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'rbac.accessible_pages'.tr(ref, fallback: 'Unlocked Suites & Modules'),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: accessibleSuites.map((suite) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(suite['icon'] as IconData, size: 14, color: AppColors.primary),
+                    const SizedBox(width: 6),
+                    Text(
+                      suite['name'] as String,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+
+          const SizedBox(height: 24),
+          Align(
+            alignment: Alignment.centerRight,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
+              child: const Text('Done', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    if (isMobile) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: dialogBg,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (sheetCtx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: buildContent(sheetCtx),
+          ),
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (dialogCtx) => Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: dialogBg,
+          child: Container(
+            width: 520,
+            constraints: const BoxConstraints(maxHeight: 640),
+            padding: const EdgeInsets.all(24),
+            child: buildContent(dialogCtx),
+          ),
+        ),
+      );
+    }
   }
 }

@@ -74,62 +74,78 @@ interface PinnedItem {
         <!-- ADMIN CONSOLE SIDEBAR (when isConsoleActive)  -->
         <!-- ============================================== -->
         <ng-container *ngIf="isConsoleActive">
-          <!-- Section: WEBSITE -->
-          <div class="menu-title">Website</div>
-          <div class="nav-item">
-            <a [href]="liveWebsiteUrl" target="_blank" class="nav-link" [title]="hasCustomDomain ? 'Visit ' + customDomain + ' in new tab' : 'Visit live public website in new tab'">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">home</span>
-                <span>Home</span>
-              </div>
-              <span class="material-symbols-outlined nav-external-hint">open_in_new</span>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/settings/console/custom-domain" class="nav-link domain-nav-link" [class.is-linked]="hasCustomDomain" [title]="hasCustomDomain ? 'Manage Custom Domain (' + customDomain + ')' : 'Link a Custom Domain'">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">{{ hasCustomDomain ? 'domain_verification' : 'add_link' }}</span>
-                <span>{{ hasCustomDomain ? 'Manage Domain' : 'Link Domain' }}</span>
-              </div>
-              <span class="badge-pill" [class.badge-linked]="hasCustomDomain" [class.badge-unlinked]="!hasCustomDomain">
-                {{ hasCustomDomain ? 'Active' : 'Setup' }}
-              </span>
-            </a>
-          </div>
-
-          <div class="menu-title">Command Center</div>
+          <!-- CORE: Executive Command & Governance -->
+          <div class="menu-title">{{ 'suite.core_command' | translate }}</div>
           <div class="nav-item">
             <a routerLink="/dashboard/console" [class.active]="isCurrentRoute('/dashboard/console') || isCurrentRoute('/admin/dashboard')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">space_dashboard</span>
-                <span>Console Dashboard</span>
+                <span>{{ 'nav.console_dashboard' | translate }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/dashboard/console')" (click)="togglePin('Console Dashboard', '/dashboard/console', 'space_dashboard'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/dashboard/console') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/dashboard/console') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
+          <div class="nav-item">
+            <a routerLink="/identity/console/audit-logs" [class.active]="isCurrentRoute('/identity/console/audit-logs')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">security</span>
+                <span>{{ 'nav.security_audit' | translate }}</span>
+                <span class="badge-pill badge-hot">Live</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/audit-logs')" (click)="togglePin('Security Logs', '/identity/console/audit-logs', 'security'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/audit-logs') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/identity/console/audit-logs') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/settings/console" [class.active]="isCurrentRoute('/settings/console') || isCurrentRoute('/admin/settings')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">palette</span>
+                <span>{{ 'nav.brand_settings' | translate }}</span>
+                <span class="badge-pill badge-hot">Hot</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console')" (click)="togglePin('Brand Settings', '/settings/console', 'palette'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/settings/console') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/settings/console') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/settings/console/custom-domain" class="nav-link domain-nav-link" [class.is-linked]="hasCustomDomain" [title]="hasCustomDomain ? 'Manage Custom Domain (' + customDomain + ')' : 'Link a Custom Domain'">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">{{ hasCustomDomain ? 'domain_verification' : 'add_link' }}</span>
+                <span>{{ hasCustomDomain ? ('nav.manage_domain' | translate) : ('nav.link_domain' | translate) }}</span>
+              </div>
+              <span class="badge-pill" [class.badge-linked]="hasCustomDomain" [class.badge-unlinked]="!hasCustomDomain">
+                {{ hasCustomDomain ? ('badge.active' | translate) : ('badge.setup' | translate) }}
+              </span>
+            </a>
+          </div>
           <span class="nav-link disabled">
             <span class="nav-link-content">
               <span class="material-symbols-outlined">payments</span>
-              <span>Feature Billing</span>
+              <span>{{ 'nav.feature_billing' | translate }}</span>
             </span>
-            <span class="badge-pill badge-soon">Soon</span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content">
-              <span class="material-symbols-outlined">security</span>
-              <span>Security Audit</span>
-            </span>
-            <span class="badge-pill badge-soon">Soon</span>
-          </span>
+          <div class="nav-item">
+            <a [href]="liveWebsiteUrl" target="_blank" class="nav-link" [title]="hasCustomDomain ? 'Visit ' + customDomain + ' in new tab' : 'Visit live public website in new tab'">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">home</span>
+                <span>{{ 'nav.home' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined nav-external-hint">open_in_new</span>
+            </a>
+          </div>
 
-          <div class="menu-title">Content CMS Studio</div>
+          <!-- SUITE 00: Content CMS Studio (Web Exclusive Only) -->
+          <div class="menu-title">{{ 'suite.content_cms' | translate }}</div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('content')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isCmsStudioActive()" (click)="toggleMenu('content')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">dynamic_feed</span>
-                <span>CMS Studio</span>
+                <span>{{ 'nav.cms_studio' | translate }}</span>
                 <span class="badge-pill badge-new">Live</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
@@ -138,7 +154,7 @@ interface PinnedItem {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/content/console" [class.active]="isCurrentRoute('/content/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>CMS Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'nav.cms_dashboard' | translate }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console')" (click)="togglePin('CMS Dashboard', '/content/console', 'dynamic_feed')" [title]="isPinned('/content/console') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/content/console') ? 'keep_off' : 'push_pin' }}</span>
@@ -148,7 +164,7 @@ interface PinnedItem {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/content/console/categories" [class.active]="isContentCategoriesActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">folder_open</span>Web Categories</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">folder_open</span>{{ 'nav.web_categories' | translate }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/categories')" (click)="togglePin('Web Categories', '/content/console/categories', 'folder_open')" [title]="isPinned('/content/console/categories') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/content/console/categories') ? 'keep_off' : 'push_pin' }}</span>
@@ -158,18 +174,17 @@ interface PinnedItem {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/content/console/pages" [class.active]="isContentPagesActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">description</span>All Web Pages</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">description</span>{{ 'nav.all_web_pages' | translate }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/pages')" (click)="togglePin('Web Pages', '/content/console/pages', 'description')" [title]="isPinned('/content/console/pages') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/content/console/pages') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
-
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/content/console/blogs" [class.active]="isParentActive('/content/console/blogs')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">post_add</span>Blog Articles</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">post_add</span>{{ 'nav.blog_articles' | translate }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/blogs')" (click)="togglePin('Blog Articles', '/content/console/blogs', 'post_add')" [title]="isPinned('/content/console/blogs') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/content/console/blogs') ? 'keep_off' : 'push_pin' }}</span>
@@ -179,15 +194,13 @@ interface PinnedItem {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/content/console/blog-categories" [class.active]="isParentActive('/content/console/blog-categories')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">topic</span>Blog Categories</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">topic</span>{{ 'nav.blog_categories' | translate }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/blog-categories')" (click)="togglePin('Blog Categories', '/content/console/blog-categories', 'topic')" [title]="isPinned('/content/console/blog-categories') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/content/console/blog-categories') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
-
-              <!-- Forms & Leads Inquiries Dropdown Index -->
               <li class="sub-nav-divider">
                 <span class="sub-divider-text">Form Inquiries & Leads</span>
               </li>
@@ -211,40 +224,34 @@ interface PinnedItem {
               </li>
             </ul>
           </div>
-
-          <!-- Manage Forms Standalone Menu Item (Directly Before My Templates) -->
           <div class="nav-item">
             <a routerLink="/content/console/forms" routerLinkActive="active" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">dynamic_form</span>
-                <span>Manage Forms</span>
+                <span>{{ 'nav.manage_forms' | translate }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/forms')" (click)="togglePin('Manage Forms', '/content/console/forms', 'dynamic_form'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/content/console/forms') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/content/console/forms') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
-
-          <!-- My Installed Templates Standalone Menu Item -->
           <div class="nav-item">
             <a routerLink="/content/console/templates" routerLinkActive="active" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">layers</span>
-                <span>My Templates</span>
+                <span>{{ 'nav.my_templates' | translate }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/templates')" (click)="togglePin('My Templates', '/content/console/templates', 'layers'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/content/console/templates') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/content/console/templates') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
-
-          <!-- UI Marketplace Standalone Menu Item -->
           <div class="nav-item">
             <a routerLink="/content/console/marketplace" routerLinkActive="active" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">widgets</span>
-                <span>UI Marketplace</span>
-                <span class="badge-pill badge-soon">Soon</span>
+                <span>{{ 'nav.ui_marketplace' | translate }}</span>
+                <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/marketplace')" (click)="togglePin('UI Marketplace', '/content/console/marketplace', 'widgets'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/content/console/marketplace') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/content/console/marketplace') ? 'keep_off' : 'push_pin' }}</span>
@@ -252,43 +259,284 @@ interface PinnedItem {
             </a>
           </div>
 
-          <!-- Brand & Settings Menu Item (Under Content CMS Studio) -->
-          <div class="nav-item">
-            <a routerLink="/settings/console" [class.active]="isCurrentRoute('/settings/console') || isCurrentRoute('/admin/settings')" class="nav-link">
+          <!-- SUITE 01: People, Community & Collaboration (Comes right after CMS on Web!) -->
+          <div class="menu-title">{{ 'suite.people_community' | translate }}</div>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('users')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/console') || isParentActive('/admin/users')" (click)="toggleMenu('users')">
               <div class="nav-link-content">
-                <span class="material-symbols-outlined">palette</span>
-                <span>Brand &amp; Settings</span>
-                <span class="badge-pill badge-hot">Hot</span>
+                <span class="material-symbols-outlined">groups</span>
+                <span>{{ 'nav.user_directory' | translate }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console')" (click)="togglePin('Brand Settings', '/settings/console', 'palette'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/settings/console') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/settings/console') ? 'keep_off' : 'push_pin' }}</span>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('users')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/dashboard" [class.active]="isCurrentRoute('/users/console/dashboard')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Dashboard Overview</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/dashboard')" (click)="togglePin('User Dashboard', '/users/console/dashboard', 'analytics')" [title]="isPinned('/users/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/console/dashboard') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/list" [class.active]="isUserListActive()" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">groups</span>{{ 'nav.all_members' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/list')" (click)="togglePin('All Members', '/users/console/list', 'groups')" [title]="isPinned('/users/console/list') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/console/list') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/categories" [class.active]="isUserCategoriesActive()" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">category</span>{{ categoryAlias || 'User Categories' }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/categories')" (click)="togglePin(categoryAlias || 'User Categories', '/users/console/categories', 'category')" [title]="isPinned('/users/console/categories') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/console/categories') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/registration-form" [class.active]="isCurrentRoute('/users/console/registration-form')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">dynamic_form</span>{{ 'nav.registration_form_builder' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/registration-form')" (click)="togglePin('Registration Form Builder', '/users/console/registration-form', 'dynamic_form')" [title]="isPinned('/users/console/registration-form') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/console/registration-form') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/kpi" [class.active]="isUserKpiActive()" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">monitoring</span>{{ 'nav.kpis_leaderboard' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/kpi')" (click)="togglePin('KPIs & Leaderboard', '/users/console/kpi', 'monitoring')" [title]="isPinned('/users/console/kpi') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/console/kpi') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/activity" [class.active]="isCurrentRoute('/users/console/activity')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history</span>{{ 'nav.activity_audit_logs' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/activity')" (click)="togglePin('Activity Logs', '/users/console/activity', 'history')" [title]="isPinned('/users/console/activity') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/console/activity') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Identity & Access Control Submenu -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('identity')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/identity/console') || isParentActive('/admin/identity')" (click)="toggleMenu('identity')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">admin_panel_settings</span>
+                <span>{{ 'nav.identity_control' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('identity')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console/dashboard" [class.active]="isCurrentRoute('/identity/console/dashboard') || isCurrentRoute('/identity/console')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Console Overview</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/dashboard')" (click)="togglePin('Identity Dashboard', '/identity/console/dashboard', 'analytics')" [title]="isPinned('/identity/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/dashboard') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console/roles" [class.active]="isCurrentRoute('/identity/console/roles')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">verified_user</span>{{ 'nav.roles_permissions' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/roles')" (click)="togglePin('Roles & Permissions', '/identity/console/roles', 'verified_user')" [title]="isPinned('/identity/console/roles') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/roles') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console/invitations" [class.active]="isCurrentRoute('/identity/console/invitations')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mail</span>{{ 'nav.user_invitations' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/invitations')" (click)="togglePin('User Invitations', '/identity/console/invitations', 'mail')" [title]="isPinned('/identity/console/invitations') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/invitations') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console/policies" [class.active]="isCurrentRoute('/identity/console/policies')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">password</span>{{ 'nav.global_policies' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/policies')" (click)="togglePin('Global Policies', '/identity/console/policies', 'password')" [title]="isPinned('/identity/console/policies') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/policies') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Groups & Communities -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('groups')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/groups/console') || isParentActive('/admin/groups')" (click)="toggleMenu('groups')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">diversity_3</span>
+                <span>{{ groupAlias || 'Groups & Communities' }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('groups')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/groups/console" [class.active]="isParentActive('/groups/console')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ groupAlias || 'Groups' }} Dashboard</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/groups/console')" (click)="togglePin((groupAlias || 'Groups') + ' Dashboard', '/groups/console', 'space_dashboard')" [title]="isPinned('/groups/console') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/groups/console') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Alumni Suite -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('alumni')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/admin/alumni') || isParentActive('/users/workspace/alumni')" (click)="toggleMenu('alumni')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">school</span>
+                <span>{{ alumniAlias || 'Alumni' }} Suite</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('alumni')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/admin/alumni" [class.active]="isCurrentRoute('/admin/alumni') || isCurrentRoute('/users/workspace/alumni')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">group</span>{{ alumniAlias || 'Alumni' }} Network</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni')" (click)="togglePin((alumniAlias || 'Alumni') + ' Network', '/admin/alumni', 'group')" [title]="isPinned('/admin/alumni') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/admin/alumni') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/admin/alumni/cohorts" [class.active]="isCurrentRoute('/admin/alumni/cohorts')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Graduation Sets & Cohorts</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni/cohorts')" (click)="togglePin((alumniAlias || 'Alumni') + ' Cohorts', '/admin/alumni/cohorts', 'calendar_month')" [title]="isPinned('/admin/alumni/cohorts') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/admin/alumni/cohorts') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Ozikol Chat Messenger -->
+          <div class="nav-item">
+            <a routerLink="/admin/messenger" [class.active]="isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">chat</span>
+                <span>{{ 'nav.chat_messenger' | translate }}</span>
+                <span class="badge-pill badge-hot">Live</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/admin/messenger') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
 
-          <!-- Custom Domain Setup Menu Item (Under Content CMS Studio) -->
-          <div class="nav-item">
-            <a routerLink="/settings/console/custom-domain" [class.active]="isCurrentRoute('/settings/console/custom-domain')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">dns</span>
-                <span>Custom Domain</span>
-                <span class="badge-pill" [class.badge-linked]="hasCustomDomain" [class.badge-unlinked]="!hasCustomDomain">
-                  {{ hasCustomDomain ? 'Active' : 'Setup' }}
-                </span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console/custom-domain')" (click)="togglePin('Custom Domain', '/settings/console/custom-domain', 'dns'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/settings/console/custom-domain') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/settings/console/custom-domain') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
+          <!-- Whistleblowing Feedback -->
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">feedback</span><span>{{ 'nav.whistleblowing' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
 
-          <!-- Commerce & Store Studio Feature -->
-          <div class="menu-title">Commerce & Store Studio</div>
+          <!-- SUITE 02: Workforce, Shifts & Scheduling -->
+          <div class="menu-title">{{ 'suite.workforce_shifts' | translate }}</div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">calendar_month</span><span>{{ 'nav.staff_rota' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">swap_horiz</span><span>{{ 'nav.shift_swaps' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">timer</span><span>{{ 'nav.attendance_tracking' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">event_repeat</span><span>{{ 'nav.calendar_followups' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- SUITE 03: Data Collection, Reports & Forms -->
+          <div class="menu-title">{{ 'suite.reports_forms' | translate }}</div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">summarize</span><span>{{ 'nav.dynamic_reports' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">dynamic_form</span><span>{{ 'nav.forms_surveys' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">fact_check</span><span>{{ 'nav.reference_forms' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">menu_book</span><span>{{ 'nav.knowledge_base' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- SUITE 04: Events, Ticketing & Training -->
+          <div class="menu-title">{{ 'suite.events_training' | translate }}</div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">confirmation_number</span><span>{{ 'nav.event_ticketing' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">record_voice_over</span><span>{{ 'nav.speaker_sessions' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">people</span><span>{{ 'nav.attendee_management' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- SUITE 05: Finance, Contributions & Revenue -->
+          <div class="menu-title">{{ 'suite.finance_revenue' | translate }}</div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>{{ 'nav.invoicing_dues' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance</span><span>{{ 'nav.embedded_banking' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">request_quote</span><span>{{ 'nav.grant_ledger' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- SUITE 06: Operations, Logistics & Facilities -->
+          <div class="menu-title">{{ 'suite.operations_logistics' | translate }}</div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('commerce')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/products/console')" (click)="toggleMenu('commerce')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">storefront</span>
-                <span>Commerce Studio</span>
+                <span>{{ 'nav.commerce_studio' | translate }}</span>
                 <span class="badge-pill badge-new">New</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
@@ -297,7 +545,7 @@ interface PinnedItem {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console" [class.active]="isCurrentRoute('/products/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">inventory_2</span>Products Catalog</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">inventory_2</span>{{ 'nav.products_catalog' | translate }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console')" (click)="togglePin('Products Catalog', '/products/console', 'inventory_2')" [title]="isPinned('/products/console') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/products/console') ? 'keep_off' : 'push_pin' }}</span>
@@ -307,7 +555,7 @@ interface PinnedItem {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console/create" [class.active]="isCurrentRoute('/products/console/create')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">add_circle</span>Create Product</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">add_circle</span>{{ 'nav.create_product' | translate }}</span>
                   </a>
                 </div>
               </li>
@@ -351,7 +599,6 @@ interface PinnedItem {
                   </button>
                 </div>
               </li>
-
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/store" target="_blank" class="sub-nav-item">
@@ -361,291 +608,78 @@ interface PinnedItem {
               </li>
             </ul>
           </div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">how_to_vote</span><span>{{ 'nav.elections_voting' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">meeting_room</span><span>{{ 'nav.facilities_equipment' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
 
-          <div class="menu-title">Identity Administration</div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('identity')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/identity/console') || isParentActive('/admin/identity')" (click)="toggleMenu('identity')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">admin_panel_settings</span>
-                <span>Identity Control</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('identity')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/identity/console/dashboard" [class.active]="isCurrentRoute('/identity/console/dashboard') || isCurrentRoute('/identity/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Console Overview</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/dashboard')" (click)="togglePin('Identity Dashboard', '/identity/console/dashboard', 'analytics')" [title]="isPinned('/identity/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/dashboard') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/identity/console/roles" [class.active]="isCurrentRoute('/identity/console/roles')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">verified_user</span>Roles & Permissions</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/roles')" (click)="togglePin('Roles & Permissions', '/identity/console/roles', 'verified_user')" [title]="isPinned('/identity/console/roles') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/roles') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/identity/console/invitations" [class.active]="isCurrentRoute('/identity/console/invitations')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mail</span>Invitations</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/invitations')" (click)="togglePin('User Invitations', '/identity/console/invitations', 'mail')" [title]="isPinned('/identity/console/invitations') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/invitations') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/identity/console/audit-logs" [class.active]="isCurrentRoute('/identity/console/audit-logs')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history</span>Security Logs</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/audit-logs')" (click)="togglePin('Security Logs', '/identity/console/audit-logs', 'history')" [title]="isPinned('/identity/console/audit-logs') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/audit-logs') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/identity/console/policies" [class.active]="isCurrentRoute('/identity/console/policies')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">password</span>Global Policies</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/policies')" (click)="togglePin('Global Policies', '/identity/console/policies', 'password')" [title]="isPinned('/identity/console/policies') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/policies') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled" style="opacity: 0.6; cursor: not-allowed;">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">badge</span>KYC Verification</span>
-                    <span class="badge-pill badge-soon">Soon</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          <div class="menu-title">User Management</div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('users')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/console') || isParentActive('/admin/users')" (click)="toggleMenu('users')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">groups</span>
-                <span>User Directory</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('users')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/users/console/dashboard" [class.active]="isCurrentRoute('/users/console/dashboard')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Dashboard Overview</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/dashboard')" (click)="togglePin('User Dashboard', '/users/console/dashboard', 'analytics')" [title]="isPinned('/users/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/users/console/dashboard') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/users/console/list" [class.active]="isUserListActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">groups</span>All Members</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/list')" (click)="togglePin('All Members', '/users/console/list', 'groups')" [title]="isPinned('/users/console/list') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/users/console/list') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/users/console/categories" [class.active]="isUserCategoriesActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">category</span>{{ categoryAlias || 'User Categories' }}</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/categories')" (click)="togglePin(categoryAlias || 'User Categories', '/users/console/categories', 'category')" [title]="isPinned('/users/console/categories') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/users/console/categories') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/users/console/registration-form" [class.active]="isCurrentRoute('/users/console/registration-form')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">dynamic_form</span>Registration Form Builder</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/registration-form')" (click)="togglePin('Registration Form Builder', '/users/console/registration-form', 'dynamic_form')" [title]="isPinned('/users/console/registration-form') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/users/console/registration-form') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/users/console/kpi" [class.active]="isUserKpiActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">monitoring</span>KPIs & Leaderboard</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/kpi')" (click)="togglePin('KPIs & Leaderboard', '/users/console/kpi', 'monitoring')" [title]="isPinned('/users/console/kpi') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/users/console/kpi') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/users/console/activity" [class.active]="isCurrentRoute('/users/console/activity')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history</span>Activity Audit Logs</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/activity')" (click)="togglePin('Activity Logs', '/users/console/activity', 'history')" [title]="isPinned('/users/console/activity') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/users/console/activity') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/users/console/notifications" [class.active]="isCurrentRoute('/users/console/notifications')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">campaign</span>Notification Studio</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/notifications')" (click)="togglePin('Notification Studio', '/users/console/notifications', 'campaign')" [title]="isPinned('/users/console/notifications') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/users/console/notifications') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          <div class="menu-title">People & Community</div>
-          
-          <!-- 1. Groups & Communities Dropdown -->
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('groups')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/groups/console') || isParentActive('/admin/groups')" (click)="toggleMenu('groups')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">diversity_3</span>
-                <span>{{ groupAlias || 'Groups & Communities' }}</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('groups')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/groups/console" [class.active]="isParentActive('/groups/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ groupAlias || 'Groups' }} Dashboard</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/groups/console')" (click)="togglePin((groupAlias || 'Groups') + ' Dashboard', '/groups/console', 'space_dashboard')" [title]="isPinned('/groups/console') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/groups/console') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          <!-- 2. Alumni Suite Dropdown -->
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('alumni')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/admin/alumni') || isParentActive('/users/workspace/alumni')" (click)="toggleMenu('alumni')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">school</span>
-                <span>{{ alumniAlias || 'Alumni' }} Suite</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('alumni')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/admin/alumni" [class.active]="isCurrentRoute('/admin/alumni') || isCurrentRoute('/users/workspace/alumni')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">group</span>{{ alumniAlias || 'Alumni' }} Network</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni')" (click)="togglePin((alumniAlias || 'Alumni') + ' Network', '/admin/alumni', 'group')" [title]="isPinned('/admin/alumni') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/admin/alumni') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/admin/alumni/cohorts" [class.active]="isCurrentRoute('/admin/alumni/cohorts')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Graduation Sets & Cohorts</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni/cohorts')" (click)="togglePin((alumniAlias || 'Alumni') + ' Cohorts', '/admin/alumni/cohorts', 'calendar_month')" [title]="isPinned('/admin/alumni/cohorts') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/admin/alumni/cohorts') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          <!-- 3. Ozikol Chat Messenger (DIRECT ITEM - NO DROPDOWN) -->
+          <!-- SUITE 07: Communication, AI & Support -->
+          <div class="menu-title">{{ 'suite.communication_ai' | translate }}</div>
           <div class="nav-item">
-            <a routerLink="/admin/messenger" [class.active]="isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat')" class="nav-link">
+            <a routerLink="/users/console/notifications" [class.active]="isCurrentRoute('/users/console/notifications')" class="nav-link">
               <div class="nav-link-content">
-                <span class="material-symbols-outlined">chat</span>
-                <span>Ozikol Chat Messenger</span>
-                <span class="badge-pill badge-hot">Live</span>
+                <span class="material-symbols-outlined">campaign</span>
+                <span>{{ 'nav.notification_studio' | translate }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/admin/messenger') ? 'keep_off' : 'push_pin' }}</span>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/notifications')" (click)="togglePin('Notification Studio', '/users/console/notifications', 'campaign')" [title]="isPinned('/users/console/notifications') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/users/console/notifications') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
-
-          <!-- Calendar & Follow-Up Routine -->
-          <div class="nav-item">
-            <span class="nav-link disabled">
-              <span class="nav-link-content">
-                <span class="material-symbols-outlined">event_repeat</span>
-                <span>Calendar & Follow-Ups</span>
-              </span>
-              <span class="badge-pill badge-soon">Soon</span>
-            </span>
-          </div>
-
-          <!-- GoCall AI Emergency & Voice Dispatch -->
-          <div class="nav-item">
-            <span class="nav-link disabled">
-              <span class="nav-link-content">
-                <span class="material-symbols-outlined">phone_in_talk</span>
-                <span>GoCall AI Dispatch</span>
-              </span>
-              <span class="badge-pill badge-soon">Soon</span>
-            </span>
-          </div>
-
-
-
-          <div class="menu-title">Reports & Knowledge</div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">summarize</span><span>Dynamic Reports</span></span>
-            <span class="badge-pill badge-soon">Soon</span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">phone_in_talk</span><span>{{ 'nav.gocall_dispatch' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">dynamic_form</span><span>Forms & Surveys</span></span>
-            <span class="badge-pill badge-soon">Soon</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">fact_check</span><span>Reference Form System</span></span>
-            <span class="badge-pill badge-soon">Soon</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">menu_book</span><span>Knowledge Base</span></span>
-            <span class="badge-pill badge-soon">Soon</span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">support_agent</span><span>{{ 'nav.helpdesk_support' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
-          <div class="menu-title">Finance & Revenue</div>
+          <!-- SUITE 08: Governance, Compliance & Safeguarding -->
+          <div class="menu-title">{{ 'suite.compliance_governance' | translate }}</div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>Financials & Dues</span></span>
-            <span class="badge-pill badge-soon">Soon</span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">folder_zip</span><span>{{ 'nav.document_vault' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance</span><span>Embedded Banking & Rails</span></span>
-            <span class="badge-pill badge-soon">Soon</span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">school</span><span>{{ 'nav.lms_training' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">verified</span><span>{{ 'nav.certificate_verification' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>{{ 'nav.kyc_verification' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- SUITE 09: Demographics, Census & Analytics -->
+          <div class="menu-title">{{ 'suite.demographics_census' | translate }}</div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">map</span><span>{{ 'nav.community_census' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">pin_drop</span><span>{{ 'nav.field_surveyor' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>{{ 'nav.digital_id_cards' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
           <div class="menu-divider" style="margin: 15px 0 10px; border-top: 1px solid rgba(255,255,255,0.08);"></div>
-          <div class="menu-title">Personal Workspace</div>
+          <div class="menu-title">{{ 'suite.member_workspace' | translate }}</div>
           <div class="nav-item">
             <a routerLink="/users/workspace/profile/biography" [class.active]="isCurrentRoute('/users/workspace/profile/biography')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">assignment_ind</span>
-                <span>My CV Biography</span>
+                <span>{{ 'nav.my_cv_biography' | translate }}</span>
               </div>
             </a>
           </div>
@@ -653,7 +687,7 @@ interface PinnedItem {
             <a routerLink="/users/workspace/chat" [class.active]="isCurrentRoute('/users/workspace/chat')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">chat</span>
-                <span>Chat Room</span>
+                <span>{{ 'nav.chat_messenger' | translate }}</span>
               </div>
             </a>
           </div>
@@ -661,7 +695,7 @@ interface PinnedItem {
             <a routerLink="/users/workspace/groups" [class.active]="isCurrentRoute('/users/workspace/groups')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">groups</span>
-                <span>Groups Directory</span>
+                <span>{{ 'nav.groups_directory' | translate }}</span>
               </div>
             </a>
           </div>
@@ -669,7 +703,7 @@ interface PinnedItem {
             <a routerLink="/users/workspace/alumni" [class.active]="isCurrentRoute('/users/workspace/alumni')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">school</span>
-                <span>Alumni Network</span>
+                <span>{{ 'nav.alumni_network' | translate }}</span>
               </div>
             </a>
           </div>
@@ -679,22 +713,20 @@ interface PinnedItem {
         <!-- MEMBER WORKSPACE SIDEBAR (when !isConsoleActive)-->
         <!-- ============================================== -->
         <ng-container *ngIf="!isConsoleActive">
-          <div class="menu-title">Member Workspace</div>
+          <div class="menu-title">{{ 'suite.member_workspace' | translate }}</div>
           <div class="nav-item">
             <a routerLink="/dashboard/workspace" [class.active]="isCurrentRoute('/dashboard/workspace') || isCurrentRoute('/users/workspace/dashboard')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">space_dashboard</span>
-                <span>Workspace Home</span>
+                <span>{{ 'nav.workspace_home' | translate }}</span>
               </div>
             </a>
           </div>
-
-          <div class="menu-title">My Dossier & Profile</div>
           <div class="nav-item">
             <a routerLink="/users/workspace/profile" [class.active]="isCurrentRoute('/users/workspace/profile')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">person</span>
-                <span>My Profile</span>
+                <span>{{ 'nav.my_profile' | translate }}</span>
               </div>
             </a>
           </div>
@@ -702,7 +734,7 @@ interface PinnedItem {
             <a routerLink="/users/workspace/profile/biography" [class.active]="isCurrentRoute('/users/workspace/profile/biography')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">assignment_ind</span>
-                <span>My CV Biography</span>
+                <span>{{ 'nav.my_cv_biography' | translate }}</span>
               </div>
             </a>
           </div>
@@ -710,15 +742,7 @@ interface PinnedItem {
             <a routerLink="/users/workspace/kpi" [class.active]="isCurrentRoute('/users/workspace/kpi')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">monitoring</span>
-                <span>My KPIs & Performance</span>
-              </div>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/purchases" [class.active]="isCurrentRoute('/users/workspace/purchases')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">shopping_bag</span>
-                <span>My Purchases</span>
+                <span>{{ 'nav.my_kpis' | translate }}</span>
               </div>
             </a>
           </div>
@@ -726,7 +750,7 @@ interface PinnedItem {
             <a routerLink="/users/workspace/security" [class.active]="isCurrentRoute('/users/workspace/security')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">lock_reset</span>
-                <span>Security & Password</span>
+                <span>{{ 'nav.security_password' | translate }}</span>
               </div>
             </a>
           </div>
@@ -734,17 +758,18 @@ interface PinnedItem {
             <a routerLink="/users/workspace/notifications" [class.active]="isCurrentRoute('/users/workspace/notifications')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">notifications</span>
-                <span>Notifications & Alerts</span>
+                <span>{{ 'nav.notifications_alerts' | translate }}</span>
               </div>
             </a>
           </div>
 
-          <div class="menu-title">Community & Channels</div>
+          <!-- Suite 01: Community & Collaboration -->
+          <div class="menu-title">{{ 'suite.people_community' | translate }}</div>
           <div class="nav-item">
             <a routerLink="/users/workspace/chat" [class.active]="isCurrentRoute('/users/workspace/chat')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">chat</span>
-                <span>Ozikol Chat Messenger</span>
+                <span>{{ 'nav.chat_messenger' | translate }}</span>
                 <span class="badge-pill badge-hot">Live</span>
               </div>
             </a>
@@ -753,7 +778,7 @@ interface PinnedItem {
             <a routerLink="/users/workspace/groups" [class.active]="isCurrentRoute('/users/workspace/groups')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">groups</span>
-                <span>Groups Directory</span>
+                <span>{{ 'nav.groups_directory' | translate }}</span>
               </div>
             </a>
           </div>
@@ -761,7 +786,7 @@ interface PinnedItem {
             <a routerLink="/users/workspace/alumni" [class.active]="isCurrentRoute('/users/workspace/alumni')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">school</span>
-                <span>Alumni Network</span>
+                <span>{{ 'nav.alumni_network' | translate }}</span>
               </div>
             </a>
           </div>
@@ -773,6 +798,51 @@ interface PinnedItem {
               </div>
             </a>
           </div>
+
+          <!-- Suite 02: My Schedule & Rota -->
+          <div class="menu-title">{{ 'suite.workforce_shifts' | translate }}</div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">calendar_today</span><span>{{ 'nav.staff_rota' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">schedule</span><span>{{ 'nav.attendance_tracking' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- Suite 04 & 05: Events, Store & Dues -->
+          <div class="menu-title">{{ 'suite.finance_revenue' | translate }}</div>
+          <div class="nav-item">
+            <a routerLink="/users/workspace/purchases" [class.active]="isCurrentRoute('/users/workspace/purchases')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">shopping_bag</span>
+                <span>{{ 'nav.my_purchases' | translate }}</span>
+              </div>
+            </a>
+          </div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">confirmation_number</span><span>{{ 'nav.event_ticketing' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">payments</span><span>{{ 'nav.invoicing_dues' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- Suite 07 & 08: Help, Credentials & ID -->
+          <div class="menu-title">{{ 'suite.compliance_governance' | translate }}</div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>{{ 'nav.digital_id_cards' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">verified</span><span>{{ 'nav.certificate_verification' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">support_agent</span><span>{{ 'nav.helpdesk_support' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
         </ng-container>
       </nav>
 
@@ -982,14 +1052,19 @@ interface PinnedItem {
               </div>
               <div class="user-profile-info">
                 <span class="user-profile-name">{{ userFullName }}</span>
-                <span class="user-profile-role">{{ isAdmin ? 'SuperAdmin' : 'Member' }}</span>
+                <span class="user-profile-role">{{ userRoleBadge }}</span>
               </div>
             </button>
             <div class="user-profile-dropdown" *ngIf="activeDropdown === 'profile'">
               <div class="profile-dropdown-header">
                 <strong>{{ userFullName }}</strong>
                 <small>{{ userEmail }}</small>
+                <div class="profile-badge-tag">{{ userRoleBadge }}</div>
               </div>
+              <a href="javascript:void(0)" (click)="openPrivilegesModal(); closeDropdowns()" class="dropdown-item">
+                <span class="material-symbols-outlined">verified_user</span>
+                <span>{{ 'rbac.view_privileges' | translate }}</span>
+              </a>
               <a href="javascript:void(0)" (click)="toggleConsoleMode(); closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
                 <span class="material-symbols-outlined">{{ isConsoleActive ? 'badge' : 'admin_panel_settings' }}</span>
                 <span>{{ isConsoleActive ? ('shell.switch_to_workspace' | translate) : ('shell.switch_to_console' | translate) }}</span>
@@ -1059,6 +1134,67 @@ interface PinnedItem {
             <li><strong>Pin Navigation:</strong> Click the push-pin icon on any sidebar item to pin it to your personal favorites bar.</li>
             <li><strong>Theme Engine:</strong> Toggle between the crisp Light Theme and Dark Mode at any time using the moon/sun icon in the topbar.</li>
           </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Privileges & Access Modal -->
+    <div class="modal-backdrop" *ngIf="showPrivilegesModal" (click)="closePrivilegesModal()">
+      <div class="modal-card privileges-modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="material-symbols-outlined text-blue">verified_user</span>
+            <div>
+              <h3>{{ 'rbac.privileges_modal_title' | translate }}</h3>
+              <p class="modal-subtitle">{{ userFullName }} &bull; <span class="role-highlight-badge">{{ userRoleBadge }}</span></p>
+            </div>
+          </div>
+          <button (click)="closePrivilegesModal()" class="btn-close">&times;</button>
+        </div>
+        <div class="modal-body privileges-modal-body">
+          <div class="privilege-section">
+            <div class="privilege-section-title">
+              <span class="material-symbols-outlined">badge</span>
+              <span>{{ 'rbac.assigned_roles' | translate }}</span>
+            </div>
+            <div class="role-chips">
+              <span class="role-chip" *ngFor="let role of userRoles">
+                {{ role }}
+              </span>
+              <span class="role-chip" *ngIf="!userRoles?.length">
+                {{ userRoleBadge }}
+              </span>
+            </div>
+          </div>
+
+          <div class="privilege-section">
+            <div class="privilege-section-title">
+              <span class="material-symbols-outlined">lock_open</span>
+              <span>{{ 'rbac.unlocked_capabilities' | translate }}</span>
+            </div>
+            <ul class="capability-list">
+              <li *ngFor="let cap of userCapabilities">
+                <span class="material-symbols-outlined check-icon-cap">check_circle</span>
+                <span>{{ cap }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="privilege-section">
+            <div class="privilege-section-title">
+              <span class="material-symbols-outlined">grid_view</span>
+              <span>{{ 'rbac.accessible_pages' | translate }}</span>
+            </div>
+            <div class="suite-pills">
+              <span class="suite-pill" *ngFor="let suite of accessibleSuites">
+                <span class="material-symbols-outlined">{{ suite.icon }}</span>
+                <span>{{ suite.name }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer privileges-footer">
+          <button type="button" class="btn-primary" (click)="closePrivilegesModal()">Done</button>
         </div>
       </div>
     </div>
@@ -1765,6 +1901,168 @@ interface PinnedItem {
     :host-context(.dark-mode) .check-icon {
       color: #60a5fa;
     }
+
+    /* User Role Badge & Privileges Modal Styles */
+    .privileges-modal-card {
+      max-width: 600px;
+    }
+    .modal-subtitle {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--sidebar-header-color, #94a3b8);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .role-highlight-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 9999px;
+      background: rgba(0, 80, 229, 0.12);
+      color: #0050e5;
+    }
+    :host-context(.dark-mode) .role-highlight-badge {
+      background: rgba(0, 80, 229, 0.25);
+      color: #60a5fa;
+    }
+    .profile-badge-tag {
+      margin-top: 4px;
+      display: inline-block;
+      align-self: flex-start;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-radius: 9999px;
+      background: #0050e5;
+      color: #ffffff;
+    }
+    .privileges-modal-body {
+      max-height: 65vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .privilege-section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .privilege-section-title .material-symbols-outlined {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .role-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .role-chip {
+      padding: 6px 12px;
+      background: rgba(0, 80, 229, 0.08);
+      border: 1px solid rgba(0, 80, 229, 0.25);
+      color: #0050e5;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    :host-context(.dark-mode) .role-chip {
+      background: rgba(0, 80, 229, 0.2);
+      border-color: rgba(0, 80, 229, 0.4);
+      color: #60a5fa;
+    }
+    .capability-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    @media (max-width: 640px) {
+      .capability-list {
+        grid-template-columns: 1fr;
+      }
+    }
+    .capability-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      padding: 8px 10px;
+      background: var(--sidebar-hover-bg, rgba(0,0,0,0.03));
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      border-radius: 8px;
+      margin: 0;
+    }
+    :host-context(.dark-mode) .capability-list li {
+      background: rgba(255,255,255,0.03);
+      border-color: rgba(255,255,255,0.08);
+    }
+    .check-icon-cap {
+      font-size: 16px;
+      color: #10b981;
+      flex-shrink: 0;
+    }
+    .suite-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .suite-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--sidebar-hover-bg, rgba(0,0,0,0.04));
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--md-sys-color-on-surface);
+    }
+    :host-context(.dark-mode) .suite-pill {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.08);
+      color: #e2e8f0;
+    }
+    .suite-pill .material-symbols-outlined {
+      font-size: 16px;
+      color: #0050e5;
+    }
+    :host-context(.dark-mode) .suite-pill .material-symbols-outlined {
+      color: #60a5fa;
+    }
+    .privileges-footer {
+      padding: 14px 24px;
+      display: flex;
+      justify-content: flex-end;
+      border-top: 1px solid var(--md-sys-color-outline);
+    }
+    .btn-primary {
+      padding: 8px 20px;
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .btn-primary:hover {
+      background: #0040b8;
+    }
   `]
 })
 export class AdminLayoutComponent implements OnInit {
@@ -1799,6 +2097,123 @@ export class AdminLayoutComponent implements OnInit {
       } catch {}
     }
     return false;
+  }
+
+  showPrivilegesModal = false;
+
+  openPrivilegesModal(): void {
+    this.showPrivilegesModal = true;
+  }
+
+  closePrivilegesModal(): void {
+    this.showPrivilegesModal = false;
+  }
+
+  get userRoles(): string[] {
+    const rolesJson = localStorage.getItem('user_roles');
+    if (rolesJson) {
+      try {
+        const roles = JSON.parse(rolesJson);
+        if (Array.isArray(roles) && roles.length) return roles;
+      } catch {}
+    }
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const roleClaim = payload['role'] || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+        if (roleClaim) {
+          return Array.isArray(roleClaim) ? roleClaim : [roleClaim];
+        }
+      } catch {}
+    }
+    return [this.isAdmin ? 'Administrator' : 'Member'];
+  }
+
+  get userRoleBadge(): string {
+    const roles = this.userRoles.map(r => (typeof r === 'string' ? r.toLowerCase() : ''));
+    if (roles.some(r => r === 'superadmin' || r === 'systemadministrator')) {
+      return 'SuperAdmin';
+    }
+    if (roles.some(r => ['admin', 'administrator', 'identitymanager', 'cmsmanager', 'storemanager'].includes(r))) {
+      return 'Administrator';
+    }
+    return 'Member';
+  }
+
+  get userCapabilities(): string[] {
+    const badge = this.userRoleBadge;
+    if (badge === 'SuperAdmin') {
+      return [
+        'Full System Executive Administration',
+        'Identity & RBAC Governance',
+        'Security Audit & User Forensics',
+        'Emergency 2FA Bypass & Log Analysis',
+        'Suite Entitlements & Feature Billing',
+        'Remote Session Kill & Revocation',
+        'Brand Configuration & Custom Domains',
+        'CMS Studio & Template Marketplace'
+      ];
+    }
+    if (badge === 'Administrator') {
+      return [
+        'User Directory & Invitation Dispatch',
+        'Content CMS & Category Publishing',
+        'Role Assignment & Membership Control',
+        'Broadcast Studio Notifications',
+        'Commerce Products & Order Management',
+        'Community & Cohort Moderation',
+        'Personal Workspace & Collaborative Tools',
+        'Audit Log Verification'
+      ];
+    }
+    return [
+      'Personal Workspace & Profile',
+      'Dynamic CV Biography Portfolio',
+      'Encrypted Real-Time Chat Messenger',
+      'Community Groups & Cohort Forums',
+      'Alumni Directory Access',
+      'Personal Order & Purchase History',
+      'Two-Factor Authentication Setup',
+      'Account Security & Active Session View'
+    ];
+  }
+
+  get accessibleSuites(): { name: string; icon: string }[] {
+    const badge = this.userRoleBadge;
+    if (badge === 'SuperAdmin') {
+      return [
+        { name: 'Core Executive Command', icon: 'space_dashboard' },
+        { name: 'Suite 00: Content CMS Studio', icon: 'dynamic_feed' },
+        { name: 'Suite 01: People & Community', icon: 'groups' },
+        { name: 'Suite 02: Workforce & Shifts', icon: 'calendar_month' },
+        { name: 'Suite 03: Reports & Forms', icon: 'summarize' },
+        { name: 'Suite 04: Events & Ticketing', icon: 'confirmation_number' },
+        { name: 'Suite 05: Finance & Revenue', icon: 'account_balance_wallet' },
+        { name: 'Suite 06: Operations & Logistics', icon: 'storefront' },
+        { name: 'Suite 07: Communication & AI', icon: 'campaign' },
+        { name: 'Suite 08: Governance & Compliance', icon: 'folder_zip' },
+        { name: 'Suite 09: Demographics & Census', icon: 'map' },
+        { name: 'Member Workspace Hub', icon: 'person' }
+      ];
+    }
+    if (badge === 'Administrator') {
+      return [
+        { name: 'Core Executive Command', icon: 'space_dashboard' },
+        { name: 'Suite 00: Content CMS Studio', icon: 'dynamic_feed' },
+        { name: 'Suite 01: People & Community', icon: 'groups' },
+        { name: 'Suite 06: Operations & Logistics', icon: 'storefront' },
+        { name: 'Suite 07: Communication & AI', icon: 'campaign' },
+        { name: 'Member Workspace Hub', icon: 'person' }
+      ];
+    }
+    return [
+      { name: 'Member Workspace Hub', icon: 'person' },
+      { name: 'Community Channels & Groups', icon: 'groups' },
+      { name: 'Chat Messenger', icon: 'chat' },
+      { name: 'Alumni Network', icon: 'school' },
+      { name: 'My Purchases & Dues', icon: 'shopping_bag' }
+    ];
   }
 
   currentConsoleMode: 'console' | 'workspace' = (localStorage.getItem('bcp_console_mode') as any) || 'console';
