@@ -550,5 +550,60 @@ void main() {
     final rememberedCode = storage.getRememberedOrganizationCode();
     expect(rememberedCode, isNull);
   });
+
+  testWidgets('WorkspaceLoginScreen AuthHeader back button clears bypass and returns to WorkspaceEntryScreen', (WidgetTester tester) async {
+    final storage = SecureStorageService.inMemory();
+    final workspace = Workspace(
+      tenantKey: 'globex-corp',
+      organizationName: 'Globex Corporation',
+      primaryDomain: 'globex.localhost:4200',
+      lastAccessed: DateTime(2026, 1, 1),
+    );
+    await storage.saveWorkspace(workspace);
+    await storage.setRememberOrganizationEnabled(true);
+    await storage.setRememberedOrganizationCode('globex-corp');
+    await storage.saveRememberedWorkspace(workspace);
+
+    final client = ApiClient(storage);
+    final repo = WorkspaceRepository(client);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          storageServiceProvider.overrideWithValue(storage),
+          apiClientProvider.overrideWithValue(client),
+          workspaceRepositoryProvider.overrideWithValue(repo),
+        ],
+        child: MaterialApp(
+          home: WorkspaceLoginScreen(workspace: workspace),
+        ),
+      ),
+    );
+
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpAndSettle();
+
+    // Verify back button in AuthHeader exists
+    final backButtonFinder = find.byTooltip('Back');
+    expect(backButtonFinder, findsOneWidget);
+
+    // Tap back button
+    await tester.tap(backButtonFinder);
+    await tester.pumpAndSettle();
+
+    // Verify navigation landed on WorkspaceEntryScreen
+    expect(find.byType(WorkspaceEntryScreen), findsOneWidget);
+    expect(find.text('Enter Workspace'), findsOneWidget);
+
+    // Verify remembered organization code was cleared in storage
+    final rememberedCode = storage.getRememberedOrganizationCode();
+    expect(rememberedCode, isNull);
+  });
 }
 

@@ -62,19 +62,6 @@ class AuthHeader extends StatelessWidget {
             padding: EdgeInsets.fromLTRB(16, topPadding, 16, bottomPadding),
             child: Stack(
               children: [
-                if (showBackButton)
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: IconButton(
-                      onPressed: onBackTap ?? () => Navigator.of(context).maybePop(),
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      tooltip: 'Back',
-                    ),
-                  ),
                 Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -128,6 +115,44 @@ class AuthHeader extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (showBackButton)
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Tooltip(
+                      message: 'Back',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: onBackTap ??
+                              () {
+                                if (Navigator.of(context).canPop()) {
+                                  Navigator.of(context).pop();
+                                }
+                              },
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(35),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white.withAlpha(60),
+                                width: 1,
+                              ),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.arrow_back_ios_new_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
