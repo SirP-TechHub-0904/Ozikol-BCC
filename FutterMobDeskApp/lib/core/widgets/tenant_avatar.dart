@@ -6,6 +6,7 @@ import 'tenant_cached_image.dart';
 /// Gracefully falls back to a branded monogram badge (initials) if no logo URL exists or network fails.
 class TenantAvatar extends StatelessWidget {
   final String? logoUrl;
+  final String? iconUrl;
   final String name;
   final String? tenantKey;
   final double size;
@@ -15,6 +16,7 @@ class TenantAvatar extends StatelessWidget {
   const TenantAvatar({
     super.key,
     this.logoUrl,
+    this.iconUrl,
     required this.name,
     this.tenantKey,
     this.size = 48.0,
@@ -38,8 +40,11 @@ class TenantAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveImageUrl = (iconUrl != null && iconUrl!.trim().isNotEmpty)
+        ? iconUrl
+        : logoUrl;
 
-    if (logoUrl != null && logoUrl!.trim().isNotEmpty) {
+    if (effectiveImageUrl != null && effectiveImageUrl.trim().isNotEmpty) {
       return Container(
         width: size,
         height: size,
@@ -59,7 +64,7 @@ class TenantAvatar extends StatelessWidget {
         ),
         padding: const EdgeInsets.all(4),
         child: TenantCachedImage(
-          imageUrl: logoUrl,
+          imageUrl: effectiveImageUrl,
           tenantKey: tenantKey ?? name,
           width: size - 8,
           height: size - 8,

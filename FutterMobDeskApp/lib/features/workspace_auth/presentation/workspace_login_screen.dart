@@ -87,9 +87,10 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
               showBackButton: true,
               onBackTap: _handleChangeOrganization,
               emblem: TenantAvatar(
+                iconUrl: ws.iconUrl,
                 logoUrl: ws.logoUrl,
                 name: ws.displayName,
-                size: 50,
+                size: 54,
                 borderRadius: 14,
               ),
             ),

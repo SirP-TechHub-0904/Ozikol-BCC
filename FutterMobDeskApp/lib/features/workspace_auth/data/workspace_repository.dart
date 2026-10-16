@@ -41,13 +41,14 @@ class WorkspaceRepository {
 
           if (item != null) {
             final tKey = item['tenantKey']?.toString() ?? cleanInput;
-            final logo = item['logoUrl'] ?? await probeTenantLogo(tKey);
+            final branding = await probeTenantBranding(tKey);
             return Workspace(
               tenantKey: tKey,
               organizationName: item['organizationName'] ?? tKey,
               primaryDomain: item['primaryDomain'] ?? '$tKey.ozikol.cloud',
               customDomain: item['customDomain'],
-              logoUrl: logo,
+              logoUrl: branding.logoUrl ?? item['logoUrl'],
+              iconUrl: branding.iconUrl ?? item['iconUrl'],
               lastAccessed: DateTime.now(),
               isActive: item['isActive'] ?? true,
             );
@@ -96,13 +97,14 @@ class WorkspaceRepository {
 
           if (isKeyMatch || isPrimaryMatch || isCustomMatch || isWebsiteMatch) {
             final matchedKey = (item['tenantKey'] ?? cleanInput).toString();
-            final logo = item['logoUrl'] ?? await probeTenantLogo(matchedKey);
+            final branding = await probeTenantBranding(matchedKey);
             return Workspace(
               tenantKey: matchedKey,
               organizationName: item['organizationName'] ?? matchedKey,
               primaryDomain: item['primaryDomain'] ?? '$matchedKey.ozikol.cloud',
               customDomain: item['customDomain'],
-              logoUrl: logo,
+              logoUrl: branding.logoUrl ?? item['logoUrl'],
+              iconUrl: branding.iconUrl ?? item['iconUrl'],
               lastAccessed: DateTime.now(),
               isActive: item['isActive'] ?? true,
             );
@@ -236,8 +238,8 @@ class WorkspaceRepository {
     return '';
   }
 
-  /// Probes the tenant's brand settings endpoint to resolve any uploaded company logo
-  Future<String?> probeTenantLogo(String tenantKey) async {
+  /// Probes the tenant's brand settings endpoint to resolve both uploaded company logo and square icon
+  Future<TenantBranding> probeTenantBranding(String tenantKey) async {
     try {
       final res = await _dio.get(
         ApiConstants.brandSettingsEndpoint,
@@ -251,12 +253,36 @@ class WorkspaceRepository {
         final d = res.data['data'];
         if (d is Map) {
           final logo = (d['companyLogoUrl'] ?? d['companyWhiteLogoUrl'] ?? d['logoUrl'])?.toString().trim();
-          if (logo != null && logo.isNotEmpty) return logo;
+          final icon = (d['companyIconUrl'] ?? d['iconUrl'] ?? d['faviconUrl'])?.toString().trim();
+          return TenantBranding(
+            logoUrl: (logo != null && logo.isNotEmpty) ? logo : null,
+            iconUrl: (icon != null && icon.isNotEmpty) ? icon : null,
+          );
         }
       }
     } catch (_) {
-      // Gracefully ignore failure and fall back to monogram initials
+      // Gracefully ignore failure and fall back
     }
-    return null;
+    return const TenantBranding();
   }
+
+  /// Probes the tenant's brand settings endpoint to resolve any uploaded company square icon (for avatars/emblems)
+  Future<String?> probeTenantIcon(String tenantKey) async {
+    final branding = await probeTenantBranding(tenantKey);
+    return branding.iconUrl ?? branding.logoUrl;
+  }
+
+  /// Probes the tenant's brand settings endpoint to resolve any uploaded company logo
+  Future<String?> probeTenantLogo(String tenantKey) async {
+    final branding = await probeTenantBranding(tenantKey);
+    return branding.logoUrl ?? branding.iconUrl;
+  }
+}
+
+/// Resolved branding asset URLs for an organization workspace
+class TenantBranding {
+  final String? logoUrl;
+  final String? iconUrl;
+
+  const TenantBranding({this.logoUrl, this.iconUrl});
 }

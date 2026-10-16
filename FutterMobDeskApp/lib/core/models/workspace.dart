@@ -5,6 +5,7 @@ class Workspace {
   final String primaryDomain;
   final String? customDomain;
   final String? logoUrl;
+  final String? iconUrl;
   final String? authToken;
   final String? userId;
   final String? userEmail;
@@ -19,6 +20,7 @@ class Workspace {
     required this.primaryDomain,
     this.customDomain,
     this.logoUrl,
+    this.iconUrl,
     this.authToken,
     this.userId,
     this.userEmail,
@@ -30,6 +32,9 @@ class Workspace {
 
   /// Human-friendly display title for the organization
   String get displayName => organizationName.trim().isNotEmpty ? organizationName : tenantKey;
+
+  /// Effective square emblem or avatar icon URL. Prefers iconUrl (favicon / app icon) over horizontal logoUrl.
+  String? get avatarUrl => (iconUrl != null && iconUrl!.trim().isNotEmpty) ? iconUrl : logoUrl;
 
   /// High-contrast monogram letters for initial avatars when logo is absent
   String get initials {
@@ -53,6 +58,7 @@ class Workspace {
     String? primaryDomain,
     String? customDomain,
     String? logoUrl,
+    String? iconUrl,
     String? authToken,
     String? userId,
     String? userEmail,
@@ -67,6 +73,7 @@ class Workspace {
       primaryDomain: primaryDomain ?? this.primaryDomain,
       customDomain: customDomain ?? this.customDomain,
       logoUrl: logoUrl ?? this.logoUrl,
+      iconUrl: iconUrl ?? this.iconUrl,
       authToken: authToken ?? this.authToken,
       userId: userId ?? this.userId,
       userEmail: userEmail ?? this.userEmail,
@@ -84,6 +91,7 @@ class Workspace {
       'primaryDomain': primaryDomain,
       'customDomain': customDomain,
       'logoUrl': logoUrl,
+      'iconUrl': iconUrl,
       'authToken': authToken,
       'userId': userId,
       'userEmail': userEmail,
@@ -101,6 +109,7 @@ class Workspace {
       primaryDomain: json['primaryDomain'] as String? ?? '',
       customDomain: json['customDomain'] as String?,
       logoUrl: json['logoUrl'] as String?,
+      iconUrl: json['iconUrl'] as String?,
       authToken: json['authToken'] as String?,
       userId: json['userId'] as String?,
       userEmail: json['userEmail'] as String?,

@@ -85,6 +85,7 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
                               ),
                             ),
                             child: TenantAvatar(
+                              iconUrl: ws.iconUrl,
                               logoUrl: ws.logoUrl,
                               name: ws.displayName,
                               size: 44,

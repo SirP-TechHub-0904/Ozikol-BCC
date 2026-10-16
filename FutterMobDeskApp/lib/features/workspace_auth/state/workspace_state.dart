@@ -143,11 +143,11 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
         isLoading: false,
       );
 
-      // Asynchronously probe and apply company logo if missing from initial state
-      if (bypassTarget != null && (bypassTarget.logoUrl == null || bypassTarget.logoUrl!.isEmpty)) {
-        _probeAndApplyLogo(bypassTarget, isPending: true);
-      } else if (active != null && (active.logoUrl == null || active.logoUrl!.isEmpty)) {
-        _probeAndApplyLogo(active, isPending: false);
+      // Asynchronously probe and apply company branding (icon and logo) if missing from initial state
+      if (bypassTarget != null && (bypassTarget.iconUrl == null || bypassTarget.iconUrl!.isEmpty)) {
+        _probeAndApplyBranding(bypassTarget, isPending: true);
+      } else if (active != null && (active.iconUrl == null || active.iconUrl!.isEmpty)) {
+        _probeAndApplyBranding(active, isPending: false);
       }
     } catch (e) {
       state = state.copyWith(
@@ -158,12 +158,15 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     }
   }
 
-  /// Asynchronously probes the tenant's uploaded company logo and updates workspace state
-  Future<void> _probeAndApplyLogo(Workspace ws, {required bool isPending}) async {
+  /// Asynchronously probes the tenant's uploaded company branding (icon + logo) and updates workspace state
+  Future<void> _probeAndApplyBranding(Workspace ws, {required bool isPending}) async {
     try {
-      final logo = await _repository.probeTenantLogo(ws.tenantKey);
-      if (logo != null && logo.isNotEmpty) {
-        final updated = ws.copyWith(logoUrl: logo);
+      final branding = await _repository.probeTenantBranding(ws.tenantKey);
+      if (branding.iconUrl != null || branding.logoUrl != null) {
+        final updated = ws.copyWith(
+          iconUrl: branding.iconUrl ?? ws.iconUrl,
+          logoUrl: branding.logoUrl ?? ws.logoUrl,
+        );
         await _storageService.saveRememberedWorkspace(updated);
         await _storageService.saveWorkspace(updated);
         if (isPending) {
