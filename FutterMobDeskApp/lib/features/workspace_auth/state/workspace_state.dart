@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/windows_jump_list_service.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../core/storage/tenant_cache_service.dart';
 import '../data/workspace_repository.dart';
@@ -63,7 +64,34 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
   final TenantCacheService? _cacheService;
 
   WorkspaceNotifier(this._storageService, this._repository, [this._cacheService]) : super(const WorkspaceState()) {
+    _setupJumpListListener();
     init();
+  }
+
+  void _setupJumpListListener() {
+    WindowsJumpListService.onTenantSelectedFromJumpList = (tenantKey) {
+      final match = state.enrolledWorkspaces.where(
+        (w) => w.tenantKey.toLowerCase() == tenantKey.toLowerCase(),
+      ).firstOrNull;
+
+      if (match != null) {
+        switchWorkspace(match.tenantKey);
+      } else {
+        verifyWorkspace(tenantKey);
+      }
+    };
+
+    WindowsJumpListService.onNewWorkspaceAction = () {
+      cancelBypass();
+    };
+
+    WindowsJumpListService.onSwitchWorkspaceAction = () {
+      cancelBypass();
+    };
+  }
+
+  void _syncJumpList(List<Workspace> list) {
+    WindowsJumpListService.syncEnrolledWorkspaces(list);
   }
 
   /// Initializes enrolled workspaces, checks for remembered organization, and restores session
@@ -102,6 +130,8 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
           }
         }
       }
+
+      _syncJumpList(workspaces);
 
       state = state.copyWith(
         enrolledWorkspaces: workspaces,
@@ -220,6 +250,7 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
       }
 
       final updatedList = await _storageService.getWorkspaces();
+      _syncJumpList(updatedList);
 
       state = state.copyWith(
         isLoading: false,
@@ -272,6 +303,7 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     await _cacheService?.clearTenant(tenantKey);
     final list = await _storageService.getWorkspaces();
     final active = await _storageService.getActiveWorkspace();
+    _syncJumpList(list);
 
     state = state.copyWith(
       enrolledWorkspaces: list,

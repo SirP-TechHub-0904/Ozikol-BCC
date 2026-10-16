@@ -17,14 +17,16 @@ import 'features/workspace_auth/presentation/workspace_login_screen.dart';
 import 'features/workspace_auth/state/workspace_state.dart';
 import 'core/services/client_config_service.dart';
 import 'core/services/windows_clipboard_fix.dart';
+import 'core/services/windows_jump_list_service.dart';
 import 'core/widgets/desktop_title_bar.dart';
 import 'core/widgets/maintenance_screen.dart';
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Windows 11 clipboard history paste stream interceptor
+  // Initialize Windows 11 clipboard history paste stream interceptor & taskbar jump list
   WindowsClipboardFix.initialize();
+  WindowsJumpListService.initialize();
 
   // Desktop window configuration (Windows, macOS, Linux)
   if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
@@ -53,6 +55,30 @@ void main() async {
   final cacheService = await TenantCacheService.create(storageService);
   final apiClient = ApiClient(storageService);
   final crashReporter = CrashReporterService(apiClient, storageService, cacheService);
+
+  // Inspect command-line arguments for jump list tenant activation
+  String? startupTenant;
+  for (final arg in args) {
+    if (arg.startsWith('--tenant=')) {
+      startupTenant = arg.substring('--tenant='.length).trim();
+      if (startupTenant.contains(' ')) {
+        startupTenant = startupTenant.split(' ').first;
+      }
+      startupTenant = startupTenant.replaceAll('"', '').replaceAll("'", '').trim();
+    }
+  }
+
+  if (startupTenant != null && startupTenant.isNotEmpty) {
+    await storageService.setActiveTenantKey(startupTenant);
+    final workspaces = await storageService.getWorkspaces();
+    final match = workspaces.where(
+      (w) => w.tenantKey.toLowerCase() == startupTenant!.toLowerCase(),
+    ).firstOrNull;
+    if (match != null) {
+      await storageService.saveRememberedWorkspace(match);
+      await storageService.setRememberedOrganizationCode(match.tenantKey);
+    }
+  }
 
   // Initialize startup stability monitor
   await crashReporter.initStartupCrashMonitor();
