@@ -145,7 +145,6 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                   isDark,
                   activeWs,
                   isCollapsed: _isSidebarCollapsed,
-                  onToggle: _toggleSidebarCollapse,
                 ),
                 sections: _buildNavigationSections(isDark),
                 footer: _buildDesktopSidebarFooter(
@@ -1628,41 +1627,22 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     bool isDark,
     dynamic activeWs, {
     bool isCollapsed = false,
-    VoidCallback? onToggle,
   }) {
     if (isCollapsed) {
       return Container(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TenantAvatar(
-              logoUrl: activeWs?.logoUrl,
-              name: activeWs?.displayName ?? 'Ozikol',
-              size: 34,
-              borderRadius: 8,
-            ),
-            const SizedBox(height: 6),
-            if (onToggle != null)
-              IconButton(
-                icon: Icon(
-                  Icons.keyboard_double_arrow_right_rounded,
-                  size: 18,
-                  color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                ),
-                tooltip: 'Maximize sidebar',
-                splashRadius: 18,
-                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                padding: EdgeInsets.zero,
-                onPressed: onToggle,
-              ),
-          ],
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        alignment: Alignment.center,
+        child: TenantAvatar(
+          logoUrl: activeWs?.logoUrl,
+          name: activeWs?.displayName ?? 'Ozikol',
+          size: 34,
+          borderRadius: 8,
         ),
       );
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
           TenantAvatar(
@@ -1699,19 +1679,6 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ],
             ),
           ),
-          if (onToggle != null)
-            IconButton(
-              icon: Icon(
-                Icons.keyboard_double_arrow_left_rounded,
-                size: 18,
-                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-              ),
-              tooltip: 'Minimize sidebar',
-              splashRadius: 18,
-              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-              padding: EdgeInsets.zero,
-              onPressed: onToggle,
-            ),
         ],
       ),
     );

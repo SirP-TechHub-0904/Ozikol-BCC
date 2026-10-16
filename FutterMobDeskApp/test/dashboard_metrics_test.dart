@@ -124,26 +124,26 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 1. Initially expanded: 'Workspace Vault' is visible, minimize buttons are present
+      // 1. Initially expanded: 'Workspace Vault' is visible, single top-bar minimize button is present
       expect(find.text('Workspace Vault'), findsOneWidget);
-      expect(find.byTooltip('Minimize sidebar'), findsWidgets);
+      expect(find.byTooltip('Minimize sidebar'), findsOneWidget);
 
       // 2. Click 'Minimize sidebar' from the top bar
-      await tester.tap(find.byTooltip('Minimize sidebar').first);
+      await tester.tap(find.byTooltip('Minimize sidebar'));
       await tester.pumpAndSettle();
 
       // 3. Sidebar is now collapsed into icon rail:
-      // 'Workspace Vault' is removed from view, and 'Maximize sidebar' appears
+      // 'Workspace Vault' is removed from view, and 'Maximize sidebar' appears in the top bar
       expect(find.text('Workspace Vault'), findsNothing);
-      expect(find.byTooltip('Maximize sidebar'), findsWidgets);
+      expect(find.byTooltip('Maximize sidebar'), findsOneWidget);
 
       // 4. Click 'Maximize sidebar'
-      await tester.tap(find.byTooltip('Maximize sidebar').first);
+      await tester.tap(find.byTooltip('Maximize sidebar'));
       await tester.pumpAndSettle();
 
       // 5. Sidebar is restored back to expanded mode
       expect(find.text('Workspace Vault'), findsOneWidget);
-      expect(find.byTooltip('Minimize sidebar'), findsWidgets);
+      expect(find.byTooltip('Minimize sidebar'), findsOneWidget);
     });
 
     testWidgets('AppDrawer renders expanded mode with section titles and collapsed rail mode with centered icons', (tester) async {
