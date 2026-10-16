@@ -40,9 +40,11 @@ class AuthHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final headerHeight = height ?? (screenHeight < 700 ? 180.0 : 210.0);
-    final topPadding = screenHeight < 700 ? 14.0 : 20.0;
-    final bottomPadding = screenHeight < 700 ? 28.0 : 36.0;
+    final topSafeArea = MediaQuery.of(context).padding.top;
+    final baseContentHeight = screenHeight < 700 ? 150.0 : 175.0;
+    final headerHeight = height ?? (topSafeArea + baseContentHeight + (screenHeight < 700 ? 20.0 : 32.0));
+    final topPadding = screenHeight < 700 ? 6.0 : 8.0;
+    final bottomPadding = screenHeight < 700 ? 20.0 : 26.0;
 
     return ClipPath(
       clipper: const _WaveHeaderClipper(),
@@ -63,8 +65,10 @@ class AuthHeader extends StatelessWidget {
             child: Stack(
               children: [
                 Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+                  child: SingleChildScrollView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                     children: [
                       emblem ??
                           Container(
@@ -115,6 +119,7 @@ class AuthHeader extends StatelessWidget {
                     ],
                   ),
                 ),
+              ),
                 if (showBackButton)
                   Align(
                     alignment: Alignment.topLeft,

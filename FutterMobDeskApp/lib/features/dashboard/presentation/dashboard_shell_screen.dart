@@ -538,36 +538,43 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             const SizedBox(width: 10),
           ],
 
-          // Search workspace bar
-          Container(
-            width: 320,
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isDark ? Colors.transparent : const Color(0xFFE2E8F0),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.search_rounded,
-                  size: 18,
-                  color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Search workspace...',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8),
-                    ),
+          // Search workspace bar (Flexible with responsive width limits)
+          Flexible(
+            flex: 2,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 280, minWidth: 120),
+              child: Container(
+                height: 38,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isDark ? Colors.transparent : const Color(0xFFE2E8F0),
                   ),
                 ),
-              ],
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.search_rounded,
+                      size: 18,
+                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Search workspace...',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
 
@@ -601,12 +608,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onTap: () => NotificationsSheet.show(context),
           ),
 
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
 
           // Live Online / Offline Presence Notice Badge
           _buildOnlineOfflineStatusPill(isDark, isOnline),
 
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
 
           // User Profile Pill (OP - Onwuka Peter - SuperAdmin) - Clickable with Presence Dot
           Material(
@@ -618,6 +625,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Stack(
                       clipBehavior: Clip.none,
@@ -657,28 +665,35 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                         ),
                       ],
                     ),
-                    const SizedBox(width: 10),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          activeWs?.userFullName ?? 'Workspace Admin',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: textColor,
+                    const SizedBox(width: 8),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 120),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            activeWs?.userFullName ?? 'Workspace Admin',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: textColor,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'SuperAdmin',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                          Text(
+                            'SuperAdmin',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
