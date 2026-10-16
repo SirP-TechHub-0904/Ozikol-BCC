@@ -17,11 +17,21 @@ export interface TerminologyAliases {
   alumniAlias: string;
 }
 
+export interface FeatureExpirationNotice {
+  featureCode: string;
+  featureName: string;
+  expiresAt: string;
+  daysRemaining: number;
+  isExpired: boolean;
+  isExpiringSoon: boolean;
+}
+
 export interface FeatureFlags {
   enableChat: boolean;
   enableEVoting: boolean;
   enableGrants: boolean;
   enableAts: boolean;
+  activeFeatures?: string[];
 }
 
 export interface ClientAppConfig {
@@ -41,7 +51,7 @@ export class SettingsService {
   private brandSubject = new BehaviorSubject<BrandSettings>({
     siteTitle: '',
     companyName: '',
-    primaryColor: '#6f42c1'
+    primaryColor: '#0050e5'
   });
   public brand$ = this.brandSubject.asObservable();
 
@@ -57,12 +67,16 @@ export class SettingsService {
     enableChat: true,
     enableEVoting: true,
     enableGrants: true,
-    enableAts: true
+    enableAts: true,
+    activeFeatures: []
   });
   public features$ = this.featuresSubject.asObservable();
 
+  private expirationsSubject = new BehaviorSubject<FeatureExpirationNotice[]>([]);
+  public expirations$ = this.expirationsSubject.asObservable();
+
   private clientConfigSubject = new BehaviorSubject<ClientAppConfig>({
-    platformName: 'Ozikol',
+    platformName: 'Ozikol BCC',
     isMaintenanceMode: false,
     minimumAppVersion: '1.0.0'
   });
@@ -90,7 +104,7 @@ export class SettingsService {
             companyName: res.data.companyName || res.data.organizationDisplayName || '',
             logoUrl: res.data.companyLogoUrl || res.data.logoUrl,
             whiteLogoUrl: res.data.companyWhiteLogoUrl || res.data.whiteLogoUrl,
-            primaryColor: res.data.primaryColor || '#6f42c1'
+            primaryColor: res.data.primaryColor || '#0050e5'
           });
         }
       },
@@ -112,7 +126,7 @@ export class SettingsService {
       error: (err) => console.warn('Using default terminology aliases.', err)
     });
 
-    // 3. Load Database Feature Flags
+    // 3. Load Database Feature Flags & Central Entitlements
     this.api.get<any>('SettingsApi/features').subscribe({
       next: (res) => {
         if (res && res.isSuccess && res.data) {
@@ -120,12 +134,39 @@ export class SettingsService {
             enableChat: res.data.enableChat ?? true,
             enableEVoting: res.data.enableEVoting ?? true,
             enableGrants: res.data.enableGrants ?? true,
-            enableAts: res.data.enableAts ?? true
+            enableAts: res.data.enableAts ?? true,
+            activeFeatures: res.data.activeFeatures || []
           });
         }
       },
       error: (err) => console.warn('Using default feature flags.', err)
     });
+  }
+
+  /**
+   * Loads upcoming capability expiration notices.
+   * Strictly intended for BCC Administrators.
+   */
+  public loadFeatureExpirations(): void {
+    this.api.get<any>('SettingsApi/feature-expirations').subscribe({
+      next: (res) => {
+        if (res && res.isSuccess && Array.isArray(res.data)) {
+          this.expirationsSubject.next(res.data);
+        }
+      },
+      error: () => this.expirationsSubject.next([])
+    });
+  }
+
+  /**
+   * Checks whether a specific modular capability is currently active for the tenant.
+   */
+  public isFeatureActive(featureCode: string): boolean {
+    const flags = this.featuresSubject.value;
+    if (!flags.activeFeatures || flags.activeFeatures.length === 0) {
+      return true; // Unrestricted default
+    }
+    return flags.activeFeatures.includes(featureCode);
   }
 
   public get currentAliases(): TerminologyAliases {
@@ -134,5 +175,13 @@ export class SettingsService {
 
   public get currentBrand(): BrandSettings {
     return this.brandSubject.value;
+  }
+
+  public get currentFeatures(): FeatureFlags {
+    return this.featuresSubject.value;
+  }
+
+  public get currentExpirations(): FeatureExpirationNotice[] {
+    return this.expirationsSubject.value;
   }
 }

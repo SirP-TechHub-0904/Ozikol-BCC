@@ -28,12 +28,24 @@ interface PinnedItem {
   imports: [CommonModule, RouterModule, AiAssistantComponent, FirstRunSetupModalComponent],
   template: `
     <!-- Sidebar / Navigation Drawer -->
-    <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isAdmin ? 'console' : 'workspace'">
+    <aside id="sidebar" [class.collapsed]="sidebarCollapsed" [attr.data-bcp-sidebar]="isConsoleActive ? 'console' : 'workspace'">
       <div class="sidebar-header">
         <a routerLink="/admin/dashboard" class="brand-logo ozikol-brand-logo" [title]="brandName">
           <img [src]="brandLogoUrl" [alt]="brandName" class="brand-logo-img" *ngIf="brandLogoUrl">
           <span *ngIf="!brandLogoUrl" class="brand-logo-text">{{ brandName || 'Workspace' }}</span>
         </a>
+      </div>
+
+      <!-- Console / Workspace Mode Switcher (Strictly for Admins) -->
+      <div class="sidebar-mode-switcher" *ngIf="isAdmin">
+        <button type="button" class="mode-switch-btn" [class.active]="isConsoleActive" (click)="setConsoleMode('console')">
+          <span class="material-symbols-outlined mode-switch-icon">admin_panel_settings</span>
+          <span class="mode-switch-text">Console</span>
+        </button>
+        <button type="button" class="mode-switch-btn" [class.active]="!isConsoleActive" (click)="setConsoleMode('workspace')">
+          <span class="material-symbols-outlined mode-switch-icon">person</span>
+          <span class="mode-switch-text">Workspace</span>
+        </button>
       </div>
 
       <nav class="sidebar-nav">
@@ -57,9 +69,9 @@ interface PinnedItem {
         </div>
 
         <!-- ============================================== -->
-        <!-- ADMIN CONSOLE SIDEBAR (when isAdmin is true)   -->
+        <!-- ADMIN CONSOLE SIDEBAR (when isConsoleActive)  -->
         <!-- ============================================== -->
-        <ng-container *ngIf="isAdmin">
+        <ng-container *ngIf="isConsoleActive">
           <!-- Section: WEBSITE -->
           <div class="menu-title">Website</div>
           <div class="nav-item">
@@ -662,9 +674,9 @@ interface PinnedItem {
         </ng-container>
 
         <!-- ============================================== -->
-        <!-- MEMBER WORKSPACE SIDEBAR (when isAdmin is false)-->
+        <!-- MEMBER WORKSPACE SIDEBAR (when !isConsoleActive)-->
         <!-- ============================================== -->
-        <ng-container *ngIf="!isAdmin">
+        <ng-container *ngIf="!isConsoleActive">
           <div class="menu-title">Member Workspace</div>
           <div class="nav-item">
             <a routerLink="/dashboard/workspace" [class.active]="isCurrentRoute('/dashboard/workspace') || isCurrentRoute('/users/workspace/dashboard')" class="nav-link">
@@ -959,13 +971,9 @@ interface PinnedItem {
                 <strong>{{ userFullName }}</strong>
                 <small>{{ userEmail }}</small>
               </div>
-              <a routerLink="/dashboard/console" (click)="closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
-                <span class="material-symbols-outlined">space_dashboard</span>
-                <span>Console Dashboard (Admin)</span>
-              </a>
-              <a routerLink="/dashboard/workspace" (click)="closeDropdowns()" class="dropdown-item">
-                <span class="material-symbols-outlined">badge</span>
-                <span>{{ isAdmin ? 'Switch to Member Workspace' : 'My Workspace Home' }}</span>
+              <a href="javascript:void(0)" (click)="toggleConsoleMode(); closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
+                <span class="material-symbols-outlined">{{ isConsoleActive ? 'badge' : 'admin_panel_settings' }}</span>
+                <span>{{ isConsoleActive ? 'Switch to Users Workspace' : 'Switch to Admin Console' }}</span>
               </a>
               <a routerLink="/users/workspace/profile" (click)="closeDropdowns()" class="dropdown-item">
                 <span class="material-symbols-outlined">account_circle</span>
@@ -988,6 +996,20 @@ interface PinnedItem {
           </div>
         </div>
       </header>
+
+      <!-- Central Feature Expiration Notice Banner (Strictly visible to BCC Admins in Admin Console) -->
+      <div class="central-feature-expiration-banner" *ngIf="isAdmin && isConsoleActive && expiringFeatures.length > 0">
+        <div class="banner-content">
+          <span class="material-symbols-outlined banner-icon">warning</span>
+          <div class="banner-text">
+            <span class="banner-title">Central Feature Subscription Notice:</span>
+            <span class="banner-desc">{{ getExpirationBannerText() }}</span>
+          </div>
+        </div>
+        <div class="banner-actions">
+          <a routerLink="/settings/console" class="banner-btn">Review Entitlements</a>
+        </div>
+      </div>
 
       <!-- Page Content & AI Side-by-Side Split Workspace Container (70% Body / 30% AI) -->
       <div class="bcp-workspace-container" [class.ai-docked-bottom]="isAiOpen && aiLayoutMode === 'docked-bottom'" [class.ai-docked-right-active]="isAiOpen && aiLayoutMode === 'docked-right'">
@@ -1489,6 +1511,115 @@ interface PinnedItem {
     .sub-nav-divider { padding: 8px 16px 4px; list-style: none; }
     .sub-divider-text { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; }
     .badge-sub-new { background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
+
+    /* Sidebar Mode Switcher (Admin Console <-> Users Workspace) */
+    .sidebar-mode-switcher {
+      display: flex;
+      margin: 8px 14px 12px;
+      padding: 3px;
+      background: var(--sidebar-hover-bg, rgba(255, 255, 255, 0.05));
+      border: 1px solid var(--md-sys-color-outline, rgba(255, 255, 255, 0.1));
+      border-radius: 8px;
+      gap: 4px;
+    }
+    .mode-switch-btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 8px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--sidebar-color, #94a3b8);
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .mode-switch-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .mode-switch-btn.active {
+      background: #0050e5;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0, 80, 229, 0.35);
+    }
+    .mode-switch-icon {
+      font-size: 15px;
+    }
+
+    /* Central Feature Expiration Banner (Strictly Admin Console) */
+    .central-feature-expiration-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 10px 14px 0 14px;
+      padding: 10px 16px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-left: 4px solid #f59e0b;
+      border-radius: 8px;
+      color: #92400e;
+      font-size: 13px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    :host-context(.dark-mode) .central-feature-expiration-banner {
+      background: #2d2010;
+      border-color: #78350f;
+      border-left-color: #f59e0b;
+      color: #fde68a;
+    }
+    .banner-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .banner-icon {
+      font-size: 20px;
+      color: #d97706;
+      flex-shrink: 0;
+    }
+    .banner-text {
+      display: flex;
+      flex-direction: row;
+      gap: 6px;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+    .banner-title {
+      font-weight: 700;
+      color: #b45309;
+    }
+    :host-context(.dark-mode) .banner-title {
+      color: #f59e0b;
+    }
+    .banner-desc {
+      color: inherit;
+    }
+    .banner-actions {
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+    .banner-btn {
+      padding: 5px 12px;
+      background: #d97706;
+      color: #ffffff;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s ease;
+      display: inline-block;
+    }
+    .banner-btn:hover {
+      background: #b45309;
+    }
   `]
 })
 export class AdminLayoutComponent implements OnInit {
@@ -1524,6 +1655,58 @@ export class AdminLayoutComponent implements OnInit {
     }
     return false;
   }
+
+  currentConsoleMode: 'console' | 'workspace' = (localStorage.getItem('bcp_console_mode') as any) || 'console';
+  expiringFeatures: any[] = [];
+
+  get isConsoleActive(): boolean {
+    return this.isAdmin && this.currentConsoleMode === 'console';
+  }
+
+  setConsoleMode(mode: 'console' | 'workspace'): void {
+    if (!this.isAdmin) {
+      this.currentConsoleMode = 'workspace';
+      return;
+    }
+    this.currentConsoleMode = mode;
+    localStorage.setItem('bcp_console_mode', mode);
+
+    if (mode === 'workspace' && (this.currentRoute.startsWith('/dashboard/console') || this.currentRoute.startsWith('/admin/dashboard'))) {
+      this.router.navigate(['/dashboard/workspace']);
+    } else if (mode === 'console' && (this.currentRoute.startsWith('/dashboard/workspace') || this.currentRoute.startsWith('/users/workspace/dashboard'))) {
+      this.router.navigate(['/dashboard/console']);
+    }
+  }
+
+  toggleConsoleMode(): void {
+    const next = this.currentConsoleMode === 'console' ? 'workspace' : 'console';
+    this.setConsoleMode(next);
+  }
+
+  loadFeatureExpirations(): void {
+    if (!this.isAdmin) return;
+    this.api.get<any>('SettingsApi/feature-expirations').subscribe({
+      next: (res) => {
+        if (res && res.isSuccess && Array.isArray(res.data)) {
+          this.expiringFeatures = res.data;
+        }
+      },
+      error: () => {
+        this.expiringFeatures = [];
+      }
+    });
+  }
+
+  getExpirationBannerText(): string {
+    if (!this.expiringFeatures || this.expiringFeatures.length === 0) return '';
+    const names = this.expiringFeatures.map(f => f.featureName || f.featureCode).join(', ');
+    const minDays = Math.min(...this.expiringFeatures.map(f => f.daysRemaining ?? 0));
+    if (minDays <= 0) {
+      return `${names} capability subscription has expired. Renew immediately to restore full feature access.`;
+    }
+    return `${names} capability subscription expires in ${minDays} day${minDays === 1 ? '' : 's'}. Renew to maintain uninterrupted platform capabilities.`;
+  }
+
   showHelpModal = false;
   showFirstRunModal = false;
 
@@ -1664,6 +1847,10 @@ export class AdminLayoutComponent implements OnInit {
     this.loadSidebarForms();
     this.checkFirstRunSetupStatus();
 
+    if (this.isAdmin) {
+      this.loadFeatureExpirations();
+    }
+
     // Listen for live brand settings updates from the Settings page
     window.addEventListener('brand_settings_updated', () => {
       this.loadTenantInfo();
@@ -1730,7 +1917,9 @@ export class AdminLayoutComponent implements OnInit {
           }
 
           // If user was demoted and is no longer an administrator
-          if (!freshData.isAdmin) {
+          if (freshData.isAdmin) {
+            this.loadFeatureExpirations();
+          } else {
             console.warn('[AdminLayout] User is no longer an Administrator. Evicting from admin dashboard...');
             this.toast.error('Your administrator permissions have been updated. Redirecting...', 'Access Revoked');
             this.router.navigate(['/portal']);
