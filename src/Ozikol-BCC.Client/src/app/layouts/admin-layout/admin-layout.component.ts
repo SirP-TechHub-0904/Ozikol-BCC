@@ -123,29 +123,7 @@ export interface SuiteInfoDetail {
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item">
-            <a routerLink="/settings/console" [class.active]="isCurrentRoute('/settings/console') || isCurrentRoute('/admin/settings')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">palette</span>
-                <span>{{ 'nav.brand_settings' | translate }}</span>
-                <span class="badge-pill badge-hot">Hot</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console')" (click)="togglePin('Brand Settings', '/settings/console', 'palette'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/settings/console') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/settings/console') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/settings/console/custom-domain" class="nav-link domain-nav-link" [class.is-linked]="hasCustomDomain" [title]="hasCustomDomain ? 'Manage Custom Domain (' + customDomain + ')' : 'Link a Custom Domain'">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">{{ hasCustomDomain ? 'domain_verification' : 'add_link' }}</span>
-                <span>{{ hasCustomDomain ? ('nav.manage_domain' | translate) : ('nav.link_domain' | translate) }}</span>
-              </div>
-              <span class="badge-pill" [class.badge-linked]="hasCustomDomain" [class.badge-unlinked]="!hasCustomDomain">
-                {{ hasCustomDomain ? ('badge.active' | translate) : ('badge.setup' | translate) }}
-              </span>
-            </a>
-          </div>
+          <!-- Suite 1: Website & CMS (Web Exclusive) -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('content')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isCmsStudioActive()" (click)="toggleMenu('content')">
               <div class="nav-link-content">
@@ -230,6 +208,29 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
           <div class="nav-item">
+            <a routerLink="/settings/console" [class.active]="isCurrentRoute('/settings/console') || isCurrentRoute('/admin/settings')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">palette</span>
+                <span>{{ 'nav.brand_settings' | translate }}</span>
+                <span class="badge-pill badge-hot">Hot</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console')" (click)="togglePin('Brand Settings', '/settings/console', 'palette'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/settings/console') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/settings/console') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/settings/console/custom-domain" class="nav-link domain-nav-link" [class.is-linked]="hasCustomDomain" [title]="hasCustomDomain ? 'Manage Custom Domain (' + customDomain + ')' : 'Link a Custom Domain'">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">{{ hasCustomDomain ? 'domain_verification' : 'add_link' }}</span>
+                <span>{{ hasCustomDomain ? ('nav.manage_domain' | translate) : ('nav.link_domain' | translate) }}</span>
+              </div>
+              <span class="badge-pill" [class.badge-linked]="hasCustomDomain" [class.badge-unlinked]="!hasCustomDomain">
+                {{ hasCustomDomain ? ('badge.active' | translate) : ('badge.setup' | translate) }}
+              </span>
+            </a>
+          </div>
+          <div class="nav-item">
             <a routerLink="/content/console/forms" routerLinkActive="active" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">dynamic_form</span>
@@ -273,10 +274,10 @@ export interface SuiteInfoDetail {
             </a>
           </div>
 
-          <!-- 3. People & Community (Suite 01) -->
+          <!-- Suite 2: User Management -->
           <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.people_community' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('people_community', $event)" title="People & Community Overview">
+            <span class="suite-header-text">{{ 'suite.user_management' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('user_management', $event)" title="User Management Overview">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -339,16 +340,6 @@ export interface SuiteInfoDetail {
                   </button>
                 </div>
               </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/users/console/activity" [class.active]="isCurrentRoute('/users/console/activity')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history</span>{{ 'nav.activity_audit_logs' | translate }}</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/activity')" (click)="togglePin('Activity Logs', '/users/console/activity', 'history')" [title]="isPinned('/users/console/activity') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/users/console/activity') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
             </ul>
           </div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('identity')">
@@ -360,16 +351,6 @@ export interface SuiteInfoDetail {
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
             <ul class="nav-submenu" *ngIf="isMenuOpen('identity')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/identity/console/dashboard" [class.active]="isCurrentRoute('/identity/console/dashboard') || isCurrentRoute('/identity/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Console Overview</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/dashboard')" (click)="togglePin('Identity Dashboard', '/identity/console/dashboard', 'analytics')" [title]="isPinned('/identity/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/dashboard') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/identity/console/roles" [class.active]="isCurrentRoute('/identity/console/roles')" class="sub-nav-item">
@@ -390,13 +371,31 @@ export interface SuiteInfoDetail {
                   </button>
                 </div>
               </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console/policies" [class.active]="isCurrentRoute('/identity/console/policies')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">password</span>{{ 'nav.global_policies' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/policies')" (click)="togglePin('Global Policies', '/identity/console/policies', 'password')" [title]="isPinned('/identity/console/policies') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/policies') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
             </ul>
+          </div>
+
+          <!-- Suite 3: People & Community -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.people_community' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('people_community', $event)" title="People & Community Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
           </div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('groups')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/groups/console') || isParentActive('/admin/groups')" (click)="toggleMenu('groups')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">diversity_3</span>
-                <span>{{ groupAlias || 'Groups & Communities' }}</span>
+                <span>{{ groupAlias || 'Groups & Committees' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
@@ -404,11 +403,26 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/groups/console" [class.active]="isParentActive('/groups/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ groupAlias || 'Groups' }} Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Groups Dashboard</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/groups/console')" (click)="togglePin((groupAlias || 'Groups') + ' Dashboard', '/groups/console', 'space_dashboard')" [title]="isPinned('/groups/console') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/groups/console')" (click)="togglePin('Groups Dashboard', '/groups/console', 'space_dashboard')" [title]="isPinned('/groups/console') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/groups/console') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/groups/console" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">diversity_3</span>Manage Groups</span>
+                  </a>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Groups Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
                 </div>
               </li>
             </ul>
@@ -417,17 +431,17 @@ export interface SuiteInfoDetail {
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/admin/alumni') || isParentActive('/users/workspace/alumni')" (click)="toggleMenu('alumni')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">school</span>
-                <span>{{ alumniAlias || 'Alumni' }} Suite</span>
+                <span>{{ alumniAlias || 'Alumni Network' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
             <ul class="nav-submenu" *ngIf="isMenuOpen('alumni')">
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/admin/alumni" [class.active]="isCurrentRoute('/admin/alumni') || isCurrentRoute('/users/workspace/alumni')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">group</span>{{ alumniAlias || 'Alumni' }} Network</span>
+                  <a routerLink="/admin/alumni" [class.active]="isCurrentRoute('/admin/alumni')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Alumni Dashboard</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni')" (click)="togglePin((alumniAlias || 'Alumni') + ' Network', '/admin/alumni', 'group')" [title]="isPinned('/admin/alumni') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni')" (click)="togglePin('Alumni Dashboard', '/admin/alumni', 'space_dashboard')" [title]="isPinned('/admin/alumni') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/admin/alumni') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
@@ -435,69 +449,163 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/admin/alumni/cohorts" [class.active]="isCurrentRoute('/admin/alumni/cohorts')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Graduation Sets & Cohorts</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Manage Alumni & Cohorts</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni/cohorts')" (click)="togglePin((alumniAlias || 'Alumni') + ' Cohorts', '/admin/alumni/cohorts', 'calendar_month')" [title]="isPinned('/admin/alumni/cohorts') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni/cohorts')" (click)="togglePin('Alumni Cohorts', '/admin/alumni/cohorts', 'calendar_month')" [title]="isPinned('/admin/alumni/cohorts') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/admin/alumni/cohorts') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Alumni Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
             </ul>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/admin/messenger" [class.active]="isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">chat</span>
+                <span>{{ 'nav.chat_messenger' | translate }}</span>
+                <span class="badge-pill badge-hot">Live</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/admin/messenger') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
           </div>
           <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">feedback</span><span>{{ 'nav.whistleblowing' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
-          <!-- 4. Daily Operations -->
+          <!-- Suite 4: Workforce & Shifts -->
           <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.daily_operations' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('daily_operations', $event)" title="Daily Operations Overview">
+            <span class="suite-header-text">{{ 'suite.workforce_shifts' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('workforce_shifts', $event)" title="Workforce & Shifts Overview">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">calendar_month</span><span>{{ 'nav.staff_rota' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">swap_horiz</span><span>{{ 'nav.shift_swaps' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">timer</span><span>{{ 'nav.attendance_tracking' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('workforce')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('workforce')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">calendar_month</span>
+                <span>Workforce & Shifts</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('workforce')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Workforce Dashboard</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event_note</span>Staff & Volunteer Rota</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">swap_horiz</span>Shift Swaps & Leave</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">timer</span>Attendance & Clock-In</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Workforce Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
           <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">event_repeat</span><span>{{ 'nav.calendar_followups' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">confirmation_number</span><span>{{ 'nav.event_ticketing' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">record_voice_over</span><span>{{ 'nav.speaker_sessions' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">how_to_reg</span><span>{{ 'nav.attendee_management' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">assignment</span><span>Project & Task Sprints</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">meeting_room</span><span>{{ 'nav.facilities_equipment' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">how_to_vote</span><span>{{ 'nav.elections_voting' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
 
-          <!-- 5. Commerce & Store -->
+          <!-- Suite 5: Events & Ticketing -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.events_ticketing' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('events_ticketing', $event)" title="Events & Ticketing Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('events')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('events')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">confirmation_number</span>
+                <span>Events & Ticketing</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('events')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Events Dashboard</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event</span>Manage Events & Passes</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mic</span>Speaker & Session Tracks</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">how_to_reg</span>Attendee Management & Check-In</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Events Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Suite 6: Commerce & Store -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.commerce_store' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('commerce_store', $event)" title="Commerce & Store Overview">
@@ -517,17 +625,17 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console" [class.active]="isCurrentRoute('/products/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">inventory_2</span>{{ 'nav.products_catalog' | translate }}</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Store Dashboard</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console')" (click)="togglePin('Products Catalog', '/products/console', 'inventory_2')" [title]="isPinned('/products/console') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console')" (click)="togglePin('Store Dashboard', '/products/console', 'space_dashboard')" [title]="isPinned('/products/console') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/products/console') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/products/console/create" [class.active]="isCurrentRoute('/products/console/create')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">add_circle</span>{{ 'nav.create_product' | translate }}</span>
+                  <a routerLink="/products/console" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">inventory_2</span>{{ 'nav.products_catalog' | translate }}</span>
                   </a>
                 </div>
               </li>
@@ -544,11 +652,29 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console/orders" [class.active]="isCurrentRoute('/products/console/orders')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">local_shipping</span>Customer Orders</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">local_shipping</span>Customer Orders & Fulfillment</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/orders')" (click)="togglePin('Customer Orders', '/products/console/orders', 'local_shipping')" [title]="isPinned('/products/console/orders') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/products/console/orders') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/products/console/transactions" [class.active]="isCurrentRoute('/products/console/transactions')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">receipt_long</span>Financial Settlement Ledger</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/transactions')" (click)="togglePin('Financial Ledger', '/products/console/transactions', 'receipt_long')" [title]="isPinned('/products/console/transactions') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/products/console/transactions') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Store Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
                 </div>
               </li>
               <li>
@@ -561,21 +687,75 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
 
-          <!-- 6. Finance & Banking -->
+          <!-- Suite 7: Finance & Banking -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.finance_banking' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('finance_banking', $event)" title="Finance & Banking Overview">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>{{ 'nav.invoicing_dues' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance</span><span>{{ 'nav.embedded_banking' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('invoicing')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('invoicing')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+                <span>{{ 'nav.invoicing_dues' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('invoicing')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Invoicing Dashboard</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">receipt</span>Manage Invoices & Dues</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Invoicing Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('banking')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('banking')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">account_balance</span>
+                <span>{{ 'nav.embedded_banking' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('banking')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">hub</span>Connected Gateways & Payouts</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Payment Rail Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
           <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">request_quote</span><span>{{ 'nav.grant_ledger' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
@@ -592,146 +772,435 @@ export interface SuiteInfoDetail {
             </a>
           </div>
 
-          <!-- 7. Communication & Support -->
+          <!-- Suite 8: Communication & Support -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.communication_support' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('communication_support', $event)" title="Communication & Support Overview">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item">
-            <a routerLink="/users/console/notifications" [class.active]="isCurrentRoute('/users/console/notifications')" class="nav-link">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('notifications')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/users/console/notifications')" (click)="toggleMenu('notifications')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">campaign</span>
                 <span>{{ 'nav.notification_studio' | translate }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/notifications')" (click)="togglePin('Notification Studio', '/users/console/notifications', 'campaign')" [title]="isPinned('/users/console/notifications') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/users/console/notifications') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('notifications')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/notifications" [class.active]="isCurrentRoute('/users/console/notifications')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Broadcasts Dashboard</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/notifications')" (click)="togglePin('Notification Studio', '/users/console/notifications', 'campaign')" [title]="isPinned('/users/console/notifications') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/console/notifications') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/notifications" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">send</span>Compose Broadcast</span>
+                  </a>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">security</span>Anti-Spam Scanner</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Delivery Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
           </div>
-          <div class="nav-item">
-            <a routerLink="/admin/messenger" [class.active]="isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat')" class="nav-link">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('helpdesk')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('helpdesk')">
               <div class="nav-link-content">
-                <span class="material-symbols-outlined">chat</span>
-                <span>{{ 'nav.chat_messenger' | translate }}</span>
-                <span class="badge-pill badge-hot">Live</span>
+                <span class="material-symbols-outlined">support_agent</span>
+                <span>{{ 'nav.helpdesk_support' | translate }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/admin/messenger') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('helpdesk')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Support Dashboard</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">confirmation_number</span>Manage Tickets</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">chat_bubble</span>Live Chat Widget Control</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Helpdesk & SLA Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
           </div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">chat_bubble</span><span>Live Chat Widget</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">support_agent</span><span>{{ 'nav.helpdesk_support' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">link</span><span>Bio Link Hub</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">link</span><span>Bio Link-Tree Builder</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
-          <!-- 8. Intelligence & Forms -->
+          <!-- Suite 9: Forms & Intelligence -->
           <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.reports_forms' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('reports_forms', $event)" title="Intelligence & Forms Overview">
+            <span class="suite-header-text">{{ 'suite.forms_intelligence' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('forms_intelligence', $event)" title="Forms & Intelligence Overview">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('forms')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/content/console/forms')" (click)="toggleMenu('forms')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">dynamic_form</span>
+                <span>{{ 'nav.forms_surveys' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('forms')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/content/console/forms" [class.active]="isCurrentRoute('/content/console/forms')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Forms Dashboard</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/forms')" (click)="togglePin('Forms Dashboard', '/content/console/forms', 'dynamic_form')" [title]="isPinned('/content/console/forms') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/content/console/forms') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/content/console/forms" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">edit_note</span>Form Builder & Responses</span>
+                  </a>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">schema</span>Custom Field Schemas</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Form Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">summarize</span><span>{{ 'nav.dynamic_reports' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">dynamic_form</span><span>{{ 'nav.forms_surveys' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">fact_check</span><span>{{ 'nav.reference_forms' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">menu_book</span><span>{{ 'nav.knowledge_base' | translate }}</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>Survey Analytics & Reports</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
-          <!-- 9. Academy & Training -->
+          <!-- Suite 10: Academy & Training -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.academy_training' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('academy_training', $event)" title="Academy & Training Overview">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">school</span><span>{{ 'nav.lms_training' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">quiz</span><span>Quizzes & Assessments</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">verified</span><span>{{ 'nav.certificate_verification' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">history_edu</span><span>Learner Transcripts</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('lms')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('lms')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">school</span>
+                <span>{{ 'nav.lms_training' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('lms')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>LMS Dashboard</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">menu_book</span>Manage Courses & Lessons</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">quiz</span>Quizzes & Assessment</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Course Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('certificates')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('certificates')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">verified</span>
+                <span>{{ 'nav.certificate_verification' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('certificates')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">design_services</span>Certificate Designer</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history_edu</span>Issued Certificates</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">qr_code</span>Public QR Verification</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Credential Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
 
-          <!-- 10. Compliance & Governance -->
+          <!-- Suite 11: Compliance & Governance -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.compliance_governance' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('compliance_governance', $event)" title="Compliance & Governance Overview">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">folder_zip</span><span>{{ 'nav.document_vault' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>{{ 'nav.kyc_verification' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">door_front</span><span>Visitor & Gate Passes</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">policy</span><span>Policy Sign-Off Audits</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('vault')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('vault')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">folder_zip</span>
+                <span>{{ 'nav.document_vault' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('vault')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Vault Overview</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">lock</span>Secure Documents & Folders</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Permissions & Retention</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('kyc')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('kyc')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">badge</span>
+                <span>{{ 'nav.kyc_verification' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('kyc')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pending_actions</span>Verification Queue</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Verification Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('visitor')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('visitor')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">door_front</span>
+                <span>Visitor & Gate Passes</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('visitor')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pin</span>Active Passes & Check-In</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Gate Pass Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
 
-          <!-- 11. Census & Demographics -->
+          <!-- Suite 12: Demographics & Census -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.demographics_census' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('demographics_census', $event)" title="Census & Demographics Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('demographics_census', $event)" title="Demographics & Census Overview">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">map</span><span>{{ 'nav.community_census' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">pin_drop</span><span>{{ 'nav.field_surveyor' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>Digital Resident IDs</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('census')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('census')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">map</span>
+                <span>{{ 'nav.community_census' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('census')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pin_drop</span>Census Map & Heatmap</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">home</span>Household Units</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Census Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('resident_id')">
+            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('resident_id')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">badge</span>
+                <span>Digital Resident IDs</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('resident_id')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">contact_emergency</span>Manage Issued ID Cards</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">design_services</span>Card Template Designer</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <span class="sub-nav-item disabled">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>ID Card Settings</span>
+                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </div>
           <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>Demographic Analytics</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
-          <!-- 12. Billing & Subscriptions (Bottom Platform Governance) -->
+          <!-- Suite 13: Billing & Subscriptions (Platform Governance) -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.billing_subscriptions' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('billing_subscriptions', $event)" title="Billing & Subscriptions Overview">
@@ -739,15 +1208,15 @@ export interface SuiteInfoDetail {
             </button>
           </div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">credit_card</span><span>Billing Dashboard</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">credit_card</span><span>Subscription Plans</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>Payment Methods</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>Payment Methods & Contacts</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">calculate</span><span>Bill Calculator</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">calculate</span><span>Usage Bill Calculator</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
@@ -755,7 +1224,7 @@ export interface SuiteInfoDetail {
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
-          <!-- 13. Security & Audit (Bottom Platform Protection) -->
+          <!-- Suite 14: Security & Audit (Platform Protection) -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.security_audit' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" title="Security & Audit Overview">
@@ -2470,9 +2939,9 @@ export class AdminLayoutComponent implements OnInit {
   suiteInfoCatalog: { [key: string]: SuiteInfoDetail } = {
     core_command: {
       key: 'core_command',
-      badge: 'Suite 01 • Core Platform',
+      badge: 'Executive Command • Core Platform',
       icon: 'dashboard',
-      title: 'Executive Command & Strategy',
+      title: 'Central Command & Cockpit',
       shortDesc: 'The unified executive cockpit for leadership, directors, and executives. Aggregates real-time telemetry across revenue, operations, task queues, and automated audit health.',
       whoUsesIt: 'Executive leadership, C-suite, Board members, Managing Directors, Operations Heads.',
       capabilities: [
@@ -2485,7 +2954,7 @@ export class AdminLayoutComponent implements OnInit {
     },
     website_cms: {
       key: 'website_cms',
-      badge: 'Suite 02 • Core Starter (Free)',
+      badge: 'Suite 01 • Web & Content',
       icon: 'language',
       title: 'Website & CMS Studio',
       shortDesc: 'Complete no-code content management suite. Enables organizations to design, publish, and host responsive multi-page public portals, hero showcases, dynamic blogs, and custom domain integrations.',
@@ -2500,39 +2969,87 @@ export class AdminLayoutComponent implements OnInit {
       ],
       impact: 'Eliminates the cost of standalone CMS platforms (WordPress, Webflow) and keeps public branding tightly coupled to membership directories.'
     },
+    user_management: {
+      key: 'user_management',
+      badge: 'Suite 02 • Core Identity',
+      icon: 'manage_accounts',
+      title: 'User Management & Access Control',
+      shortDesc: 'Unified directory and security governance suite. Manage user directories, categorized cohorts, custom registration forms, dynamic leaderboards, and role-based permissions.',
+      whoUsesIt: 'System administrators, HR managers, Membership coordinators, Community managers.',
+      capabilities: [
+        'Central Member Directory with real-time status and quick search',
+        'Role & Permission Matrices with granular security policies',
+        'Dynamic Registration Form Builder with custom field schemas',
+        'Member KPIs, Badges & Activity Telemetry Leaderboards',
+        'Direct Email Invitations and Security Credential Management'
+      ],
+      impact: 'Secures organizational identity, automates self-registration onboarding, and delivers continuous member engagement metrics.'
+    },
     people_community: {
       key: 'people_community',
-      badge: 'Suite 03 • Operations Add-on',
+      badge: 'Suite 03 • Community Add-on',
       icon: 'groups',
-      title: 'People & Community Hub',
-      shortDesc: 'Comprehensive member identity, staff directory, and community organization hub. Manages classifications, sub-categories, alumni tracking, and role-based permissions.',
+      title: 'People, Groups & Community',
+      shortDesc: 'Comprehensive member identity, staff directory, and community organization hub. Manages classifications, sub-categories, alumni tracking, and working committee collaboration.',
       whoUsesIt: 'HR managers, Membership coordinators, Community managers, Alumni directors, Association secretaries.',
       capabilities: [
         'Central Member Directory with quick search, filters & export',
         'Category & Sub-Category Segmentation (e.g. VIP, Staff, Volunteers)',
-        'Interactive Groups, Working Committees & Community Hubs',
-        'Alumni Network Tracking & Graduation Cohorts'
+        'Interactive Working Groups, Working Committees & Community Hubs',
+        'Alumni Network Tracking & Graduation Cohorts',
+        'Real-time Ozikol Chat Messenger for staff and member collaboration',
+        'Confidential Whistleblowing & Feedback Oversight'
       ],
       impact: 'Transforms passive contact lists into structured, searchable communities with custom taxonomy and lifecycle history.'
     },
-    daily_operations: {
-      key: 'daily_operations',
-      badge: 'Suite 04 • Workflow Add-on',
-      icon: 'event_available',
-      title: 'Daily Operations & Events',
-      shortDesc: 'Coordinates organizational rhythm: schedule events, reserve rooms and equipment, log check-in attendance, and dispatch broadcast meeting agendas.',
-      whoUsesIt: 'Event managers, Facility managers, Operations coordinators, Administrative officers.',
+    workforce_shifts: {
+      key: 'workforce_shifts',
+      badge: 'Suite 04 • Operations Add-on',
+      icon: 'calendar_month',
+      title: 'Workforce, Shifts & Scheduling',
+      shortDesc: 'Operational staff and volunteer roster management. Coordinate rota shifts, handle shift swaps, track clock-in attendance, and synchronize team calendars.',
+      whoUsesIt: 'Operations managers, Shift supervisors, Volunteer coordinators, Department leads.',
       capabilities: [
-        'Central Event Calendar with multi-track scheduling & registration',
-        'QR-code Check-in & Real-time Attendance Roster',
-        'Physical Facility & Equipment Resource Booking Engine',
-        'Automated calendar invites and reminder broadcasts'
+        'Visual Staff & Volunteer Rota Scheduling',
+        'Interactive Shift Swaps & Leave Request Approvals',
+        'Clock-In Attendance Tracking with geolocation verification',
+        'Master Team Calendar & Automated Follow-Up Reminders'
       ],
-      impact: 'Prevents double-booking of physical resources and automates attendance tracking for compliance or engagement reporting.'
+      impact: 'Eliminates scheduling conflicts, ensures adequate operational coverage, and automates labor attendance tracking.'
+    },
+    daily_operations: {
+      key: 'workforce_shifts',
+      badge: 'Suite 04 • Operations Add-on',
+      icon: 'calendar_month',
+      title: 'Workforce, Shifts & Scheduling',
+      shortDesc: 'Operational staff and volunteer roster management. Coordinate rota shifts, handle shift swaps, track clock-in attendance, and synchronize team calendars.',
+      whoUsesIt: 'Operations managers, Shift supervisors, Volunteer coordinators, Department leads.',
+      capabilities: [
+        'Visual Staff & Volunteer Rota Scheduling',
+        'Interactive Shift Swaps & Leave Request Approvals',
+        'Clock-In Attendance Tracking with geolocation verification',
+        'Master Team Calendar & Automated Follow-Up Reminders'
+      ],
+      impact: 'Eliminates scheduling conflicts, ensures adequate operational coverage, and automates labor attendance tracking.'
+    },
+    events_ticketing: {
+      key: 'events_ticketing',
+      badge: 'Suite 05 • Events Add-on',
+      icon: 'confirmation_number',
+      title: 'Events & Ticketing',
+      shortDesc: 'Comprehensive event planning and ticketing platform. Sell tickets, manage attendee tiers, coordinate multi-track speaker sessions, and verify QR check-ins.',
+      whoUsesIt: 'Event directors, Conference coordinators, Program managers, Ticket sales agents.',
+      capabilities: [
+        'Event Publishing & Multi-Tier Pass Ticketing Engine',
+        'Speaker & Session Track Agenda Builder',
+        'Real-Time QR Code Attendee Check-In Desk',
+        'Attendee Communication & Automated Badge Generation'
+      ],
+      impact: 'Maximizes ticket revenue and streamlines day-of-event check-in lines with fast QR scanning.'
     },
     commerce_store: {
       key: 'commerce_store',
-      badge: 'Suite 05 • Revenue Add-on',
+      badge: 'Suite 06 • Commerce Add-on',
       icon: 'storefront',
       title: 'Commerce & Store Studio',
       shortDesc: 'Full-featured physical and digital product storefront. Manage product variants, inventory levels, promotional categories, shopping cart checkout, and fulfillment dispatch.',
@@ -2548,7 +3065,7 @@ export class AdminLayoutComponent implements OnInit {
     },
     finance_banking: {
       key: 'finance_banking',
-      badge: 'Suite 06 • Fiscal Add-on',
+      badge: 'Suite 07 • Fiscal Add-on',
       icon: 'account_balance',
       title: 'Finance & Banking Rail',
       shortDesc: 'Institutional fiscal governance engine: automate recurring membership dues, issue professional multi-currency invoices, connect banking gateways, and manage grant applications.',
@@ -2563,7 +3080,7 @@ export class AdminLayoutComponent implements OnInit {
     },
     communication_support: {
       key: 'communication_support',
-      badge: 'Suite 07 • Engagement Add-on',
+      badge: 'Suite 08 • Engagement Add-on',
       icon: 'forum',
       title: 'Communication & Support Hub',
       shortDesc: 'Unified multi-channel outreach and member assistance center. Broadcast mass alerts across Email, SMS, WhatsApp, and in-app with built-in anti-spam scanning, live chat, and support ticketing.',
@@ -2579,11 +3096,41 @@ export class AdminLayoutComponent implements OnInit {
       ],
       impact: 'Consolidates Mailchimp, Zendesk, and Twilio into one unified suite with high deliverability spam defenses.'
     },
-    intelligence_forms: {
-      key: 'intelligence_forms',
-      badge: 'Suite 08 • Data Add-on',
+    forms_intelligence: {
+      key: 'forms_intelligence',
+      badge: 'Suite 09 • Data Add-on',
       icon: 'dynamic_form',
-      title: 'Intelligence & Form Studio',
+      title: 'Forms & Intelligence',
+      shortDesc: 'No-code dynamic form builder and feedback engine. Create member onboarding questionnaires, event registration surveys, voting ballots, and automate downstream actions.',
+      whoUsesIt: 'Research officers, Program managers, HR evaluators, Event planners, Community organizers.',
+      capabilities: [
+        'Drag-and-Drop Dynamic Form & Survey Builder',
+        'Survey Response Analytics with real-time charts & CSV exports',
+        'Custom Field Schema Designer with conditional branching',
+        'Automated workflow triggers based on form submission values'
+      ],
+      impact: 'Replaces external tools (Google Forms, Typeform) with deeply integrated, GDPR-compliant data capture directly linked to member profiles.'
+    },
+    intelligence_forms: {
+      key: 'forms_intelligence',
+      badge: 'Suite 09 • Data Add-on',
+      icon: 'dynamic_form',
+      title: 'Forms & Intelligence',
+      shortDesc: 'No-code dynamic form builder and feedback engine. Create member onboarding questionnaires, event registration surveys, voting ballots, and automate downstream actions.',
+      whoUsesIt: 'Research officers, Program managers, HR evaluators, Event planners, Community organizers.',
+      capabilities: [
+        'Drag-and-Drop Dynamic Form & Survey Builder',
+        'Survey Response Analytics with real-time charts & CSV exports',
+        'Custom Field Schema Designer with conditional branching',
+        'Automated workflow triggers based on form submission values'
+      ],
+      impact: 'Replaces external tools (Google Forms, Typeform) with deeply integrated, GDPR-compliant data capture directly linked to member profiles.'
+    },
+    reports_forms: {
+      key: 'forms_intelligence',
+      badge: 'Suite 09 • Data Add-on',
+      icon: 'dynamic_form',
+      title: 'Forms & Intelligence',
       shortDesc: 'No-code dynamic form builder and feedback engine. Create member onboarding questionnaires, event registration surveys, voting ballots, and automate downstream actions.',
       whoUsesIt: 'Research officers, Program managers, HR evaluators, Event planners, Community organizers.',
       capabilities: [
@@ -2596,7 +3143,7 @@ export class AdminLayoutComponent implements OnInit {
     },
     academy_training: {
       key: 'academy_training',
-      badge: 'Suite 09 • Education Add-on',
+      badge: 'Suite 10 • Education Add-on',
       icon: 'school',
       title: 'Academy & Training Suite',
       shortDesc: 'Modern Learning Management System (LMS) and credentialing engine. Host video lessons, track student progress, administer quizzes, and generate cryptographically verifiable QR certificates.',
@@ -2611,7 +3158,7 @@ export class AdminLayoutComponent implements OnInit {
     },
     compliance_governance: {
       key: 'compliance_governance',
-      badge: 'Suite 10 • Governance Add-on',
+      badge: 'Suite 11 • Governance Add-on',
       icon: 'verified_user',
       title: 'Compliance & Governance Vault',
       shortDesc: 'Enterprise trust, security, and physical access suite. Securely archive confidential contracts, verify customer identities (KYC), and issue digital visitor gate passes.',
@@ -2626,9 +3173,9 @@ export class AdminLayoutComponent implements OnInit {
     },
     demographics_census: {
       key: 'demographics_census',
-      badge: 'Suite 11 • Community Add-on',
+      badge: 'Suite 12 • Community Add-on',
       icon: 'analytics',
-      title: 'Census & Demographics',
+      title: 'Demographics & Census',
       shortDesc: 'Territorial and population analytics for communities, municipalities, and religious organizations. Map geographic spread, issue digital resident ID cards, and analyze demographic shifts.',
       whoUsesIt: 'Community leaders, Municipal boards, NGO field directors, Census coordinators, Faith organizations.',
       capabilities: [
@@ -2641,7 +3188,7 @@ export class AdminLayoutComponent implements OnInit {
     },
     billing_subscriptions: {
       key: 'billing_subscriptions',
-      badge: 'Suite 12 • Platform Governance',
+      badge: 'Suite 13 • Platform Governance',
       icon: 'credit_card',
       title: 'Billing & Subscriptions',
       shortDesc: 'Tenant subscription and feature billing management. Track plan usage, manage credit card payment methods, review past invoices, and add modular feature add-ons.',
@@ -2656,7 +3203,7 @@ export class AdminLayoutComponent implements OnInit {
     },
     security_audit: {
       key: 'security_audit',
-      badge: 'Suite 13 • Platform Protection',
+      badge: 'Suite 14 • Platform Protection',
       icon: 'security',
       title: 'Security & Audit',
       shortDesc: 'Comprehensive platform security and compliance logging. Inspect immutable audit logs, review authentication history, enforce security policies, and manage active sessions.',
@@ -3143,14 +3690,18 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   updateActiveMenu(url: string): void {
-    if (url.startsWith('/admin/users')) {
+    if (url.startsWith('/users/console') || url.startsWith('/admin/users')) {
       this.openMenus = { users: true };
-    } else if (url.startsWith('/admin/content')) {
+    } else if (url.startsWith('/content/console') || url.startsWith('/admin/content')) {
       this.openMenus = { content: true };
-    } else if (url.startsWith('/admin/identity')) {
+    } else if (url.startsWith('/identity/console') || url.startsWith('/admin/identity')) {
       this.openMenus = { identity: true };
-    } else if (url.startsWith('/admin/groups')) {
+    } else if (url.startsWith('/groups/console') || url.startsWith('/admin/groups')) {
       this.openMenus = { groups: true };
+    } else if (url.startsWith('/admin/alumni') || url.startsWith('/users/workspace/alumni')) {
+      this.openMenus = { alumni: true };
+    } else if (url.startsWith('/products/console')) {
+      this.openMenus = { commerce: true };
     }
   }
 
@@ -3177,18 +3728,24 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   isUserListActive(): boolean {
-    return this.currentRoute === '/admin/users/list' ||
+    return this.currentRoute === '/users/console/list' ||
+           this.currentRoute.startsWith('/users/console/create') ||
+           this.currentRoute.startsWith('/users/console/edit') ||
+           this.currentRoute.startsWith('/users/console/details') ||
+           this.currentRoute === '/admin/users/list' ||
            this.currentRoute.startsWith('/admin/users/create') ||
            this.currentRoute.startsWith('/admin/users/edit') ||
            this.currentRoute.startsWith('/admin/users/details');
   }
 
   isUserCategoriesActive(): boolean {
-    return this.currentRoute.startsWith('/admin/users/categories');
+    return this.currentRoute.startsWith('/users/console/categories') ||
+           this.currentRoute.startsWith('/admin/users/categories');
   }
 
   isUserKpiActive(): boolean {
-    return this.currentRoute.startsWith('/admin/users/kpi');
+    return this.currentRoute.startsWith('/users/console/kpi') ||
+           this.currentRoute.startsWith('/admin/users/kpi');
   }
 
   isContentCategoriesActive(): boolean {
