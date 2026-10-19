@@ -49,18 +49,6 @@ export interface SuiteInfoDetail {
         </a>
       </div>
 
-      <!-- Console / Workspace Mode Switcher (Strictly for Admins) -->
-      <div class="sidebar-mode-switcher" *ngIf="isAdmin">
-        <button type="button" class="mode-switch-btn" [class.active]="isConsoleActive" (click)="setConsoleMode('console')">
-          <span class="material-symbols-outlined mode-switch-icon">admin_panel_settings</span>
-          <span class="mode-switch-text">{{ 'shell.console' | translate }}</span>
-        </button>
-        <button type="button" class="mode-switch-btn" [class.active]="!isConsoleActive" (click)="setConsoleMode('workspace')">
-          <span class="material-symbols-outlined mode-switch-icon">person</span>
-          <span class="mode-switch-text">{{ 'shell.workspace' | translate }}</span>
-        </button>
-      </div>
-
       <nav class="sidebar-nav">
         <!-- Section: PIN NAVIGATION -->
         <div id="pinned-sidebar-section" *ngIf="pinnedItems.length > 0">
