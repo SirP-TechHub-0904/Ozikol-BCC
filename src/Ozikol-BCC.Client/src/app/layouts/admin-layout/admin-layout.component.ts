@@ -2210,41 +2210,54 @@ export interface SuiteInfoDetail {
 
     /* Suite Header & Info Trigger Styles */
     .suite-header-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-right: 8px;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      padding: 12px 10px 4px 10px !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
     .suite-header-text {
-      flex: 1;
+      flex: 1 1 auto;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .suite-info-trigger {
-      background: none;
+      flex: 0 0 auto;
+      background: transparent;
       border: none;
       padding: 2px 4px;
       margin: 0;
       cursor: pointer;
-      display: inline-flex;
+      display: inline-flex !important;
       align-items: center;
       justify-content: center;
       border-radius: 4px;
-      color: rgba(255, 255, 255, 0.35);
-      transition: all 0.15s ease;
+      color: var(--sidebar-header-color, #64748b) !important;
+      opacity: 0.75;
+      transition: all 0.2s ease;
+      line-height: 1;
     }
-    :host-context([data-bcp-sidebar="workspace"]) .suite-info-trigger {
-      color: rgba(148, 163, 184, 0.45);
+    :host-context(.dark-mode) .suite-info-trigger {
+      color: rgba(255, 255, 255, 0.5) !important;
     }
     .suite-info-trigger:hover {
-      color: #38bdf8;
-      background: rgba(255, 255, 255, 0.1);
-      transform: scale(1.1);
+      opacity: 1 !important;
+      color: #0050e5 !important;
+      background: rgba(0, 80, 229, 0.1) !important;
+      transform: scale(1.15);
+    }
+    :host-context(.dark-mode) .suite-info-trigger:hover {
+      color: #38bdf8 !important;
+      background: rgba(255, 255, 255, 0.1) !important;
     }
     .suite-info-icon {
-      font-size: 14px;
-      line-height: 1;
+      font-size: 14px !important;
+      width: 14px;
+      height: 14px;
+      line-height: 14px !important;
+      display: inline-block !important;
     }
 
     /* Suite Info Modal Card & Details */

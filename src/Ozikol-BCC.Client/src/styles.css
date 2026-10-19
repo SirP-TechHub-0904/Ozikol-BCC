@@ -532,6 +532,66 @@ body.sidebar-closed #sidebar .mode-pulse-dot {
   padding-top: 4px;
 }
 
+/* Suite Section Header Row with Info Modal Trigger */
+.menu-title.suite-header-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 12px 10px 4px 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.suite-header-text {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suite-info-trigger {
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  padding: 2px 4px;
+  margin: 0;
+  cursor: pointer;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--sidebar-header-color, #64748b) !important;
+  opacity: 0.75;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.dark-mode .suite-info-trigger,
+[data-theme="dark"] .suite-info-trigger {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.suite-info-trigger:hover {
+  opacity: 1 !important;
+  color: #0050e5 !important;
+  background: rgba(0, 80, 229, 0.1) !important;
+  transform: scale(1.15);
+}
+
+.dark-mode .suite-info-trigger:hover,
+[data-theme="dark"] .suite-info-trigger:hover {
+  color: #38bdf8 !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.suite-info-icon {
+  font-size: 14px !important;
+  width: 14px;
+  height: 14px;
+  line-height: 14px !important;
+  display: inline-block !important;
+}
+
 /* Nav Item / Group Links */
 .nav-item {
   margin-bottom: 2px;
