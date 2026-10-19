@@ -24,6 +24,17 @@ interface PinnedItem {
   icon: string;
 }
 
+export interface SuiteInfoDetail {
+  key: string;
+  badge: string;
+  icon: string;
+  title: string;
+  shortDesc: string;
+  whoUsesIt: string;
+  capabilities: string[];
+  impact: string;
+}
+
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
@@ -74,8 +85,13 @@ interface PinnedItem {
         <!-- ADMIN CONSOLE SIDEBAR (when isConsoleActive)  -->
         <!-- ============================================== -->
         <ng-container *ngIf="isConsoleActive">
-          <!-- CORE: Executive Command & Governance -->
-          <div class="menu-title">{{ 'suite.core_command' | translate }}</div>
+          <!-- 1. Executive Command -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.core_command' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('core_command', $event)" title="Executive Command Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
           <div class="nav-item">
             <a routerLink="/dashboard/console" [class.active]="isCurrentRoute('/dashboard/console') || isCurrentRoute('/admin/dashboard')" class="nav-link">
               <div class="nav-link-content">
@@ -88,16 +104,24 @@ interface PinnedItem {
             </a>
           </div>
           <div class="nav-item">
-            <a routerLink="/identity/console/audit-logs" [class.active]="isCurrentRoute('/identity/console/audit-logs')" class="nav-link">
+            <a routerLink="/dashboard/console/analytics" [class.active]="isCurrentRoute('/dashboard/console/analytics')" class="nav-link">
               <div class="nav-link-content">
-                <span class="material-symbols-outlined">security</span>
-                <span>{{ 'nav.security_audit' | translate }}</span>
+                <span class="material-symbols-outlined">analytics</span>
+                <span>Analytics & Telemetry</span>
                 <span class="badge-pill badge-hot">Live</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/audit-logs')" (click)="togglePin('Security Logs', '/identity/console/audit-logs', 'security'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/audit-logs') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/identity/console/audit-logs') ? 'keep_off' : 'push_pin' }}</span>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/dashboard/console/analytics')" (click)="togglePin('Analytics', '/dashboard/console/analytics', 'analytics'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/dashboard/console/analytics') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/dashboard/console/analytics') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
+          </div>
+
+          <!-- 2. Website & CMS (Web Exclusive) -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.website_cms' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('website_cms', $event)" title="Website & CMS Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
           </div>
           <div class="nav-item">
             <a routerLink="/settings/console" [class.active]="isCurrentRoute('/settings/console') || isCurrentRoute('/admin/settings')" class="nav-link">
@@ -122,25 +146,6 @@ interface PinnedItem {
               </span>
             </a>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content">
-              <span class="material-symbols-outlined">payments</span>
-              <span>{{ 'nav.feature_billing' | translate }}</span>
-            </span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <div class="nav-item">
-            <a [href]="liveWebsiteUrl" target="_blank" class="nav-link" [title]="hasCustomDomain ? 'Visit ' + customDomain + ' in new tab' : 'Visit live public website in new tab'">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">home</span>
-                <span>{{ 'nav.home' | translate }}</span>
-              </div>
-              <span class="material-symbols-outlined nav-external-hint">open_in_new</span>
-            </a>
-          </div>
-
-          <!-- SUITE 00: Content CMS Studio (Web Exclusive Only) -->
-          <div class="menu-title">{{ 'suite.content_cms' | translate }}</div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('content')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isCmsStudioActive()" (click)="toggleMenu('content')">
               <div class="nav-link-content">
@@ -258,9 +263,23 @@ interface PinnedItem {
               </button>
             </a>
           </div>
+          <div class="nav-item">
+            <a [href]="liveWebsiteUrl" target="_blank" class="nav-link" [title]="hasCustomDomain ? 'Visit ' + customDomain + ' in new tab' : 'Visit live public website in new tab'">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">open_in_browser</span>
+                <span>Live Public Site</span>
+              </div>
+              <span class="material-symbols-outlined nav-external-hint">open_in_new</span>
+            </a>
+          </div>
 
-          <!-- SUITE 01: People, Community & Collaboration (Comes right after CMS on Web!) -->
-          <div class="menu-title">{{ 'suite.people_community' | translate }}</div>
+          <!-- 3. People & Community (Suite 01) -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.people_community' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('people_community', $event)" title="People & Community Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('users')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/console') || isParentActive('/admin/users')" (click)="toggleMenu('users')">
               <div class="nav-link-content">
@@ -332,8 +351,6 @@ interface PinnedItem {
               </li>
             </ul>
           </div>
-
-          <!-- Identity & Access Control Submenu -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('identity')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/identity/console') || isParentActive('/admin/identity')" (click)="toggleMenu('identity')">
               <div class="nav-link-content">
@@ -373,20 +390,8 @@ interface PinnedItem {
                   </button>
                 </div>
               </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/identity/console/policies" [class.active]="isCurrentRoute('/identity/console/policies')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">password</span>{{ 'nav.global_policies' | translate }}</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/policies')" (click)="togglePin('Global Policies', '/identity/console/policies', 'password')" [title]="isPinned('/identity/console/policies') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/policies') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
             </ul>
           </div>
-
-          <!-- Groups & Communities -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('groups')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/groups/console') || isParentActive('/admin/groups')" (click)="toggleMenu('groups')">
               <div class="nav-link-content">
@@ -408,8 +413,6 @@ interface PinnedItem {
               </li>
             </ul>
           </div>
-
-          <!-- Alumni Suite -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('alumni')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/admin/alumni') || isParentActive('/users/workspace/alumni')" (click)="toggleMenu('alumni')">
               <div class="nav-link-content">
@@ -441,29 +444,18 @@ interface PinnedItem {
               </li>
             </ul>
           </div>
-
-          <!-- Ozikol Chat Messenger -->
-          <div class="nav-item">
-            <a routerLink="/admin/messenger" [class.active]="isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">chat</span>
-                <span>{{ 'nav.chat_messenger' | translate }}</span>
-                <span class="badge-pill badge-hot">Live</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/admin/messenger') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
-
-          <!-- Whistleblowing Feedback -->
           <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">feedback</span><span>{{ 'nav.whistleblowing' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
-          <!-- SUITE 02: Workforce, Shifts & Scheduling -->
-          <div class="menu-title">{{ 'suite.workforce_shifts' | translate }}</div>
+          <!-- 4. Daily Operations -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.daily_operations' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('daily_operations', $event)" title="Daily Operations Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
           <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">calendar_month</span><span>{{ 'nav.staff_rota' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
@@ -480,28 +472,6 @@ interface PinnedItem {
             <span class="nav-link-content"><span class="material-symbols-outlined">event_repeat</span><span>{{ 'nav.calendar_followups' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
-
-          <!-- SUITE 03: Data Collection, Reports & Forms -->
-          <div class="menu-title">{{ 'suite.reports_forms' | translate }}</div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">summarize</span><span>{{ 'nav.dynamic_reports' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">dynamic_form</span><span>{{ 'nav.forms_surveys' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">fact_check</span><span>{{ 'nav.reference_forms' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">menu_book</span><span>{{ 'nav.knowledge_base' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-
-          <!-- SUITE 04: Events, Ticketing & Training -->
-          <div class="menu-title">{{ 'suite.events_training' | translate }}</div>
           <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">confirmation_number</span><span>{{ 'nav.event_ticketing' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
@@ -511,27 +481,29 @@ interface PinnedItem {
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">people</span><span>{{ 'nav.attendee_management' | translate }}</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">how_to_reg</span><span>{{ 'nav.attendee_management' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">assignment</span><span>Project & Task Sprints</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">meeting_room</span><span>{{ 'nav.facilities_equipment' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">how_to_vote</span><span>{{ 'nav.elections_voting' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
-          <!-- SUITE 05: Finance, Contributions & Revenue -->
-          <div class="menu-title">{{ 'suite.finance_revenue' | translate }}</div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>{{ 'nav.invoicing_dues' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance</span><span>{{ 'nav.embedded_banking' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">request_quote</span><span>{{ 'nav.grant_ledger' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-
-          <!-- SUITE 06: Operations, Logistics & Facilities -->
-          <div class="menu-title">{{ 'suite.operations_logistics' | translate }}</div>
+          <!-- 5. Commerce & Store -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.commerce_store' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('commerce_store', $event)" title="Commerce & Store Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('commerce')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/products/console')" (click)="toggleMenu('commerce')">
               <div class="nav-link-content">
@@ -571,31 +543,11 @@ interface PinnedItem {
               </li>
               <li>
                 <div class="sub-nav-wrapper">
-                  <a routerLink="/products/console/marketing" [class.active]="isCurrentRoute('/products/console/marketing')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">campaign</span>Broadcast Studio</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/marketing')" (click)="togglePin('Broadcast Studio', '/products/console/marketing', 'campaign')" [title]="isPinned('/products/console/marketing') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/products/console/marketing') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
                   <a routerLink="/products/console/orders" [class.active]="isCurrentRoute('/products/console/orders')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">local_shipping</span>Customer Orders</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/orders')" (click)="togglePin('Customer Orders', '/products/console/orders', 'local_shipping')" [title]="isPinned('/products/console/orders') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/products/console/orders') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/products/console/transactions" [class.active]="isCurrentRoute('/products/console/transactions')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">receipt_long</span>Financial Ledger</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/transactions')" (click)="togglePin('Financial Ledger', '/products/console/transactions', 'receipt_long')" [title]="isPinned('/products/console/transactions') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/products/console/transactions') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
@@ -608,17 +560,45 @@ interface PinnedItem {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">how_to_vote</span><span>{{ 'nav.elections_voting' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">meeting_room</span><span>{{ 'nav.facilities_equipment' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
 
-          <!-- SUITE 07: Communication, AI & Support -->
-          <div class="menu-title">{{ 'suite.communication_ai' | translate }}</div>
+          <!-- 6. Finance & Banking -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.finance_banking' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('finance_banking', $event)" title="Finance & Banking Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>{{ 'nav.invoicing_dues' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance</span><span>{{ 'nav.embedded_banking' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">request_quote</span><span>{{ 'nav.grant_ledger' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <div class="nav-item">
+            <a routerLink="/products/console/transactions" [class.active]="isCurrentRoute('/products/console/transactions')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">receipt_long</span>
+                <span>Financial Ledger</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/transactions')" (click)="togglePin('Financial Ledger', '/products/console/transactions', 'receipt_long')" [title]="isPinned('/products/console/transactions') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/products/console/transactions') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+
+          <!-- 7. Communication & Support -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.communication_support' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('communication_support', $event)" title="Communication & Support Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
           <div class="nav-item">
             <a routerLink="/users/console/notifications" [class.active]="isCurrentRoute('/users/console/notifications')" class="nav-link">
               <div class="nav-link-content">
@@ -630,23 +610,68 @@ interface PinnedItem {
               </button>
             </a>
           </div>
+          <div class="nav-item">
+            <a routerLink="/admin/messenger" [class.active]="isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">chat</span>
+                <span>{{ 'nav.chat_messenger' | translate }}</span>
+                <span class="badge-pill badge-hot">Live</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/admin/messenger') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">phone_in_talk</span><span>{{ 'nav.gocall_dispatch' | translate }}</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">chat_bubble</span><span>Live Chat Widget</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">support_agent</span><span>{{ 'nav.helpdesk_support' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
-
-          <!-- SUITE 08: Governance, Compliance & Safeguarding -->
-          <div class="menu-title">{{ 'suite.compliance_governance' | translate }}</div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">folder_zip</span><span>{{ 'nav.document_vault' | translate }}</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">link</span><span>Bio Link Hub</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- 8. Intelligence & Forms -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.reports_forms' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('reports_forms', $event)" title="Intelligence & Forms Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">summarize</span><span>{{ 'nav.dynamic_reports' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">dynamic_form</span><span>{{ 'nav.forms_surveys' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">fact_check</span><span>{{ 'nav.reference_forms' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">menu_book</span><span>{{ 'nav.knowledge_base' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- 9. Academy & Training -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.academy_training' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('academy_training', $event)" title="Academy & Training Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
+          <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">school</span><span>{{ 'nav.lms_training' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">quiz</span><span>Quizzes & Assessments</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
@@ -654,12 +679,41 @@ interface PinnedItem {
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>{{ 'nav.kyc_verification' | translate }}</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">history_edu</span><span>Learner Transcripts</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
-          <!-- SUITE 09: Demographics, Census & Analytics -->
-          <div class="menu-title">{{ 'suite.demographics_census' | translate }}</div>
+          <!-- 10. Compliance & Governance -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.compliance_governance' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('compliance_governance', $event)" title="Compliance & Governance Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">folder_zip</span><span>{{ 'nav.document_vault' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>{{ 'nav.kyc_verification' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">door_front</span><span>Visitor & Gate Passes</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">policy</span><span>Policy Sign-Off Audits</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- 11. Census & Demographics -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.demographics_census' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('demographics_census', $event)" title="Census & Demographics Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
           <span class="nav-link disabled">
             <span class="nav-link-content"><span class="material-symbols-outlined">map</span><span>{{ 'nav.community_census' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
@@ -669,42 +723,74 @@ interface PinnedItem {
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>{{ 'nav.digital_id_cards' | translate }}</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>Digital Resident IDs</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>Demographic Analytics</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
-          <div class="menu-divider" style="margin: 15px 0 10px; border-top: 1px solid rgba(255,255,255,0.08);"></div>
-          <div class="menu-title">{{ 'suite.member_workspace' | translate }}</div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/profile/biography" [class.active]="isCurrentRoute('/users/workspace/profile/biography')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">assignment_ind</span>
-                <span>{{ 'nav.my_cv_biography' | translate }}</span>
-              </div>
-            </a>
+          <!-- 12. Billing & Subscriptions (Bottom Platform Governance) -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.billing_subscriptions' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('billing_subscriptions', $event)" title="Billing & Subscriptions Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
+          </div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">credit_card</span><span>Billing Dashboard</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>Payment Methods</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">calculate</span><span>Bill Calculator</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">extension</span><span>{{ 'nav.feature_billing' | translate }}</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+
+          <!-- 13. Security & Audit (Bottom Platform Protection) -->
+          <div class="menu-title suite-header-row">
+            <span class="suite-header-text">{{ 'suite.security_audit' | translate }}</span>
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" title="Security & Audit Overview">
+              <span class="material-symbols-outlined suite-info-icon">info</span>
+            </button>
           </div>
           <div class="nav-item">
-            <a routerLink="/users/workspace/chat" [class.active]="isCurrentRoute('/users/workspace/chat')" class="nav-link">
+            <a routerLink="/identity/console/audit-logs" [class.active]="isCurrentRoute('/identity/console/audit-logs')" class="nav-link">
               <div class="nav-link-content">
-                <span class="material-symbols-outlined">chat</span>
-                <span>{{ 'nav.chat_messenger' | translate }}</span>
+                <span class="material-symbols-outlined">security</span>
+                <span>{{ 'nav.security_audit' | translate }}</span>
+                <span class="badge-pill badge-hot">Live</span>
               </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/audit-logs')" (click)="togglePin('Security Logs', '/identity/console/audit-logs', 'security'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/audit-logs') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/identity/console/audit-logs') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
             </a>
           </div>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">manage_accounts</span><span>Login & Access History</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
+          <span class="nav-link disabled">
+            <span class="nav-link-content"><span class="material-symbols-outlined">devices</span><span>Active Sessions & Remote Kill</span></span>
+            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
+          </span>
           <div class="nav-item">
-            <a routerLink="/users/workspace/groups" [class.active]="isCurrentRoute('/users/workspace/groups')" class="nav-link">
+            <a routerLink="/identity/console/policies" [class.active]="isCurrentRoute('/identity/console/policies')" class="nav-link">
               <div class="nav-link-content">
-                <span class="material-symbols-outlined">groups</span>
-                <span>{{ 'nav.groups_directory' | translate }}</span>
+                <span class="material-symbols-outlined">password</span>
+                <span>{{ 'nav.global_policies' | translate }}</span>
               </div>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/alumni" [class.active]="isCurrentRoute('/users/workspace/alumni')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">school</span>
-                <span>{{ 'nav.alumni_network' | translate }}</span>
-              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/policies')" (click)="togglePin('Global Policies', '/identity/console/policies', 'password')" [title]="isPinned('/identity/console/policies') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/identity/console/policies') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
             </a>
           </div>
         </ng-container>
@@ -1195,6 +1281,64 @@ interface PinnedItem {
         </div>
         <div class="modal-footer privileges-footer">
           <button type="button" class="btn-primary" (click)="closePrivilegesModal()">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Suite Overview & Capabilities Modal -->
+    <div class="modal-backdrop" *ngIf="showSuiteInfoModal" (click)="closeSuiteInfoModal()">
+      <div class="modal-content suite-info-modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header suite-info-modal-header" *ngIf="activeSuiteInfo">
+          <div class="suite-info-header-badge">
+            <span class="material-symbols-outlined">{{ activeSuiteInfo.icon }}</span>
+          </div>
+          <div class="suite-info-header-meta">
+            <div class="suite-info-kicker">{{ activeSuiteInfo.badge }}</div>
+            <h3 class="suite-info-title">{{ activeSuiteInfo.title }}</h3>
+          </div>
+          <button (click)="closeSuiteInfoModal()" class="btn-close" aria-label="Close">&times;</button>
+        </div>
+
+        <div class="modal-body suite-info-modal-body" *ngIf="activeSuiteInfo">
+          <p class="suite-info-desc">{{ activeSuiteInfo.shortDesc }}</p>
+
+          <div class="suite-info-section">
+            <div class="suite-info-section-title">
+              <span class="material-symbols-outlined">group</span>
+              <span>Target Organizations & Users</span>
+            </div>
+            <div class="suite-info-target-box">
+              {{ activeSuiteInfo.whoUsesIt }}
+            </div>
+          </div>
+
+          <div class="suite-info-section">
+            <div class="suite-info-section-title">
+              <span class="material-symbols-outlined">verified</span>
+              <span>Key Capabilities & Features Unlocked</span>
+            </div>
+            <ul class="suite-capabilities-list">
+              <li *ngFor="let cap of activeSuiteInfo.capabilities">
+                <span class="material-symbols-outlined check-icon">check_circle</span>
+                <span>{{ cap }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="suite-info-section" *ngIf="activeSuiteInfo.impact">
+            <div class="suite-info-section-title">
+              <span class="material-symbols-outlined">trending_up</span>
+              <span>Operational & Business Impact</span>
+            </div>
+            <div class="suite-info-impact-box">
+              <span class="material-symbols-outlined impact-icon">lightbulb</span>
+              <span>{{ activeSuiteInfo.impact }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer suite-info-modal-footer">
+          <button type="button" class="btn-secondary" (click)="closeSuiteInfoModal()">Dismiss</button>
         </div>
       </div>
     </div>
@@ -2063,11 +2207,482 @@ interface PinnedItem {
     .btn-primary:hover {
       background: #0040b8;
     }
+
+    /* Suite Header & Info Trigger Styles */
+    .suite-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-right: 8px;
+    }
+    .suite-header-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .suite-info-trigger {
+      background: none;
+      border: none;
+      padding: 2px 4px;
+      margin: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      color: rgba(255, 255, 255, 0.35);
+      transition: all 0.15s ease;
+    }
+    :host-context([data-bcp-sidebar="workspace"]) .suite-info-trigger {
+      color: rgba(148, 163, 184, 0.45);
+    }
+    .suite-info-trigger:hover {
+      color: #38bdf8;
+      background: rgba(255, 255, 255, 0.1);
+      transform: scale(1.1);
+    }
+    .suite-info-icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    /* Suite Info Modal Card & Details */
+    .suite-info-modal-card {
+      max-width: 620px;
+      width: 100%;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      background: var(--md-sys-color-surface, #ffffff);
+      border: 1px solid var(--md-sys-color-outline, #e2e8f0);
+    }
+    :host-context(.dark-mode) .suite-info-modal-card {
+      background: #1e222d;
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    .suite-info-modal-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--md-sys-color-outline, #e2e8f0);
+      position: relative;
+    }
+    :host-context(.dark-mode) .suite-info-modal-header {
+      border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+    .suite-info-header-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0050e5, #3b82f6);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
+    }
+    .suite-info-header-badge .material-symbols-outlined {
+      font-size: 24px;
+    }
+    .suite-info-header-meta {
+      flex: 1;
+      min-width: 0;
+    }
+    .suite-info-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #0050e5;
+      margin-bottom: 2px;
+    }
+    :host-context(.dark-mode) .suite-info-kicker {
+      color: #60a5fa;
+    }
+    .suite-info-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface, #0f172a);
+    }
+    :host-context(.dark-mode) .suite-info-title {
+      color: #f8fafc;
+    }
+    .suite-info-modal-body {
+      padding: 22px 24px;
+      max-height: 65vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .suite-info-desc {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--md-sys-color-on-surface-variant, #475569);
+    }
+    :host-context(.dark-mode) .suite-info-desc {
+      color: #cbd5e1;
+    }
+    .suite-info-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .suite-info-section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--md-sys-color-on-surface, #1e293b);
+    }
+    :host-context(.dark-mode) .suite-info-section-title {
+      color: #94a3b8;
+    }
+    .suite-info-section-title .material-symbols-outlined {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    :host-context(.dark-mode) .suite-info-section-title .material-symbols-outlined {
+      color: #60a5fa;
+    }
+    .suite-info-target-box {
+      padding: 10px 14px;
+      background: rgba(0, 80, 229, 0.05);
+      border-left: 3px solid #0050e5;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: var(--md-sys-color-on-surface, #1e293b);
+      line-height: 1.5;
+    }
+    :host-context(.dark-mode) .suite-info-target-box {
+      background: rgba(0, 80, 229, 0.12);
+      color: #e2e8f0;
+      border-left-color: #60a5fa;
+    }
+    .suite-capabilities-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .suite-capabilities-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--md-sys-color-on-surface, #334155);
+    }
+    :host-context(.dark-mode) .suite-capabilities-list li {
+      color: #cbd5e1;
+    }
+    .suite-capabilities-list .check-icon {
+      font-size: 17px;
+      color: #10b981;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+    .suite-info-impact-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #166534;
+      line-height: 1.5;
+    }
+    :host-context(.dark-mode) .suite-info-impact-box {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.25);
+      color: #86efac;
+    }
+    .suite-info-impact-box .impact-icon {
+      font-size: 20px;
+      color: #10b981;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .suite-info-modal-footer {
+      padding: 14px 24px;
+      display: flex;
+      justify-content: flex-end;
+      border-top: 1px solid var(--md-sys-color-outline, #e2e8f0);
+    }
+    :host-context(.dark-mode) .suite-info-modal-footer {
+      border-top-color: rgba(255, 255, 255, 0.08);
+    }
+    .btn-secondary {
+      padding: 8px 20px;
+      background: #e2e8f0;
+      color: #1e293b;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+    :host-context(.dark-mode) .btn-secondary {
+      background: #334155;
+      color: #f1f5f9;
+    }
+    :host-context(.dark-mode) .btn-secondary:hover {
+      background: #475569;
+    }
   `]
 })
 export class AdminLayoutComponent implements OnInit {
   sidebarCollapsed = false;
   darkMode = false;
+
+  // Suite Overview & Capabilities Modal State
+  showSuiteInfoModal = false;
+  activeSuiteInfo: SuiteInfoDetail | null = null;
+  suiteInfoCatalog: { [key: string]: SuiteInfoDetail } = {
+    core_command: {
+      key: 'core_command',
+      badge: 'Suite 01 • Core Platform',
+      icon: 'dashboard',
+      title: 'Executive Command & Strategy',
+      shortDesc: 'The unified executive cockpit for leadership, directors, and executives. Aggregates real-time telemetry across revenue, operations, task queues, and automated audit health.',
+      whoUsesIt: 'Executive leadership, C-suite, Board members, Managing Directors, Operations Heads.',
+      capabilities: [
+        'Central Executive Command Cockpit with real-time KPI aggregations',
+        'Visual Analytics & System Health Telemetry',
+        'Cross-organizational task delegation and status boards',
+        'Active alert dispatch monitor and milestone trackers'
+      ],
+      impact: 'Provides real-time visibility into high-level organizational health and operational bottlenecks without manual spreadsheet reporting.'
+    },
+    website_cms: {
+      key: 'website_cms',
+      badge: 'Suite 02 • Core Starter (Free)',
+      icon: 'language',
+      title: 'Website & CMS Studio',
+      shortDesc: 'Complete no-code content management suite. Enables organizations to design, publish, and host responsive multi-page public portals, hero showcases, dynamic blogs, and custom domain integrations.',
+      whoUsesIt: 'Marketing teams, Content creators, Web administrators, Brand managers, Community leaders.',
+      capabilities: [
+        'Visual Modular Content & Page Designer with live previews',
+        'Dynamic Blog Post & Article Publishing with Rich Media & Tags',
+        'Visual Menu Navigation, Topbars & Dropdown Hierarchy Editor',
+        'Footer & Legal Compliance Pages Builder',
+        'Live Theme Customizer (Palette, Typography, Card Styles)',
+        'Custom Domain Setup & Cloudflare SSL Integration'
+      ],
+      impact: 'Eliminates the cost of standalone CMS platforms (WordPress, Webflow) and keeps public branding tightly coupled to membership directories.'
+    },
+    people_community: {
+      key: 'people_community',
+      badge: 'Suite 03 • Operations Add-on',
+      icon: 'groups',
+      title: 'People & Community Hub',
+      shortDesc: 'Comprehensive member identity, staff directory, and community organization hub. Manages classifications, sub-categories, alumni tracking, and role-based permissions.',
+      whoUsesIt: 'HR managers, Membership coordinators, Community managers, Alumni directors, Association secretaries.',
+      capabilities: [
+        'Central Member Directory with quick search, filters & export',
+        'Category & Sub-Category Segmentation (e.g. VIP, Staff, Volunteers)',
+        'Interactive Groups, Working Committees & Community Hubs',
+        'Alumni Network Tracking & Graduation Cohorts'
+      ],
+      impact: 'Transforms passive contact lists into structured, searchable communities with custom taxonomy and lifecycle history.'
+    },
+    daily_operations: {
+      key: 'daily_operations',
+      badge: 'Suite 04 • Workflow Add-on',
+      icon: 'event_available',
+      title: 'Daily Operations & Events',
+      shortDesc: 'Coordinates organizational rhythm: schedule events, reserve rooms and equipment, log check-in attendance, and dispatch broadcast meeting agendas.',
+      whoUsesIt: 'Event managers, Facility managers, Operations coordinators, Administrative officers.',
+      capabilities: [
+        'Central Event Calendar with multi-track scheduling & registration',
+        'QR-code Check-in & Real-time Attendance Roster',
+        'Physical Facility & Equipment Resource Booking Engine',
+        'Automated calendar invites and reminder broadcasts'
+      ],
+      impact: 'Prevents double-booking of physical resources and automates attendance tracking for compliance or engagement reporting.'
+    },
+    commerce_store: {
+      key: 'commerce_store',
+      badge: 'Suite 05 • Revenue Add-on',
+      icon: 'storefront',
+      title: 'Commerce & Store Studio',
+      shortDesc: 'Full-featured physical and digital product storefront. Manage product variants, inventory levels, promotional categories, shopping cart checkout, and fulfillment dispatch.',
+      whoUsesIt: 'Merchandise teams, Retail businesses, Non-profits selling branded swag, Digital product creators.',
+      capabilities: [
+        'Product Catalog & Inventory Management with low-stock alerts',
+        'New Product Creation with Multi-image Galleries & Variants',
+        'Category Taxonomy & Storefront Showcase Sorting',
+        'Customer Order Processing, Tracking & Fulfillment Pipeline',
+        'Store Financial Transaction Ledger & Settlement Summaries'
+      ],
+      impact: 'Empowers organizations to sell merchandise, tickets, and digital downloads directly to their community with integrated payment processing.'
+    },
+    finance_banking: {
+      key: 'finance_banking',
+      badge: 'Suite 06 • Fiscal Add-on',
+      icon: 'account_balance',
+      title: 'Finance & Banking Rail',
+      shortDesc: 'Institutional fiscal governance engine: automate recurring membership dues, issue professional multi-currency invoices, connect banking gateways, and manage grant applications.',
+      whoUsesIt: 'Finance controllers, Treasurers, Accountants, Grant officers, Executive directors.',
+      capabilities: [
+        'Member Dues Invoicing with recurring billing schedules',
+        'Multi-currency Invoice Generation with PDF receipt export',
+        'Integrated Banking Gateways & Settlement reconciliation',
+        'Proposals, Philanthropic Grants Pipeline & Donor Funding Logs'
+      ],
+      impact: 'Automates dues collection cycles, minimizes accounts receivable delays, and maintains audit-ready fiscal ledgers.'
+    },
+    communication_support: {
+      key: 'communication_support',
+      badge: 'Suite 07 • Engagement Add-on',
+      icon: 'forum',
+      title: 'Communication & Support Hub',
+      shortDesc: 'Unified multi-channel outreach and member assistance center. Broadcast mass alerts across Email, SMS, WhatsApp, and in-app with built-in anti-spam scanning, live chat, and support ticketing.',
+      whoUsesIt: 'Communications teams, Customer support reps, Community liaisons, Crisis responders.',
+      capabilities: [
+        'Mass Notification Studio with Email, SMS, WhatsApp & In-App delivery',
+        'Real-time Anti-Spam Scanner & Mailbox Blacklist Guard',
+        'Delivery Telemetry, Open-rate and Click-through Analytics',
+        'Internal Ozikol Chat Messenger for staff & team collaboration',
+        'Embeddable Live Chat Widget for public websites',
+        'Multi-agent Helpdesk Ticketing System with SLA routing',
+        'Social Bio Link-Tree Landing Page Builder'
+      ],
+      impact: 'Consolidates Mailchimp, Zendesk, and Twilio into one unified suite with high deliverability spam defenses.'
+    },
+    intelligence_forms: {
+      key: 'intelligence_forms',
+      badge: 'Suite 08 • Data Add-on',
+      icon: 'dynamic_form',
+      title: 'Intelligence & Form Studio',
+      shortDesc: 'No-code dynamic form builder and feedback engine. Create member onboarding questionnaires, event registration surveys, voting ballots, and automate downstream actions.',
+      whoUsesIt: 'Research officers, Program managers, HR evaluators, Event planners, Community organizers.',
+      capabilities: [
+        'Drag-and-Drop Dynamic Form & Survey Builder',
+        'Survey Response Analytics with real-time charts & CSV exports',
+        'Custom Field Schema Designer with conditional branching',
+        'Automated workflow triggers based on form submission values'
+      ],
+      impact: 'Replaces external tools (Google Forms, Typeform) with deeply integrated, GDPR-compliant data capture directly linked to member profiles.'
+    },
+    academy_training: {
+      key: 'academy_training',
+      badge: 'Suite 09 • Education Add-on',
+      icon: 'school',
+      title: 'Academy & Training Suite',
+      shortDesc: 'Modern Learning Management System (LMS) and credentialing engine. Host video lessons, track student progress, administer quizzes, and generate cryptographically verifiable QR certificates.',
+      whoUsesIt: 'Corporate trainers, Educational institutions, Professional certification boards, Internal onboarding teams.',
+      capabilities: [
+        'Course Curriculum Builder with modular video, audio & text lessons',
+        'Student Enrollment, Quiz Scoring & Progress Telemetry',
+        'Dynamic Certificate Designer with automated credential generation',
+        'Cryptographic QR-Code Verification Portal for public credential verification'
+      ],
+      impact: 'Enables continuous education, compliance accreditation, and monetization of training programs under your own brand.'
+    },
+    compliance_governance: {
+      key: 'compliance_governance',
+      badge: 'Suite 10 • Governance Add-on',
+      icon: 'verified_user',
+      title: 'Compliance & Governance Vault',
+      shortDesc: 'Enterprise trust, security, and physical access suite. Securely archive confidential contracts, verify customer identities (KYC), and issue digital visitor gate passes.',
+      whoUsesIt: 'Legal counsel, Compliance officers, Security personnel, Facility receptionists, Audit committees.',
+      capabilities: [
+        'Document Vault & Cloud Archive with role-based access encryption',
+        'KYC & Government Identity Document Verification Pipeline',
+        'Visitor & Digital Gate Pass Management with entry/exit timestamps',
+        'Policy acknowledgment tracking and audit verification trail'
+      ],
+      impact: 'Guarantees regulatory compliance, protects sensitive institutional documents, and digitizes physical visitor security.'
+    },
+    demographics_census: {
+      key: 'demographics_census',
+      badge: 'Suite 11 • Community Add-on',
+      icon: 'analytics',
+      title: 'Census & Demographics',
+      shortDesc: 'Territorial and population analytics for communities, municipalities, and religious organizations. Map geographic spread, issue digital resident ID cards, and analyze demographic shifts.',
+      whoUsesIt: 'Community leaders, Municipal boards, NGO field directors, Census coordinators, Faith organizations.',
+      capabilities: [
+        'Community Geographic Census with territorial heatmaps',
+        'Digital Resident & Member ID Card Generation with QR codes',
+        'Demographic Analytics & Longitudinal Cohort Growth Charts',
+        'Household & Family Unit Relationship Grouping'
+      ],
+      impact: 'Delivers clear demographic insights to allocate community resources, plan outreach programs, and issue verifiable digital identity badges.'
+    },
+    billing_subscriptions: {
+      key: 'billing_subscriptions',
+      badge: 'Suite 12 • Platform Governance',
+      icon: 'credit_card',
+      title: 'Billing & Subscriptions',
+      shortDesc: 'Tenant subscription and feature billing management. Track plan usage, manage credit card payment methods, review past invoices, and add modular feature add-ons.',
+      whoUsesIt: 'Tenant Owners, Primary Billing Contacts, Financial Administrators.',
+      capabilities: [
+        'Subscription Dashboard with active plan and renewal cycle details',
+        'Payment Methods Management (Stripe, Cards, Bank Transfers)',
+        'Transparent Bill Calculator based on active members and activated suites',
+        'Modular Feature Add-on Marketplace with instant activation'
+      ],
+      impact: 'Provides total transparency into tenant infrastructure costs and self-service scalability.'
+    },
+    security_audit: {
+      key: 'security_audit',
+      badge: 'Suite 13 • Platform Protection',
+      icon: 'security',
+      title: 'Security & Audit',
+      shortDesc: 'Comprehensive platform security and compliance logging. Inspect immutable audit logs, review authentication history, enforce security policies, and manage active sessions.',
+      whoUsesIt: 'Security administrators, IT directors, Compliance auditors, System administrators.',
+      capabilities: [
+        'Live Security & Audit Logs with IP tracking and payload inspection',
+        'Login & Access History with geo-location risk flagging',
+        'Active Sessions Directory with one-click remote session termination',
+        'Global Security Policies (MFA enforcement, password rotation rules)'
+      ],
+      impact: 'Ensures zero unauthorized access, maintains forensic audit trails for SOC2/ISO27001 compliance, and safeguards tenant data.'
+    }
+  };
+
+  /**
+   * Opens the suite overview and capabilities info modal for the given suite key.
+   * @param key The unique key identifying the suite in suiteInfoCatalog.
+   * @param event Optional DOM click event to stop propagation.
+   */
+  openSuiteInfo(key: string, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    const info = this.suiteInfoCatalog[key];
+    if (info) {
+      this.activeSuiteInfo = info;
+      this.showSuiteInfoModal = true;
+    }
+  }
+
+  /**
+   * Closes the suite overview and capabilities modal.
+   */
+  closeSuiteInfoModal(): void {
+    this.showSuiteInfoModal = false;
+    this.activeSuiteInfo = null;
+  }
+
   brandName = localStorage.getItem('tenant_name') || 'Workspace';
   brandAbbreviation = this.computeAbbreviation(localStorage.getItem('tenant_abbreviation') && localStorage.getItem('tenant_abbreviation') !== 'CC' ? localStorage.getItem('tenant_abbreviation')! : (localStorage.getItem('tenant_name') || 'Workspace'));
   brandLogoUrl = localStorage.getItem('tenant_logo') || '';
