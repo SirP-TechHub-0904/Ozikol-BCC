@@ -35,7 +35,9 @@ export interface ScanStage {
  */
 export interface SecurityScanRequest {
   /** Template display name */
-  title: string;
+  title?: string;
+  /** Template display name alias */
+  templateTitle?: string;
   /** Template category identifier */
   category: string;
   /** Semantic HTML markup */
@@ -142,6 +144,7 @@ export class TemplateSecurityScannerService {
    * @param request Full code assets and callback action.
    */
   scanAndExecute(request: SecurityScanRequest): void {
+    request.title = request.title || request.templateTitle || 'Template Asset';
     const initialStages: ScanStage[] = this.defaultStages.map(s => ({ ...s, status: 'pending', threatCount: 0 }));
 
     this._state$.next({

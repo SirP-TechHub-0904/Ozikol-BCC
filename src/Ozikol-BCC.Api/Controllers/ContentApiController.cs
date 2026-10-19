@@ -139,6 +139,21 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
+                // Pre-flight security scan: Read CSS file stream and verify zero malicious signatures before storing
+                using (var reader = new StreamReader(file.OpenReadStream()))
+                {
+                    var cssText = await reader.ReadToEndAsync();
+                    var scan = _templateSecurityInspector.Inspect(null, cssText, null, null);
+                    if (!scan.IsPassed)
+                    {
+                        var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
+                        return BadRequest(ApiResponse<object>.FailureResponse(
+                            $"Security scan failed for stylesheet '{fileName}': {threat?.Message ?? "Prohibited CSS signature detected."}",
+                            null,
+                            scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                    }
+                }
+
                 var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
                 string finalUrl;
                 string storageType;
@@ -241,6 +256,21 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
+                // Pre-flight security scan: Read JavaScript file stream and verify zero malicious signatures before storing
+                using (var reader = new StreamReader(file.OpenReadStream()))
+                {
+                    var jsText = await reader.ReadToEndAsync();
+                    var scan = _templateSecurityInspector.Inspect(null, null, jsText, null);
+                    if (!scan.IsPassed)
+                    {
+                        var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
+                        return BadRequest(ApiResponse<object>.FailureResponse(
+                            $"Security scan failed for script '{fileName}': {threat?.Message ?? "Prohibited JavaScript execution signature detected."}",
+                            null,
+                            scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                    }
+                }
+
                 var tenantSlug = _tenantProvider?.CurrentTenant ?? "portal";
                 string finalUrl;
                 string storageType;
@@ -4885,6 +4915,25 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                 return BadRequest(ApiResponse<object>.FailureResponse("Zone must be 'head', 'body_open', or 'footer'."));
             }
 
+            // Pre-flight security scan: prevent SQL injection, malicious scripts, or blacklisted URLs
+            var tagTypeLower = (request.TagType ?? string.Empty).ToLowerInvariant();
+            var isCss = tagTypeLower.Contains("css") || tagTypeLower.Contains("stylesheet");
+            var isJs = tagTypeLower.Contains("script") || tagTypeLower.Contains("js");
+            var scan = _templateSecurityInspector.Inspect(
+                htmlTemplate: (!isCss && !isJs) ? request.Content : null,
+                cssStyles: isCss ? request.Content : null,
+                jsScript: isJs ? request.Content : null,
+                defaultContentJson: null);
+
+            if (!scan.IsPassed)
+            {
+                var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Security inspection failed for tag '{request.Name}': {threat?.Message ?? "Prohibited code signature detected."}",
+                    null,
+                    scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+            }
+
             try
             {
                 var tag = new SiteCodeInjectionTag
@@ -4994,6 +5043,27 @@ You MUST respond strictly with a valid JSON object matching this schema without 
                 var tagType = isJs 
                     ? (cleanZone == "footer" ? "footer_script_url" : "script_url") 
                     : (isFont ? "raw_css" : "link_stylesheet");
+
+                // Pre-flight security scan: inspect text files (.css, .js) prior to storage
+                if (isJs || (!isFont && ext == ".css"))
+                {
+                    using (var reader = new StreamReader(file.OpenReadStream()))
+                    {
+                        var textContent = await reader.ReadToEndAsync();
+                        var fileScan = isJs
+                            ? _templateSecurityInspector.Inspect(null, null, textContent, null)
+                            : _templateSecurityInspector.Inspect(null, textContent, null, null);
+
+                        if (!fileScan.IsPassed)
+                        {
+                            var threat = fileScan.CriticalViolations.FirstOrDefault() ?? fileScan.Violations.FirstOrDefault();
+                            return BadRequest(ApiResponse<object>.FailureResponse(
+                                $"Security inspection failed for file '{fileName}': {threat?.Message ?? "Prohibited code signature detected."}",
+                                null,
+                                fileScan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+                        }
+                    }
+                }
 
                 try
                 {
@@ -5143,6 +5213,25 @@ You MUST respond strictly with a valid JSON object matching this schema without 
             if (cleanZone != "head" && cleanZone != "body_open" && cleanZone != "footer")
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Zone must be 'head', 'body_open', or 'footer'."));
+            }
+
+            // Pre-flight security scan: prevent SQL injection, malicious scripts, or blacklisted URLs
+            var tagTypeLower = (request.TagType ?? tag.TagType ?? string.Empty).ToLowerInvariant();
+            var isCss = tagTypeLower.Contains("css") || tagTypeLower.Contains("stylesheet");
+            var isJs = tagTypeLower.Contains("script") || tagTypeLower.Contains("js");
+            var scan = _templateSecurityInspector.Inspect(
+                htmlTemplate: (!isCss && !isJs) ? request.Content : null,
+                cssStyles: isCss ? request.Content : null,
+                jsScript: isJs ? request.Content : null,
+                defaultContentJson: null);
+
+            if (!scan.IsPassed)
+            {
+                var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Security inspection failed for tag '{request.Name}': {threat?.Message ?? "Prohibited code signature detected."}",
+                    null,
+                    scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
             }
 
             tag.Name = request.Name.Trim();
@@ -5298,6 +5387,26 @@ You MUST respond strictly with a valid JSON object matching this schema without 
             }
 
             var updatedText = request?.RawContent ?? string.Empty;
+
+            // Pre-flight security scan: inspect updated asset text prior to overwriting R2 or database content
+            var tagTypeLower = (tag.TagType ?? string.Empty).ToLowerInvariant();
+            var isCssAsset = tagTypeLower.Contains("css") || tagTypeLower.Contains("stylesheet");
+            var isJsAsset = tagTypeLower.Contains("script") || tagTypeLower.Contains("js");
+            var scan = _templateSecurityInspector.Inspect(
+                htmlTemplate: (!isCssAsset && !isJsAsset) ? updatedText : null,
+                cssStyles: isCssAsset ? updatedText : null,
+                jsScript: isJsAsset ? updatedText : null,
+                defaultContentJson: null);
+
+            if (!scan.IsPassed)
+            {
+                var threat = scan.CriticalViolations.FirstOrDefault() ?? scan.Violations.FirstOrDefault();
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Security inspection failed for asset content: {threat?.Message ?? "Prohibited code signature detected."}",
+                    null,
+                    scan.Violations.Select(v => $"[{v.Severity}] {v.Category}: {v.Message}").ToList()));
+            }
+
             var extractedUrl = ExtractUrlFromTag(tag.Content);
 
             if (!string.IsNullOrWhiteSpace(extractedUrl))

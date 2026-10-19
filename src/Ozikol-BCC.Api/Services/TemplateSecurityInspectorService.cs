@@ -36,6 +36,11 @@ namespace Ozikol_BCC.Api.Services
         public int? LineNumber { get; set; }
 
         /// <summary>
+        /// Taxonomy category alias.
+        /// </summary>
+        public string Category => ThreatCategory;
+
+        /// <summary>
         /// Clear descriptive explanation detailing why this code pattern is blocked.
         /// </summary>
         public string Message { get; set; } = string.Empty;
@@ -50,6 +55,16 @@ namespace Ozikol_BCC.Api.Services
         /// True when no Critical violations were identified.
         /// </summary>
         public bool IsSecure => !Violations.Any(v => v.Severity == "Critical");
+
+        /// <summary>
+        /// True when all security checks passed without critical blocking violations.
+        /// </summary>
+        public bool IsPassed => IsSecure;
+
+        /// <summary>
+        /// Critical violations that block template persistence.
+        /// </summary>
+        public IEnumerable<TemplateSecurityViolation> CriticalViolations => Violations.Where(v => v.Severity == "Critical");
 
         /// <summary>
         /// True if any non-blocking warning notices were raised.
