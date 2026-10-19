@@ -92,7 +92,7 @@ namespace Ozikol_BCC.Api.Services
         // 1. SQL Injection & Database Threat Signatures
         private static readonly (Regex Pattern, string Category, string Message)[] SqlInjectionRules = new[]
         {
-            (new Regex(@"('|"")\s*(--|/\*|#)", RegexOptions.Compiled | RegexOptions.IgnoreCase),
+            (new Regex(@"'\s*(--|/\*)", RegexOptions.Compiled | RegexOptions.IgnoreCase),
                 "SqlInjection", "SQL literal quote directly followed by comment delimiter detected."),
 
             (new Regex(@"\b(DROP|ALTER|TRUNCATE)\s+TABLE\b", RegexOptions.Compiled | RegexOptions.IgnoreCase),

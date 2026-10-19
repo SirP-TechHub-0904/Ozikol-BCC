@@ -95,7 +95,7 @@ export class TemplateSecurityScannerService {
 
   // 1. SQL Injection Rules
   private readonly sqlRules = [
-    { pattern: /('|"|\`)\s*(--|\/\*|#)/i, category: 'SqlInjection', message: 'SQL literal quote directly followed by comment delimiter detected.' },
+    { pattern: /'\s*(--|\/\*)/i, category: 'SqlInjection', message: 'SQL literal quote directly followed by comment delimiter detected.' },
     { pattern: /\b(DROP|ALTER|TRUNCATE)\s+TABLE\b/i, category: 'SqlInjection', message: 'Destructive DDL SQL statement (DROP/ALTER/TRUNCATE TABLE) detected.' },
     { pattern: /\bUNION\s+(ALL\s+)?SELECT\b/i, category: 'SqlInjection', message: 'Classic SQL UNION SELECT data exfiltration pattern detected.' },
     { pattern: /\b(XP_CMDSHELL|SP_EXECUTESQL)\b/i, category: 'SqlInjection', message: 'Restricted database stored procedure invocation signature detected.' },
