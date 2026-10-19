@@ -1,5 +1,7 @@
 using System.Text;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using Scalar.AspNetCore;
 using Amazon.S3;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -172,6 +174,56 @@ namespace Ozikol_BCC.Api
                 });
             });
 
+            // 4b. Defense-in-Depth Native Rate Limiting Policies (Auth, AI, Upload Protection)
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+                options.OnRejected = async (context, token) =>
+                {
+                    context.HttpContext.Response.ContentType = "application/json";
+                    await context.HttpContext.Response.WriteAsync(
+                        "{\"success\":false,\"message\":\"Too many requests. Please slow down and try again shortly.\",\"statusCode\":429}",
+                        token);
+                };
+
+                // Policy A: Auth limit (Login / Register / Forgot Password) - 5 requests / min per IP
+                options.AddPolicy("auth-limit", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 5,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
+
+                // Policy B: AI Assist & Generation limit - 15 requests / min per client
+                options.AddPolicy("ai-limit", httpContext =>
+                    RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        factory: _ => new SlidingWindowRateLimiterOptions
+                        {
+                            PermitLimit = 15,
+                            Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 3,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
+
+                // Policy C: File / Media Upload limit - 20 uploads / min per IP
+                options.AddPolicy("upload-limit", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 20,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                            QueueLimit = 0
+                        }));
+            });
+
             // 5. SignalR & Form Options
             builder.Services.AddSignalR(options =>
             {
@@ -240,8 +292,10 @@ namespace Ozikol_BCC.Api
             var app = builder.Build();
 
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+            app.UseSecurityHeaders();
 
             app.UseCors("AllowAngularApp");
+            app.UseRateLimiter();
 
             // Only redirect to HTTPS in Production.
             // In Development, Angular calls http://localhost:51026 directly.

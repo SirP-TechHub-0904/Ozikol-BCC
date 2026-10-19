@@ -11,6 +11,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Ozikol_BCC.Api.Models;
@@ -27,6 +28,7 @@ namespace Ozikol_BCC.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Tags("2. Authentication & Authorization")]
+    [EnableRateLimiting("auth-limit")]
     public class AuthController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -133,6 +135,7 @@ namespace Ozikol_BCC.Api.Controllers
 
         [HttpGet("me")]
         [Authorize]
+        [DisableRateLimiting]
         public async Task<IActionResult> GetCurrentUserSession()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
