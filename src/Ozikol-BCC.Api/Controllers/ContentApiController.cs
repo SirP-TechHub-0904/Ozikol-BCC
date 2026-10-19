@@ -36,6 +36,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly ICloudinaryService _cloudinaryService;
         private readonly ICloudflareR2StorageService _r2Storage;
         private readonly ITenantProvider? _tenantProvider;
+        private readonly Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService _templateSecurityInspector;
 
         public ContentApiController(
             DashboardDbContext context, 
@@ -43,7 +44,8 @@ namespace Ozikol_BCC.Api.Controllers
             ICloudinaryService cloudinaryService,
             ICloudflareR2StorageService r2Storage,
             ITenantProvider? tenantProvider = null,
-            MasterCatalogDbContext? masterCatalogDbContext = null)
+            MasterCatalogDbContext? masterCatalogDbContext = null,
+            Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService? templateSecurityInspector = null)
         {
             _context = context;
             _mediator = mediator;
@@ -51,6 +53,7 @@ namespace Ozikol_BCC.Api.Controllers
             _r2Storage = r2Storage;
             _tenantProvider = tenantProvider;
             _masterCatalogDbContext = masterCatalogDbContext;
+            _templateSecurityInspector = templateSecurityInspector ?? new Ozikol_BCC.Api.Services.TemplateSecurityInspectorService();
         }
 
         // ==========================================
@@ -1357,6 +1360,21 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("TemplateKey and CategoryKey are required."));
             }
 
+            // Pre-persistence Security Gatekeeper: Inspect incoming HTML, CSS, JS, and JSON
+            var scanResult = _templateSecurityInspector.Inspect(
+                request.HtmlTemplate,
+                request.CssStyles,
+                request.JsScript,
+                request.DefaultContentJson);
+
+            if (!scanResult.IsSecure)
+            {
+                var criticalCount = scanResult.Violations.Count(v => v.Severity == "Critical");
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Template installation blocked: {criticalCount} security violation(s) detected.",
+                    new { violations = scanResult.Violations }));
+            }
+
             try
             {
                 var catKey = request.CategoryKey.Trim().ToLowerInvariant();
@@ -2171,6 +2189,21 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Template Name and Category are required."));
             }
 
+            // Pre-persistence Security Gatekeeper: Inspect incoming HTML, CSS, JS, and JSON
+            var scanResult = _templateSecurityInspector.Inspect(
+                request.HtmlTemplate,
+                request.CssStyles,
+                request.JsScript,
+                request.DefaultContentJson);
+
+            if (!scanResult.IsSecure)
+            {
+                var criticalCount = scanResult.Violations.Count(v => v.Severity == "Critical");
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Template creation blocked: {criticalCount} security violation(s) detected.",
+                    new { violations = scanResult.Violations }));
+            }
+
             try
             {
                 var catKey = rawCategory.Trim().ToLowerInvariant();
@@ -2314,6 +2347,21 @@ namespace Ozikol_BCC.Api.Controllers
             if (string.IsNullOrWhiteSpace(id))
             {
                 return BadRequest(ApiResponse<object>.FailureResponse("Template identifier is required."));
+            }
+
+            // Pre-persistence Security Gatekeeper: Inspect incoming HTML, CSS, JS, and JSON
+            var scanResult = _templateSecurityInspector.Inspect(
+                request.HtmlTemplate,
+                request.CssStyles,
+                request.JsScript,
+                request.DefaultContentJson);
+
+            if (!scanResult.IsSecure)
+            {
+                var criticalCount = scanResult.Violations.Count(v => v.Severity == "Critical");
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Template update blocked: {criticalCount} security violation(s) detected.",
+                    new { violations = scanResult.Violations }));
             }
 
             try

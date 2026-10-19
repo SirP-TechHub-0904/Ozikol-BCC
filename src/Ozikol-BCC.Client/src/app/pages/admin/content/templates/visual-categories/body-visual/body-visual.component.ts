@@ -7,6 +7,7 @@ import { BODY_PRESETS } from './body-presets.data';
 import { ApiService } from '../../../../../../core/services/api.service';
 import { ToastService } from '../../../../../../core/services/toast.service';
 import { UniversalPreviewModalService } from '../../services/universal-preview-modal.service';
+import { TemplateSecurityScannerService } from '../../services/template-security-scanner.service';
 
 /**
  * Dedicated category studio component for creating and editing Body Section templates.
@@ -1030,6 +1031,7 @@ export class BodyVisualComponent implements OnInit {
     private api: ApiService,
     private toast: ToastService,
     private previewModalService: UniversalPreviewModalService,
+    private securityScanner: TemplateSecurityScannerService,
     private router: Router
   ) {}
 
@@ -1171,6 +1173,18 @@ export class BodyVisualComponent implements OnInit {
       return;
     }
 
+    this.securityScanner.scanAndExecute({
+      title: name,
+      category: 'body',
+      html: this.htmlTemplate || '',
+      css: this.cssStyles || '',
+      js: this.jsScript || '',
+      mockJson: JSON.stringify(this.sampleContent),
+      onConfirmSave: () => this.executeSaveBodyTemplate(name)
+    });
+  }
+
+  private executeSaveBodyTemplate(name: string): void {
     this.isSaving = true;
     const payload = {
       name,
@@ -1201,8 +1215,12 @@ export class BodyVisualComponent implements OnInit {
       },
       error: (err: any) => {
         this.isSaving = false;
-        const msg = err?.error?.message || err?.message || 'Failed to save Body Section template.';
-        this.toast.error(`Save error: ${msg}`);
+        if (err?.status === 400 && (err?.error?.message?.toLowerCase().includes('security') || err?.error?.data?.violations)) {
+          this.securityScanner.handleBackendError(err);
+        } else {
+          const msg = err?.error?.message || err?.message || 'Failed to save Body Section template.';
+          this.toast.error(`Save error: ${msg}`);
+        }
       }
     });
   }

@@ -56,6 +56,7 @@ namespace Ozikol_BCC.Api
                 }));
             builder.Services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
             builder.Services.AddScoped<ITenantFeatureGateService, Ozikol_BCC.Api.Services.TenantFeatureGateService>();
+            builder.Services.AddSingleton<Ozikol_BCC.Api.Services.ITemplateSecurityInspectorService, Ozikol_BCC.Api.Services.TemplateSecurityInspectorService>();
             builder.Services.AddMemoryCache();
 
             builder.Services.AddHttpClient();

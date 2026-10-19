@@ -13,6 +13,7 @@ import { FooterVisualComponent } from './visual-categories/footer-visual/footer-
 import { BlogVisualComponent } from './visual-categories/blog-visual/blog-visual.component';
 import { BlogDetailVisualComponent } from './visual-categories/blog-detail-visual/blog-detail-visual.component';
 import { UniversalPreviewModalComponent } from './universal-preview-modal/universal-preview-modal.component';
+import { TemplateSecurityModalComponent } from './template-security-modal/template-security-modal.component';
 
 /**
  * Definition descriptor for supported template categories in CMS Template Visual Studio.
@@ -45,7 +46,8 @@ export interface CategoryPresetItem {
     FooterVisualComponent,
     BlogVisualComponent,
     BlogDetailVisualComponent,
-    UniversalPreviewModalComponent
+    UniversalPreviewModalComponent,
+    TemplateSecurityModalComponent
   ],
   template: `
     <div class="visuals-studio-page">
@@ -200,6 +202,9 @@ export interface CategoryPresetItem {
 
       <!-- Universal Centralized Template Preview Modal -->
       <app-universal-preview-modal></app-universal-preview-modal>
+
+      <!-- Pre-Flight Code Integrity & Security Scanner Modal -->
+      <app-template-security-modal></app-template-security-modal>
     </div>
   `,
   styles: [`
