@@ -35,7 +35,7 @@
     @Html.AntiForgeryToken()
 
     <div class="form-group">
-        <label asp-for="Email" class="form-label">Operator Work Email <span class="required">*</span></label>
+        <label asp-for="Email" class="form-label">Email <span class="required">*</span></label>
         <input asp-for="Email" class="form-control" placeholder="name@@company.com" autocomplete="email" autofocus />
         <span asp-validation-for="Email" class="field-validation-error"></span>
     </div>

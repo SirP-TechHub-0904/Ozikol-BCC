@@ -122,16 +122,16 @@ public class CentralEmailService : ICentralEmailService
 
     public async Task<bool> SendTwoFactorCodeEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default)
     {
-        var subject = $"Your Ozikol Console 2FA Verification Code: {code}";
+        var subject = $"Your Ozikol 2FA Verification Code: {code}";
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
-                    <h2 style='color: #0f172a; margin: 0; font-size: 22px; font-weight: 800;'>Ozikol Console Security</h2>
+                    <h2 style='color: #0f172a; margin: 0; font-size: 22px; font-weight: 800;'>Ozikol Security</h2>
                     <p style='color: #64748b; font-size: 13.5px; margin: 4px 0 0;'>Platform Operator 2-Factor Authentication</p>
                 </div>
                 <div style='background: #f8fafc; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; text-align: center;'>
                     <p style='margin: 0 0 12px; color: #334155; font-size: 14px;'>Enter the following 6-digit verification code to complete your sign-in:</p>
-                    <div style='font-size: 34px; font-weight: 800; color: #e11d48; letter-spacing: 8px; font-family: monospace; padding: 8px 0;'>{code}</div>
+                    <div style='font-size: 34px; font-weight: 800; color: #0050e5; letter-spacing: 8px; font-family: monospace; padding: 8px 0;'>{code}</div>
                     <p style='color: #94a3b8; font-size: 12px; margin: 12px 0 0;'>This code expires in 10 minutes. Never share this code with anyone.</p>
                 </div>
                 <div style='margin-top: 24px; text-align: center; font-size: 11.5px; color: #94a3b8;'>
@@ -152,16 +152,16 @@ public class CentralEmailService : ICentralEmailService
     /// <returns>True if queued/sent successfully; false otherwise.</returns>
     public async Task<bool> SendPasswordResetOtpEmailAsync(string toEmail, string code, CancellationToken cancellationToken = default)
     {
-        var subject = $"Your Ozikol Console Password Reset Code: {code}";
+        var subject = $"Your Ozikol Password Reset Code: {code}";
         var body = $@"
             <div style='font-family: -apple-system, BlinkMacSystemFont, ""Segoe UI"", Roboto, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; background: #ffffff; color: #0f172a; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px;'>
                 <div style='text-align: center; margin-bottom: 24px;'>
-                    <h2 style='color: #0f172a; margin: 0; font-size: 22px; font-weight: 800;'>Ozikol Console Security</h2>
+                    <h2 style='color: #0f172a; margin: 0; font-size: 22px; font-weight: 800;'>Ozikol Security</h2>
                     <p style='color: #64748b; font-size: 13.5px; margin: 4px 0 0;'>Operator Password Recovery</p>
                 </div>
                 <div style='background: #f8fafc; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; text-align: center;'>
                     <p style='margin: 0 0 12px; color: #334155; font-size: 14px;'>Use the following 6-digit code to reset your platform operator password:</p>
-                    <div style='font-size: 34px; font-weight: 800; color: #e11d48; letter-spacing: 8px; font-family: monospace; padding: 8px 0;'>{code}</div>
+                    <div style='font-size: 34px; font-weight: 800; color: #0050e5; letter-spacing: 8px; font-family: monospace; padding: 8px 0;'>{code}</div>
                     <p style='color: #94a3b8; font-size: 12px; margin: 12px 0 0;'>This one-time code expires in 15 minutes.</p>
                 </div>
                 <div style='margin-top: 24px; text-align: center; font-size: 11.5px; color: #94a3b8;'>
