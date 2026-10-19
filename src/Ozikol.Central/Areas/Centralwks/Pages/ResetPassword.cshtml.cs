@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
@@ -19,7 +20,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
     {
         private readonly UserManager<CentralUser> _userManager;
         private readonly ICentralTwoFactorService _twoFactorService;
-        private readonly ICentralEmailService _emailService;
         private readonly MasterCatalogDbContext _dbContext;
         private readonly ILogger<ResetPasswordModel> _logger;
 
@@ -28,19 +28,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
         /// </summary>
         /// <param name="userManager">Identity user manager for CentralUser accounts.</param>
         /// <param name="twoFactorService">Security service for validating numeric OTP codes.</param>
-        /// <param name="emailService">Service for dispatching outbound transactional emails.</param>
         /// <param name="dbContext">Master catalog database context for logging audit trail events.</param>
         /// <param name="logger">Security diagnostics logger.</param>
+        [ActivatorUtilitiesConstructor]
         public ResetPasswordModel(
             UserManager<CentralUser> userManager,
             ICentralTwoFactorService twoFactorService,
-            ICentralEmailService emailService,
             MasterCatalogDbContext dbContext,
             ILogger<ResetPasswordModel> logger)
         {
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _twoFactorService = twoFactorService ?? throw new ArgumentNullException(nameof(twoFactorService));
-            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -213,8 +211,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages
             try
             {
                 _logger.LogInformation("Resending password reset OTP to {Email}", targetEmail);
+                var emailService = HttpContext.RequestServices.GetRequiredService<ICentralEmailService>();
                 var otp = _twoFactorService.GeneratePasswordResetOtp(targetEmail);
-                var sent = await _emailService.SendPasswordResetOtpEmailAsync(targetEmail, otp);
+                var sent = await emailService.SendPasswordResetOtpEmailAsync(targetEmail, otp);
 
                 if (sent)
                 {
