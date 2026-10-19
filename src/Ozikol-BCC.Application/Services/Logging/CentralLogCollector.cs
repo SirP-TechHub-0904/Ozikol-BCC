@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Security.Authentication;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,16 @@ namespace Ozikol_BCC.Application.Services.Logging
         private static string? _cachedConnectionString;
         private static bool _ttlIndexCreated;
         private static readonly SemaphoreSlim _initLock = new(1, 1);
+
+        /// <summary>
+        /// Timestamp of the last MongoDB connectivity or authentication failure in UTC.
+        /// </summary>
+        private static DateTime _lastFailureUtc = DateTime.MinValue;
+
+        /// <summary>
+        /// Cooldown interval during which MongoDB connection attempts are suspended following a failure.
+        /// </summary>
+        private static readonly TimeSpan _failureCooldown = TimeSpan.FromSeconds(60);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CentralLogCollector"/> class.
@@ -152,6 +163,18 @@ namespace Ozikol_BCC.Application.Services.Logging
         /// <inheritdoc />
         public async Task LogTraceAsync(CentralLogDocument document, CancellationToken cancellationToken = default)
         {
+            // Circuit-breaker: If MongoDB has recently failed, bypass it during cooldown without stalling API requests
+            if (DateTime.UtcNow - _lastFailureUtc < _failureCooldown)
+            {
+                _logger.LogInformation(
+                    "[CentralLogFallback] ({Category}/{Level}) {App} - {Message}",
+                    document.Category,
+                    document.Level,
+                    document.Application,
+                    document.Message);
+                return;
+            }
+
             try
             {
                 var collection = await GetLogCollectionAsync(cancellationToken);
@@ -171,8 +194,11 @@ namespace Ozikol_BCC.Application.Services.Logging
             }
             catch (Exception ex)
             {
+                // Mark circuit-breaker failure timestamp to prevent repeated 30-second blocking on subsequent logs
+                _lastFailureUtc = DateTime.UtcNow;
+
                 // Central log collector must never throw exceptions or disrupt API traffic
-                _logger.LogWarning(ex, "Failed to persist central log document to MongoDB.");
+                _logger.LogWarning(ex, "Failed to persist central log document to MongoDB. Entering 60s fallback cooldown.");
             }
         }
 
@@ -225,7 +251,9 @@ namespace Ozikol_BCC.Application.Services.Logging
             {
                 connectionString = _configuration["MONGODB_LOGS_CONNECTION_STRING"]
                                 ?? _configuration["MongoDb:LogsConnectionString"]
-                                ?? Environment.GetEnvironmentVariable("MONGODB_LOGS_CONNECTION_STRING");
+                                ?? _configuration["MONGODB_URI"]
+                                ?? Environment.GetEnvironmentVariable("MONGODB_LOGS_CONNECTION_STRING")
+                                ?? Environment.GetEnvironmentVariable("MONGODB_URI");
             }
 
             if (string.IsNullOrWhiteSpace(connectionString))
@@ -233,7 +261,7 @@ namespace Ozikol_BCC.Application.Services.Logging
                 return null;
             }
 
-            // 3. Cache client instance thread-safely
+            // 3. Cache client instance thread-safely with fast-fail timeouts and explicit TLS protocols
             if (_mongoClient == null || _cachedConnectionString != connectionString)
             {
                 await _initLock.WaitAsync(cancellationToken);
@@ -241,7 +269,20 @@ namespace Ozikol_BCC.Application.Services.Logging
                 {
                     if (_mongoClient == null || _cachedConnectionString != connectionString)
                     {
-                        _mongoClient = new MongoClient(connectionString);
+                        var mongoSettings = MongoClientSettings.FromConnectionString(connectionString);
+
+                        // Fail-fast timeouts: Prevent MongoDB replica set selection from blocking threads for 30s
+                        mongoSettings.ServerSelectionTimeout = TimeSpan.FromSeconds(2);
+                        mongoSettings.ConnectTimeout = TimeSpan.FromSeconds(3);
+                        mongoSettings.SocketTimeout = TimeSpan.FromSeconds(5);
+
+                        // Explicitly configure TLS 1.2 and TLS 1.3 for Windows Schannel / Atlas handshake
+                        mongoSettings.SslSettings = new SslSettings
+                        {
+                            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13
+                        };
+
+                        _mongoClient = new MongoClient(mongoSettings);
                         _cachedConnectionString = connectionString;
                         _ttlIndexCreated = false;
                     }
