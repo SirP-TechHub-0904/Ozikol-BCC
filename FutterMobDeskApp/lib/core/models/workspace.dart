@@ -16,6 +16,9 @@ class Workspace {
   final String activeConsoleMode;
   final DateTime lastAccessed;
   final bool isActive;
+  final String? groupAlias;
+  final String? alumniAlias;
+  final String? categoryAlias;
 
   const Workspace({
     required this.tenantKey,
@@ -34,7 +37,46 @@ class Workspace {
     this.activeConsoleMode = 'administration',
     required this.lastAccessed,
     this.isActive = true,
+    this.groupAlias,
+    this.alumniAlias,
+    this.categoryAlias,
   });
+
+  /// Effective label alias for Groups & Committees (defaults to 'Groups & Committees')
+  String get effectiveGroupAlias {
+    if (groupAlias != null && groupAlias!.trim().isNotEmpty) {
+      return groupAlias!.trim();
+    }
+    final pAlias = effectivePermissions['groupAlias'] as String?;
+    if (pAlias != null && pAlias.trim().isNotEmpty) {
+      return pAlias.trim();
+    }
+    return 'Groups & Committees';
+  }
+
+  /// Effective label alias for Alumni Network (defaults to 'Alumni Network')
+  String get effectiveAlumniAlias {
+    if (alumniAlias != null && alumniAlias!.trim().isNotEmpty) {
+      return alumniAlias!.trim();
+    }
+    final pAlias = effectivePermissions['alumniAlias'] as String?;
+    if (pAlias != null && pAlias.trim().isNotEmpty) {
+      return pAlias.trim();
+    }
+    return 'Alumni Network';
+  }
+
+  /// Effective label alias for User Categories (defaults to 'User Categories')
+  String get effectiveCategoryAlias {
+    if (categoryAlias != null && categoryAlias!.trim().isNotEmpty) {
+      return categoryAlias!.trim();
+    }
+    final pAlias = effectivePermissions['categoryAlias'] as String?;
+    if (pAlias != null && pAlias.trim().isNotEmpty) {
+      return pAlias.trim();
+    }
+    return 'User Categories';
+  }
 
   /// Human-friendly display title for the organization
   String get displayName => organizationName.trim().isNotEmpty ? organizationName : tenantKey;
@@ -137,6 +179,9 @@ class Workspace {
     String? activeConsoleMode,
     DateTime? lastAccessed,
     bool? isActive,
+    String? groupAlias,
+    String? alumniAlias,
+    String? categoryAlias,
   }) {
     return Workspace(
       tenantKey: tenantKey ?? this.tenantKey,
@@ -155,6 +200,9 @@ class Workspace {
       activeConsoleMode: activeConsoleMode ?? this.activeConsoleMode,
       lastAccessed: lastAccessed ?? this.lastAccessed,
       isActive: isActive ?? this.isActive,
+      groupAlias: groupAlias ?? this.groupAlias,
+      alumniAlias: alumniAlias ?? this.alumniAlias,
+      categoryAlias: categoryAlias ?? this.categoryAlias,
     );
   }
 
@@ -176,6 +224,9 @@ class Workspace {
       'activeConsoleMode': activeConsoleMode,
       'lastAccessed': lastAccessed.toIso8601String(),
       'isActive': isActive,
+      'groupAlias': groupAlias,
+      'alumniAlias': alumniAlias,
+      'categoryAlias': categoryAlias,
     };
   }
 
@@ -199,6 +250,9 @@ class Workspace {
           ? DateTime.tryParse(json['lastAccessed'] as String) ?? DateTime.now()
           : DateTime.now(),
       isActive: json['isActive'] as bool? ?? true,
+      groupAlias: json['groupAlias'] as String?,
+      alumniAlias: json['alumniAlias'] as String?,
+      categoryAlias: json['categoryAlias'] as String?,
     );
   }
 }

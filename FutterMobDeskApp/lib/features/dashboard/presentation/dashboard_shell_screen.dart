@@ -18,7 +18,6 @@ import '../../../core/widgets/update_banner.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/models/suite_info_catalog.dart';
 import '../../../core/theme/theme_provider.dart';
-import '../../workspace_auth/presentation/workspace_entry_screen.dart';
 import '../../workspace_auth/presentation/workspace_login_screen.dart';
 import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
 import '../../workspace_auth/state/workspace_state.dart';
@@ -203,7 +202,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   Widget _buildDesktopLayout(
     BuildContext context, {
     required bool isDark,
-    required dynamic activeWs,
+    required Workspace? activeWs,
     required int notifCount,
     required AsyncValue<dynamic> updateAsync,
     required DashboardMetrics metrics,
@@ -343,7 +342,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   Widget _buildMobileLayout(
     BuildContext context, {
     required bool isDark,
-    required dynamic activeWs,
+    required Workspace? activeWs,
     required int notifCount,
     required AsyncValue<dynamic> updateAsync,
     required DashboardMetrics metrics,
@@ -560,7 +559,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   Widget _buildDesktopTopBar(
     BuildContext context,
     bool isDark,
-    dynamic activeWs,
+    Workspace? activeWs,
     int notifCount, {
     bool isOnline = true,
   }) {
@@ -2006,7 +2005,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
   Widget _buildDesktopSidebarHeader(
     bool isDark,
-    dynamic activeWs, {
+    Workspace? activeWs, {
     bool isCollapsed = false,
     bool isMobile = false,
   }) {
@@ -2043,16 +2042,16 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             alignment: Alignment.centerLeft,
             child: TenantCachedImage(
               imageUrl: activeWs.logoUrl,
-              tenantKey: activeWs?.tenantKey,
+              tenantKey: activeWs.tenantKey,
               height: 38,
               fit: BoxFit.contain,
               fallbackWidget: Row(
                 children: [
                   TenantAvatar(
-                    iconUrl: activeWs?.iconUrl,
-                    logoUrl: activeWs?.logoUrl,
-                    name: activeWs?.displayName ?? 'Ozikol',
-                    tenantKey: activeWs?.tenantKey,
+                    iconUrl: activeWs.iconUrl,
+                    logoUrl: activeWs.logoUrl,
+                    name: activeWs.displayName,
+                    tenantKey: activeWs.tenantKey,
                     size: 34,
                     borderRadius: 8,
                   ),
@@ -2063,7 +2062,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          activeWs?.displayName ?? 'Ozikol BCC',
+                          activeWs.displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -2137,27 +2136,19 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }
 
   /// Signs out of the current user session and returns to the organization's WorkspaceLoginScreen.
-  Future<void> _handleSignOut(dynamic activeWs) async {
+  Future<void> _handleSignOut(Workspace? activeWs) async {
     if (activeWs == null) return;
-    final ws = activeWs is Workspace ? activeWs : null;
     await ref.read(workspaceStateProvider.notifier).signOutSession(activeWs.tenantKey);
     if (!mounted) return;
-    if (ws != null) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => WorkspaceLoginScreen(workspace: ws)),
-        (route) => false,
-      );
-    } else {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const WorkspaceEntryScreen()),
-        (route) => false,
-      );
-    }
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => WorkspaceLoginScreen(workspace: activeWs)),
+      (route) => false,
+    );
   }
 
   Widget _buildDesktopSidebarFooter(
     bool isDark,
-    dynamic activeWs, {
+    Workspace? activeWs, {
     bool isCollapsed = false,
     bool isMobile = false,
   }) {
@@ -2324,8 +2315,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     );
   }
 
-  List<AppDrawerSection> _buildNavigationSections(bool isDark, dynamic activeWs) {
-    final canAccessAdmin = activeWs == null || (activeWs?.canAccessAdminConsole ?? false);
+  List<AppDrawerSection> _buildNavigationSections(bool isDark, Workspace? activeWs) {
+    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
     final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
 
     if (isAdministration) {
@@ -2354,10 +2345,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   /// Builds the complete 14-Suite Administration Console navigation tree for administrators.
   /// Exactly mirrors the Web Admin Console (admin-layout.component.ts) with full 1-to-1 fidelity
   /// (except Suite 1: Website & CMS which is web-exclusive).
-  List<AppDrawerSection> _buildAdminConsoleSections(bool isDark, dynamic activeWs) {
-    final groupAlias = (activeWs?.groupAlias as String?) ?? 'Groups & Committees';
-    final alumniAlias = (activeWs?.alumniAlias as String?) ?? 'Alumni Network';
-    final categoryAlias = (activeWs?.categoryAlias as String?) ?? 'User Categories';
+  List<AppDrawerSection> _buildAdminConsoleSections(bool isDark, Workspace? activeWs) {
+    final groupAlias = activeWs?.effectiveGroupAlias ?? 'Groups & Committees';
+    final alumniAlias = activeWs?.effectiveAlumniAlias ?? 'Alumni Network';
+    final categoryAlias = activeWs?.effectiveCategoryAlias ?? 'User Categories';
 
     return [
       // 1. Executive Command (Core Platform)
@@ -3256,7 +3247,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }
 
   /// Builds the personal Users Workspace navigation tree for regular members and personal tasks.
-  List<AppDrawerSection> _buildUsersWorkspaceSections(bool isDark, dynamic activeWs) {
+  List<AppDrawerSection> _buildUsersWorkspaceSections(bool isDark, Workspace? activeWs) {
     return [
       AppDrawerSection(
         title: 'suite.member_workspace'.tr(ref, fallback: 'Personal Workspace Hub'),
@@ -3428,8 +3419,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     ];
   }
 
-  Widget _buildMobileBottomBar(bool isDark, dynamic activeWs) {
-    final canAccessAdmin = activeWs == null || (activeWs?.canAccessAdminConsole ?? false);
+  Widget _buildMobileBottomBar(bool isDark, Workspace? activeWs) {
+    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
     final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
 
     final items = isAdministration
@@ -3495,8 +3486,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }
 
   /// Feature Expiration Alert Banner visible strictly to administrators in Administration mode.
-  Widget _buildFeatureExpirationBanner(bool isDark, dynamic activeWs, {bool isMobile = false}) {
-    if (activeWs == null || !(activeWs.isAdmin as bool) || activeWs.activeConsoleMode == 'workspace') {
+  Widget _buildFeatureExpirationBanner(bool isDark, Workspace? activeWs, {bool isMobile = false}) {
+    if (activeWs == null || !activeWs.isAdmin || activeWs.activeConsoleMode == 'workspace') {
       return const SizedBox.shrink();
     }
 
@@ -3964,7 +3955,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }
 
   /// Displays the user profile, role credentials, and presence details modal dialog.
-  void _showUserProfileDialog(BuildContext context, bool isDark, dynamic activeWs) {
+  void _showUserProfileDialog(BuildContext context, bool isDark, Workspace? activeWs) {
     final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
     final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
     final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
@@ -4314,27 +4305,27 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }
 
   /// Resolves the user's role badge (SuperAdmin, Administrator, or Member).
-  String _getUserRoleBadge(dynamic activeWs) {
+  String _getUserRoleBadge(Workspace? activeWs) {
     if (activeWs == null) return 'Member';
-    final roles = (activeWs.userRoles as List<dynamic>?)?.map((r) => r.toString().toLowerCase()).toList() ?? [];
-    if (activeWs.isSuperAdmin == true || roles.contains('superadmin') || roles.contains('systemadministrator')) {
+    final roles = activeWs.userRoles.map((r) => r.toLowerCase()).toList();
+    if (activeWs.isSuperAdmin || roles.contains('superadmin') || roles.contains('systemadministrator')) {
       return 'SuperAdmin';
     }
-    if (activeWs.isAdmin == true || roles.any((r) => ['admin', 'administrator', 'identitymanager', 'cmsmanager', 'storemanager'].contains(r))) {
+    if (activeWs.isAdmin || roles.any((r) => ['admin', 'administrator', 'identitymanager', 'cmsmanager', 'storemanager'].contains(r))) {
       return 'Administrator';
     }
     return 'Member';
   }
 
   /// Displays the account roles, granted capabilities, and unlocked suites modal dialog or bottom sheet.
-  void _showPrivilegesDialog(BuildContext context, bool isDark, dynamic activeWs) {
+  void _showPrivilegesDialog(BuildContext context, bool isDark, Workspace? activeWs) {
     final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
     final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
     final subColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
     final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
     final roleBadge = _getUserRoleBadge(activeWs);
 
-    final List<String> roles = (activeWs?.userRoles as List<dynamic>?)?.map((r) => r.toString()).toList() ?? [];
+    final List<String> roles = activeWs?.userRoles.toList() ?? [];
     if (roles.isEmpty) {
       roles.add(roleBadge);
     }
