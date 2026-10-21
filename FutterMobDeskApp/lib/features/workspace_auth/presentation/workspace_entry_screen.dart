@@ -136,9 +136,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
       screenTitle: 'Workspace Access & Landing Tour',
       steps: const [
         TourStep(
-          title: 'Enter Organization Access Code',
+          title: 'Enter Organization Access Code or URL',
           description:
-              'Type your company access code (e.g. acmecorp) to securely connect to your organization.',
+              'Type your organization access code or custom URL (e.g. access code or domain.com) to securely connect to your workspace.',
           icon: Icons.apartment_rounded,
         ),
         TourStep(
@@ -801,7 +801,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                     const ContextualInfoButton(
                                       title: 'Workspace Resolution',
                                       purpose: 'Connects this client application to your isolated tenant database and permissions layer.',
-                                      expectedInputs: 'Enter your organization access code (e.g. acmecorp).',
+                                      expectedInputs: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).',
                                       impact: 'Loads your organization security policies, tenant branding, and routes notifications appropriately.',
                                       bestPractices: 'Contact your organization administrator if you are unsure of your access code.',
                                     ),
@@ -809,7 +809,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Sign in using your organization access code.',
+                                  'Sign in using your organization access code or custom URL.',
                                   style: TextStyle(
                                     fontSize: 14,
                                     height: 1.4,
@@ -851,7 +851,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                 CustomTextField(
                                   controller: _controller,
                                   label: 'Organization Code',
-                                  placeholder: 'e.g. acmecorp',
+                                  placeholder: 'e.g. access code or url',
                                   prefixIcon: const Icon(Icons.apartment_rounded, size: 20, color: AppColors.primary),
                                   showPasteButton: true,
                                   textInputAction: TextInputAction.done,
@@ -877,7 +877,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
-                                        'Enter your organization access code.',
+                                        'Enter your organization access code or custom URL.',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: isDark ? AppColors.gray400 : AppColors.gray500,
@@ -1172,13 +1172,13 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                               const ContextualInfoButton(
                                 title: 'Workspace Resolution',
                                 purpose: 'Connects your device to your isolated tenant database.',
-                                expectedInputs: 'Enter your organization access code (e.g. acmecorp).',
+                                expectedInputs: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).',
                               ),
                             ],
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Enter your organization access code.',
+                            'Enter your organization access code or custom URL.',
                             style: TextStyle(
                               fontSize: 13,
                               color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -1206,7 +1206,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                           CustomTextField(
                             controller: _controller,
                             label: 'Organization Code',
-                            placeholder: 'e.g. acmecorp',
+                            placeholder: 'e.g. access code or url',
                             prefixIcon: const Icon(Icons.apartment_rounded, size: 20, color: AppColors.primary),
                             showPasteButton: true,
                             textInputAction: TextInputAction.done,
