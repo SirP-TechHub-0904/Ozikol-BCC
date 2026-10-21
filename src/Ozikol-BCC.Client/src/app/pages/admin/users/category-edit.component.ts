@@ -6,6 +6,11 @@ import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
+/**
+ * Component for creating and editing organizational user categories or departments.
+ * Color code and icon selectors have been removed per specification, replaced by
+ * a publication status (Published / Unpublished) toggle.
+ */
 @Component({
   selector: 'app-category-edit',
   standalone: true,
@@ -14,10 +19,10 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     <div class="category-form-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="CATEGORY CONFIGURATION"
-        icon="category"
-        [title]="isEditMode ? 'Edit Category Tier: ' + model.name : 'Create User Category Tier'"
-        subtitle="Configure category identity, description, sort order, and custom hex color branding."
+        eyebrow="ORGANIZATIONAL HIERARCHY"
+        icon="corporate_fare"
+        [title]="isEditMode ? 'Edit Category: ' + (model.name || 'Department') : 'Create User Category'"
+        subtitle="Configure organizational department or user category tier, description, sort order, and publication status."
         [buttons]="headerButtons"
         [loading]="isLoading || isSaving"
       ></app-page-header>
@@ -26,58 +31,71 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       <form (ngSubmit)="saveCategory()" class="form-container" *ngIf="!isLoading">
         <div class="form-card">
           <div class="card-header">
-            <div class="icon-preview-box" [style.background]="(model.colorCode || '#0050e5') + '15'" [style.color]="model.colorCode || '#0050e5'">
-              <span class="material-symbols-outlined">{{ model.icon || 'category' }}</span>
+            <div class="icon-box">
+              <span class="material-symbols-outlined">corporate_fare</span>
             </div>
             <div>
-              <h3>Category Tier Details</h3>
-              <p>Organizational placement and visual badge settings</p>
+              <h3>Category Details</h3>
+              <p>Organizational department name, description, priority order, and publication visibility</p>
             </div>
           </div>
 
           <div class="card-body">
             <div class="form-grid-2">
               <div class="form-group">
-                <label>Category Name *</label>
-                <input type="text" [(ngModel)]="model.name" name="name" placeholder="e.g. Executive Board, Engineering, Volunteers" required />
+                <label>Category / Department Name *</label>
+                <input
+                  type="text"
+                  [(ngModel)]="model.name"
+                  name="name"
+                  placeholder="e.g. Engineering Team, Software Team, Operations"
+                  required
+                />
               </div>
               <div class="form-group">
-                <label>Sort Order / Weight</label>
-                <input type="number" [(ngModel)]="model.sortOrder" name="sortOrder" placeholder="0" />
+                <label>Sort Order / Display Priority</label>
+                <input
+                  type="number"
+                  [(ngModel)]="model.sortOrder"
+                  name="sortOrder"
+                  placeholder="0"
+                />
               </div>
             </div>
 
             <div class="form-group">
               <label>Description (Optional)</label>
-              <textarea rows="3" [(ngModel)]="model.description" name="description" placeholder="Briefly describe the responsibilities or criteria of this tier..."></textarea>
+              <textarea
+                rows="3"
+                [(ngModel)]="model.description"
+                name="description"
+                placeholder="Briefly describe the responsibilities, members, or purpose of this category..."
+              ></textarea>
             </div>
 
-            <div class="form-grid-2">
-              <!-- Color Picker -->
-              <div class="form-group">
-                <label>Brand Accent Color</label>
-                <div class="color-picker-row">
-                  <input type="color" [(ngModel)]="model.colorCode" name="colorCode" class="color-input" />
-                  <input type="text" [(ngModel)]="model.colorCode" name="colorCodeText" placeholder="#0050e5" class="color-text-input" />
+            <!-- Publication Status Toggle -->
+            <div class="publication-card" [class.is-published]="model.isActive">
+              <div class="pub-info">
+                <div class="pub-title-row">
+                  <span class="material-symbols-outlined pub-icon">
+                    {{ model.isActive ? 'check_circle' : 'pause_circle' }}
+                  </span>
+                  <span class="pub-title">Publication Status</span>
+                  <span class="status-pill" [class.status-pill-active]="model.isActive" [class.status-pill-draft]="!model.isActive">
+                    {{ model.isActive ? 'Published' : 'Unpublished' }}
+                  </span>
                 </div>
+                <p class="pub-desc">
+                  {{ model.isActive
+                    ? 'Active & Published: Visible to administrators, member registration forms, and departmental directories.'
+                    : 'Unpublished / Draft: Temporarily hidden from registration forms and disabled for new member assignments.' }}
+                </p>
               </div>
 
-              <!-- Icon Selector -->
-              <div class="form-group">
-                <label>Material Symbol Icon</label>
-                <select [(ngModel)]="model.icon" name="icon">
-                  <option value="category">Category (Default)</option>
-                  <option value="corporate_fare">Corporate Fare</option>
-                  <option value="badge">Badge</option>
-                  <option value="workspace_premium">Premium Crown</option>
-                  <option value="school">School / Faculty</option>
-                  <option value="handshake">Partnership</option>
-                  <option value="engineering">Engineering</option>
-                  <option value="volunteer_activism">Volunteers</option>
-                  <option value="medical_services">Medical</option>
-                  <option value="group_work">Group Work</option>
-                </select>
-              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="model.isActive" name="isActive" />
+                <span class="slider"></span>
+              </label>
             </div>
           </div>
 
@@ -97,23 +115,86 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
     .form-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden; display: flex; flex-direction: column; width: 100%; }
     .card-header { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid #f1f5f9; background: #fafbfc; }
-    .icon-preview-box { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-    .icon-preview-box span { font-size: 24px; }
+    .icon-box { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: rgba(0,80,229,0.08); color: #0050e5; }
+    .icon-box span { font-size: 24px; }
     .card-header h3 { margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; }
     .card-header p { margin: 2px 0 0; font-size: 12px; color: #64748b; }
-    .card-body { padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+    .card-body { padding: 22px; display: flex; flex-direction: column; gap: 18px; }
 
     .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media (max-width: 540px) { .form-grid-2 { grid-template-columns: 1fr; } }
 
     .form-group { display: flex; flex-direction: column; gap: 6px; }
     .form-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #475569; letter-spacing: 0.05em; }
-    .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; background: #ffffff; color: #0f172a; transition: all 0.15s ease; }
+    .form-group input, .form-group select, .form-group textarea { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; outline: none; background: #ffffff; color: #0f172a; transition: all 0.15s ease; box-sizing: border-box; }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #0050e5; box-shadow: 0 0 0 3px rgba(0,80,229,0.1); }
 
-    .color-picker-row { display: flex; gap: 10px; align-items: center; }
-    .color-input { width: 44px; height: 42px; padding: 2px; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; }
-    .color-text-input { flex: 1; height: 42px; font-family: monospace; }
+    /* Publication Card & Switch */
+    .publication-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fafbfc;
+      transition: all 0.2s ease;
+    }
+    .publication-card.is-published {
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+    }
+    .pub-info { display: flex; flex-direction: column; gap: 4px; }
+    .pub-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .pub-icon { font-size: 20px; color: #64748b; }
+    .publication-card.is-published .pub-icon { color: #16a34a; }
+    .pub-title { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .pub-desc { font-size: 12px; color: #64748b; margin: 0; line-height: 1.4; }
+    .publication-card.is-published .pub-desc { color: #166534; }
+
+    .status-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .status-pill-active { background: #dcfce7; color: #15803d; }
+    .status-pill-draft { background: #f1f5f9; color: #64748b; }
+
+    /* Toggle switch slider */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #cbd5e1;
+      border-radius: 26px;
+      transition: 0.2s;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    input:checked + .slider { background-color: #0050e5; }
+    input:checked + .slider:before { transform: translateX(22px); }
 
     .card-footer { padding: 16px 22px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc; }
     .btn { height: 40px; padding: 0 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; }
@@ -133,9 +214,8 @@ export class CategoryEditComponent implements OnInit {
   model: any = {
     name: '',
     description: '',
-    colorCode: '#0050e5',
-    icon: 'category',
-    sortOrder: 0
+    sortOrder: 0,
+    isActive: true
   };
 
   headerButtons: PageHeaderButton[] = [];
@@ -174,8 +254,6 @@ export class CategoryEditComponent implements OnInit {
           this.model = {
             name: res.data.name || '',
             description: res.data.description || '',
-            colorCode: res.data.colorCode || '#0050e5',
-            icon: res.data.icon || 'category',
             sortOrder: res.data.sortOrder || 0,
             isActive: res.data.isActive !== false
           };

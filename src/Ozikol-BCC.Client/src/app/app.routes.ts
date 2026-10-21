@@ -36,6 +36,7 @@ import { KpiGradeComponent } from './pages/admin/users/kpi-grade.component';
 import { UserActivityComponent } from './pages/admin/users/user-activity.component';
 import { NotificationsManagementComponent } from './pages/admin/users/notifications-management.component';
 import { RegistrationFormBuilderComponent } from './pages/admin/users/registration-form-builder.component';
+import { UserSettingsComponent } from './pages/admin/users/user-settings.component';
 import { WorkspaceNotificationsComponent } from './pages/workspace/workspace-notifications.component';
 
 import { IdentityDashboardComponent } from './pages/admin/identity/identity-dashboard.component';
@@ -169,6 +170,7 @@ export const routes: Routes = [
       { path: 'users/console/kpi/grade/:userId', component: KpiGradeComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'users/console/activity', component: UserActivityComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'users/console/registration-form', component: RegistrationFormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'users/console/settings', component: UserSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
 
       // 2. User Management Suite: Workspace (Member Self-Service)
@@ -280,6 +282,7 @@ export const routes: Routes = [
       { path: 'admin/users/edit/:id', redirectTo: 'users/console/edit/:id', pathMatch: 'full' },
       { path: 'admin/users/categories', redirectTo: 'users/console/categories', pathMatch: 'full' },
       { path: 'admin/users/registration-form', redirectTo: 'users/console/registration-form', pathMatch: 'full' },
+      { path: 'admin/users/settings', redirectTo: 'users/console/settings', pathMatch: 'full' },
       { path: 'admin/users/kpi', redirectTo: 'users/console/kpi', pathMatch: 'full' },
       { path: 'admin/users/activity', redirectTo: 'users/console/activity', pathMatch: 'full' },
       { path: 'admin/groups', redirectTo: 'groups/console', pathMatch: 'full' },

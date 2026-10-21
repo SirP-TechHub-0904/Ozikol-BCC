@@ -328,6 +328,16 @@ export interface SuiteInfoDetail {
                   </button>
                 </div>
               </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/settings" [class.active]="isCurrentRoute('/users/console/settings')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>User Settings</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/settings')" (click)="togglePin('User Settings', '/users/console/settings', 'tune')" [title]="isPinned('/users/console/settings') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/console/settings') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
             </ul>
           </div>
           <div class="nav-item has-sub" [class.open]="isMenuOpen('identity')">

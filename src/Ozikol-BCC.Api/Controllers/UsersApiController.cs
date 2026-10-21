@@ -569,8 +569,18 @@ namespace Ozikol_BCC.Api.Controllers
                 EmailConfirmed = false, // Email confirmation required according to policy
                 PhoneNumberConfirmed = false,
                 MustChangePassword = mustChangePassword,
-                RegistrationSource = "Admin"
+                RegistrationSource = "Admin",
+                CustomAttributesJson = !string.IsNullOrWhiteSpace(request.Suffix)
+                    ? JsonSerializer.Serialize(new { suffix = request.Suffix.Trim() })
+                    : null
             };
+
+            // Prevent assigning SuperAdmin to any user account
+            var roleToAssign = !string.IsNullOrWhiteSpace(request.Role) ? request.Role : "Member";
+            if (string.Equals(roleToAssign, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role is strictly reserved for the root workspace account and cannot be assigned to members."));
+            }
 
             var password = string.IsNullOrWhiteSpace(request.Password) ? "Member@2026" : request.Password;
             var result = await _userManager.CreateAsync(newUser, password);
@@ -578,7 +588,6 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", result.Errors.Select(e => e.Description))));
 
             // Assign role
-            var roleToAssign = !string.IsNullOrWhiteSpace(request.Role) ? request.Role : "Member";
             if (await _roleManager.RoleExistsAsync(roleToAssign))
             {
                 await _userManager.AddToRoleAsync(newUser, roleToAssign);
@@ -816,11 +825,23 @@ namespace Ozikol_BCC.Api.Controllers
             if (request.BcpUserCategoryId.HasValue) user.BcpUserCategoryId = request.BcpUserCategoryId;
             // NOTE: MemberId is permanently immutable and cannot be updated once created.
 
+            if (request.Suffix != null)
+            {
+                user.CustomAttributesJson = !string.IsNullOrWhiteSpace(request.Suffix)
+                    ? JsonSerializer.Serialize(new { suffix = request.Suffix.Trim() })
+                    : null;
+            }
+
             await _dbContext.SaveChangesAsync();
 
             // Update role if provided
             if (!string.IsNullOrWhiteSpace(request.Role))
             {
+                if (string.Equals(request.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+                {
+                    return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role is strictly reserved for the root workspace account and cannot be assigned."));
+                }
+
                 var currentRoles = await _userManager.GetRolesAsync(user);
                 await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 if (await _roleManager.RoleExistsAsync(request.Role))
@@ -1487,7 +1508,7 @@ namespace Ozikol_BCC.Api.Controllers
                 setting.MemberIdFormat = request.ActiveFormat.Trim();
 
             if (!string.IsNullOrWhiteSpace(request.Prefix))
-                setting.MemberIdPrefix = request.Prefix.Trim().ToUpperInvariant();
+                setting.MemberIdPrefix = request.Prefix.Trim().TrimEnd('-', '/', '_', ':', '.', ' ').ToUpperInvariant();
 
             if (request.NextNumber.HasValue && request.NextNumber.Value > 0)
                 setting.MemberIdNextNumber = request.NextNumber.Value;
@@ -1521,6 +1542,190 @@ namespace Ozikol_BCC.Api.Controllers
                 enableUserDeletion = setting.EnableUserDeletion,
                 previews
             }, "Member ID format and verification policies saved successfully."));
+        }
+
+        /// <summary>
+        /// Retrieves the comprehensive User Manager settings (Title, Suffix, Member ID rules, and Account Policies).
+        /// Marked AllowAnonymous so public registration and admin configuration pages can read title/suffix visibility.
+        /// </summary>
+        [HttpGet("settings")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetUserSettings()
+        {
+            var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
+            if (setting == null)
+            {
+                setting = new MisConfigurationSetting
+                {
+                    Id = Guid.NewGuid(),
+                    MemberIdFormat = "PrefixYearMonthRandom",
+                    MemberIdPrefix = "CC",
+                    MemberIdNextNumber = 1,
+                    MemberIdPadding = 4,
+                    MemberIdDelimiter = "-"
+                };
+                _dbContext.MisConfigurationSettings.Add(setting);
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // Defaults
+            bool enableTitle = true;
+            string preFilledTitles = "Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor";
+            bool enableSuffix = true;
+
+            // Read from durable system config in BcpRegistrationFormFields
+            var durableConfig = await _dbContext.BcpRegistrationFormFields
+                .AsNoTracking()
+                .FirstOrDefaultAsync(f => f.FieldKey == "__user_settings__");
+
+            if (durableConfig != null && !string.IsNullOrWhiteSpace(durableConfig.OptionsJson))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(durableConfig.OptionsJson);
+                    if (doc.RootElement.TryGetProperty("enableTitle", out var et))
+                        enableTitle = et.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("preFilledTitles", out var pt))
+                        preFilledTitles = pt.GetString() ?? preFilledTitles;
+                    if (doc.RootElement.TryGetProperty("enableSuffix", out var es))
+                        enableSuffix = es.GetBoolean();
+                }
+                catch { }
+            }
+
+            var previews = await _memberIdGenerator.GetFormatPreviewsAsync(
+                setting.MemberIdPrefix,
+                setting.MemberIdNextNumber,
+                setting.MemberIdPadding,
+                setting.MemberIdDelimiter);
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                enableTitle,
+                preFilledTitles,
+                enableSuffix,
+                memberIdFormat = setting.MemberIdFormat ?? "PrefixYearMonthRandom",
+                memberIdPrefix = setting.MemberIdPrefix ?? "CC",
+                nextNumber = setting.MemberIdNextNumber > 0 ? setting.MemberIdNextNumber : 1,
+                padding = setting.MemberIdPadding > 0 ? setting.MemberIdPadding : 4,
+                delimiter = setting.MemberIdDelimiter ?? "-",
+                requireConfirmedEmailToLogin = setting.RequireConfirmedEmailToLogin,
+                enableUserDeletion = setting.EnableUserDeletion,
+                previews
+            }, "User management settings retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Updates the tenant's User Manager preferences (Titles, Suffix, Member ID rules, and Policies).
+        /// </summary>
+        [HttpPut("settings")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        public async Task<IActionResult> UpdateUserSettings([FromBody] UpdateUserSettingsRequest request)
+        {
+            var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
+            if (setting == null)
+            {
+                setting = new MisConfigurationSetting { Id = Guid.NewGuid() };
+                _dbContext.MisConfigurationSettings.Add(setting);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.MemberIdFormat))
+                setting.MemberIdFormat = request.MemberIdFormat.Trim();
+
+            if (!string.IsNullOrWhiteSpace(request.MemberIdPrefix))
+                setting.MemberIdPrefix = request.MemberIdPrefix.Trim().TrimEnd('-', '/', '_', ':', '.', ' ').ToUpperInvariant();
+
+            if (request.MemberIdNextNumber.HasValue && request.MemberIdNextNumber.Value > 0)
+                setting.MemberIdNextNumber = request.MemberIdNextNumber.Value;
+
+            if (request.MemberIdPadding.HasValue && request.MemberIdPadding.Value > 0)
+                setting.MemberIdPadding = request.MemberIdPadding.Value;
+
+            if (!string.IsNullOrWhiteSpace(request.MemberIdDelimiter))
+                setting.MemberIdDelimiter = request.MemberIdDelimiter.Trim();
+
+            if (request.RequireConfirmedEmailToLogin.HasValue)
+                setting.RequireConfirmedEmailToLogin = request.RequireConfirmedEmailToLogin.Value;
+
+            if (request.EnableUserDeletion.HasValue)
+                setting.EnableUserDeletion = request.EnableUserDeletion.Value;
+
+            // Persist title and suffix preferences to durable system config
+            var durableConfig = await _dbContext.BcpRegistrationFormFields
+                .FirstOrDefaultAsync(f => f.FieldKey == "__user_settings__");
+
+            bool curEnableTitle = true;
+            string curTitles = "Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor";
+            bool curEnableSuffix = true;
+
+            if (durableConfig != null && !string.IsNullOrWhiteSpace(durableConfig.OptionsJson))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(durableConfig.OptionsJson);
+                    if (doc.RootElement.TryGetProperty("enableTitle", out var et)) curEnableTitle = et.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("preFilledTitles", out var pt)) curTitles = pt.GetString() ?? curTitles;
+                    if (doc.RootElement.TryGetProperty("enableSuffix", out var es)) curEnableSuffix = es.GetBoolean();
+                }
+                catch { }
+            }
+
+            if (request.EnableTitle.HasValue) curEnableTitle = request.EnableTitle.Value;
+            if (!string.IsNullOrWhiteSpace(request.PreFilledTitles)) curTitles = request.PreFilledTitles.Trim();
+            if (request.EnableSuffix.HasValue) curEnableSuffix = request.EnableSuffix.Value;
+
+            var optionsJson = JsonSerializer.Serialize(new
+            {
+                enableTitle = curEnableTitle,
+                preFilledTitles = curTitles,
+                enableSuffix = curEnableSuffix
+            });
+
+            if (durableConfig == null)
+            {
+                durableConfig = new BcpRegistrationFormField
+                {
+                    Id = Guid.NewGuid(),
+                    FieldKey = "__user_settings__",
+                    Label = "User Management Settings Configuration",
+                    FieldType = "system_config",
+                    IsActive = false,
+                    SortOrder = -998,
+                    OptionsJson = optionsJson,
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+                _dbContext.BcpRegistrationFormFields.Add(durableConfig);
+            }
+            else
+            {
+                durableConfig.OptionsJson = optionsJson;
+                durableConfig.UpdatedAtUtc = DateTime.UtcNow;
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            await LogActivityAsync("Configure User Settings", $"Updated user settings (EnableTitle={curEnableTitle}, EnableSuffix={curEnableSuffix}, Format='{setting.MemberIdFormat}')", null, null);
+
+            var previews = await _memberIdGenerator.GetFormatPreviewsAsync(
+                setting.MemberIdPrefix,
+                setting.MemberIdNextNumber,
+                setting.MemberIdPadding,
+                setting.MemberIdDelimiter);
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                enableTitle = curEnableTitle,
+                preFilledTitles = curTitles,
+                enableSuffix = curEnableSuffix,
+                memberIdFormat = setting.MemberIdFormat,
+                memberIdPrefix = setting.MemberIdPrefix,
+                nextNumber = setting.MemberIdNextNumber,
+                padding = setting.MemberIdPadding,
+                delimiter = setting.MemberIdDelimiter,
+                requireConfirmedEmailToLogin = setting.RequireConfirmedEmailToLogin,
+                enableUserDeletion = setting.EnableUserDeletion,
+                previews
+            }, "User management settings saved successfully."));
         }
 
         /// <summary>
@@ -1711,6 +1916,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? Title { get; set; }
+        public string? Suffix { get; set; }
         public GenderStatus? Gender { get; set; }
         public string? PhoneNumber { get; set; }
         public string? MemberId { get; set; }
@@ -1733,6 +1939,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? Title { get; set; }
+        public string? Suffix { get; set; }
         public GenderStatus? Gender { get; set; }
         public string? PhoneNumber { get; set; }
         public string? MemberId { get; set; }
@@ -1740,6 +1947,20 @@ namespace Ozikol_BCC.Api.Controllers
         public string? AvatarUrl { get; set; }
         public string? Role { get; set; }
         public Guid? BcpUserCategoryId { get; set; }
+    }
+
+    public class UpdateUserSettingsRequest
+    {
+        public bool? EnableTitle { get; set; }
+        public string? PreFilledTitles { get; set; }
+        public bool? EnableSuffix { get; set; }
+        public string? MemberIdFormat { get; set; }
+        public string? MemberIdPrefix { get; set; }
+        public int? MemberIdNextNumber { get; set; }
+        public int? MemberIdPadding { get; set; }
+        public string? MemberIdDelimiter { get; set; }
+        public bool? RequireConfirmedEmailToLogin { get; set; }
+        public bool? EnableUserDeletion { get; set; }
     }
 
     public class UpdateUserStatusRequest

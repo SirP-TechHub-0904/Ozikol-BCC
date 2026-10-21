@@ -57,10 +57,10 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <label>Assigned Role</label>
             <select [(ngModel)]="selectedRoleFilter" (change)="applyFilters()">
               <option value="All">All Roles</option>
-              <option value="SuperAdmin">SuperAdmin</option>
               <option value="Admin">Admin</option>
-              <option value="Editor">Editor</option>
-              <option value="Moderator">Moderator</option>
+              <option value="Global Editor">Global Editor</option>
+              <option value="Feature Editor">Feature Editor</option>
+              <option value="Read Only">Read Only</option>
               <option value="Member">Member</option>
             </select>
           </div>
@@ -134,19 +134,40 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <tr>
               <th (click)="sortBy('fullName')">
                 <div class="th-content">
-                  <span>Member & Contact</span>
-                  <span class="material-symbols-outlined sort-icon">unfold_more</span>
+                  <span>Member Name</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('fullName') }}</span>
                 </div>
               </th>
-              <th (click)="sortBy('memberId')">
+              <th (click)="sortBy('email')">
+                <div class="th-content">
+                  <span>Email Address</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('email') }}</span>
+                </div>
+              </th>
+              <th (click)="sortBy('memberId')" style="width: 140px;">
                 <div class="th-content">
                   <span>Member ID</span>
-                  <span class="material-symbols-outlined sort-icon">unfold_more</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('memberId') }}</span>
                 </div>
               </th>
-              <th>Category Tier</th>
-              <th>Assigned Role</th>
-              <th>Status</th>
+              <th (click)="sortBy('categoryName')">
+                <div class="th-content">
+                  <span>Category</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('categoryName') }}</span>
+                </div>
+              </th>
+              <th (click)="sortBy('roles')" style="width: 130px;">
+                <div class="th-content">
+                  <span>Role</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('roles') }}</span>
+                </div>
+              </th>
+              <th (click)="sortBy('userStatus')" style="width: 110px;">
+                <div class="th-content">
+                  <span>Status</span>
+                  <span class="material-symbols-outlined sort-icon">{{ getSortIcon('userStatus') }}</span>
+                </div>
+              </th>
               <th style="text-align:right; width:160px;">Actions</th>
             </tr>
           </thead>
@@ -161,16 +182,25 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   </div>
                   <div class="member-info">
                     <div class="member-name">{{ u.fullName || 'Unnamed Member' }}</div>
-                    <div class="member-email" style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
-                      <span>{{ u.email }}</span>
-                      <span class="material-symbols-outlined" [title]="u.emailConfirmed ? 'Email Verified' : 'Email Unverified (Pending)'" [style.color]="u.emailConfirmed ? '#16a34a' : '#f59e0b'" style="font-size: 13px;">
-                        {{ u.emailConfirmed ? 'verified' : 'mark_email_unread' }}
-                      </span>
-                      <span *ngIf="u.phoneNumber" class="material-symbols-outlined" [title]="u.phoneNumberConfirmed ? 'Phone Verified' : 'Phone Unverified'" [style.color]="u.phoneNumberConfirmed ? '#16a34a' : '#94a3b8'" style="font-size: 13px;">
-                        {{ u.phoneNumberConfirmed ? 'sms' : 'phone_missed' }}
-                      </span>
-                    </div>
                     <div class="member-designation" *ngIf="u.designation">{{ u.designation }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Email Address & Phone -->
+              <td>
+                <div class="email-cell">
+                  <div class="email-text-row">
+                    <span class="email-address">{{ u.email }}</span>
+                    <span class="material-symbols-outlined verify-icon" [title]="u.emailConfirmed ? 'Email Verified' : 'Email Unverified (Pending)'" [style.color]="u.emailConfirmed ? '#16a34a' : '#f59e0b'">
+                      {{ u.emailConfirmed ? 'verified' : 'mark_email_unread' }}
+                    </span>
+                  </div>
+                  <div class="phone-sub-row" *ngIf="u.phoneNumber">
+                    <span class="phone-text">{{ u.phoneNumber }}</span>
+                    <span class="material-symbols-outlined verify-icon" [title]="u.phoneNumberConfirmed ? 'Phone Verified' : 'Phone Unverified'" [style.color]="u.phoneNumberConfirmed ? '#16a34a' : '#94a3b8'">
+                      {{ u.phoneNumberConfirmed ? 'sms' : 'phone_missed' }}
+                    </span>
                   </div>
                 </div>
               </td>
@@ -183,7 +213,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <!-- Category Tier -->
               <td>
                 <span class="category-badge" *ngIf="u.bcpUserCategoryId && u.categoryName" [style.background]="(u.categoryColor || '#0050e5') + '15'" [style.color]="u.categoryColor || '#0050e5'" [style.border-color]="(u.categoryColor || '#0050e5') + '35'">
-                  <span class="material-symbols-outlined badge-icon">{{ u.categoryIcon || 'category' }}</span>
+                  <span class="material-symbols-outlined badge-icon">{{ u.categoryIcon || 'folder_shared' }}</span>
                   <span>{{ u.categoryName }}</span>
                 </span>
                 <span class="unassigned-badge" *ngIf="!u.bcpUserCategoryId || !u.categoryName">
@@ -193,7 +223,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <!-- Role -->
               <td>
-                <span class="role-pill" [class.role-admin]="u.roles?.includes('SuperAdmin') || u.roles?.includes('Admin')">
+                <span class="role-pill" [class.role-admin]="u.roles?.includes('Admin')">
                   {{ u.roles?.join(', ') || 'Member' }}
                 </span>
               </td>
@@ -225,7 +255,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </tr>
 
             <tr *ngIf="paginatedUsers.length === 0">
-              <td colspan="6" class="empty-table-cell">
+              <td colspan="7" class="empty-table-cell">
                 <span class="material-symbols-outlined empty-icon">person_search</span>
                 <p>No members found matching your search or filters.</p>
                 <button type="button" class="btn btn-outline btn-sm" (click)="resetFilters()">Clear Filters</button>
@@ -329,8 +359,16 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .avatar-img { width: 100%; height: 100%; object-fit: cover; }
     .member-info { display: flex; flex-direction: column; }
     .member-name { font-weight: 700; color: #0f172a; }
-    .member-email { font-size: 12px; color: #64748b; }
     .member-designation { font-size: 11px; color: #0050e5; font-weight: 600; margin-top: 1px; }
+
+    /* Email Cell */
+    .email-cell { display: flex; flex-direction: column; gap: 2px; }
+    .email-text-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .email-address { font-size: 12.5px; color: #334155; font-weight: 500; }
+    .verify-icon { font-size: 14px; }
+    .phone-sub-row { display: flex; align-items: center; gap: 4px; }
+    .phone-text { font-size: 11px; color: #64748b; font-family: monospace; }
+
     .member-id-pill { font-family: monospace; font-size: 12px; background: #f1f5f9; padding: 2px 8px; border-radius: 4px; color: #475569; font-weight: 600; }
 
     .category-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; border: 1px solid transparent; }
@@ -439,7 +477,8 @@ export class UsersListComponent implements OnInit {
     this.api.get<any>('UsersApi').subscribe({
       next: (res) => {
         this.isLoading = false;
-        this.users = res.data || [];
+        // Strictly filter out any root SuperAdmin user account from appearing in user list
+        this.users = (res.data || []).filter((u: any) => !u.roles?.includes('SuperAdmin'));
         this.applyFilters();
       },
       error: (err) => {
@@ -489,13 +528,20 @@ export class UsersListComponent implements OnInit {
       list = list.filter(u => u.userStatus === this.selectedStatusFilter);
     }
 
-    // Sort
+    // Comprehensive Column Sorting
     list.sort((a, b) => {
-      let valA = a[this.sortColumn] || '';
-      let valB = b[this.sortColumn] || '';
-      if (typeof valA === 'string') valA = valA.toLowerCase();
-      if (typeof valB === 'string') valB = valB.toLowerCase();
-      return this.sortAsc ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+      let valA: any = a[this.sortColumn];
+      let valB: any = b[this.sortColumn];
+
+      if (this.sortColumn === 'roles') {
+        valA = Array.isArray(a.roles) ? a.roles.join(', ') : (a.roles || '');
+        valB = Array.isArray(b.roles) ? b.roles.join(', ') : (b.roles || '');
+      }
+
+      valA = (valA ?? '').toString().toLowerCase();
+      valB = (valB ?? '').toString().toLowerCase();
+
+      return this.sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
     });
 
     this.filteredUsers = list;
@@ -511,6 +557,11 @@ export class UsersListComponent implements OnInit {
       this.sortAsc = true;
     }
     this.applyFilters();
+  }
+
+  getSortIcon(col: string): string {
+    if (this.sortColumn !== col) return 'unfold_more';
+    return this.sortAsc ? 'arrow_upward' : 'arrow_downward';
   }
 
   resetFilters(): void {

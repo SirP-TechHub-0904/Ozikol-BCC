@@ -41,32 +41,284 @@ namespace Ozikol_BCC.Api.Controllers
             _hubContext = hubContext;
         }
 
-        [HttpGet("roles")]
-        public async Task<IActionResult> GetRoles()
+        /// <summary>
+        /// Ensures all 6 standard platform roles exist in the tenant Identity role store.
+        /// </summary>
+        private async Task EnsureSeededRolesAsync()
         {
-            var isSuperAdmin = User.IsInRole("SuperAdmin");
+            var systemRoles = new (string Name, RoleCategory Category)[]
+            {
+                ("SuperAdmin", RoleCategory.BCP),
+                ("Admin", RoleCategory.Both),
+                ("Global Editor", RoleCategory.BCP),
+                ("Feature Editor", RoleCategory.BCP),
+                ("Read Only", RoleCategory.BCP),
+                ("Member", RoleCategory.BCP)
+            };
+
+            foreach (var (name, cat) in systemRoles)
+            {
+                if (!await _roleManager.RoleExistsAsync(name))
+                {
+                    await _roleManager.CreateAsync(new AppRole(name) { RoleCategory = cat });
+                }
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the list of assignable system roles, strictly excluding SuperAdmin.
+        /// </summary>
+        [HttpGet("roles")]
+        public async Task<IActionResult> GetRoles([FromQuery] bool includeSuperAdmin = false)
+        {
+            await EnsureSeededRolesAsync();
+
             var rolesQuery = _roleManager.Roles.AsQueryable();
-            if (!isSuperAdmin)
+            // SuperAdmin can never be selected or assigned from general role dropdowns
+            if (!includeSuperAdmin || !User.IsInRole("SuperAdmin"))
             {
                 rolesQuery = rolesQuery.Where(r => r.Name != "SuperAdmin");
             }
 
-            var roles = await rolesQuery.Select(r => new
-            {
-                r.Id,
-                r.Name,
-                r.NormalizedName
-            }).ToListAsync();
-
-            if (roles.Count == 0)
-            {
-                var defaultRoles = isSuperAdmin 
-                    ? new[] { "SuperAdmin", "Admin", "Member", "Moderator", "Editor" }
-                    : new[] { "Admin", "Member", "Moderator", "Editor" };
-                return Ok(ApiResponse<object>.SuccessResponse(defaultRoles.Select(r => new { Id = r, Name = r, NormalizedName = r.ToUpperInvariant() }), "Default roles retrieved."));
-            }
+            var roles = await rolesQuery
+                .OrderBy(r => r.Name == "Admin" ? 1 : r.Name == "Global Editor" ? 2 : r.Name == "Feature Editor" ? 3 : r.Name == "Read Only" ? 4 : 5)
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Name,
+                    r.NormalizedName
+                }).ToListAsync();
 
             return Ok(ApiResponse<object>.SuccessResponse(roles, "Roles retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves the fixed 6-tier system role catalog with assigned members and scope specifications.
+        /// Pre-populates all standard roles so the console view is never blank.
+        /// </summary>
+        [HttpGet("roles/catalog")]
+        public async Task<IActionResult> GetRolesCatalog()
+        {
+            await EnsureSeededRolesAsync();
+
+            // Fetch all user roles mapped with profile info
+            var allUserRoles = await _dbContext.UserRoles
+                .Join(_dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
+                .ToListAsync();
+
+            var userIds = allUserRoles.Select(ur => ur.UserId).Distinct().ToList();
+            var profiles = await _dbContext.Users
+                .Where(u => userIds.Contains(u.Id))
+                .Select(u => new
+                {
+                    u.Id,
+                    FullName = (u.FirstName + " " + u.LastName).Trim(),
+                    u.Email,
+                    u.MemberId,
+                    u.AvatarUrl
+                })
+                .ToDictionaryAsync(u => u.Id);
+
+            var featureRoles = await _dbContext.BcpUserFeatureRoles
+                .AsNoTracking()
+                .Where(f => f.IsActive)
+                .ToListAsync();
+
+            var featureRolesByUser = featureRoles
+                .GroupBy(f => f.ProfileId)
+                .ToDictionary(g => g.Key, g => g.Select(f => f.FeatureAreaKey).Distinct().ToList());
+
+            // Build catalog for the 6 fixed system roles
+            var catalogDefinitions = new[]
+            {
+                new
+                {
+                    Name = "SuperAdmin",
+                    Description = "Root workspace administrator with full sovereignty across master catalog and tenant systems. Locked to root account.",
+                    Scope = "Root System Access (Non-assignable)",
+                    CanAssign = false,
+                    Badge = "badge-root",
+                    Icon = "shield_with_house"
+                },
+                new
+                {
+                    Name = "Admin",
+                    Description = "Global workspace administrator with unrestricted operational authority across identity, content, configuration, and data.",
+                    Scope = "Global Administrator (Unrestricted)",
+                    CanAssign = true,
+                    Badge = "badge-admin",
+                    Icon = "admin_panel_settings"
+                },
+                new
+                {
+                    Name = "Global Editor",
+                    Description = "Global editor with permissions to modify content, records, and operations across all active workspace features.",
+                    Scope = "Global Scope (All Active Features)",
+                    CanAssign = true,
+                    Badge = "badge-editor",
+                    Icon = "edit_square"
+                },
+                new
+                {
+                    Name = "Feature Editor",
+                    Description = "Modular feature editor with modification privileges scoped specifically to assigned feature modules (e.g. User Management).",
+                    Scope = "Scoped Feature Scope (e.g. UserManager)",
+                    CanAssign = true,
+                    Badge = "badge-feature",
+                    Icon = "rule_settings"
+                },
+                new
+                {
+                    Name = "Read Only",
+                    Description = "Read-only auditor with comprehensive viewing permissions across modules, but zero modification or deletion capabilities.",
+                    Scope = "Read-Only (All Features)",
+                    CanAssign = true,
+                    Badge = "badge-readonly",
+                    Icon = "visibility"
+                },
+                new
+                {
+                    Name = "Member",
+                    Description = "Standard tenant member account with directory listing and personal workspace self-service capabilities.",
+                    Scope = "Standard Member Access",
+                    CanAssign = true,
+                    Badge = "badge-member",
+                    Icon = "person"
+                }
+            };
+
+            var catalog = catalogDefinitions.Select(def =>
+            {
+                var assignedUsers = allUserRoles
+                    .Where(ur => string.Equals(ur.RoleName, def.Name, StringComparison.OrdinalIgnoreCase))
+                    .Select(ur =>
+                    {
+                        profiles.TryGetValue(ur.UserId, out var p);
+                        featureRolesByUser.TryGetValue(ur.UserId, out var fList);
+                        return new
+                        {
+                            userId = ur.UserId,
+                            fullName = !string.IsNullOrWhiteSpace(p?.FullName) ? p.FullName : "Member",
+                            email = p?.Email ?? "",
+                            memberId = p?.MemberId ?? "",
+                            avatarUrl = p?.AvatarUrl,
+                            features = fList ?? new List<string> { "UserManager" }
+                        };
+                    })
+                    .ToList();
+
+                return new
+                {
+                    name = def.Name,
+                    description = def.Description,
+                    scope = def.Scope,
+                    canAssign = def.CanAssign,
+                    badge = def.Badge,
+                    icon = def.Icon,
+                    memberCount = assignedUsers.Count,
+                    members = assignedUsers
+                };
+            }).ToList();
+
+            return Ok(ApiResponse<object>.SuccessResponse(catalog, "Role catalog retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Assigns a member to an authorized system role. SuperAdmin cannot be assigned to any member.
+        /// </summary>
+        [HttpPost("roles/assign")]
+        public async Task<IActionResult> AssignRole([FromBody] RoleAssignmentRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.RoleName) || string.IsNullOrWhiteSpace(request.UserId))
+                return BadRequest(ApiResponse<object>.FailureResponse("RoleName and UserId are required."));
+
+            if (string.Equals(request.RoleName, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role cannot be assigned to any member account. It is strictly reserved for the root workspace account."));
+            }
+
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+                return NotFound(ApiResponse<object>.FailureResponse("User not found."));
+
+            await EnsureSeededRolesAsync();
+
+            if (!await _roleManager.RoleExistsAsync(request.RoleName))
+                return BadRequest(ApiResponse<object>.FailureResponse($"Role '{request.RoleName}' does not exist."));
+
+            if (!await _userManager.IsInRoleAsync(user, request.RoleName))
+            {
+                var addRes = await _userManager.AddToRoleAsync(user, request.RoleName);
+                if (!addRes.Succeeded)
+                    return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", addRes.Errors.Select(e => e.Description))));
+            }
+
+            // If Feature Editor, assign feature scope (default UserManager)
+            if (string.Equals(request.RoleName, "Feature Editor", StringComparison.OrdinalIgnoreCase))
+            {
+                var featureKey = !string.IsNullOrWhiteSpace(request.FeatureArea) ? request.FeatureArea.Trim() : "UserManager";
+                var existingFeature = await _dbContext.BcpUserFeatureRoles
+                    .FirstOrDefaultAsync(f => f.ProfileId == user.Id && f.FeatureAreaKey == featureKey);
+
+                if (existingFeature == null)
+                {
+                    _dbContext.BcpUserFeatureRoles.Add(new BcpUserFeatureRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        ProfileId = user.Id,
+                        FeatureAreaKey = featureKey,
+                        ActionRole = BcpActionRole.FeatureEditor,
+                        IsActive = true,
+                        AssignedBy = User.FindFirstValue(ClaimTypes.NameIdentifier),
+                        Date = DateTime.UtcNow
+                    });
+                }
+                else
+                {
+                    existingFeature.ActionRole = BcpActionRole.FeatureEditor;
+                    existingFeature.IsActive = true;
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"User '{user.Email}' assigned to role '{request.RoleName}' successfully."));
+        }
+
+        /// <summary>
+        /// Unassigns a member from a system role. SuperAdmin cannot be unassigned.
+        /// </summary>
+        [HttpPost("roles/unassign")]
+        public async Task<IActionResult> UnassignRole([FromBody] RoleUnassignmentRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.RoleName) || string.IsNullOrWhiteSpace(request.UserId))
+                return BadRequest(ApiResponse<object>.FailureResponse("RoleName and UserId are required."));
+
+            if (string.Equals(request.RoleName, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role cannot be modified."));
+            }
+
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+                return NotFound(ApiResponse<object>.FailureResponse("User not found."));
+
+            if (await _userManager.IsInRoleAsync(user, request.RoleName))
+            {
+                await _userManager.RemoveFromRoleAsync(user, request.RoleName);
+            }
+
+            // Clear feature role if feature editor
+            if (string.Equals(request.RoleName, "Feature Editor", StringComparison.OrdinalIgnoreCase))
+            {
+                var fRoles = await _dbContext.BcpUserFeatureRoles.Where(f => f.ProfileId == user.Id).ToListAsync();
+                if (fRoles.Any())
+                {
+                    _dbContext.BcpUserFeatureRoles.RemoveRange(fRoles);
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"User '{user.Email}' unassigned from role '{request.RoleName}' successfully."));
         }
 
         [HttpGet("permissions")]
@@ -660,5 +912,18 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string FeatureName { get; set; } = string.Empty;
         public string Scope { get; set; } = "None"; // None, ReadOnly, FeatureEdit, GlobalEdit
+    }
+
+    public class RoleAssignmentRequest
+    {
+        public string RoleName { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
+        public string? FeatureArea { get; set; } = "UserManager";
+    }
+
+    public class RoleUnassignmentRequest
+    {
+        public string RoleName { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
     }
 }

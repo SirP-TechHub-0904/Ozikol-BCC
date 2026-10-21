@@ -36,27 +36,25 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </div>
 
             <div class="card-body">
-              <div class="form-grid-3">
-                <div class="form-group">
-                  <label>Title / Salutation</label>
+              <div class="name-row-flex">
+                <div class="form-group title-col" *ngIf="userSettings.enableTitle">
+                  <label>Title</label>
                   <select [(ngModel)]="model.title" name="title">
                     <option value="">None</option>
-                    <option value="Mr.">Mr.</option>
-                    <option value="Mrs.">Mrs.</option>
-                    <option value="Ms.">Ms.</option>
-                    <option value="Dr.">Dr.</option>
-                    <option value="Prof.">Prof.</option>
-                    <option value="Engr.">Engr.</option>
-                    <option value="Chief">Chief</option>
+                    <option *ngFor="let t of titleOptions" [value]="t">{{ t }}</option>
                   </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group first-name-col">
                   <label>First Name *</label>
-                  <input type="text" [(ngModel)]="model.firstName" name="firstName" required />
+                  <input type="text" [(ngModel)]="model.firstName" name="firstName" placeholder="e.g. First Name" required />
                 </div>
-                <div class="form-group">
+                <div class="form-group last-name-col">
                   <label>Last Name *</label>
-                  <input type="text" [(ngModel)]="model.lastName" name="lastName" required />
+                  <input type="text" [(ngModel)]="model.lastName" name="lastName" placeholder="e.g. Last Name" required />
+                </div>
+                <div class="form-group suffix-col" *ngIf="userSettings.enableSuffix">
+                  <label>Suffix</label>
+                  <input type="text" [(ngModel)]="model.suffix" name="suffix" placeholder="e.g. mni, PhD, Esq" />
                 </div>
               </div>
 
@@ -77,7 +75,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <div class="form-group">
                 <label>Phone Number</label>
-                <input type="text" [(ngModel)]="model.phoneNumber" name="phoneNumber" placeholder="e.g. +1 555-0199" />
+                <input type="text" [(ngModel)]="model.phoneNumber" name="phoneNumber" placeholder="e.g. +0 (000) 000-0000" />
               </div>
             </div>
           </div>
@@ -111,9 +109,9 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <select [(ngModel)]="model.role" name="role">
                     <option value="Member">Member</option>
                     <option value="Admin">Admin</option>
-                    <option value="Editor">Editor</option>
-                    <option value="Moderator">Moderator</option>
-                    <option value="SuperAdmin">SuperAdmin</option>
+                    <option value="Global Editor">Global Editor</option>
+                    <option value="Feature Editor">Feature Editor</option>
+                    <option value="Read Only">Read Only</option>
                   </select>
                 </div>
               </div>
@@ -160,6 +158,14 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .card-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 
     .form-grid-3 { display: grid; grid-template-columns: 140px 1fr 1fr; gap: 12px; }
+    .name-row-flex { display: flex; gap: 12px; flex-wrap: wrap; }
+    .name-row-flex .title-col { flex: 0 0 110px; }
+    .name-row-flex .first-name-col { flex: 1 1 160px; }
+    .name-row-flex .last-name-col { flex: 1 1 160px; }
+    .name-row-flex .suffix-col { flex: 0 0 130px; }
+    @media (max-width: 600px) {
+      .name-row-flex .title-col, .name-row-flex .first-name-col, .name-row-flex .last-name-col, .name-row-flex .suffix-col { flex: 1 1 100%; }
+    }
     .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 600px) { .form-grid-3, .form-grid-2 { grid-template-columns: 1fr; } }
 
@@ -190,10 +196,18 @@ export class UserEditComponent implements OnInit {
   isSaving = false;
   categories: any[] = [];
 
+  userSettings: any = {
+    enableTitle: true,
+    preFilledTitles: 'Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor',
+    enableSuffix: false
+  };
+  titleOptions: string[] = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Engr.', 'Chief', 'Rev.', 'Pastor'];
+
   model: any = {
     firstName: '',
     lastName: '',
     title: '',
+    suffix: '',
     gender: 0,
     email: '',
     phoneNumber: '',
@@ -234,8 +248,29 @@ export class UserEditComponent implements OnInit {
       }
     ];
 
+    this.loadUserSettings();
     this.loadCategories();
     this.loadUserData();
+  }
+
+  loadUserSettings(): void {
+    this.api.get<any>('UsersApi/settings').subscribe({
+      next: (res) => {
+        if (res.data) {
+          this.userSettings.enableTitle = res.data.enableTitle ?? true;
+          this.userSettings.enableSuffix = res.data.enableSuffix ?? false;
+          if (res.data.preFilledTitles) {
+            const raw = res.data.preFilledTitles;
+            if (Array.isArray(raw)) {
+              this.titleOptions = raw;
+            } else if (typeof raw === 'string') {
+              this.titleOptions = raw.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+            }
+          }
+        }
+      },
+      error: () => {}
+    });
   }
 
   loadCategories(): void {
@@ -258,6 +293,7 @@ export class UserEditComponent implements OnInit {
             firstName: u.firstName,
             lastName: u.lastName,
             title: u.title,
+            suffix: u.suffix || '',
             fullName: u.fullName,
             gender: u.gender === 'Female' || u.gender === 1 ? 1 : 0,
             email: u.email,

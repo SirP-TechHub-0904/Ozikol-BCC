@@ -226,8 +226,18 @@ interface WizardStep {
                     <span class="divider-title">Account Credentials</span>
                   </div>
 
-                  <div class="form-grid-2">
-                    <div class="form-group">
+                  <div class="name-row-flex">
+                    <div class="form-group title-col" *ngIf="userSettings.enableTitle">
+                      <label for="s_title" class="form-label">Title</label>
+                      <div class="input-wrapper">
+                        <select id="s_title" [(ngModel)]="model.title" name="s_title" class="form-input">
+                          <option value="">None</option>
+                          <option *ngFor="let t of titleOptions" [value]="t">{{ t }}</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group first-name-col">
                       <label for="s_firstName" class="form-label">First Name <span class="req-star">*</span></label>
                       <div class="input-wrapper">
                         <span class="material-symbols-outlined input-icon">person</span>
@@ -243,7 +253,7 @@ interface WizardStep {
                       </div>
                     </div>
 
-                    <div class="form-group">
+                    <div class="form-group last-name-col">
                       <label for="s_lastName" class="form-label">Last Name <span class="req-star">*</span></label>
                       <div class="input-wrapper">
                         <span class="material-symbols-outlined input-icon">person</span>
@@ -255,6 +265,20 @@ interface WizardStep {
                           placeholder="e.g. Last Name"
                           class="form-input"
                           required
+                        />
+                      </div>
+                    </div>
+
+                    <div class="form-group suffix-col" *ngIf="userSettings.enableSuffix">
+                      <label for="s_suffix" class="form-label">Suffix</label>
+                      <div class="input-wrapper">
+                        <input
+                          id="s_suffix"
+                          type="text"
+                          [(ngModel)]="model.suffix"
+                          name="suffix"
+                          placeholder="e.g. mni, PhD"
+                          class="form-input"
                         />
                       </div>
                     </div>
@@ -615,19 +639,34 @@ interface WizardStep {
                     </div>
                   </div>
                   <div class="section-card-body">
-                    <div class="form-grid-2">
-                      <div class="form-group">
+                    <div class="name-row-flex">
+                      <div class="form-group title-col" *ngIf="userSettings.enableTitle">
+                        <label class="form-label">Title</label>
+                        <div class="input-wrapper">
+                          <select [(ngModel)]="model.title" name="sec_title" class="form-input">
+                            <option value="">None</option>
+                            <option *ngFor="let t of titleOptions" [value]="t">{{ t }}</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="form-group first-name-col">
                         <label class="form-label">First Name <span class="req-star">*</span></label>
                         <div class="input-wrapper">
                           <span class="material-symbols-outlined input-icon">person</span>
                           <input type="text" [(ngModel)]="model.firstName" name="sec_firstName" placeholder="e.g. First Name" class="form-input" required />
                         </div>
                       </div>
-                      <div class="form-group">
+                      <div class="form-group last-name-col">
                         <label class="form-label">Last Name <span class="req-star">*</span></label>
                         <div class="input-wrapper">
                           <span class="material-symbols-outlined input-icon">person</span>
                           <input type="text" [(ngModel)]="model.lastName" name="sec_lastName" placeholder="e.g. Last Name" class="form-input" required />
+                        </div>
+                      </div>
+                      <div class="form-group suffix-col" *ngIf="userSettings.enableSuffix">
+                        <label class="form-label">Suffix</label>
+                        <div class="input-wrapper">
+                          <input type="text" [(ngModel)]="model.suffix" name="sec_suffix" placeholder="e.g. mni, PhD" class="form-input" />
                         </div>
                       </div>
                     </div>
@@ -794,14 +833,25 @@ interface WizardStep {
                   <!-- Stage 1: Account -->
                   <div *ngIf="currentStep === 1" class="stage-section fade-in">
                     <div class="section-divider"><span>Account Credentials</span></div>
-                    <div class="form-grid-2">
-                      <div class="form-group">
+                    <div class="name-row-flex">
+                      <div class="form-group title-col" *ngIf="userSettings.enableTitle">
+                        <label class="form-label">Title</label>
+                        <select [(ngModel)]="model.title" name="st_title" class="form-input">
+                          <option value="">None</option>
+                          <option *ngFor="let t of titleOptions" [value]="t">{{ t }}</option>
+                        </select>
+                      </div>
+                      <div class="form-group first-name-col">
                         <label class="form-label">First Name <span class="req-star">*</span></label>
                         <input type="text" [(ngModel)]="model.firstName" name="st_fn" placeholder="e.g. First Name" class="form-input" required />
                       </div>
-                      <div class="form-group">
+                      <div class="form-group last-name-col">
                         <label class="form-label">Last Name <span class="req-star">*</span></label>
                         <input type="text" [(ngModel)]="model.lastName" name="st_ln" placeholder="e.g. Last Name" class="form-input" required />
+                      </div>
+                      <div class="form-group suffix-col" *ngIf="userSettings.enableSuffix">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" [(ngModel)]="model.suffix" name="st_sfx" placeholder="e.g. mni, PhD" class="form-input" />
                       </div>
                     </div>
                     <div class="form-group">
@@ -1015,14 +1065,25 @@ interface WizardStep {
                 <form class="register-form" novalidate>
                   <!-- Page 1: Credentials -->
                   <div *ngIf="currentStep === 1" class="page-content fade-in">
-                    <div class="form-grid-2">
-                      <div class="form-group">
+                    <div class="name-row-flex">
+                      <div class="form-group title-col" *ngIf="userSettings.enableTitle">
+                        <label class="form-label">Title</label>
+                        <select [(ngModel)]="model.title" name="pg_title" class="form-input">
+                          <option value="">None</option>
+                          <option *ngFor="let t of titleOptions" [value]="t">{{ t }}</option>
+                        </select>
+                      </div>
+                      <div class="form-group first-name-col">
                         <label class="form-label">First Name <span class="req-star">*</span></label>
                         <input type="text" [(ngModel)]="model.firstName" name="pg_fn" placeholder="e.g. First Name" class="form-input" required />
                       </div>
-                      <div class="form-group">
+                      <div class="form-group last-name-col">
                         <label class="form-label">Last Name <span class="req-star">*</span></label>
                         <input type="text" [(ngModel)]="model.lastName" name="pg_ln" placeholder="e.g. Last Name" class="form-input" required />
+                      </div>
+                      <div class="form-group suffix-col" *ngIf="userSettings.enableSuffix">
+                        <label class="form-label">Suffix</label>
+                        <input type="text" [(ngModel)]="model.suffix" name="pg_sfx" placeholder="e.g. mni, PhD" class="form-input" />
                       </div>
                     </div>
                     <div class="form-group">
@@ -2253,6 +2314,14 @@ interface WizardStep {
       .category-cards-grid {
         grid-template-columns: 1fr;
       }
+      .name-row-flex { display: flex; gap: 12px; flex-wrap: wrap; }
+      .name-row-flex .title-col { flex: 0 0 110px; }
+      .name-row-flex .first-name-col { flex: 1 1 150px; }
+      .name-row-flex .last-name-col { flex: 1 1 150px; }
+      .name-row-flex .suffix-col { flex: 0 0 130px; }
+      @media (max-width: 600px) {
+        .name-row-flex .title-col, .name-row-flex .first-name-col, .name-row-flex .last-name-col, .name-row-flex .suffix-col { flex: 1 1 100%; }
+      }
       .topbar-inner {
         padding: 12px 16px;
       }
@@ -2266,8 +2335,10 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
    * Primary registration account payload sent to auth/register.
    */
   model: any = {
+    title: '',
     firstName: '',
     lastName: '',
+    suffix: '',
     email: '',
     phoneNumber: '',
     organizationType: '',
@@ -2277,6 +2348,13 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     referralCode: '',
     recaptchaToken: ''
   };
+
+  userSettings: any = {
+    enableTitle: true,
+    preFilledTitles: 'Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor',
+    enableSuffix: false
+  };
+  titleOptions: string[] = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Engr.', 'Chief', 'Rev.', 'Pastor'];
 
   /**
    * Industry / Organization Sectors matching canonical catalog.
@@ -2373,10 +2451,31 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     if (typeof document !== 'undefined') {
       document.body.classList.add('public-website-mode');
     }
+    this.loadUserSettings();
     this.loadRegistrationSchema();
     this.loadBrandSettings();
     this.loadSiteCodeInjections();
     this.tryRestoreDraft();
+  }
+
+  loadUserSettings(): void {
+    this.api.get<any>('UsersApi/settings').subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.userSettings.enableTitle = res.data.enableTitle ?? true;
+          this.userSettings.enableSuffix = res.data.enableSuffix ?? false;
+          if (res.data.preFilledTitles) {
+            const raw = res.data.preFilledTitles;
+            if (Array.isArray(raw)) {
+              this.titleOptions = raw;
+            } else if (typeof raw === 'string') {
+              this.titleOptions = raw.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+            }
+          }
+        }
+      },
+      error: () => {}
+    });
   }
 
   ngOnDestroy(): void {
@@ -3195,6 +3294,13 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loading = true;
     this.errorMessage = '';
 
+    if (this.model.suffix) {
+      this.customAttributes['suffix'] = this.model.suffix.trim();
+    }
+    if (this.model.title) {
+      this.customAttributes['title'] = this.model.title.trim();
+    }
+
     const payload = {
       ...this.model,
       customAttributes: this.customAttributes
@@ -3204,7 +3310,9 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (res) => {
         this.loading = false;
         this.registrationSuccess = true;
-        this.registeredName = `${this.model.firstName} ${this.model.lastName}`.trim();
+        const nameSuffix = this.model.suffix ? `, ${this.model.suffix.trim()}` : '';
+        const nameTitle = this.model.title ? `${this.model.title.trim()} ` : '';
+        this.registeredName = `${nameTitle}${this.model.firstName} ${this.model.lastName}${nameSuffix}`.trim();
         this.registeredEmail = this.model.email;
 
         // Clear draft & session storage on successful registration
