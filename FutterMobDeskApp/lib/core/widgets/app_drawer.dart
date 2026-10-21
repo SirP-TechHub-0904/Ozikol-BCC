@@ -1,6 +1,78 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
+/// Standardized badge pills matching the Ozikol Central / Web Admin design system.
+class AppDrawerBadge extends StatelessWidget {
+  /// Badge label (e.g. "SOON", "LIVE", "NEW", "HOT").
+  final String label;
+
+  /// Background fill color.
+  final Color backgroundColor;
+
+  /// Text color.
+  final Color textColor;
+
+  const AppDrawerBadge({
+    super.key,
+    required this.label,
+    required this.backgroundColor,
+    this.textColor = Colors.white,
+  });
+
+  /// Grey pill for upcoming / planned modules (matches .badge-soon).
+  factory AppDrawerBadge.soon([String label = 'SOON']) {
+    return AppDrawerBadge(
+      label: label,
+      backgroundColor: const Color(0xFF64748B),
+    );
+  }
+
+  /// Red/Orange pill for active real-time features (matches .badge-hot).
+  factory AppDrawerBadge.live([String label = 'LIVE']) {
+    return AppDrawerBadge(
+      label: label,
+      backgroundColor: const Color(0xFFF06548),
+    );
+  }
+
+  /// Teal/Green pill for newly released capabilities (matches .badge-new).
+  factory AppDrawerBadge.newItem([String label = 'NEW']) {
+    return AppDrawerBadge(
+      label: label,
+      backgroundColor: const Color(0xFF0AB39C),
+    );
+  }
+
+  /// Orange pill for hot features (matches .badge-hot).
+  factory AppDrawerBadge.hot([String label = 'HOT']) {
+    return AppDrawerBadge(
+      label: label,
+      backgroundColor: const Color(0xFFF06548),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 2),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+          letterSpacing: 0.4,
+          height: 1.1,
+        ),
+      ),
+    );
+  }
+}
+
 /// Single sub-item within an expandable [AppDrawerItem].
 class AppDrawerSubItem {
   /// Display title of the sub-item (e.g. "Dashboard Overview", "All Members", "Settings").
@@ -15,6 +87,9 @@ class AppDrawerSubItem {
   /// Whether this sub-item is currently selected.
   final bool isSelected;
 
+  /// Whether this item is enabled or an upcoming disabled module.
+  final bool isEnabled;
+
   /// Optional trailing badge or widget.
   final Widget? trailing;
 
@@ -24,6 +99,7 @@ class AppDrawerSubItem {
     this.icon,
     required this.onTap,
     this.isSelected = false,
+    this.isEnabled = true,
     this.trailing,
   });
 }
@@ -46,6 +122,9 @@ class AppDrawerItem {
   /// Whether this item is currently selected/active.
   final bool isSelected;
 
+  /// Whether this item is enabled or an upcoming disabled module.
+  final bool isEnabled;
+
   /// Optional sub-items revealing a three-tier accordion structure.
   final List<AppDrawerSubItem>? subItems;
 
@@ -59,6 +138,7 @@ class AppDrawerItem {
     this.onTap,
     this.trailing,
     this.isSelected = false,
+    this.isEnabled = true,
     this.subItems,
     this.initiallyExpanded = false,
   });
@@ -424,7 +504,7 @@ class _DrawerItemTileState extends State<_DrawerItemTile> {
           color: (item.isSelected && !hasSub) ? activeBg : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
           child: InkWell(
-            onTap: hasSub ? _toggleExpanded : item.onTap,
+            onTap: hasSub ? _toggleExpanded : (item.isEnabled ? item.onTap : null),
             borderRadius: BorderRadius.circular(10),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8.5),
@@ -433,7 +513,11 @@ class _DrawerItemTileState extends State<_DrawerItemTile> {
                   Icon(
                     item.icon,
                     size: 19,
-                    color: isAnySelected ? activeFg : (isDark ? AppColors.gray400 : AppColors.gray600),
+                    color: isAnySelected
+                        ? activeFg
+                        : (!item.isEnabled
+                            ? (isDark ? AppColors.gray500 : const Color(0xFF94A3B8))
+                            : (isDark ? AppColors.gray400 : AppColors.gray600)),
                   ),
                   const SizedBox(width: 11),
                   Expanded(
@@ -444,7 +528,11 @@ class _DrawerItemTileState extends State<_DrawerItemTile> {
                       style: TextStyle(
                         fontSize: 12.8,
                         fontWeight: isAnySelected ? FontWeight.w700 : FontWeight.w500,
-                        color: (item.isSelected && !hasSub) ? activeFg : defaultFg,
+                        color: (item.isSelected && !hasSub)
+                            ? activeFg
+                            : (!item.isEnabled
+                                ? (isDark ? AppColors.gray500 : const Color(0xFF94A3B8))
+                                : defaultFg),
                       ),
                     ),
                   ),
@@ -493,7 +581,7 @@ class _DrawerItemTileState extends State<_DrawerItemTile> {
                       color: isSubActive ? activeBg : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       child: InkWell(
-                        onTap: sub.onTap,
+                        onTap: sub.isEnabled ? sub.onTap : null,
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6.5),
@@ -502,7 +590,11 @@ class _DrawerItemTileState extends State<_DrawerItemTile> {
                               Icon(
                                 sub.icon ?? Icons.arrow_right_rounded,
                                 size: sub.icon != null ? 14 : 16,
-                                color: isSubActive ? activeFg : (isDark ? AppColors.gray400 : AppColors.gray500),
+                                color: isSubActive
+                                    ? activeFg
+                                    : (!sub.isEnabled
+                                        ? (isDark ? AppColors.gray500 : const Color(0xFF94A3B8))
+                                        : (isDark ? AppColors.gray400 : AppColors.gray500)),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
@@ -513,7 +605,11 @@ class _DrawerItemTileState extends State<_DrawerItemTile> {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: isSubActive ? FontWeight.w700 : FontWeight.w500,
-                                    color: isSubActive ? activeFg : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
+                                    color: isSubActive
+                                        ? activeFg
+                                        : (!sub.isEnabled
+                                            ? (isDark ? AppColors.gray500 : const Color(0xFF94A3B8))
+                                            : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569))),
                                   ),
                                 ),
                               ),
