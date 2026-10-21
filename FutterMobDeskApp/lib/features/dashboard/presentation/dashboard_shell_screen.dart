@@ -16,6 +16,7 @@ import '../../../core/widgets/tenant_avatar.dart';
 import '../../../core/widgets/tenant_cached_image.dart';
 import '../../../core/widgets/update_banner.dart';
 import '../../../core/models/workspace.dart';
+import '../../../core/models/suite_info_catalog.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../workspace_auth/presentation/workspace_entry_screen.dart';
 import '../../workspace_auth/presentation/workspace_login_screen.dart';
@@ -2025,32 +2026,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               borderRadius: 8,
             ),
           ),
-          if (activeWs?.canAccessAdminConsole ?? false)
-            IconButton(
-              iconSize: 18,
-              tooltip: activeWs?.activeConsoleMode == 'administration'
-                  ? 'Switch to Users Workspace'
-                  : 'Switch to Administration Console',
-              icon: Icon(
-                activeWs?.activeConsoleMode == 'administration'
-                    ? Icons.admin_panel_settings_rounded
-                    : Icons.person_rounded,
-                color: AppColors.primary,
-              ),
-              onPressed: () {
-                final next = activeWs?.activeConsoleMode == 'administration'
-                    ? 'workspace'
-                    : 'administration';
-                ref.read(workspaceStateProvider.notifier).switchConsoleMode(next);
-              },
-            ),
+
         ],
       );
     }
 
     final hasLogo = activeWs?.logoUrl != null && (activeWs!.logoUrl as String).trim().isNotEmpty;
-    final canAccessAdmin = activeWs?.canAccessAdminConsole ?? false;
-    final isAdministration = activeWs?.activeConsoleMode != 'workspace';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -2149,111 +2130,6 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                   ),
                 ),
               ],
-            ),
-          ),
-
-        // Mode Switcher Widget (Strictly shown on Desktop for Admin / Privileged Roles; omitted on Mobile)
-        if (!isMobile && canAccessAdmin)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 2, 10, 8),
-            child: Container(
-              height: 32,
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.backgroundDark : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Administration Tab
-                  Expanded(
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(6),
-                      onTap: () {
-                        if (activeWs?.activeConsoleMode != 'administration') {
-                          ref.read(workspaceStateProvider.notifier).switchConsoleMode('administration');
-                        }
-                      },
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isAdministration ? AppColors.primary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.admin_panel_settings_rounded,
-                              size: 13,
-                              color: isAdministration
-                                  ? Colors.white
-                                  : (isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Admin',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: isAdministration
-                                    ? Colors.white
-                                    : (isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Workspace Tab
-                  Expanded(
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(6),
-                      onTap: () {
-                        if (activeWs?.activeConsoleMode != 'workspace') {
-                          ref.read(workspaceStateProvider.notifier).switchConsoleMode('workspace');
-                        }
-                      },
-                      child: Container(
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: !isAdministration ? AppColors.primary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.person_rounded,
-                              size: 13,
-                              color: !isAdministration
-                                  ? Colors.white
-                                  : (isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Workspace',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: !isAdministration
-                                    ? Colors.white
-                                    : (isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
       ],
@@ -2459,394 +2335,1423 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     return _buildUsersWorkspaceSections(isDark, activeWs);
   }
 
-  /// Builds the clean Administration Console navigation tree for administrators and managers.
-  /// Web-only CMS and HTML website builder items (Suite 00) are omitted to maintain a fast, focused native app.
-  /// On Mobile & Desktop, User Management (Suite 01) comes immediately after Executive Command / Dashboard.
+  /// Builds the complete 14-Suite Administration Console navigation tree for administrators.
+  /// Fully aligned with the Web Admin Console blueprint with accordion submenus and (i) suite info triggers.
   List<AppDrawerSection> _buildAdminConsoleSections(bool isDark, dynamic activeWs) {
-    final soonBadge = _buildPillBadge('badge.soon'.tr(ref, fallback: 'Soon'), isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8));
+    final liveBadge = _buildPillBadge('LIVE', const Color(0xFF16A34A));
+    final hotBadge = _buildPillBadge('HOT', const Color(0xFFEA580C));
+    final newBadge = _buildPillBadge('NEW', const Color(0xFF0D9488));
+    final auditBadge = _buildPillBadge('AUDIT', AppColors.primary);
+    final centralBadge = _buildPillBadge('CENTRAL', AppColors.primary);
 
     return [
-      // Core Executive Command & Governance Hub
+      // 0. Executive Command
       AppDrawerSection(
-        title: 'suite.core_command'.tr(ref, fallback: 'Executive Command & Governance'),
+        title: 'suite.core_command'.tr(ref, fallback: 'Executive Command'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'core_command'),
+        infoTooltip: 'Executive Command & Cockpit Overview',
         items: [
           AppDrawerItem(
             icon: Icons.space_dashboard_rounded,
             title: 'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard'),
             isSelected: _selectedNavIndex == 0,
-            onTap: () => setState(() => _selectedNavIndex = 0),
+            onTap: () {
+              setState(() => _selectedNavIndex = 0);
+              if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                _mobileScaffoldKey.currentState?.closeDrawer();
+              }
+            },
           ),
           AppDrawerItem(
             icon: Icons.insights_rounded,
-            title: 'Analytics & Telemetry',
-            trailing: _buildPillBadge('LIVE', const Color(0xFF16A34A)),
+            title: 'nav.analytics_telemetry'.tr(ref, fallback: 'Analytics & Telemetry'),
+            trailing: liveBadge,
             isSelected: _selectedNavIndex == 1,
-            onTap: () => setState(() => _selectedNavIndex = 1),
+            onTap: () {
+              setState(() => _selectedNavIndex = 1);
+              if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                _mobileScaffoldKey.currentState?.closeDrawer();
+              }
+            },
           ),
           AppDrawerItem(
             icon: Icons.shield_outlined,
             title: 'nav.security_audit'.tr(ref, fallback: 'Security Audit'),
-            trailing: _buildPillBadge('AUDIT', AppColors.primary),
+            trailing: auditBadge,
             isSelected: _selectedNavIndex == 2,
-            onTap: () => setState(() => _selectedNavIndex = 2),
+            onTap: () {
+              setState(() => _selectedNavIndex = 2);
+              if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                _mobileScaffoldKey.currentState?.closeDrawer();
+              }
+            },
           ),
           AppDrawerItem(
             icon: Icons.tune_outlined,
             title: 'nav.brand_settings'.tr(ref, fallback: 'Brand & Settings'),
-            trailing: _buildPillBadge('HOT', const Color(0xFFEA580C)),
+            trailing: hotBadge,
             isSelected: _selectedNavIndex == 3,
-            onTap: () => setState(() => _selectedNavIndex = 3),
-          ),
-          AppDrawerItem(
-            icon: Icons.language_rounded,
-            title: 'nav.custom_domain'.tr(ref, fallback: 'Custom Domain'),
-            isSelected: _selectedNavIndex == 4,
-            onTap: () => setState(() => _selectedNavIndex = 4),
-          ),
-          AppDrawerItem(
-            icon: Icons.payment_outlined,
-            title: 'nav.feature_billing'.tr(ref, fallback: 'Feature Billing & Licenses'),
-            trailing: _buildPillBadge('CENTRAL', AppColors.primary),
-            isSelected: _selectedNavIndex == 5,
-            onTap: () => setState(() => _selectedNavIndex = 5),
+            onTap: () {
+              setState(() => _selectedNavIndex = 3);
+              if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                _mobileScaffoldKey.currentState?.closeDrawer();
+              }
+            },
           ),
         ],
       ),
 
-      // SUITE 01: People, Community & Collaboration (immediately follows Executive Command)
+      // 1. Suite 01: User Management
       AppDrawerSection(
-        title: 'suite.people_community'.tr(ref, fallback: 'People, Community & Collaboration'),
+        title: 'suite.user_management'.tr(ref, fallback: 'User Management'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'user_management'),
+        infoTooltip: 'User Management & Access Control Overview',
         items: [
           AppDrawerItem(
-            icon: Icons.people_outline_rounded,
-            title: 'nav.user_management'.tr(ref, fallback: 'User Management & Directory'),
-            isSelected: _selectedNavIndex == 6,
-            onTap: () => setState(() => _selectedNavIndex = 6),
+            icon: Icons.people_alt_rounded,
+            title: 'nav.user_directory'.tr(ref, fallback: 'User Management'),
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 4,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 4);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.groups_outlined,
+                title: 'All Members Directory',
+                isSelected: _selectedNavIndex == 5,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 5);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.category_outlined,
+                title: 'User Categories',
+                isSelected: _selectedNavIndex == 6,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 6);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.edit_document,
+                title: 'Registration Form Builder',
+                isSelected: _selectedNavIndex == 7,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 7);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.emoji_events_outlined,
+                title: 'Member KPIs & Leaderboard',
+                isSelected: _selectedNavIndex == 8,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 8);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+            ],
           ),
           AppDrawerItem(
-            icon: Icons.admin_panel_settings_outlined,
+            icon: Icons.admin_panel_settings_rounded,
             title: 'nav.identity_control'.tr(ref, fallback: 'Identity & Access Control'),
-            isSelected: _selectedNavIndex == 7,
-            onTap: () => setState(() => _selectedNavIndex = 7),
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.key_rounded,
+                title: 'Roles & Permissions Matrix',
+                isSelected: _selectedNavIndex == 9,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 9);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.mail_outline_rounded,
+                title: 'Member Invitations',
+                isSelected: _selectedNavIndex == 10,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 10);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.lock_outline_rounded,
+                title: 'Global Security Policies',
+                isSelected: _selectedNavIndex == 11,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 11);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+            ],
           ),
-          AppDrawerItem(
-            icon: Icons.verified_user_outlined,
-            title: 'nav.roles_permissions'.tr(ref, fallback: 'Roles & Permissions'),
-            isSelected: _selectedNavIndex == 8,
-            onTap: () => setState(() => _selectedNavIndex = 8),
-          ),
-          AppDrawerItem(
-            icon: Icons.mail_outline_rounded,
-            title: 'nav.user_invitations'.tr(ref, fallback: 'Member Invitations'),
-            isSelected: _selectedNavIndex == 9,
-            onTap: () => setState(() => _selectedNavIndex = 9),
-          ),
-          AppDrawerItem(
-            icon: Icons.policy_outlined,
-            title: 'nav.global_policies'.tr(ref, fallback: 'Global Security Policies'),
-            isSelected: _selectedNavIndex == 10,
-            onTap: () => setState(() => _selectedNavIndex = 10),
-          ),
+        ],
+      ),
+
+      // 2. Suite 02: People & Community
+      AppDrawerSection(
+        title: 'suite.people_community'.tr(ref, fallback: 'People & Community'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'people_community'),
+        infoTooltip: 'People, Groups & Community Overview',
+        items: [
           AppDrawerItem(
             icon: Icons.groups_outlined,
-            title: 'nav.groups_directory'.tr(ref, fallback: 'Group Channels'),
-            isSelected: _selectedNavIndex == 11,
-            onTap: () => setState(() => _selectedNavIndex = 11),
-          ),
-          AppDrawerItem(
-            icon: Icons.forum_outlined,
-            title: 'nav.chat_messenger'.tr(ref, fallback: 'Ozikol Chat Messenger'),
-            trailing: _buildPillBadge('LIVE', const Color(0xFF16A34A)),
-            isSelected: _selectedNavIndex == 12,
-            onTap: () => setState(() => _selectedNavIndex = 12),
+            title: 'nav.groups_directory'.tr(ref, fallback: 'Groups & Committees'),
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 12,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 12);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.group_work_outlined,
+                title: 'Manage Groups',
+                isSelected: _selectedNavIndex == 13,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 13);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 14,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 14);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+            ],
           ),
           AppDrawerItem(
             icon: Icons.school_outlined,
             title: 'nav.alumni_network'.tr(ref, fallback: 'Alumni Network'),
-            isSelected: _selectedNavIndex == 13,
-            onTap: () => setState(() => _selectedNavIndex = 13),
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 15,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 15);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.history_edu_outlined,
+                title: 'Manage Alumni',
+                isSelected: _selectedNavIndex == 16,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 16);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 17,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 17);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+            ],
+          ),
+          AppDrawerItem(
+            icon: Icons.forum_rounded,
+            title: 'nav.chat_messenger'.tr(ref, fallback: 'Ozikol Chat Messenger'),
+            trailing: liveBadge,
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 18,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 18);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.chat_bubble_outline_rounded,
+                title: 'Manage Chats',
+                isSelected: _selectedNavIndex == 19,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 19);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 20,
+                onTap: () => setState(() => _selectedNavIndex = 20),
+              ),
+            ],
           ),
           AppDrawerItem(
             icon: Icons.feedback_outlined,
             title: 'nav.whistleblowing'.tr(ref, fallback: 'Whistleblowing & Feedback'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 14,
-            onTap: () => setState(() => _selectedNavIndex = 14),
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 21,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 21);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.assignment_outlined,
+                title: 'Manage Reports',
+                isSelected: _selectedNavIndex == 22,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 22);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 23,
+                onTap: () => setState(() => _selectedNavIndex = 23),
+              ),
+            ],
           ),
         ],
       ),
 
-      // SUITE 02: Workforce, Shifts & Scheduling
+      // 3. Suite 03: Workforce & Shifts
       AppDrawerSection(
         title: 'suite.workforce_shifts'.tr(ref, fallback: 'Workforce, Shifts & Scheduling'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'workforce_shifts'),
+        infoTooltip: 'Workforce, Shifts & Scheduling Overview',
         items: [
           AppDrawerItem(
             icon: Icons.calendar_month_outlined,
             title: 'nav.staff_rota'.tr(ref, fallback: 'Staff & Volunteer Rota'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 15,
-            onTap: () => setState(() => _selectedNavIndex = 15),
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 24,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 24);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.view_timeline_outlined,
+                title: 'Manage Rota',
+                isSelected: _selectedNavIndex == 25,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 25);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 26,
+                onTap: () => setState(() => _selectedNavIndex = 26),
+              ),
+            ],
           ),
           AppDrawerItem(
             icon: Icons.swap_horiz_rounded,
             title: 'nav.shift_swaps'.tr(ref, fallback: 'Shift Swaps & Leave'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 16,
-            onTap: () => setState(() => _selectedNavIndex = 16),
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 27,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 27);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.swap_calls_outlined,
+                title: 'Manage Swaps & Leave',
+                isSelected: _selectedNavIndex == 28,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 28);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 29,
+                onTap: () => setState(() => _selectedNavIndex = 29),
+              ),
+            ],
           ),
           AppDrawerItem(
             icon: Icons.timer_outlined,
             title: 'nav.attendance_tracking'.tr(ref, fallback: 'Attendance & Clock-In'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 17,
-            onTap: () => setState(() => _selectedNavIndex = 17),
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 30,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 30);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.access_time_outlined,
+                title: 'Manage Attendance',
+                isSelected: _selectedNavIndex == 31,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 31);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 32,
+                onTap: () => setState(() => _selectedNavIndex = 32),
+              ),
+            ],
           ),
           AppDrawerItem(
             icon: Icons.event_repeat_rounded,
             title: 'nav.calendar_followups'.tr(ref, fallback: 'Calendar & Follow-Ups'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 18,
-            onTap: () => setState(() => _selectedNavIndex = 18),
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 33,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 33);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.calendar_today_outlined,
+                title: 'Manage Calendar',
+                isSelected: _selectedNavIndex == 34,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 34);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 35,
+                onTap: () => setState(() => _selectedNavIndex = 35),
+              ),
+            ],
           ),
         ],
       ),
 
-      // SUITE 03: Data Collection, Reports & Forms
+      // 4. Suite 04: Events, Ticketing & Passes
       AppDrawerSection(
-        title: 'suite.reports_forms'.tr(ref, fallback: 'Data Collection, Reports & Forms'),
-        items: [
-          AppDrawerItem(
-            icon: Icons.summarize_outlined,
-            title: 'nav.dynamic_reports'.tr(ref, fallback: 'Dynamic Reports'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 19,
-            onTap: () => setState(() => _selectedNavIndex = 19),
-          ),
-          AppDrawerItem(
-            icon: Icons.dynamic_form_outlined,
-            title: 'nav.forms_surveys'.tr(ref, fallback: 'Forms & Surveys'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 20,
-            onTap: () => setState(() => _selectedNavIndex = 20),
-          ),
-          AppDrawerItem(
-            icon: Icons.fact_check_outlined,
-            title: 'nav.reference_forms'.tr(ref, fallback: 'Reference Form System'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 21,
-            onTap: () => setState(() => _selectedNavIndex = 21),
-          ),
-          AppDrawerItem(
-            icon: Icons.menu_book_outlined,
-            title: 'nav.knowledge_base'.tr(ref, fallback: 'Knowledge Base'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 22,
-            onTap: () => setState(() => _selectedNavIndex = 22),
-          ),
-        ],
-      ),
-
-      // SUITE 04: Events, Ticketing & Training
-      AppDrawerSection(
-        title: 'suite.events_training'.tr(ref, fallback: 'Events, Ticketing & Training'),
+        title: 'suite.events_ticketing'.tr(ref, fallback: 'Events, Ticketing & Passes'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'events_ticketing'),
+        infoTooltip: 'Events & Ticketing Overview',
         items: [
           AppDrawerItem(
             icon: Icons.confirmation_number_outlined,
-            title: 'nav.event_ticketing'.tr(ref, fallback: 'Event Ticketing & Passes'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 23,
-            onTap: () => setState(() => _selectedNavIndex = 23),
+            title: 'Events & Ticketing',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 36,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 36);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.event_available_outlined,
+                title: 'Manage Events',
+                isSelected: _selectedNavIndex == 37,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 37);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 38,
+                onTap: () => setState(() => _selectedNavIndex = 38),
+              ),
+            ],
           ),
           AppDrawerItem(
-            icon: Icons.record_voice_over_outlined,
-            title: 'nav.speaker_sessions'.tr(ref, fallback: 'Speaker & Session Tracks'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 24,
-            onTap: () => setState(() => _selectedNavIndex = 24),
+            icon: Icons.mic_external_on_outlined,
+            title: 'Speaker & Session Tracks',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 39,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 39);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.record_voice_over_outlined,
+                title: 'Manage Tracks',
+                isSelected: _selectedNavIndex == 40,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 40);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 41,
+                onTap: () => setState(() => _selectedNavIndex = 41),
+              ),
+            ],
           ),
           AppDrawerItem(
-            icon: Icons.people_outline_rounded,
-            title: 'nav.attendee_management'.tr(ref, fallback: 'Attendee Management'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 25,
-            onTap: () => setState(() => _selectedNavIndex = 25),
+            icon: Icons.qr_code_scanner_rounded,
+            title: 'Attendee Check-In',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 42,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 42);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.how_to_reg_outlined,
+                title: 'Manage Attendees',
+                isSelected: _selectedNavIndex == 43,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 43);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 44,
+                onTap: () => setState(() => _selectedNavIndex = 44),
+              ),
+            ],
           ),
         ],
       ),
 
-      // SUITE 05: Finance, Contributions & Revenue
+      // 5. Suite 05: Commerce & Store Studio
       AppDrawerSection(
-        title: 'suite.finance_revenue'.tr(ref, fallback: 'Finance, Contributions & Revenue'),
+        title: 'suite.commerce_store'.tr(ref, fallback: 'Commerce & Store Studio'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'commerce_store'),
+        infoTooltip: 'Commerce & Store Studio Overview',
         items: [
           AppDrawerItem(
-            icon: Icons.account_balance_wallet_outlined,
-            title: 'nav.invoicing_dues'.tr(ref, fallback: 'Invoicing & Member Dues'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 26,
-            onTap: () => setState(() => _selectedNavIndex = 26),
+            icon: Icons.storefront_rounded,
+            title: 'Commerce Studio',
+            trailing: newBadge,
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 45,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 45);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.inventory_2_outlined,
+                title: 'Manage Products & Inventory',
+                isSelected: _selectedNavIndex == 46,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 46);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 47,
+                onTap: () => setState(() => _selectedNavIndex = 47),
+              ),
+            ],
+          ),
+          AppDrawerItem(
+            icon: Icons.shopping_bag_outlined,
+            title: 'Customer Orders',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 48,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 48);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.receipt_long_outlined,
+                title: 'Manage Orders',
+                isSelected: _selectedNavIndex == 49,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 49);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 50,
+                onTap: () => setState(() => _selectedNavIndex = 50),
+              ),
+            ],
+          ),
+          AppDrawerItem(
+            icon: Icons.category_outlined,
+            title: 'Product Categories',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 51,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 51);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.label_outline_rounded,
+                title: 'Manage Categories',
+                isSelected: _selectedNavIndex == 52,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 52);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 53,
+                onTap: () => setState(() => _selectedNavIndex = 53),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      // 6. Suite 06: Finance & Embedded Banking
+      AppDrawerSection(
+        title: 'suite.finance_banking'.tr(ref, fallback: 'Finance & Embedded Banking'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'finance_banking'),
+        infoTooltip: 'Finance & Embedded Banking Overview',
+        items: [
+          AppDrawerItem(
+            icon: Icons.receipt_outlined,
+            title: 'Invoicing & Member Dues',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 54,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 54);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.request_quote_outlined,
+                title: 'Manage Invoicing',
+                isSelected: _selectedNavIndex == 55,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 55);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 56,
+                onTap: () => setState(() => _selectedNavIndex = 56),
+              ),
+            ],
           ),
           AppDrawerItem(
             icon: Icons.account_balance_outlined,
-            title: 'nav.embedded_banking'.tr(ref, fallback: 'Embedded Banking & Rails'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 27,
-            onTap: () => setState(() => _selectedNavIndex = 27),
+            title: 'Embedded Banking & Payouts',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 57,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 57);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.payments_outlined,
+                title: 'Manage Banking',
+                isSelected: _selectedNavIndex == 58,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 58);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 59,
+                onTap: () => setState(() => _selectedNavIndex = 59),
+              ),
+            ],
           ),
           AppDrawerItem(
-            icon: Icons.request_quote_outlined,
-            title: 'nav.grant_ledger'.tr(ref, fallback: 'Proposal & Grant Ledger'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 28,
-            onTap: () => setState(() => _selectedNavIndex = 28),
+            icon: Icons.volunteer_activism_outlined,
+            title: 'Grants & Sponsorships',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 60,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 60);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.card_giftcard_outlined,
+                title: 'Manage Grants',
+                isSelected: _selectedNavIndex == 61,
+                onTap: () => setState(() => _selectedNavIndex = 61),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 62,
+                onTap: () => setState(() => _selectedNavIndex = 62),
+              ),
+            ],
           ),
         ],
       ),
 
-      // SUITE 06: Operations, Logistics & Facilities
+      // 7. Suite 07: Communication & Helpdesk
       AppDrawerSection(
-        title: 'suite.operations_logistics'.tr(ref, fallback: 'Operations, Logistics & Facilities'),
-        items: [
-          AppDrawerItem(
-            icon: Icons.storefront_outlined,
-            title: 'Commerce Studio',
-            trailing: _buildPillBadge('NEW', const Color(0xFF0D9488)),
-            isSelected: _selectedNavIndex == 29,
-            onTap: () => setState(() => _selectedNavIndex = 29),
-          ),
-          AppDrawerItem(
-            icon: Icons.how_to_vote_outlined,
-            title: 'nav.elections_voting'.tr(ref, fallback: 'Elections & E-Voting'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 30,
-            onTap: () => setState(() => _selectedNavIndex = 30),
-          ),
-          AppDrawerItem(
-            icon: Icons.meeting_room_outlined,
-            title: 'nav.facilities_equipment'.tr(ref, fallback: 'Facilities & Equipment Checkout'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 31,
-            onTap: () => setState(() => _selectedNavIndex = 31),
-          ),
-        ],
-      ),
-
-      // SUITE 07: Communication, AI & Support
-      AppDrawerSection(
-        title: 'suite.communication_ai'.tr(ref, fallback: 'Communication, AI & Support'),
+        title: 'suite.communication_support'.tr(ref, fallback: 'Communication & Helpdesk'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'communication_support'),
+        infoTooltip: 'Communication & Helpdesk Studio Overview',
         items: [
           AppDrawerItem(
             icon: Icons.campaign_outlined,
-            title: 'nav.notification_studio'.tr(ref, fallback: 'Notification Studio'),
-            isSelected: _selectedNavIndex == 32,
-            onTap: () => setState(() => _selectedNavIndex = 32),
+            title: 'Mass Broadcasts',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 63,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 63);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.send_outlined,
+                title: 'Manage Broadcasts',
+                isSelected: _selectedNavIndex == 64,
+                onTap: () => setState(() => _selectedNavIndex = 64),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 65,
+                onTap: () => setState(() => _selectedNavIndex = 65),
+              ),
+            ],
           ),
           AppDrawerItem(
             icon: Icons.phone_in_talk_outlined,
-            title: 'nav.gocall_dispatch'.tr(ref, fallback: 'GoCall AI Dispatch'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 33,
-            onTap: () => setState(() => _selectedNavIndex = 33),
+            title: 'GoCall AI Emergency Dispatch',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 66,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 66);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.contact_phone_outlined,
+                title: 'Manage GoCall',
+                isSelected: _selectedNavIndex == 67,
+                onTap: () => setState(() => _selectedNavIndex = 67),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 68,
+                onTap: () => setState(() => _selectedNavIndex = 68),
+              ),
+            ],
           ),
           AppDrawerItem(
             icon: Icons.support_agent_outlined,
-            title: 'nav.helpdesk_support'.tr(ref, fallback: 'Helpdesk & Support Desk'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 34,
-            onTap: () => setState(() => _selectedNavIndex = 34),
-          ),
-        ],
-      ),
-
-      // SUITE 08: Governance, Compliance & Safeguarding
-      AppDrawerSection(
-        title: 'suite.compliance_governance'.tr(ref, fallback: 'Governance, Compliance & Safeguarding'),
-        items: [
-          AppDrawerItem(
-            icon: Icons.folder_zip_outlined,
-            title: 'nav.document_vault'.tr(ref, fallback: 'Document Vault & Archive'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 35,
-            onTap: () => setState(() => _selectedNavIndex = 35),
-          ),
-          AppDrawerItem(
-            icon: Icons.school_outlined,
-            title: 'nav.lms_training'.tr(ref, fallback: 'Learning Management (LMS)'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 36,
-            onTap: () => setState(() => _selectedNavIndex = 36),
-          ),
-          AppDrawerItem(
-            icon: Icons.verified_outlined,
-            title: 'nav.certificate_verification'.tr(ref, fallback: 'Certificate Verification'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 37,
-            onTap: () => setState(() => _selectedNavIndex = 37),
-          ),
-          AppDrawerItem(
-            icon: Icons.badge_outlined,
-            title: 'nav.kyc_verification'.tr(ref, fallback: 'KYC Verification'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 38,
-            onTap: () => setState(() => _selectedNavIndex = 38),
-          ),
-        ],
-      ),
-
-      // SUITE 09: Demographics, Census & Analytics
-      AppDrawerSection(
-        title: 'suite.demographics_census'.tr(ref, fallback: 'Demographics, Census & Analytics'),
-        items: [
-          AppDrawerItem(
-            icon: Icons.map_outlined,
-            title: 'nav.community_census'.tr(ref, fallback: 'Community Census & Mapping'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 39,
-            onTap: () => setState(() => _selectedNavIndex = 39),
-          ),
-          AppDrawerItem(
-            icon: Icons.pin_drop_outlined,
-            title: 'nav.field_surveyor'.tr(ref, fallback: 'Field Surveyor Tools'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 40,
-            onTap: () => setState(() => _selectedNavIndex = 40),
-          ),
-          AppDrawerItem(
-            icon: Icons.badge_outlined,
-            title: 'nav.digital_id_cards'.tr(ref, fallback: 'Digital Member ID Cards'),
-            trailing: soonBadge,
-            isSelected: _selectedNavIndex == 41,
-            onTap: () => setState(() => _selectedNavIndex = 41),
-          ),
-        ],
-      ),
-
-      // Member Workspace Cross-Link Hub
-      AppDrawerSection(
-        title: 'suite.member_workspace'.tr(ref, fallback: 'Personal Workspace Hub'),
-        items: [
-          AppDrawerItem(
-            icon: Icons.assignment_ind_outlined,
-            title: 'nav.my_cv_biography'.tr(ref, fallback: 'My CV Biography'),
-            isSelected: _selectedNavIndex == 42,
-            onTap: () => setState(() => _selectedNavIndex = 42),
+            title: 'Helpdesk & Support Desk',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 69,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 69);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.confirmation_number_outlined,
+                title: 'Manage Tickets',
+                isSelected: _selectedNavIndex == 70,
+                onTap: () => setState(() => _selectedNavIndex = 70),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 71,
+                onTap: () => setState(() => _selectedNavIndex = 71),
+              ),
+            ],
           ),
           AppDrawerItem(
             icon: Icons.chat_bubble_outline_rounded,
-            title: 'nav.chat_messenger'.tr(ref, fallback: 'Ozikol Chat Messenger'),
-            isSelected: _selectedNavIndex == 43,
-            onTap: () => setState(() => _selectedNavIndex = 43),
+            title: 'Live Chat Widget Control',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 72,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 72);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.widgets_outlined,
+                title: 'Manage Widget',
+                isSelected: _selectedNavIndex == 73,
+                onTap: () => setState(() => _selectedNavIndex = 73),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 74,
+                onTap: () => setState(() => _selectedNavIndex = 74),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      // 8. Suite 08: Data Collection & Intelligence
+      AppDrawerSection(
+        title: 'suite.reports_forms'.tr(ref, fallback: 'Data Collection & Intelligence'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'reports_forms'),
+        infoTooltip: 'Data Collection & Intelligence Overview',
+        items: [
+          AppDrawerItem(
+            icon: Icons.summarize_outlined,
+            title: 'Dynamic Reports',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 75,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 75);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.bar_chart_rounded,
+                title: 'Manage Reports',
+                isSelected: _selectedNavIndex == 76,
+                onTap: () => setState(() => _selectedNavIndex = 76),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 77,
+                onTap: () => setState(() => _selectedNavIndex = 77),
+              ),
+            ],
           ),
           AppDrawerItem(
-            icon: Icons.groups_outlined,
-            title: 'nav.groups_directory'.tr(ref, fallback: 'Groups Directory'),
-            isSelected: _selectedNavIndex == 44,
-            onTap: () => setState(() => _selectedNavIndex = 44),
+            icon: Icons.dynamic_form_outlined,
+            title: 'Forms & Surveys',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 78,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 78);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.assignment_outlined,
+                title: 'Manage Forms',
+                isSelected: _selectedNavIndex == 79,
+                onTap: () => setState(() => _selectedNavIndex = 79),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 80,
+                onTap: () => setState(() => _selectedNavIndex = 80),
+              ),
+            ],
           ),
+          AppDrawerItem(
+            icon: Icons.fact_check_outlined,
+            title: 'Reference Form System',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 81,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 81);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.checklist_outlined,
+                title: 'Manage References',
+                isSelected: _selectedNavIndex == 82,
+                onTap: () => setState(() => _selectedNavIndex = 82),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 83,
+                onTap: () => setState(() => _selectedNavIndex = 83),
+              ),
+            ],
+          ),
+          AppDrawerItem(
+            icon: Icons.menu_book_outlined,
+            title: 'Knowledge Base',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 84,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 84);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.article_outlined,
+                title: 'Manage Articles',
+                isSelected: _selectedNavIndex == 85,
+                onTap: () => setState(() => _selectedNavIndex = 85),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 86,
+                onTap: () => setState(() => _selectedNavIndex = 86),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      // 9. Suite 09: Academy, LMS & Training
+      AppDrawerSection(
+        title: 'suite.academy_training'.tr(ref, fallback: 'Academy, LMS & Training'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'academy_training'),
+        infoTooltip: 'Academy, LMS & Training Overview',
+        items: [
           AppDrawerItem(
             icon: Icons.school_outlined,
-            title: 'nav.alumni_network'.tr(ref, fallback: 'Alumni Network'),
-            isSelected: _selectedNavIndex == 45,
-            onTap: () => setState(() => _selectedNavIndex = 45),
+            title: 'LMS Courses & Curriculum',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 87,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 87);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.video_library_outlined,
+                title: 'Manage Courses',
+                isSelected: _selectedNavIndex == 88,
+                onTap: () => setState(() => _selectedNavIndex = 88),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 89,
+                onTap: () => setState(() => _selectedNavIndex = 89),
+              ),
+            ],
+          ),
+          AppDrawerItem(
+            icon: Icons.workspace_premium_outlined,
+            title: 'Certification Issuance',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 90,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 90);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.card_membership_outlined,
+                title: 'Manage Certificates',
+                isSelected: _selectedNavIndex == 91,
+                onTap: () => setState(() => _selectedNavIndex = 91),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 92,
+                onTap: () => setState(() => _selectedNavIndex = 92),
+              ),
+            ],
+          ),
+          AppDrawerItem(
+            icon: Icons.quiz_outlined,
+            title: 'Exams & Assessments',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 93,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 93);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.grading_outlined,
+                title: 'Manage Exams',
+                isSelected: _selectedNavIndex == 94,
+                onTap: () => setState(() => _selectedNavIndex = 94),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 95,
+                onTap: () => setState(() => _selectedNavIndex = 95),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      // 10. Suite 10: Compliance, Governance & Vault
+      AppDrawerSection(
+        title: 'suite.compliance_governance'.tr(ref, fallback: 'Compliance & Document Vault'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'compliance_governance'),
+        infoTooltip: 'Compliance, Governance & Vault Overview',
+        items: [
+          AppDrawerItem(
+            icon: Icons.folder_special_outlined,
+            title: 'Document Cloud Vault',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 96,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 96);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.cloud_outlined,
+                title: 'Manage Vault',
+                isSelected: _selectedNavIndex == 97,
+                onTap: () => setState(() => _selectedNavIndex = 97),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 98,
+                onTap: () => setState(() => _selectedNavIndex = 98),
+              ),
+            ],
+          ),
+          AppDrawerItem(
+            icon: Icons.verified_user_outlined,
+            title: 'KYC & Identity Verification',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 99,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 99);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.badge_outlined,
+                title: 'Manage KYC',
+                isSelected: _selectedNavIndex == 100,
+                onTap: () => setState(() => _selectedNavIndex = 100),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 101,
+                onTap: () => setState(() => _selectedNavIndex = 101),
+              ),
+            ],
+          ),
+          AppDrawerItem(
+            icon: Icons.door_sliding_outlined,
+            title: 'Visitor Gate Management',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 102,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 102);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.meeting_room_outlined,
+                title: 'Manage Gate',
+                isSelected: _selectedNavIndex == 103,
+                onTap: () => setState(() => _selectedNavIndex = 103),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 104,
+                onTap: () => setState(() => _selectedNavIndex = 104),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      // 11. Suite 11: Demographics, Census & IDs
+      AppDrawerSection(
+        title: 'suite.demographics_census'.tr(ref, fallback: 'Demographics & ID Cards'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'demographics_census'),
+        infoTooltip: 'Demographics, Census & ID Cards Overview',
+        items: [
+          AppDrawerItem(
+            icon: Icons.map_outlined,
+            title: 'Community Census & Mapping',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 105,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 105);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.pin_drop_outlined,
+                title: 'Manage Census',
+                isSelected: _selectedNavIndex == 106,
+                onTap: () => setState(() => _selectedNavIndex = 106),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 107,
+                onTap: () => setState(() => _selectedNavIndex = 107),
+              ),
+            ],
+          ),
+          AppDrawerItem(
+            icon: Icons.assignment_ind_outlined,
+            title: 'Field Surveyor Tools',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 108,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 108);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.handyman_outlined,
+                title: 'Manage Surveys',
+                isSelected: _selectedNavIndex == 109,
+                onTap: () => setState(() => _selectedNavIndex = 109),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 110,
+                onTap: () => setState(() => _selectedNavIndex = 110),
+              ),
+            ],
+          ),
+          AppDrawerItem(
+            icon: Icons.contact_emergency_outlined,
+            title: 'Digital Member ID Cards',
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 111,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 111);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.credit_card_outlined,
+                title: 'Manage ID Cards',
+                isSelected: _selectedNavIndex == 112,
+                onTap: () => setState(() => _selectedNavIndex = 112),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 113,
+                onTap: () => setState(() => _selectedNavIndex = 113),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      // 12. Suite 12: Feature Billing & Licenses
+      AppDrawerSection(
+        title: 'suite.billing_subscriptions'.tr(ref, fallback: 'Feature Billing & Licenses'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'billing_subscriptions'),
+        infoTooltip: 'Feature Billing & Licenses Overview',
+        items: [
+          AppDrawerItem(
+            icon: Icons.credit_card_rounded,
+            title: 'Feature Billing & Licenses',
+            trailing: centralBadge,
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 114,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 114);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.tune_outlined,
+                title: 'Manage Licenses',
+                isSelected: _selectedNavIndex == 115,
+                onTap: () => setState(() => _selectedNavIndex = 115),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 116,
+                onTap: () => setState(() => _selectedNavIndex = 116),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      // 13. Suite 13: Security & Audit Governance
+      AppDrawerSection(
+        title: 'suite.security_audit'.tr(ref, fallback: 'Security Audit & Forensics'),
+        onInfoTap: () => SuiteInfoCatalog.show(context, 'security_audit'),
+        infoTooltip: 'Security Audit & Forensics Overview',
+        items: [
+          AppDrawerItem(
+            icon: Icons.security_rounded,
+            title: 'Security Audit Logs',
+            trailing: auditBadge,
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.space_dashboard_outlined,
+                title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 117,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 117);
+                  if (_mobileScaffoldKey.currentState?.isDrawerOpen ?? false) {
+                    _mobileScaffoldKey.currentState?.closeDrawer();
+                  }
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.view_list_outlined,
+                title: 'View Audit Logs',
+                isSelected: _selectedNavIndex == 118,
+                onTap: () => setState(() => _selectedNavIndex = 118),
+              ),
+              AppDrawerSubItem(
+                icon: Icons.settings_outlined,
+                title: 'Settings',
+                isSelected: _selectedNavIndex == 119,
+                onTap: () => setState(() => _selectedNavIndex = 119),
+              ),
+            ],
           ),
         ],
       ),

@@ -1,7 +1,35 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
+/// Single sub-item within an expandable [AppDrawerItem].
+class AppDrawerSubItem {
+  /// Display title of the sub-item (e.g. "Dashboard Overview", "All Members", "Settings").
+  final String title;
+
+  /// Optional icon for this sub-item.
+  final IconData? icon;
+
+  /// Tap callback.
+  final VoidCallback onTap;
+
+  /// Whether this sub-item is currently selected.
+  final bool isSelected;
+
+  /// Optional trailing badge or widget.
+  final Widget? trailing;
+
+  /// Creates an accordion sub-item.
+  const AppDrawerSubItem({
+    required this.title,
+    this.icon,
+    required this.onTap,
+    this.isSelected = false,
+    this.trailing,
+  });
+}
+
 /// Single item within an [AppDrawerSection].
+/// Can represent either a flat navigation item or an expandable accordion with [subItems].
 class AppDrawerItem {
   /// Icon for this item.
   final IconData icon;
@@ -9,29 +37,44 @@ class AppDrawerItem {
   /// Display title.
   final String title;
 
-  /// Tap callback.
-  final VoidCallback onTap;
+  /// Optional tap callback for flat items or when clicking the accordion parent.
+  final VoidCallback? onTap;
 
-  /// Optional trailing widget (e.g. badge, locked lock icon, chevron).
+  /// Optional trailing widget (e.g. badge, locked lock icon).
   final Widget? trailing;
 
   /// Whether this item is currently selected/active.
   final bool isSelected;
 
+  /// Optional sub-items revealing a three-tier accordion structure.
+  final List<AppDrawerSubItem>? subItems;
+
+  /// Whether this accordion should be expanded initially.
+  final bool initiallyExpanded;
+
   /// Creates a drawer navigation item.
   const AppDrawerItem({
     required this.icon,
     required this.title,
-    required this.onTap,
+    this.onTap,
     this.trailing,
     this.isSelected = false,
+    this.subItems,
+    this.initiallyExpanded = false,
   });
 }
 
-/// Logical grouping of [AppDrawerItem] items with an optional section heading.
+/// Logical grouping of [AppDrawerItem] items with an optional section heading
+/// and a contextual information trigger [onInfoTap] for suite guidance.
 class AppDrawerSection {
-  /// Section heading text (e.g. "WORKSPACE HUB", "OPERATIONS").
+  /// Section heading text (e.g. "EXECUTIVE COMMAND", "USER MANAGEMENT").
   final String? title;
+
+  /// Optional contextual info trigger callback. When provided, renders a faint (i) icon.
+  final VoidCallback? onInfoTap;
+
+  /// Optional tooltip for the info icon.
+  final String? infoTooltip;
 
   /// List of items belonging to this section.
   final List<AppDrawerItem> items;
@@ -39,6 +82,8 @@ class AppDrawerSection {
   /// Creates a grouped section in the drawer.
   const AppDrawerSection({
     this.title,
+    this.onInfoTap,
+    this.infoTooltip,
     required this.items,
   });
 }
@@ -138,11 +183,11 @@ class AppDrawer extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               padding: EdgeInsets.symmetric(
-                horizontal: isCollapsed ? 6 : 12,
+                horizontal: isCollapsed ? 6 : 10,
                 vertical: 8,
               ),
               itemCount: sections.length,
-              separatorBuilder: (context, index) => SizedBox(height: isCollapsed ? 10 : 16),
+              separatorBuilder: (context, index) => SizedBox(height: isCollapsed ? 10 : 14),
               itemBuilder: (context, index) {
                 final section = sections[index];
 
@@ -152,15 +197,37 @@ class AppDrawer extends StatelessWidget {
                     if (section.title != null && section.title!.trim().isNotEmpty)
                       if (!isCollapsed)
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                          child: Text(
-                            section.title!.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.8,
-                              color: isDark ? AppColors.gray500 : AppColors.gray600,
-                            ),
+                          padding: const EdgeInsets.fromLTRB(10, 4, 6, 6),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  section.title!.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
+                                    color: isDark ? AppColors.gray500 : AppColors.gray600,
+                                  ),
+                                ),
+                              ),
+                              if (section.onInfoTap != null)
+                                Tooltip(
+                                  message: section.infoTooltip ?? 'Suite Capabilities & Overview',
+                                  child: InkWell(
+                                    onTap: section.onInfoTap,
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: Icon(
+                                        Icons.info_outline_rounded,
+                                        size: 14,
+                                        color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         )
                       else
@@ -238,7 +305,7 @@ class AppDrawer extends StatelessWidget {
   }
 }
 
-class _DrawerItemTile extends StatelessWidget {
+class _DrawerItemTile extends StatefulWidget {
   final AppDrawerItem item;
   final bool isDark;
   final bool isCollapsed;
@@ -250,12 +317,51 @@ class _DrawerItemTile extends StatelessWidget {
   });
 
   @override
+  State<_DrawerItemTile> createState() => _DrawerItemTileState();
+}
+
+class _DrawerItemTileState extends State<_DrawerItemTile> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    final hasActiveSub = widget.item.subItems?.any((s) => s.isSelected) ?? false;
+    _isExpanded = widget.item.initiallyExpanded || hasActiveSub;
+  }
+
+  @override
+  void didUpdateWidget(covariant _DrawerItemTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final hasActiveSub = widget.item.subItems?.any((s) => s.isSelected) ?? false;
+    if (hasActiveSub && !_isExpanded) {
+      _isExpanded = true;
+    }
+  }
+
+  void _toggleExpanded() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+    });
+    if (widget.item.onTap != null) {
+      widget.item.onTap!();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    final item = widget.item;
+    final hasSub = item.subItems != null && item.subItems!.isNotEmpty;
+    final hasActiveSub = item.subItems?.any((s) => s.isSelected) ?? false;
+    final isAnySelected = item.isSelected || hasActiveSub;
+
     final activeBg = isDark ? AppColors.primary.withValues(alpha: 0.15) : AppColors.primaryContainer;
     final activeFg = AppColors.primary;
     final defaultFg = isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight;
 
-    if (isCollapsed) {
+    // Collapsed Icon Rail View (68px)
+    if (widget.isCollapsed) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -264,10 +370,16 @@ class _DrawerItemTile extends StatelessWidget {
             preferBelow: false,
             waitDuration: const Duration(milliseconds: 200),
             child: Material(
-              color: item.isSelected ? activeBg : Colors.transparent,
+              color: isAnySelected ? activeBg : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
               child: InkWell(
-                onTap: item.onTap,
+                onTap: () {
+                  if (hasSub) {
+                    _showCollapsedSubMenu(context);
+                  } else if (item.onTap != null) {
+                    item.onTap!();
+                  }
+                },
                 borderRadius: BorderRadius.circular(10),
                 child: Container(
                   width: 44,
@@ -279,17 +391,17 @@ class _DrawerItemTile extends StatelessWidget {
                       Icon(
                         item.icon,
                         size: 20,
-                        color: item.isSelected ? activeFg : (isDark ? AppColors.gray400 : AppColors.gray600),
+                        color: isAnySelected ? activeFg : (isDark ? AppColors.gray400 : AppColors.gray600),
                       ),
-                      if (item.trailing != null)
+                      if (item.trailing != null || hasSub)
                         Positioned(
                           top: 4,
                           right: 4,
                           child: Container(
                             width: 6,
                             height: 6,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
+                            decoration: BoxDecoration(
+                              color: isAnySelected ? activeFg : (isDark ? AppColors.gray500 : const Color(0xFF94A3B8)),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -304,39 +416,170 @@ class _DrawerItemTile extends StatelessWidget {
       );
     }
 
-    return Material(
-      color: item.isSelected ? activeBg : Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: item.onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              Icon(
-                item.icon,
-                size: 20,
-                color: item.isSelected ? activeFg : (isDark ? AppColors.gray400 : AppColors.gray600),
+    // Expanded Sidebar Mode View (250px)
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Material(
+          color: (item.isSelected && !hasSub) ? activeBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          child: InkWell(
+            onTap: hasSub ? _toggleExpanded : item.onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8.5),
+              child: Row(
+                children: [
+                  Icon(
+                    item.icon,
+                    size: 19,
+                    color: isAnySelected ? activeFg : (isDark ? AppColors.gray400 : AppColors.gray600),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.8,
+                        fontWeight: isAnySelected ? FontWeight.w700 : FontWeight.w500,
+                        color: (item.isSelected && !hasSub) ? activeFg : defaultFg,
+                      ),
+                    ),
+                  ),
+                  if (item.trailing != null) ...[
+                    item.trailing!,
+                    const SizedBox(width: 4),
+                  ],
+                  if (hasSub)
+                    AnimatedRotation(
+                      turns: _isExpanded ? 0.25 : 0.0,
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeInOut,
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 17,
+                        color: isDark ? AppColors.gray400 : AppColors.gray500,
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: item.isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: item.isSelected ? activeFg : defaultFg,
+            ),
+          ),
+        ),
+
+        // Accordion Submenu
+        if (hasSub && _isExpanded)
+          Padding(
+            padding: const EdgeInsets.only(left: 19, top: 2, bottom: 4),
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: isDark ? AppColors.outlineDark.withValues(alpha: 0.6) : const Color(0xFFE2E8F0),
+                    width: 1.5,
                   ),
                 ),
               ),
-              if (item.trailing != null) item.trailing!,
-            ],
+              padding: const EdgeInsets.only(left: 9),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: item.subItems!.map((sub) {
+                  final isSubActive = sub.isSelected;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 1.5),
+                    child: Material(
+                      color: isSubActive ? activeBg : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                      child: InkWell(
+                        onTap: sub.onTap,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6.5),
+                          child: Row(
+                            children: [
+                              Icon(
+                                sub.icon ?? Icons.arrow_right_rounded,
+                                size: sub.icon != null ? 14 : 16,
+                                color: isSubActive ? activeFg : (isDark ? AppColors.gray400 : AppColors.gray500),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  sub.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: isSubActive ? FontWeight.w700 : FontWeight.w500,
+                                    color: isSubActive ? activeFg : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569)),
+                                  ),
+                                ),
+                              ),
+                              if (sub.trailing != null) sub.trailing!,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _showCollapsedSubMenu(BuildContext context) {
+    final RenderBox? box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+    final position = box.localToGlobal(Offset.zero);
+
+    showMenu<void>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx + 56,
+        position.dy,
+        position.dx + 260,
+        position.dy + 200,
+      ),
+      items: [
+        PopupMenuItem<void>(
+          enabled: false,
+          child: Text(
+            widget.item.title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
           ),
         ),
-      ),
+        const PopupMenuDivider(),
+        ...?widget.item.subItems?.map((sub) => PopupMenuItem<void>(
+          onTap: sub.onTap,
+          child: Row(
+            children: [
+              if (sub.icon != null) ...[
+                Icon(sub.icon, size: 16, color: sub.isSelected ? AppColors.primary : null),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  sub.title,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: sub.isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: sub.isSelected ? AppColors.primary : null,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        )),
+      ],
     );
   }
 }
