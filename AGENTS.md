@@ -53,7 +53,16 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 ---
 
 ## 4. UI Form & Placeholder Standards (Mandatory)
-* **Standard Professional Placeholders**: All form input fields and text areas MUST use clean, professional, intuitive placeholder text demonstrating the expected input format (e.g., `e.g. First Last`, `name@company.com`, `e.g. Your Organization Name`, `e.g. +0 (000) 000-0000`, `e.g. @@username`, `e.g. mycompany`). **No real names or company names** may be used in placeholder text.
+* **Standard Professional Placeholders (Zero Individual or Company Names)**: All form input fields and text areas MUST use clean, professional, intuitive placeholder text demonstrating the expected input format.
+  * **Strict Prohibition of Individual & Company Names**: NEVER use individual personal names (e.g. `Jane`, `Doe`, `John`, `Smith`, `Jane Doe`, `jane.doe@organization.org`) or dummy company names (e.g. `acmecorp`, `contoso`) in placeholder text or field demonstrations.
+  * **Canonical Format Placeholders**:
+    * **First Name**: `e.g. First Name` or `e.g. First`
+    * **Last Name**: `e.g. Last Name` or `e.g. Last`
+    * **Full Name**: `e.g. First Last`
+    * **Email Address**: `name@company.com` or `user@domain.com` (never personal name prefixes like `jane.doe@...`)
+    * **Organization / Workspace**: `e.g. access code or url` or `e.g. Your Organization Name`
+    * **Phone Number**: `e.g. +0 (000) 000-0000`
+    * **Username**: `e.g. @username`
 * **No Ambiguous or Cluttered Strings**: Placeholders must avoid arbitrary or overly verbose sample text and show the expected format at a glance.
 * **Razor Escaping in Placeholders**: In Razor `.cshtml` files, always properly escape `@` characters in placeholder attributes (e.g., `placeholder="e.g. @@username"` or `placeholder="name@@company.com"` where applicable) to prevent Razor compilation parsing errors.
 
