@@ -118,8 +118,9 @@ import { ToastService } from '../../../core/services/toast.service';
 
           <div class="step-switch-prompt">
             <span class="switch-label">Already have a verification code?</span>
-            <button type="button" class="btn-text-link" (click)="activeStep = 2">
-              <span>Enter code</span>
+            <button type="button" class="btn btn-secondary-code" (click)="activeStep = 2">
+              <span class="material-symbols-outlined btn-icon">pin</span>
+              <span>Enter Code</span>
               <span class="material-symbols-outlined prompt-arrow">arrow_forward</span>
             </button>
           </div>
@@ -816,43 +817,77 @@ import { ToastService } from '../../../core/services/toast.service';
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 10px;
       font-size: 13px;
       color: #64748b;
-      margin-top: 14px;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px dashed #e2e8f0;
       text-align: center;
+      width: 100%;
 
-      .switch-label,
-      span {
+      .switch-label {
         color: #64748b;
+        font-size: 13px;
         font-weight: 500;
       }
 
-      .btn-text-link {
-        background: none;
-        border: none;
-        color: #0050e5;
-        font-size: 13px;
-        font-weight: 700;
-        cursor: pointer;
-        padding: 2px 6px;
+      .btn,
+      .btn-secondary-code {
+        width: 100%;
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        transition: all 0.15s ease;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 20px;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1.5px solid #cbd5e1;
+        color: #0050e5;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        box-sizing: border-box;
+
+        .btn-icon {
+          font-size: 18px;
+          color: #0050e5;
+          transition: transform 0.2s ease, color 0.2s ease;
+        }
 
         .prompt-arrow {
-          font-size: 15px;
-          transition: transform 0.15s ease;
+          font-size: 17px;
+          color: #0050e5;
+          transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        span {
+          color: inherit;
+          font-weight: 700;
         }
 
         &:hover {
+          background: #eff6ff;
+          border-color: #0050e5;
           color: #003bb5;
-          text-decoration: underline;
+          box-shadow: 0 4px 14px rgba(0, 80, 229, 0.12);
+          transform: translateY(-1px);
+
+          .btn-icon {
+            color: #003bb5;
+            transform: scale(1.08);
+          }
 
           .prompt-arrow {
-            transform: translateX(3px);
+            color: #003bb5;
+            transform: translateX(4px);
           }
+        }
+
+        &:active {
+          transform: translateY(0);
+          box-shadow: none;
         }
       }
     }
