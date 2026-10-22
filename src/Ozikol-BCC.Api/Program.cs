@@ -21,6 +21,7 @@ using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Persistence.EF.SQL.Extensions;
 using Ozikol_BCC.Telemetry.Sentry.Extensions;
 using Ozikol_BCC.Api.Middleware;
+using Ozikol_BCC.EmailServices.Postmark;
 
 namespace Ozikol_BCC.Api
 {
@@ -43,6 +44,8 @@ namespace Ozikol_BCC.Api
                 .AddTenantSupport(builder.Configuration)
                 .AddRecaptchaSupport()
                 .AddEntityFrameworkSqlServer<DashboardDbContext>();
+
+            builder.Services.AddPostmarkEmailServices(builder.Configuration);
 
             var masterConnectionString = builder.Configuration["TenantConfiguration:ConnectionString"] 
                 ?? builder.Configuration.GetConnectionString("DefaultConnection") 
