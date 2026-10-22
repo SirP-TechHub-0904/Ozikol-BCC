@@ -117,7 +117,7 @@ import { ToastService } from '../../../core/services/toast.service';
           </button>
 
           <div class="step-switch-prompt">
-            <span>Already have a verification code?</span>
+            <span class="switch-label">Already have a verification code?</span>
             <button type="button" class="btn-text-link" (click)="activeStep = 2">
               <span>Enter code</span>
               <span class="material-symbols-outlined prompt-arrow">arrow_forward</span>
@@ -813,15 +813,16 @@ import { ToastService } from '../../../core/services/toast.service';
 
     .step-switch-prompt {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex-wrap: wrap;
-      gap: 6px;
+      gap: 5px;
       font-size: 13px;
       color: #64748b;
-      margin-top: 10px;
+      margin-top: 14px;
       text-align: center;
 
+      .switch-label,
       span {
         color: #64748b;
         font-weight: 500;
@@ -834,11 +835,11 @@ import { ToastService } from '../../../core/services/toast.service';
         font-size: 13px;
         font-weight: 700;
         cursor: pointer;
-        padding: 0;
+        padding: 2px 6px;
         display: inline-flex;
         align-items: center;
-        gap: 3px;
-        transition: color 0.15s ease;
+        gap: 4px;
+        transition: all 0.15s ease;
 
         .prompt-arrow {
           font-size: 15px;
@@ -850,7 +851,7 @@ import { ToastService } from '../../../core/services/toast.service';
           text-decoration: underline;
 
           .prompt-arrow {
-            transform: translateX(2px);
+            transform: translateX(3px);
           }
         }
       }
