@@ -39,9 +39,19 @@ namespace Ozikol_BCC.Application.Interfaces.Services
         public NotificationDispatchTarget TargetType { get; set; } = NotificationDispatchTarget.SingleUser;
 
         /// <summary>
-        /// Target user ID (required when TargetType is SingleUser).
+        /// Target user ID (required when TargetType is SingleUser, unless RecipientEmail is provided).
         /// </summary>
         public string? TargetUserId { get; set; }
+
+        /// <summary>
+        /// Optional direct recipient email address for transactional dispatches when TargetUserId is not yet established.
+        /// </summary>
+        public string? RecipientEmail { get; set; }
+
+        /// <summary>
+        /// Optional direct recipient full name for transactional email salutations.
+        /// </summary>
+        public string? RecipientName { get; set; }
 
         /// <summary>
         /// Target category ID (required when TargetType is Category).

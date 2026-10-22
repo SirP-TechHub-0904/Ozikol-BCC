@@ -9,6 +9,9 @@ using Ozikol_BCC.Application.Queries.UserQueries;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Application.Services;
+using Ozikol_BCC.Application.Interfaces.Services;
+using Ozikol_BCC.Application.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 using System.Text.Json;
 using static Ozikol_BCC.Domain.Enum.Enum;
@@ -27,6 +30,8 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly RoleManager<AppRole> _roleManager;
         private readonly IMemberIdGeneratorService _memberIdGenerator;
         private readonly IOtpVerificationService _otpService;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
+        private readonly IHubContext<NotificationHub>? _hubContext;
 
         public UsersApiController(
             IMediator mediator,
@@ -34,7 +39,9 @@ namespace Ozikol_BCC.Api.Controllers
             UserManager<Profile> userManager,
             RoleManager<AppRole> roleManager,
             IMemberIdGeneratorService memberIdGenerator,
-            IOtpVerificationService otpService)
+            IOtpVerificationService otpService,
+            ICentralNotificationDispatcher? notificationDispatcher = null,
+            IHubContext<NotificationHub>? hubContext = null)
         {
             _mediator = mediator;
             _dbContext = dbContext;
@@ -42,6 +49,8 @@ namespace Ozikol_BCC.Api.Controllers
             _roleManager = roleManager;
             _memberIdGenerator = memberIdGenerator;
             _otpService = otpService;
+            _notificationDispatcher = notificationDispatcher;
+            _hubContext = hubContext;
         }
 
         // =========================================================================
@@ -522,6 +531,7 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             await LogActivityAsync("Delete User", $"Permanently deleted member account for '{userName}' ({user.Email})", id, userName);
+            await NotifyAdministratorsAsync("Member Account Deleted", $"Member account for '{userName}' ({user.Email}) was permanently deleted by administration.", "/users/console/list", NotificationSeverity.Failed, "person_remove");
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Member account for '{userName}' has been deleted."));
         }
 
@@ -647,6 +657,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             // Log activity
             await LogActivityAsync("Create User", $"Created member account for '{newUser.FullName}' ({newUser.Email}) with Member ID '{newUser.MemberId}' and role '{roleToAssign}'", newUser.Id, newUser.FullName);
+            await NotifyAdministratorsAsync("New Member Registered", $"A new member account has been registered for '{newUser.FullName}' ({newUser.Email}) with Member ID '{newUser.MemberId}'.", $"/users/console/detail/{newUser.Id}", NotificationSeverity.Success, "person_add");
 
             return Ok(ApiResponse<object>.SuccessResponse(new { newUser.Id, newUser.MemberId, newUser.MustChangePassword }, "User account created successfully. Welcome email with credentials dispatched."));
         }
@@ -736,28 +747,8 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            // Also queue In-App Notification
-            try
-            {
-                _dbContext.BcpNotifications.Add(new BcpNotification
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = user.Id,
-                    Title = "Temporary Password Assigned",
-                    Message = "An administrator assigned a temporary password to your account. You will be prompted to update it upon sign in.",
-                    Category = BcpMessageCategory.Security,
-                    Priority = BcpMessagePriority.Urgent,
-                    EventType = BcpEventType.PasswordReset,
-                    Icon = "lock_reset",
-                    Module = "Security",
-                    IsRead = false
-                });
-                await _dbContext.SaveChangesAsync();
-            }
-            catch
-            {
-                // Non-fatal notification creation
-            }
+            // Dispatch in-app notification & SignalR real-time broadcast
+            await NotifyUserAsync(user.Id, "Temporary Password Assigned", "An administrator assigned a temporary password to your account. You will be prompted to update it upon sign in.", "/users/workspace/overview", NotificationSeverity.Update, "lock_reset");
 
             await LogActivityAsync("Reset Password", $"Admin reset password for '{user.FullName}' (MustChangePassword={user.MustChangePassword}, EmailNotified={request.SendEmailNotification ?? true})", user.Id, user.FullName);
             return Ok(ApiResponse<object>.SuccessResponse(null, "Temporary password applied. Email notification dispatched to member."));
@@ -875,6 +866,13 @@ namespace Ozikol_BCC.Api.Controllers
             await _dbContext.SaveChangesAsync();
 
             await LogActivityAsync("Status Change", $"Changed account status of '{user.FullName}' from {oldStatus} to {user.UserStatus}", user.Id, user.FullName);
+            await NotifyUserAsync(user.Id, "Account Status Updated",
+                request.IsActive
+                    ? "Your account has been reactivated by administration."
+                    : "Your account has been temporarily suspended by administration.",
+                "/users/workspace/overview",
+                request.IsActive ? NotificationSeverity.Success : NotificationSeverity.Failed,
+                request.IsActive ? "check_circle" : "block");
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Account status updated to {user.UserStatus}."));
         }
 
@@ -893,6 +891,11 @@ namespace Ozikol_BCC.Api.Controllers
             await _dbContext.SaveChangesAsync();
 
             await LogActivityAsync("Category Change", $"Assigned '{user.FullName}' to category '{category?.Name ?? "None"}'", user.Id, user.FullName);
+            await NotifyUserAsync(user.Id, "Category Updated",
+                $"Your membership tier/category has been updated to '{category?.Name ?? "Standard"}'.",
+                "/users/workspace/overview",
+                NotificationSeverity.Update,
+                "badge");
             return Ok(ApiResponse<object>.SuccessResponse(null, "Category assigned successfully."));
         }
 
@@ -1338,6 +1341,11 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _dbContext.SaveChangesAsync();
             await LogActivityAsync("Submit KPI Score", $"Evaluated KPI performance for '{user.FullName}' in period '{request.Period}'", user.Id, user.FullName);
+            await NotifyUserAsync(user.Id, "KPI Evaluation Recorded",
+                $"Your performance evaluation scores for period '{request.Period}' have been recorded.",
+                "/users/workspace/kpis",
+                NotificationSeverity.Update,
+                "insights");
 
             return Ok(ApiResponse<object>.SuccessResponse(null, "KPI evaluation scores saved successfully."));
         }
@@ -1977,7 +1985,163 @@ namespace Ozikol_BCC.Api.Controllers
                 await LogActivityAsync("Toggle Verification", $"Admin set email verified to {request.IsVerified} for '{user.FullName}'", user.Id, user.FullName);
             }
 
+            // In-app notification to member
+            await NotifyUserAsync(user.Id, "Verification Status Updated",
+                request.IsPhone
+                    ? $"Your phone number verification status has been marked as {(request.IsVerified ? "Verified" : "Unverified")} by administration."
+                    : $"Your email address verification status has been marked as {(request.IsVerified ? "Verified" : "Unverified")} by administration.",
+                "/users/workspace/security",
+                request.IsVerified ? NotificationSeverity.Success : NotificationSeverity.Warning,
+                "verified");
+
             return Ok(ApiResponse<object>.SuccessResponse(new { user.EmailConfirmed, user.PhoneNumberConfirmed }, "Verification status updated."));
+        }
+
+        private async Task NotifyUserAsync(string userId, string title, string message, string actionUrl = "/users/workspace/overview", NotificationSeverity severity = NotificationSeverity.Update, string icon = "info")
+        {
+            try
+            {
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = userId,
+                        Title = title,
+                        Message = message,
+                        ActionUrl = actionUrl,
+                        Module = "User Management",
+                        Icon = icon,
+                        Category = BcpMessageCategory.Account,
+                        Priority = BcpMessagePriority.Normal,
+                        Severity = severity,
+                        Channels = NotificationChannels.InApp
+                    });
+                }
+                else
+                {
+                    var notif = new BcpNotification
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Title = title,
+                        Message = message,
+                        ActionUrl = actionUrl,
+                        Module = "User Management",
+                        Icon = icon,
+                        Category = BcpMessageCategory.Account,
+                        Priority = BcpMessagePriority.Normal,
+                        Severity = severity,
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    };
+                    _dbContext.BcpNotifications.Add(notif);
+                    await _dbContext.SaveChangesAsync();
+
+                    if (_hubContext != null)
+                    {
+                        await _hubContext.Clients.Group($"user_{userId}").SendAsync("ReceiveNotification", notif);
+                    }
+                }
+            }
+            catch
+            {
+                // Non-fatal notification failure
+            }
+        }
+
+        private async Task NotifyAdministratorsAsync(string title, string message, string actionUrl = "/users/console/list", NotificationSeverity severity = NotificationSeverity.Update, string icon = "person")
+        {
+            try
+            {
+                var adminUserIds = await (from ur in _dbContext.UserRoles
+                                          join r in _dbContext.Roles on ur.RoleId equals r.Id
+                                          where r.Name == "Admin" || r.Name == "SuperAdmin" || r.Name == "IdentityManager" || r.Name == "UserManager"
+                                          select ur.UserId).Distinct().ToListAsync();
+
+                var notifications = adminUserIds.Select(adminId => new BcpNotification
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = adminId,
+                    Title = title,
+                    Message = message,
+                    ActionUrl = actionUrl,
+                    Module = "User Management",
+                    Icon = icon,
+                    Category = BcpMessageCategory.Account,
+                    Priority = BcpMessagePriority.Normal,
+                    Severity = severity,
+                    CreatedAt = DateTime.UtcNow,
+                    IsRead = false
+                }).ToList();
+
+                if (notifications.Count > 0)
+                {
+                    _dbContext.BcpNotifications.AddRange(notifications);
+                    await _dbContext.SaveChangesAsync();
+
+                    if (_hubContext != null)
+                    {
+                        foreach (var notif in notifications)
+                        {
+                            await _hubContext.Clients.Group($"user_{notif.UserId}").SendAsync("ReceiveNotification", notif);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Non-fatal notification failure
+            }
+        }
+
+        private async Task QueueEmailAsync(string recipientEmail, string recipientName, string subject, string htmlBody, BcpMessageCategory category = BcpMessageCategory.General, BcpMessagePriority priority = BcpMessagePriority.Normal, string? relatedUserId = null)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(recipientEmail)) return;
+
+                if (_notificationDispatcher != null && !string.IsNullOrWhiteSpace(relatedUserId))
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = relatedUserId,
+                        RecipientEmail = recipientEmail,
+                        RecipientName = recipientName,
+                        Title = subject,
+                        Message = subject,
+                        EmailSubject = subject,
+                        EmailHtmlBody = htmlBody,
+                        Category = category,
+                        Priority = priority,
+                        Channels = NotificationChannels.Email,
+                        SendEmailCopy = true
+                    });
+                }
+                else
+                {
+                    var emailItem = new BcpEmailQueue
+                    {
+                        Id = Guid.NewGuid(),
+                        RelatedUserId = relatedUserId,
+                        RecipientEmail = recipientEmail.Trim(),
+                        RecipientName = recipientName?.Trim() ?? string.Empty,
+                        Subject = subject,
+                        HtmlBody = htmlBody,
+                        Category = category,
+                        Priority = priority,
+                        Status = BcpQueueStatus.Queued,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _dbContext.BcpEmailQueue.Add(emailItem);
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+            catch
+            {
+                // Non-fatal email queueing
+            }
         }
 
         private async Task LogActivityAsync(string actionType, string description, string? targetProfileId, string? targetFullName)

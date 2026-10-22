@@ -105,19 +105,24 @@ namespace Ozikol_BCC.Application.Services.Notifications
 
                 if (payload.TargetType == NotificationDispatchTarget.SingleUser)
                 {
-                    if (string.IsNullOrWhiteSpace(payload.TargetUserId))
+                    if (!string.IsNullOrWhiteSpace(payload.TargetUserId))
                     {
-                        result.Errors.Add("TargetUserId is required for SingleUser dispatch.");
+                        var user = await _dbContext.Users.FindAsync(new object?[] { payload.TargetUserId }, cancellationToken);
+                        if (user != null)
+                        {
+                            targetProfiles.Add(user);
+                        }
+                        else if (string.IsNullOrWhiteSpace(payload.RecipientEmail))
+                        {
+                            result.Errors.Add($"Target user '{payload.TargetUserId}' was not found.");
+                            return result;
+                        }
+                    }
+                    else if (string.IsNullOrWhiteSpace(payload.RecipientEmail))
+                    {
+                        result.Errors.Add("TargetUserId or RecipientEmail is required for SingleUser dispatch.");
                         return result;
                     }
-
-                    var user = await _dbContext.Users.FindAsync(new object?[] { payload.TargetUserId }, cancellationToken);
-                    if (user == null)
-                    {
-                        result.Errors.Add($"Target user '{payload.TargetUserId}' was not found.");
-                        return result;
-                    }
-                    targetProfiles.Add(user);
                 }
                 else if (payload.TargetType == NotificationDispatchTarget.Category)
                 {
@@ -423,6 +428,11 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 .Select(p => p.Email!)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+
+            if (!string.IsNullOrWhiteSpace(payload.RecipientEmail) && !recipients.Contains(payload.RecipientEmail, StringComparer.OrdinalIgnoreCase))
+            {
+                recipients.Add(payload.RecipientEmail.Trim());
+            }
 
             foreach (var email in recipients)
             {
