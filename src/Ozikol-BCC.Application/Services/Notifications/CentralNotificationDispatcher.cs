@@ -426,9 +426,9 @@ namespace Ozikol_BCC.Application.Services.Notifications
 
             foreach (var email in recipients)
             {
+                string htmlBody = string.Empty;
                 try
                 {
-                    string htmlBody;
                     if (!string.IsNullOrWhiteSpace(payload.EmailHtmlBody) &&
                         (payload.EmailHtmlBody.Contains("<html", StringComparison.OrdinalIgnoreCase) ||
                          payload.EmailHtmlBody.Contains("<table", StringComparison.OrdinalIgnoreCase)))
@@ -457,13 +457,46 @@ namespace Ozikol_BCC.Application.Services.Notifications
                         htmlBody: htmlBody,
                         tag: $"notification-{severityLabel.ToLowerInvariant()}");
 
+                    _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                    {
+                        RecipientEmail = email,
+                        Subject = safeSubject,
+                        HtmlBody = htmlBody,
+                        Category = BcpMessageCategory.Communication,
+                        Priority = BcpMessagePriority.Normal,
+                        Status = BcpQueueStatus.Sent,
+                        SentAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow
+                    });
+
                     result.DispatchedEmailCount++;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "[CentralNotificationDispatcher] Email dispatch failed for {Email}: {Msg}", email, ex.Message);
                     result.Errors.Add($"Email delivery to '{email}' failed: {ex.Message}");
+
+                    _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                    {
+                        RecipientEmail = email,
+                        Subject = safeSubject,
+                        HtmlBody = !string.IsNullOrWhiteSpace(htmlBody) ? htmlBody : payload.Message,
+                        Category = BcpMessageCategory.Communication,
+                        Priority = BcpMessagePriority.Normal,
+                        Status = BcpQueueStatus.Failed,
+                        LastError = ex.Message,
+                        CreatedAt = DateTime.UtcNow
+                    });
                 }
+            }
+
+            try
+            {
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[CentralNotificationDispatcher] Failed to save BcpEmailQueue audit records: {Msg}", ex.Message);
             }
         }
 

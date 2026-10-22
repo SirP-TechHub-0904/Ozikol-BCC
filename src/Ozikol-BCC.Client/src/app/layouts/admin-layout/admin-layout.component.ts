@@ -110,6 +110,18 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
+          <div class="nav-item">
+            <a routerLink="/dashboard/mxmails" [class.active]="isCurrentRoute('/dashboard/mxmails') || isCurrentRoute('/admin/dashboard/mxmails')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">mark_email_read</span>
+                <span>MX Email Logs</span>
+                <span class="badge-pill badge-hot">Telemetry</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/dashboard/mxmails')" (click)="togglePin('MX Email Logs', '/dashboard/mxmails', 'mark_email_read'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/dashboard/mxmails') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/dashboard/mxmails') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
 
           <!-- 2. Website & CMS (Web Exclusive) -->
           <ng-container *ngIf="canAccessSuite('cms')">
@@ -4045,7 +4057,8 @@ export class AdminLayoutComponent implements OnInit {
     let tabTitle = 'Page';
     let tabIcon = 'description';
 
-    if (url.includes('/users/console/notifications')) { tabTitle = 'Notification Studio'; tabIcon = 'campaign'; }
+    if (url.includes('/dashboard/mxmails') || url.includes('/admin/mxmails') || url.includes('/mxmails')) { tabTitle = 'MX Email Logs'; tabIcon = 'mark_email_read'; }
+    else if (url.includes('/users/console/notifications')) { tabTitle = 'Notification Studio'; tabIcon = 'campaign'; }
     else if (url.includes('/users/workspace/notifications')) { tabTitle = 'Notifications'; tabIcon = 'notifications'; }
     else if (url.includes('/dashboard/workspace')) { tabTitle = 'Workspace Home'; tabIcon = 'space_dashboard'; }
     else if (url.includes('/dashboard/console') || url.includes('/admin/dashboard')) { tabTitle = 'Dashboard'; tabIcon = 'dashboard'; }
