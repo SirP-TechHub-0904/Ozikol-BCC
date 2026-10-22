@@ -413,58 +413,72 @@ export interface SuiteInfoDetail {
                   </button>
                 </div>
               </li>
-              <!-- Manage Account Dropdown Group -->
-              <li class="has-nested-sub">
-                <div class="sub-nav-wrapper">
-                  <a href="javascript:void(0)" [class.active]="isCurrentRoute('/identity/console/account')" class="sub-nav-item" (click)="toggleNestedMenu('manage_account', $event)">
-                    <span class="sub-nav-content">
-                      <span class="material-symbols-outlined sub-icon">manage_accounts</span>
-                      {{ 'nav.manage_account' | translate }}
-                    </span>
-                    <span class="material-symbols-outlined nested-arrow-icon" style="font-size: 16px; margin-left: auto;">
-                      {{ isNestedMenuOpen('manage_account') ? 'expand_more' : 'chevron_right' }}
-                    </span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account')" (click)="togglePin('Manage Account', '/identity/console/account', 'manage_accounts')" [title]="isPinned('/identity/console/account') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/account') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-                <ul class="nested-sub-menu" *ngIf="isNestedMenuOpen('manage_account')" style="list-style: none; padding: 4px 0 6px 18px; margin: 0; display: flex; flex-direction: column; gap: 4px;">
-                  <li>
-                    <a routerLink="/identity/console/account" [queryParams]="{ tab: 'password' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'password')" class="sub-nav-item" style="padding: 6px 12px; font-size: 12.5px;">
-                      <span class="material-symbols-outlined sub-icon" style="font-size: 15px;">key</span>
-                      <span>{{ 'nav.change_password' | translate }}</span>
-                    </a>
-                  </li>
-                  <li>
-                    <a routerLink="/identity/console/account" [queryParams]="{ tab: '2fa' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', '2fa')" class="sub-nav-item" style="padding: 6px 12px; font-size: 12.5px;">
-                      <span class="material-symbols-outlined sub-icon" style="font-size: 15px;">shield_lock</span>
-                      <span>{{ 'nav.mfa_security' | translate }}</span>
-                    </a>
-                  </li>
-                  <li>
-                    <a routerLink="/identity/console/account" [queryParams]="{ tab: 'devices' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'devices')" class="sub-nav-item" style="padding: 6px 12px; font-size: 12.5px;">
-                      <span class="material-symbols-outlined sub-icon" style="font-size: 15px;">devices</span>
-                      <span>{{ 'nav.manage_devices' | translate }}</span>
-                    </a>
-                  </li>
-                  <li>
-                    <a routerLink="/identity/console/account" [queryParams]="{ tab: 'activity' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'activity')" class="sub-nav-item" style="padding: 6px 12px; font-size: 12.5px;">
-                      <span class="material-symbols-outlined sub-icon" style="font-size: 15px;">history</span>
-                      <span>{{ 'nav.login_history' | translate }}</span>
-                    </a>
-                  </li>
-                  <li>
-                    <a routerLink="/identity/console/account" [class.active]="isAccountHubActive()" class="sub-nav-item" style="padding: 6px 12px; font-size: 12.5px; opacity: 0.9;">
-                      <span class="material-symbols-outlined sub-icon" style="font-size: 15px;">tune</span>
-                      <span>{{ 'nav.account_hub' | translate }}</span>
-                    </a>
-                  </li>
-                </ul>
-              </li>
             </ul>
           </div>
           </ng-container>
+
+          <!-- Administrator Account & Security Management Dropdown (Top-Level) -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('admin_manage_account')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/identity/console/account')" (click)="toggleMenu('admin_manage_account')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">manage_accounts</span>
+                <span>{{ 'nav.manage_my_account' | translate }}</span>
+              </div>
+              <span class="material-symbols-outlined arrow-icon">{{ isMenuOpen('admin_manage_account') ? 'expand_more' : 'chevron_right' }}</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('admin_manage_account')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console/account" [queryParams]="{ tab: 'password' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'password')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">key</span>{{ 'nav.change_password' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account?tab=password')" (click)="togglePin('Change Password', '/identity/console/account?tab=password', 'key')" [title]="isPinned('/identity/console/account?tab=password') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/account?tab=password') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console/account" [queryParams]="{ tab: '2fa' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', '2fa')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">shield_lock</span>{{ 'nav.mfa_security' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account?tab=2fa')" (click)="togglePin('2FA Security', '/identity/console/account?tab=2fa', 'shield_lock')" [title]="isPinned('/identity/console/account?tab=2fa') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/account?tab=2fa') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console/account" [queryParams]="{ tab: 'devices' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'devices')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">devices</span>{{ 'nav.manage_devices' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account?tab=devices')" (click)="togglePin('Manage Devices', '/identity/console/account?tab=devices', 'devices')" [title]="isPinned('/identity/console/account?tab=devices') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/account?tab=devices') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console/account" [queryParams]="{ tab: 'activity' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'activity')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history</span>{{ 'nav.login_history' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account?tab=activity')" (click)="togglePin('Login History', '/identity/console/account?tab=activity', 'history')" [title]="isPinned('/identity/console/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/account?tab=activity') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console/account" [class.active]="isAccountHubActive()" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>{{ 'nav.account_hub' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account')" (click)="togglePin('Account Hub', '/identity/console/account', 'tune')" [title]="isPinned('/identity/console/account') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/account') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+          </div>
 
           <!-- Suite 3: People & Community -->
           <ng-container *ngIf="canAccessSuite('people_community')">
@@ -3711,7 +3725,11 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   updateActiveMenu(url: string): void {
-    if (url.startsWith('/users/console') || url.startsWith('/admin/users')) {
+    if (url.startsWith('/identity/console/account')) {
+      this.openMenus = { admin_manage_account: true };
+    } else if (url.startsWith('/users/workspace/account')) {
+      this.openMenus = { workspace_account: true };
+    } else if (url.startsWith('/users/console') || url.startsWith('/admin/users')) {
       this.openMenus = { users: true };
     } else if (url.startsWith('/content/console') || url.startsWith('/admin/content')) {
       this.openMenus = { content: true };
