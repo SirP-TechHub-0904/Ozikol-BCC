@@ -35,10 +35,10 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         </div>
         <div class="widget-body" style="padding:0;">
           <div *ngIf="invitations.length === 0 && !isLoading" class="empty-state">
-            <span class="material-symbols-outlined">drafts</span>
+            <span class="material-symbols-outlined empty-state-icon">drafts</span>
             <p>No invitations issued yet. Click "Issue New Invitation" to onboard a new workspace member.</p>
-            <a routerLink="/identity/console/invitations/create" class="btn btn-primary" style="margin-top: 14px;">
-              <span class="material-symbols-outlined">send</span>
+            <a routerLink="/identity/console/invitations/create" class="btn btn-primary btn-sm" style="margin-top: 14px;">
+              <span class="material-symbols-outlined btn-icon">send</span>
               <span>Issue First Invitation</span>
             </a>
           </div>
@@ -104,6 +104,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       align-items: center;
       gap: 8px;
       transition: background 0.2s;
+      text-decoration: none;
     }
     .btn-outline {
       background: transparent;
@@ -149,13 +150,26 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       color: #0f172a;
     }
     .empty-state {
-      padding: 40px;
+      padding: 48px 24px;
       text-align: center;
       color: #64748b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
-    .empty-state span {
-      font-size: 40px;
+    .empty-state p {
+      font-size: 13.5px;
+      color: #64748b;
+      margin: 0 0 14px;
+    }
+    .empty-state .empty-state-icon {
+      font-size: 44px;
       margin-bottom: 12px;
+      color: #94a3b8;
+    }
+    .btn-icon {
+      font-size: 16px !important;
     }
     .form-control {
       width: 100%;
