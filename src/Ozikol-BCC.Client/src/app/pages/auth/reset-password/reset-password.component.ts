@@ -19,23 +19,20 @@ import { ToastService } from '../../../core/services/toast.service';
     <div class="reset-container">
       <div class="reset-card">
         <!-- Brand Avatar & Header -->
+        <!-- Brand Identity & Header -->
         <div class="reset-card-header">
-          <!-- Official Brand Logo -->
-          <div class="brand-logo-wrap" *ngIf="brandLogoUrl">
+          <!-- 1. Official Brand Logo if uploaded -->
+          <div class="brand-identity-row" *ngIf="brandLogoUrl">
             <img [src]="brandLogoUrl" [alt]="brandCompanyName || 'Workspace Logo'" class="brand-logo-img" />
           </div>
 
-          <!-- Fallback: Brand Name & Icon / Initials -->
-          <div class="brand-text-row" *ngIf="!brandLogoUrl && (brandCompanyName || brandIconUrl || brandInitials)">
-            <div class="brand-avatar" *ngIf="brandIconUrl || brandInitials">
-              <img *ngIf="brandIconUrl" [src]="brandIconUrl" [alt]="brandCompanyName" class="brand-icon-img" />
-              <span *ngIf="!brandIconUrl && brandInitials" class="brand-initials">{{ brandInitials }}</span>
-            </div>
-            <span class="brand-company-title" *ngIf="brandCompanyName">{{ brandCompanyName }}</span>
+          <!-- 2. Brand Name (Text Only) if no logo is uploaded -->
+          <div class="brand-identity-row" *ngIf="!brandLogoUrl && brandCompanyName">
+            <span class="brand-company-title">{{ brandCompanyName }}</span>
           </div>
 
-          <!-- Fallback Avatar when no brand identity exists -->
-          <div class="brand-avatar default-avatar" *ngIf="!brandLogoUrl && !brandCompanyName && !brandIconUrl && !brandInitials">
+          <!-- 3. Fallback Step Avatar only when neither logo nor brand name is available -->
+          <div class="brand-avatar default-avatar" *ngIf="!brandLogoUrl && !brandCompanyName">
             <span class="material-symbols-outlined avatar-icon">{{ activeStep === 1 ? 'mark_email_read' : 'lock_reset' }}</span>
           </div>
 
@@ -319,11 +316,11 @@ import { ToastService } from '../../../core/services/toast.service';
       width: 100%;
     }
 
-    .brand-logo-wrap {
+    .brand-identity-row {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
 
     .brand-logo-img {
@@ -332,31 +329,10 @@ import { ToastService } from '../../../core/services/toast.service';
       object-fit: contain;
     }
 
-    .brand-text-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-
     .brand-company-title {
-      font-size: 18px;
-      font-weight: 800;
-      color: #0f172a;
-      letter-spacing: -0.02em;
-    }
-
-    .brand-icon-img {
-      max-width: 32px;
-      max-height: 32px;
-      object-fit: contain;
-    }
-
-    .brand-initials {
       font-size: 20px;
       font-weight: 800;
-      color: #0050e5;
+      color: #0f172a;
       letter-spacing: -0.02em;
     }
 

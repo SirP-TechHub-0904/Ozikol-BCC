@@ -24,19 +24,16 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
       <div class="login-card" *ngIf="!workspaceNotFound">
         <!-- Logo & Header -->
         <div class="card-header">
-          <!-- Official Brand Logo -->
-          <div class="brand-logo-wrap" *ngIf="brandLogoUrl">
+          <!-- 1. Official Brand Logo if uploaded -->
+          <div class="brand-identity-row" *ngIf="brandLogoUrl">
             <img [src]="brandLogoUrl" [alt]="brandCompanyName || 'Workspace Logo'" class="brand-logo-top" />
           </div>
 
-          <!-- Fallback: Brand Name & Icon / Initials -->
-          <div class="brand-text-row" *ngIf="!brandLogoUrl && (brandCompanyName || brandIconUrl || brandInitials)">
-            <div class="brand-avatar" *ngIf="brandIconUrl || brandInitials">
-              <img *ngIf="brandIconUrl" [src]="brandIconUrl" [alt]="brandCompanyName" class="brand-logo-main" />
-              <span *ngIf="!brandIconUrl && brandInitials" class="brand-initials">{{ brandInitials }}</span>
-            </div>
-            <span class="brand-company-title" *ngIf="brandCompanyName">{{ brandCompanyName }}</span>
+          <!-- 2. Brand Name (Text Only) if no logo is uploaded -->
+          <div class="brand-identity-row" *ngIf="!brandLogoUrl && brandCompanyName">
+            <span class="brand-company-title">{{ brandCompanyName }}</span>
           </div>
+
           <h2 class="title">Sign In to Workspace</h2>
           <p class="subtitle">Enter your credentials to access your organization portal.</p>
         </div>
@@ -360,26 +357,19 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
       margin-bottom: 24px;
       width: 100%;
     }
-    .brand-logo-wrap {
+    .brand-identity-row {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
     .brand-logo-top {
       max-height: 48px;
       max-width: 220px;
       object-fit: contain;
     }
-    .brand-text-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
     .brand-company-title {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 800;
       color: #0f172a;
       letter-spacing: -0.02em;
