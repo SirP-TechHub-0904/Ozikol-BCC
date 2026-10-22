@@ -1597,7 +1597,7 @@ export class IdentityInvitationCreateComponent implements OnInit {
       ]
     },
 
-    // GROUP 2: Modular Feature Authority Roles
+    // GROUP 2: Modular Feature Authority Roles (Active)
     {
       name: 'User Manager',
       group: RoleGroup.Feature,
@@ -1635,120 +1635,6 @@ export class IdentityInvitationCreateComponent implements OnInit {
         'Cannot modify platform billing or subscriptions',
         'Cannot assign the SuperAdmin root role'
       ]
-    },
-    {
-      name: 'Website CMS & Blog Studio',
-      group: RoleGroup.Feature,
-      featureAreaKey: 'ContentManager',
-      tier: 'Content Authority',
-      badgeClass: 'badge-content',
-      icon: 'web',
-      summary: 'Creating, updating, and publishing public web pages, articles, and media.',
-      defaultActionRole: ActionRoleType.FeatureEditor,
-      allowedActions: [
-        'Create, edit, and publish website landing pages',
-        'Manage blog posts, authors, and tag taxonomies',
-        'Upload and organize media library assets'
-      ],
-      restrictedActions: [
-        'Cannot access user directory or billing records',
-        'Cannot alter workspace DNS or identity policies'
-      ]
-    },
-    {
-      name: 'Commerce & Product Catalog',
-      group: RoleGroup.Feature,
-      featureAreaKey: 'CommerceManager',
-      tier: 'Commerce Authority',
-      badgeClass: 'badge-commerce',
-      icon: 'shopping_bag',
-      summary: 'Inventory management, product definitions, discounts, and customer order processing.',
-      defaultActionRole: ActionRoleType.FeatureEditor,
-      allowedActions: [
-        'Manage product listings, variants, and stock counts',
-        'Process customer orders and fulfillment states',
-        'Configure discount codes and pricing rules'
-      ],
-      restrictedActions: [
-        'Cannot alter tenant bank accounts or payout gateways',
-        'Cannot view executive financial subscription ledgers'
-      ]
-    },
-    {
-      name: 'Member CRM & Relationships',
-      group: RoleGroup.Feature,
-      featureAreaKey: 'CrmManager',
-      tier: 'Engagement Authority',
-      badgeClass: 'badge-crm',
-      icon: 'contact_page',
-      summary: 'Lead engagement, relationship stages, communication logs, and customer CRM.',
-      defaultActionRole: ActionRoleType.FeatureEditor,
-      allowedActions: [
-        'Track customer leads and stage transitions',
-        'Log interaction notes and scheduled touchpoints',
-        'Manage pipeline deals and customer rosters'
-      ],
-      restrictedActions: [
-        'Cannot modify workspace site code or themes',
-        'Cannot grant access rights to external users'
-      ]
-    },
-    {
-      name: 'Invoicing & Plan Subscriptions',
-      group: RoleGroup.Feature,
-      featureAreaKey: 'BillingManager',
-      tier: 'Finance Authority',
-      badgeClass: 'badge-billing',
-      icon: 'payments',
-      summary: 'Managing invoices, subscription tiers, payment receipts, and billing items.',
-      defaultActionRole: ActionRoleType.FeatureEditor,
-      allowedActions: [
-        'Issue client invoices and credit memos',
-        'Configure subscription tiers and billable products',
-        'Track payment receipts and outstanding balances'
-      ],
-      restrictedActions: [
-        'Cannot edit user accounts or directory rosters',
-        'Cannot access web publishing tools'
-      ]
-    },
-    {
-      name: 'Workspace Settings & Branding',
-      group: RoleGroup.Feature,
-      featureAreaKey: 'SettingsManager',
-      tier: 'Branding Authority',
-      badgeClass: 'badge-settings',
-      icon: 'settings',
-      summary: 'Customizing brand assets, site header, footer, contact channels, and UI theme.',
-      defaultActionRole: ActionRoleType.FeatureEditor,
-      allowedActions: [
-        'Upload corporate logos and brand color schemes',
-        'Configure header, footer, and navigation menus',
-        'Set public contact channels and support info'
-      ],
-      restrictedActions: [
-        'Cannot modify security encryption keys',
-        'Cannot manage user roles or invoices'
-      ]
-    },
-    {
-      name: 'Custom Intake & Survey Forms',
-      group: RoleGroup.Feature,
-      featureAreaKey: 'FormsManager',
-      tier: 'Operations Authority',
-      badgeClass: 'badge-forms',
-      icon: 'dynamic_form',
-      summary: 'Designing custom submission forms, survey questionnaires, and responses.',
-      defaultActionRole: ActionRoleType.FeatureEditor,
-      allowedActions: [
-        'Build custom multi-step forms and surveys',
-        'Review and export submitted responses',
-        'Configure auto-reply confirmations'
-      ],
-      restrictedActions: [
-        'Cannot alter workspace security settings',
-        'Cannot assign roles or manage members'
-      ]
     }
   ];
 
@@ -1783,56 +1669,21 @@ export class IdentityInvitationCreateComponent implements OnInit {
     }
   ];
 
-  /** Available Feature Capability Scopes for Feature Editor */
+  /** Available Feature Capability Scopes for Feature Editor (Active) */
   featureScopeOptions: FeatureScopeOption[] = [
     {
       key: 'UserManager',
       label: 'User Directory & Profiles',
-      icon: 'group',
-      description: 'Authoring and management of member records, categories, and account statuses.',
+      icon: 'manage_accounts',
+      description: 'Authoring and governance of member records, categories, and account statuses.',
       permittedAreas: ['Member Profiles', 'User Categories', 'Member Rosters']
     },
     {
-      key: 'ContentManager',
-      label: 'Website CMS & Blog Studio',
-      icon: 'web',
-      description: 'Creating, updating, and publishing public web pages, articles, and media.',
-      permittedAreas: ['CMS Web Pages', 'Blog Posts & Tags', 'Media Library']
-    },
-    {
-      key: 'CommerceManager',
-      label: 'Commerce & Product Catalog',
-      icon: 'shopping_bag',
-      description: 'Inventory management, product definitions, and customer order processing.',
-      permittedAreas: ['Product Catalog', 'Orders & Shipping', 'Discounts & SKUs']
-    },
-    {
-      key: 'CrmManager',
-      label: 'Member CRM & Relationships',
-      icon: 'contact_page',
-      description: 'Lead engagement, relationship stages, communication logs, and customer CRM.',
-      permittedAreas: ['CRM Contacts', 'Pipeline Stages', 'Interaction Logs']
-    },
-    {
-      key: 'BillingManager',
-      label: 'Invoicing & Plan Subscriptions',
-      icon: 'payments',
-      description: 'Managing invoices, subscription tiers, payment receipts, and billing items.',
-      permittedAreas: ['Invoice Records', 'Subscription Plans', 'Payment Statuses']
-    },
-    {
-      key: 'SettingsManager',
-      label: 'Workspace Settings & Branding',
-      icon: 'settings',
-      description: 'Customizing brand assets, site header, footer, contact channels, and UI theme.',
-      permittedAreas: ['Brand Assets', 'Site Information', 'Navigation Menus']
-    },
-    {
-      key: 'FormsManager',
-      label: 'Custom Intake & Survey Forms',
-      icon: 'dynamic_form',
-      description: 'Designing custom submission forms, survey questionnaires, and responses.',
-      permittedAreas: ['Form Builder', 'Inquiry Submissions', 'Survey Analytics']
+      key: 'IdentityManager',
+      label: 'Identity & Access Control',
+      icon: 'security',
+      description: 'Issuing onboarding invitations, role delegations, and security policies.',
+      permittedAreas: ['Onboarding Invitations', 'Role Assignments', 'Security Policies']
     }
   ];
 
