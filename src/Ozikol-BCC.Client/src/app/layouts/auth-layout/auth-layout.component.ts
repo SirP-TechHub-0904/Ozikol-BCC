@@ -55,11 +55,11 @@ import { ApiService } from '../../core/services/api.service';
               </span>
             </div>
 
-            <!-- Central Hero Narrative (Dynamic from DB) -->
+            <!-- Central Hero Narrative (Dynamic from DB with Smart Contextual Fallbacks) -->
             <div class="showcase-hero">
-              <div class="hero-chip" *ngIf="loginNoteTitle">
+              <div class="hero-chip">
                 <span class="material-symbols-outlined icon-chip">verified_user</span>
-                <span>{{ loginNoteTitle }}</span>
+                <span>{{ displayChip }}</span>
               </div>
               <h1 class="hero-title">{{ displayTitle }}</h1>
               <p class="hero-description">{{ displayDescription }}</p>
@@ -100,7 +100,7 @@ import { ApiService } from '../../core/services/api.service';
 
               <!-- Universal Form Footer Note & Powered by Ozikol -->
               <div class="form-footer-meta">
-                <p class="auth-terms-note" *ngIf="loginNoteFooter">{{ loginNoteFooter }}</p>
+                <p class="auth-terms-note">{{ displayFooterNote }}</p>
                 <div class="powered-by-row" [class.desktop-hidden-in-split]="!isCentered">
                   <span>Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a></span>
                 </div>
@@ -754,6 +754,11 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
     return this.loginLayout?.toLowerCase() === 'centered';
   }
 
+  get isResetPasswordRoute(): boolean {
+    const url = this.router.url.toLowerCase();
+    return url.includes('reset-password') || url.includes('forgot-password');
+  }
+
   get displayIcon(): string {
     return this.brandIconUrl || '';
   }
@@ -769,12 +774,30 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
     return this.loginBgUrl?.trim() ? this.loginBgUrl.trim() : this.defaultBgUrl;
   }
 
+  get displayChip(): string {
+    if (this.loginNoteTitle?.trim()) {
+      return this.loginNoteTitle.trim();
+    }
+    return this.isResetPasswordRoute ? 'Self-Service Account Recovery' : 'Verified Workspace Portal';
+  }
+
   get displayTitle(): string {
+    if (this.isResetPasswordRoute) {
+      return 'Account Recovery & Verification';
+    }
     return this.loginTitle?.trim() || `Sign In to ${this.brandName}`;
   }
 
   get displayDescription(): string {
+    if (this.isResetPasswordRoute) {
+      return 'Enter your registered account email to receive a secure single-use recovery code and set your new permanent password.';
+    }
     return this.loginNote?.trim() || 
       'Access your unified enterprise workspace, collaborate with your teams, and manage institutional records securely.';
+  }
+
+  get displayFooterNote(): string {
+    return this.loginNoteFooter?.trim() || 
+      'Protected by enterprise authentication, end-to-end encryption, and comprehensive audit tracking.';
   }
 }
