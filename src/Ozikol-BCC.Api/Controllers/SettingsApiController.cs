@@ -310,7 +310,7 @@ namespace Ozikol_BCC.Api.Controllers
                 SecondaryColor = "#1f6bff",
                 LoginBackgroundImageUrl = site?.LoginBackgroundImageUrl ?? "",
                 LoginBackgroundImageKey = site?.LoginBackgroundImageKey ?? "",
-                LoginLayout = !string.IsNullOrWhiteSpace(site?.LoginLayout) ? site.LoginLayout : "split",
+                LoginLayout = !string.IsNullOrWhiteSpace(site?.LoginLayout) ? site.LoginLayout : "centered",
                 AllowPublicRegistration = _db.MisConfigurationSettings.Select(c => (bool?)c.AllowPublicRegistration).FirstOrDefault() ?? true,
                 UseNormalLogoInLogin = site?.UseNormalLogoInLogin ?? true,
                 UseWhiteLogoInLogin = site?.UseWhiteLogoInLogin ?? false,

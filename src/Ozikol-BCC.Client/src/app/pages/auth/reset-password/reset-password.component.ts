@@ -21,19 +21,8 @@ import { ToastService } from '../../../core/services/toast.service';
         <!-- Brand Avatar & Header -->
         <!-- Brand Identity & Header -->
         <div class="reset-card-header">
-          <!-- 1. Official Brand Logo if uploaded -->
-          <div class="brand-identity-row" *ngIf="brandLogoUrl">
-            <img [src]="brandLogoUrl" [alt]="brandCompanyName || 'Workspace Logo'" class="brand-logo-img" />
-          </div>
-
-          <!-- 2. Brand Name (Text Only) if no logo is uploaded -->
-          <div class="brand-identity-row" *ngIf="!brandLogoUrl && brandCompanyName">
-            <span class="brand-company-title">{{ brandCompanyName }}</span>
-          </div>
-
-          <!-- 3. Fallback Step Avatar only when neither logo nor brand name is available -->
-          <div class="brand-avatar default-avatar" *ngIf="!brandLogoUrl && !brandCompanyName">
-            <span class="material-symbols-outlined avatar-icon">{{ activeStep === 1 ? 'mark_email_read' : 'lock_reset' }}</span>
+          <div class="brand-identity-row">
+            <img [src]="brandLogoUrl || 'assets/images/ozikol.png'" alt="Brand Logo" class="brand-logo-img" />
           </div>
 
           <h2 class="title">{{ activeStep === 1 ? 'Forgot Password?' : 'Reset Account Password' }}</h2>

@@ -240,8 +240,8 @@ namespace Ozikol_BCC.Domain.Models
         [Display(Name = "Login Screen Layout")]
         public string LoginLayout
         {
-            get => LoginBackgroundImageKey == "centered" ? "centered" : "split";
-            set => LoginBackgroundImageKey = value == "centered" ? "centered" : "split";
+            get => LoginBackgroundImageKey == "split" ? "split" : "centered";
+            set => LoginBackgroundImageKey = value == "split" ? "split" : "centered";
         }
 
         /// <summary>

@@ -39,15 +39,10 @@ import { ApiService } from '../../core/services/api.service';
             <div class="showcase-header">
               <a routerLink="/" class="brand-link" title="Return to Home">
                 <img 
-                  *ngIf="displayLogo" 
                   [src]="displayLogo" 
-                  [alt]="brandName" 
+                  alt="Logo" 
                   class="brand-logo-img" 
                 />
-                <div *ngIf="!displayLogo" class="brand-fallback-badge">
-                  <img *ngIf="displayIcon" [src]="displayIcon" [alt]="brandName" class="brand-icon-img" />
-                  <span class="fallback-name">{{ brandName }}</span>
-                </div>
               </a>
               <span class="portal-badge">
                 <span class="pulse-dot"></span>
@@ -72,7 +67,6 @@ import { ApiService } from '../../core/services/api.service';
                 <span>Return to Home</span>
               </a>
               <div class="footer-meta">
-                <span class="copyright-text">&copy; {{ currentYear }} {{ brandName }}.</span>
                 <span class="powered-by-tag">
                   Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a>
                 </span>
@@ -87,21 +81,12 @@ import { ApiService } from '../../core/services/api.service';
         <main class="auth-form-panel">
           <div class="form-panel-scroll">
             <div class="form-wrapper">
-              <!-- Brand Header (Always in Centered Mode, Mobile-Only in Split Mode) -->
-              <div class="mobile-brand-bar" [class.always-visible]="isCentered">
-                <a routerLink="/" class="mobile-logo-link">
-                  <img *ngIf="displayLogo" [src]="displayLogo" [alt]="brandName" class="mobile-logo-img" />
-                  <span *ngIf="!displayLogo" class="mobile-brand-text">{{ brandName }}</span>
-                </a>
-              </div>
-
               <!-- Routed Auth View (Login, 2FA, Reset Password, Register) -->
               <router-outlet></router-outlet>
 
               <!-- Universal Form Footer Note & Powered by Ozikol -->
               <div class="form-footer-meta">
-                <p class="auth-terms-note">{{ displayFooterNote }}</p>
-                <div class="powered-by-row" [class.desktop-hidden-in-split]="!isCentered">
+                <div class="powered-by-row">
                   <span>Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a></span>
                 </div>
               </div>
@@ -599,7 +584,7 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
   brandIconUrl: string = '';
   useWhiteLogo: boolean = false;
   loginBgUrl: string = '';
-  loginLayout: string = 'split';
+  loginLayout: string = 'centered';
   loginTitle: string = '';
   loginNoteTitle: string = '';
   loginNote: string = '';
@@ -633,7 +618,7 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
           this.brandIconUrl = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
           this.useWhiteLogo = res.data.useWhiteLogoInLogin || false;
           this.loginBgUrl = res.data.loginBackgroundImageUrl || '';
-          this.loginLayout = res.data.loginLayout || 'split';
+          this.loginLayout = res.data.loginLayout || 'centered';
           this.loginTitle = res.data.loginTitle || '';
           this.loginNoteTitle = res.data.loginNoteTitle || '';
           this.loginNote = res.data.loginNote || '';
@@ -767,7 +752,7 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
     if (this.useWhiteLogo && this.brandWhiteLogoUrl) {
       return this.brandWhiteLogoUrl;
     }
-    return this.brandWhiteLogoUrl || this.brandLogoUrl || '';
+    return this.brandWhiteLogoUrl || this.brandLogoUrl || 'assets/images/ozikol.png';
   }
 
   get activeBackground(): string {
@@ -785,7 +770,7 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
     if (this.isResetPasswordRoute) {
       return 'Account Recovery & Verification';
     }
-    return this.loginTitle?.trim() || `Sign In to ${this.brandName}`;
+    return this.loginTitle?.trim() || 'Sign In to Workspace';
   }
 
   get displayDescription(): string {

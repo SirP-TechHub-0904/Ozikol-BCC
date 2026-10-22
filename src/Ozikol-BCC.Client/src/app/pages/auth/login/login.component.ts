@@ -24,18 +24,13 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
       <div class="login-card" *ngIf="!workspaceNotFound">
         <!-- Logo & Header -->
         <div class="card-header">
-          <!-- 1. Official Brand Logo if uploaded -->
-          <div class="brand-identity-row" *ngIf="brandLogoUrl">
-            <img [src]="brandLogoUrl" [alt]="brandCompanyName || 'Workspace Logo'" class="brand-logo-top" />
+          <!-- Official Brand Logo if uploaded, or default platform logo -->
+          <div class="brand-identity-row">
+            <img [src]="brandLogoUrl || 'assets/images/ozikol.png'" alt="Brand Logo" class="brand-logo-top" />
           </div>
 
-          <!-- 2. Brand Name (Text Only) if no logo is uploaded -->
-          <div class="brand-identity-row" *ngIf="!brandLogoUrl && brandCompanyName">
-            <span class="brand-company-title">{{ brandCompanyName }}</span>
-          </div>
-
-          <h2 class="title">Sign In to Workspace</h2>
-          <p class="subtitle">Enter your credentials to access your organization portal.</p>
+          <h2 class="title">Sign In</h2>
+          <p class="subtitle">Enter your credentials to access your account.</p>
         </div>
 
         <!-- Alert Error Banner -->

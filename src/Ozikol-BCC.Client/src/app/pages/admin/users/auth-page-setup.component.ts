@@ -367,15 +367,14 @@ interface WallpaperPreset {
               <div class="sim-split-wrapper" *ngIf="brand.loginLayout !== 'centered'">
                 <div class="sim-left-showcase">
                   <div class="sim-brand-row">
-                    <img *ngIf="displayLogo" [src]="displayLogo" alt="Brand Logo" class="sim-logo" />
-                    <span *ngIf="!displayLogo" class="sim-brand-fallback">{{ brand.companyName || 'Workspace' }}</span>
+                    <img [src]="displayLogo || 'assets/images/ozikol-white.png'" alt="Brand Logo" class="sim-logo" />
                   </div>
                   <div class="sim-hero-narrative">
                     <div class="sim-chip" *ngIf="brand.loginNoteTitle">
                       <span class="material-symbols-outlined" style="font-size: 10px;">verified_user</span>
                       <span>{{ brand.loginNoteTitle }}</span>
                     </div>
-                    <h4 class="sim-hero-title">{{ brand.loginTitle || ('Sign In to ' + (brand.companyName || 'Workspace')) }}</h4>
+                    <h4 class="sim-hero-title">{{ brand.loginTitle || 'Sign In to Workspace' }}</h4>
                     <p class="sim-hero-desc">{{ brand.loginNote || 'Access your unified enterprise workspace.' }}</p>
                   </div>
                   <div class="sim-footer-meta">
@@ -415,10 +414,9 @@ interface WallpaperPreset {
                 </div>
                 <div class="sim-centered-card">
                   <div class="sim-brand-row" style="margin-bottom: 8px;">
-                    <img *ngIf="displayLogo" [src]="displayLogo" alt="Brand Logo" class="sim-logo" />
-                    <span *ngIf="!displayLogo" class="sim-brand-fallback" style="color: #0f172a;">{{ brand.companyName || 'Workspace' }}</span>
+                    <img [src]="displayLogo || 'assets/images/ozikol.png'" alt="Brand Logo" class="sim-logo" />
                   </div>
-                  <h4 class="sim-card-title" style="margin-bottom: 2px;">{{ brand.loginTitle || ('Sign In to ' + (brand.companyName || 'Workspace')) }}</h4>
+                  <h4 class="sim-card-title" style="margin-bottom: 2px;">{{ brand.loginTitle || 'Sign In' }}</h4>
                   <p class="sim-card-subtitle">{{ brand.loginNote || 'Enter your credentials to enter the workspace.' }}</p>
 
                   <div class="sim-form-line" style="margin-top: 10px;">
@@ -1323,7 +1321,7 @@ export class AuthPageSetupComponent implements OnInit {
     useWhiteLogoInLogin: false,
     loginBackgroundImageUrl: '',
     loginBackgroundImageKey: '',
-    loginLayout: 'split',
+    loginLayout: 'centered',
     allowPublicRegistration: true,
     loginTitle: '',
     loginNoteTitle: '',
@@ -1421,7 +1419,7 @@ export class AuthPageSetupComponent implements OnInit {
           this.brand = { ...this.brand, ...res.data };
           // Normalise defaults
           if (!this.brand.loginLayout) {
-            this.brand.loginLayout = 'split';
+            this.brand.loginLayout = 'centered';
           }
           if (this.brand.allowPublicRegistration === undefined) {
             this.brand.allowPublicRegistration = true;
