@@ -707,9 +707,19 @@ public class TenantOnboardingService : ITenantOnboardingService
         {
             var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
 
-            // 1. Seed Roles
-            var rolesToSeed = new[] { "SuperAdmin", "Admin", "Manager", "Member", "User" };
-            foreach (var roleName in rolesToSeed)
+            // 1. Seed Roles (All canonical platform roles)
+            var rolesToSeed = new (string Name, Ozikol_BCC.Domain.Enum.Enum.RoleCategory Category)[]
+            {
+                ("SuperAdmin", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),
+                ("Admin", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.Both),
+                ("Global Editor", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),
+                ("Feature Editor", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),
+                ("Read Only", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),
+                ("Member", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP),
+                ("Manager", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.Both),
+                ("User", Ozikol_BCC.Domain.Enum.Enum.RoleCategory.BCP)
+            };
+            foreach (var (roleName, category) in rolesToSeed)
             {
                 if (!await dbContext.Roles.AnyAsync(r => r.Name == roleName, cancellationToken))
                 {
@@ -717,7 +727,9 @@ public class TenantOnboardingService : ITenantOnboardingService
                     {
                         Id = Guid.NewGuid().ToString(),
                         Name = roleName,
-                        NormalizedName = roleName.ToUpperInvariant()
+                        NormalizedName = roleName.ToUpperInvariant(),
+                        RoleCategory = category,
+                        ConcurrencyStamp = Guid.NewGuid().ToString()
                     });
                 }
             }

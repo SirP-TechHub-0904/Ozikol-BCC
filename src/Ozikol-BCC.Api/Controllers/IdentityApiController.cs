@@ -56,12 +56,25 @@ namespace Ozikol_BCC.Api.Controllers
                 ("Member", RoleCategory.BCP)
             };
 
+            bool changed = false;
             foreach (var (name, cat) in systemRoles)
             {
-                if (!await _roleManager.RoleExistsAsync(name))
+                var roleExists = await _dbContext.Roles.AnyAsync(r => r.Name == name || r.NormalizedName == name.ToUpperInvariant());
+                if (!roleExists)
                 {
-                    await _roleManager.CreateAsync(new AppRole(name) { RoleCategory = cat });
+                    _dbContext.Roles.Add(new AppRole(name)
+                    {
+                        NormalizedName = name.ToUpperInvariant(),
+                        RoleCategory = cat,
+                        ConcurrencyStamp = Guid.NewGuid().ToString()
+                    });
+                    changed = true;
                 }
+            }
+
+            if (changed)
+            {
+                await _dbContext.SaveChangesAsync();
             }
         }
 
@@ -99,128 +112,138 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("roles/catalog")]
         public async Task<IActionResult> GetRolesCatalog()
         {
-            await EnsureSeededRolesAsync();
-
-            // Fetch all user roles mapped with profile info
-            var allUserRoles = await _dbContext.UserRoles
-                .Join(_dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
-                .ToListAsync();
-
-            var userIds = allUserRoles.Select(ur => ur.UserId).Distinct().ToList();
-            var profiles = await _dbContext.Users
-                .Where(u => userIds.Contains(u.Id))
-                .Select(u => new
-                {
-                    u.Id,
-                    FullName = (u.FirstName + " " + u.LastName).Trim(),
-                    u.Email,
-                    u.MemberId,
-                    u.AvatarUrl
-                })
-                .ToDictionaryAsync(u => u.Id);
-
-            var featureRoles = await _dbContext.BcpUserFeatureRoles
-                .AsNoTracking()
-                .Where(f => f.IsActive)
-                .ToListAsync();
-
-            var featureRolesByUser = featureRoles
-                .GroupBy(f => f.ProfileId)
-                .ToDictionary(g => g.Key, g => g.Select(f => f.FeatureAreaKey).Distinct().ToList());
-
-            // Build catalog for the 6 fixed system roles
-            var catalogDefinitions = new[]
+            try
             {
-                new
-                {
-                    Name = "SuperAdmin",
-                    Description = "Root workspace administrator with full sovereignty across master catalog and tenant systems. Locked to root account.",
-                    Scope = "Root System Access (Non-assignable)",
-                    CanAssign = false,
-                    Badge = "badge-root",
-                    Icon = "shield_with_house"
-                },
-                new
-                {
-                    Name = "Admin",
-                    Description = "Global workspace administrator with unrestricted operational authority across identity, content, configuration, and data.",
-                    Scope = "Global Administrator (Unrestricted)",
-                    CanAssign = true,
-                    Badge = "badge-admin",
-                    Icon = "admin_panel_settings"
-                },
-                new
-                {
-                    Name = "Global Editor",
-                    Description = "Global editor with permissions to modify content, records, and operations across all active workspace features.",
-                    Scope = "Global Scope (All Active Features)",
-                    CanAssign = true,
-                    Badge = "badge-editor",
-                    Icon = "edit_square"
-                },
-                new
-                {
-                    Name = "Feature Editor",
-                    Description = "Modular feature editor with modification privileges scoped specifically to assigned feature modules (e.g. User Management).",
-                    Scope = "Scoped Feature Scope (e.g. UserManager)",
-                    CanAssign = true,
-                    Badge = "badge-feature",
-                    Icon = "rule_settings"
-                },
-                new
-                {
-                    Name = "Read Only",
-                    Description = "Read-only auditor with comprehensive viewing permissions across modules, but zero modification or deletion capabilities.",
-                    Scope = "Read-Only (All Features)",
-                    CanAssign = true,
-                    Badge = "badge-readonly",
-                    Icon = "visibility"
-                },
-                new
-                {
-                    Name = "Member",
-                    Description = "Standard tenant member account with directory listing and personal workspace self-service capabilities.",
-                    Scope = "Standard Member Access",
-                    CanAssign = true,
-                    Badge = "badge-member",
-                    Icon = "person"
-                }
-            };
+                await EnsureSeededRolesAsync();
 
-            var catalog = catalogDefinitions.Select(def =>
-            {
-                var assignedUsers = allUserRoles
-                    .Where(ur => string.Equals(ur.RoleName, def.Name, StringComparison.OrdinalIgnoreCase))
-                    .Select(ur =>
+                // Fetch all user roles mapped with profile info
+                var allUserRoles = await _dbContext.UserRoles
+                    .Join(_dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
+                    .ToListAsync();
+
+                var userIds = allUserRoles.Select(ur => ur.UserId).Distinct().ToList();
+                var profilesList = await _dbContext.Users
+                    .Where(u => userIds.Contains(u.Id))
+                    .Select(u => new
                     {
-                        profiles.TryGetValue(ur.UserId, out var p);
-                        featureRolesByUser.TryGetValue(ur.UserId, out var fList);
-                        return new
-                        {
-                            userId = ur.UserId,
-                            fullName = !string.IsNullOrWhiteSpace(p?.FullName) ? p.FullName : "Member",
-                            email = p?.Email ?? "",
-                            memberId = p?.MemberId ?? "",
-                            avatarUrl = p?.AvatarUrl,
-                            features = fList ?? new List<string> { "UserManager" }
-                        };
+                        u.Id,
+                        FullName = ((u.FirstName ?? "") + " " + (u.LastName ?? "")).Trim(),
+                        u.Email,
+                        u.MemberId,
+                        u.AvatarUrl
                     })
-                    .ToList();
+                    .ToListAsync();
 
-                return new
+                var profiles = profilesList.ToDictionary(u => u.Id);
+
+                var featureRoles = await _dbContext.BcpUserFeatureRoles
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .ToListAsync();
+
+                var featureRolesByUser = featureRoles
+                    .Where(f => !string.IsNullOrEmpty(f.ProfileId))
+                    .GroupBy(f => f.ProfileId!)
+                    .ToDictionary(g => g.Key, g => g.Select(f => f.FeatureAreaKey ?? "").Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList());
+
+                // Build catalog for the 6 fixed system roles
+                var catalogDefinitions = new[]
                 {
-                    name = def.Name,
-                    description = def.Description,
-                    scope = def.Scope,
-                    canAssign = def.CanAssign,
-                    badge = def.Badge,
-                    icon = def.Icon,
-                    memberCount = assignedUsers.Count,
-                    members = assignedUsers
+                    new
+                    {
+                        Name = "SuperAdmin",
+                        Description = "Root workspace administrator with full sovereignty across master catalog and tenant systems. Locked to root account.",
+                        Scope = "Root System Access (Non-assignable)",
+                        CanAssign = false,
+                        Badge = "badge-root",
+                        Icon = "shield_with_house"
+                    },
+                    new
+                    {
+                        Name = "Admin",
+                        Description = "Global workspace administrator with unrestricted operational authority across identity, content, configuration, and data.",
+                        Scope = "Global Administrator (Unrestricted)",
+                        CanAssign = true,
+                        Badge = "badge-admin",
+                        Icon = "admin_panel_settings"
+                    },
+                    new
+                    {
+                        Name = "Global Editor",
+                        Description = "Global editor with permissions to modify content, records, and operations across all active workspace features.",
+                        Scope = "Global Scope (All Active Features)",
+                        CanAssign = true,
+                        Badge = "badge-editor",
+                        Icon = "edit_square"
+                    },
+                    new
+                    {
+                        Name = "Feature Editor",
+                        Description = "Modular feature editor with modification privileges scoped specifically to assigned feature modules (e.g. User Management).",
+                        Scope = "Scoped Feature Scope (e.g. UserManager)",
+                        CanAssign = true,
+                        Badge = "badge-feature",
+                        Icon = "rule_settings"
+                    },
+                    new
+                    {
+                        Name = "Read Only",
+                        Description = "Read-only auditor with comprehensive viewing permissions across modules, but zero modification or deletion capabilities.",
+                        Scope = "Read-Only (All Features)",
+                        CanAssign = true,
+                        Badge = "badge-readonly",
+                        Icon = "visibility"
+                    },
+                    new
+                    {
+                        Name = "Member",
+                        Description = "Standard tenant member account with directory listing and personal workspace self-service capabilities.",
+                        Scope = "Standard Member Access",
+                        CanAssign = true,
+                        Badge = "badge-member",
+                        Icon = "person"
+                    }
                 };
-            }).ToList();
 
-            return Ok(ApiResponse<object>.SuccessResponse(catalog, "Role catalog retrieved successfully."));
+                var catalog = catalogDefinitions.Select(def =>
+                {
+                    var assignedUsers = allUserRoles
+                        .Where(ur => string.Equals(ur.RoleName, def.Name, StringComparison.OrdinalIgnoreCase))
+                        .Select(ur =>
+                        {
+                            profiles.TryGetValue(ur.UserId, out var p);
+                            featureRolesByUser.TryGetValue(ur.UserId, out var fList);
+                            return new
+                            {
+                                userId = ur.UserId,
+                                fullName = !string.IsNullOrWhiteSpace(p?.FullName) ? p.FullName : "Member",
+                                email = p?.Email ?? "",
+                                memberId = p?.MemberId ?? "",
+                                avatarUrl = p?.AvatarUrl,
+                                features = fList ?? new List<string> { "UserManager" }
+                            };
+                        })
+                        .ToList();
+
+                    return new
+                    {
+                        name = def.Name,
+                        description = def.Description,
+                        scope = def.Scope,
+                        canAssign = def.CanAssign,
+                        badge = def.Badge,
+                        icon = def.Icon,
+                        memberCount = assignedUsers.Count,
+                        members = assignedUsers
+                    };
+                }).ToList();
+
+                return Ok(ApiResponse<object>.SuccessResponse(catalog, "Role catalog retrieved successfully."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to retrieve roles catalog: {ex.Message}"));
+            }
         }
 
         /// <summary>
