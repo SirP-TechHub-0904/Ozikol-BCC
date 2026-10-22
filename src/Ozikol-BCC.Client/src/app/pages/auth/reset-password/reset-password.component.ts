@@ -119,8 +119,11 @@ import { ToastService } from '../../../core/services/toast.service';
           </button>
 
           <div class="step-switch-prompt">
-            <span>Already have your 6-digit verification code?</span>
-            <button type="button" class="btn-text-link" (click)="activeStep = 2">Enter code now &rarr;</button>
+            <span>Already have a verification code?</span>
+            <button type="button" class="btn-text-link" (click)="activeStep = 2">
+              <span>Enter code</span>
+              <span class="material-symbols-outlined prompt-arrow">arrow_forward</span>
+            </button>
           </div>
         </form>
 
@@ -273,11 +276,6 @@ import { ToastService } from '../../../core/services/toast.service';
           <a routerLink="/auth/login" class="back-link">
             <span class="material-symbols-outlined">arrow_back</span>
             <span>Return to Sign In</span>
-          </a>
-          <span class="footer-divider">•</span>
-          <a routerLink="/" class="back-link">
-            <span class="material-symbols-outlined">home</span>
-            <span>Home</span>
           </a>
         </div>
       </div>
@@ -819,23 +817,43 @@ import { ToastService } from '../../../core/services/toast.service';
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-wrap: wrap;
       gap: 6px;
-      font-size: 12.5px;
+      font-size: 13px;
       color: #64748b;
-      margin-top: 4px;
+      margin-top: 10px;
+      text-align: center;
+
+      span {
+        color: #64748b;
+        font-weight: 500;
+      }
 
       .btn-text-link {
         background: none;
         border: none;
         color: #0050e5;
-        font-size: 12.5px;
+        font-size: 13px;
         font-weight: 700;
         cursor: pointer;
         padding: 0;
-        transition: color 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        transition: color 0.15s ease;
+
+        .prompt-arrow {
+          font-size: 15px;
+          transition: transform 0.15s ease;
+        }
 
         &:hover {
+          color: #003bb5;
           text-decoration: underline;
+
+          .prompt-arrow {
+            transform: translateX(2px);
+          }
         }
       }
     }
@@ -843,14 +861,11 @@ import { ToastService } from '../../../core/services/toast.service';
     /* Footer */
     .card-footer {
       margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid #f1f5f9;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-
-      .footer-divider {
-        color: #cbd5e1;
-      }
 
       .back-link {
         color: #64748b;
@@ -860,14 +875,22 @@ import { ToastService } from '../../../core/services/toast.service';
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        transition: color 0.15s;
+        padding: 6px 14px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
 
         &:hover {
           color: #0050e5;
+          background: #f0f6ff;
         }
 
         .material-symbols-outlined {
-          font-size: 17px;
+          font-size: 18px;
+          transition: transform 0.2s ease;
+        }
+
+        &:hover .material-symbols-outlined {
+          transform: translateX(-3px);
         }
       }
     }
