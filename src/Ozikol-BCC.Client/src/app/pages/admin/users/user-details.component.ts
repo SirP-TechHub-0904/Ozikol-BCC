@@ -111,15 +111,16 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <p>Platform access tier, security scope & administrative capabilities</p>
                 </div>
               </div>
-              <button
-                *ngIf="!isEditingRole && !isRootSuperAdmin"
-                type="button"
-                class="btn btn-primary btn-sm"
-                (click)="openRoleEditor()"
+              <a
+                *ngIf="!isRootSuperAdmin"
+                [routerLink]="['/users/console/permissions', userId]"
+                class="btn-permission-action"
+                title="Configure user system roles, feature authorizations, and action scopes"
               >
-                <span class="material-symbols-outlined">edit_attributes</span>
-                <span>Update Permission</span>
-              </button>
+                <span class="material-symbols-outlined icon-shield">admin_panel_settings</span>
+                <span class="btn-text">Update Permission</span>
+                <span class="material-symbols-outlined icon-arrow">arrow_forward</span>
+              </a>
             </div>
 
             <div class="card-body">
@@ -651,6 +652,44 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn-danger:hover { background: #b91c1c; }
 
     /* Role & Permissions Card */
+    .btn-permission-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef2f2 100%);
+      border: 1.5px solid #f87171;
+      border-radius: 9999px;
+      color: #991b1b;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(239, 68, 68, 0.12);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-permission-action:hover {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border-color: #ef4444;
+      color: #7f1d1d;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.22);
+      transform: translateY(-1px);
+    }
+    .btn-permission-action .icon-shield {
+      font-size: 17px;
+      color: #dc2626;
+    }
+    .btn-permission-action .btn-text {
+      letter-spacing: 0.01em;
+    }
+    .btn-permission-action .icon-arrow {
+      font-size: 15px;
+      color: #dc2626;
+      transition: transform 0.15s ease;
+    }
+    .btn-permission-action:hover .icon-arrow {
+      transform: translateX(3px);
+    }
     .permission-view-mode { display: flex; flex-direction: column; gap: 10px; }
     .role-display-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .role-badge-large { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }

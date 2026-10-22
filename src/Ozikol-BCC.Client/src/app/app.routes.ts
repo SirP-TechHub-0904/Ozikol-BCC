@@ -165,6 +165,8 @@ export const routes: Routes = [
       { path: 'users/console/list', component: UsersListComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/create', component: UserCreateComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/details/:id', component: UserDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/details/:id/permissions', loadComponent: () => import('./pages/admin/users/user-permissions.component').then(m => m.UserPermissionsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/permissions/:id', loadComponent: () => import('./pages/admin/users/user-permissions.component').then(m => m.UserPermissionsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/edit/:id', component: UserEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/delete/:id', component: UserDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/categories', component: UserCategoriesComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },

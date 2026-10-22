@@ -15,6 +15,7 @@ using static Ozikol_BCC.Domain.Enum.Enum;
 
 using Microsoft.AspNetCore.SignalR;
 using Ozikol_BCC.Api.Hubs;
+using Ozikol_BCC.Application.Interfaces.Services;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -31,17 +32,20 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly UserManager<Profile> _userManager;
         private readonly DashboardDbContext _dbContext;
         private readonly IHubContext<GroupChatHub>? _hubContext;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         public IdentityApiController(
             RoleManager<AppRole> roleManager,
             UserManager<Profile> userManager,
             DashboardDbContext dbContext,
-            IHubContext<GroupChatHub>? hubContext = null)
+            IHubContext<GroupChatHub>? hubContext = null,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _roleManager = roleManager;
             _userManager = userManager;
             _dbContext = dbContext;
             _hubContext = hubContext;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         /// <summary>
@@ -1207,7 +1211,11 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var globalRoles = await _userManager.GetRolesAsync(user);
-            var isAdmin = globalRoles.Contains("Admin") || globalRoles.Contains("SuperAdmin");
+            var isSuperAdmin = globalRoles.Contains("SuperAdmin");
+            var isAdmin = isSuperAdmin || globalRoles.Contains("Admin");
+            var primaryRole = isSuperAdmin ? "SuperAdmin" :
+                              (globalRoles.FirstOrDefault(r => !string.Equals(r, "Member", StringComparison.OrdinalIgnoreCase)) ?? 
+                               globalRoles.FirstOrDefault() ?? "Member");
 
             var featureRoles = await _dbContext.BcpUserFeatureRoles
                 .AsNoTracking()
@@ -1223,13 +1231,23 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 UserId = user.Id,
                 Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                FullName = $"{user.FirstName} {user.LastName}".Trim(),
+                AvatarUrl = user.AvatarUrl,
+                CurrentRole = primaryRole,
+                AllRoles = globalRoles,
                 IsAdmin = isAdmin,
+                IsSuperAdmin = isSuperAdmin,
                 FeatureRoles = featureRoles
             };
 
             return Ok(ApiResponse<object>.SuccessResponse(data, "User security feature roles retrieved."));
         }
 
+        /// <summary>
+        /// Saves updated security feature roles, assigns system access tiers, and dispatches real-time security notifications & emails.
+        /// </summary>
         [HttpPost("users/{userId}/feature-roles")]
         [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> SaveUserFeatureRoles(string userId, [FromBody] SaveFeatureRolesRequest request)
@@ -1251,26 +1269,45 @@ namespace Ozikol_BCC.Api.Controllers
                 return StatusCode(403, ApiResponse<object>.FailureResponse("Permission Denied: Standard admins cannot modify SuperAdmin security levels."));
             }
 
-            // Sync global Admin role
             var globalRoles = await _userManager.GetRolesAsync(user);
-            if (request.IsAdmin)
+            var isTargetSuperAdmin = globalRoles.Contains("SuperAdmin");
+
+            // Determine target system role
+            var targetRole = !string.IsNullOrWhiteSpace(request.SystemRole)
+                ? request.SystemRole.Trim()
+                : (request.IsAdmin ? "Admin" : "Member");
+
+            if (string.Equals(targetRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase) && !isTargetSuperAdmin)
             {
-                if (!globalRoles.Contains("Admin"))
-                {
-                    await _userManager.AddToRoleAsync(user, "Admin");
-                }
+                return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role cannot be assigned. It is strictly reserved for the root workspace account."));
             }
-            else
+
+            // Sync Identity role if not root SuperAdmin
+            if (!isTargetSuperAdmin)
             {
-                if (globalRoles.Contains("Admin"))
+                await EnsureSeededRolesAsync();
+                var currentRoles = await _userManager.GetRolesAsync(user);
+                var rolesToRemove = currentRoles.Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)).ToList();
+                if (rolesToRemove.Any())
                 {
-                    await _userManager.RemoveFromRoleAsync(user, "Admin");
+                    await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
+                }
+
+                if (await _roleManager.RoleExistsAsync(targetRole))
+                {
+                    await _userManager.AddToRoleAsync(user, targetRole);
+                }
+                else
+                {
+                    await _userManager.AddToRoleAsync(user, request.IsAdmin ? "Admin" : "Member");
                 }
             }
 
             // Clear old feature roles
             var oldRoles = await _dbContext.BcpUserFeatureRoles.Where(r => r.ProfileId == userId).ToListAsync();
             _dbContext.BcpUserFeatureRoles.RemoveRange(oldRoles);
+
+            var activeScopesList = new List<string>();
 
             // Add new feature roles
             if (request.FeatureRoles != null)
@@ -1280,9 +1317,24 @@ namespace Ozikol_BCC.Api.Controllers
                     if (string.IsNullOrEmpty(r.Scope) || r.Scope == "None") continue;
 
                     BcpActionRole actionRole;
-                    if (r.Scope == "GlobalEdit") actionRole = BcpActionRole.GlobalEditor;
-                    else if (r.Scope == "FeatureEdit") actionRole = BcpActionRole.FeatureEditor;
-                    else actionRole = BcpActionRole.Readonly;
+                    string scopeLabel;
+                    if (r.Scope == "GlobalEdit") 
+                    {
+                        actionRole = BcpActionRole.GlobalEditor;
+                        scopeLabel = "Global Editor (Tenant-Wide Authority)";
+                    }
+                    else if (r.Scope == "FeatureEdit") 
+                    {
+                        actionRole = BcpActionRole.FeatureEditor;
+                        scopeLabel = "Feature Editor (Full CRUD)";
+                    }
+                    else 
+                    {
+                        actionRole = BcpActionRole.Readonly;
+                        scopeLabel = "Read Only (Auditor)";
+                    }
+
+                    activeScopesList.Add($"• <strong>{r.FeatureName}</strong>: {scopeLabel}");
 
                     var featureRole = new BcpUserFeatureRole
                     {
@@ -1298,67 +1350,128 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            // Dispatch Notifications & Audit Event
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var currentUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? "Admin";
 
-            // Save
+            // Save database changes
             await _dbContext.SaveChangesAsync();
 
-            // In-App Notification to modified user
+            // Format dynamic scopes summary for notification & email
+            var scopesHtmlSummary = activeScopesList.Any()
+                ? string.Join("<br/>", activeScopesList)
+                : "<em>Standard Member Access (No custom capability scopes assigned).</em>";
+
+            // 1. In-App Notification (Persistent BcpNotification)
             var notif = new BcpNotification
             {
                 Id = Guid.CreateVersion7(),
                 UserId = user.Id,
-                Title = "Permissions Updated",
-                Message = "Your workspace roles and access scopes have been updated by an administrator.",
+                Title = "Security: Permissions Matrix Updated",
+                Message = $"Your system role has been set to '{targetRole}' with {activeScopesList.Count} capability authorizations.",
+                Severity = "warning",
+                ActionUrl = "/users/workspace/security",
                 IsRead = false,
                 CreatedAt = DateTime.UtcNow
             };
             _dbContext.BcpNotifications.Add(notif);
 
-            // Email to modified user
+            // 2. Transactional Email Layout (Royal Blue #0050E5, Anti-Spam Compliant)
+            var recipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? $"{user.FirstName} {user.LastName}".Trim() : (user.Email ?? "Member");
             var emailBody = $@"
-                <div style='font-family:sans-serif; padding:24px; max-width:550px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px;'>
-                    <h3 style='color:#0050e5; margin-top:0;'>Workspace Permissions Updated</h3>
-                    <p style='color:#334155; font-size:14px; line-height:1.6;'>
-                        Hello, an administrator has updated your global roles and feature-specific authorization scopes.
-                    </p>
-                    <p style='color:#334155; font-size:14.5px;'>
-                        <strong>Global Admin Access:</strong> {(request.IsAdmin ? "Granted" : "Restricted")}
-                    </p>
-                    <p style='color:#475569; font-size:13.5px;'>
-                        Please log out and sign back in to apply these new security configurations to your workspace.
-                    </p>
-                </div>";
+<!DOCTYPE html>
+<html>
+<head><meta charset='utf-8'></head>
+<body style='font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,sans-serif; background-color:#f8fafc; padding:24px; margin:0;'>
+  <div style='max-width:580px; margin:0 auto; background:#ffffff; border-radius:12px; border:1px solid #e2e8f0; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.05);'>
+    <div style='background:#0050e5; padding:24px 30px; text-align:left;'>
+      <h2 style='color:#ffffff; margin:0; font-size:20px; font-weight:700;'>Ozikol BCC • Security Notification</h2>
+      <p style='color:#e0e7ff; margin:4px 0 0 0; font-size:13px;'>Workspace Role & Capability Scope Adjustment</p>
+    </div>
+    <div style='padding:28px 30px; color:#334155;'>
+      <p style='font-size:15px; line-height:1.6; margin-top:0;'>
+        Hello <strong>{recipientName}</strong>,
+      </p>
+      <p style='font-size:14px; line-height:1.6; color:#475569;'>
+        This is an official security advisory to inform you that a workspace administrator has updated your system role and action authorizations.
+      </p>
+      <div style='background:#f1f5f9; border-left:4px solid #0050e5; padding:14px 18px; border-radius:4px; margin:20px 0;'>
+        <p style='margin:0 0 6px 0; font-size:14px;'><strong>Primary System Role:</strong> <span style='color:#0050e5; font-weight:700;'>{targetRole}</span></p>
+        <p style='margin:0 0 6px 0; font-size:14px;'><strong>Administrative Privileges:</strong> {(targetRole == "Admin" || targetRole == "SuperAdmin" || request.IsAdmin ? "Granted (Administrator)" : "Restricted (Standard Member)")}</p>
+        <p style='margin:0; font-size:14px;'><strong>Effective Date:</strong> {DateTime.UtcNow:MMMM dd, yyyy HH:mm} UTC</p>
+      </div>
+      <h4 style='color:#0f172a; margin:20px 0 10px 0; font-size:14px; font-weight:700;'>Assigned Modular Capability Scopes:</h4>
+      <div style='background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 18px; font-size:13px; line-height:1.8; color:#334155;'>
+        {scopesHtmlSummary}
+      </div>
+      <p style='color:#64748b; font-size:12.5px; line-height:1.5; margin-top:24px;'>
+        <strong>Security Tip:</strong> To ensure all updated privileges take effect immediately across your active sessions, please log out and sign back into your workspace.
+      </p>
+      <div style='margin-top:24px; text-align:center;'>
+        <a href='https://testspace.localhost:4200/users/workspace/security' style='background:#0050e5; color:#ffffff; padding:10px 22px; text-decoration:none; border-radius:8px; font-size:13px; font-weight:700; display:inline-block;'>
+          Review Security Settings
+        </a>
+      </div>
+    </div>
+    <div style='background:#f8fafc; padding:14px 30px; border-top:1px solid #e2e8f0; text-align:center; font-size:11.5px; color:#94a3b8;'>
+      This automated alert was dispatched by Ozikol Business Command Center. If you did not expect this adjustment, please contact your workspace administrator immediately.
+    </div>
+  </div>
+</body>
+</html>";
 
             var emailQueueItem = new BcpEmailQueue
             {
                 Id = Guid.CreateVersion7(),
                 RecipientEmail = user.Email ?? string.Empty,
-                Subject = "Security Alert: Permissions Matrix Updated",
+                Subject = "Security Alert: Workspace Role & Permissions Matrix Updated",
                 HtmlBody = emailBody,
-                Category = BcpMessageCategory.General,
-                Priority = BcpMessagePriority.High,
+                Category = BcpMessageCategory.SecurityAlert,
+                Priority = BcpMessagePriority.Urgent,
                 Status = BcpQueueStatus.Queued,
                 CreatedAt = DateTime.UtcNow
             };
             _dbContext.BcpEmailQueue.Add(emailQueueItem);
 
-            // Activity log for privilege changes
+            // 3. CentralNotificationDispatcher Multi-Channel Delivery (Rule 16)
+            if (_notificationDispatcher != null)
+            {
+                try
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        Title = "Security: Permissions Matrix Updated",
+                        Message = $"Your system role has been set to '{targetRole}' with {activeScopesList.Count} capability authorizations.",
+                        Severity = NotificationSeverity.Warning,
+                        Channels = NotificationChannels.InApp | NotificationChannels.Email,
+                        ActionUrl = "/users/workspace/security",
+                        Module = "Identity & Access Governance",
+                        Icon = "admin_panel_settings",
+                        Category = BcpMessageCategory.SecurityAlert,
+                        Priority = BcpMessagePriority.Urgent,
+                        SendEmailCopy = true,
+                        EmailSubject = "Security Alert: Workspace Role & Permissions Matrix Updated",
+                        EmailHtmlBody = emailBody
+                    });
+                }
+                catch { }
+            }
+
+            // 4. Audit Log Entry
             var wasAdmin = globalRoles.Contains("Admin") || globalRoles.Contains("SuperAdmin");
             var adminStatusChanged = wasAdmin != request.IsAdmin;
-            
+
             var activityLog = new BcpActivityLog
             {
                 Id = Guid.CreateVersion7(),
                 Module = "Identity & Access Governance",
-                ActionType = adminStatusChanged 
+                ActionType = adminStatusChanged
                     ? (request.IsAdmin ? "Privilege Escalation: Granted Global Admin" : "Privilege Demotion: Revoked Global Admin")
                     : "Permissions Profile Updated",
                 Description = adminStatusChanged
                     ? $"{(request.IsAdmin ? "Granted Global Administrator authority to" : "Revoked Global Administrator rights from")} user '{user.Email}' ({user.FirstName} {user.LastName})."
-                    : $"Updated feature access scopes for user '{user.Email}'.",
+                    : $"Updated role to '{targetRole}' and configured {activeScopesList.Count} capability scopes for '{user.Email}'.",
                 PerformedByProfileId = currentUserId,
                 PerformedByFullName = currentUserEmail,
                 TargetProfileId = user.Id,
@@ -1370,7 +1483,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _dbContext.SaveChangesAsync();
 
-            // Broadcast live real-time SignalR security event to the target user's active browser sessions
+            // 5. Broadcast live real-time SignalR security event to the target user's active browser sessions
             if (_hubContext != null)
             {
                 try
@@ -1379,6 +1492,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         userId = user.Id,
                         email = user.Email,
+                        role = targetRole,
                         isAdmin = request.IsAdmin,
                         timestamp = DateTime.UtcNow
                     });
@@ -1386,7 +1500,7 @@ namespace Ozikol_BCC.Api.Controllers
                 catch { }
             }
 
-            return Ok(ApiResponse<object>.SuccessResponse(null, "Security permissions updated successfully and user alerts dispatched."));
+            return Ok(ApiResponse<object>.SuccessResponse(null, $"Security permissions updated successfully. System role set to '{targetRole}' and user notification alerts dispatched."));
         }
     }
 
@@ -1451,6 +1565,7 @@ namespace Ozikol_BCC.Api.Controllers
     public class SaveFeatureRolesRequest
     {
         public bool IsAdmin { get; set; }
+        public string? SystemRole { get; set; }
         public List<FeatureRoleScopeDto>? FeatureRoles { get; set; }
     }
 
