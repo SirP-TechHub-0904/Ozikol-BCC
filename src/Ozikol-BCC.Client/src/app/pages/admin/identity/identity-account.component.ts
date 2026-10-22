@@ -555,9 +555,11 @@ interface AccountSummary {
   `,
   styles: [`
     .account-container {
-      padding: 24px 32px;
-      max-width: 1200px;
-      margin: 0 auto;
+      padding: 0;
+      width: 100%;
+      max-width: 100%;
+      margin: 0;
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -746,12 +748,16 @@ interface AccountSummary {
       display: flex;
       flex-direction: column;
       gap: 16px;
-      max-width: 600px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .form-group {
       display: flex;
       flex-direction: column;
       gap: 6px;
+      width: 100%;
+      box-sizing: border-box;
     }
     .form-group label {
       font-size: 13px;
@@ -759,6 +765,8 @@ interface AccountSummary {
       color: #334155;
     }
     .form-input {
+      width: 100%;
+      box-sizing: border-box;
       padding: 10px 14px;
       border: 1px solid #cbd5e1;
       border-radius: 8px;
@@ -774,9 +782,12 @@ interface AccountSummary {
       position: relative;
       display: flex;
       align-items: center;
+      width: 100%;
+      box-sizing: border-box;
     }
     .password-input-wrap .form-input {
       width: 100%;
+      box-sizing: border-box;
       padding-right: 44px;
     }
     .eye-btn {
@@ -934,7 +945,9 @@ interface AccountSummary {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      max-width: 650px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .mfa-option-row {
       display: flex;
@@ -978,7 +991,9 @@ interface AccountSummary {
       display: flex;
       flex-direction: column;
       gap: 16px;
-      max-width: 600px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .challenge-alert {
       display: flex;
@@ -1043,7 +1058,9 @@ interface AccountSummary {
       display: flex;
       flex-direction: column;
       gap: 16px;
-      max-width: 600px;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .success-header {
       display: flex;
