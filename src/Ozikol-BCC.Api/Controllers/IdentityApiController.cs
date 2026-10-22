@@ -42,7 +42,40 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Ensures all 6 standard platform roles exist in the tenant Identity role store.
+        /// Validates whether the calling principal possesses authority to grant, modify, or revoke system roles.
+        /// Strictly restricted to SuperAdmin, Admin (implicit Global Editor), or assigned Identity Manager roles.
+        /// Feature Editors for other domains (e.g. User Management) cannot assign or alter roles.
+        /// </summary>
+        private async Task<bool> CallerCanAssignRolesAsync()
+        {
+            bool HasRoleClaim(string roleName) =>
+                User.IsInRole(roleName) ||
+                User.Claims.Any(c => (c.Type == ClaimTypes.Role || c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role") &&
+                                     string.Equals(c.Value, roleName, StringComparison.OrdinalIgnoreCase));
+
+            if (HasRoleClaim("SuperAdmin") || HasRoleClaim("Admin"))
+                return true;
+
+            if (HasRoleClaim("Identity Manager"))
+                return true;
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                var hasIdentityFeature = await _dbContext.BcpUserFeatureRoles
+                    .AnyAsync(f => f.ProfileId == currentUserId &&
+                                   f.IsActive &&
+                                   (f.FeatureAreaKey == "IdentityManager" || f.FeatureAreaKey == "IdentityAccessControl") &&
+                                   (f.ActionRole == BcpActionRole.GlobalEditor || f.ActionRole == BcpActionRole.FeatureEditor));
+                if (hasIdentityFeature)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Ensures all standard platform and feature authority roles exist in the tenant Identity role store.
         /// </summary>
         private async Task EnsureSeededRolesAsync()
         {
@@ -50,6 +83,8 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 ("SuperAdmin", RoleCategory.BCP),
                 ("Admin", RoleCategory.Both),
+                ("Identity Manager", RoleCategory.BCP),
+                ("User Manager", RoleCategory.BCP),
                 ("Global Editor", RoleCategory.BCP),
                 ("Feature Editor", RoleCategory.BCP),
                 ("Read Only", RoleCategory.BCP),
@@ -94,7 +129,12 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             var roles = await rolesQuery
-                .OrderBy(r => r.Name == "Admin" ? 1 : r.Name == "Global Editor" ? 2 : r.Name == "Feature Editor" ? 3 : r.Name == "Read Only" ? 4 : 5)
+                .OrderBy(r => r.Name == "Admin" ? 1 :
+                              r.Name == "Identity Manager" ? 2 :
+                              r.Name == "User Manager" ? 3 :
+                              r.Name == "Global Editor" ? 4 :
+                              r.Name == "Feature Editor" ? 5 :
+                              r.Name == "Read Only" ? 6 : 7)
                 .Select(r => new
                 {
                     r.Id,
@@ -146,7 +186,7 @@ namespace Ozikol_BCC.Api.Controllers
                     .GroupBy(f => f.ProfileId!)
                     .ToDictionary(g => g.Key, g => g.Select(f => f.FeatureAreaKey ?? "").Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList());
 
-                // Build catalog for the 6 fixed system roles
+                // Build catalog for system and operational roles
                 var catalogDefinitions = new[]
                 {
                     new
@@ -156,7 +196,9 @@ namespace Ozikol_BCC.Api.Controllers
                         Scope = "Root System Access (Non-assignable)",
                         CanAssign = false,
                         Badge = "badge-root",
-                        Icon = "shield_with_house"
+                        Icon = "shield_with_house",
+                        Group = "system_feature",
+                        Order = 1
                     },
                     new
                     {
@@ -165,34 +207,31 @@ namespace Ozikol_BCC.Api.Controllers
                         Scope = "Global Administrator (Unrestricted)",
                         CanAssign = true,
                         Badge = "badge-admin",
-                        Icon = "admin_panel_settings"
+                        Icon = "admin_panel_settings",
+                        Group = "system_feature",
+                        Order = 2
                     },
                     new
                     {
-                        Name = "Global Editor",
-                        Description = "Global editor with permissions to modify content, records, and operations across all active workspace features.",
-                        Scope = "Global Scope (All Active Features)",
+                        Name = "Identity Manager",
+                        Description = "Sovereign identity and access administrator authorized to manage system roles, grant operational permissions, and issue user invitations.",
+                        Scope = "Identity & Access Control (RBAC Sovereign)",
                         CanAssign = true,
-                        Badge = "badge-editor",
-                        Icon = "edit_square"
+                        Badge = "badge-identity",
+                        Icon = "badge",
+                        Group = "system_feature",
+                        Order = 3
                     },
                     new
                     {
-                        Name = "Feature Editor",
-                        Description = "Modular feature editor with modification privileges scoped specifically to assigned feature modules (e.g. User Management).",
-                        Scope = "Scoped Feature Scope (e.g. UserManager)",
+                        Name = "User Manager",
+                        Description = "Directory and cohort administrator authorized to manage user profiles, categories, custom fields, and member statuses across the workspace.",
+                        Scope = "User Directory & Cohort Management",
                         CanAssign = true,
-                        Badge = "badge-feature",
-                        Icon = "rule_settings"
-                    },
-                    new
-                    {
-                        Name = "Read Only",
-                        Description = "Read-only auditor with comprehensive viewing permissions across modules, but zero modification or deletion capabilities.",
-                        Scope = "Read-Only (All Features)",
-                        CanAssign = true,
-                        Badge = "badge-readonly",
-                        Icon = "visibility"
+                        Badge = "badge-usermanager",
+                        Icon = "manage_accounts",
+                        Group = "system_feature",
+                        Order = 4
                     },
                     new
                     {
@@ -201,7 +240,42 @@ namespace Ozikol_BCC.Api.Controllers
                         Scope = "Standard Member Access",
                         CanAssign = true,
                         Badge = "badge-member",
-                        Icon = "person"
+                        Icon = "person",
+                        Group = "system_feature",
+                        Order = 5
+                    },
+                    new
+                    {
+                        Name = "Global Editor",
+                        Description = "Global operational editor with permissions to modify content, records, and operations across all active workspace features.",
+                        Scope = "Global Scope (All Active Features)",
+                        CanAssign = true,
+                        Badge = "badge-editor",
+                        Icon = "edit_square",
+                        Group = "operational_level",
+                        Order = 6
+                    },
+                    new
+                    {
+                        Name = "Feature Editor",
+                        Description = "Modular feature editor with modification privileges scoped specifically to assigned feature modules (e.g. User Management, CMS, Products).",
+                        Scope = "Scoped Feature Scope (e.g. UserManager, CMS)",
+                        CanAssign = true,
+                        Badge = "badge-feature",
+                        Icon = "rule_settings",
+                        Group = "operational_level",
+                        Order = 7
+                    },
+                    new
+                    {
+                        Name = "Read Only",
+                        Description = "Read-only auditor with comprehensive viewing permissions across modules, but zero modification or deletion capabilities.",
+                        Scope = "Read-Only (All Features)",
+                        CanAssign = true,
+                        Badge = "badge-readonly",
+                        Icon = "visibility",
+                        Group = "operational_level",
+                        Order = 8
                     }
                 };
 
@@ -213,6 +287,7 @@ namespace Ozikol_BCC.Api.Controllers
 
                 var visibleDefinitions = catalogDefinitions
                     .Where(def => isSuperAdmin || !string.Equals(def.Name, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(def => def.Order)
                     .ToList();
 
                 var catalog = visibleDefinitions.Select(def =>
@@ -243,6 +318,8 @@ namespace Ozikol_BCC.Api.Controllers
                         canAssign = def.CanAssign,
                         badge = def.Badge,
                         icon = def.Icon,
+                        group = def.Group,
+                        order = def.Order,
                         memberCount = assignedUsers.Count,
                         members = assignedUsers
                     };
@@ -262,6 +339,11 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPost("roles/assign")]
         public async Task<IActionResult> AssignRole([FromBody] RoleAssignmentRequest request)
         {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or users with the 'Identity Manager' role can assign system roles."));
+            }
+
             if (string.IsNullOrWhiteSpace(request.RoleName) || string.IsNullOrWhiteSpace(request.UserId))
                 return BadRequest(ApiResponse<object>.FailureResponse("RoleName and UserId are required."));
 
@@ -328,6 +410,11 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPost("roles/unassign")]
         public async Task<IActionResult> UnassignRole([FromBody] RoleUnassignmentRequest request)
         {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or users with the 'Identity Manager' role can unassign system roles."));
+            }
+
             if (string.IsNullOrWhiteSpace(request.RoleName) || string.IsNullOrWhiteSpace(request.UserId))
                 return BadRequest(ApiResponse<object>.FailureResponse("RoleName and UserId are required."));
 
@@ -398,6 +485,11 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPost("invitations")]
         public async Task<IActionResult> SendInvitation([FromBody] InvitationRequest request)
         {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or users with the 'Identity Manager' role can invite users or provision roles."));
+            }
+
             if (string.IsNullOrWhiteSpace(request.Email))
                 return BadRequest(ApiResponse<object>.FailureResponse("Email address is required."));
 
@@ -766,6 +858,11 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpPost("users/{userId}/feature-roles")]
         public async Task<IActionResult> SaveUserFeatureRoles(string userId, [FromBody] SaveFeatureRolesRequest request)
         {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or users with the 'Identity Manager' role can modify security feature roles."));
+            }
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null)
                 return NotFound(ApiResponse<object>.FailureResponse("User not found."));

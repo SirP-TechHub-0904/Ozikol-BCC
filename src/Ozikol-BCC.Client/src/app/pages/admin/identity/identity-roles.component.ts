@@ -16,6 +16,8 @@ interface RoleCatalogItem {
   canAssign: boolean;
   badge: string;
   icon: string;
+  group?: 'system_feature' | 'operational_level' | string;
+  order?: number;
   memberCount: number;
   members: RoleMemberItem[];
 }
@@ -34,9 +36,12 @@ interface RoleMemberItem {
 
 /**
  * Role-First Governance Catalog Component.
- * The 6 canonical system roles (SuperAdmin, Admin, Global Editor, Feature Editor, Read Only, Member)
- * are always seeded and prefilled on page load (never blank).
- * SuperAdmin cannot be assigned to any user except the root account.
+ * Restructured into two distinct enterprise categories:
+ *  1. System & Feature Authority Roles (SuperAdmin, Admin, Identity Manager, User Manager, Member)
+ *  2. Operational Access Levels (Global Editor, Feature Editor, Read Only)
+ * 
+ * Strict Sovereign Identity Rule: Non-Identity Manager users cannot assign roles or issue
+ * workspace invitations even from within user management views.
  */
 @Component({
   selector: 'app-identity-roles',
@@ -49,7 +54,7 @@ interface RoleMemberItem {
         eyebrow="ACCESS CONTROL & GOVERNANCE"
         icon="shield_person"
         title="System Roles & Authority Matrix"
-        [subtitle]="'Manage the ' + (rolesCatalog.length || (isSuperAdmin ? 6 : 5)) + ' pre-configured system roles, examine operational permissions, and assign authorized members to feature scopes.'"
+        [subtitle]="'Manage the ' + (rolesCatalog.length || (isSuperAdmin ? 8 : 7)) + ' enterprise roles organized into System & Feature Authority and Operational Access Levels.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -61,28 +66,28 @@ interface RoleMemberItem {
             <span class="material-symbols-outlined">security</span>
           </div>
           <div class="stat-meta">
-            <span class="stat-val">{{ rolesCatalog.length || (isSuperAdmin ? 6 : 5) }}</span>
-            <span class="stat-lbl">Fixed System Roles</span>
+            <span class="stat-val">{{ rolesCatalog.length || (isSuperAdmin ? 8 : 7) }}</span>
+            <span class="stat-lbl">Enterprise Roles</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrap" style="background: rgba(67,56,202,0.08); color: #4338ca;">
+            <span class="material-symbols-outlined">admin_panel_settings</span>
+          </div>
+          <div class="stat-meta">
+            <span class="stat-val">{{ systemFeatureRoles.length }}</span>
+            <span class="stat-lbl">Authority & Feature Roles</span>
           </div>
         </div>
 
         <div class="stat-card">
           <div class="stat-icon-wrap" style="background: rgba(16,185,129,0.08); color: #10b981;">
-            <span class="material-symbols-outlined">admin_panel_settings</span>
+            <span class="material-symbols-outlined">tune</span>
           </div>
           <div class="stat-meta">
-            <span class="stat-val">{{ totalPrivilegedCount }}</span>
-            <span class="stat-lbl">Administrative Staff</span>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-icon-wrap" style="background: rgba(245,158,11,0.08); color: #f59e0b;">
-            <span class="material-symbols-outlined">rule_settings</span>
-          </div>
-          <div class="stat-meta">
-            <span class="stat-val">{{ featureEditorCount }}</span>
-            <span class="stat-lbl">Modular Feature Editors</span>
+            <span class="stat-val">{{ operationalLevelRoles.length }}</span>
+            <span class="stat-lbl">Operational Action Levels</span>
           </div>
         </div>
 
@@ -91,18 +96,57 @@ interface RoleMemberItem {
             <span class="material-symbols-outlined">groups</span>
           </div>
           <div class="stat-meta">
-            <span class="stat-val">{{ memberRoleCount }}</span>
-            <span class="stat-lbl">General Workspace Members</span>
+            <span class="stat-val">{{ totalAssignedCount }}</span>
+            <span class="stat-lbl">Assigned Personnel</span>
           </div>
         </div>
       </div>
 
-      <!-- Roles Table Card -->
-      <div class="table-card" *ngIf="!isLoading">
+      <!-- Category Filter Navigation Tabs -->
+      <div class="category-tabs-nav" *ngIf="!isLoading">
+        <button 
+          type="button" 
+          class="filter-tab-btn" 
+          [class.active]="activeFilter === 'all'" 
+          (click)="activeFilter = 'all'"
+        >
+          <span class="material-symbols-outlined">dataset</span>
+          <span>All Roles ({{ rolesCatalog.length }})</span>
+        </button>
+        <button 
+          type="button" 
+          class="filter-tab-btn" 
+          [class.active]="activeFilter === 'system_feature'" 
+          (click)="activeFilter = 'system_feature'"
+        >
+          <span class="material-symbols-outlined">shield_person</span>
+          <span>System & Feature Authority ({{ systemFeatureRoles.length }})</span>
+        </button>
+        <button 
+          type="button" 
+          class="filter-tab-btn" 
+          [class.active]="activeFilter === 'operational_level'" 
+          (click)="activeFilter = 'operational_level'"
+        >
+          <span class="material-symbols-outlined">tune</span>
+          <span>Operational Access Levels ({{ operationalLevelRoles.length }})</span>
+        </button>
+      </div>
+
+      <!-- Group 1: System & Feature Authority Roles Card -->
+      <div class="table-card" *ngIf="!isLoading && (activeFilter === 'all' || activeFilter === 'system_feature')">
         <div class="table-card-header">
-          <div>
-            <h3>Enterprise Role Catalog</h3>
-            <p>Seeded system roles with permanent scope boundaries. Roles cannot be arbitrarily deleted.</p>
+          <div class="card-header-meta">
+            <div class="header-icon-pill" style="background: rgba(0,80,229,0.08); color: #0050e5;">
+              <span class="material-symbols-outlined">shield_person</span>
+            </div>
+            <div>
+              <div class="header-title-row">
+                <h3>System & Feature Authority Roles</h3>
+                <span class="section-count-badge badge-admin">{{ systemFeatureRoles.length }} Roles</span>
+              </div>
+              <p>Sovereign platform, identity governance, and feature domain authority roles that govern workspace administration.</p>
+            </div>
           </div>
           <button type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role assignments">
             <span class="material-symbols-outlined">refresh</span>
@@ -114,15 +158,15 @@ interface RoleMemberItem {
           <table class="roles-data-table">
             <thead>
               <tr>
-                <th style="min-width: 220px;">Role & Tier</th>
-                <th style="min-width: 280px;">Scope & Operational Boundaries</th>
+                <th style="min-width: 220px;">Role & Authority Tier</th>
+                <th style="min-width: 280px;">Scope & Governance Boundaries</th>
                 <th style="width: 140px; text-align: center;">Personnel</th>
                 <th style="width: 200px;">Assigned Members Preview</th>
                 <th style="width: 190px; text-align: right; white-space: nowrap;">Action</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let role of rolesCatalog" [class.locked-row]="!role.canAssign">
+              <tr *ngFor="let role of systemFeatureRoles" [class.locked-row]="!role.canAssign">
                 <!-- Role Name & Icon -->
                 <td>
                   <div class="role-cell">
@@ -132,7 +176,7 @@ interface RoleMemberItem {
                     <div class="role-title-box">
                       <span class="role-name">{{ role.name }}</span>
                       <span class="role-pill-badge" [ngClass]="role.badge">
-                        {{ role.canAssign ? 'Operational Role' : 'Root Sovereign' }}
+                        {{ role.canAssign ? 'System Authority' : 'Root Sovereign' }}
                       </span>
                     </div>
                   </div>
@@ -204,6 +248,114 @@ interface RoleMemberItem {
         </div>
       </div>
 
+      <!-- Group 2: Operational Access Levels Card -->
+      <div class="table-card" [class.mt-4]="activeFilter === 'all'" *ngIf="!isLoading && (activeFilter === 'all' || activeFilter === 'operational_level')">
+        <div class="table-card-header">
+          <div class="card-header-meta">
+            <div class="header-icon-pill" style="background: rgba(16,185,129,0.08); color: #10b981;">
+              <span class="material-symbols-outlined">tune</span>
+            </div>
+            <div>
+              <div class="header-title-row">
+                <h3>Operational Access Levels</h3>
+                <span class="section-count-badge badge-editor">{{ operationalLevelRoles.length }} Levels</span>
+              </div>
+              <p>Granular operational scopes governing content creation, data records, and read-only observation across features.</p>
+            </div>
+          </div>
+          <button *ngIf="activeFilter === 'operational_level'" type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role assignments">
+            <span class="material-symbols-outlined">refresh</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="roles-data-table">
+            <thead>
+              <tr>
+                <th style="min-width: 220px;">Operational Level</th>
+                <th style="min-width: 280px;">Scope & Operational Action Boundaries</th>
+                <th style="width: 140px; text-align: center;">Personnel</th>
+                <th style="width: 200px;">Assigned Members Preview</th>
+                <th style="width: 190px; text-align: right; white-space: nowrap;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let role of operationalLevelRoles" [class.locked-row]="!role.canAssign">
+                <!-- Role Name & Icon -->
+                <td>
+                  <div class="role-cell">
+                    <div class="role-icon-box" [ngClass]="role.badge">
+                      <span class="material-symbols-outlined">{{ role.icon }}</span>
+                    </div>
+                    <div class="role-title-box">
+                      <span class="role-name">{{ role.name }}</span>
+                      <span class="role-pill-badge" [ngClass]="role.badge">
+                        Operational Level
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                <!-- Scope & Description -->
+                <td>
+                  <div class="scope-cell">
+                    <span class="scope-tag">{{ role.scope }}</span>
+                    <p class="role-desc">{{ role.description }}</p>
+                  </div>
+                </td>
+
+                <!-- Member Count -->
+                <td style="text-align: center;">
+                  <span class="count-badge" [class.count-badge-zero]="role.memberCount === 0">
+                    <strong>{{ role.memberCount }}</strong>
+                    <span>{{ role.memberCount === 1 ? 'user' : 'users' }}</span>
+                  </span>
+                </td>
+
+                <!-- Members Preview Avatars -->
+                <td>
+                  <div class="members-preview-cell" *ngIf="role.memberCount > 0">
+                    <div class="avatar-stack">
+                      <div
+                        class="stack-avatar"
+                        *ngFor="let m of role.members.slice(0, 3)"
+                        [title]="m.fullName + ' (' + m.email + ')'"
+                        [style.background]="getGradient(m.fullName)"
+                      >
+                        {{ getInitials(m.fullName) }}
+                      </div>
+                      <div class="stack-avatar stack-more" *ngIf="role.memberCount > 3" [title]="(role.memberCount - 3) + ' more members'">
+                        +{{ role.memberCount - 3 }}
+                      </div>
+                    </div>
+                    <span class="preview-names-text">
+                      {{ getPreviewNames(role.members) }}
+                    </span>
+                  </div>
+                  <div class="no-members-text" *ngIf="role.memberCount === 0">
+                    <span>No members assigned</span>
+                  </div>
+                </td>
+
+                <!-- Action Button -->
+                <td style="text-align: right; white-space: nowrap;">
+                  <!-- Manage Members Modal Trigger -->
+                  <button
+                    type="button"
+                    class="btn-manage-members"
+                    (click)="openManageModal(role)"
+                  >
+                    <span class="material-symbols-outlined btn-icon">group_add</span>
+                    <span class="btn-text">Manage Members</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Manage Members Modal Dialog -->
       <div class="modal-backdrop fade-in" *ngIf="activeModalRole" (click)="closeManageModal()">
         <div class="modal-dialog" (click)="$event.stopPropagation()">
@@ -223,6 +375,17 @@ interface RoleMemberItem {
           </div>
 
           <div class="modal-body">
+            <!-- Informative Role Notices -->
+            <div class="role-scope-notice notice-identity" *ngIf="activeModalRole.name === 'Identity Manager'">
+              <span class="material-symbols-outlined">verified_user</span>
+              <span><strong>Identity Manager Sovereign Role:</strong> Members assigned to this role possess authority to assign system roles, manage operational permissions, and dispatch workspace invitations.</span>
+            </div>
+
+            <div class="role-scope-notice notice-usermanager" *ngIf="activeModalRole.name === 'User Manager'">
+              <span class="material-symbols-outlined">manage_accounts</span>
+              <span><strong>User Manager Domain Role:</strong> Members assigned to this role can manage user profiles, categories, and account statuses. They cannot assign roles unless also granted Identity Manager authority.</span>
+            </div>
+
             <!-- Assignment Form Section -->
             <div class="assign-section">
               <h4 class="section-title">Assign Member to this Role</h4>
@@ -361,6 +524,44 @@ interface RoleMemberItem {
     .stat-val { font-size: 20px; font-weight: 800; color: #0f172a; line-height: 1.2; }
     .stat-lbl { font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 2px; }
 
+    /* Category Tabs Nav */
+    .category-tabs-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      width: fit-content;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    .filter-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+      white-space: nowrap;
+    }
+    .filter-tab-btn span.material-symbols-outlined { font-size: 17px; }
+    .filter-tab-btn:hover {
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.6);
+    }
+    .filter-tab-btn.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
     /* Table Card */
     .table-card {
       background: #ffffff;
@@ -369,6 +570,7 @@ interface RoleMemberItem {
       overflow: hidden;
       box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
+    .table-card.mt-4 { margin-top: 20px; }
     .table-card-header {
       padding: 18px 22px;
       border-bottom: 1px solid #f1f5f9;
@@ -377,7 +579,35 @@ interface RoleMemberItem {
       align-items: center;
       background: #fafbfc;
     }
-    .table-card-header h3 { margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; }
+    .card-header-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-icon-pill {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .header-icon-pill span { font-size: 20px; }
+    .header-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-title-row h3 { margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; }
+    .section-count-badge {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
     .table-card-header p { margin: 2px 0 0; font-size: 12px; color: #64748b; }
 
     .table-responsive { width: 100%; overflow-x: auto; }
@@ -431,11 +661,13 @@ interface RoleMemberItem {
     }
 
     /* Badges */
-    .badge-root { background: #fef2f2; color: #b91c1c; }
-    .badge-admin { background: #eff6ff; color: #0050e5; }
-    .badge-editor { background: #ecfdf5; color: #059669; }
-    .badge-feature { background: #fef3c7; color: #d97706; }
-    .badge-readonly { background: #f1f5f9; color: #475569; }
+    .badge-root { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .badge-admin { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
+    .badge-identity { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+    .badge-usermanager { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-editor { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+    .badge-feature { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .badge-readonly { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
     .badge-member { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
 
     /* Scope Cell */
@@ -584,7 +816,10 @@ interface RoleMemberItem {
     /* Modal Backdrop & Dialog */
     .modal-backdrop {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background: rgba(15, 23, 42, 0.5);
       backdrop-filter: blur(4px);
       z-index: 1050;
@@ -596,7 +831,7 @@ interface RoleMemberItem {
     .modal-dialog {
       background: #ffffff;
       border-radius: 14px;
-      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15);
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
       width: 100%;
       max-width: 620px;
       max-height: 90vh;
@@ -639,6 +874,28 @@ interface RoleMemberItem {
       flex-direction: column;
       gap: 20px;
     }
+
+    /* Role Scope Notices */
+    .role-scope-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+    .role-scope-notice.notice-identity {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+    }
+    .role-scope-notice.notice-usermanager {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      color: #166534;
+    }
+    .role-scope-notice span.material-symbols-outlined { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
 
     .section-title {
       font-size: 12px;
@@ -769,7 +1026,7 @@ interface RoleMemberItem {
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
     .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: #0040b8; }
+    .btn-primary:hover:not(:disabled) { background: #0040b8; color: #ffffff !important; }
     .btn-sm { height: 32px; padding: 0 12px; font-size: 12px; }
   `]
 })
@@ -780,6 +1037,9 @@ export class IdentityRolesComponent implements OnInit {
 
   rolesCatalog: RoleCatalogItem[] = [];
   assignableUsers: any[] = [];
+
+  // Filter Tab State: 'all' | 'system_feature' | 'operational_level'
+  activeFilter: 'all' | 'system_feature' | 'operational_level' = 'all';
 
   // Modal State
   isSuperAdmin: boolean = false;
@@ -827,22 +1087,34 @@ export class IdentityRolesComponent implements OnInit {
     }
   }
 
-  get totalPrivilegedCount(): number {
+  /**
+   * Filtered getter for Group 1: System & Feature Authority Roles.
+   */
+  get systemFeatureRoles(): RoleCatalogItem[] {
     return this.rolesCatalog
-      .filter(r => r.name !== 'Member')
-      .reduce((acc, curr) => acc + curr.memberCount, 0);
+      .filter(r => r.group === 'system_feature' || ['SuperAdmin', 'Admin', 'Identity Manager', 'User Manager', 'Member'].includes(r.name))
+      .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
   }
 
-  get featureEditorCount(): number {
-    const f = this.rolesCatalog.find(r => r.name === 'Feature Editor');
-    return f ? f.memberCount : 0;
+  /**
+   * Filtered getter for Group 2: Operational Access Levels.
+   */
+  get operationalLevelRoles(): RoleCatalogItem[] {
+    return this.rolesCatalog
+      .filter(r => r.group === 'operational_level' || ['Global Editor', 'Feature Editor', 'Read Only'].includes(r.name))
+      .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
   }
 
-  get memberRoleCount(): number {
-    const m = this.rolesCatalog.find(r => r.name === 'Member');
-    return m ? m.memberCount : 0;
+  /**
+   * Total assigned personnel across all system and operational roles.
+   */
+  get totalAssignedCount(): number {
+    return this.rolesCatalog.reduce((acc, curr) => acc + curr.memberCount, 0);
   }
 
+  /**
+   * Fetches the complete system roles catalog from the backend API.
+   */
   loadRoleCatalog(): void {
     this.isLoading = true;
     this.api.get<any>('IdentityApi/roles/catalog').subscribe({
@@ -850,12 +1122,15 @@ export class IdentityRolesComponent implements OnInit {
         this.isLoading = false;
         const allRoles: RoleCatalogItem[] = res.data || [];
         // Strictly filter out SuperAdmin unless the current logged-in user is SuperAdmin
-        this.rolesCatalog = allRoles.filter(r => {
-          if (r.name.toLowerCase() === 'superadmin') {
-            return this.isSuperAdmin;
-          }
-          return true;
-        });
+        this.rolesCatalog = allRoles
+          .filter(r => {
+            if (r.name.toLowerCase() === 'superadmin') {
+              return this.isSuperAdmin;
+            }
+            return true;
+          })
+          .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+
         // Update active modal role reference if open
         if (this.activeModalRole) {
           const refreshed = this.rolesCatalog.find(r => r.name === this.activeModalRole?.name);
@@ -869,6 +1144,9 @@ export class IdentityRolesComponent implements OnInit {
     });
   }
 
+  /**
+   * Loads users eligible to receive role assignments.
+   */
   loadAssignableUsers(): void {
     this.api.get<any>('UsersApi').subscribe({
       next: (res) => {
