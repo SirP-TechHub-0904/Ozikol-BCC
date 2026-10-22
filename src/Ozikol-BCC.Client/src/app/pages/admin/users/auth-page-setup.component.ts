@@ -369,13 +369,13 @@ interface WallpaperPreset {
                   <div class="sim-brand-row">
                     <img [src]="displayLogo || 'assets/images/ozikol-white.png'" alt="Brand Logo" class="sim-logo" />
                   </div>
-                  <div class="sim-hero-narrative">
+                  <div class="sim-hero-narrative" *ngIf="brand.loginNoteTitle || brand.loginTitle || brand.loginNote">
                     <div class="sim-chip" *ngIf="brand.loginNoteTitle">
                       <span class="material-symbols-outlined" style="font-size: 10px;">verified_user</span>
                       <span>{{ brand.loginNoteTitle }}</span>
                     </div>
-                    <h4 class="sim-hero-title">{{ brand.loginTitle || 'Sign In to Workspace' }}</h4>
-                    <p class="sim-hero-desc">{{ brand.loginNote || 'Access your unified enterprise workspace.' }}</p>
+                    <h4 class="sim-hero-title" *ngIf="brand.loginTitle">{{ brand.loginTitle }}</h4>
+                    <p class="sim-hero-desc" *ngIf="brand.loginNote">{{ brand.loginNote }}</p>
                   </div>
                   <div class="sim-footer-meta">
                     <span>Powered by <strong>Ozikol</strong></span>
@@ -388,7 +388,8 @@ interface WallpaperPreset {
                       <div class="sim-card-avatar">
                         <span class="material-symbols-outlined" style="font-size: 14px; color: #0050e5;">lock</span>
                       </div>
-                      <span class="sim-card-title">Sign In</span>
+                      <span class="sim-card-title">{{ brand.loginTitle || 'Sign In' }}</span>
+                      <p class="sim-card-subtitle" *ngIf="brand.loginNote" style="font-size: 10px; color: #64748b; margin: 4px 0 0;">{{ brand.loginNote }}</p>
                     </div>
                     <div class="sim-form-line">
                       <span class="sim-input-dummy">name&#64;company.com</span>
@@ -397,7 +398,7 @@ interface WallpaperPreset {
                       <span class="sim-input-dummy">••••••••••••</span>
                     </div>
                     <button type="button" class="sim-submit-btn">
-                      {{ brand.loginButtonText || 'Sign In to Dashboard' }}
+                      {{ brand.loginButtonText || 'Sign In' }}
                     </button>
                     <div class="sim-card-footer" *ngIf="brand.allowPublicRegistration">
                       <span>Need an account? <strong style="color: #0050e5;">Register</strong></span>
@@ -417,7 +418,7 @@ interface WallpaperPreset {
                     <img [src]="displayLogo || 'assets/images/ozikol.png'" alt="Brand Logo" class="sim-logo" />
                   </div>
                   <h4 class="sim-card-title" style="margin-bottom: 2px;">{{ brand.loginTitle || 'Sign In' }}</h4>
-                  <p class="sim-card-subtitle">{{ brand.loginNote || 'Enter your credentials to enter the workspace.' }}</p>
+                  <p class="sim-card-subtitle" *ngIf="brand.loginNote">{{ brand.loginNote }}</p>
 
                   <div class="sim-form-line" style="margin-top: 10px;">
                     <span class="sim-input-dummy">name&#64;company.com</span>
@@ -426,7 +427,7 @@ interface WallpaperPreset {
                     <span class="sim-input-dummy">••••••••••••</span>
                   </div>
                   <button type="button" class="sim-submit-btn">
-                    {{ brand.loginButtonText || 'Sign In to Dashboard' }}
+                    {{ brand.loginButtonText || 'Sign In' }}
                   </button>
                   <div class="sim-card-footer" *ngIf="brand.allowPublicRegistration">
                     <span>Need an account? <strong style="color: #0050e5;">Register</strong></span>

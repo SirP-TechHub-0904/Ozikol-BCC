@@ -386,7 +386,7 @@ namespace Ozikol_BCC.Api.Controllers
             site.ReloaderIconKey = dto.ReloaderIconKey;
             site.LoginBackgroundImageUrl = dto.LoginBackgroundImageUrl;
             site.LoginBackgroundImageKey = dto.LoginBackgroundImageKey;
-            site.LoginLayout = !string.IsNullOrWhiteSpace(dto.LoginLayout) ? dto.LoginLayout : "split";
+            site.LoginLayout = !string.IsNullOrWhiteSpace(dto.LoginLayout) ? dto.LoginLayout : "centered";
             site.UseNormalLogoInLogin = dto.UseNormalLogoInLogin;
             site.UseWhiteLogoInLogin = dto.UseWhiteLogoInLogin;
             site.LoginTitle = dto.LoginTitle;

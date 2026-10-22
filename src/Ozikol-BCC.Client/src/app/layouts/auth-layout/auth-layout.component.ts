@@ -44,20 +44,16 @@ import { ApiService } from '../../core/services/api.service';
                   class="brand-logo-img" 
                 />
               </a>
-              <span class="portal-badge">
-                <span class="pulse-dot"></span>
-                <span>Workspace Portal</span>
-              </span>
             </div>
 
-            <!-- Central Hero Narrative (Dynamic from DB with Smart Contextual Fallbacks) -->
-            <div class="showcase-hero">
-              <div class="hero-chip">
+            <!-- Central Hero Narrative (Dynamic from Auth Settings) -->
+            <div class="showcase-hero" *ngIf="displayChip || displayTitle || displayDescription">
+              <div class="hero-chip" *ngIf="displayChip">
                 <span class="material-symbols-outlined icon-chip">verified_user</span>
                 <span>{{ displayChip }}</span>
               </div>
-              <h1 class="hero-title">{{ displayTitle }}</h1>
-              <p class="hero-description">{{ displayDescription }}</p>
+              <h1 class="hero-title" *ngIf="displayTitle">{{ displayTitle }}</h1>
+              <p class="hero-description" *ngIf="displayDescription">{{ displayDescription }}</p>
             </div>
 
             <!-- Showcase Footer -->
@@ -86,6 +82,7 @@ import { ApiService } from '../../core/services/api.service';
 
               <!-- Universal Form Footer Note & Powered by Ozikol -->
               <div class="form-footer-meta">
+                <p class="auth-terms-note" *ngIf="displayFooterNote">{{ displayFooterNote }}</p>
                 <div class="powered-by-row">
                   <span>Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a></span>
                 </div>
@@ -760,29 +757,24 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
   }
 
   get displayChip(): string {
-    if (this.loginNoteTitle?.trim()) {
-      return this.loginNoteTitle.trim();
-    }
-    return this.isResetPasswordRoute ? 'Self-Service Account Recovery' : 'Verified Workspace Portal';
+    return this.loginNoteTitle?.trim() || '';
   }
 
   get displayTitle(): string {
     if (this.isResetPasswordRoute) {
       return 'Account Recovery & Verification';
     }
-    return this.loginTitle?.trim() || 'Sign In to Workspace';
+    return this.loginTitle?.trim() || '';
   }
 
   get displayDescription(): string {
     if (this.isResetPasswordRoute) {
       return 'Enter your registered account email to receive a secure single-use recovery code and set your new permanent password.';
     }
-    return this.loginNote?.trim() || 
-      'Access your unified enterprise workspace, collaborate with your teams, and manage institutional records securely.';
+    return this.loginNote?.trim() || '';
   }
 
   get displayFooterNote(): string {
-    return this.loginNoteFooter?.trim() || 
-      'Protected by enterprise authentication, end-to-end encryption, and comprehensive audit tracking.';
+    return this.loginNoteFooter?.trim() || '';
   }
 }

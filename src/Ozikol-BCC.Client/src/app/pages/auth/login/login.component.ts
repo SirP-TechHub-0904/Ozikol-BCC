@@ -29,8 +29,8 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
             <img [src]="brandLogoUrl || 'assets/images/ozikol.png'" alt="Brand Logo" class="brand-logo-top" />
           </div>
 
-          <h2 class="title">Sign In</h2>
-          <p class="subtitle">Enter your credentials to access your account.</p>
+          <h2 class="title">{{ loginTitle || 'Sign In' }}</h2>
+          <p class="subtitle" *ngIf="loginNote">{{ loginNote }}</p>
         </div>
 
         <!-- Alert Error Banner -->
@@ -97,7 +97,7 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
           <button type="submit" [disabled]="loading" class="btn-submit">
             <span *ngIf="loading" class="spinner"></span>
             <span *ngIf="!loading" class="material-symbols-outlined">login</span>
-            <span>{{ loading ? 'Authenticating...' : 'Sign In to Dashboard' }}</span>
+            <span>{{ loading ? 'Authenticating...' : (loginButtonText || 'Sign In') }}</span>
           </button>
         </form>
 
@@ -840,6 +840,12 @@ export class LoginComponent implements OnInit {
   brandCompanyName = '';
   brandInitials = '';
 
+  // Auth Settings & Dynamic Copy
+  loginTitle = '';
+  loginNote = '';
+  loginButtonText = 'Sign In';
+  loginNoteFooter = '';
+
   // Forced Password Change State
   showForceChangeModal = false;
   newPermanentPassword = '';
@@ -905,6 +911,10 @@ export class LoginComponent implements OnInit {
           if (res.data.allowPublicRegistration !== undefined) {
             this.allowPublicRegistration = res.data.allowPublicRegistration;
           }
+          this.loginTitle = res.data.loginTitle || '';
+          this.loginNote = res.data.loginNote || '';
+          this.loginButtonText = res.data.loginButtonText || 'Sign In';
+          this.loginNoteFooter = res.data.loginNoteFooter || '';
         }
       },
       error: (err) => {
