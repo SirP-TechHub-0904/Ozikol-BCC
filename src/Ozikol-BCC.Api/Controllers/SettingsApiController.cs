@@ -429,6 +429,8 @@ namespace Ozikol_BCC.Api.Controllers
                 companyLogoUrl = site.CompanyLogoUrl,
                 companyWhiteLogoUrl = site.CompanyWhiteLogoUrl,
                 companyIconUrl = site.CompanyIconUrl,
+                loginLayout = site.LoginLayout,
+                loginBackgroundImageUrl = site.LoginBackgroundImageUrl,
                 primaryColor = "#0050e5",
                 secondaryColor = "#1f6bff",
                 updatedAtUtc = site.UpdatedAtUtc
@@ -840,7 +842,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string SecondaryColor { get; set; } = "#1f6bff";
         public string LoginBackgroundImageUrl { get; set; } = string.Empty;
         public string LoginBackgroundImageKey { get; set; } = string.Empty;
-        public string LoginLayout { get; set; } = "split";
+        public string LoginLayout { get; set; } = "centered";
         public bool AllowPublicRegistration { get; set; } = true;
         public bool UseNormalLogoInLogin { get; set; } = true;
         public bool UseWhiteLogoInLogin { get; set; }
@@ -887,7 +889,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string ReloaderIconKey { get; set; } = string.Empty;
         public string LoginBackgroundImageUrl { get; set; } = string.Empty;
         public string LoginBackgroundImageKey { get; set; } = string.Empty;
-        public string LoginLayout { get; set; } = "split";
+        public string LoginLayout { get; set; } = "centered";
         public bool AllowPublicRegistration { get; set; } = true;
         public bool UseNormalLogoInLogin { get; set; } = true;
         public bool UseWhiteLogoInLogin { get; set; }

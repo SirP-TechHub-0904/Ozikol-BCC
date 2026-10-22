@@ -55,8 +55,18 @@ interface WallpaperPreset {
                 <span class="material-symbols-outlined">dashboard_customize</span>
               </div>
               <div class="header-text">
-                <h3>Screen Layout Architecture</h3>
-                <p>Choose between a dual-pane showcase layout or a focused single centered card.</p>
+                <div class="header-title-flex">
+                  <h3>Screen Layout Architecture</h3>
+                  <span class="auto-save-pill" *ngIf="isSavingLayout">
+                    <span class="material-symbols-outlined rotating-spinner">sync</span>
+                    Saving...
+                  </span>
+                  <span class="auto-save-pill saved" *ngIf="!isSavingLayout && lastSavedLayout">
+                    <span class="material-symbols-outlined">check</span>
+                    Auto-saved
+                  </span>
+                </div>
+                <p>Choose between a dual-pane showcase layout or a focused single centered card. Switching auto-saves instantly.</p>
               </div>
             </div>
 
@@ -66,7 +76,8 @@ interface WallpaperPreset {
                 <div 
                   class="layout-option-card" 
                   [class.selected]="brand.loginLayout !== 'centered'"
-                  (click)="brand.loginLayout = 'split'"
+                  [class.is-saving]="isSavingLayout && targetLayout === 'split'"
+                  (click)="selectLayout('split')"
                 >
                   <div class="option-preview split-preview">
                     <div class="prev-left-pane">
@@ -86,7 +97,8 @@ interface WallpaperPreset {
                   <div class="option-meta">
                     <div class="meta-title-row">
                       <strong class="option-title">Split Screen Showcase</strong>
-                      <span class="material-symbols-outlined check-icon" *ngIf="brand.loginLayout !== 'centered'">check_circle</span>
+                      <span class="material-symbols-outlined check-icon" *ngIf="brand.loginLayout !== 'centered' && (!isSavingLayout || targetLayout !== 'split')">check_circle</span>
+                      <span class="material-symbols-outlined check-icon rotating-spinner" *ngIf="isSavingLayout && targetLayout === 'split'">sync</span>
                     </div>
                     <p class="option-desc">Dual-panel experience featuring brand narrative showcase on the left and bright auth form card on the right.</p>
                   </div>
@@ -96,7 +108,8 @@ interface WallpaperPreset {
                 <div 
                   class="layout-option-card" 
                   [class.selected]="brand.loginLayout === 'centered'"
-                  (click)="brand.loginLayout = 'centered'"
+                  [class.is-saving]="isSavingLayout && targetLayout === 'centered'"
+                  (click)="selectLayout('centered')"
                 >
                   <div class="option-preview centered-preview">
                     <div class="prev-centered-box">
@@ -110,7 +123,8 @@ interface WallpaperPreset {
                   <div class="option-meta">
                     <div class="meta-title-row">
                       <strong class="option-title">Centered Card (Don't Split)</strong>
-                      <span class="material-symbols-outlined check-icon" *ngIf="brand.loginLayout === 'centered'">check_circle</span>
+                      <span class="material-symbols-outlined check-icon" *ngIf="brand.loginLayout === 'centered' && (!isSavingLayout || targetLayout !== 'centered')">check_circle</span>
+                      <span class="material-symbols-outlined check-icon rotating-spinner" *ngIf="isSavingLayout && targetLayout === 'centered'">sync</span>
                     </div>
                     <p class="option-desc">Single glass card centered on full-bleed background wallpaper with ambient backdrop blur.</p>
                   </div>
@@ -517,6 +531,42 @@ interface WallpaperPreset {
       }
 
       .header-text {
+        width: 100%;
+
+        .header-title-flex {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 4px;
+
+          h3 {
+            margin: 0;
+          }
+
+          .auto-save-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            background: #eff6ff;
+            color: #0050e5;
+            border: 1px solid #bfdbfe;
+
+            .material-symbols-outlined {
+              font-size: 13px;
+            }
+
+            &.saved {
+              background: #f0fdf4;
+              color: #16a34a;
+              border-color: #bbf7d0;
+            }
+          }
+        }
+
         h3 {
           font-size: 16px;
           font-weight: 700;
@@ -565,6 +615,11 @@ interface WallpaperPreset {
         border-color: #0050e5;
         background: #ffffff;
         box-shadow: 0 8px 24px rgba(0, 80, 229, 0.12);
+      }
+
+      &.is-saving {
+        opacity: 0.85;
+        border-color: #0050e5;
       }
 
       .option-preview {
@@ -1323,6 +1378,9 @@ export class AuthPageSetupComponent implements OnInit {
   isLoading: boolean = false;
   isSaving: boolean = false;
   isUploading: boolean = false;
+  isSavingLayout: boolean = false;
+  targetLayout: string = '';
+  lastSavedLayout: boolean = false;
 
   brand: any = {
     companyName: 'Workspace',
@@ -1447,7 +1505,37 @@ export class AuthPageSetupComponent implements OnInit {
     });
   }
 
-  saveSettings(): void {
+  /**
+   * Switches the active authentication screen layout architecture and automatically persists to backend.
+   * @param layout 'split' for dual-pane showcase layout, or 'centered' for focused single card layout.
+   */
+  selectLayout(layout: 'split' | 'centered'): void {
+    if (this.brand.loginLayout === layout && !this.isSavingLayout) {
+      return;
+    }
+
+    this.brand.loginLayout = layout;
+    this.brand.loginBackgroundImageKey = layout;
+    this.targetLayout = layout;
+    this.isSavingLayout = true;
+    this.lastSavedLayout = false;
+
+    // Persist immediately to backend
+    this.api.put<any>('SettingsApi/brand', this.brand).subscribe({
+      next: () => {
+        this.isSavingLayout = false;
+        this.lastSavedLayout = true;
+        const friendlyName = layout === 'split' ? 'Split Screen Showcase' : 'Centered Card (Single)';
+        this.toast.success(`Screen layout switched to ${friendlyName} and saved.`);
+      },
+      error: (err) => {
+        this.isSavingLayout = false;
+        this.toast.error(err?.error?.message || 'Failed to save screen layout.');
+      }
+    });
+  }
+
+  saveSettings(customSuccessMessage?: string): void {
     this.isSaving = true;
     this.updateHeaderButtons();
 
@@ -1459,8 +1547,9 @@ export class AuthPageSetupComponent implements OnInit {
     this.api.put<any>('SettingsApi/brand', this.brand).subscribe({
       next: () => {
         this.isSaving = false;
+        this.lastSavedLayout = true;
         this.updateHeaderButtons();
-        this.toast.success('Authentication page setup saved successfully!');
+        this.toast.success(customSuccessMessage || 'Authentication page setup saved successfully!');
       },
       error: (err) => {
         this.isSaving = false;
@@ -1473,7 +1562,7 @@ export class AuthPageSetupComponent implements OnInit {
   selectPreset(preset: WallpaperPreset): void {
     this.brand.loginBackgroundImageUrl = preset.url;
     this.brand.loginBackgroundImageKey = preset.id;
-    this.toast.info(`Selected ${preset.name} wallpaper preset.`);
+    this.saveSettings(`Selected ${preset.name} wallpaper preset and saved.`);
   }
 
   isCurrentWallpaper(url: string): boolean {
@@ -1483,7 +1572,7 @@ export class AuthPageSetupComponent implements OnInit {
   clearWallpaper(): void {
     this.brand.loginBackgroundImageUrl = '';
     this.brand.loginBackgroundImageKey = '';
-    this.toast.info('Reverted to platform default wallpaper.');
+    this.saveSettings('Reverted to platform default wallpaper and saved.');
   }
 
   onFileSelected(event: Event): void {
