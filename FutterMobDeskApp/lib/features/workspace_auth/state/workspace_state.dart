@@ -60,6 +60,49 @@ class WorkspaceState {
   }
 }
 
+/// Represents the outcome of an authentication attempt.
+class LoginAuthOutcome {
+  /// Whether authentication succeeded and an active session was created.
+  final bool isSuccess;
+
+  /// Whether a two-factor verification challenge is required to complete sign-in.
+  final bool requiresMfa;
+
+  /// The target user identifier for the 2FA challenge.
+  final String? mfaUserId;
+
+  /// The preferred MFA delivery provider (e.g. 'GoogleAuthenticator', 'Email', 'SMS').
+  final String? mfaProvider;
+
+  /// Whether the user is flagged with a temporary password requiring a mandatory first-time update.
+  final bool mustChangePassword;
+
+  /// Optional error message when sign-in fails.
+  final String? errorMessage;
+
+  /// Creates a [LoginAuthOutcome].
+  const LoginAuthOutcome({
+    this.isSuccess = false,
+    this.requiresMfa = false,
+    this.mfaUserId,
+    this.mfaProvider,
+    this.mustChangePassword = false,
+    this.errorMessage,
+  });
+
+  /// Factory creating a successful outcome.
+  factory LoginAuthOutcome.success({bool mustChangePassword = false}) =>
+      LoginAuthOutcome(isSuccess: true, mustChangePassword: mustChangePassword);
+
+  /// Factory creating an MFA-challenged outcome.
+  factory LoginAuthOutcome.mfa({required String userId, required String provider}) =>
+      LoginAuthOutcome(requiresMfa: true, mfaUserId: userId, mfaProvider: provider);
+
+  /// Factory creating a failed outcome.
+  factory LoginAuthOutcome.failure(String error) =>
+      LoginAuthOutcome(isSuccess: false, errorMessage: error);
+}
+
 /// State notifier driving multi-workspace switching, authentication, and persistence
 class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
   final SecureStorageService _storageService;
@@ -393,8 +436,10 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     }
   }
 
+
+
   /// Authenticates into the pending or specified workspace
-  Future<bool> login({
+  Future<LoginAuthOutcome> login({
     required String email,
     required String password,
     Workspace? targetWorkspace,
@@ -402,7 +447,7 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     final workspace = targetWorkspace ?? state.pendingWorkspace;
     if (workspace == null) {
       state = state.copyWith(errorMessage: 'No workspace selected for sign in.');
-      return false;
+      return LoginAuthOutcome.failure('No workspace selected for sign in.');
     }
 
     state = state.copyWith(isLoading: true, clearError: true);
@@ -413,6 +458,17 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
         password: password,
       );
 
+      // Check if 2FA verification challenge is required
+      final requiresMfa = result['requiresMfa'] == true || result['RequiresMfa'] == true;
+      if (requiresMfa) {
+        state = state.copyWith(isLoading: false);
+        return LoginAuthOutcome.mfa(
+          userId: (result['userId'] ?? result['UserId'] ?? '').toString(),
+          provider: (result['mfaProvider'] ?? result['MfaProvider'] ?? 'Email').toString(),
+        );
+      }
+
+      final mustChange = result['mustChangePassword'] == true || result['MustChangePassword'] == true;
       final token = result['token'] as String?;
       final fullName = result['fullName'] as String? ?? result['userName'] as String?;
       final userId = result['userId']?.toString();
@@ -462,13 +518,14 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
         clearPending: true,
       );
 
-      return true;
+      return LoginAuthOutcome.success(mustChangePassword: mustChange);
     } catch (e) {
+      final sanitized = _sanitizeError(e);
       state = state.copyWith(
         isLoading: false,
-        errorMessage: _sanitizeError(e),
+        errorMessage: sanitized,
       );
-      return false;
+      return LoginAuthOutcome.failure(sanitized);
     }
   }
 

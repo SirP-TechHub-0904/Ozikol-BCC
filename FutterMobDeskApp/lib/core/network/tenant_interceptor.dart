@@ -24,6 +24,14 @@ class TenantInterceptor extends Interceptor {
       options.headers[ApiConstants.headerPlatform] = kIsWeb ? 'web' : Platform.operatingSystem;
     }
 
+    // Inject accurate platform User-Agent for connected device identification and audit trails
+    if (!options.headers.containsKey('User-Agent')) {
+      final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+      final os = kIsWeb ? 'Web' : Platform.operatingSystem;
+      final form = isMobile ? 'Mobile' : 'Desktop';
+      options.headers['User-Agent'] = 'BCC-Client/1.0 ($os; $form)';
+    }
+
     // 2. Inject active workspace credentials and headers
     final activeWorkspace = await _storageService.getActiveWorkspace();
 

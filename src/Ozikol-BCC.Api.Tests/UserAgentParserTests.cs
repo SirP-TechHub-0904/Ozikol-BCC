@@ -99,6 +99,42 @@ namespace Ozikol_BCC.Api.Tests
             result.Icon.Should().Be("desktop_windows");
         }
 
+        [Fact]
+        public void Parse_FlutterWindowsDesktop_ReturnsDesktopAppPlatformDetails()
+        {
+            // Arrange - native desktop client User-Agent with BCC-Client header
+            var ua = "BCC-Client/1.0 (Windows; Desktop; Windows 10 Pro)";
+
+            // Act
+            var result = UserAgentParser.Parse(ua);
+
+            // Assert - tenant sessions must be 100% white-labeled with zero vendor branding
+            result.BrowserName.Should().Be("Desktop App");
+            result.OperatingSystem.Should().Be("Windows");
+            result.DeviceType.Should().Be("Desktop");
+            result.FriendlyDeviceTitle.Should().Be("Desktop App on Windows");
+            result.FriendlyBrowserDetails.Should().Be("Desktop App • Desktop");
+            result.Icon.Should().Be("desktop_windows");
+        }
+
+        [Fact]
+        public void Parse_FlutterAndroidMobile_ReturnsMobileAppPlatformDetails()
+        {
+            // Arrange - native mobile client User-Agent with BCC-Client header
+            var ua = "BCC-Client/1.0 (Android; Mobile; Android 14)";
+
+            // Act
+            var result = UserAgentParser.Parse(ua);
+
+            // Assert - tenant sessions must be 100% white-labeled with zero vendor branding
+            result.BrowserName.Should().Be("Mobile App");
+            result.OperatingSystem.Should().Be("Android");
+            result.DeviceType.Should().Be("Mobile");
+            result.FriendlyDeviceTitle.Should().Be("Mobile App on Android");
+            result.FriendlyBrowserDetails.Should().Be("Mobile App • Mobile");
+            result.Icon.Should().Be("smartphone");
+        }
+
         [Theory]
         [InlineData(null)]
         [InlineData("")]

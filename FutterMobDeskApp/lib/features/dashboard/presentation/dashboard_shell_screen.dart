@@ -9,14 +9,12 @@ import '../../../core/services/in_app_update_service.dart';
 import '../../../core/widgets/app_badge.dart';
 import '../../../core/widgets/app_drawer.dart';
 import '../../../core/widgets/app_top_bar.dart';
-import '../../../core/widgets/contextual_info_button.dart';
 import '../../../core/widgets/exit_confirmation_dialog.dart';
 import '../../../core/widgets/offline_status_bar.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../../core/widgets/tenant_cached_image.dart';
 import '../../../core/widgets/update_banner.dart';
 import '../../../core/models/workspace.dart';
-import '../../../core/models/suite_info_catalog.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../workspace_auth/presentation/workspace_login_screen.dart';
 import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
@@ -28,6 +26,23 @@ import '../../../core/widgets/oz_lang_switcher.dart';
 import '../data/dashboard_repository.dart';
 import '../models/dashboard_metrics.dart';
 import 'widgets/user_profile_end_drawer.dart';
+import 'screens/user_directory/user_dashboard_overview_view.dart';
+import 'screens/user_directory/all_members_view.dart';
+import 'screens/user_directory/user_categories_view.dart';
+import 'screens/user_directory/registration_form_builder_view.dart';
+import 'screens/user_directory/auth_page_setup_view.dart';
+import 'screens/user_directory/kpis_leaderboard_view.dart';
+import 'screens/user_directory/user_settings_view.dart';
+import 'screens/identity_access/identity_dashboard_view.dart';
+import 'screens/identity_access/roles_permissions_view.dart';
+import 'screens/identity_access/member_invitations_view.dart';
+import 'screens/identity_access/global_security_policies_view.dart';
+import 'screens/manage_account/my_account_profile_view.dart';
+import 'screens/manage_account/change_password_view.dart';
+import 'screens/manage_account/two_factor_security_view.dart';
+import 'screens/manage_account/manage_devices_view.dart';
+import 'screens/manage_account/login_activity_view.dart';
+import 'screens/member_workspace/workspace_home_view.dart';
 
 /// Clean adaptive dashboard shell delivering 1-to-1 operational and visual parity
 /// with the Ozikol BCC Angular Web Console Dashboard (`/dashboard/console`).
@@ -43,7 +58,7 @@ class DashboardShellScreen extends ConsumerStatefulWidget {
 class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _mobileScaffoldKey = GlobalKey<ScaffoldState>();
-  int _selectedNavIndex = 2; // 2 = Console Dashboard
+  int _selectedNavIndex = 0;
   bool _isSidebarCollapsed = false;
   late AnimationController _refreshAnimController;
 
@@ -265,51 +280,15 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     // Central Feature Expiration Notice (Strictly visible to BCC Admins in Admin mode)
                     _buildFeatureExpirationBanner(isDark, activeWs),
 
-                    // Main Console Dashboard Content Canvas
+                    // Main Active View Canvas
                     Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 1. Header / Command Strip
-                            _buildCommandStrip(isDark, isLoading),
-
-                            const SizedBox(height: 18),
-
-                            // 2. Core Performance & Health Counters (6-Metric Strip)
-                            _buildHealthCountersWidget(isDark, metrics),
-
-                            const SizedBox(height: 20),
-
-                            // 3. 2-Column Split: Recently Registered Members (60%) & Quick Actions (40%)
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Left Column (Span 7 / flex 7): Recently Registered Members
-                                Expanded(
-                                  flex: 7,
-                                  child: _buildRecentMembersWidget(isDark, metrics),
-                                ),
-
-                                const SizedBox(width: 20),
-
-                                // Right Column (Span 5 / flex 5): Quick Actions & Shortcuts
-                                Expanded(
-                                  flex: 5,
-                                  child: _buildQuickActionsWidget(isDark),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            // 4. Bottom Audit Log Stream: Recent Activity & Audit Trail
-                            _buildAuditTrailWidget(isDark, metrics),
-
-                            const SizedBox(height: 32),
-                          ],
-                        ),
+                      child: _buildActiveViewCanvas(
+                        isDark: isDark,
+                        isOnline: isOnline,
+                        isLoading: isLoading,
+                        metrics: metrics,
+                        activeWs: activeWs,
+                        isMobile: false,
                       ),
                     ),
                   ],
@@ -513,24 +492,15 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               const OfflineStatusBar(),
               _buildFeatureExpirationBanner(isDark, activeWs, isMobile: true),
+              // Main Active View Canvas
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildCommandStrip(isDark, isLoading, isMobile: true),
-                      const SizedBox(height: 16),
-                      _buildHealthCountersWidget(isDark, metrics, isMobile: true),
-                      const SizedBox(height: 16),
-                      _buildQuickActionsWidget(isDark),
-                      const SizedBox(height: 16),
-                      _buildRecentMembersWidget(isDark, metrics),
-                      const SizedBox(height: 16),
-                      _buildAuditTrailWidget(isDark, metrics),
-                      const SizedBox(height: 48),
-                    ],
-                  ),
+                child: _buildActiveViewCanvas(
+                  isDark: isDark,
+                  isOnline: isOnline,
+                  isLoading: isLoading,
+                  metrics: metrics,
+                  activeWs: activeWs,
+                  isMobile: true,
                 ),
               ),
             ],
@@ -916,1089 +886,6 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   // COMMAND STRIP (Header with Refresh Telemetry & New Web Page)
   // =========================================================================
 
-  Widget _buildCommandStrip(bool isDark, bool isLoading, {bool isMobile = false}) {
-    final titleColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
-    final subtitleColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
-
-    final titleBlock = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard'),
-          style: TextStyle(
-            fontSize: isMobile ? 20 : 24,
-            fontWeight: FontWeight.w800,
-            color: titleColor,
-            letterSpacing: -0.5,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          'Multi-tenant workspace command center, membership telemetry, and dynamic CMS studio.',
-          style: TextStyle(
-            fontSize: isMobile ? 12 : 13,
-            color: subtitleColor,
-          ),
-        ),
-      ],
-    );
-
-    final actionButtons = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Refresh Telemetry button
-        OutlinedButton.icon(
-          onPressed: _isRefreshing ? null : _triggerRefresh,
-          icon: _isRefreshing
-              ? SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isDark ? Colors.white : AppColors.primary,
-                    ),
-                  ),
-                )
-              : RotationTransition(
-                  turns: _refreshAnimController,
-                  child: Icon(
-                    Icons.refresh_rounded,
-                    size: 16,
-                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
-                  ),
-                ),
-          label: Text(
-            _isRefreshing ? 'Refreshing...' : 'btn.refresh_telemetry'.tr(ref, fallback: 'Refresh Telemetry'),
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
-            ),
-          ),
-          style: OutlinedButton.styleFrom(
-            backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
-            side: BorderSide(
-              color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
-            ),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          ),
-        ),
-
-        const SizedBox(width: 10),
-
-        // New Web Page button (Primary Royal Blue)
-        ElevatedButton.icon(
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Navigating to CMS Web Page Designer...')),
-            );
-          },
-          icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
-          label: Text(
-            'btn.new_web_page'.tr(ref, fallback: 'New Web Page'),
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-        ),
-      ],
-    );
-
-    if (isMobile) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          titleBlock,
-          const SizedBox(height: 12),
-          actionButtons,
-        ],
-      );
-    }
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(child: titleBlock),
-        actionButtons,
-      ],
-    );
-  }
-
-  // =========================================================================
-  // CORE HEALTH COUNTERS WIDGET (6 KPI CARDS)
-  // =========================================================================
-
-  Widget _buildHealthCountersWidget(
-    bool isDark,
-    DashboardMetrics metrics, {
-    bool isMobile = false,
-  }) {
-    return _buildCardWrapper(
-      isDark: isDark,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Widget Header with Drag Handle & Status Pill
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.drag_indicator_rounded,
-                      size: 16,
-                      color: isDark ? AppColors.gray500 : const Color(0xFF94A3B8),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'kpi.core_performance'.tr(ref, fallback: 'Core Performance & Health Counters'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ContextualInfoButton(
-                      title: 'Workspace Telemetry & Health Counters',
-                      purpose:
-                          'Live operational counters pulled directly from the tenant database and catalog registry.',
-                      expectedInputs: 'Synchronized live from active database schema and user records.',
-                      impact: 'Guarantees 1-to-1 operational awareness for workspace administrators.',
-                      bestPractices: 'Review daily to observe active membership growth and web page deployment.',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // "All Services Operational" Pill Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF22C55E).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: const Color(0xFF22C55E).withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF16A34A)),
-                    const SizedBox(width: 5),
-                    Text(
-                      'kpi.all_operational'.tr(ref, fallback: 'All Services Operational'),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF16A34A),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // 6 Metric Cards
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (isMobile) {
-                return Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildMetricTile(
-                            isDark,
-                            label: 'TOTAL MEMBERS',
-                            value: '${metrics.totalMembers}',
-                            note: '↗ +12% active directory',
-                            noteColor: const Color(0xFF16A34A),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildMetricTile(
-                            isDark,
-                            label: 'GROUP CHANNELS',
-                            value: '${metrics.totalGroups}',
-                            note: '↗ Live real-time chat',
-                            noteColor: const Color(0xFF0284C7),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildMetricTile(
-                            isDark,
-                            label: 'PUBLISHED PAGES',
-                            value: '${metrics.totalPublishedPages}',
-                            note: '✓ 100% DB dynamic',
-                            noteColor: const Color(0xFF16A34A),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildMetricTile(
-                            isDark,
-                            label: 'HERO SLIDERS',
-                            value: '${metrics.totalSliders}',
-                            note: '★ Visual carousel',
-                            noteColor: const Color(0xFFD97706),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildMetricTile(
-                            isDark,
-                            label: 'ACTIVE FAQS',
-                            value: '${metrics.totalFaqs}',
-                            note: 'ℹ Knowledge items',
-                            noteColor: const Color(0xFF0284C7),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _buildMetricTile(
-                            isDark,
-                            label: 'PLATFORM ROLES',
-                            value: '3',
-                            note: '🔒 RBAC Protected',
-                            noteColor: const Color(0xFF9333EA),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              }
-
-              // Desktop: 6 cards in a single responsive row
-              return Row(
-                children: [
-                  Expanded(
-                    child: _buildMetricTile(
-                      isDark,
-                      label: 'TOTAL MEMBERS',
-                      value: '${metrics.totalMembers}',
-                      note: '↗ +12% active directory',
-                      noteColor: const Color(0xFF16A34A),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildMetricTile(
-                      isDark,
-                      label: 'GROUP CHANNELS',
-                      value: '${metrics.totalGroups}',
-                      note: '↗ Live real-time chat',
-                      noteColor: const Color(0xFF0284C7),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildMetricTile(
-                      isDark,
-                      label: 'PUBLISHED PAGES',
-                      value: '${metrics.totalPublishedPages}',
-                      note: '✓ 100% DB dynamic',
-                      noteColor: const Color(0xFF16A34A),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildMetricTile(
-                      isDark,
-                      label: 'HERO SLIDERS',
-                      value: '${metrics.totalSliders}',
-                      note: '★ Visual carousel',
-                      noteColor: const Color(0xFFD97706),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildMetricTile(
-                      isDark,
-                      label: 'ACTIVE FAQS',
-                      value: '${metrics.totalFaqs}',
-                      note: 'ℹ Knowledge items',
-                      noteColor: const Color(0xFF0284C7),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildMetricTile(
-                      isDark,
-                      label: 'PLATFORM ROLES',
-                      value: '3',
-                      note: '🔒 RBAC Protected',
-                      noteColor: const Color(0xFF9333EA),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricTile(
-    bool isDark, {
-    required String label,
-    required String value,
-    required String note,
-    required Color noteColor,
-  }) {
-    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
-    final cardBg = isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-              color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-              color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            note,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: noteColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // =========================================================================
-  // RECENTLY REGISTERED MEMBERS WIDGET (Clean Table)
-  // =========================================================================
-
-  Widget _buildRecentMembersWidget(bool isDark, DashboardMetrics metrics) {
-    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
-    final users = metrics.recentUsers;
-
-    return _buildCardWrapper(
-      isDark: isDark,
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.drag_indicator_rounded,
-                        size: 16,
-                        color: isDark ? AppColors.gray500 : const Color(0xFF94A3B8),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Recently Registered Members',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text(
-                    'View Directory →',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Divider(height: 1, color: borderColor),
-
-          // Table Header
-          Container(
-            color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 4,
-                  child: Text(
-                    'MEMBER NAME',
-                    style: _tableHeaderStyle(isDark),
-                  ),
-                ),
-                Expanded(
-                  flex: 4,
-                  child: Text(
-                    'EMAIL',
-                    style: _tableHeaderStyle(isDark),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'CATEGORY',
-                    style: _tableHeaderStyle(isDark),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'STATUS',
-                    style: _tableHeaderStyle(isDark),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Divider(height: 1, color: borderColor),
-
-          // Table Body Rows
-          if (users.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(32),
-              child: Center(
-                child: Text(
-                  'No registered members yet.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8),
-                  ),
-                ),
-              ),
-            )
-          else
-            ...users.map((u) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: borderColor, width: 0.5)),
-                ),
-                child: Row(
-                  children: [
-                    // Member Name with Initial Avatar
-                    Expanded(
-                      flex: 4,
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: const Color(0xFF0050E5).withValues(alpha: 0.12),
-                            child: Text(
-                              (u.fullName.isNotEmpty ? u.fullName[0] : 'U').toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0050E5),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              u.fullName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Email
-                    Expanded(
-                      flex: 4,
-                      child: Text(
-                        u.email,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'monospace',
-                          color: isDark ? AppColors.gray300 : const Color(0xFF475569),
-                        ),
-                      ),
-                    ),
-
-                    // Category Pill
-                    Expanded(
-                      flex: 2,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0284C7).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            u.category,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF0284C7),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Status Pill (Active)
-                    Expanded(
-                      flex: 2,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF22C55E).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: const Text(
-                            'Active',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF16A34A),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-
-          // Footer
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              child: TextButton(
-                onPressed: () {},
-                child: const Text(
-                  'Manage all directory members',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  TextStyle _tableHeaderStyle(bool isDark) {
-    return TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.5,
-      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-    );
-  }
-
-  // =========================================================================
-  // QUICK ACTIONS & SHORTCUTS WIDGET (4 Canonical Actions)
-  // =========================================================================
-
-  Widget _buildQuickActionsWidget(bool isDark) {
-    return _buildCardWrapper(
-      isDark: isDark,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.drag_indicator_rounded,
-                size: 16,
-                color: isDark ? AppColors.gray500 : const Color(0xFF94A3B8),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Quick Actions & Shortcuts',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-          // 4 Action Rows with Pastel Background Icons
-          _buildActionRow(
-            isDark: isDark,
-            title: 'Create Dynamic Web Page',
-            subtitle: 'Add database driven page to website navigation',
-            icon: Icons.add_circle_outline_rounded,
-            iconBg: const Color(0xFF0050E5).withValues(alpha: 0.12),
-            iconColor: const Color(0xFF0050E5),
-            onTap: () {},
-          ),
-          const SizedBox(height: 10),
-          _buildActionRow(
-            isDark: isDark,
-            title: 'Register New Member',
-            subtitle: 'Add profile and assign feature category',
-            icon: Icons.person_add_alt_1_outlined,
-            iconBg: const Color(0xFF22C55E).withValues(alpha: 0.12),
-            iconColor: const Color(0xFF16A34A),
-            onTap: () {},
-          ),
-          const SizedBox(height: 10),
-          _buildActionRow(
-            isDark: isDark,
-            title: 'Create Group Channel',
-            subtitle: 'Launch real-time team discussion space',
-            icon: Icons.chat_bubble_outline_rounded,
-            iconBg: const Color(0xFFA855F7).withValues(alpha: 0.12),
-            iconColor: const Color(0xFF9333EA),
-            onTap: () {},
-          ),
-          const SizedBox(height: 10),
-          _buildActionRow(
-            isDark: isDark,
-            title: 'Brand & Theme Customizer',
-            subtitle: 'Update corporate colors, logo, and announcement',
-            icon: Icons.palette_outlined,
-            iconBg: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-            iconColor: const Color(0xFFD97706),
-            onTap: () {},
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionRow({
-    required bool isDark,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
-    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
-    final cardBg = isDark ? AppColors.surfaceVariantDark : Colors.white;
-
-    return Material(
-      color: cardBg,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: borderColor),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                alignment: Alignment.center,
-                child: Icon(icon, size: 20, color: iconColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 20,
-                color: isDark ? AppColors.gray500 : const Color(0xFF94A3B8),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // =========================================================================
-  // RECENT ACTIVITY & AUDIT TRAIL WIDGET (Table Stream)
-  // =========================================================================
-
-  Widget _buildAuditTrailWidget(bool isDark, DashboardMetrics metrics) {
-    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
-    final audits = metrics.recentActivities;
-
-    return _buildCardWrapper(
-      isDark: isDark,
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.drag_indicator_rounded,
-                        size: 16,
-                        color: isDark ? AppColors.gray500 : const Color(0xFF94A3B8),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Recent Activity & Audit Trail',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
-                    ),
-                  ),
-                  child: Text(
-                    'Telemetry Log',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Divider(height: 1, color: borderColor),
-
-          // Table Header
-          Container(
-            color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Text('ACTION TYPE', style: _tableHeaderStyle(isDark)),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Text('PERFORMED BY', style: _tableHeaderStyle(isDark)),
-                ),
-                Expanded(
-                  flex: 4,
-                  child: Text('DETAILS & DESCRIPTION', style: _tableHeaderStyle(isDark)),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text('DATE & TIME', style: _tableHeaderStyle(isDark)),
-                ),
-              ],
-            ),
-          ),
-
-          Divider(height: 1, color: borderColor),
-
-          // Table Body
-          if (audits.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(32),
-              child: Center(
-                child: Text(
-                  'No audit actions logged yet.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8),
-                  ),
-                ),
-              ),
-            )
-          else
-            ...audits.map((a) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: borderColor, width: 0.5)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFA855F7).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            a.action,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF9333EA),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        a.user,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: Text(
-                        a.details,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? AppColors.gray300 : const Color(0xFF475569),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        a.timestamp != null
-                            ? '${a.timestamp!.hour}:${a.timestamp!.minute.toString().padLeft(2, '0')}'
-                            : 'Just now',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontFamily: 'monospace',
-                          color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-        ],
-      ),
-    );
-  }
-
-  // =========================================================================
-  // FLOATING OZI AI BUTTON
-  // =========================================================================
-
-  Widget _buildOziAiFloatingButton(bool isDark) {
-    return Material(
-      color: const Color(0xFF0B132B),
-      elevation: 6,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Launching Ozi AI Studio Assistant...')),
-          );
-        },
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: const Color(0xFF0050E5).withValues(alpha: 0.4),
-              width: 1.5,
-            ),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.auto_awesome_rounded, size: 18, color: Color(0xFF60A5FA)),
-              SizedBox(width: 8),
-              Text(
-                'Ozi AI',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // =========================================================================
-  // REUSABLE CARD CONTAINER
-  // =========================================================================
-
-  Widget _buildCardWrapper({
-    required bool isDark,
-    required Widget child,
-    EdgeInsetsGeometry padding = const EdgeInsets.all(18),
-  }) {
-    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
-    final cardBg = isDark ? AppColors.surfaceDark : Colors.white;
-
-    return Container(
-      width: double.infinity,
-      padding: padding,
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor, width: 1),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.02),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
-      child: child,
-    );
-  }
-
   // =========================================================================
   // SIDEBAR & DRAWER SECTIONS (Matches Angular BCC Admin Sidebar)
   // =========================================================================
@@ -2019,7 +906,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             child: TenantAvatar(
               iconUrl: activeWs?.iconUrl,
               logoUrl: activeWs?.logoUrl,
-              name: activeWs?.displayName ?? 'Ozikol',
+              name: activeWs?.displayName ?? 'Business Command Center',
               tenantKey: activeWs?.tenantKey,
               size: 34,
               borderRadius: 8,
@@ -2095,7 +982,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 TenantAvatar(
                   iconUrl: activeWs?.iconUrl,
                   logoUrl: activeWs?.logoUrl,
-                  name: activeWs?.displayName ?? 'Ozikol',
+                  name: activeWs?.displayName ?? 'Business Command Center',
                   tenantKey: activeWs?.tenantKey,
                   size: 34,
                   borderRadius: 8,
@@ -2107,7 +994,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        activeWs?.displayName ?? 'Ozikol BCC',
+                        activeWs?.displayName ?? 'Business Command Center',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -2188,7 +1075,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
             const SizedBox(height: 6),
             Tooltip(
-              message: 'shell.powered_by'.tr(ref, fallback: 'Powered by Ozikol'),
+              message: 'shell.powered_by'.tr(ref, fallback: 'Business Command Center'),
               child: Image.asset(
                 isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
                 width: 16,
@@ -2227,7 +1114,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'shell.powered_by'.tr(ref, fallback: 'Powered by Ozikol BCC'),
+                'shell.powered_by'.tr(ref, fallback: 'Business Command Center'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -2301,7 +1188,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'shell.powered_by'.tr(ref, fallback: 'Powered by Ozikol'),
+                'shell.powered_by'.tr(ref, fallback: 'Business Command Center'),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -2332,66 +1219,44 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     }
   }
 
-  void _openStorefront() {
-    _closeMobileDrawer();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Opening live storefront...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  /// Builds the complete 14-Suite Administration Console navigation tree for administrators.
-  /// Exactly mirrors the Web Admin Console (admin-layout.component.ts) with full 1-to-1 fidelity
-  /// (except Suite 1: Website & CMS which is web-exclusive).
+  /// Builds the exact 3-Feature User Management Administration Console navigation tree:
+  /// 1. User Directory (7 sub-items)
+  /// 2. Identity & Access Control (4 sub-items)
+  /// 3. Manage My Account (5 sub-items)
   List<AppDrawerSection> _buildAdminConsoleSections(bool isDark, Workspace? activeWs) {
-    final groupAlias = activeWs?.effectiveGroupAlias ?? 'Groups & Committees';
-    final alumniAlias = activeWs?.effectiveAlumniAlias ?? 'Alumni Network';
-    final categoryAlias = activeWs?.effectiveCategoryAlias ?? 'User Categories';
+    final categoryAlias = activeWs?.effectiveCategoryAlias ?? 'Category';
 
     return [
-      // 1. Executive Command (Core Platform)
       AppDrawerSection(
-        title: 'suite.core_command'.tr(ref, fallback: 'Executive Command'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'core_command'),
-        infoTooltip: 'Executive Command & Cockpit Overview',
+        title: 'USER MANAGEMENT',
         items: [
-          AppDrawerItem(
-            icon: Icons.space_dashboard_rounded,
-            title: 'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard'),
-            isSelected: _selectedNavIndex == 0,
-            onTap: () {
-              setState(() => _selectedNavIndex = 0);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.analytics_rounded,
-            title: 'Analytics & Telemetry',
-            trailing: AppDrawerBadge.live('Live'),
-            isSelected: _selectedNavIndex == 1,
-            onTap: () {
-              setState(() => _selectedNavIndex = 1);
-              _closeMobileDrawer();
-            },
-          ),
-        ],
-      ),
-
-      // 2. Suite 2: User Management (Core Identity)
-      AppDrawerSection(
-        title: 'suite.user_management'.tr(ref, fallback: 'User Management'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'user_management'),
-        infoTooltip: 'User Management & Access Control Overview',
-        items: [
+          // 1. User Directory (expandable)
           AppDrawerItem(
             icon: Icons.groups_rounded,
-            title: 'nav.user_directory'.tr(ref, fallback: 'User Directory'),
+            title: 'User Directory',
+            initiallyExpanded: _selectedNavIndex >= 0 && _selectedNavIndex <= 6,
             subItems: [
               AppDrawerSubItem(
-                icon: Icons.analytics_rounded,
+                icon: Icons.dashboard_outlined,
                 title: 'Dashboard Overview',
+                isSelected: _selectedNavIndex == 0,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 0);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.people_outline,
+                title: 'All Members',
+                isSelected: _selectedNavIndex == 1,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 1);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.category_outlined,
+                title: categoryAlias,
                 isSelected: _selectedNavIndex == 2,
                 onTap: () {
                   setState(() => _selectedNavIndex = 2);
@@ -2399,8 +1264,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.groups_rounded,
-                title: 'nav.all_members'.tr(ref, fallback: 'All Members'),
+                icon: Icons.dynamic_form_outlined,
+                title: 'Registration Form Builder',
                 isSelected: _selectedNavIndex == 3,
                 onTap: () {
                   setState(() => _selectedNavIndex = 3);
@@ -2408,8 +1273,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.category_rounded,
-                title: categoryAlias,
+                icon: Icons.palette_outlined,
+                title: 'Auth Page Setup',
                 isSelected: _selectedNavIndex == 4,
                 onTap: () {
                   setState(() => _selectedNavIndex = 4);
@@ -2417,8 +1282,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.dynamic_form_rounded,
-                title: 'nav.registration_form_builder'.tr(ref, fallback: 'Registration Form Builder'),
+                icon: Icons.leaderboard_outlined,
+                title: 'KPIs & Leaderboard',
                 isSelected: _selectedNavIndex == 5,
                 onTap: () {
                   setState(() => _selectedNavIndex = 5);
@@ -2426,8 +1291,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.leaderboard_rounded,
-                title: 'nav.kpis_leaderboard'.tr(ref, fallback: 'KPIs & Leaderboard'),
+                icon: Icons.settings_outlined,
+                title: 'User Settings',
                 isSelected: _selectedNavIndex == 6,
                 onTap: () {
                   setState(() => _selectedNavIndex = 6);
@@ -2436,13 +1301,16 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
             ],
           ),
+
+          // 2. Identity & Access Control (expandable)
           AppDrawerItem(
-            icon: Icons.admin_panel_settings_rounded,
-            title: 'nav.identity_control'.tr(ref, fallback: 'Identity & Access Control'),
+            icon: Icons.admin_panel_settings_outlined,
+            title: 'Identity & Access Control',
+            initiallyExpanded: _selectedNavIndex >= 7 && _selectedNavIndex <= 10,
             subItems: [
               AppDrawerSubItem(
-                icon: Icons.verified_user_rounded,
-                title: 'nav.roles_permissions'.tr(ref, fallback: 'Roles & Permissions'),
+                icon: Icons.shield_outlined,
+                title: 'Identity Dashboard',
                 isSelected: _selectedNavIndex == 7,
                 onTap: () {
                   setState(() => _selectedNavIndex = 7);
@@ -2450,8 +1318,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.mail_rounded,
-                title: 'nav.user_invitations'.tr(ref, fallback: 'Member Invitations'),
+                icon: Icons.vpn_key_outlined,
+                title: 'Roles & Permissions',
                 isSelected: _selectedNavIndex == 8,
                 onTap: () {
                   setState(() => _selectedNavIndex = 8);
@@ -2459,41 +1327,35 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.password_rounded,
-                title: 'nav.global_policies'.tr(ref, fallback: 'Global Security Policies'),
+                icon: Icons.mail_outline,
+                title: 'Member Invitations',
                 isSelected: _selectedNavIndex == 9,
                 onTap: () {
                   setState(() => _selectedNavIndex = 9);
                   _closeMobileDrawer();
                 },
               ),
-            ],
-          ),
-        ],
-      ),
-
-      // 3. Suite 3: People & Community (Community Add-on)
-      AppDrawerSection(
-        title: 'suite.people_community'.tr(ref, fallback: 'People & Community'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'people_community'),
-        infoTooltip: 'People & Community Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.diversity_3_rounded,
-            title: groupAlias,
-            subItems: [
               AppDrawerSubItem(
-                icon: Icons.space_dashboard_rounded,
-                title: 'Groups Dashboard',
+                icon: Icons.lock_outline,
+                title: 'Global Security Policies',
                 isSelected: _selectedNavIndex == 10,
                 onTap: () {
                   setState(() => _selectedNavIndex = 10);
                   _closeMobileDrawer();
                 },
               ),
+            ],
+          ),
+
+          // 3. Manage My Account (expandable)
+          AppDrawerItem(
+            icon: Icons.manage_accounts_outlined,
+            title: 'Manage My Account',
+            initiallyExpanded: _selectedNavIndex >= 11 && _selectedNavIndex <= 15,
+            subItems: [
               AppDrawerSubItem(
-                icon: Icons.diversity_3_rounded,
-                title: 'Manage Groups',
+                icon: Icons.person_outline,
+                title: 'My Account',
                 isSelected: _selectedNavIndex == 11,
                 onTap: () {
                   setState(() => _selectedNavIndex = 11);
@@ -2501,21 +1363,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Groups Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.school_rounded,
-            title: alumniAlias,
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.space_dashboard_rounded,
-                title: 'Alumni Dashboard',
+                icon: Icons.password_outlined,
+                title: 'Change Password',
                 isSelected: _selectedNavIndex == 12,
                 onTap: () {
                   setState(() => _selectedNavIndex = 12);
@@ -2523,8 +1372,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.calendar_month_rounded,
-                title: 'Manage Alumni & Cohorts',
+                icon: Icons.security_outlined,
+                title: '2FA Security',
                 isSelected: _selectedNavIndex == 13,
                 onTap: () {
                   setState(() => _selectedNavIndex = 13);
@@ -2532,891 +1381,187 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Alumni Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.chat_bubble_rounded,
-            title: 'nav.chat_messenger'.tr(ref, fallback: 'Chat Messenger'),
-            trailing: AppDrawerBadge.live('Live'),
-            isSelected: _selectedNavIndex == 14,
-            onTap: () {
-              setState(() => _selectedNavIndex = 14);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.feedback_rounded,
-            title: 'nav.whistleblowing'.tr(ref, fallback: 'Whistleblowing & Feedback'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-        ],
-      ),
-
-      // 4. Suite 4: Workforce & Shifts (Operations Add-on)
-      AppDrawerSection(
-        title: 'suite.workforce_shifts'.tr(ref, fallback: 'Workforce & Shifts'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'workforce_shifts'),
-        infoTooltip: 'Workforce & Shifts Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.calendar_month_rounded,
-            title: 'Workforce & Shifts',
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.space_dashboard_rounded,
-                title: 'Workforce Dashboard',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
+                icon: Icons.devices_outlined,
+                title: 'Manage Devices',
+                isSelected: _selectedNavIndex == 14,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 14);
+                  _closeMobileDrawer();
+                },
               ),
               AppDrawerSubItem(
-                icon: Icons.event_note_rounded,
-                title: 'Staff & Volunteer Rota',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.swap_horiz_rounded,
-                title: 'Shift Swaps & Leave',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.timer_rounded,
-                title: 'Attendance & Clock-In',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Workforce Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.event_repeat_rounded,
-            title: 'nav.calendar_followups'.tr(ref, fallback: 'Calendar & Follow-ups'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-        ],
-      ),
-
-      // 5. Suite 5: Events & Ticketing (Events Add-on)
-      AppDrawerSection(
-        title: 'suite.events_ticketing'.tr(ref, fallback: 'Events & Ticketing'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'events_ticketing'),
-        infoTooltip: 'Events & Ticketing Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.confirmation_number_rounded,
-            title: 'Events & Ticketing',
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.space_dashboard_rounded,
-                title: 'Events Dashboard',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.event_rounded,
-                title: 'Manage Events & Passes',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.mic_rounded,
-                title: 'Speaker & Session Tracks',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.how_to_reg_rounded,
-                title: 'Attendee Management & Check-In',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Events Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ],
-      ),
-
-      // 6. Suite 6: Commerce & Store (Commerce Add-on)
-      AppDrawerSection(
-        title: 'suite.commerce_store'.tr(ref, fallback: 'Commerce & Store'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'commerce_store'),
-        infoTooltip: 'Commerce & Store Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.storefront_rounded,
-            title: 'nav.commerce_studio'.tr(ref, fallback: 'Commerce Studio'),
-            trailing: AppDrawerBadge.newItem('New'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.space_dashboard_rounded,
-                title: 'Store Dashboard',
+                icon: Icons.history_outlined,
+                title: 'Login Activity',
                 isSelected: _selectedNavIndex == 15,
                 onTap: () {
                   setState(() => _selectedNavIndex = 15);
                   _closeMobileDrawer();
                 },
               ),
-              AppDrawerSubItem(
-                icon: Icons.inventory_2_rounded,
-                title: 'nav.products_catalog'.tr(ref, fallback: 'Products Catalog'),
-                isSelected: _selectedNavIndex == 16,
-                onTap: () {
-                  setState(() => _selectedNavIndex = 16);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.category_rounded,
-                title: 'Product Categories',
-                isSelected: _selectedNavIndex == 17,
-                onTap: () {
-                  setState(() => _selectedNavIndex = 17);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.local_shipping_rounded,
-                title: 'Customer Orders & Fulfillment',
-                isSelected: _selectedNavIndex == 18,
-                onTap: () {
-                  setState(() => _selectedNavIndex = 18);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.receipt_long_rounded,
-                title: 'Financial Settlement Ledger',
-                isSelected: _selectedNavIndex == 19,
-                onTap: () {
-                  setState(() => _selectedNavIndex = 19);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Store Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.open_in_new_rounded,
-                title: 'Live Storefront ↗',
-                onTap: () => _openStorefront(),
-              ),
             ],
-          ),
-        ],
-      ),
-
-      // 7. Suite 7: Finance & Banking (Fiscal Add-on)
-      AppDrawerSection(
-        title: 'suite.finance_banking'.tr(ref, fallback: 'Finance & Banking'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'finance_banking'),
-        infoTooltip: 'Finance & Banking Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.account_balance_wallet_rounded,
-            title: 'nav.invoicing_dues'.tr(ref, fallback: 'Invoicing & Member Dues'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.space_dashboard_rounded,
-                title: 'Invoicing Dashboard',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.receipt_rounded,
-                title: 'Manage Invoices & Dues',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Invoicing Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.account_balance_rounded,
-            title: 'nav.embedded_banking'.tr(ref, fallback: 'Embedded Banking'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.hub_rounded,
-                title: 'Connected Gateways & Payouts',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Payment Rail Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.request_quote_rounded,
-            title: 'nav.grant_ledger'.tr(ref, fallback: 'Proposal & Grant Ledger'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-          AppDrawerItem(
-            icon: Icons.receipt_long_rounded,
-            title: 'Financial Ledger',
-            isSelected: _selectedNavIndex == 19,
-            onTap: () {
-              setState(() => _selectedNavIndex = 19);
-              _closeMobileDrawer();
-            },
-          ),
-        ],
-      ),
-
-      // 8. Suite 8: Communication & Support (Engagement Add-on)
-      AppDrawerSection(
-        title: 'suite.communication_support'.tr(ref, fallback: 'Communication & Support'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'communication_support'),
-        infoTooltip: 'Communication & Support Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.campaign_rounded,
-            title: 'nav.notification_studio'.tr(ref, fallback: 'Notification Studio'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.analytics_rounded,
-                title: 'Broadcasts Dashboard',
-                isSelected: _selectedNavIndex == 20,
-                onTap: () {
-                  setState(() => _selectedNavIndex = 20);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.send_rounded,
-                title: 'Compose Broadcast',
-                isSelected: _selectedNavIndex == 21,
-                onTap: () {
-                  setState(() => _selectedNavIndex = 21);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.security_rounded,
-                title: 'Anti-Spam Scanner',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Delivery Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.support_agent_rounded,
-            title: 'nav.helpdesk_support'.tr(ref, fallback: 'Helpdesk & Support'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.space_dashboard_rounded,
-                title: 'Support Dashboard',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.confirmation_number_rounded,
-                title: 'Manage Tickets',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.chat_bubble_rounded,
-                title: 'Live Chat Widget Control',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Helpdesk & SLA Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.link_rounded,
-            title: 'Bio Link-Tree Builder',
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-        ],
-      ),
-
-      // 9. Suite 9: Forms & Intelligence (Data Add-on)
-      AppDrawerSection(
-        title: 'suite.forms_intelligence'.tr(ref, fallback: 'Forms & Intelligence'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'forms_intelligence'),
-        infoTooltip: 'Forms & Intelligence Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.dynamic_form_rounded,
-            title: 'nav.forms_surveys'.tr(ref, fallback: 'Forms & Surveys'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.space_dashboard_rounded,
-                title: 'Forms Dashboard',
-                isSelected: _selectedNavIndex == 22,
-                onTap: () {
-                  setState(() => _selectedNavIndex = 22);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.edit_note_rounded,
-                title: 'Form Builder & Responses',
-                isSelected: _selectedNavIndex == 23,
-                onTap: () {
-                  setState(() => _selectedNavIndex = 23);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.schema_rounded,
-                title: 'Custom Field Schemas',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Form Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.query_stats_rounded,
-            title: 'Survey Analytics & Reports',
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-        ],
-      ),
-
-      // 10. Suite 10: Academy & Training (Education Add-on)
-      AppDrawerSection(
-        title: 'suite.academy_training'.tr(ref, fallback: 'Academy & Training'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'academy_training'),
-        infoTooltip: 'Academy & Training Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.school_rounded,
-            title: 'nav.lms_training'.tr(ref, fallback: 'LMS & Training'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.space_dashboard_rounded,
-                title: 'LMS Dashboard',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.menu_book_rounded,
-                title: 'Manage Courses & Lessons',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.quiz_rounded,
-                title: 'Quizzes & Assessment',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Course Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.verified_rounded,
-            title: 'nav.certificate_verification'.tr(ref, fallback: 'Certificate Verification'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.design_services_rounded,
-                title: 'Certificate Designer',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.history_edu_rounded,
-                title: 'Issued Certificates',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.qr_code_rounded,
-                title: 'Public QR Verification',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Credential Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ],
-      ),
-
-      // 11. Suite 11: Compliance & Governance (Governance Add-on)
-      AppDrawerSection(
-        title: 'suite.compliance_governance'.tr(ref, fallback: 'Compliance & Governance'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'compliance_governance'),
-        infoTooltip: 'Compliance & Governance Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.folder_zip_rounded,
-            title: 'nav.document_vault'.tr(ref, fallback: 'Document Vault'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.space_dashboard_rounded,
-                title: 'Vault Overview',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.lock_rounded,
-                title: 'Secure Documents & Folders',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Permissions & Retention',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.badge_rounded,
-            title: 'nav.kyc_verification'.tr(ref, fallback: 'KYC Verification'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.pending_actions_rounded,
-                title: 'Verification Queue',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Verification Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.door_front_door_rounded,
-            title: 'Visitor & Gate Passes',
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.pin_drop_rounded,
-                title: 'Active Passes & Check-In',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Gate Pass Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-        ],
-      ),
-
-      // 12. Suite 12: Demographics & Census (Community Add-on)
-      AppDrawerSection(
-        title: 'suite.demographics_census'.tr(ref, fallback: 'Demographics & Census'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'demographics_census'),
-        infoTooltip: 'Demographics & Census Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.map_rounded,
-            title: 'nav.community_census'.tr(ref, fallback: 'Community Census'),
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.pin_drop_rounded,
-                title: 'Census Map & Heatmap',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.home_rounded,
-                title: 'Household Units',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'Census Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.badge_rounded,
-            title: 'Digital Resident IDs',
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.contact_emergency_rounded,
-                title: 'Manage Issued ID Cards',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.design_services_rounded,
-                title: 'Card Template Designer',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-              AppDrawerSubItem(
-                icon: Icons.settings_rounded,
-                title: 'ID Card Settings',
-                trailing: AppDrawerBadge.soon('SOON'),
-                isEnabled: false,
-                onTap: () {},
-              ),
-            ],
-          ),
-          AppDrawerItem(
-            icon: Icons.query_stats_rounded,
-            title: 'Demographic Analytics',
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-        ],
-      ),
-
-      // 13. Suite 13: Billing & Subscriptions (Platform Governance) — 100% MATCH TO WEB
-      AppDrawerSection(
-        title: 'suite.billing_subscriptions'.tr(ref, fallback: 'Billing & Subscriptions'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'billing_subscriptions'),
-        infoTooltip: 'Billing & Subscriptions Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.credit_card_rounded,
-            title: 'Subscription Plans',
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-          AppDrawerItem(
-            icon: Icons.account_balance_wallet_rounded,
-            title: 'Payment Methods & Contacts',
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-          AppDrawerItem(
-            icon: Icons.calculate_rounded,
-            title: 'Usage Bill Calculator',
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-          AppDrawerItem(
-            icon: Icons.extension_rounded,
-            title: 'nav.feature_billing'.tr(ref, fallback: 'Feature Billing'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-        ],
-      ),
-
-      // 14. Suite 14: Security & Audit (Platform Protection) — 100% MATCH TO WEB
-      AppDrawerSection(
-        title: 'suite.security_audit'.tr(ref, fallback: 'Security & Audit'),
-        onInfoTap: () => SuiteInfoCatalog.show(context, 'security_audit'),
-        infoTooltip: 'Security & Audit Overview',
-        items: [
-          AppDrawerItem(
-            icon: Icons.security_rounded,
-            title: 'nav.security_audit'.tr(ref, fallback: 'Security Audit'),
-            trailing: AppDrawerBadge.live('LIVE'),
-            isSelected: _selectedNavIndex == 24,
-            onTap: () {
-              setState(() => _selectedNavIndex = 24);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.manage_accounts_rounded,
-            title: 'Login & Access History',
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-          AppDrawerItem(
-            icon: Icons.devices_rounded,
-            title: 'Active Sessions & Remote Kill',
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-          AppDrawerItem(
-            icon: Icons.password_rounded,
-            title: 'nav.global_policies'.tr(ref, fallback: 'Global Security Policies'),
-            isSelected: _selectedNavIndex == 9,
-            onTap: () {
-              setState(() => _selectedNavIndex = 9);
-              _closeMobileDrawer();
-            },
           ),
         ],
       ),
     ];
   }
 
-  /// Builds the personal Users Workspace navigation tree for regular members and personal tasks.
+  /// Builds the exact 2-Feature Personal Workspace Hub navigation tree for members:
+  /// 1. Workspace Home (single item)
+  /// 2. Manage My Account (5 sub-items)
   List<AppDrawerSection> _buildUsersWorkspaceSections(bool isDark, Workspace? activeWs) {
+    final memberIndex = _selectedNavIndex >= 100 ? _selectedNavIndex - 100 : _selectedNavIndex;
+
     return [
       AppDrawerSection(
-        title: 'suite.member_workspace'.tr(ref, fallback: 'Personal Workspace Hub'),
+        title: 'PERSONAL WORKSPACE HUB',
         items: [
+          // 1. Workspace Home (single top-level item)
           AppDrawerItem(
             icon: Icons.space_dashboard_outlined,
-            title: 'nav.workspace_home'.tr(ref, fallback: 'Workspace Home'),
-            isSelected: _selectedNavIndex == 0,
+            title: 'Workspace Home',
+            isSelected: memberIndex == 0,
             onTap: () {
               setState(() => _selectedNavIndex = 0);
               _closeMobileDrawer();
             },
           ),
+
+          // 2. Manage My Account (expandable)
           AppDrawerItem(
-            icon: Icons.person_outline_rounded,
-            title: 'nav.my_profile'.tr(ref, fallback: 'My Profile'),
-            isSelected: _selectedNavIndex == 1,
-            onTap: () {
-              setState(() => _selectedNavIndex = 1);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.assignment_ind_outlined,
-            title: 'nav.my_cv_biography'.tr(ref, fallback: 'My CV Biography'),
-            isSelected: _selectedNavIndex == 2,
-            onTap: () {
-              setState(() => _selectedNavIndex = 2);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.insights_rounded,
-            title: 'nav.my_kpis'.tr(ref, fallback: 'My KPIs & Performance'),
-            isSelected: _selectedNavIndex == 3,
-            onTap: () {
-              setState(() => _selectedNavIndex = 3);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.lock_outline_rounded,
-            title: 'nav.security_password'.tr(ref, fallback: 'Security & Password'),
-            isSelected: _selectedNavIndex == 4,
-            onTap: () {
-              setState(() => _selectedNavIndex = 4);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.notifications_none_rounded,
-            title: 'nav.notifications_alerts'.tr(ref, fallback: 'Notifications & Alerts'),
-            isSelected: _selectedNavIndex == 5,
-            onTap: () {
-              setState(() => _selectedNavIndex = 5);
-              _closeMobileDrawer();
-            },
-          ),
-        ],
-      ),
-      AppDrawerSection(
-        title: 'suite.people_community'.tr(ref, fallback: 'People & Community'),
-        items: [
-          AppDrawerItem(
-            icon: Icons.chat_bubble_rounded,
-            title: 'nav.chat_messenger'.tr(ref, fallback: 'Chat Messenger'),
-            trailing: AppDrawerBadge.live('Live'),
-            isSelected: _selectedNavIndex == 6,
-            onTap: () {
-              setState(() => _selectedNavIndex = 6);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.groups_outlined,
-            title: 'nav.groups_directory'.tr(ref, fallback: 'Groups Directory'),
-            isSelected: _selectedNavIndex == 7,
-            onTap: () {
-              setState(() => _selectedNavIndex = 7);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.school_outlined,
-            title: 'nav.alumni_network'.tr(ref, fallback: 'Alumni Network'),
-            isSelected: _selectedNavIndex == 8,
-            onTap: () {
-              setState(() => _selectedNavIndex = 8);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.calendar_month_outlined,
-            title: 'Alumni Cohorts & Sets',
-            isSelected: _selectedNavIndex == 9,
-            onTap: () {
-              setState(() => _selectedNavIndex = 9);
-              _closeMobileDrawer();
-            },
-          ),
-        ],
-      ),
-      AppDrawerSection(
-        title: 'suite.workforce_shifts'.tr(ref, fallback: 'Workforce & Shifts'),
-        items: [
-          AppDrawerItem(
-            icon: Icons.calendar_today_outlined,
-            title: 'nav.staff_rota'.tr(ref, fallback: 'Staff & Volunteer Rota'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-          AppDrawerItem(
-            icon: Icons.schedule_rounded,
-            title: 'nav.attendance_tracking'.tr(ref, fallback: 'Attendance & Clock-In'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-        ],
-      ),
-      AppDrawerSection(
-        title: 'suite.finance_revenue'.tr(ref, fallback: 'Finance & Revenue'),
-        items: [
-          AppDrawerItem(
-            icon: Icons.shopping_bag_outlined,
-            title: 'nav.my_purchases'.tr(ref, fallback: 'My Purchases'),
-            isSelected: _selectedNavIndex == 12,
-            onTap: () {
-              setState(() => _selectedNavIndex = 12);
-              _closeMobileDrawer();
-            },
-          ),
-          AppDrawerItem(
-            icon: Icons.confirmation_number_outlined,
-            title: 'nav.event_ticketing'.tr(ref, fallback: 'Event Ticketing & Passes'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-          AppDrawerItem(
-            icon: Icons.payments_outlined,
-            title: 'nav.invoicing_dues'.tr(ref, fallback: 'Invoicing & Member Dues'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-        ],
-      ),
-      AppDrawerSection(
-        title: 'suite.compliance_governance'.tr(ref, fallback: 'Compliance & Governance'),
-        items: [
-          AppDrawerItem(
-            icon: Icons.badge_outlined,
-            title: 'nav.digital_id_cards'.tr(ref, fallback: 'Digital Member ID Cards'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-          AppDrawerItem(
-            icon: Icons.verified_outlined,
-            title: 'nav.certificate_verification'.tr(ref, fallback: 'Certificate Verification'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
-          ),
-          AppDrawerItem(
-            icon: Icons.support_agent_outlined,
-            title: 'nav.helpdesk_support'.tr(ref, fallback: 'Helpdesk & Support Desk'),
-            trailing: AppDrawerBadge.soon('SOON'),
-            isEnabled: false,
+            icon: Icons.manage_accounts_outlined,
+            title: 'Manage My Account',
+            initiallyExpanded: memberIndex >= 1 && memberIndex <= 5,
+            subItems: [
+              AppDrawerSubItem(
+                icon: Icons.person_outline,
+                title: 'My Account',
+                isSelected: memberIndex == 1,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 1);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.password_outlined,
+                title: 'Change Password',
+                isSelected: memberIndex == 2,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 2);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.security_outlined,
+                title: '2FA Security',
+                isSelected: memberIndex == 3,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 3);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.devices_outlined,
+                title: 'Manage Devices',
+                isSelected: memberIndex == 4,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 4);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.history_outlined,
+                title: 'Login Activity',
+                isSelected: memberIndex == 5,
+                onTap: () {
+                  setState(() => _selectedNavIndex = 5);
+                  _closeMobileDrawer();
+                },
+              ),
+            ],
           ),
         ],
       ),
     ];
+  }
+
+  /// Renders the active sub-feature view corresponding to the active mode and selected menu index.
+  Widget _buildActiveViewCanvas({
+    required bool isDark,
+    required bool isOnline,
+    required bool isLoading,
+    required DashboardMetrics metrics,
+    required Workspace? activeWs,
+    bool isMobile = false,
+  }) {
+    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
+    final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
+
+    if (isAdministration) {
+      switch (_selectedNavIndex) {
+        case 0:
+          return UserDashboardOverviewView(workspace: activeWs);
+        case 1:
+          return AllMembersView(workspace: activeWs);
+        case 2:
+          return UserCategoriesView(workspace: activeWs);
+        case 3:
+          return RegistrationFormBuilderView(workspace: activeWs);
+        case 4:
+          return AuthPageSetupView(workspace: activeWs);
+        case 5:
+          return KpisLeaderboardView(workspace: activeWs);
+        case 6:
+          return UserSettingsView(workspace: activeWs);
+        case 7:
+          return IdentityDashboardView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+          );
+        case 8:
+          return RolesPermissionsView(workspace: activeWs);
+        case 9:
+          return MemberInvitationsView(workspace: activeWs);
+        case 10:
+          return GlobalSecurityPoliciesView(workspace: activeWs);
+        case 11:
+          return MyAccountProfileView(workspace: activeWs);
+        case 12:
+          return ChangePasswordView(workspace: activeWs);
+        case 13:
+          return TwoFactorSecurityView(workspace: activeWs);
+        case 14:
+          return ManageDevicesView(workspace: activeWs);
+        case 15:
+          return LoginActivityView(workspace: activeWs);
+        default:
+          return UserDashboardOverviewView(workspace: activeWs);
+      }
+    } else {
+      // Member mode
+      final memberIndex = _selectedNavIndex >= 100 ? _selectedNavIndex - 100 : _selectedNavIndex;
+      switch (memberIndex) {
+        case 0:
+          return WorkspaceHomeView(
+            workspace: activeWs,
+            onNavigate: (idx) => setState(() => _selectedNavIndex = idx >= 100 ? idx - 100 : idx),
+          );
+        case 1:
+          return MyAccountProfileView(workspace: activeWs);
+        case 2:
+          return ChangePasswordView(workspace: activeWs);
+        case 3:
+          return TwoFactorSecurityView(workspace: activeWs);
+        case 4:
+          return ManageDevicesView(workspace: activeWs);
+        case 5:
+          return LoginActivityView(workspace: activeWs);
+        default:
+          return WorkspaceHomeView(
+            workspace: activeWs,
+            onNavigate: (idx) => setState(() => _selectedNavIndex = idx >= 100 ? idx - 100 : idx),
+          );
+      }
+    }
   }
 
   Widget _buildMobileBottomBar(bool isDark, Workspace? activeWs) {
@@ -3426,40 +1571,70 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final items = isAdministration
         ? const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_rounded),
-              label: 'Console',
+              icon: Icon(Icons.dashboard_outlined),
+              activeIcon: Icon(Icons.dashboard_rounded),
+              label: 'Overview',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.insights_rounded),
-              label: 'Analytics',
+              icon: Icon(Icons.people_outline),
+              activeIcon: Icon(Icons.people_rounded),
+              label: 'Members',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline_rounded),
-              label: 'Directory',
+              icon: Icon(Icons.shield_outlined),
+              activeIcon: Icon(Icons.shield_rounded),
+              label: 'Identity',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined),
-              label: 'Settings',
+              icon: Icon(Icons.manage_accounts_outlined),
+              activeIcon: Icon(Icons.manage_accounts_rounded),
+              label: 'Account',
             ),
           ]
         : const [
             BottomNavigationBarItem(
               icon: Icon(Icons.space_dashboard_outlined),
-              label: 'Dashboard',
+              activeIcon: Icon(Icons.space_dashboard_rounded),
+              label: 'Home',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.groups_outlined),
-              label: 'Channels',
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person_rounded),
+              label: 'Account',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_month_outlined),
-              label: 'Events',
+              icon: Icon(Icons.security_outlined),
+              activeIcon: Icon(Icons.security_rounded),
+              label: 'Security',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle_outlined),
-              label: 'Profile',
+              icon: Icon(Icons.devices_outlined),
+              activeIcon: Icon(Icons.devices_rounded),
+              label: 'Devices',
             ),
           ];
+
+    int currentBottomIndex = 0;
+    if (isAdministration) {
+      if (_selectedNavIndex >= 0 && _selectedNavIndex <= 6) {
+        currentBottomIndex = _selectedNavIndex == 1 ? 1 : 0;
+      } else if (_selectedNavIndex >= 7 && _selectedNavIndex <= 10) {
+        currentBottomIndex = 2;
+      } else if (_selectedNavIndex >= 11 && _selectedNavIndex <= 15) {
+        currentBottomIndex = 3;
+      }
+    } else {
+      final mIdx = _selectedNavIndex >= 100 ? _selectedNavIndex - 100 : _selectedNavIndex;
+      if (mIdx == 0) {
+        currentBottomIndex = 0;
+      } else if (mIdx == 1 || mIdx == 2 || mIdx == 5) {
+        currentBottomIndex = 1;
+      } else if (mIdx == 3) {
+        currentBottomIndex = 2;
+      } else if (mIdx == 4) {
+        currentBottomIndex = 3;
+      }
+    }
 
     return Container(
       decoration: BoxDecoration(
@@ -3471,8 +1646,40 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ),
       ),
       child: BottomNavigationBar(
-        currentIndex: _selectedNavIndex.clamp(0, items.length - 1),
-        onTap: (index) => setState(() => _selectedNavIndex = index),
+        currentIndex: currentBottomIndex.clamp(0, items.length - 1),
+        onTap: (index) {
+          if (isAdministration) {
+            switch (index) {
+              case 0:
+                setState(() => _selectedNavIndex = 0);
+                break;
+              case 1:
+                setState(() => _selectedNavIndex = 1);
+                break;
+              case 2:
+                setState(() => _selectedNavIndex = 7);
+                break;
+              case 3:
+                setState(() => _selectedNavIndex = 11);
+                break;
+            }
+          } else {
+            switch (index) {
+              case 0:
+                setState(() => _selectedNavIndex = 0);
+                break;
+              case 1:
+                setState(() => _selectedNavIndex = 1);
+                break;
+              case 2:
+                setState(() => _selectedNavIndex = 3);
+                break;
+              case 3:
+                setState(() => _selectedNavIndex = 4);
+                break;
+            }
+          }
+        },
         backgroundColor: Colors.transparent,
         elevation: 0,
         selectedItemColor: AppColors.primary,
@@ -3643,7 +1850,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
     return Tooltip(
       message: isOnline
-          ? 'Network Online • Real-Time Connected to Ozikol Cloud'
+          ? 'Network Online • Real-Time Connected'
           : 'Network Offline • Showing Cached Workspace Data',
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -3861,7 +2068,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                           ),
                         ),
                         Text(
-                          'Ozikol Business Command Center Documentation',
+                          'Business Command Center Documentation',
                           style: TextStyle(fontSize: 12, color: subColor),
                         ),
                       ],
@@ -3931,7 +2138,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 children: [
                   Expanded(
                     child: Text(
-                      'Need assistance? Contact support@ozikol.cloud',
+                      'Need assistance? Contact your workspace administrator',
                       style: TextStyle(fontSize: 11, color: subColor),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -4070,7 +2277,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 isDark,
                 icon: Icons.business_rounded,
                 label: 'Active Workspace',
-                value: activeWs?.displayName ?? 'Ozikol BCC',
+                value: activeWs?.displayName ?? 'Business Command Center',
               ),
               const SizedBox(height: 10),
               _buildProfileDetailRow(
@@ -4627,5 +2834,24 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ),
       );
     }
+  }
+
+  Widget _buildOziAiFloatingButton(bool isDark) {
+    return FloatingActionButton.extended(
+      onPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('AI Assistant is available in the workspace studio.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      },
+      backgroundColor: AppColors.primary,
+      icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+      label: const Text(
+        'AI Assistant',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+    );
   }
 }

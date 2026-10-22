@@ -342,7 +342,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
                           TenantAvatar(
                             iconUrl: ws?.iconUrl,
                             logoUrl: ws?.logoUrl,
-                            name: ws?.displayName ?? 'Ozikol',
+                            name: ws?.displayName ?? 'Business Command Center',
                             tenantKey: ws?.tenantKey ?? 'workspace',
                             size: 36,
                             borderRadius: 8,
@@ -353,7 +353,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  ws?.displayName ?? 'Ozikol BCC',
+                                  ws?.displayName ?? 'Business Command Center',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -364,7 +364,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  ws?.primaryDomain ?? 'workspace.ozikol.cloud',
+                                  ws?.primaryDomain ?? 'workspace.domain.com',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
@@ -668,7 +668,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
             const SizedBox(height: 6),
             Text('Email: ${ws?.userEmail ?? 'Not specified'}'),
             const SizedBox(height: 6),
-            Text('Organization: ${ws?.displayName ?? 'Ozikol BCC'}'),
+            Text('Organization: ${ws?.displayName ?? 'Business Command Center'}'),
             const SizedBox(height: 12),
             const Text(
               'Profile credentials, authentication methods, and notification preferences can be customized in the security center.',

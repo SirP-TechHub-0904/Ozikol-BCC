@@ -72,6 +72,26 @@ namespace Ozikol_BCC.Application.Common
 
             var ua = userAgent.Trim();
 
+            // Check for native mobile and desktop applications (White-labeled, zero platform vendor name in tenant UI)
+            if (ua.Contains("BCC-Client", StringComparison.OrdinalIgnoreCase) || ua.Contains("OzikolBCC-Flutter", StringComparison.OrdinalIgnoreCase) || ua.Contains("Flutter", StringComparison.OrdinalIgnoreCase))
+            {
+                var isMobile = ua.Contains("Mobile", StringComparison.OrdinalIgnoreCase) || ua.Contains("Android", StringComparison.OrdinalIgnoreCase) || ua.Contains("iOS", StringComparison.OrdinalIgnoreCase);
+                var isApple = ua.Contains("iOS", StringComparison.OrdinalIgnoreCase) || ua.Contains("macOS", StringComparison.OrdinalIgnoreCase);
+                var os = ua.Contains("Android", StringComparison.OrdinalIgnoreCase) ? "Android" :
+                         ua.Contains("iOS", StringComparison.OrdinalIgnoreCase) ? "iOS" :
+                         ua.Contains("Windows", StringComparison.OrdinalIgnoreCase) ? "Windows" :
+                         ua.Contains("macOS", StringComparison.OrdinalIgnoreCase) ? "macOS" :
+                         ua.Contains("Linux", StringComparison.OrdinalIgnoreCase) ? "Linux" : "Device";
+
+                info.BrowserName = isMobile ? "Mobile App" : "Desktop App";
+                info.OperatingSystem = os;
+                info.DeviceType = isMobile ? "Mobile" : "Desktop";
+                info.FriendlyDeviceTitle = $"{info.BrowserName} on {os}";
+                info.FriendlyBrowserDetails = $"{info.BrowserName} • {info.DeviceType}";
+                info.Icon = isMobile ? "smartphone" : (isApple ? "laptop_mac" : "desktop_windows");
+                return info;
+            }
+
             // Already friendly format check (e.g. "Google Chrome on Windows 10/11")
             if (!ua.StartsWith("Mozilla/", StringComparison.OrdinalIgnoreCase) && ua.Contains(" on "))
             {

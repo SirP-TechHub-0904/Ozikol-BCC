@@ -9,6 +9,9 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../dashboard/presentation/dashboard_shell_screen.dart';
 import '../state/workspace_state.dart';
+import 'first_time_password_screen.dart';
+import 'forgot_password_screen.dart';
+import 'two_factor_challenge_screen.dart';
 import 'workspace_entry_screen.dart';
 
 /// Clean, branded authentication screen for the resolved organization workspace.
@@ -45,14 +48,45 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
     final password = _passwordController.text;
     final notifier = ref.read(workspaceStateProvider.notifier);
 
-    final success = await notifier.login(
+    final outcome = await notifier.login(
       email: email,
       password: password,
       targetWorkspace: widget.workspace,
     );
 
-    if (success && mounted) {
-      // Clear route stack and navigate into the multi-workspace dashboard shell
+    if (!mounted) return;
+
+    // 1. Intercept Two-Factor Authentication Challenge
+    if (outcome.requiresMfa) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TwoFactorChallengeScreen(
+            workspace: widget.workspace,
+            userId: outcome.mfaUserId ?? '',
+            provider: outcome.mfaProvider ?? 'Email',
+            email: email,
+          ),
+        ),
+      );
+      return;
+    }
+
+    // 2. Intercept Mandatory First-Time / Temporary Password Force Change
+    if (outcome.mustChangePassword) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => FirstTimePasswordScreen(
+            workspace: widget.workspace,
+            email: email,
+            temporaryPassword: password,
+          ),
+        ),
+      );
+      return;
+    }
+
+    // 3. Normal Successful Login
+    if (outcome.isSuccess) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const DashboardShellScreen()),
         (route) => false,
@@ -246,7 +280,35 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 6),
+
+                            // Forgot Password Action Link
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => ForgotPasswordScreen(workspace: widget.workspace),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? const Color(0xFF60A5FA) : AppColors.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
 
                             // Sign In Action Button
                             PrimaryButton(
