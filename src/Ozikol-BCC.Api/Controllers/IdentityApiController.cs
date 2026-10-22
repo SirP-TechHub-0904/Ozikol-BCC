@@ -205,7 +205,17 @@ namespace Ozikol_BCC.Api.Controllers
                     }
                 };
 
-                var catalog = catalogDefinitions.Select(def =>
+                // SuperAdmin tier is strictly visible only when an authenticated SuperAdmin is logged in.
+                // Standard administrators and lower operational roles must not see or manage the root SuperAdmin role.
+                var isSuperAdmin = User.IsInRole("SuperAdmin") ||
+                                   User.Claims.Any(c => (c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role") &&
+                                                        string.Equals(c.Value, "SuperAdmin", StringComparison.OrdinalIgnoreCase));
+
+                var visibleDefinitions = catalogDefinitions
+                    .Where(def => isSuperAdmin || !string.Equals(def.Name, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                var catalog = visibleDefinitions.Select(def =>
                 {
                     var assignedUsers = allUserRoles
                         .Where(ur => string.Equals(ur.RoleName, def.Name, StringComparison.OrdinalIgnoreCase))

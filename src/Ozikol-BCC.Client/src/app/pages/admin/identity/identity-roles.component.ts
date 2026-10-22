@@ -49,7 +49,7 @@ interface RoleMemberItem {
         eyebrow="ACCESS CONTROL & GOVERNANCE"
         icon="shield_person"
         title="System Roles & Authority Matrix"
-        subtitle="Manage the 6 pre-configured system roles, examine operational permissions, and assign authorized members to feature scopes."
+        [subtitle]="'Manage the ' + (rolesCatalog.length || (isSuperAdmin ? 6 : 5)) + ' pre-configured system roles, examine operational permissions, and assign authorized members to feature scopes.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -61,7 +61,7 @@ interface RoleMemberItem {
             <span class="material-symbols-outlined">security</span>
           </div>
           <div class="stat-meta">
-            <span class="stat-val">6</span>
+            <span class="stat-val">{{ rolesCatalog.length || (isSuperAdmin ? 6 : 5) }}</span>
             <span class="stat-lbl">Fixed System Roles</span>
           </div>
         </div>
@@ -737,6 +737,7 @@ export class IdentityRolesComponent implements OnInit {
   assignableUsers: any[] = [];
 
   // Modal State
+  isSuperAdmin: boolean = false;
   activeModalRole: RoleCatalogItem | null = null;
   selectedUserId: string = '';
   selectedFeatureName: string = 'UserManager';
@@ -762,8 +763,23 @@ export class IdentityRolesComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.checkCurrentUserRole();
     this.loadRoleCatalog();
     this.loadAssignableUsers();
+  }
+
+  /**
+   * Evaluates the authenticated user identity to determine if SuperAdmin access is permitted.
+   */
+  private checkCurrentUserRole(): void {
+    const userStr = localStorage.getItem('auth_user') || localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        const roles: string[] = u.roles || [];
+        this.isSuperAdmin = roles.some(r => r.toLowerCase() === 'superadmin');
+      } catch {}
+    }
   }
 
   get totalPrivilegedCount(): number {
@@ -787,7 +803,14 @@ export class IdentityRolesComponent implements OnInit {
     this.api.get<any>('IdentityApi/roles/catalog').subscribe({
       next: (res) => {
         this.isLoading = false;
-        this.rolesCatalog = res.data || [];
+        const allRoles: RoleCatalogItem[] = res.data || [];
+        // Strictly filter out SuperAdmin unless the current logged-in user is SuperAdmin
+        this.rolesCatalog = allRoles.filter(r => {
+          if (r.name.toLowerCase() === 'superadmin') {
+            return this.isSuperAdmin;
+          }
+          return true;
+        });
         // Update active modal role reference if open
         if (this.activeModalRole) {
           const refreshed = this.rolesCatalog.find(r => r.name === this.activeModalRole?.name);
