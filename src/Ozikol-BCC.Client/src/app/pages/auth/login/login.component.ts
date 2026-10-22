@@ -344,8 +344,9 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
               <span>{{ mfaLoading ? 'Verifying...' : 'Verify & Sign In' }}</span>
             </button>
 
-            <!-- 60-Second Cooldown Resend for SMS / Email -->
+            <!-- 60-Second Cooldown Resend for SMS / Email Only -->
             <button 
+              *ngIf="canResendMfaCode()"
               type="button" 
               class="btn-resend-otp" 
               (click)="onResendLoginMfa()" 
@@ -357,6 +358,11 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
               <span *ngIf="mfaResendCountdown > 0">Resend Code in {{ mfaResendCountdown }}s</span>
               <span *ngIf="mfaResendCountdown === 0 && !mfaResendLoading">Didn't receive code? Resend Code</span>
             </button>
+
+            <!-- Tip for TOTP / Authenticator App Users -->
+            <p *ngIf="!canResendMfaCode()" style="margin: 4px auto 10px auto; font-size: 12px; color: #64748b; text-align: center; line-height: 1.4;">
+              Codes rotate automatically every 30 seconds in your app. You can also enter one of your single-use backup recovery keys.
+            </p>
 
             <button 
               type="button" 
@@ -915,6 +921,7 @@ export class LoginComponent implements OnInit {
   showMfaModal = false;
   mfaCode = '';
   mfaUserId = '';
+  mfaProvider = '';
   mfaProviderLabel = '';
   trustThisDevice = false;
   mfaLoading = false;
@@ -1022,12 +1029,15 @@ export class LoginComponent implements OnInit {
         // Check for MFA requirement
         if (res?.data?.requiresMfa) {
           this.mfaUserId = res.data.userId;
-          this.mfaProviderLabel = this.getFriendlyMfaProvider(res.data.mfaProvider);
+          this.mfaProvider = res.data.mfaProvider || '';
+          this.mfaProviderLabel = this.getFriendlyMfaProvider(this.mfaProvider);
           this.mfaCode = '';
           this.mfaError = '';
           this.mfaSuccessMessage = '';
           this.showMfaModal = true;
-          this.startMfaCountdown();
+          if (this.canResendMfaCode()) {
+            this.startMfaCountdown();
+          }
           return;
         }
 
@@ -1083,6 +1093,11 @@ export class LoginComponent implements OnInit {
     }
   }
 
+  canResendMfaCode(): boolean {
+    const p = (this.mfaProvider || '').toLowerCase();
+    return p === 'email' || p === 'sms';
+  }
+
   onVerifyLoginMfa(): void {
     if (!this.mfaCode || this.mfaCode.trim().length < 4) return;
 
@@ -1129,6 +1144,7 @@ export class LoginComponent implements OnInit {
     this.mfaError = '';
     this.mfaSuccessMessage = '';
     this.mfaUserId = '';
+    this.mfaProvider = '';
     this.loading = false;
     if (this.mfaResendInterval) {
       clearInterval(this.mfaResendInterval);
@@ -1150,7 +1166,7 @@ export class LoginComponent implements OnInit {
   }
 
   onResendLoginMfa(): void {
-    if (!this.mfaUserId || this.mfaResendLoading || this.mfaResendCountdown > 0) return;
+    if (!this.canResendMfaCode() || !this.mfaUserId || this.mfaResendLoading || this.mfaResendCountdown > 0) return;
     this.mfaResendLoading = true;
     this.mfaError = '';
     this.mfaSuccessMessage = '';

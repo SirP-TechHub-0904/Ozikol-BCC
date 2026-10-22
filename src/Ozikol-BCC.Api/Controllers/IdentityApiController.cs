@@ -15,6 +15,7 @@ using static Ozikol_BCC.Domain.Enum.Enum;
 
 using Microsoft.AspNetCore.SignalR;
 using Ozikol_BCC.Api.Hubs;
+using Ozikol_BCC.Application.Common;
 using Ozikol_BCC.Application.Interfaces.Services;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -889,14 +890,19 @@ namespace Ozikol_BCC.Api.Controllers
                 deviceEntities.Add(newDevice);
             }
 
-            var sessions = deviceEntities.Select(d => new
+            var sessions = deviceEntities.Select(d =>
             {
-                SessionId = d.Id,
-                Device = d.DeviceName,
-                Browser = d.DeviceName,
-                IpAddress = d.IpAddress,
-                LastActive = d.LastUsedAt,
-                IsCurrent = (!string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti) || (d == deviceEntities[0])
+                var parsed = UserAgentParser.Parse(d.DeviceName);
+                return new
+                {
+                    SessionId = d.Id,
+                    Device = parsed.FriendlyDeviceTitle,
+                    Browser = parsed.FriendlyBrowserDetails,
+                    RawDevice = d.DeviceName,
+                    IpAddress = d.IpAddress,
+                    LastActive = d.LastUsedAt,
+                    IsCurrent = (!string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti) || (d == deviceEntities[0])
+                };
             }).ToList();
 
             return Ok(ApiResponse<object>.SuccessResponse(sessions, "Active sessions retrieved."));
@@ -1081,7 +1087,23 @@ namespace Ozikol_BCC.Api.Controllers
                 });
             }
 
-            return Ok(ApiResponse<object>.SuccessResponse(history, "Personal login history retrieved."));
+            var formatted = history.Select(h =>
+            {
+                var parsed = UserAgentParser.Parse(h.UserAgent);
+                return new
+                {
+                    h.Id,
+                    h.Email,
+                    h.Status,
+                    h.IpAddress,
+                    h.UserAgent,
+                    Device = parsed.FriendlyDeviceTitle,
+                    Browser = parsed.FriendlyBrowserDetails,
+                    h.Timestamp
+                };
+            }).ToList();
+
+            return Ok(ApiResponse<object>.SuccessResponse(formatted, "Personal login history retrieved."));
         }
 
         /// <summary>

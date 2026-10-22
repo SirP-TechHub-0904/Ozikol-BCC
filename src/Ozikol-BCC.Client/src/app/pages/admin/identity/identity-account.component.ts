@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { parseUserAgent, formatClientIpAddress } from '../../../core/utils/user-agent.util';
 
 /**
  * Interface representing an active logged-in device session.
@@ -445,11 +446,12 @@ interface AccountSummary {
                 </div>
                 <div class="device-info">
                   <div class="device-name-row">
-                    <span class="device-name">{{ s.device }}</span>
+                    <span class="device-name">{{ formatDeviceTitle(s.device) }}</span>
                     <span class="badge-current" *ngIf="s.isCurrent">{{ 'account.this_device' | translate }}</span>
                   </div>
                   <div class="device-meta-row">
-                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">router</span>{{ s.ipAddress }}</span>
+                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">language</span>{{ formatBrowserDetails(s.device) }}</span>
+                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">router</span>{{ formatIpAddress(s.ipAddress) }}</span>
                     <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">schedule</span>{{ formatRelativeTime(s.lastActive) }}</span>
                   </div>
                 </div>
@@ -508,8 +510,13 @@ interface AccountSummary {
                         {{ log.status }}
                       </span>
                     </td>
-                    <td><code>{{ log.ipAddress || '127.0.0.1' }}</code></td>
-                    <td class="log-agent" [title]="log.userAgent">{{ formatUserAgent(log.userAgent) }}</td>
+                    <td><code>{{ formatIpAddress(log.ipAddress) }}</code></td>
+                    <td class="log-agent" [title]="log.userAgent">
+                      <div class="log-agent-wrap">
+                        <span class="log-device-main">{{ formatDeviceTitle(log.userAgent) }}</span>
+                        <span class="log-device-sub">{{ formatBrowserDetails(log.userAgent) }}</span>
+                      </div>
+                    </td>
                     <td>{{ formatDateTime(log.timestamp) }}</td>
                   </tr>
                 </tbody>
@@ -1220,10 +1227,22 @@ interface AccountSummary {
       color: #1e293b;
     }
     .log-agent {
-      max-width: 250px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      min-width: 200px;
+      max-width: 320px;
+    }
+    .log-agent-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .log-device-main {
+      font-weight: 600;
+      color: #0f172a;
+      font-size: 13px;
+    }
+    .log-device-sub {
+      font-size: 11.5px;
+      color: #64748b;
     }
     .log-status-pill {
       display: inline-flex;
@@ -1693,14 +1712,35 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Returns human-readable device title (e.g. "Google Chrome on Windows 10/11").
+   * @param device Raw user agent or device string.
+   */
+  formatDeviceTitle(device: string | undefined | null): string {
+    return parseUserAgent(device).displayTitle;
+  }
+
+  /**
+   * Returns secondary browser details (e.g. "Google Chrome 155 • Desktop").
+   * @param device Raw user agent or device string.
+   */
+  formatBrowserDetails(device: string | undefined | null): string {
+    return parseUserAgent(device).displayDetails;
+  }
+
+  /**
+   * Formats an IP address, handling loopback cleanly.
+   * @param ip Raw IP string.
+   */
+  formatIpAddress(ip: string | undefined | null): string {
+    return formatClientIpAddress(ip);
+  }
+
+  /**
    * Returns an appropriate icon name for a given device description.
-   * @param device Device name string.
+   * @param device Device name or user agent string.
    */
   getDeviceIcon(device: string): string {
-    const d = (device || '').toLowerCase();
-    if (d.includes('mobile') || d.includes('android') || d.includes('iphone')) return 'smartphone';
-    if (d.includes('ipad') || d.includes('tablet')) return 'tablet';
-    return 'computer';
+    return parseUserAgent(device).icon;
   }
 
   /**
@@ -1708,9 +1748,7 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
    * @param ua User agent string.
    */
   formatUserAgent(ua: string): string {
-    if (!ua) return 'Unknown Client';
-    if (ua.length > 50) return ua.substring(0, 48) + '...';
-    return ua;
+    return this.formatDeviceTitle(ua);
   }
 
   /**
