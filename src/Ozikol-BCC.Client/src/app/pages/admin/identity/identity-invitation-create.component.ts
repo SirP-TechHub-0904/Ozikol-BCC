@@ -35,7 +35,7 @@ export interface AvailableRole {
   icon: string;
   summary: string;
   featureAreaKey?: string;
-  defaultActionRole: ActionRoleType;
+  defaultActionRole?: ActionRoleType;
   allowedActions: string[];
   restrictedActions: string[];
 }
@@ -286,9 +286,13 @@ export interface FeatureScopeOption {
                     <h4 class="role-select-title">{{ role.name }}</h4>
                     <p class="role-select-desc">{{ role.summary }}</p>
                     <div class="role-card-footer">
-                      <span class="auto-link-hint">
+                      <span class="auto-link-hint" *ngIf="role.name === 'Admin'">
                         <span class="material-symbols-outlined">auto_mode</span>
-                        <span>Sets {{ getActionRoleShortLabel(role.defaultActionRole) }}</span>
+                        <span>Sets Global Edit</span>
+                      </span>
+                      <span class="auto-link-hint text-slate" *ngIf="role.name === 'Member'">
+                        <span class="material-symbols-outlined">dashboard</span>
+                        <span>Member Portal Access</span>
                       </span>
                       <div class="role-radio-indicator">
                         <span class="material-symbols-outlined" *ngIf="selectedRole === role.name">check_circle</span>
@@ -299,14 +303,14 @@ export interface FeatureScopeOption {
                 </div>
               </div>
 
-              <!-- GROUP B: Modular Feature Authority Roles -->
+              <!-- GROUP B: Modular Feature Authority Roles (Active 2 Roles) -->
               <div class="role-group-section mt-4" *ngIf="activeGroupFilter === 'All' || activeGroupFilter === RoleGroup.Feature">
                 <div class="role-group-divider">
                   <div class="divider-left">
                     <span class="material-symbols-outlined text-emerald">extension</span>
                     <span class="group-header-text">Modular Capability Feature Authorities</span>
                   </div>
-                  <span class="group-header-pill emerald">Scoped Capabilities</span>
+                  <span class="group-header-pill emerald">Active Modules (2)</span>
                 </div>
 
                 <div class="roles-selection-grid">
@@ -347,110 +351,136 @@ export interface FeatureScopeOption {
                 <span class="material-symbols-outlined text-emerald">tune</span>
                 <div>
                   <h3 class="card-title">Card 2: Operational Edit Access Level</h3>
-                  <p class="card-subtitle">Controls the user's operational write power: tenant-wide global edit, targeted module edit, or view-only auditing.</p>
+                  <p class="card-subtitle">
+                    {{ selectedRole === 'Member' 
+                       ? 'Standard members do not hold operational administrative edit roles.' 
+                       : 'Controls the user operational write power: tenant-wide global edit, targeted module edit, or view-only auditing.' }}
+                  </p>
                 </div>
               </div>
               <span class="scope-highlight-badge" [ngClass]="getActionBadgeClass()">
-                <span class="material-symbols-outlined">bolt</span>
+                <span class="material-symbols-outlined">{{ getActionIcon() }}</span>
                 <span>{{ getSelectedActionRoleLabel() }}</span>
               </span>
             </div>
 
             <div class="card-body">
-              <!-- 3 Action Role Cards (Global Editor, Feature Editor, Read Only) -->
-              <div class="action-roles-grid">
-                <div
-                  *ngFor="let act of actionRoleOptions"
-                  class="action-role-card"
-                  [class.selected]="selectedActionRole === act.key"
-                  (click)="selectActionRole(act)"
-                >
-                  <div class="action-card-top">
-                    <div class="action-icon-box" [ngClass]="act.badgeClass">
-                      <span class="material-symbols-outlined">{{ act.icon }}</span>
-                    </div>
-                    <span class="action-tier-badge" [ngClass]="act.badgeClass">{{ act.badge }}</span>
-                  </div>
-                  <h4 class="action-title">{{ act.title }}</h4>
-                  <p class="action-summary">{{ act.summary }}</p>
-
-                  <div class="action-card-bottom">
-                    <span class="action-sync-tag" *ngIf="isAutoAssigned(act.key)">
-                      <span class="material-symbols-outlined">auto_awesome</span>
-                      <span>Auto-assigned</span>
-                    </span>
-                    <span class="action-sync-tag custom" *ngIf="!isAutoAssigned(act.key)">
-                      <span>Manual Override</span>
-                    </span>
-                    <div class="action-radio">
-                      <span class="material-symbols-outlined" *ngIf="selectedActionRole === act.key">check_circle</span>
-                      <span class="material-symbols-outlined text-muted" *ngIf="selectedActionRole !== act.key">radio_button_unchecked</span>
-                    </div>
+              <!-- CASE A: When Member is selected -> Standard Member Workspace Portal Info -->
+              <div *ngIf="selectedRole === 'Member'" class="member-portal-info-box animate-fade">
+                <div class="member-info-icon">
+                  <span class="material-symbols-outlined">dashboard_customize</span>
+                </div>
+                <div class="member-info-text">
+                  <h4>Dedicated Member Workspace Portal</h4>
+                  <p>
+                    A <strong>Member</strong> is a standard workspace user with their own dedicated user dashboard and workspace applications.
+                    They do not hold administrative or operational editing roles within the BCC Administration Console.
+                  </p>
+                  <div class="member-features-pills">
+                    <span class="pill-feat"><span class="material-symbols-outlined">check</span> Authenticated Member Dashboard</span>
+                    <span class="pill-feat"><span class="material-symbols-outlined">check</span> Personal Profile &amp; 2FA</span>
+                    <span class="pill-feat"><span class="material-symbols-outlined">check</span> Member Directory Presence</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Contextual Scope Details depending on selectedActionRole -->
-              <!-- CASE 1: Feature Editor -> Show modular capability picker -->
-              <div class="module-scope-container mt-4 animate-fade" *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
-                <div class="module-scope-head">
-                  <div>
-                    <h4 class="module-scope-title">Designated Capability Domain</h4>
-                    <p class="module-scope-sub">This user will be granted full authoring, write, and publishing rights strictly within this selected module.</p>
-                  </div>
-                  <span class="bound-badge">
-                    <span class="material-symbols-outlined">link</span>
-                    <span>Bound to: <strong>{{ getSelectedScopeLabel() }}</strong></span>
-                  </span>
-                </div>
-
-                <div class="scope-selector-grid mt-3">
+              <!-- CASE B: When an Operational Role is selected (Admin, User Manager, Identity Manager) -->
+              <div *ngIf="selectedRole !== 'Member'">
+                <!-- 3 Action Role Cards (Global Editor, Feature Editor, Read Only) -->
+                <div class="action-roles-grid">
                   <div
-                    *ngFor="let scope of featureScopeOptions"
-                    class="scope-option-card"
-                    [class.active]="selectedFeatureArea === scope.key"
-                    (click)="selectFeatureScope(scope)"
+                    *ngFor="let act of actionRoleOptions"
+                    class="action-role-card"
+                    [class.selected]="selectedActionRole === act.key"
+                    (click)="selectActionRole(act)"
                   >
-                    <div class="scope-option-header">
-                      <div class="scope-icon-wrap">
-                        <span class="material-symbols-outlined">{{ scope.icon }}</span>
+                    <div class="action-card-top">
+                      <div class="action-icon-box" [ngClass]="act.badgeClass">
+                        <span class="material-symbols-outlined">{{ act.icon }}</span>
                       </div>
-                      <div>
-                        <h4 class="scope-title">{{ scope.label }}</h4>
-                        <code class="scope-code">{{ scope.key }}</code>
-                      </div>
+                      <span class="action-tier-badge" [ngClass]="act.badgeClass">{{ act.badge }}</span>
                     </div>
-                    <p class="scope-desc">{{ scope.description }}</p>
-                    <div class="scope-areas-pills">
-                      <span *ngFor="let area of scope.permittedAreas" class="area-pill">
-                        ✓ {{ area }}
+                    <h4 class="action-title">{{ act.title }}</h4>
+                    <p class="action-summary">{{ act.summary }}</p>
+
+                    <div class="action-card-bottom">
+                      <span class="action-sync-tag" *ngIf="isAutoAssigned(act.key)">
+                        <span class="material-symbols-outlined">auto_awesome</span>
+                        <span>Auto-assigned</span>
                       </span>
+                      <span class="action-sync-tag custom" *ngIf="!isAutoAssigned(act.key)">
+                        <span>Manual Override</span>
+                      </span>
+                      <div class="action-radio">
+                        <span class="material-symbols-outlined" *ngIf="selectedActionRole === act.key">check_circle</span>
+                        <span class="material-symbols-outlined text-muted" *ngIf="selectedActionRole !== act.key">radio_button_unchecked</span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div class="scope-notice-box mt-3">
-                  <span class="material-symbols-outlined text-blue">info</span>
+                <!-- Contextual Scope Details depending on selectedActionRole -->
+                <!-- Feature Editor -> Show active modular capability picker -->
+                <div class="module-scope-container mt-4 animate-fade" *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
+                  <div class="module-scope-head">
+                    <div>
+                      <h4 class="module-scope-title">Designated Capability Domain</h4>
+                      <p class="module-scope-sub">This user will be granted full authoring, write, and publishing rights strictly within this selected module.</p>
+                    </div>
+                    <span class="bound-badge">
+                      <span class="material-symbols-outlined">link</span>
+                      <span>Bound to: <strong>{{ getSelectedScopeLabel() }}</strong></span>
+                    </span>
+                  </div>
+
+                  <div class="scope-selector-grid mt-3">
+                    <div
+                      *ngFor="let scope of featureScopeOptions"
+                      class="scope-option-card"
+                      [class.active]="selectedFeatureArea === scope.key"
+                      (click)="selectFeatureScope(scope)"
+                    >
+                      <div class="scope-option-header">
+                        <div class="scope-icon-wrap">
+                          <span class="material-symbols-outlined">{{ scope.icon }}</span>
+                        </div>
+                        <div>
+                          <h4 class="scope-title">{{ scope.label }}</h4>
+                          <code class="scope-code">{{ scope.key }}</code>
+                        </div>
+                      </div>
+                      <p class="scope-desc">{{ scope.description }}</p>
+                      <div class="scope-areas-pills">
+                        <span *ngFor="let area of scope.permittedAreas" class="area-pill">
+                          ✓ {{ area }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="scope-notice-box mt-3">
+                    <span class="material-symbols-outlined text-blue">info</span>
+                    <p>
+                      <strong>Capability Isolation:</strong> Personnel assigned with Feature Editor access to <strong>{{ getSelectedScopeLabel() }}</strong> can only author, edit, and publish records within this designated module. They will hold standard read-only access in other workspace areas.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Global Editor Info Notice -->
+                <div class="scope-notice-box global mt-4 animate-fade" *ngIf="selectedActionRole === ActionRoleType.GlobalEditor">
+                  <span class="material-symbols-outlined text-indigo">language</span>
                   <p>
-                    <strong>Capability Isolation:</strong> Personnel assigned with Feature Editor access to <strong>{{ getSelectedScopeLabel() }}</strong> can only author, edit, and publish records within this designated module. They will hold standard read-only access in other workspace areas.
+                    <strong>Global Operational Scope:</strong> With <strong>Global Editor</strong> privileges, this user will hold full CRUD create, edit, publish, and delete authority across all active modules throughout this entire tenant workspace.
                   </p>
                 </div>
-              </div>
 
-              <!-- CASE 2: Global Editor Info Notice -->
-              <div class="scope-notice-box global mt-4 animate-fade" *ngIf="selectedActionRole === ActionRoleType.GlobalEditor">
-                <span class="material-symbols-outlined text-indigo">language</span>
-                <p>
-                  <strong>Global Operational Scope:</strong> With <strong>Global Editor</strong> privileges, this user will hold full CRUD create, edit, publish, and delete authority across all active modules throughout this entire tenant workspace.
-                </p>
-              </div>
-
-              <!-- CASE 3: Read Only Info Notice -->
-              <div class="scope-notice-box readonly mt-4 animate-fade" *ngIf="selectedActionRole === ActionRoleType.Readonly">
-                <span class="material-symbols-outlined text-amber">visibility</span>
-                <p>
-                  <strong>Observer Auditing Scope:</strong> With <strong>Read Only</strong> privileges, this user can navigate and inspect data across workspace applications, but all create, edit, and delete action triggers will be hidden or disabled.
-                </p>
+                <!-- Read Only Info Notice -->
+                <div class="scope-notice-box readonly mt-4 animate-fade" *ngIf="selectedActionRole === ActionRoleType.Readonly">
+                  <span class="material-symbols-outlined text-amber">visibility</span>
+                  <p>
+                    <strong>Observer Auditing Scope:</strong> With <strong>Read Only</strong> privileges, this user can navigate and inspect data across workspace applications, but all create, edit, and delete action triggers will be hidden or disabled.
+                  </p>
+                </div>
               </div>
             </div>
           </section>
@@ -479,8 +509,8 @@ export interface FeatureScopeOption {
                 <div>
                   <div class="live-role-name">{{ selectedRole }}</div>
                   <div class="live-role-tier">
-                    {{ currentRoleObj?.tier || 'Operational Level' }} &bull;
-                    {{ currentRoleObj?.group === RoleGroup.System ? 'System Governance' : 'Feature Authority' }}
+                    {{ currentRoleObj?.tier || 'Standard Member' }} &bull;
+                    {{ currentRoleObj?.group === RoleGroup.System ? 'System Tier' : 'Feature Authority' }}
                   </div>
                 </div>
               </div>
@@ -489,9 +519,9 @@ export interface FeatureScopeOption {
               <div class="live-scope-banner mt-3" [ngClass]="getActionBadgeClass()">
                 <span class="material-symbols-outlined">{{ getActionIcon() }}</span>
                 <div>
-                  <strong>Edit Access Level:</strong>
+                  <strong>{{ selectedRole === 'Member' ? 'Workspace Surface:' : 'Edit Access Level:' }}</strong>
                   <span>{{ getSelectedActionRoleLabel() }}</span>
-                  <span *ngIf="selectedActionRole === ActionRoleType.FeatureEditor"> &mdash; {{ getSelectedScopeLabel() }}</span>
+                  <span *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.FeatureEditor"> &mdash; {{ getSelectedScopeLabel() }}</span>
                 </div>
               </div>
 
@@ -502,13 +532,16 @@ export interface FeatureScopeOption {
                   <span>Permitted Capabilities</span>
                 </div>
                 <ul class="perm-items">
-                  <li *ngIf="selectedActionRole === ActionRoleType.GlobalEditor">
+                  <li *ngIf="selectedRole === 'Member'">
+                    Full access to authenticated personal workspace apps and member dashboard
+                  </li>
+                  <li *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.GlobalEditor">
                     Full CRUD create, edit, and publish permissions across all workspace modules
                   </li>
-                  <li *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
+                  <li *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.FeatureEditor">
                     Author, update, and publish records within {{ getSelectedScopeLabel() }}
                   </li>
-                  <li *ngIf="selectedActionRole === ActionRoleType.Readonly">
+                  <li *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.Readonly">
                     Inspect dashboards, member rosters, and activity logs without edit rights
                   </li>
                   <li *ngFor="let act of currentRoleObj?.allowedActions">
@@ -524,10 +557,10 @@ export interface FeatureScopeOption {
                   <span>Restricted Boundaries</span>
                 </div>
                 <ul class="perm-items restricted">
-                  <li *ngIf="selectedActionRole === ActionRoleType.Readonly">
+                  <li *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.Readonly">
                     Strictly prohibited from modifying, saving, or deleting workspace records
                   </li>
-                  <li *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
+                  <li *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.FeatureEditor">
                     Read-only access across other modules outside {{ getSelectedScopeLabel() }}
                   </li>
                   <li *ngFor="let rest of currentRoleObj?.restrictedActions">
@@ -578,10 +611,15 @@ export interface FeatureScopeOption {
                     <span class="mock-role-pill" [ngClass]="currentRoleObj?.badgeClass">
                       {{ selectedRole }}
                     </span>
-                    with <strong>{{ getSelectedActionRoleLabel() }}</strong>
-                    <span *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
-                      for <strong>{{ getSelectedScopeLabel() }}</strong>
-                    </span>.
+                    <ng-container *ngIf="selectedRole !== 'Member'">
+                      with <strong>{{ getSelectedActionRoleLabel() }}</strong>
+                      <span *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
+                        for <strong>{{ getSelectedScopeLabel() }}</strong>
+                      </span>
+                    </ng-container>
+                    <ng-container *ngIf="selectedRole === 'Member'">
+                      with access to your personal workspace portal apps and dashboard.
+                    </ng-container>
                   </p>
 
                   <div *ngIf="customMessage" class="mock-quote-box">
@@ -752,6 +790,7 @@ export interface FeatureScopeOption {
     .text-good { color: #16a34a; }
     .text-warn { color: #d97706; }
     .text-muted { color: #94a3b8; }
+    .text-slate { color: #475569; }
 
     /* Expiration Pills */
     .pill-selector {
@@ -944,6 +983,9 @@ export interface FeatureScopeOption {
     .auto-link-hint.emerald {
       color: #10b981;
     }
+    .auto-link-hint.text-slate {
+      color: #475569;
+    }
     .role-radio-indicator {
       display: flex;
       align-items: center;
@@ -957,12 +999,6 @@ export interface FeatureScopeOption {
     .badge-admin { background: rgba(0, 80, 229, 0.12); color: #0050e5; }
     .badge-identity { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
     .badge-user { background: rgba(14, 165, 233, 0.12); color: #0284c7; }
-    .badge-content { background: rgba(16, 185, 129, 0.12); color: #059669; }
-    .badge-commerce { background: rgba(245, 158, 11, 0.12); color: #d97706; }
-    .badge-crm { background: rgba(99, 102, 241, 0.12); color: #4f46e5; }
-    .badge-billing { background: rgba(20, 184, 166, 0.12); color: #0d9488; }
-    .badge-settings { background: rgba(100, 116, 139, 0.12); color: #475569; }
-    .badge-forms { background: rgba(236, 72, 153, 0.12); color: #db2777; }
     .badge-member { background: rgba(100, 116, 139, 0.12); color: #475569; }
     .badge-readonly { background: rgba(245, 158, 11, 0.12); color: #d97706; }
     .badge-global { background: rgba(0, 80, 229, 0.12); color: #0050e5; }
@@ -1062,6 +1098,64 @@ export interface FeatureScopeOption {
     .action-radio .material-symbols-outlined {
       font-size: 18px;
       color: #0050e5;
+    }
+
+    /* Dedicated Member Portal Notice */
+    .member-portal-info-box {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .member-info-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(0, 80, 229, 0.08);
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .member-info-icon .material-symbols-outlined {
+      font-size: 24px;
+    }
+    .member-info-text h4 {
+      font-size: 14px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 6px;
+    }
+    .member-info-text p {
+      font-size: 12.5px;
+      color: #475569;
+      line-height: 1.5;
+      margin: 0 0 12px;
+    }
+    .member-features-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .pill-feat {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #0f172a;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+    .pill-feat .material-symbols-outlined {
+      font-size: 14px;
+      color: #10b981;
     }
 
     /* Module Scope Container */
@@ -1257,6 +1351,11 @@ export interface FeatureScopeOption {
       background: rgba(245, 158, 11, 0.08);
       border: 1px solid rgba(245, 158, 11, 0.2);
       color: #b45309;
+    }
+    .live-scope-banner.badge-member {
+      background: rgba(100, 116, 139, 0.08);
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      color: #334155;
     }
     .live-scope-banner .material-symbols-outlined {
       font-size: 18px;
@@ -1545,7 +1644,7 @@ export class IdentityInvitationCreateComponent implements OnInit {
   // Role & Group State
   activeGroupFilter: RoleGroup | 'All' = 'All';
   selectedRole = 'User Manager';
-  selectedActionRole: ActionRoleType = ActionRoleType.FeatureEditor;
+  selectedActionRole: ActionRoleType | null = ActionRoleType.FeatureEditor;
   selectedFeatureArea: string | null = 'UserManager';
 
   // Loaded Data
@@ -1584,10 +1683,10 @@ export class IdentityInvitationCreateComponent implements OnInit {
       tier: 'Standard Member',
       badgeClass: 'badge-member',
       icon: 'badge',
-      summary: 'Standard directory presence and authenticated user workspace portal access.',
-      defaultActionRole: ActionRoleType.Readonly,
+      summary: 'Standard member directory presence and authenticated user workspace portal access.',
+      defaultActionRole: undefined,
       allowedActions: [
-        'Access authenticated user workspace portal apps',
+        'Access authenticated user workspace portal apps and personal dashboard',
         'Update personal profile details and 2FA credentials',
         'Participate in permitted member discussion channels'
       ],
@@ -1597,7 +1696,7 @@ export class IdentityInvitationCreateComponent implements OnInit {
       ]
     },
 
-    // GROUP 2: Modular Feature Authority Roles (Active)
+    // GROUP 2: Modular Feature Authority Roles (Active 2 Roles)
     {
       name: 'User Manager',
       group: RoleGroup.Feature,
@@ -1669,7 +1768,7 @@ export class IdentityInvitationCreateComponent implements OnInit {
     }
   ];
 
-  /** Available Feature Capability Scopes for Feature Editor (Active) */
+  /** Available Feature Capability Scopes for Feature Editor (Active 2 Modules) */
   featureScopeOptions: FeatureScopeOption[] = [
     {
       key: 'UserManager',
@@ -1745,7 +1844,7 @@ export class IdentityInvitationCreateComponent implements OnInit {
     if (!this.inviteEmail || !this.inviteEmail.includes('@') || !this.inviteEmail.includes('.')) {
       return false;
     }
-    if (this.selectedActionRole === ActionRoleType.FeatureEditor && !this.selectedFeatureArea) {
+    if (this.selectedRole !== 'Member' && this.selectedActionRole === ActionRoleType.FeatureEditor && !this.selectedFeatureArea) {
       return false;
     }
     return true;
@@ -1754,7 +1853,7 @@ export class IdentityInvitationCreateComponent implements OnInit {
   /**
    * Selects a primary authority role and triggers automatic selection in Card 2.
    * - Admin -> Automatically selects Global Editor.
-   * - Member -> Automatically selects Read Only.
+   * - Member -> Standard member workspace portal access (no action role, no readonly).
    * - Feature Authority -> Automatically selects Feature Editor and binds to that module.
    * @param role Target role item.
    */
@@ -1766,7 +1865,8 @@ export class IdentityInvitationCreateComponent implements OnInit {
       this.selectedActionRole = ActionRoleType.GlobalEditor;
       this.selectedFeatureArea = null;
     } else if (role.name === 'Member') {
-      this.selectedActionRole = ActionRoleType.Readonly;
+      // Member is strictly a member with their own dashboard; no action role or readonly attached.
+      this.selectedActionRole = null;
       this.selectedFeatureArea = null;
     } else {
       // Feature Authority Role
@@ -1811,7 +1911,7 @@ export class IdentityInvitationCreateComponent implements OnInit {
    */
   isAutoAssigned(key: ActionRoleType): boolean {
     if (this.selectedRole === 'Admin') return key === ActionRoleType.GlobalEditor;
-    if (this.selectedRole === 'Member') return key === ActionRoleType.Readonly;
+    if (this.selectedRole === 'Member') return false;
     return key === ActionRoleType.FeatureEditor;
   }
 
@@ -1819,29 +1919,25 @@ export class IdentityInvitationCreateComponent implements OnInit {
    * Returns human-readable label for selected action role.
    */
   getSelectedActionRoleLabel(): string {
+    if (this.selectedRole === 'Member') {
+      return 'Member Portal Dashboard';
+    }
     const act = this.actionRoleOptions.find(a => a.key === this.selectedActionRole);
     return act ? act.title : 'Feature Editor';
-  }
-
-  /**
-   * Returns short action label for auto-assignment hints.
-   */
-  getActionRoleShortLabel(actionType: ActionRoleType): string {
-    switch (actionType) {
-      case ActionRoleType.GlobalEditor: return 'Global Edit';
-      case ActionRoleType.FeatureEditor: return 'Feature Edit';
-      case ActionRoleType.Readonly: return 'Read Only';
-    }
   }
 
   /**
    * Returns badge CSS class for active action role.
    */
   getActionBadgeClass(): string {
+    if (this.selectedRole === 'Member') {
+      return 'badge-member';
+    }
     switch (this.selectedActionRole) {
       case ActionRoleType.GlobalEditor: return 'badge-global';
       case ActionRoleType.FeatureEditor: return 'badge-feature';
       case ActionRoleType.Readonly: return 'badge-readonly';
+      default: return 'badge-member';
     }
   }
 
@@ -1849,10 +1945,14 @@ export class IdentityInvitationCreateComponent implements OnInit {
    * Returns material icon for active action role.
    */
   getActionIcon(): string {
+    if (this.selectedRole === 'Member') {
+      return 'dashboard';
+    }
     switch (this.selectedActionRole) {
       case ActionRoleType.GlobalEditor: return 'public';
       case ActionRoleType.FeatureEditor: return 'tune';
       case ActionRoleType.Readonly: return 'visibility';
+      default: return 'dashboard';
     }
   }
 
@@ -1887,11 +1987,12 @@ export class IdentityInvitationCreateComponent implements OnInit {
     }
 
     this.isSending = true;
+    const isMember = this.selectedRole === 'Member';
     const payload = {
       email: this.inviteEmail.trim(),
       role: this.selectedRole,
-      actionRole: this.selectedActionRole,
-      featureArea: this.selectedActionRole === ActionRoleType.FeatureEditor ? this.selectedFeatureArea : null,
+      actionRole: isMember ? null : this.selectedActionRole,
+      featureArea: (!isMember && this.selectedActionRole === ActionRoleType.FeatureEditor) ? this.selectedFeatureArea : null,
       categoryId: this.selectedCategoryId,
       expirationDays: this.expirationDays,
       customMessage: this.customMessage?.trim() || null
@@ -1903,7 +2004,7 @@ export class IdentityInvitationCreateComponent implements OnInit {
         const data = res?.data;
         this.dispatchedLink = data?.invitationUrl || '';
         this.dispatchedEmail = this.inviteEmail;
-        this.dispatchedRole = `${this.selectedRole} (${this.getSelectedActionRoleLabel()})`;
+        this.dispatchedRole = isMember ? 'Member' : `${this.selectedRole} (${this.getSelectedActionRoleLabel()})`;
         this.toast.success(`Invitation dispatched successfully to ${this.inviteEmail}!`, 'Invitation Sent');
       },
       error: (err) => {
