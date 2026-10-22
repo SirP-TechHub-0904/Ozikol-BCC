@@ -118,7 +118,7 @@ interface RoleMemberItem {
                 <th style="min-width: 280px;">Scope & Operational Boundaries</th>
                 <th style="width: 140px; text-align: center;">Personnel</th>
                 <th style="width: 200px;">Assigned Members Preview</th>
-                <th style="width: 170px; text-align: right;">Action</th>
+                <th style="width: 190px; text-align: right; white-space: nowrap;">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -180,7 +180,7 @@ interface RoleMemberItem {
                 </td>
 
                 <!-- Action Button -->
-                <td style="text-align: right;">
+                <td style="text-align: right; white-space: nowrap;">
                   <!-- SuperAdmin Locked State -->
                   <div *ngIf="!role.canAssign" class="locked-chip" title="Root account authority cannot be transferred or assigned to other users.">
                     <span class="material-symbols-outlined">lock</span>
@@ -194,8 +194,8 @@ interface RoleMemberItem {
                     class="btn-manage-members"
                     (click)="openManageModal(role)"
                   >
-                    <span class="material-symbols-outlined">group_add</span>
-                    <span>Manage Members</span>
+                    <span class="material-symbols-outlined btn-icon">group_add</span>
+                    <span class="btn-text">Manage Members</span>
                   </button>
                 </td>
               </tr>
@@ -517,23 +517,68 @@ interface RoleMemberItem {
 
     .btn-manage-members {
       height: 34px;
-      padding: 0 12px;
+      padding: 0 14px;
       border-radius: 8px;
-      border: 1px solid #0050e5;
+      border: 1px solid rgba(0, 80, 229, 0.4);
       background: #ffffff;
       color: #0050e5;
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
-      transition: all 0.15s ease;
+      white-space: nowrap;
+      line-height: 1;
+      text-decoration: none;
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 2px rgba(0, 80, 229, 0.05);
     }
-    .btn-manage-members span { font-size: 17px; }
+    .btn-manage-members .material-symbols-outlined,
+    .btn-manage-members .btn-icon {
+      font-size: 16px;
+      line-height: 1;
+      color: inherit;
+      flex-shrink: 0;
+    }
+    .btn-manage-members .btn-text {
+      font-size: 12.5px;
+      font-weight: 600;
+      line-height: 1;
+      color: inherit;
+      white-space: nowrap;
+    }
     .btn-manage-members:hover {
       background: #0050e5;
-      color: #ffffff;
+      border-color: #0050e5;
+      color: #ffffff !important;
+      box-shadow: 0 4px 10px rgba(0, 80, 229, 0.22);
+      transform: translateY(-1px);
+    }
+    .btn-manage-members:hover .material-symbols-outlined,
+    .btn-manage-members:hover .btn-icon,
+    .btn-manage-members:hover .btn-text {
+      color: #ffffff !important;
+    }
+    .btn-manage-members:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+    :host-context(.dark-mode) .btn-manage-members {
+      background: rgba(0, 80, 229, 0.12);
+      border-color: rgba(96, 165, 250, 0.4);
+      color: #60a5fa;
+    }
+    :host-context(.dark-mode) .btn-manage-members:hover {
+      background: #0050e5;
+      border-color: #0050e5;
+      color: #ffffff !important;
+    }
+    :host-context(.dark-mode) .btn-manage-members:hover .material-symbols-outlined,
+    :host-context(.dark-mode) .btn-manage-members:hover .btn-icon,
+    :host-context(.dark-mode) .btn-manage-members:hover .btn-text {
+      color: #ffffff !important;
     }
 
     /* Modal Backdrop & Dialog */
