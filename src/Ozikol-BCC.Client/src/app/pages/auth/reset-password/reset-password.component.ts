@@ -19,10 +19,26 @@ import { ToastService } from '../../../core/services/toast.service';
     <div class="reset-container">
       <div class="reset-card">
         <!-- Brand Avatar & Header -->
-        <div class="card-header">
-          <div class="brand-avatar">
+        <div class="reset-card-header">
+          <!-- Official Brand Logo -->
+          <div class="brand-logo-wrap" *ngIf="brandLogoUrl">
+            <img [src]="brandLogoUrl" [alt]="brandCompanyName || 'Workspace Logo'" class="brand-logo-img" />
+          </div>
+
+          <!-- Fallback: Brand Name & Icon / Initials -->
+          <div class="brand-text-row" *ngIf="!brandLogoUrl && (brandCompanyName || brandIconUrl || brandInitials)">
+            <div class="brand-avatar" *ngIf="brandIconUrl || brandInitials">
+              <img *ngIf="brandIconUrl" [src]="brandIconUrl" [alt]="brandCompanyName" class="brand-icon-img" />
+              <span *ngIf="!brandIconUrl && brandInitials" class="brand-initials">{{ brandInitials }}</span>
+            </div>
+            <span class="brand-company-title" *ngIf="brandCompanyName">{{ brandCompanyName }}</span>
+          </div>
+
+          <!-- Fallback Avatar when no brand identity exists -->
+          <div class="brand-avatar default-avatar" *ngIf="!brandLogoUrl && !brandCompanyName && !brandIconUrl && !brandInitials">
             <span class="material-symbols-outlined avatar-icon">{{ activeStep === 1 ? 'mark_email_read' : 'lock_reset' }}</span>
           </div>
+
           <h2 class="title">{{ activeStep === 1 ? 'Forgot Password?' : 'Reset Account Password' }}</h2>
           <p class="subtitle">
             {{ activeStep === 1 
@@ -292,36 +308,88 @@ import { ToastService } from '../../../core/services/toast.service';
       transition: all 0.3s ease;
     }
 
-    .card-header {
-      text-align: center;
-      margin-bottom: 22px;
+    .reset-card-header,
+    .reset-card .card-header {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
+      margin-bottom: 24px;
+      width: 100%;
+    }
+
+    .brand-logo-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .brand-logo-img {
+      max-height: 48px;
+      max-width: 220px;
+      object-fit: contain;
+    }
+
+    .brand-text-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .brand-company-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-icon-img {
+      max-width: 32px;
+      max-height: 32px;
+      object-fit: contain;
+    }
+
+    .brand-initials {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0050e5;
+      letter-spacing: -0.02em;
     }
 
     .brand-avatar {
-      width: 64px;
-      height: 64px;
-      border-radius: 20px;
+      width: 60px;
+      height: 60px;
+      border-radius: 18px;
       background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
       border: 1.5px solid #bfdbfe;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 16px;
       box-shadow: 0 8px 20px rgba(0, 80, 229, 0.12);
       transition: transform 0.2s ease;
+      overflow: hidden;
 
       .avatar-icon {
-        font-size: 32px;
+        font-size: 30px;
         color: #0050e5;
       }
+    }
+
+    .brand-avatar.default-avatar {
+      margin-bottom: 14px;
     }
 
     .title {
       font-size: 22px;
       font-weight: 800;
       color: #0f172a;
-      margin: 0 0 8px;
+      margin: 6px 0 8px;
       letter-spacing: -0.02em;
+      text-align: center;
     }
 
     .subtitle {
@@ -329,6 +397,8 @@ import { ToastService } from '../../../core/services/toast.service';
       color: #64748b;
       margin: 0;
       line-height: 1.55;
+      text-align: center;
+      max-width: 380px;
     }
 
     /* Step Navigator */
@@ -858,6 +928,11 @@ import { ToastService } from '../../../core/services/toast.service';
   `]
 })
 export class ResetPasswordComponent implements OnInit, OnDestroy {
+  brandCompanyName: string = '';
+  brandLogoUrl: string = '';
+  brandIconUrl: string = '';
+  brandInitials: string = '';
+
   activeStep: number = 1;
   email: string = '';
   otp: string = '';
@@ -879,6 +954,20 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Load Brand Identity
+    this.api.get<any>('SettingsApi/brand').subscribe({
+      next: (res) => {
+        if (res?.data) {
+          this.brandCompanyName = res.data.companyName || '';
+          this.brandLogoUrl = res.data.companyLogoUrl || res.data.companyWhiteLogoUrl || '';
+          const rawIcon = res.data.companyIconUrl;
+          this.brandIconUrl = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : (this.brandLogoUrl || '');
+          this.brandInitials = res.data.companyNameAbbreviation || (this.brandCompanyName ? this.brandCompanyName.substring(0, 2).toUpperCase() : '');
+        }
+      },
+      error: () => {}
+    });
+
     this.route.queryParams.subscribe(params => {
       if (params['email']) {
         this.email = params['email'];

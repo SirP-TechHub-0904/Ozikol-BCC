@@ -101,7 +101,7 @@ import { ApiService } from '../../core/services/api.service';
               <!-- Universal Form Footer Note & Powered by Ozikol -->
               <div class="form-footer-meta">
                 <p class="auth-terms-note" *ngIf="loginNoteFooter">{{ loginNoteFooter }}</p>
-                <div class="powered-by-row">
+                <div class="powered-by-row" [class.desktop-hidden-in-split]="!isCentered">
                   <span>Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a></span>
                 </div>
               </div>
@@ -415,6 +415,10 @@ import { ApiService } from '../../core/services/api.service';
         font-size: 11.5px;
         color: #64748b;
 
+        &.desktop-hidden-in-split {
+          display: none;
+        }
+
         a {
           color: #0050e5;
           font-weight: 700;
@@ -580,6 +584,9 @@ import { ApiService } from '../../core/services/api.service';
       .form-panel-scroll {
         height: auto;
         padding: 0;
+      }
+      .form-footer-meta .powered-by-row.desktop-hidden-in-split {
+        display: block;
       }
     }
   `]
