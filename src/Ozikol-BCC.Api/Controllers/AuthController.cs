@@ -1603,14 +1603,39 @@ namespace Ozikol_BCC.Api.Controllers
                     key = await _userManager.GetAuthenticatorKeyAsync(user);
                 }
 
+                // Resolve dynamic tenant brand name to identify this workspace in authenticator apps
+                string brandName = "Ozikol-BCC";
+                if (_dbContext != null)
+                {
+                    try
+                    {
+                        var siteSetting = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+                        if (!string.IsNullOrWhiteSpace(siteSetting?.BrandName))
+                        {
+                            brandName = siteSetting.BrandName.Trim();
+                        }
+                        else if (!string.IsNullOrWhiteSpace(siteSetting?.CompanyName))
+                        {
+                            brandName = siteSetting.CompanyName.Trim();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(ex, "Could not resolve tenant brand name for MFA QR code, fallback to default.");
+                    }
+                }
+
                 var appName = provider == BcpTwoFactorProvider.GoogleAuthenticator ? "GoogleAuthenticator" : "MicrosoftAuthenticator";
-                var qrCodeUrl = $"otpauth://totp/Ozikol-BCC:{Uri.EscapeDataString(user.Email!)}?secret={key}&issuer=Ozikol-BCC&label=Ozikol-BCC";
+                var safeBrand = Uri.EscapeDataString(brandName);
+                var safeEmail = Uri.EscapeDataString(user.Email ?? "user");
+                var qrCodeUrl = $"otpauth://totp/{safeBrand}:{safeEmail}?secret={key}&issuer={safeBrand}&label={safeBrand}";
 
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
                     SecretKey = key,
                     QrCodeUrl = qrCodeUrl,
-                    Provider = appName
+                    Provider = appName,
+                    BrandName = brandName
                 }, "Authenticator setup initiated. Enter the code to verify."));
             }
             else if (provider == BcpTwoFactorProvider.Email || provider == BcpTwoFactorProvider.SMS)
