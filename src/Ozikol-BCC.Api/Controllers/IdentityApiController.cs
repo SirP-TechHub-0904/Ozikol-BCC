@@ -523,11 +523,15 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 var roleName = i.RawRole;
                 string? featureArea = null;
+                string? actionRole = null;
                 if (roleName.Contains(':'))
                 {
-                    var parts = roleName.Split(':', 2);
+                    var parts = roleName.Split(':');
                     roleName = parts[0];
-                    featureArea = parts[1];
+                    if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]))
+                        featureArea = parts[1];
+                    if (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]))
+                        actionRole = parts[2];
                 }
 
                 return new
@@ -537,6 +541,7 @@ namespace Ozikol_BCC.Api.Controllers
                     i.Token,
                     AssignedRole = roleName,
                     FeatureArea = featureArea,
+                    ActionRole = actionRole,
                     i.BcpUserCategoryId,
                     i.Status,
                     i.SentDate,
@@ -587,12 +592,15 @@ namespace Ozikol_BCC.Api.Controllers
                 _dbContext.BcpUserInvitations.RemoveRange(existingPending);
             }
 
-            // 3. Format pre-assigned role with modular feature area if Feature Editor
+            // 3. Format pre-assigned role with modular feature area and operational action role
             var baseRole = !string.IsNullOrWhiteSpace(request.Role) ? request.Role.Trim() : "Member";
+            var actionRole = !string.IsNullOrWhiteSpace(request.ActionRole) ? request.ActionRole.Trim() : null;
+            var featureArea = !string.IsNullOrWhiteSpace(request.FeatureArea) ? request.FeatureArea.Trim() : null;
+
             var storedRole = baseRole;
-            if (!string.IsNullOrWhiteSpace(request.FeatureArea) && string.Equals(baseRole, "Feature Editor", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(featureArea) || !string.IsNullOrEmpty(actionRole))
             {
-                storedRole = $"Feature Editor:{request.FeatureArea.Trim()}";
+                storedRole = $"{baseRole}:{featureArea ?? string.Empty}:{actionRole ?? string.Empty}";
             }
 
             // 4. Create new invitation
@@ -623,9 +631,17 @@ namespace Ozikol_BCC.Api.Controllers
                 ? string.Empty
                 : $@"<div style='background:#f8fafc; border-left:4px solid #0050e5; padding:12px 16px; margin:18px 0; font-style:italic; color:#475569; font-size:13.5px; border-radius:0 8px 8px 0;'>&ldquo;{System.Net.WebUtility.HtmlEncode(request.CustomMessage.Trim())}&rdquo;</div>";
 
-            var featureScopeNotice = !string.IsNullOrWhiteSpace(request.FeatureArea) && string.Equals(baseRole, "Feature Editor", StringComparison.OrdinalIgnoreCase)
-                ? $" with modular capability scope for <strong>{System.Net.WebUtility.HtmlEncode(request.FeatureArea.Trim())}</strong>"
-                : string.Empty;
+            var actionDescription = actionRole switch
+            {
+                "GlobalEditor" => "Global Editor",
+                "FeatureEditor" => "Feature Editor",
+                "Readonly" => "Read Only",
+                _ => string.Empty
+            };
+
+            var featureScopeNotice = !string.IsNullOrWhiteSpace(featureArea)
+                ? $" with <strong>{(!string.IsNullOrEmpty(actionDescription) ? actionDescription : "Feature Editor")}</strong> access for <strong>{System.Net.WebUtility.HtmlEncode(featureArea)}</strong>"
+                : (!string.IsNullOrEmpty(actionDescription) ? $" with <strong>{actionDescription}</strong> operational access" : string.Empty);
 
             var emailBody = $@"
                 <div style='font-family:sans-serif; padding:32px; max-width:550px; margin:0 auto; border:1px solid #e2e8f0; border-radius:16px; background-color:#ffffff;'>
@@ -1195,6 +1211,11 @@ namespace Ozikol_BCC.Api.Controllers
         /// Gets or sets the pre-assigned system role.
         /// </summary>
         public string Role { get; set; } = "Member";
+
+        /// <summary>
+        /// Gets or sets the operational action level (GlobalEditor, FeatureEditor, Readonly).
+        /// </summary>
+        public string? ActionRole { get; set; }
 
         /// <summary>
         /// Gets or sets the optional pre-assigned member category ID.

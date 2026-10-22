@@ -7,23 +7,56 @@ import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 /**
+ * Categorizes primary authority roles into broad organizational tiers
+ * or modular capability feature authorities.
+ */
+export enum RoleGroup {
+  System = 'System',
+  Feature = 'Feature'
+}
+
+/**
+ * Operational access level / action scope enumeration matching BcpActionRole.
+ */
+export enum ActionRoleType {
+  GlobalEditor = 'GlobalEditor',
+  FeatureEditor = 'FeatureEditor',
+  Readonly = 'Readonly'
+}
+
+/**
  * Interface representing a selectable system or operational role with security governance details.
  */
-interface AvailableRole {
+export interface AvailableRole {
   name: string;
+  group: RoleGroup;
   tier: string;
   badgeClass: string;
   icon: string;
   summary: string;
-  requiresFeatureScope?: boolean;
+  featureAreaKey?: string;
+  defaultActionRole: ActionRoleType;
   allowedActions: string[];
   restrictedActions: string[];
 }
 
 /**
+ * Interface representing an operational action role (Global Editor, Feature Editor, Read Only).
+ */
+export interface ActionRoleOption {
+  key: ActionRoleType;
+  title: string;
+  badge: string;
+  badgeClass: string;
+  icon: string;
+  summary: string;
+  detailNote: string;
+}
+
+/**
  * Interface representing a modular capability domain for Feature Editor scoping.
  */
-interface FeatureScopeOption {
+export interface FeatureScopeOption {
   key: string;
   label: string;
   icon: string;
@@ -33,8 +66,8 @@ interface FeatureScopeOption {
 
 /**
  * Component providing a dedicated administrative page for issuing workspace onboarding invitations.
- * Allows administrators to pre-assign system roles, configure granular feature capability edit scopes,
- * inspect a real-time reactive email simulation, and generate direct invitation tokens.
+ * Implements a 2-card role and action role selection hierarchy with reactive auto-selection,
+ * modular capability binding, live authority inspection, and dynamic email simulation.
  */
 @Component({
   selector: 'app-identity-invitation-create',
@@ -63,7 +96,7 @@ interface FeatureScopeOption {
           <h3>Invitation Dispatched Successfully</h3>
           <p>
             An onboarding email has been enqueued for <strong>{{ dispatchedEmail }}</strong> with pre-assigned role <strong>{{ dispatchedRole }}</strong>.
-            You can also copy the direct registration link below to share directly via WhatsApp, Slack, Teams, or SMS:
+            You can also copy the direct registration link below to share directly via communication channels:
           </p>
           <div class="link-copy-box">
             <input type="text" readonly [value]="dispatchedLink" class="link-input" #linkInput />
@@ -89,7 +122,7 @@ interface FeatureScopeOption {
       <div class="invitation-grid" *ngIf="!dispatchedLink">
         <!-- LEFT COLUMN: Primary Configuration (60% width) -->
         <div class="config-column">
-          <!-- CARD 1: Recipient Identity & Organization Details -->
+          <!-- CARD 0: Recipient Identity & Organization Details -->
           <section class="console-card">
             <div class="card-head">
               <div class="card-head-title">
@@ -183,89 +216,240 @@ interface FeatureScopeOption {
             </div>
           </section>
 
-          <!-- CARD 2: Pre-Assigned System & Operational Role Selection -->
+          <!-- CARD 1: Pre-Assigned Primary Authority Role (Grouped into System vs Feature Authorities) -->
           <section class="console-card mt-4">
             <div class="card-head">
               <div class="card-head-title">
-                <span class="material-symbols-outlined text-purple">verified_user</span>
+                <span class="material-symbols-outlined text-purple">badge</span>
                 <div>
-                  <h3 class="card-title">Pre-Assigned Authority Role</h3>
-                  <p class="card-subtitle">Choose the governance tier or operational access level to provision upon account registration.</p>
+                  <h3 class="card-title">Card 1: Primary Authority Role</h3>
+                  <p class="card-subtitle">Choose the user's primary identity persona. Grouped into System Governance and Modular Feature Authorities.</p>
                 </div>
+              </div>
+
+              <!-- Filter Tabs for Groups -->
+              <div class="group-tab-switch">
+                <button
+                  type="button"
+                  class="tab-btn"
+                  [class.active]="activeGroupFilter === 'All'"
+                  (click)="activeGroupFilter = 'All'"
+                >
+                  <span>All</span>
+                  <span class="tab-count">{{ availableRoles.length }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="tab-btn"
+                  [class.active]="activeGroupFilter === RoleGroup.System"
+                  (click)="activeGroupFilter = RoleGroup.System"
+                >
+                  <span>System</span>
+                  <span class="tab-count">{{ systemRoles.length }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="tab-btn"
+                  [class.active]="activeGroupFilter === RoleGroup.Feature"
+                  (click)="activeGroupFilter = RoleGroup.Feature"
+                >
+                  <span>Feature Authority</span>
+                  <span class="tab-count">{{ featureRoles.length }}</span>
+                </button>
               </div>
             </div>
 
             <div class="card-body">
-              <div class="roles-selection-grid">
-                <div
-                  *ngFor="let role of availableRoles"
-                  class="role-select-card"
-                  [class.selected]="selectedRole === role.name"
-                  (click)="selectRole(role)"
-                >
-                  <div class="role-select-top">
-                    <div class="role-icon-box" [ngClass]="role.badgeClass">
-                      <span class="material-symbols-outlined">{{ role.icon }}</span>
-                    </div>
-                    <span class="role-tier-badge" [ngClass]="role.badgeClass">{{ role.tier }}</span>
+              <!-- GROUP A: System & Organization Governance -->
+              <div class="role-group-section" *ngIf="activeGroupFilter === 'All' || activeGroupFilter === RoleGroup.System">
+                <div class="role-group-divider">
+                  <div class="divider-left">
+                    <span class="material-symbols-outlined text-purple">admin_panel_settings</span>
+                    <span class="group-header-text">System &amp; Workspace Governance</span>
                   </div>
-                  <h4 class="role-select-title">{{ role.name }}</h4>
-                  <p class="role-select-desc">{{ role.summary }}</p>
-                  <div class="role-radio-indicator">
-                    <span class="material-symbols-outlined" *ngIf="selectedRole === role.name">check_circle</span>
-                    <span class="material-symbols-outlined text-muted" *ngIf="selectedRole !== role.name">radio_button_unchecked</span>
+                  <span class="group-header-pill">Organization Tier</span>
+                </div>
+
+                <div class="roles-selection-grid">
+                  <div
+                    *ngFor="let role of systemRoles"
+                    class="role-select-card"
+                    [class.selected]="selectedRole === role.name"
+                    (click)="selectRole(role)"
+                  >
+                    <div class="role-select-top">
+                      <div class="role-icon-box" [ngClass]="role.badgeClass">
+                        <span class="material-symbols-outlined">{{ role.icon }}</span>
+                      </div>
+                      <span class="role-tier-badge" [ngClass]="role.badgeClass">{{ role.tier }}</span>
+                    </div>
+                    <h4 class="role-select-title">{{ role.name }}</h4>
+                    <p class="role-select-desc">{{ role.summary }}</p>
+                    <div class="role-card-footer">
+                      <span class="auto-link-hint">
+                        <span class="material-symbols-outlined">auto_mode</span>
+                        <span>Sets {{ getActionRoleShortLabel(role.defaultActionRole) }}</span>
+                      </span>
+                      <div class="role-radio-indicator">
+                        <span class="material-symbols-outlined" *ngIf="selectedRole === role.name">check_circle</span>
+                        <span class="material-symbols-outlined text-muted" *ngIf="selectedRole !== role.name">radio_button_unchecked</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- GROUP B: Modular Feature Authority Roles -->
+              <div class="role-group-section mt-4" *ngIf="activeGroupFilter === 'All' || activeGroupFilter === RoleGroup.Feature">
+                <div class="role-group-divider">
+                  <div class="divider-left">
+                    <span class="material-symbols-outlined text-emerald">extension</span>
+                    <span class="group-header-text">Modular Capability Feature Authorities</span>
+                  </div>
+                  <span class="group-header-pill emerald">Scoped Capabilities</span>
+                </div>
+
+                <div class="roles-selection-grid">
+                  <div
+                    *ngFor="let role of featureRoles"
+                    class="role-select-card"
+                    [class.selected]="selectedRole === role.name"
+                    (click)="selectRole(role)"
+                  >
+                    <div class="role-select-top">
+                      <div class="role-icon-box" [ngClass]="role.badgeClass">
+                        <span class="material-symbols-outlined">{{ role.icon }}</span>
+                      </div>
+                      <span class="role-tier-badge" [ngClass]="role.badgeClass">{{ role.tier }}</span>
+                    </div>
+                    <h4 class="role-select-title">{{ role.name }}</h4>
+                    <p class="role-select-desc">{{ role.summary }}</p>
+                    <div class="role-card-footer">
+                      <span class="auto-link-hint emerald">
+                        <span class="material-symbols-outlined">tune</span>
+                        <span>Feature Edit</span>
+                      </span>
+                      <div class="role-radio-indicator">
+                        <span class="material-symbols-outlined" *ngIf="selectedRole === role.name">check_circle</span>
+                        <span class="material-symbols-outlined text-muted" *ngIf="selectedRole !== role.name">radio_button_unchecked</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </section>
 
-          <!-- CARD 3: Modular Capability Edit Scope (Dynamic End Column / Section) -->
-          <section
-            class="console-card mt-4 animate-fade"
-            *ngIf="currentRoleObj?.requiresFeatureScope"
-          >
+          <!-- CARD 2: Operational Action Role & Edit Scope (BcpActionRole) -->
+          <section class="console-card mt-4">
             <div class="card-head">
               <div class="card-head-title">
                 <span class="material-symbols-outlined text-emerald">tune</span>
                 <div>
-                  <h3 class="card-title">Modular Capability Edit Access Scope</h3>
-                  <p class="card-subtitle">Select the specific workspace domain this user will be granted write and editor permissions for.</p>
+                  <h3 class="card-title">Card 2: Operational Edit Access Level</h3>
+                  <p class="card-subtitle">Controls the user's operational write power: tenant-wide global edit, targeted module edit, or view-only auditing.</p>
                 </div>
               </div>
-              <span class="scope-highlight-badge">Modular Scope Required</span>
+              <span class="scope-highlight-badge" [ngClass]="getActionBadgeClass()">
+                <span class="material-symbols-outlined">bolt</span>
+                <span>{{ getSelectedActionRoleLabel() }}</span>
+              </span>
             </div>
 
             <div class="card-body">
-              <div class="scope-selector-grid">
+              <!-- 3 Action Role Cards (Global Editor, Feature Editor, Read Only) -->
+              <div class="action-roles-grid">
                 <div
-                  *ngFor="let scope of featureScopeOptions"
-                  class="scope-option-card"
-                  [class.active]="selectedFeatureArea === scope.key"
-                  (click)="selectedFeatureArea = scope.key"
+                  *ngFor="let act of actionRoleOptions"
+                  class="action-role-card"
+                  [class.selected]="selectedActionRole === act.key"
+                  (click)="selectActionRole(act)"
                 >
-                  <div class="scope-option-header">
-                    <div class="scope-icon-wrap">
-                      <span class="material-symbols-outlined">{{ scope.icon }}</span>
+                  <div class="action-card-top">
+                    <div class="action-icon-box" [ngClass]="act.badgeClass">
+                      <span class="material-symbols-outlined">{{ act.icon }}</span>
                     </div>
-                    <div>
-                      <h4 class="scope-title">{{ scope.label }}</h4>
-                      <code class="scope-code">{{ scope.key }}</code>
-                    </div>
+                    <span class="action-tier-badge" [ngClass]="act.badgeClass">{{ act.badge }}</span>
                   </div>
-                  <p class="scope-desc">{{ scope.description }}</p>
-                  <div class="scope-areas-pills">
-                    <span *ngFor="let area of scope.permittedAreas" class="area-pill">
-                      ✓ {{ area }}
+                  <h4 class="action-title">{{ act.title }}</h4>
+                  <p class="action-summary">{{ act.summary }}</p>
+
+                  <div class="action-card-bottom">
+                    <span class="action-sync-tag" *ngIf="isAutoAssigned(act.key)">
+                      <span class="material-symbols-outlined">auto_awesome</span>
+                      <span>Auto-assigned</span>
                     </span>
+                    <span class="action-sync-tag custom" *ngIf="!isAutoAssigned(act.key)">
+                      <span>Manual Override</span>
+                    </span>
+                    <div class="action-radio">
+                      <span class="material-symbols-outlined" *ngIf="selectedActionRole === act.key">check_circle</span>
+                      <span class="material-symbols-outlined text-muted" *ngIf="selectedActionRole !== act.key">radio_button_unchecked</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div class="scope-notice-box mt-3">
-                <span class="material-symbols-outlined text-blue">info</span>
+              <!-- Contextual Scope Details depending on selectedActionRole -->
+              <!-- CASE 1: Feature Editor -> Show modular capability picker -->
+              <div class="module-scope-container mt-4 animate-fade" *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
+                <div class="module-scope-head">
+                  <div>
+                    <h4 class="module-scope-title">Designated Capability Domain</h4>
+                    <p class="module-scope-sub">This user will be granted full authoring, write, and publishing rights strictly within this selected module.</p>
+                  </div>
+                  <span class="bound-badge">
+                    <span class="material-symbols-outlined">link</span>
+                    <span>Bound to: <strong>{{ getSelectedScopeLabel() }}</strong></span>
+                  </span>
+                </div>
+
+                <div class="scope-selector-grid mt-3">
+                  <div
+                    *ngFor="let scope of featureScopeOptions"
+                    class="scope-option-card"
+                    [class.active]="selectedFeatureArea === scope.key"
+                    (click)="selectFeatureScope(scope)"
+                  >
+                    <div class="scope-option-header">
+                      <div class="scope-icon-wrap">
+                        <span class="material-symbols-outlined">{{ scope.icon }}</span>
+                      </div>
+                      <div>
+                        <h4 class="scope-title">{{ scope.label }}</h4>
+                        <code class="scope-code">{{ scope.key }}</code>
+                      </div>
+                    </div>
+                    <p class="scope-desc">{{ scope.description }}</p>
+                    <div class="scope-areas-pills">
+                      <span *ngFor="let area of scope.permittedAreas" class="area-pill">
+                        ✓ {{ area }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="scope-notice-box mt-3">
+                  <span class="material-symbols-outlined text-blue">info</span>
+                  <p>
+                    <strong>Capability Isolation:</strong> Personnel assigned with Feature Editor access to <strong>{{ getSelectedScopeLabel() }}</strong> can only author, edit, and publish records within this designated module. They will hold standard read-only access in other workspace areas.
+                  </p>
+                </div>
+              </div>
+
+              <!-- CASE 2: Global Editor Info Notice -->
+              <div class="scope-notice-box global mt-4 animate-fade" *ngIf="selectedActionRole === ActionRoleType.GlobalEditor">
+                <span class="material-symbols-outlined text-indigo">language</span>
                 <p>
-                  <strong>Capability Isolation:</strong> Personnel assigned to <strong>{{ getSelectedScopeLabel() }}</strong> can only author, edit, and publish records within this designated module. They will hold standard read-only access in other workspace areas.
+                  <strong>Global Operational Scope:</strong> With <strong>Global Editor</strong> privileges, this user will hold full CRUD create, edit, publish, and delete authority across all active modules throughout this entire tenant workspace.
+                </p>
+              </div>
+
+              <!-- CASE 3: Read Only Info Notice -->
+              <div class="scope-notice-box readonly mt-4 animate-fade" *ngIf="selectedActionRole === ActionRoleType.Readonly">
+                <span class="material-symbols-outlined text-amber">visibility</span>
+                <p>
+                  <strong>Observer Auditing Scope:</strong> With <strong>Read Only</strong> privileges, this user can navigate and inspect data across workspace applications, but all create, edit, and delete action triggers will be hidden or disabled.
                 </p>
               </div>
             </div>
@@ -294,39 +478,58 @@ interface FeatureScopeOption {
                 </div>
                 <div>
                   <div class="live-role-name">{{ selectedRole }}</div>
-                  <div class="live-role-tier">{{ currentRoleObj?.tier || 'Operational Level' }}</div>
+                  <div class="live-role-tier">
+                    {{ currentRoleObj?.tier || 'Operational Level' }} &bull;
+                    {{ currentRoleObj?.group === RoleGroup.System ? 'System Governance' : 'Feature Authority' }}
+                  </div>
                 </div>
               </div>
 
-              <!-- Scope Detail if Feature Editor -->
-              <div *ngIf="currentRoleObj?.requiresFeatureScope" class="live-scope-banner mt-3">
-                <span class="material-symbols-outlined">tune</span>
+              <!-- Live Action Role Pill Bar -->
+              <div class="live-scope-banner mt-3" [ngClass]="getActionBadgeClass()">
+                <span class="material-symbols-outlined">{{ getActionIcon() }}</span>
                 <div>
-                  <strong>Assigned Capability Scope:</strong>
-                  <span>{{ getSelectedScopeLabel() }}</span>
+                  <strong>Edit Access Level:</strong>
+                  <span>{{ getSelectedActionRoleLabel() }}</span>
+                  <span *ngIf="selectedActionRole === ActionRoleType.FeatureEditor"> &mdash; {{ getSelectedScopeLabel() }}</span>
                 </div>
               </div>
 
-              <!-- Allowed Actions -->
+              <!-- Dynamic Permitted Capabilities -->
               <div class="permissions-list mt-3">
                 <div class="perm-title text-good">
                   <span class="material-symbols-outlined">check_circle</span>
                   <span>Permitted Capabilities</span>
                 </div>
                 <ul class="perm-items">
+                  <li *ngIf="selectedActionRole === ActionRoleType.GlobalEditor">
+                    Full CRUD create, edit, and publish permissions across all workspace modules
+                  </li>
+                  <li *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
+                    Author, update, and publish records within {{ getSelectedScopeLabel() }}
+                  </li>
+                  <li *ngIf="selectedActionRole === ActionRoleType.Readonly">
+                    Inspect dashboards, member rosters, and activity logs without edit rights
+                  </li>
                   <li *ngFor="let act of currentRoleObj?.allowedActions">
                     {{ act }}
                   </li>
                 </ul>
               </div>
 
-              <!-- Restricted Actions -->
+              <!-- Dynamic Restricted Boundaries -->
               <div class="permissions-list mt-3">
                 <div class="perm-title text-warn">
                   <span class="material-symbols-outlined">block</span>
                   <span>Restricted Boundaries</span>
                 </div>
                 <ul class="perm-items restricted">
+                  <li *ngIf="selectedActionRole === ActionRoleType.Readonly">
+                    Strictly prohibited from modifying, saving, or deleting workspace records
+                  </li>
+                  <li *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
+                    Read-only access across other modules outside {{ getSelectedScopeLabel() }}
+                  </li>
                   <li *ngFor="let rest of currentRoleObj?.restrictedActions">
                     {{ rest }}
                   </li>
@@ -375,8 +578,9 @@ interface FeatureScopeOption {
                     <span class="mock-role-pill" [ngClass]="currentRoleObj?.badgeClass">
                       {{ selectedRole }}
                     </span>
-                    <span *ngIf="currentRoleObj?.requiresFeatureScope">
-                      with capability scope for <strong>{{ getSelectedScopeLabel() }}</strong>
+                    with <strong>{{ getSelectedActionRoleLabel() }}</strong>
+                    <span *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
+                      for <strong>{{ getSelectedScopeLabel() }}</strong>
                     </span>.
                   </p>
 
@@ -450,11 +654,14 @@ interface FeatureScopeOption {
       justify-content: space-between;
       align-items: flex-start;
       margin-bottom: 20px;
+      gap: 16px;
+      flex-wrap: wrap;
     }
     .card-head-title {
       display: flex;
       align-items: flex-start;
       gap: 12px;
+      flex: 1;
     }
     .card-head-title .material-symbols-outlined {
       font-size: 26px;
@@ -470,6 +677,7 @@ interface FeatureScopeOption {
       font-size: 12.5px;
       color: #64748b;
       margin: 3px 0 0;
+      line-height: 1.4;
     }
     .form-row {
       display: flex;
@@ -540,9 +748,10 @@ interface FeatureScopeOption {
     .text-purple { color: #8b5cf6; }
     .text-emerald { color: #10b981; }
     .text-indigo { color: #6366f1; }
+    .text-amber { color: #d97706; }
     .text-good { color: #16a34a; }
     .text-warn { color: #d97706; }
-    .text-muted { color: #cbd5e1; }
+    .text-muted { color: #94a3b8; }
 
     /* Expiration Pills */
     .pill-selector {
@@ -571,6 +780,82 @@ interface FeatureScopeOption {
       background: rgba(0, 80, 229, 0.08);
       border-color: #0050e5;
       color: #0050e5;
+    }
+
+    /* Filter Tabs Switcher */
+    .group-tab-switch {
+      display: inline-flex;
+      background: #f1f5f9;
+      border-radius: 9999px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .tab-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      color: #0050e5;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+    .tab-count {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 9999px;
+      background: rgba(100, 116, 139, 0.12);
+      color: inherit;
+    }
+    .tab-btn.active .tab-count {
+      background: rgba(0, 80, 229, 0.1);
+      color: #0050e5;
+    }
+
+    /* Role Group Section & Divider */
+    .role-group-divider {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .divider-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .divider-left .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .group-header-text {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #334155;
+    }
+    .group-header-pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: rgba(139, 92, 246, 0.1);
+      color: #8b5cf6;
+    }
+    .group-header-pill.emerald {
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
     }
 
     /* Roles Selection Grid */
@@ -637,9 +922,31 @@ interface FeatureScopeOption {
       line-height: 1.4;
       flex: 1;
     }
+    .role-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 8px;
+      margin-top: auto;
+    }
+    .auto-link-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      color: #0050e5;
+      font-weight: 600;
+    }
+    .auto-link-hint .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .auto-link-hint.emerald {
+      color: #10b981;
+    }
     .role-radio-indicator {
       display: flex;
-      justify-content: flex-end;
+      align-items: center;
     }
     .role-radio-indicator .material-symbols-outlined {
       font-size: 18px;
@@ -650,11 +957,154 @@ interface FeatureScopeOption {
     .badge-admin { background: rgba(0, 80, 229, 0.12); color: #0050e5; }
     .badge-identity { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
     .badge-user { background: rgba(14, 165, 233, 0.12); color: #0284c7; }
-    .badge-editor { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .badge-content { background: rgba(16, 185, 129, 0.12); color: #059669; }
+    .badge-commerce { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+    .badge-crm { background: rgba(99, 102, 241, 0.12); color: #4f46e5; }
+    .badge-billing { background: rgba(20, 184, 166, 0.12); color: #0d9488; }
+    .badge-settings { background: rgba(100, 116, 139, 0.12); color: #475569; }
+    .badge-forms { background: rgba(236, 72, 153, 0.12); color: #db2777; }
     .badge-member { background: rgba(100, 116, 139, 0.12); color: #475569; }
     .badge-readonly { background: rgba(245, 158, 11, 0.12); color: #d97706; }
+    .badge-global { background: rgba(0, 80, 229, 0.12); color: #0050e5; }
+    .badge-feature { background: rgba(16, 185, 129, 0.12); color: #10b981; }
 
-    /* Feature Scope Section */
+    /* CARD 2: Operational Action Roles */
+    .action-roles-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 768px) {
+      .action-roles-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .action-role-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      background: #ffffff;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .action-role-card:hover {
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+    }
+    .action-role-card.selected {
+      border-color: #0050e5;
+      background: rgba(0, 80, 229, 0.02);
+      box-shadow: 0 0 0 1.5px #0050e5;
+    }
+    .action-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .action-icon-box {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .action-icon-box .material-symbols-outlined {
+      font-size: 20px;
+    }
+    .action-tier-badge {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 4px;
+    }
+    .action-title {
+      font-size: 14px;
+      font-weight: 800;
+      margin: 0 0 5px;
+      color: #0f172a;
+    }
+    .action-summary {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 0 0 14px;
+      line-height: 1.45;
+      flex: 1;
+    }
+    .action-card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 8px;
+      margin-top: auto;
+    }
+    .action-sync-tag {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #0050e5;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .action-sync-tag .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .action-sync-tag.custom {
+      color: #94a3b8;
+    }
+    .action-radio .material-symbols-outlined {
+      font-size: 18px;
+      color: #0050e5;
+    }
+
+    /* Module Scope Container */
+    .module-scope-container {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .module-scope-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .module-scope-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 3px;
+    }
+    .module-scope-sub {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 0;
+    }
+    .bound-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(16, 185, 129, 0.1);
+      color: #065f46;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+    .bound-badge .material-symbols-outlined {
+      font-size: 14px;
+    }
+
+    /* Scope Options Grid */
     .scope-highlight-badge {
       background: rgba(16, 185, 129, 0.12);
       color: #10b981;
@@ -662,6 +1112,12 @@ interface FeatureScopeOption {
       font-weight: 700;
       padding: 4px 8px;
       border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .scope-highlight-badge .material-symbols-outlined {
+      font-size: 14px;
     }
     .scope-selector-grid {
       display: grid;
@@ -747,6 +1203,14 @@ interface FeatureScopeOption {
       color: #334155;
       line-height: 1.5;
     }
+    .scope-notice-box.global {
+      background: rgba(99, 102, 241, 0.05);
+      border-left-color: #6366f1;
+    }
+    .scope-notice-box.readonly {
+      background: rgba(245, 158, 11, 0.05);
+      border-left-color: #f59e0b;
+    }
     .scope-notice-box .material-symbols-outlined {
       font-size: 18px;
       margin-top: 1px;
@@ -774,12 +1238,28 @@ interface FeatureScopeOption {
       display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(16, 185, 129, 0.08);
-      border: 1px solid rgba(16, 185, 129, 0.2);
       border-radius: 8px;
       padding: 8px 12px;
       font-size: 12px;
+      font-weight: 600;
+    }
+    .live-scope-banner.badge-global {
+      background: rgba(0, 80, 229, 0.08);
+      border: 1px solid rgba(0, 80, 229, 0.2);
+      color: #0050e5;
+    }
+    .live-scope-banner.badge-feature {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
       color: #065f46;
+    }
+    .live-scope-banner.badge-readonly {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      color: #b45309;
+    }
+    .live-scope-banner .material-symbols-outlined {
+      font-size: 18px;
     }
     .permissions-list .perm-title {
       display: flex;
@@ -851,10 +1331,10 @@ interface FeatureScopeOption {
     .email-mockup-header {
       background: #ffffff;
       padding: 12px 16px;
-      border-bottom: 1px solid #e2e8f0;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-bottom: 1px solid #e2e8f0;
     }
     .brand-pill {
       display: flex;
@@ -872,11 +1352,8 @@ interface FeatureScopeOption {
       color: #94a3b8;
     }
     .email-mockup-body {
-      padding: 20px 16px;
+      padding: 20px;
       background: #ffffff;
-      margin: 12px;
-      border-radius: 8px;
-      border: 1px solid #eef2f6;
     }
     .mock-heading {
       font-size: 16px;
@@ -1055,13 +1532,21 @@ export class IdentityInvitationCreateComponent implements OnInit {
   hasCopied = false;
   today = new Date();
 
+  // Enums for template usage
+  readonly RoleGroup = RoleGroup;
+  readonly ActionRoleType = ActionRoleType;
+
   // Form State
   inviteEmail = '';
   selectedCategoryId: string | null = null;
   expirationDays = 7;
   customMessage = '';
-  selectedRole = 'Feature Editor';
-  selectedFeatureArea = 'UserManager';
+
+  // Role & Group State
+  activeGroupFilter: RoleGroup | 'All' = 'All';
+  selectedRole = 'User Manager';
+  selectedActionRole: ActionRoleType = ActionRoleType.FeatureEditor;
+  selectedFeatureArea: string | null = 'UserManager';
 
   // Loaded Data
   userCategories: any[] = [];
@@ -1071,33 +1556,76 @@ export class IdentityInvitationCreateComponent implements OnInit {
   dispatchedEmail = '';
   dispatchedRole = '';
 
-  /** Available System and Operational Roles for Pre-Assignment */
+  /** Available Primary Authority Roles (Categorized via RoleGroup Enum) */
   availableRoles: AvailableRole[] = [
+    // GROUP 1: System & Workspace Governance
     {
       name: 'Admin',
-      tier: 'System Authority',
+      group: RoleGroup.System,
+      tier: 'System Governance',
       badgeClass: 'badge-admin',
       icon: 'admin_panel_settings',
-      summary: 'Broad management across members, CMS entities, operations, and settings.',
-      requiresFeatureScope: false,
+      summary: 'Broad governance across members, operations, CMS entities, and workspace settings.',
+      defaultActionRole: ActionRoleType.GlobalEditor,
       allowedActions: [
-        'Manage organizational users and categories',
-        'Edit and publish website CMS pages',
-        'Review security login audit records',
-        'Manage tenant configuration and branding'
+        'Full CRUD governance across all workspace modules',
+        'Manage organizational users, categories, and rosters',
+        'Review security login audit trails and challenges',
+        'Manage tenant configuration and workspace branding'
       ],
       restrictedActions: [
-        'Root account authority reserved for SuperAdmin',
+        'Root account authority strictly reserved for SuperAdmin',
         'Cannot unbind tenant primary database connection'
       ]
     },
     {
+      name: 'Member',
+      group: RoleGroup.System,
+      tier: 'Standard Member',
+      badgeClass: 'badge-member',
+      icon: 'badge',
+      summary: 'Standard directory presence and authenticated user workspace portal access.',
+      defaultActionRole: ActionRoleType.Readonly,
+      allowedActions: [
+        'Access authenticated user workspace portal apps',
+        'Update personal profile details and 2FA credentials',
+        'Participate in permitted member discussion channels'
+      ],
+      restrictedActions: [
+        'Zero access to Administration Console',
+        'Cannot inspect or modify other members private records'
+      ]
+    },
+
+    // GROUP 2: Modular Feature Authority Roles
+    {
+      name: 'User Manager',
+      group: RoleGroup.Feature,
+      featureAreaKey: 'UserManager',
+      tier: 'Domain Authority',
+      badgeClass: 'badge-user',
+      icon: 'manage_accounts',
+      summary: 'Full governance of user accounts, directory categories, and status transitions.',
+      defaultActionRole: ActionRoleType.FeatureEditor,
+      allowedActions: [
+        'Create, edit, suspend, and archive user profiles',
+        'Manage member categories and custom tags',
+        'Export member directory rosters'
+      ],
+      restrictedActions: [
+        'Cannot grant system roles to other users',
+        'Read-only access in other workspace areas'
+      ]
+    },
+    {
       name: 'Identity Manager',
-      tier: 'System Authority',
+      group: RoleGroup.Feature,
+      featureAreaKey: 'IdentityManager',
+      tier: 'Security Authority',
       badgeClass: 'badge-identity',
       icon: 'security',
       summary: 'Dedicated authority to provision roles, enforce policies, and issue invitations.',
-      requiresFeatureScope: false,
+      defaultActionRole: ActionRoleType.FeatureEditor,
       allowedActions: [
         'Issue cryptographic onboarding invitations',
         'Assign and revoke feature authority roles',
@@ -1109,106 +1637,149 @@ export class IdentityInvitationCreateComponent implements OnInit {
       ]
     },
     {
-      name: 'User Manager',
-      tier: 'Domain Authority',
-      badgeClass: 'badge-user',
-      icon: 'manage_accounts',
-      summary: 'Full governance of user accounts, directory categories, and status transitions.',
-      requiresFeatureScope: false,
+      name: 'Website CMS & Blog Studio',
+      group: RoleGroup.Feature,
+      featureAreaKey: 'ContentManager',
+      tier: 'Content Authority',
+      badgeClass: 'badge-content',
+      icon: 'web',
+      summary: 'Creating, updating, and publishing public web pages, articles, and media.',
+      defaultActionRole: ActionRoleType.FeatureEditor,
       allowedActions: [
-        'Create, edit, suspend, and archive user profiles',
-        'Manage member categories and custom tags',
-        'Export member directory rosters'
+        'Create, edit, and publish website landing pages',
+        'Manage blog posts, authors, and tag taxonomies',
+        'Upload and organize media library assets'
       ],
       restrictedActions: [
-        'Cannot grant system roles to other users',
-        'Cannot alter workspace security policies'
+        'Cannot access user directory or billing records',
+        'Cannot alter workspace DNS or identity policies'
       ]
     },
     {
-      name: 'Global Editor',
-      tier: 'Operational Level',
-      badgeClass: 'badge-editor',
-      icon: 'edit_note',
-      summary: 'Tenant-wide editing privileges across all content, store, and event entities.',
-      requiresFeatureScope: false,
+      name: 'Commerce & Product Catalog',
+      group: RoleGroup.Feature,
+      featureAreaKey: 'CommerceManager',
+      tier: 'Commerce Authority',
+      badgeClass: 'badge-commerce',
+      icon: 'shopping_bag',
+      summary: 'Inventory management, product definitions, discounts, and customer order processing.',
+      defaultActionRole: ActionRoleType.FeatureEditor,
       allowedActions: [
-        'Edit all CMS pages, posts, and media assets',
-        'Manage product catalogs, orders, and tickets',
-        'Author news bulletins and notifications'
+        'Manage product listings, variants, and stock counts',
+        'Process customer orders and fulfillment states',
+        'Configure discount codes and pricing rules'
       ],
       restrictedActions: [
-        'Cannot manage user roles or access controls',
-        'Cannot alter tenant identity policies'
+        'Cannot alter tenant bank accounts or payout gateways',
+        'Cannot view executive financial subscription ledgers'
       ]
     },
     {
-      name: 'Feature Editor',
-      tier: 'Modular Scope',
-      badgeClass: 'badge-editor',
+      name: 'Member CRM & Relationships',
+      group: RoleGroup.Feature,
+      featureAreaKey: 'CrmManager',
+      tier: 'Engagement Authority',
+      badgeClass: 'badge-crm',
+      icon: 'contact_page',
+      summary: 'Lead engagement, relationship stages, communication logs, and customer CRM.',
+      defaultActionRole: ActionRoleType.FeatureEditor,
+      allowedActions: [
+        'Track customer leads and stage transitions',
+        'Log interaction notes and scheduled touchpoints',
+        'Manage pipeline deals and customer rosters'
+      ],
+      restrictedActions: [
+        'Cannot modify workspace site code or themes',
+        'Cannot grant access rights to external users'
+      ]
+    },
+    {
+      name: 'Invoicing & Plan Subscriptions',
+      group: RoleGroup.Feature,
+      featureAreaKey: 'BillingManager',
+      tier: 'Finance Authority',
+      badgeClass: 'badge-billing',
+      icon: 'payments',
+      summary: 'Managing invoices, subscription tiers, payment receipts, and billing items.',
+      defaultActionRole: ActionRoleType.FeatureEditor,
+      allowedActions: [
+        'Issue client invoices and credit memos',
+        'Configure subscription tiers and billable products',
+        'Track payment receipts and outstanding balances'
+      ],
+      restrictedActions: [
+        'Cannot edit user accounts or directory rosters',
+        'Cannot access web publishing tools'
+      ]
+    },
+    {
+      name: 'Workspace Settings & Branding',
+      group: RoleGroup.Feature,
+      featureAreaKey: 'SettingsManager',
+      tier: 'Branding Authority',
+      badgeClass: 'badge-settings',
+      icon: 'settings',
+      summary: 'Customizing brand assets, site header, footer, contact channels, and UI theme.',
+      defaultActionRole: ActionRoleType.FeatureEditor,
+      allowedActions: [
+        'Upload corporate logos and brand color schemes',
+        'Configure header, footer, and navigation menus',
+        'Set public contact channels and support info'
+      ],
+      restrictedActions: [
+        'Cannot modify security encryption keys',
+        'Cannot manage user roles or invoices'
+      ]
+    },
+    {
+      name: 'Custom Intake & Survey Forms',
+      group: RoleGroup.Feature,
+      featureAreaKey: 'FormsManager',
+      tier: 'Operations Authority',
+      badgeClass: 'badge-forms',
+      icon: 'dynamic_form',
+      summary: 'Designing custom submission forms, survey questionnaires, and responses.',
+      defaultActionRole: ActionRoleType.FeatureEditor,
+      allowedActions: [
+        'Build custom multi-step forms and surveys',
+        'Review and export submitted responses',
+        'Configure auto-reply confirmations'
+      ],
+      restrictedActions: [
+        'Cannot alter workspace security settings',
+        'Cannot assign roles or manage members'
+      ]
+    }
+  ];
+
+  /** Operational Action Role Options for Card 2 */
+  actionRoleOptions: ActionRoleOption[] = [
+    {
+      key: ActionRoleType.GlobalEditor,
+      title: 'Global Editor',
+      badge: 'Tenant-Wide Edit',
+      badgeClass: 'badge-global',
+      icon: 'public',
+      summary: 'Full CRUD privileges across all features, modules, and directories throughout the workspace.',
+      detailNote: 'Unrestricted operational authority across all current and future modules in this workspace.'
+    },
+    {
+      key: ActionRoleType.FeatureEditor,
+      title: 'Feature Editor',
+      badge: 'Modular Scope',
+      badgeClass: 'badge-feature',
       icon: 'tune',
-      summary: 'Targeted edit and authoring access strictly scoped to one specific capability.',
-      requiresFeatureScope: true,
-      allowedActions: [
-        'Author and manage records within assigned capability',
-        'Publish updates within designated module boundary',
-        'View related operational telemetry'
-      ],
-      restrictedActions: [
-        'Read-only access in other workspace modules',
-        'Zero administrative or user management authority'
-      ]
+      summary: 'Targeted edit and authoring privileges strictly confined to the assigned capability module.',
+      detailNote: 'Editing permissions are isolated to the designated module; other workspace areas remain read-only.'
     },
     {
-      name: 'Moderator',
-      tier: 'Operational Level',
-      badgeClass: 'badge-readonly',
-      icon: 'gavel',
-      summary: 'Community moderation, chat stream oversight, and ticket handling.',
-      requiresFeatureScope: false,
-      allowedActions: [
-        'Moderate discussion channels and user forums',
-        'Review and triage member support tickets',
-        'Flag inappropriate member interactions'
-      ],
-      restrictedActions: [
-        'Cannot modify workspace web pages or products',
-        'Cannot view system audit logs'
-      ]
-    },
-    {
-      name: 'Member',
-      tier: 'Standard Member',
-      badgeClass: 'badge-member',
-      icon: 'badge',
-      summary: 'Standard directory presence and authenticated user workspace portal access.',
-      requiresFeatureScope: false,
-      allowedActions: [
-        'Access authenticated user workspace apps',
-        'Update personal profile details and 2FA credentials',
-        'Interact with public and shared member spaces'
-      ],
-      restrictedActions: [
-        'Zero access to Administration Console',
-        'Cannot view other members private metadata'
-      ]
-    },
-    {
-      name: 'Read Only',
-      tier: 'Observer Level',
+      key: ActionRoleType.Readonly,
+      title: 'Read Only',
+      badge: 'Observer Level',
       badgeClass: 'badge-readonly',
       icon: 'visibility',
-      summary: 'Full inspection and auditing visibility across features without edit rights.',
-      requiresFeatureScope: false,
-      allowedActions: [
-        'Inspect operational dashboards and reports',
-        'View audit logs and system analytics',
-        'Export read-only summary reports'
-      ],
-      restrictedActions: [
-        'Strictly prohibited from modifying any records',
-        'Cannot delete, edit, or dispatch invites'
-      ]
+      summary: 'Inspection and auditing visibility across features without permission to create, edit, or delete records.',
+      detailNote: 'All create, edit, update, and delete actions will be hidden and prohibited.'
     }
   ];
 
@@ -1296,6 +1867,20 @@ export class IdentityInvitationCreateComponent implements OnInit {
   }
 
   /**
+   * Returns roles filtered by System Governance.
+   */
+  get systemRoles(): AvailableRole[] {
+    return this.availableRoles.filter(r => r.group === RoleGroup.System);
+  }
+
+  /**
+   * Returns roles filtered by Modular Feature Authority.
+   */
+  get featureRoles(): AvailableRole[] {
+    return this.availableRoles.filter(r => r.group === RoleGroup.Feature);
+  }
+
+  /**
    * Returns the currently selected role definition.
    */
   get currentRoleObj(): AvailableRole | undefined {
@@ -1309,20 +1894,114 @@ export class IdentityInvitationCreateComponent implements OnInit {
     if (!this.inviteEmail || !this.inviteEmail.includes('@') || !this.inviteEmail.includes('.')) {
       return false;
     }
-    if (this.currentRoleObj?.requiresFeatureScope && !this.selectedFeatureArea) {
+    if (this.selectedActionRole === ActionRoleType.FeatureEditor && !this.selectedFeatureArea) {
       return false;
     }
     return true;
   }
 
   /**
-   * Selects an authority or operational role.
+   * Selects a primary authority role and triggers automatic selection in Card 2.
+   * - Admin -> Automatically selects Global Editor.
+   * - Member -> Automatically selects Read Only.
+   * - Feature Authority -> Automatically selects Feature Editor and binds to that module.
    * @param role Target role item.
    */
   selectRole(role: AvailableRole): void {
     this.selectedRole = role.name;
-    if (role.requiresFeatureScope && !this.selectedFeatureArea) {
-      this.selectedFeatureArea = 'UserManager';
+
+    // Automatic Interplay:
+    if (role.name === 'Admin') {
+      this.selectedActionRole = ActionRoleType.GlobalEditor;
+      this.selectedFeatureArea = null;
+    } else if (role.name === 'Member') {
+      this.selectedActionRole = ActionRoleType.Readonly;
+      this.selectedFeatureArea = null;
+    } else {
+      // Feature Authority Role
+      this.selectedActionRole = ActionRoleType.FeatureEditor;
+      this.selectedFeatureArea = role.featureAreaKey || 'UserManager';
+    }
+
+    this.onFormChange();
+  }
+
+  /**
+   * Manually selects or adjusts the operational action role in Card 2.
+   * @param action Target action role option.
+   */
+  selectActionRole(action: ActionRoleOption): void {
+    this.selectedActionRole = action.key;
+    if (action.key === ActionRoleType.FeatureEditor && !this.selectedFeatureArea) {
+      this.selectedFeatureArea = this.currentRoleObj?.featureAreaKey || 'UserManager';
+    }
+    this.onFormChange();
+  }
+
+  /**
+   * Selects a specific feature capability scope domain.
+   * @param scope Target feature scope option.
+   */
+  selectFeatureScope(scope: FeatureScopeOption): void {
+    this.selectedFeatureArea = scope.key;
+    // Align role with chosen scope if current role is a feature authority
+    if (this.currentRoleObj?.group === RoleGroup.Feature) {
+      const matchingRole = this.availableRoles.find(r => r.featureAreaKey === scope.key);
+      if (matchingRole) {
+        this.selectedRole = matchingRole.name;
+      }
+    }
+    this.onFormChange();
+  }
+
+  /**
+   * Determines whether the given action role was auto-assigned by the active role.
+   * @param key Action role type.
+   */
+  isAutoAssigned(key: ActionRoleType): boolean {
+    if (this.selectedRole === 'Admin') return key === ActionRoleType.GlobalEditor;
+    if (this.selectedRole === 'Member') return key === ActionRoleType.Readonly;
+    return key === ActionRoleType.FeatureEditor;
+  }
+
+  /**
+   * Returns human-readable label for selected action role.
+   */
+  getSelectedActionRoleLabel(): string {
+    const act = this.actionRoleOptions.find(a => a.key === this.selectedActionRole);
+    return act ? act.title : 'Feature Editor';
+  }
+
+  /**
+   * Returns short action label for auto-assignment hints.
+   */
+  getActionRoleShortLabel(actionType: ActionRoleType): string {
+    switch (actionType) {
+      case ActionRoleType.GlobalEditor: return 'Global Edit';
+      case ActionRoleType.FeatureEditor: return 'Feature Edit';
+      case ActionRoleType.Readonly: return 'Read Only';
+    }
+  }
+
+  /**
+   * Returns badge CSS class for active action role.
+   */
+  getActionBadgeClass(): string {
+    switch (this.selectedActionRole) {
+      case ActionRoleType.GlobalEditor: return 'badge-global';
+      case ActionRoleType.FeatureEditor: return 'badge-feature';
+      case ActionRoleType.Readonly: return 'badge-readonly';
+    }
+  }
+
+  /**
+   * Returns material icon for active action role.
+   */
+  getActionIcon(): string {
+    switch (this.selectedActionRole) {
+      case ActionRoleType.GlobalEditor: return 'public';
+      case ActionRoleType.FeatureEditor: return 'tune';
+      case ActionRoleType.Readonly: return 'visibility';
     }
   }
 
@@ -1331,7 +2010,7 @@ export class IdentityInvitationCreateComponent implements OnInit {
    */
   getSelectedScopeLabel(): string {
     const scope = this.featureScopeOptions.find(s => s.key === this.selectedFeatureArea);
-    return scope ? scope.label : this.selectedFeatureArea;
+    return scope ? scope.label : (this.selectedFeatureArea || 'General Workspace');
   }
 
   /**
@@ -1360,9 +2039,10 @@ export class IdentityInvitationCreateComponent implements OnInit {
     const payload = {
       email: this.inviteEmail.trim(),
       role: this.selectedRole,
+      actionRole: this.selectedActionRole,
+      featureArea: this.selectedActionRole === ActionRoleType.FeatureEditor ? this.selectedFeatureArea : null,
       categoryId: this.selectedCategoryId,
       expirationDays: this.expirationDays,
-      featureArea: this.currentRoleObj?.requiresFeatureScope ? this.selectedFeatureArea : null,
       customMessage: this.customMessage?.trim() || null
     };
 
@@ -1372,7 +2052,7 @@ export class IdentityInvitationCreateComponent implements OnInit {
         const data = res?.data;
         this.dispatchedLink = data?.invitationUrl || '';
         this.dispatchedEmail = this.inviteEmail;
-        this.dispatchedRole = this.selectedRole;
+        this.dispatchedRole = `${this.selectedRole} (${this.getSelectedActionRoleLabel()})`;
         this.toast.success(`Invitation dispatched successfully to ${this.inviteEmail}!`, 'Invitation Sent');
       },
       error: (err) => {

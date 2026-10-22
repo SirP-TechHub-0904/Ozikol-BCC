@@ -628,6 +628,19 @@ namespace Ozikol_BCC.Domain.Enum
         }
 
         /// <summary>
+        /// Categorizes user authority roles into broad system & organization governance
+        /// or modular capability feature authorities.
+        /// </summary>
+        public enum RoleGroup
+        {
+            [Description("System & Organization Governance")]
+            System = 1,
+
+            [Description("Modular Feature Authority")]
+            Feature = 2
+        }
+
+        /// <summary>
         /// Billing cadence attached to a BCP feature subscription or purchase.
         /// </summary>
         public enum FeatureBillingDuration

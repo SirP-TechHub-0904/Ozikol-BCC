@@ -1273,11 +1273,15 @@ namespace Ozikol_BCC.Api.Controllers
             // Role assignment
             var assignedRole = invitation?.RoleName ?? "Member";
             string? featureScope = null;
+            string? actionRoleStr = null;
             if (assignedRole.Contains(':'))
             {
-                var roleParts = assignedRole.Split(':', 2);
+                var roleParts = assignedRole.Split(':');
                 assignedRole = roleParts[0];
-                featureScope = roleParts[1];
+                if (roleParts.Length > 1 && !string.IsNullOrWhiteSpace(roleParts[1]))
+                    featureScope = roleParts[1];
+                if (roleParts.Length > 2 && !string.IsNullOrWhiteSpace(roleParts[2]))
+                    actionRoleStr = roleParts[2];
             }
 
             try
@@ -1298,9 +1302,23 @@ namespace Ozikol_BCC.Api.Controllers
                 try { await _userManager.AddToRoleAsync(newUser, "Member"); } catch { }
             }
 
-            // Provision modular capability scope if assigned via Feature Editor invitation
+            // Provision modular capability scope if assigned via invitation
             if (!string.IsNullOrEmpty(featureScope) && _dbContext != null)
             {
+                var actionRoleEnum = BcpActionRole.FeatureEditor;
+                if (!string.IsNullOrEmpty(actionRoleStr) && System.Enum.TryParse<BcpActionRole>(actionRoleStr, true, out var parsedActionRole))
+                {
+                    actionRoleEnum = parsedActionRole;
+                }
+                else if (string.Equals(assignedRole, "Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    actionRoleEnum = BcpActionRole.GlobalEditor;
+                }
+                else if (string.Equals(assignedRole, "Member", StringComparison.OrdinalIgnoreCase))
+                {
+                    actionRoleEnum = BcpActionRole.Readonly;
+                }
+
                 var existingFeatureRole = await _dbContext.BcpUserFeatureRoles
                     .FirstOrDefaultAsync(f => f.ProfileId == newUser.Id && f.FeatureAreaKey == featureScope);
 
@@ -1311,11 +1329,15 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = Guid.CreateVersion7(),
                         ProfileId = newUser.Id,
                         FeatureAreaKey = featureScope,
-                        ActionRole = BcpActionRole.FeatureEditor,
+                        ActionRole = actionRoleEnum,
                         IsActive = true,
                         AssignedBy = invitation?.InvitedByProfileId,
                         Date = DateTime.UtcNow
                     });
+                }
+                else
+                {
+                    existingFeatureRole.ActionRole = actionRoleEnum;
                 }
             }
 
