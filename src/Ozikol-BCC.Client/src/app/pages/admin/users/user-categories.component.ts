@@ -79,7 +79,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <!-- Member Headcount -->
               <td style="text-align: center;">
-                <a routerLink="/admin/users/list" [queryParams]="{ category: cat.id }" class="headcount-badge" title="View all members in this category">
+                <a routerLink="/users/console/list" [queryParams]="{ category: cat.id }" class="headcount-badge" title="View all members in this category">
                   <span class="material-symbols-outlined" style="font-size: 15px;">groups</span>
                   <strong>{{ cat.memberCount || 0 }}</strong>
                   <span>{{ (cat.memberCount === 1) ? 'member' : 'members' }}</span>
@@ -102,7 +102,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <!-- Action Buttons -->
               <td style="text-align: right;">
                 <div class="row-actions-group">
-                  <a routerLink="/admin/users/list" [queryParams]="{ category: cat.id }" class="btn-action btn-members" title="View Category Members">
+                  <a routerLink="/users/console/list" [queryParams]="{ category: cat.id }" class="btn-action btn-members" title="View Category Members">
                     <span class="material-symbols-outlined">group</span>
                     <span>Members</span>
                   </a>
@@ -419,7 +419,7 @@ export class UserCategoriesComponent implements OnInit {
       text: 'User Directory',
       icon: 'groups',
       isPrimary: false,
-      routerLink: '/admin/users/list'
+      routerLink: '/users/console/list'
     },
     {
       text: 'Create Category',

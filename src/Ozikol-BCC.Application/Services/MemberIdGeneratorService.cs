@@ -295,9 +295,9 @@ namespace Ozikol_BCC.Application.Services
         /// <param name="candidate">The raw candidate member ID string.</param>
         /// <param name="delimiter">The configured delimiter character/string.</param>
         /// <returns>A sanitized member ID string without duplicate separators.</returns>
-        private static string SanitizeMemberId(string candidate, string delimiter)
+        public static string SanitizeMemberId(string? candidate, string delimiter = "-")
         {
-            if (string.IsNullOrWhiteSpace(candidate)) return candidate;
+            if (string.IsNullOrWhiteSpace(candidate)) return candidate ?? string.Empty;
 
             var sanitized = candidate.Trim();
 

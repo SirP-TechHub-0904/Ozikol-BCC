@@ -246,12 +246,17 @@ namespace Ozikol_BCC.Api.Controllers
             if (!await _roleManager.RoleExistsAsync(request.RoleName))
                 return BadRequest(ApiResponse<object>.FailureResponse($"Role '{request.RoleName}' does not exist."));
 
-            if (!await _userManager.IsInRoleAsync(user, request.RoleName))
+            // Remove existing non-SuperAdmin roles to guarantee a single unambiguous active role
+            var existingRoles = await _userManager.GetRolesAsync(user);
+            var rolesToRemove = existingRoles.Where(r => !string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase)).ToList();
+            if (rolesToRemove.Any())
             {
-                var addRes = await _userManager.AddToRoleAsync(user, request.RoleName);
-                if (!addRes.Succeeded)
-                    return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", addRes.Errors.Select(e => e.Description))));
+                await _userManager.RemoveFromRolesAsync(user, rolesToRemove);
             }
+
+            var addRes = await _userManager.AddToRoleAsync(user, request.RoleName);
+            if (!addRes.Succeeded)
+                return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", addRes.Errors.Select(e => e.Description))));
 
             // If Feature Editor, assign feature scope (default UserManager)
             if (string.Equals(request.RoleName, "Feature Editor", StringComparison.OrdinalIgnoreCase))

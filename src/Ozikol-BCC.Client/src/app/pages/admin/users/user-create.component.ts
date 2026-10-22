@@ -125,7 +125,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   </span>
                 </label>
                 <div class="locked-input-wrapper">
-                  <input type="text" [value]="activeIdPreview || 'Auto-generated on creation (e.g. ' + (activeFormatName || 'Active Format') + ')'" disabled readonly class="locked-input" />
+                  <input type="text" [value]="(activeIdPreview || '').replace('--', '-') || 'Auto-generated on creation (e.g. ' + (activeFormatName || 'Active Format') + ')'" disabled readonly class="locked-input" />
                   <span class="material-symbols-outlined locked-icon">tag</span>
                 </div>
                 <span class="input-hint-locked">Member ID will be uniquely generated and permanently assigned using your workspace's configured coding rules.</span>
@@ -171,7 +171,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
 
           <div class="card-footer">
-            <a routerLink="/admin/users/list" class="btn btn-outline">Cancel</a>
+            <a routerLink="/users/console/list" class="btn btn-outline">Cancel</a>
             <button type="submit" class="btn btn-primary" [disabled]="isSaving || !model.email || !model.firstName || !model.lastName">
               <span *ngIf="!isSaving" class="material-symbols-outlined">person_add</span>
               <span>{{ isSaving ? 'Provisioning Account...' : 'Create & Provision Member' }}</span>
@@ -228,9 +228,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn { height: 40px; padding: 0 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
-    .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: #0040b8; }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
+    .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; color: #ffffff !important; }
+    .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
   `]
 })
 export class UserCreateComponent implements OnInit {
@@ -268,7 +271,7 @@ export class UserCreateComponent implements OnInit {
       text: 'Back to Directory',
       icon: 'arrow_back',
       isPrimary: false,
-      routerLink: '/admin/users/list'
+      routerLink: '/users/console/list'
     }
   ];
 
@@ -314,7 +317,9 @@ export class UserCreateComponent implements OnInit {
           const activePreview = previews.find(p => p.key === activeKey);
           if (activePreview) {
             this.activeFormatName = activePreview.name;
-            this.activeIdPreview = activePreview.previewExample;
+            let preview = activePreview.previewExample || '';
+            preview = preview.replace(/[-]{2,}/g, '-').replace(/[/]{2,}/g, '/').replace(/[_]{2,}/g, '_');
+            this.activeIdPreview = preview;
           }
         }
       },
@@ -351,7 +356,7 @@ export class UserCreateComponent implements OnInit {
       next: () => {
         this.isSaving = false;
         this.toast.success(`Account for ${this.model.firstName} ${this.model.lastName} provisioned successfully!`);
-        this.router.navigate(['/admin/users/list']);
+        this.router.navigate(['/users/console/list']);
       },
       error: (err) => {
         this.isSaving = false;

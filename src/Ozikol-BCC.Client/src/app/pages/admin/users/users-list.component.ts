@@ -207,7 +207,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <!-- Member ID -->
               <td>
-                <span class="member-id-pill">{{ u.memberId || 'CC-2026-' + u.id.substring(0,4).toUpperCase() }}</span>
+                <span class="member-id-pill">{{ sanitizeId(u.memberId || 'CC-2026-' + u.id.substring(0,4).toUpperCase()) }}</span>
               </td>
 
               <!-- Category Tier -->
@@ -236,7 +236,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 </span>
               </td>
 
-              <!-- Clean Actions (Details & Edit) -->
+              <!-- Clean Actions (Details & Edit - Delete button removed) -->
               <td style="text-align:right;">
                 <div class="row-actions-group">
                   <a [routerLink]="['/users/console/details', u.id]" class="btn-action btn-details" title="View Member Dossier">
@@ -246,9 +246,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <a [routerLink]="['/users/console/edit', u.id]" class="btn-action btn-edit" title="Edit Member Profile">
                     <span class="material-symbols-outlined">edit</span>
                     <span>Edit</span>
-                  </a>
-                  <a [routerLink]="['/users/console/delete', u.id]" class="btn-action btn-delete" title="Delete Member Account">
-                    <span class="material-symbols-outlined">delete</span>
                   </a>
                 </div>
               </td>
@@ -389,7 +386,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .row-actions-group { display: flex; gap: 6px; justify-content: flex-end; }
     .btn-action { display: inline-flex; align-items: center; gap: 4px; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; transition: all 0.15s ease; }
     .btn-details { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
-    .btn-details:hover { background: #0050e5; color: #ffffff; }
+    .btn-details:hover { background: #0050e5; color: #ffffff !important; }
+    .btn-details:hover span { color: #ffffff !important; }
     .btn-edit { background: #ffffff; color: #475569; border: 1px solid #cbd5e1; }
     .btn-edit:hover { background: #f8fafc; color: #0f172a; border-color: #94a3b8; }
 
@@ -400,7 +398,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .pagination-controls { display: flex; gap: 4px; align-items: center; }
     .page-btn { min-width: 32px; height: 32px; padding: 0 6px; display: flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
     .page-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #94a3b8; }
-    .page-btn.active { background: #0050e5; color: #ffffff; border-color: #0050e5; }
+    .page-btn.active { background: #0050e5; color: #ffffff !important; border-color: #0050e5; }
     .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .empty-table-cell { text-align: center; padding: 40px 20px; color: #64748b; }
     .empty-icon { font-size: 40px; color: #cbd5e1; margin-bottom: 8px; display: block; }
@@ -589,6 +587,11 @@ export class UsersListComponent implements OnInit {
   onPageSizeChange(): void {
     this.currentPage = 1;
     this.updatePagination();
+  }
+
+  sanitizeId(id: string): string {
+    if (!id) return '';
+    return id.replace(/[-]{2,}/g, '-').replace(/[/]{2,}/g, '/').replace(/[_]{2,}/g, '_');
   }
 
   // Export Columns Definition

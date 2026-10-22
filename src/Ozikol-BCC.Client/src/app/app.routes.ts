@@ -173,6 +173,27 @@ export const routes: Routes = [
       { path: 'users/console/settings', component: UserSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
 
+      // Backward-Compatibility Aliases for Admin Users Suite
+      { path: 'admin/users', redirectTo: 'users/console/list', pathMatch: 'full' },
+      { path: 'admin/users/dashboard', redirectTo: 'users/console/dashboard', pathMatch: 'full' },
+      { path: 'admin/users/list', redirectTo: 'users/console/list', pathMatch: 'full' },
+      { path: 'admin/users/create', redirectTo: 'users/console/create', pathMatch: 'full' },
+      { path: 'admin/users/details/:id', redirectTo: 'users/console/details/:id' },
+      { path: 'admin/users/edit/:id', redirectTo: 'users/console/edit/:id' },
+      { path: 'admin/users/delete/:id', redirectTo: 'users/console/delete/:id' },
+      { path: 'admin/users/categories', redirectTo: 'users/console/categories', pathMatch: 'full' },
+      { path: 'admin/users/categories/create', redirectTo: 'users/console/categories/create', pathMatch: 'full' },
+      { path: 'admin/users/categories/edit/:id', redirectTo: 'users/console/categories/edit/:id' },
+      { path: 'admin/users/categories/delete/:id', redirectTo: 'users/console/categories/delete/:id' },
+      { path: 'admin/users/kpi', redirectTo: 'users/console/kpi', pathMatch: 'full' },
+      { path: 'admin/users/kpi/metrics/create', redirectTo: 'users/console/kpi/metrics/create', pathMatch: 'full' },
+      { path: 'admin/users/kpi/metrics/edit/:id', redirectTo: 'users/console/kpi/metrics/edit/:id' },
+      { path: 'admin/users/kpi/metrics/delete/:id', redirectTo: 'users/console/kpi/metrics/delete/:id' },
+      { path: 'admin/users/kpi/grade/:userId', redirectTo: 'users/console/kpi/grade/:userId' },
+      { path: 'admin/users/activity', redirectTo: 'users/console/activity', pathMatch: 'full' },
+      { path: 'admin/users/settings', redirectTo: 'users/console/settings', pathMatch: 'full' },
+      { path: 'admin/users/notifications', redirectTo: 'users/console/notifications', pathMatch: 'full' },
+
       // 2. User Management Suite: Workspace (Member Self-Service)
       { path: 'users/workspace', component: WorkspaceDashboardComponent },
       { path: 'users/workspace/dashboard', component: WorkspaceDashboardComponent },

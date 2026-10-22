@@ -26,6 +26,10 @@ interface UserSettingsModel {
   memberIdDelimiter: string;
   requireConfirmedEmailToLogin: boolean;
   enableUserDeletion: boolean;
+  enableKpiEvaluations: boolean;
+  enablePublicLeaderboard: boolean;
+  defaultKpiPeriodCycle: string;
+  kpiPassingScore: number;
 }
 
 @Component({
@@ -215,6 +219,102 @@ interface UserSettingsModel {
                     <div class="pattern-example">{{ p.previewExample }}</div>
                     <div class="pattern-desc">{{ p.description }}</div>
                   </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Performance Evaluations & KPI Settings -->
+          <div class="settings-card">
+            <div class="card-header">
+              <div class="header-icon-box">
+                <span class="material-symbols-outlined">monitoring</span>
+              </div>
+              <div class="header-text">
+                <h3>Performance Evaluations & KPI Settings</h3>
+                <p>Configure scorecard evaluation cycles, passing benchmarks, and public member leaderboard visibility.</p>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <!-- Toggle: Enable KPI Evaluations -->
+              <div class="preference-row">
+                <div class="pref-info">
+                  <div class="pref-title-row">
+                    <span class="pref-title">Enable Member KPI Evaluations</span>
+                    <span class="status-badge" [class.badge-active]="settings.enableKpiEvaluations" [class.badge-inactive]="!settings.enableKpiEvaluations">
+                      {{ settings.enableKpiEvaluations ? 'ENABLED' : 'DISABLED' }}
+                    </span>
+                  </div>
+                  <p class="pref-desc">Activate performance scorecards and multi-factor evaluation rubrics for members and staff across the tenant.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="settings.enableKpiEvaluations" name="enableKpiEvaluations" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="divider-line"></div>
+
+              <!-- Toggle: Publish Leaderboard -->
+              <div class="preference-row">
+                <div class="pref-info">
+                  <div class="pref-title-row">
+                    <span class="pref-title">Publish Member Performance Leaderboard</span>
+                    <span class="status-badge" [class.badge-active]="settings.enablePublicLeaderboard" [class.badge-inactive]="!settings.enablePublicLeaderboard">
+                      {{ settings.enablePublicLeaderboard ? 'PUBLIC' : 'ADMIN ONLY' }}
+                    </span>
+                  </div>
+                  <p class="pref-desc">Allow members to view competitive performance rankings and podium positions in their personal member workspace.</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" [(ngModel)]="settings.enablePublicLeaderboard" name="enablePublicLeaderboard" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <!-- Sub-config when KPI is enabled -->
+              <div class="sub-config-block" *ngIf="settings.enableKpiEvaluations">
+                <div class="kpi-config-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                  <div class="form-group">
+                    <label>
+                      <span>Default Evaluation Cycle / Period</span>
+                    </label>
+                    <select [(ngModel)]="settings.defaultKpiPeriodCycle" name="defaultKpiPeriodCycle" class="form-control" style="height: 42px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 600; color: #0f172a; background: #ffffff;">
+                      <option value="Quarterly">Quarterly (e.g. 2026 Q1, 2026 Q2...)</option>
+                      <option value="Monthly">Monthly (e.g. October 2026, November 2026...)</option>
+                      <option value="Bi-Annual">Bi-Annual (H1 / H2)</option>
+                      <option value="Annual">Annual Review Cycle</option>
+                    </select>
+                    <span class="hint-text">Pre-selected cycle duration when generating periodic grading sheets.</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label>
+                      <span>Benchmark Passing Score (%)</span>
+                    </label>
+                    <input
+                      type="number"
+                      [(ngModel)]="settings.kpiPassingScore"
+                      name="kpiPassingScore"
+                      min="1"
+                      max="100"
+                      class="form-control"
+                      placeholder="70"
+                    />
+                    <span class="hint-text">Minimum threshold percentage required for satisfactory performance rating.</span>
+                  </div>
+                </div>
+
+                <div style="margin-top: 14px; display: flex; align-items: center; justify-content: space-between; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; flex-wrap: wrap; gap: 10px;">
+                  <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #166534; font-weight: 600;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">verified</span>
+                    <span>Ready to evaluate scorecards or configure rubric indicators?</span>
+                  </div>
+                  <a routerLink="/users/console/kpi" class="btn btn-outline btn-sm" style="background:#fff;">
+                    <span class="material-symbols-outlined">launch</span>
+                    <span>Open KPI & Leaderboard Hub</span>
+                  </a>
                 </div>
               </div>
             </div>
@@ -543,9 +643,12 @@ interface UserSettingsModel {
     }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f8fafc; color: #0f172a; border-color: #94a3b8; }
-    .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: #0040b8; }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
+    .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; color: #ffffff !important; }
+    .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
   `]
 })
 export class UserSettingsComponent implements OnInit {
@@ -562,7 +665,11 @@ export class UserSettingsComponent implements OnInit {
     memberIdPadding: 4,
     memberIdDelimiter: '-',
     requireConfirmedEmailToLogin: false,
-    enableUserDeletion: false
+    enableUserDeletion: false,
+    enableKpiEvaluations: true,
+    enablePublicLeaderboard: true,
+    defaultKpiPeriodCycle: 'Quarterly',
+    kpiPassingScore: 70
   };
 
   titleChips: string[] = [];
@@ -602,9 +709,13 @@ export class UserSettingsComponent implements OnInit {
             memberIdPadding: res.data.padding || res.data.memberIdPadding || 4,
             memberIdDelimiter: res.data.delimiter || res.data.memberIdDelimiter || '-',
             requireConfirmedEmailToLogin: !!res.data.requireConfirmedEmailToLogin,
-            enableUserDeletion: !!res.data.enableUserDeletion
+            enableUserDeletion: !!res.data.enableUserDeletion,
+            enableKpiEvaluations: res.data.enableKpiEvaluations !== false,
+            enablePublicLeaderboard: res.data.enablePublicLeaderboard !== false,
+            defaultKpiPeriodCycle: res.data.defaultKpiPeriodCycle || 'Quarterly',
+            kpiPassingScore: res.data.kpiPassingScore || 70
           };
-          this.previews = res.data.previews || [];
+          this.previews = this.sanitizePreviews(res.data.previews || []);
           this.updateTitleChips();
         }
       },
@@ -613,6 +724,17 @@ export class UserSettingsComponent implements OnInit {
         this.toast.error('Failed to load user management settings.');
       }
     });
+  }
+
+  sanitizePreviews(list: MemberIdFormatPreview[]): MemberIdFormatPreview[] {
+    if (!list) return [];
+    return list.map(p => ({
+      ...p,
+      previewExample: (p.previewExample || '')
+        .replace(/[-]{2,}/g, '-')
+        .replace(/[/]{2,}/g, '/')
+        .replace(/[_]{2,}/g, '_')
+    }));
   }
 
   onPrefixInput(): void {
@@ -634,7 +756,7 @@ export class UserSettingsComponent implements OnInit {
     this.api.get<any>('UsersApi/member-id-config/preview', params).subscribe({
       next: (res) => {
         if (res.data) {
-          this.previews = res.data;
+          this.previews = this.sanitizePreviews(res.data);
         }
       }
     });
@@ -674,7 +796,11 @@ export class UserSettingsComponent implements OnInit {
       memberIdPadding: this.settings.memberIdPadding,
       memberIdDelimiter: this.settings.memberIdDelimiter,
       requireConfirmedEmailToLogin: this.settings.requireConfirmedEmailToLogin,
-      enableUserDeletion: this.settings.enableUserDeletion
+      enableUserDeletion: this.settings.enableUserDeletion,
+      enableKpiEvaluations: this.settings.enableKpiEvaluations,
+      enablePublicLeaderboard: this.settings.enablePublicLeaderboard,
+      defaultKpiPeriodCycle: this.settings.defaultKpiPeriodCycle,
+      kpiPassingScore: this.settings.kpiPassingScore
     };
 
     this.api.put<any>('UsersApi/settings', payload).subscribe({

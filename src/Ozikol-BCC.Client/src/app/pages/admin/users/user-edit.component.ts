@@ -135,7 +135,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         </div>
 
         <div class="card-footer" style="margin-top: 16px; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center;">
-          <a [routerLink]="['/admin/users/details', userId]" class="btn btn-outline">Cancel</a>
+          <a [routerLink]="['/users/console/details', userId]" class="btn btn-outline">Cancel</a>
           <button type="submit" class="btn btn-primary" [disabled]="isSaving || !model.firstName || !model.lastName">
             <span *ngIf="!isSaving" class="material-symbols-outlined">save</span>
             <span>{{ isSaving ? 'Saving Changes...' : 'Save Profile Changes' }}</span>
@@ -185,9 +185,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .btn { height: 40px; padding: 0 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; border: 1px solid transparent; }
     .btn-outline { background: #ffffff; border-color: #cbd5e1; color: #334155; }
     .btn-outline:hover { background: #f1f5f9; color: #0f172a; }
-    .btn-primary { background: #0050e5; color: #ffffff; }
-    .btn-primary:hover:not(:disabled) { background: #0040b8; }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-primary { background: #0050e5 !important; color: #ffffff !important; }
+    .btn-primary span, .btn-primary .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) { background: #0040b8 !important; color: #ffffff !important; }
+    .btn-primary:hover:not(:disabled) span, .btn-primary:hover:not(:disabled) .material-symbols-outlined { color: #ffffff !important; }
+    .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; color: #ffffff !important; }
+    .btn-primary:disabled span, .btn-primary:disabled .material-symbols-outlined { color: #ffffff !important; }
   `]
 })
 export class UserEditComponent implements OnInit {
@@ -229,7 +232,7 @@ export class UserEditComponent implements OnInit {
   ngOnInit(): void {
     this.userId = this.route.snapshot.paramMap.get('id') || '';
     if (!this.userId) {
-      this.router.navigate(['/admin/users/list']);
+      this.router.navigate(['/users/console/list']);
       return;
     }
 
@@ -238,13 +241,13 @@ export class UserEditComponent implements OnInit {
         text: 'View Details',
         icon: 'visibility',
         isPrimary: false,
-        routerLink: `/admin/users/details/${this.userId}`
+        routerLink: `/users/console/details/${this.userId}`
       },
       {
         text: 'Back to List',
         icon: 'arrow_back',
         isPrimary: false,
-        routerLink: '/admin/users/list'
+        routerLink: '/users/console/list'
       }
     ];
 
@@ -308,7 +311,7 @@ export class UserEditComponent implements OnInit {
       error: () => {
         this.isLoading = false;
         this.toast.error('Failed to load member profile.');
-        this.router.navigate(['/admin/users/list']);
+        this.router.navigate(['/users/console/list']);
       }
     });
   }
@@ -324,7 +327,7 @@ export class UserEditComponent implements OnInit {
       next: () => {
         this.isSaving = false;
         this.toast.success('Member profile updated successfully!');
-        this.router.navigate(['/admin/users/details', this.userId]);
+        this.router.navigate(['/users/console/details', this.userId]);
       },
       error: (err) => {
         this.isSaving = false;

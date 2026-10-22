@@ -369,6 +369,11 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
+            var assignedFeature = await _dbContext.BcpUserFeatureRoles
+                .Where(f => f.ProfileId == id && f.IsActive)
+                .Select(f => f.FeatureAreaKey)
+                .FirstOrDefaultAsync();
+
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 id = user.Id,
@@ -380,7 +385,7 @@ namespace Ozikol_BCC.Api.Controllers
                 firstName = user.FirstName,
                 lastName = user.LastName,
                 title = user.Title,
-                memberId = user.MemberId,
+                memberId = MemberIdGeneratorService.SanitizeMemberId(user.MemberId, "-"),
                 gender = user.Gender.ToString(),
                 designation = user.Designation ?? "Member",
                 avatarUrl = user.AvatarUrl,
@@ -394,6 +399,7 @@ namespace Ozikol_BCC.Api.Controllers
                 categoryColor = user.BcpUserCategory?.ColorCode,
                 categoryIcon = user.BcpUserCategory?.Icon,
                 roles,
+                assignedFeatureArea = assignedFeature ?? "UserManager",
                 kpiScores,
                 notes,
                 logs,
@@ -1035,6 +1041,65 @@ namespace Ozikol_BCC.Api.Controllers
                 .ThenBy(k => k.Title)
                 .ToListAsync();
 
+            if (indicators.Count == 0)
+            {
+                var defaultRubrics = new List<BcpKpiIndicator>
+                {
+                    new BcpKpiIndicator
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Task Completion & Delivery",
+                        Description = "Evaluation of on-time task delivery, responsiveness to deadlines, and accountability.",
+                        Category = "Operational",
+                        MaxScore = 100,
+                        Weight = 1.2m,
+                        SortOrder = 1,
+                        IsActive = true,
+                        Date = DateTime.UtcNow
+                    },
+                    new BcpKpiIndicator
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Work Quality & Accuracy",
+                        Description = "Assess precision, error-free outputs, technical competence, and attention to detail.",
+                        Category = "Quality",
+                        MaxScore = 100,
+                        Weight = 1.0m,
+                        SortOrder = 2,
+                        IsActive = true,
+                        Date = DateTime.UtcNow
+                    },
+                    new BcpKpiIndicator
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Team Collaboration & Communication",
+                        Description = "Constructive engagement with team members, prompt communication, and collective problem-solving.",
+                        Category = "Leadership",
+                        MaxScore = 100,
+                        Weight = 1.0m,
+                        SortOrder = 3,
+                        IsActive = true,
+                        Date = DateTime.UtcNow
+                    },
+                    new BcpKpiIndicator
+                    {
+                        Id = Guid.NewGuid(),
+                        Title = "Punctuality & Meeting Attendance",
+                        Description = "Consistent presence at scheduled team scrums, workspace standups, and community sessions.",
+                        Category = "Attendance",
+                        MaxScore = 100,
+                        Weight = 0.8m,
+                        SortOrder = 4,
+                        IsActive = true,
+                        Date = DateTime.UtcNow
+                    }
+                };
+
+                _dbContext.BcpKpiIndicators.AddRange(defaultRubrics);
+                await _dbContext.SaveChangesAsync();
+                indicators = defaultRubrics;
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(indicators, "KPI indicators retrieved successfully."));
         }
 
@@ -1324,13 +1389,15 @@ namespace Ozikol_BCC.Api.Controllers
             var scores = await query.ToListAsync();
 
             var leaderboard = scores
-                .GroupBy(s => new { s.ProfileId, Name = s.Profile != null ? s.Profile.FullName : "Unknown", Avatar = s.Profile?.AvatarUrl, Cat = s.Profile?.BcpUserCategory?.Name })
+                .GroupBy(s => new { s.ProfileId, Name = s.Profile != null ? s.Profile.FullName : "Unknown", Email = s.Profile != null ? s.Profile.Email : "", Avatar = s.Profile?.AvatarUrl, Cat = s.Profile?.BcpUserCategory?.Name })
                 .Select(g => new
                 {
+                    UserId = g.Key.ProfileId,
                     ProfileId = g.Key.ProfileId,
                     FullName = g.Key.Name,
+                    Email = g.Key.Email,
                     AvatarUrl = g.Key.Avatar,
-                    CategoryName = g.Key.Cat ?? "Unassigned",
+                    CategoryName = g.Key.Cat ?? "General",
                     TotalIndicators = g.Count(),
                     AverageScore = Math.Round(g.Average(x => (x.Score / (x.BcpKpiIndicator?.MaxScore > 0 ? x.BcpKpiIndicator.MaxScore : 100)) * 100), 1),
                     Scores = g.Select(x => new { Indicator = x.BcpKpiIndicator?.Title, Score = x.Score, Max = x.BcpKpiIndicator?.MaxScore ?? 100 })
@@ -1475,7 +1542,21 @@ namespace Ozikol_BCC.Api.Controllers
                 await _dbContext.SaveChangesAsync();
             }
 
+            if (!string.IsNullOrWhiteSpace(setting.MemberIdPrefix))
+            {
+                var cleanPrefix = setting.MemberIdPrefix.Trim().TrimEnd('-', '/', '_', ':', '.', ' ').ToUpperInvariant();
+                if (setting.MemberIdPrefix != cleanPrefix)
+                {
+                    setting.MemberIdPrefix = cleanPrefix;
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+
             var previews = await _memberIdGenerator.GetFormatPreviewsAsync(setting.MemberIdPrefix, setting.MemberIdNextNumber, setting.MemberIdPadding, setting.MemberIdDelimiter);
+            foreach (var p in previews)
+            {
+                p.PreviewExample = MemberIdGeneratorService.SanitizeMemberId(p.PreviewExample, setting.MemberIdDelimiter ?? "-");
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
@@ -1572,6 +1653,10 @@ namespace Ozikol_BCC.Api.Controllers
             bool enableTitle = true;
             string preFilledTitles = "Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor";
             bool enableSuffix = true;
+            bool enableKpiEvaluations = true;
+            bool enablePublicLeaderboard = true;
+            string defaultKpiPeriodCycle = "Quarterly";
+            int kpiPassingScore = 70;
 
             // Read from durable system config in BcpRegistrationFormFields
             var durableConfig = await _dbContext.BcpRegistrationFormFields
@@ -1589,8 +1674,26 @@ namespace Ozikol_BCC.Api.Controllers
                         preFilledTitles = pt.GetString() ?? preFilledTitles;
                     if (doc.RootElement.TryGetProperty("enableSuffix", out var es))
                         enableSuffix = es.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("enableKpiEvaluations", out var ek))
+                        enableKpiEvaluations = ek.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("enablePublicLeaderboard", out var el))
+                        enablePublicLeaderboard = el.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("defaultKpiPeriodCycle", out var dc))
+                        defaultKpiPeriodCycle = dc.GetString() ?? defaultKpiPeriodCycle;
+                    if (doc.RootElement.TryGetProperty("kpiPassingScore", out var kp))
+                        kpiPassingScore = kp.GetInt32();
                 }
                 catch { }
+            }
+
+            if (!string.IsNullOrWhiteSpace(setting.MemberIdPrefix))
+            {
+                var cleanPrefix = setting.MemberIdPrefix.Trim().TrimEnd('-', '/', '_', ':', '.', ' ').ToUpperInvariant();
+                if (setting.MemberIdPrefix != cleanPrefix)
+                {
+                    setting.MemberIdPrefix = cleanPrefix;
+                    await _dbContext.SaveChangesAsync();
+                }
             }
 
             var previews = await _memberIdGenerator.GetFormatPreviewsAsync(
@@ -1598,12 +1701,20 @@ namespace Ozikol_BCC.Api.Controllers
                 setting.MemberIdNextNumber,
                 setting.MemberIdPadding,
                 setting.MemberIdDelimiter);
+            foreach (var p in previews)
+            {
+                p.PreviewExample = MemberIdGeneratorService.SanitizeMemberId(p.PreviewExample, setting.MemberIdDelimiter ?? "-");
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 enableTitle,
                 preFilledTitles,
                 enableSuffix,
+                enableKpiEvaluations,
+                enablePublicLeaderboard,
+                defaultKpiPeriodCycle,
+                kpiPassingScore,
                 memberIdFormat = setting.MemberIdFormat ?? "PrefixYearMonthRandom",
                 memberIdPrefix = setting.MemberIdPrefix ?? "CC",
                 nextNumber = setting.MemberIdNextNumber > 0 ? setting.MemberIdNextNumber : 1,
@@ -1657,6 +1768,10 @@ namespace Ozikol_BCC.Api.Controllers
             bool curEnableTitle = true;
             string curTitles = "Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor";
             bool curEnableSuffix = true;
+            bool curEnableKpiEvaluations = true;
+            bool curEnablePublicLeaderboard = true;
+            string curDefaultKpiPeriodCycle = "Quarterly";
+            int curKpiPassingScore = 70;
 
             if (durableConfig != null && !string.IsNullOrWhiteSpace(durableConfig.OptionsJson))
             {
@@ -1666,6 +1781,10 @@ namespace Ozikol_BCC.Api.Controllers
                     if (doc.RootElement.TryGetProperty("enableTitle", out var et)) curEnableTitle = et.GetBoolean();
                     if (doc.RootElement.TryGetProperty("preFilledTitles", out var pt)) curTitles = pt.GetString() ?? curTitles;
                     if (doc.RootElement.TryGetProperty("enableSuffix", out var es)) curEnableSuffix = es.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("enableKpiEvaluations", out var ek)) curEnableKpiEvaluations = ek.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("enablePublicLeaderboard", out var el)) curEnablePublicLeaderboard = el.GetBoolean();
+                    if (doc.RootElement.TryGetProperty("defaultKpiPeriodCycle", out var dc)) curDefaultKpiPeriodCycle = dc.GetString() ?? curDefaultKpiPeriodCycle;
+                    if (doc.RootElement.TryGetProperty("kpiPassingScore", out var kp)) curKpiPassingScore = kp.GetInt32();
                 }
                 catch { }
             }
@@ -1673,12 +1792,20 @@ namespace Ozikol_BCC.Api.Controllers
             if (request.EnableTitle.HasValue) curEnableTitle = request.EnableTitle.Value;
             if (!string.IsNullOrWhiteSpace(request.PreFilledTitles)) curTitles = request.PreFilledTitles.Trim();
             if (request.EnableSuffix.HasValue) curEnableSuffix = request.EnableSuffix.Value;
+            if (request.EnableKpiEvaluations.HasValue) curEnableKpiEvaluations = request.EnableKpiEvaluations.Value;
+            if (request.EnablePublicLeaderboard.HasValue) curEnablePublicLeaderboard = request.EnablePublicLeaderboard.Value;
+            if (!string.IsNullOrWhiteSpace(request.DefaultKpiPeriodCycle)) curDefaultKpiPeriodCycle = request.DefaultKpiPeriodCycle.Trim();
+            if (request.KpiPassingScore.HasValue && request.KpiPassingScore.Value > 0) curKpiPassingScore = request.KpiPassingScore.Value;
 
             var optionsJson = JsonSerializer.Serialize(new
             {
                 enableTitle = curEnableTitle,
                 preFilledTitles = curTitles,
-                enableSuffix = curEnableSuffix
+                enableSuffix = curEnableSuffix,
+                enableKpiEvaluations = curEnableKpiEvaluations,
+                enablePublicLeaderboard = curEnablePublicLeaderboard,
+                defaultKpiPeriodCycle = curDefaultKpiPeriodCycle,
+                kpiPassingScore = curKpiPassingScore
             });
 
             if (durableConfig == null)
@@ -1954,6 +2081,10 @@ namespace Ozikol_BCC.Api.Controllers
         public bool? EnableTitle { get; set; }
         public string? PreFilledTitles { get; set; }
         public bool? EnableSuffix { get; set; }
+        public bool? EnableKpiEvaluations { get; set; }
+        public bool? EnablePublicLeaderboard { get; set; }
+        public string? DefaultKpiPeriodCycle { get; set; }
+        public int? KpiPassingScore { get; set; }
         public string? MemberIdFormat { get; set; }
         public string? MemberIdPrefix { get; set; }
         public int? MemberIdNextNumber { get; set; }
