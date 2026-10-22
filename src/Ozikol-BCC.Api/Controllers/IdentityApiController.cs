@@ -493,26 +493,67 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(modules, "Permission matrix retrieved."));
         }
 
+        /// <summary>
+        /// Retrieves the complete registry of pending and accepted user invitations.
+        /// </summary>
+        /// <returns>A collection of workspace onboarding invitations.</returns>
         [HttpGet("invitations")]
         public async Task<IActionResult> GetInvitations()
         {
-            var invitations = await _dbContext.BcpUserInvitations
+            var origin = Request.Headers.Origin.ToString();
+            if (string.IsNullOrEmpty(origin)) origin = "http://localhost:4200";
+
+            var rawInvitations = await _dbContext.BcpUserInvitations
                 .AsNoTracking()
                 .OrderByDescending(i => i.CreatedAt)
                 .Select(i => new
                 {
                     i.Id,
                     i.Email,
-                    AssignedRole = i.RoleName ?? "Member",
+                    i.Token,
+                    RawRole = i.RoleName ?? "Member",
+                    i.BcpUserCategoryId,
                     Status = i.IsAccepted ? "Accepted" : (i.ExpiresAt < DateTime.UtcNow ? "Expired" : "Pending"),
                     SentDate = i.CreatedAt,
                     ExpiresDate = i.ExpiresAt
                 })
                 .ToListAsync();
 
+            var invitations = rawInvitations.Select(i =>
+            {
+                var roleName = i.RawRole;
+                string? featureArea = null;
+                if (roleName.Contains(':'))
+                {
+                    var parts = roleName.Split(':', 2);
+                    roleName = parts[0];
+                    featureArea = parts[1];
+                }
+
+                return new
+                {
+                    i.Id,
+                    i.Email,
+                    i.Token,
+                    AssignedRole = roleName,
+                    FeatureArea = featureArea,
+                    i.BcpUserCategoryId,
+                    i.Status,
+                    i.SentDate,
+                    i.ExpiresDate,
+                    InvitationUrl = $"{origin}/auth/register?token={i.Token}&email={Uri.EscapeDataString(i.Email)}"
+                };
+            }).ToList();
+
             return Ok(ApiResponse<object>.SuccessResponse(invitations, "Invitations retrieved."));
         }
 
+        /// <summary>
+        /// Dispatches a cryptographic onboarding invitation to a prospective member.
+        /// Pre-provisions enterprise system roles and optional modular capability edit scopes.
+        /// </summary>
+        /// <param name="request">Invitation payload containing recipient email, role, and capability scope.</param>
+        /// <returns>The generated invitation token and registration link.</returns>
         [HttpPost("invitations")]
         public async Task<IActionResult> SendInvitation([FromBody] InvitationRequest request)
         {
@@ -523,6 +564,12 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (string.IsNullOrWhiteSpace(request.Email))
                 return BadRequest(ApiResponse<object>.FailureResponse("Email address is required."));
+
+            // SuperAdmin cannot be provisioned via invitations under any circumstances
+            if (string.Equals(request.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("The SuperAdmin role is strictly reserved for the root workspace account and cannot be provisioned via invitations."));
+            }
 
             var emailClean = request.Email.Trim().ToLowerInvariant();
 
@@ -540,40 +587,61 @@ namespace Ozikol_BCC.Api.Controllers
                 _dbContext.BcpUserInvitations.RemoveRange(existingPending);
             }
 
-            // 3. Create new invitation
+            // 3. Format pre-assigned role with modular feature area if Feature Editor
+            var baseRole = !string.IsNullOrWhiteSpace(request.Role) ? request.Role.Trim() : "Member";
+            var storedRole = baseRole;
+            if (!string.IsNullOrWhiteSpace(request.FeatureArea) && string.Equals(baseRole, "Feature Editor", StringComparison.OrdinalIgnoreCase))
+            {
+                storedRole = $"Feature Editor:{request.FeatureArea.Trim()}";
+            }
+
+            // 4. Create new invitation
             var token = Guid.NewGuid().ToString("N");
             var invitedBy = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var expiresDays = request.ExpirationDays.HasValue && request.ExpirationDays.Value > 0 ? request.ExpirationDays.Value : 7;
             var invitation = new BcpUserInvitation
             {
                 Id = Guid.CreateVersion7(),
                 Email = emailClean,
                 Token = token,
-                RoleName = request.Role,
+                RoleName = storedRole,
+                BcpUserCategoryId = request.CategoryId,
                 InvitedByProfileId = invitedBy,
                 CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                ExpiresAt = DateTime.UtcNow.AddDays(expiresDays),
                 IsAccepted = false
             };
             _dbContext.BcpUserInvitations.Add(invitation);
 
-            // 4. Resolve client register link host dynamically
+            // 5. Resolve client register link host dynamically
             var origin = Request.Headers.Origin.ToString();
             if (string.IsNullOrEmpty(origin)) origin = "http://localhost:4200";
+
+            var registrationUrl = $"{origin}/auth/register?token={token}&email={Uri.EscapeDataString(emailClean)}";
+
+            var customMsgBlock = string.IsNullOrWhiteSpace(request.CustomMessage)
+                ? string.Empty
+                : $@"<div style='background:#f8fafc; border-left:4px solid #0050e5; padding:12px 16px; margin:18px 0; font-style:italic; color:#475569; font-size:13.5px; border-radius:0 8px 8px 0;'>&ldquo;{System.Net.WebUtility.HtmlEncode(request.CustomMessage.Trim())}&rdquo;</div>";
+
+            var featureScopeNotice = !string.IsNullOrWhiteSpace(request.FeatureArea) && string.Equals(baseRole, "Feature Editor", StringComparison.OrdinalIgnoreCase)
+                ? $" with modular capability scope for <strong>{System.Net.WebUtility.HtmlEncode(request.FeatureArea.Trim())}</strong>"
+                : string.Empty;
 
             var emailBody = $@"
                 <div style='font-family:sans-serif; padding:32px; max-width:550px; margin:0 auto; border:1px solid #e2e8f0; border-radius:16px; background-color:#ffffff;'>
                     <h2 style='color:#0f172a; margin-top:0; font-size:22px; font-weight:800; letter-spacing:-0.02em;'>Workspace Onboarding</h2>
-                    <p style='color:#334155; font-size:14.5px; line-height:1.6; margin-bottom:24px;'>
-                        You have been invited to join the <strong>Ozikol Workspace Portal</strong> as a <strong>{request.Role}</strong>. Accept the invitation below to register your account.
+                    <p style='color:#334155; font-size:14.5px; line-height:1.6; margin-bottom:20px;'>
+                        You have been invited to join the <strong>Ozikol Workspace Portal</strong> as a <strong>{baseRole}</strong>{featureScopeNotice}. Accept the invitation below to establish your account credentials and access the workspace.
                     </p>
+                    {customMsgBlock}
                     <div style='margin:30px 0; text-align:center;'>
-                        <a href='{origin}/auth/register?token={token}&email={Uri.EscapeDataString(emailClean)}' 
+                        <a href='{registrationUrl}' 
                            style='background-color:#0050e5; color:#ffffff; padding:13px 28px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block; font-size:14px; box-shadow:0 4px 6px -1px rgba(0, 80, 229, 0.2);'>
                             Accept Invitation & Register
                         </a>
                     </div>
                     <p style='color:#64748b; font-size:12px; line-height:1.5; border-top:1px solid #f1f5f9; padding-top:16px;'>
-                        This invitation is secure and will expire in 7 days. If you did not request this invitation, you can safely ignore this message.
+                        This invitation is secure and will expire in {expiresDays} days. If you did not request this invitation, you can safely ignore this message.
                     </p>
                 </div>";
 
@@ -592,7 +660,16 @@ namespace Ozikol_BCC.Api.Controllers
             _dbContext.BcpEmailQueue.Add(emailQueueItem);
 
             await _dbContext.SaveChangesAsync();
-            return Ok(ApiResponse<object>.SuccessResponse(null, $"Invitation successfully sent to '{emailClean}' with role '{request.Role}'."));
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                token = token,
+                invitationUrl = registrationUrl,
+                email = emailClean,
+                role = baseRole,
+                featureArea = request.FeatureArea,
+                expiresAt = invitation.ExpiresAt
+            }, $"Invitation successfully sent to '{emailClean}' with role '{baseRole}'."));
         }
 
         /// <summary>
@@ -1104,10 +1181,40 @@ namespace Ozikol_BCC.Api.Controllers
         }
     }
 
+    /// <summary>
+    /// Payload request for issuing a workspace member invitation.
+    /// </summary>
     public class InvitationRequest
     {
+        /// <summary>
+        /// Gets or sets the target recipient email address.
+        /// </summary>
         public string Email { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the pre-assigned system role.
+        /// </summary>
         public string Role { get; set; } = "Member";
+
+        /// <summary>
+        /// Gets or sets the optional pre-assigned member category ID.
+        /// </summary>
+        public Guid? CategoryId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of days until the invitation expires (defaults to 7).
+        /// </summary>
+        public int? ExpirationDays { get; set; }
+
+        /// <summary>
+        /// Gets or sets the scoped feature/module domain when assigning Feature Editor.
+        /// </summary>
+        public string? FeatureArea { get; set; }
+
+        /// <summary>
+        /// Gets or sets an optional welcome note from the issuing administrator.
+        /// </summary>
+        public string? CustomMessage { get; set; }
     }
 
     public class PasswordPolicyUpdateRequest

@@ -2451,6 +2451,21 @@ export class RegisterComponent implements OnInit, AfterViewInit, OnDestroy {
     if (typeof document !== 'undefined') {
       document.body.classList.add('public-website-mode');
     }
+
+    // Inspect query parameters for pre-authorized workspace invitation token
+    this.route.queryParams.subscribe(params => {
+      if (params['token']) {
+        this.model.invitationToken = params['token'];
+      }
+      if (params['email']) {
+        try {
+          this.model.email = decodeURIComponent(params['email']).trim();
+        } catch {
+          this.model.email = params['email'].trim();
+        }
+      }
+    });
+
     this.loadUserSettings();
     this.loadRegistrationSchema();
     this.loadBrandSettings();

@@ -42,6 +42,7 @@ import { WorkspaceNotificationsComponent } from './pages/workspace/workspace-not
 import { IdentityDashboardComponent } from './pages/admin/identity/identity-dashboard.component';
 import { IdentityRolesComponent } from './pages/admin/identity/identity-roles.component';
 import { IdentityInvitationsComponent } from './pages/admin/identity/identity-invitations.component';
+import { IdentityInvitationCreateComponent } from './pages/admin/identity/identity-invitation-create.component';
 import { IdentityAuditLogsComponent } from './pages/admin/identity/identity-audit-logs.component';
 import { IdentityPoliciesComponent } from './pages/admin/identity/identity-policies.component';
 import { GroupsComponent } from './pages/admin/groups/groups.component';
@@ -234,6 +235,7 @@ export const routes: Routes = [
       { path: 'identity/console/dashboard', component: IdentityDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/roles', component: IdentityRolesComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/invitations', component: IdentityInvitationsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'identity/console/invitations/create', component: IdentityInvitationCreateComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/audit-logs', component: IdentityAuditLogsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/policies', component: IdentityPoliciesComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity', redirectTo: 'identity/console/dashboard', pathMatch: 'full' },

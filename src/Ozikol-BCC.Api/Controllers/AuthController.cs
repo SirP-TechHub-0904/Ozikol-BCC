@@ -1272,7 +1272,52 @@ namespace Ozikol_BCC.Api.Controllers
 
             // Role assignment
             var assignedRole = invitation?.RoleName ?? "Member";
-            await _userManager.AddToRoleAsync(newUser, assignedRole);
+            string? featureScope = null;
+            if (assignedRole.Contains(':'))
+            {
+                var roleParts = assignedRole.Split(':', 2);
+                assignedRole = roleParts[0];
+                featureScope = roleParts[1];
+            }
+
+            try
+            {
+                var roleExists = _dbContext != null && await _dbContext.Roles.AnyAsync(r => r.Name == assignedRole);
+                if (roleExists)
+                {
+                    await _userManager.AddToRoleAsync(newUser, assignedRole);
+                }
+                else
+                {
+                    await _userManager.AddToRoleAsync(newUser, "Member");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to assign role '{Role}' to new user '{Email}'. Falling back to Member.", assignedRole, newUser.Email);
+                try { await _userManager.AddToRoleAsync(newUser, "Member"); } catch { }
+            }
+
+            // Provision modular capability scope if assigned via Feature Editor invitation
+            if (!string.IsNullOrEmpty(featureScope) && _dbContext != null)
+            {
+                var existingFeatureRole = await _dbContext.BcpUserFeatureRoles
+                    .FirstOrDefaultAsync(f => f.ProfileId == newUser.Id && f.FeatureAreaKey == featureScope);
+
+                if (existingFeatureRole == null)
+                {
+                    _dbContext.BcpUserFeatureRoles.Add(new BcpUserFeatureRole
+                    {
+                        Id = Guid.CreateVersion7(),
+                        ProfileId = newUser.Id,
+                        FeatureAreaKey = featureScope,
+                        ActionRole = BcpActionRole.FeatureEditor,
+                        IsActive = true,
+                        AssignedBy = invitation?.InvitedByProfileId,
+                        Date = DateTime.UtcNow
+                    });
+                }
+            }
 
             // Complete invitation
             if (invitation != null && _dbContext != null)
