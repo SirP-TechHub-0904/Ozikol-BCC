@@ -6,7 +6,6 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
-import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 export interface EmailQueueItem {
   id: string;
@@ -37,7 +36,7 @@ export interface EmailQueueStats {
 @Component({
   selector: 'app-mxmails',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
   template: `
     <div class="mxmails-container">
       <app-page-header
