@@ -22,7 +22,16 @@ import { ToastService } from '../../../core/services/toast.service';
         <!-- Brand Identity & Header -->
         <div class="reset-card-header">
           <div class="brand-identity-row">
-            <img [src]="brandLogoUrl || 'assets/images/ozikol.png'" alt="Brand Logo" class="brand-logo-img" />
+            <img 
+              *ngIf="brandLogoUrl && !logoLoadFailed" 
+              [src]="brandLogoUrl" 
+              [alt]="brandCompanyName || 'Workspace'" 
+              class="brand-logo-img" 
+              (error)="logoLoadFailed = true"
+            />
+            <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+              {{ brandCompanyName || 'Workspace' }}
+            </span>
           </div>
 
           <h2 class="title">{{ activeStep === 1 ? 'Forgot Password?' : 'Reset Account Password' }}</h2>
@@ -920,6 +929,7 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
   brandLogoUrl: string = '';
   brandIconUrl: string = '';
   brandInitials: string = '';
+  logoLoadFailed: boolean = false;
 
   activeStep: number = 1;
   email: string = '';

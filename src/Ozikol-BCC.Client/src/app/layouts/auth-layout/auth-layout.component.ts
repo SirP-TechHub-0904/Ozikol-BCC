@@ -39,10 +39,15 @@ import { ApiService } from '../../core/services/api.service';
             <div class="showcase-header">
               <a routerLink="/" class="brand-link" title="Return to Home">
                 <img 
+                  *ngIf="displayLogo && !logoLoadFailed" 
                   [src]="displayLogo" 
-                  alt="Logo" 
+                  [alt]="brandName || 'Workspace'" 
                   class="brand-logo-img" 
+                  (error)="logoLoadFailed = true"
                 />
+                <span *ngIf="!displayLogo || logoLoadFailed" class="showcase-brand-name">
+                  {{ brandName || 'Workspace' }}
+                </span>
               </a>
             </div>
 
@@ -179,6 +184,14 @@ import { ApiService } from '../../core/services/api.service';
       max-width: 220px;
       object-fit: contain;
       filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+    }
+
+    .showcase-brand-name {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.025em;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
     }
 
     .brand-fallback-badge {
@@ -586,6 +599,7 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
   loginNoteTitle: string = '';
   loginNote: string = '';
   loginNoteFooter: string = '';
+  logoLoadFailed: boolean = false;
   private routerSub?: Subscription;
 
   // Default curated royalty-free enterprise modern glass architecture wallpaper
@@ -749,7 +763,7 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
     if (this.useWhiteLogo && this.brandWhiteLogoUrl) {
       return this.brandWhiteLogoUrl;
     }
-    return this.brandWhiteLogoUrl || this.brandLogoUrl || 'assets/images/ozikol.png';
+    return this.brandWhiteLogoUrl || this.brandLogoUrl || '';
   }
 
   get activeBackground(): string {

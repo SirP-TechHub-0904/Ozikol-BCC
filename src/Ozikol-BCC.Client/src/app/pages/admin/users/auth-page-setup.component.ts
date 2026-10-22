@@ -367,7 +367,8 @@ interface WallpaperPreset {
               <div class="sim-split-wrapper" *ngIf="brand.loginLayout !== 'centered'">
                 <div class="sim-left-showcase">
                   <div class="sim-brand-row">
-                    <img [src]="displayLogo || 'assets/images/ozikol-white.png'" alt="Brand Logo" class="sim-logo" />
+                    <img *ngIf="displayLogo" [src]="displayLogo" [alt]="brand.companyName || 'Workspace'" class="sim-logo" />
+                    <span *ngIf="!displayLogo" class="sim-brand-fallback">{{ brand.companyName || 'Workspace' }}</span>
                   </div>
                   <div class="sim-hero-narrative" *ngIf="brand.loginNoteTitle || brand.loginTitle || brand.loginNote">
                     <div class="sim-chip" *ngIf="brand.loginNoteTitle">
@@ -415,7 +416,8 @@ interface WallpaperPreset {
                 </div>
                 <div class="sim-centered-card">
                   <div class="sim-brand-row" style="margin-bottom: 8px;">
-                    <img [src]="displayLogo || 'assets/images/ozikol.png'" alt="Brand Logo" class="sim-logo" />
+                    <img *ngIf="displayLogo" [src]="displayLogo" [alt]="brand.companyName || 'Workspace'" class="sim-logo" />
+                    <span *ngIf="!displayLogo" class="sim-brand-fallback dark">{{ brand.companyName || 'Workspace' }}</span>
                   </div>
                   <h4 class="sim-card-title" style="margin-bottom: 2px;">{{ brand.loginTitle || 'Sign In' }}</h4>
                   <p class="sim-card-subtitle" *ngIf="brand.loginNote">{{ brand.loginNote }}</p>
@@ -1248,6 +1250,14 @@ interface WallpaperPreset {
         flex-direction: column;
         gap: 6px;
         text-align: center;
+
+        .sim-brand-fallback {
+          font-size: 11px;
+          font-weight: 700;
+          color: #0f172a;
+          margin-bottom: 2px;
+          display: block;
+        }
 
         .sim-card-subtitle {
           font-size: 8.5px;

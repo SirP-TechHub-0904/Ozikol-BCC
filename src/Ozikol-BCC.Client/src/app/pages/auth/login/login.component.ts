@@ -24,9 +24,18 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
       <div class="login-card" *ngIf="!workspaceNotFound">
         <!-- Logo & Header -->
         <div class="card-header">
-          <!-- Official Brand Logo if uploaded, or default platform logo -->
+          <!-- Official Brand Logo if uploaded, or Brand Name if logo is null -->
           <div class="brand-identity-row">
-            <img [src]="brandLogoUrl || 'assets/images/ozikol.png'" alt="Brand Logo" class="brand-logo-top" />
+            <img 
+              *ngIf="brandLogoUrl && !logoLoadFailed" 
+              [src]="brandLogoUrl" 
+              [alt]="brandCompanyName || 'Workspace'" 
+              class="brand-logo-top" 
+              (error)="logoLoadFailed = true"
+            />
+            <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+              {{ brandCompanyName || 'Workspace' }}
+            </span>
           </div>
 
           <h2 class="title">{{ loginTitle || 'Sign In' }}</h2>
@@ -839,6 +848,7 @@ export class LoginComponent implements OnInit {
   brandIconUrl = '';
   brandCompanyName = '';
   brandInitials = '';
+  logoLoadFailed = false;
 
   // Auth Settings & Dynamic Copy
   loginTitle = '';
