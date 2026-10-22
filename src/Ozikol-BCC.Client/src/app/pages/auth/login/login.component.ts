@@ -123,9 +123,21 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
       <div class="modal-backdrop" *ngIf="showForceChangeModal">
         <div class="modal-card force-change-card" (click)="$event.stopPropagation()">
           <div class="force-modal-header">
+            <!-- Brand Identity: Logo or Company Name -->
+            <div class="brand-identity-row" style="margin-bottom: 14px;">
+              <img 
+                *ngIf="brandLogoUrl && !logoLoadFailed" 
+                [src]="brandLogoUrl" 
+                [alt]="brandCompanyName || 'Workspace'" 
+                class="brand-logo-top" 
+                (error)="logoLoadFailed = true"
+              />
+              <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+                {{ brandCompanyName || 'Workspace' }}
+              </span>
+            </div>
             <div class="force-modal-avatar">
-              <img *ngIf="brandLogoUrl" [src]="brandLogoUrl" alt="Brand Logo" class="brand-logo-img" />
-              <span *ngIf="!brandLogoUrl" class="material-symbols-outlined">lock_reset</span>
+              <span class="material-symbols-outlined">lock_reset</span>
             </div>
             <h3 class="force-modal-title">Temporary Password Detected</h3>
             <p class="force-modal-subtitle">For your security, please update your temporary credentials to a permanent password before accessing the portal.</p>
@@ -200,6 +212,19 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
       <div class="modal-backdrop" *ngIf="showOtpVerifyModal">
         <div class="modal-card force-change-card" (click)="$event.stopPropagation()">
           <div class="force-modal-header">
+            <!-- Brand Identity: Logo or Company Name -->
+            <div class="brand-identity-row" style="margin-bottom: 14px;">
+              <img 
+                *ngIf="brandLogoUrl && !logoLoadFailed" 
+                [src]="brandLogoUrl" 
+                [alt]="brandCompanyName || 'Workspace'" 
+                class="brand-logo-top" 
+                (error)="logoLoadFailed = true"
+              />
+              <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+                {{ brandCompanyName || 'Workspace' }}
+              </span>
+            </div>
             <div class="force-modal-avatar">
               <span class="material-symbols-outlined">mark_email_unread</span>
             </div>
@@ -257,6 +282,19 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
       <div class="modal-backdrop" *ngIf="showMfaModal">
         <div class="modal-card force-change-card" (click)="$event.stopPropagation()">
           <div class="force-modal-header">
+            <!-- Brand Identity: Logo or Company Name -->
+            <div class="brand-identity-row" style="margin-bottom: 14px;">
+              <img 
+                *ngIf="brandLogoUrl && !logoLoadFailed" 
+                [src]="brandLogoUrl" 
+                [alt]="brandCompanyName || 'Workspace'" 
+                class="brand-logo-top" 
+                (error)="logoLoadFailed = true"
+              />
+              <span *ngIf="!brandLogoUrl || logoLoadFailed" class="brand-company-title">
+                {{ brandCompanyName || 'Workspace' }}
+              </span>
+            </div>
             <div class="force-modal-avatar" style="background:#0050e5; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
               <span class="material-symbols-outlined" style="color:#fff; font-size:28px;">security</span>
             </div>
