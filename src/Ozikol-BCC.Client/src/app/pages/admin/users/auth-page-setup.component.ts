@@ -1463,8 +1463,14 @@ export class AuthPageSetupComponent implements OnInit {
         this.isLoading = false;
         if (res?.data) {
           this.brand = { ...this.brand, ...res.data };
-          // Normalise defaults
-          if (!this.brand.loginLayout) {
+          // Normalise defaults with robust fallback to loginBackgroundImageKey
+          const apiLayout = res.data.loginLayout?.toLowerCase();
+          const bgKeyLayout = res.data.loginBackgroundImageKey?.toLowerCase();
+          if (apiLayout === 'split' || apiLayout === 'centered') {
+            this.brand.loginLayout = apiLayout;
+          } else if (bgKeyLayout === 'split' || bgKeyLayout === 'centered') {
+            this.brand.loginLayout = bgKeyLayout;
+          } else {
             this.brand.loginLayout = 'centered';
           }
           if (this.brand.allowPublicRegistration === undefined) {
@@ -1521,6 +1527,11 @@ export class AuthPageSetupComponent implements OnInit {
       this.brand.useNormalLogoInLogin = false;
     }
 
+    // Maintain layout state in loginBackgroundImageKey to preserve NotMapped domain contract
+    if (this.brand.loginLayout === 'split' || this.brand.loginLayout === 'centered') {
+      this.brand.loginBackgroundImageKey = this.brand.loginLayout;
+    }
+
     this.api.put<any>('SettingsApi/brand', this.brand).subscribe({
       next: () => {
         this.isSaving = false;
@@ -1538,7 +1549,8 @@ export class AuthPageSetupComponent implements OnInit {
 
   selectPreset(preset: WallpaperPreset): void {
     this.brand.loginBackgroundImageUrl = preset.url;
-    this.brand.loginBackgroundImageKey = preset.id;
+    // Maintain layout state in loginBackgroundImageKey to preserve NotMapped domain contract
+    this.brand.loginBackgroundImageKey = this.brand.loginLayout === 'split' ? 'split' : 'centered';
     this.saveSettings(`Selected ${preset.name} wallpaper preset and saved.`);
   }
 
@@ -1548,7 +1560,8 @@ export class AuthPageSetupComponent implements OnInit {
 
   clearWallpaper(): void {
     this.brand.loginBackgroundImageUrl = '';
-    this.brand.loginBackgroundImageKey = '';
+    // Maintain layout state in loginBackgroundImageKey to preserve NotMapped domain contract
+    this.brand.loginBackgroundImageKey = this.brand.loginLayout === 'split' ? 'split' : 'centered';
     this.saveSettings('Reverted to platform default wallpaper and saved.');
   }
 
@@ -1592,10 +1605,9 @@ export class AuthPageSetupComponent implements OnInit {
         next: (res) => {
           this.isUploading = false;
           const url = res?.data?.url || res?.url;
-          const key = res?.data?.key || res?.key;
           if (url) {
             this.brand.loginBackgroundImageUrl = url;
-            this.brand.loginBackgroundImageKey = key;
+            this.brand.loginBackgroundImageKey = this.brand.loginLayout === 'split' ? 'split' : 'centered';
           }
           this.toast.success('Custom wallpaper uploaded to cloud storage!');
         },

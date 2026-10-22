@@ -88,7 +88,7 @@ import { ApiService } from '../../core/services/api.service';
               <!-- Universal Form Footer Note & Powered by Ozikol -->
               <div class="form-footer-meta">
                 <p class="auth-terms-note" *ngIf="displayFooterNote">{{ displayFooterNote }}</p>
-                <div class="powered-by-row">
+                <div class="powered-by-row" [class.desktop-hidden-in-split]="!isCentered">
                   <span>Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a></span>
                 </div>
               </div>
@@ -629,7 +629,17 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
           this.brandIconUrl = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
           this.useWhiteLogo = res.data.useWhiteLogoInLogin || false;
           this.loginBgUrl = res.data.loginBackgroundImageUrl || '';
-          this.loginLayout = res.data.loginLayout || 'centered';
+
+          // Robust layout resolution: Check loginLayout first, with fallback to loginBackgroundImageKey
+          const apiLayout = res.data.loginLayout?.toLowerCase();
+          const bgKeyLayout = res.data.loginBackgroundImageKey?.toLowerCase();
+          if (apiLayout === 'split' || apiLayout === 'centered') {
+            this.loginLayout = apiLayout;
+          } else if (bgKeyLayout === 'split' || bgKeyLayout === 'centered') {
+            this.loginLayout = bgKeyLayout;
+          } else {
+            this.loginLayout = 'centered';
+          }
           this.loginTitle = res.data.loginTitle || '';
           this.loginNoteTitle = res.data.loginNoteTitle || '';
           this.loginNote = res.data.loginNote || '';
