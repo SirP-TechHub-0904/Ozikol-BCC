@@ -595,11 +595,70 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Invitation successfully sent to '{emailClean}' with role '{request.Role}'."));
         }
 
+        /// <summary>
+        /// Retrieves the real-time security login audit stream.
+        /// When the calling user is not a SuperAdmin, audit records associated with SuperAdmin accounts are strictly filtered out.
+        /// </summary>
+        /// <returns>A collection of login audit records limited to the latest 250 rows.</returns>
         [HttpGet("login-audit")]
         public async Task<IActionResult> GetLoginAuditLogs()
         {
-            var logs = await _dbContext.BcpLoginAuditLogs
-                .AsNoTracking()
+            var isSuperAdmin = User.IsInRole("SuperAdmin") ||
+                               User.Claims.Any(c => (c.Type == ClaimTypes.Role || c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role") &&
+                                                    string.Equals(c.Value, "SuperAdmin", StringComparison.OrdinalIgnoreCase));
+
+            IQueryable<BcpLoginAuditLog> query = _dbContext.BcpLoginAuditLogs.AsNoTracking();
+
+            // Non-SuperAdmin administrators must never see SuperAdmin login attempts or telemetry
+            if (!isSuperAdmin)
+            {
+                // Identify SuperAdmin role and all associated user identifiers/emails to strictly shield them from non-SuperAdmin callers
+                var superAdminRole = await _dbContext.Roles
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Name == "SuperAdmin" || r.NormalizedName == "SUPERADMIN");
+
+                var superAdminUserIds = new List<string>();
+                var superAdminEmails = new List<string>();
+
+                if (superAdminRole != null)
+                {
+                    superAdminUserIds = await _dbContext.UserRoles
+                        .AsNoTracking()
+                        .Where(ur => ur.RoleId == superAdminRole.Id)
+                        .Select(ur => ur.UserId)
+                        .ToListAsync();
+
+                    if (superAdminUserIds.Count > 0)
+                    {
+                        superAdminEmails = await _dbContext.Users
+                            .AsNoTracking()
+                            .Where(u => superAdminUserIds.Contains(u.Id) && !string.IsNullOrEmpty(u.Email))
+                            .Select(u => u.Email!)
+                            .ToListAsync();
+                    }
+                }
+
+                // Construct normalized list of known superadmin emails
+                var emailFilterList = superAdminEmails
+                    .SelectMany(e => new[] { e, e.ToLower(), e.ToUpper() })
+                    .Distinct()
+                    .ToList();
+
+                // Apply comprehensive exclusion: exclude by UserId, known SuperAdmin emails, and any 'superadmin' handle
+                if (superAdminUserIds.Count > 0)
+                {
+                    query = query.Where(l => l.UserId == null || !superAdminUserIds.Contains(l.UserId));
+                }
+
+                if (emailFilterList.Count > 0)
+                {
+                    query = query.Where(l => string.IsNullOrEmpty(l.Email) || !emailFilterList.Contains(l.Email));
+                }
+
+                query = query.Where(l => string.IsNullOrEmpty(l.Email) || !l.Email.Contains("superadmin"));
+            }
+
+            var logs = await query
                 .OrderByDescending(l => l.Timestamp)
                 .Take(250) // Limit to latest 250 rows for performance
                 .ToListAsync();
