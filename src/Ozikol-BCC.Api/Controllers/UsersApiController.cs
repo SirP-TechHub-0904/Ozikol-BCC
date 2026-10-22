@@ -349,7 +349,7 @@ namespace Ozikol_BCC.Api.Controllers
                 })
                 .ToListAsync();
 
-            // Custom Dynamic Onboarding Attributes
+            // Custom Dynamic Onboarding Attributes (excluding internal suffix which is incorporated directly into FullName)
             var customAttributes = new List<object>();
             if (!string.IsNullOrWhiteSpace(user.CustomAttributesJson))
             {
@@ -361,6 +361,9 @@ namespace Ozikol_BCC.Api.Controllers
                         var fieldDefs = await _dbContext.BcpRegistrationFormFields.AsNoTracking().ToListAsync();
                         foreach (var kvp in rawDict)
                         {
+                            // Suffix is attached directly to FullName and should not be displayed as an arbitrary dynamic attribute
+                            if (string.Equals(kvp.Key, "suffix", StringComparison.OrdinalIgnoreCase)) continue;
+
                             var def = fieldDefs.FirstOrDefault(f => f.FieldKey.Equals(kvp.Key, StringComparison.OrdinalIgnoreCase));
                             customAttributes.Add(new
                             {
@@ -394,6 +397,7 @@ namespace Ozikol_BCC.Api.Controllers
                 firstName = user.FirstName,
                 lastName = user.LastName,
                 title = user.Title,
+                suffix = user.Suffix,
                 memberId = MemberIdGeneratorService.SanitizeMemberId(user.MemberId, "-"),
                 gender = user.Gender.ToString(),
                 designation = user.Designation ?? "Member",
@@ -1991,7 +1995,7 @@ namespace Ozikol_BCC.Api.Controllers
                     ? $"Your phone number verification status has been marked as {(request.IsVerified ? "Verified" : "Unverified")} by administration."
                     : $"Your email address verification status has been marked as {(request.IsVerified ? "Verified" : "Unverified")} by administration.",
                 "/users/workspace/security",
-                request.IsVerified ? NotificationSeverity.Success : NotificationSeverity.Warning,
+                request.IsVerified ? NotificationSeverity.Success : NotificationSeverity.Failed,
                 "verified");
 
             return Ok(ApiResponse<object>.SuccessResponse(new { user.EmailConfirmed, user.PhoneNumberConfirmed }, "Verification status updated."));
@@ -2198,6 +2202,7 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string Target { get; set; } = "email"; // "email" or "phone"
         public bool IsVerified { get; set; }
+        public bool IsPhone => string.Equals(Target, "phone", StringComparison.OrdinalIgnoreCase);
     }
 
     public class CreateUserRequest

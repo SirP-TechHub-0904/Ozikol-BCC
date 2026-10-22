@@ -1368,7 +1368,7 @@ namespace Ozikol_BCC.Api.Controllers
                 UserId = user.Id,
                 Title = "Security: Permissions Matrix Updated",
                 Message = $"Your system role has been set to '{targetRole}' with {activeScopesList.Count} capability authorizations.",
-                Severity = "warning",
+                Severity = NotificationSeverity.Failed,
                 ActionUrl = "/users/workspace/security",
                 IsRead = false,
                 CreatedAt = DateTime.UtcNow
@@ -1381,7 +1381,7 @@ namespace Ozikol_BCC.Api.Controllers
 <!DOCTYPE html>
 <html>
 <head><meta charset='utf-8'></head>
-<body style='font-family:-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,sans-serif; background-color:#f8fafc; padding:24px; margin:0;'>
+<body style='font-family:-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Roboto,sans-serif; background-color:#f8fafc; padding:24px; margin:0;'>
   <div style='max-width:580px; margin:0 auto; background:#ffffff; border-radius:12px; border:1px solid #e2e8f0; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.05);'>
     <div style='background:#0050e5; padding:24px 30px; text-align:left;'>
       <h2 style='color:#ffffff; margin:0; font-size:20px; font-weight:700;'>Ozikol BCC • Security Notification</h2>
@@ -1425,7 +1425,7 @@ namespace Ozikol_BCC.Api.Controllers
                 RecipientEmail = user.Email ?? string.Empty,
                 Subject = "Security Alert: Workspace Role & Permissions Matrix Updated",
                 HtmlBody = emailBody,
-                Category = BcpMessageCategory.SecurityAlert,
+                Category = BcpMessageCategory.Security,
                 Priority = BcpMessagePriority.Urgent,
                 Status = BcpQueueStatus.Queued,
                 CreatedAt = DateTime.UtcNow
@@ -1443,12 +1443,12 @@ namespace Ozikol_BCC.Api.Controllers
                         TargetUserId = user.Id,
                         Title = "Security: Permissions Matrix Updated",
                         Message = $"Your system role has been set to '{targetRole}' with {activeScopesList.Count} capability authorizations.",
-                        Severity = NotificationSeverity.Warning,
+                        Severity = NotificationSeverity.Failed,
                         Channels = NotificationChannels.InApp | NotificationChannels.Email,
                         ActionUrl = "/users/workspace/security",
                         Module = "Identity & Access Governance",
                         Icon = "admin_panel_settings",
-                        Category = BcpMessageCategory.SecurityAlert,
+                        Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,
                         SendEmailCopy = true,
                         EmailSubject = "Security Alert: Workspace Role & Permissions Matrix Updated",

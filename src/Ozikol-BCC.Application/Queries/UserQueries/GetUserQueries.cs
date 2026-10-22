@@ -78,7 +78,9 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                         catch { }
                     }
 
-                    var cleanFullName = !string.IsNullOrWhiteSpace(suffix) ? $"{u.FullName}, {suffix}".Trim() : u.FullName;
+                    var cleanFullName = !string.IsNullOrWhiteSpace(suffix) && !u.FullName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)
+                        ? $"{u.FullName}, {suffix}".Trim()
+                        : u.FullName;
 
                     return new UserDto
                     {
@@ -154,7 +156,9 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                 catch { }
             }
 
-            var cleanFullName = !string.IsNullOrWhiteSpace(suffix) ? $"{u.FullName}, {suffix}".Trim() : u.FullName;
+            var cleanFullName = !string.IsNullOrWhiteSpace(suffix) && !u.FullName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)
+                ? $"{u.FullName}, {suffix}".Trim()
+                : u.FullName;
 
             return new UserDto
             {
