@@ -205,6 +205,7 @@ export const routes: Routes = [
       { path: 'users/workspace/profile', component: WorkspaceProfileComponent },
       { path: 'users/workspace/kpi', component: WorkspaceKpiComponent },
       { path: 'users/workspace/security', component: WorkspaceSecurityComponent },
+      { path: 'users/workspace/account', component: IdentityAccountComponent },
       { path: 'users/workspace/notifications', component: WorkspaceNotificationsComponent },
       { path: 'users/workspace/purchases', component: WorkspacePurchasesComponent },
       { path: 'users/workspace/activity', component: WorkspaceDashboardComponent },

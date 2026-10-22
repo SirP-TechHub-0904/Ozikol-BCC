@@ -1353,6 +1353,8 @@ export interface SuiteInfoDetail {
         <!-- ============================================== -->
         <ng-container *ngIf="!isConsoleActive">
           <div class="menu-title">{{ 'suite.member_workspace' | translate }}</div>
+
+          <!-- 1. Workspace Dashboard -->
           <div class="nav-item">
             <a routerLink="/dashboard/workspace" [class.active]="isCurrentRoute('/dashboard/workspace') || isCurrentRoute('/users/workspace/dashboard')" class="nav-link">
               <div class="nav-link-content">
@@ -1361,127 +1363,69 @@ export interface SuiteInfoDetail {
               </div>
             </a>
           </div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/profile" [class.active]="isCurrentRoute('/users/workspace/profile')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">person</span>
-                <span>{{ 'nav.my_profile' | translate }}</span>
-              </div>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/profile/biography" [class.active]="isCurrentRoute('/users/workspace/profile/biography')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">assignment_ind</span>
-                <span>{{ 'nav.my_cv_biography' | translate }}</span>
-              </div>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/kpi" [class.active]="isCurrentRoute('/users/workspace/kpi')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">monitoring</span>
-                <span>{{ 'nav.my_kpis' | translate }}</span>
-              </div>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/security" [class.active]="isCurrentRoute('/users/workspace/security')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">lock_reset</span>
-                <span>{{ 'nav.security_password' | translate }}</span>
-              </div>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/notifications" [class.active]="isCurrentRoute('/users/workspace/notifications')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">notifications</span>
-                <span>{{ 'nav.notifications_alerts' | translate }}</span>
-              </div>
-            </a>
-          </div>
 
-          <!-- Suite 01: Community & Collaboration -->
-          <div class="menu-title">{{ 'suite.people_community' | translate }}</div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/chat" [class.active]="isCurrentRoute('/users/workspace/chat')" class="nav-link">
+          <!-- 2. Manage My Account Dropdown -->
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_account')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/workspace/account') || isParentActive('/identity/console/account')" (click)="toggleMenu('workspace_account')">
               <div class="nav-link-content">
-                <span class="material-symbols-outlined">chat</span>
-                <span>{{ 'nav.chat_messenger' | translate }}</span>
-                <span class="badge-pill badge-hot">Live</span>
+                <span class="material-symbols-outlined">manage_accounts</span>
+                <span>{{ 'nav.manage_my_account' | translate }}</span>
               </div>
+              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
+            <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_account')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/workspace/account" [queryParams]="{ tab: 'password' }" [class.active]="isCurrentRouteWithQuery('/users/workspace/account', 'password')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">key</span>{{ 'nav.change_password' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=password')" (click)="togglePin('Change Password', '/users/workspace/account?tab=password', 'key')" [title]="isPinned('/users/workspace/account?tab=password') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account?tab=password') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/workspace/account" [queryParams]="{ tab: '2fa' }" [class.active]="isCurrentRouteWithQuery('/users/workspace/account', '2fa')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">shield_lock</span>{{ 'nav.mfa_security' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=2fa')" (click)="togglePin('2FA Security', '/users/workspace/account?tab=2fa', 'shield_lock')" [title]="isPinned('/users/workspace/account?tab=2fa') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account?tab=2fa') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/workspace/account" [queryParams]="{ tab: 'devices' }" [class.active]="isCurrentRouteWithQuery('/users/workspace/account', 'devices')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">devices</span>{{ 'nav.manage_devices' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=devices')" (click)="togglePin('Manage Devices', '/users/workspace/account?tab=devices', 'devices')" [title]="isPinned('/users/workspace/account?tab=devices') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account?tab=devices') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/workspace/account" [queryParams]="{ tab: 'activity' }" [class.active]="isCurrentRouteWithQuery('/users/workspace/account', 'activity')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history</span>{{ 'nav.login_history' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=activity')" (click)="togglePin('Login History', '/users/workspace/account?tab=activity', 'history')" [title]="isPinned('/users/workspace/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account?tab=activity') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/workspace/account" [class.active]="isAccountHubActive()" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>{{ 'nav.account_hub' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account')" (click)="togglePin('Account Hub', '/users/workspace/account', 'tune')" [title]="isPinned('/users/workspace/account') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
           </div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/groups" [class.active]="isCurrentRoute('/users/workspace/groups')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">groups</span>
-                <span>{{ 'nav.groups_directory' | translate }}</span>
-              </div>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/alumni" [class.active]="isCurrentRoute('/users/workspace/alumni')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">school</span>
-                <span>{{ 'nav.alumni_network' | translate }}</span>
-              </div>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/alumni/cohorts" [class.active]="isCurrentRoute('/users/workspace/alumni/cohorts')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">calendar_month</span>
-                <span>Alumni Cohorts & Sets</span>
-              </div>
-            </a>
-          </div>
-
-          <!-- Suite 02: My Schedule & Rota -->
-          <div class="menu-title">{{ 'suite.workforce_shifts' | translate }}</div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">calendar_today</span><span>{{ 'nav.staff_rota' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">schedule</span><span>{{ 'nav.attendance_tracking' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-
-          <!-- Suite 04 & 05: Events, Store & Dues -->
-          <div class="menu-title">{{ 'suite.finance_revenue' | translate }}</div>
-          <div class="nav-item">
-            <a routerLink="/users/workspace/purchases" [class.active]="isCurrentRoute('/users/workspace/purchases')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">shopping_bag</span>
-                <span>{{ 'nav.my_purchases' | translate }}</span>
-              </div>
-            </a>
-          </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">confirmation_number</span><span>{{ 'nav.event_ticketing' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">payments</span><span>{{ 'nav.invoicing_dues' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-
-          <!-- Suite 07 & 08: Help, Credentials & ID -->
-          <div class="menu-title">{{ 'suite.compliance_governance' | translate }}</div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>{{ 'nav.digital_id_cards' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">verified</span><span>{{ 'nav.certificate_verification' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">support_agent</span><span>{{ 'nav.helpdesk_support' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
         </ng-container>
       </nav>
 
@@ -4037,7 +3981,7 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   isAccountHubActive(): boolean {
-    return this.isCurrentRoute('/identity/console/account') && !this.router.url.includes('tab=');
+    return (this.isCurrentRoute('/identity/console/account') || this.isCurrentRoute('/users/workspace/account')) && !this.router.url.includes('tab=');
   }
 
   toggleDropdown(dropdownName: string, event?: Event): void {
@@ -4096,7 +4040,7 @@ export class AdminLayoutComponent implements OnInit {
     else if (url.includes('/identity/console/roles')) { tabTitle = 'Roles & Permissions'; tabIcon = 'verified_user'; }
     else if (url.includes('/identity/console/invitations')) { tabTitle = 'Member Invitations'; tabIcon = 'mail'; }
     else if (url.includes('/identity/console/policies')) { tabTitle = 'Global Policies'; tabIcon = 'password'; }
-    else if (url.includes('/identity/console/account')) { tabTitle = 'Manage Account'; tabIcon = 'manage_accounts'; }
+    else if (url.includes('/identity/console/account') || url.includes('/users/workspace/account')) { tabTitle = 'Manage Account'; tabIcon = 'manage_accounts'; }
     else if (url.includes('/identity/console') || url.includes('/admin/identity')) { tabTitle = 'Identity Dashboard'; tabIcon = 'space_dashboard'; }
     else if (url.includes('/users/workspace/chat')) { tabTitle = 'Chat Room'; tabIcon = 'chat'; }
     else if (url.includes('/users/workspace/groups')) { tabTitle = 'Groups Directory'; tabIcon = 'groups'; }
