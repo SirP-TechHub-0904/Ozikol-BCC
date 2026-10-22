@@ -327,29 +327,6 @@ interface WallpaperPreset {
                   <span class="toggle-slider"></span>
                 </label>
               </div>
-
-              <!-- Header Menu & Footer Link Integration -->
-              <div class="form-grid-2" style="margin-top: 12px;">
-                <div class="toggle-card mini-toggle" [class.active-toggle]="brand.activateLoginInMenu" (click)="toggleMenuLogin()">
-                  <div class="toggle-info">
-                    <strong class="toggle-title" style="font-size: 13px;">Show Login in Header Navbar</strong>
-                  </div>
-                  <label class="toggle-switch" (click)="$event.stopPropagation()">
-                    <input type="checkbox" [(ngModel)]="brand.activateLoginInMenu" (change)="saveSettings('Header navbar login link saved.')" />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-
-                <div class="toggle-card mini-toggle" [class.active-toggle]="brand.activateLoginInFooter" (click)="toggleFooterLogin()">
-                  <div class="toggle-info">
-                    <strong class="toggle-title" style="font-size: 13px;">Show Login in Footer Columns</strong>
-                  </div>
-                  <label class="toggle-switch" (click)="$event.stopPropagation()">
-                    <input type="checkbox" [(ngModel)]="brand.activateLoginInFooter" (change)="saveSettings('Footer login link saved.')" />
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -1585,18 +1562,6 @@ export class AuthPageSetupComponent implements OnInit {
     this.brand.useWhiteLogoInLogin = !this.brand.useWhiteLogoInLogin;
     const status = this.brand.useWhiteLogoInLogin ? 'enabled' : 'disabled';
     this.saveSettings(`White logo variant ${status} and saved.`);
-  }
-
-  toggleMenuLogin(): void {
-    this.brand.activateLoginInMenu = !this.brand.activateLoginInMenu;
-    const status = this.brand.activateLoginInMenu ? 'enabled' : 'disabled';
-    this.saveSettings(`Login link in header navbar ${status} and saved.`);
-  }
-
-  toggleFooterLogin(): void {
-    this.brand.activateLoginInFooter = !this.brand.activateLoginInFooter;
-    const status = this.brand.activateLoginInFooter ? 'enabled' : 'disabled';
-    this.saveSettings(`Login link in footer columns ${status} and saved.`);
   }
 
   onFileSelected(event: Event): void {
