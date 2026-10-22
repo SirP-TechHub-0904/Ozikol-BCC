@@ -351,6 +351,16 @@ export interface SuiteInfoDetail {
             <ul class="nav-submenu" *ngIf="isMenuOpen('identity')">
               <li>
                 <div class="sub-nav-wrapper">
+                  <a routerLink="/identity/console" [class.active]="isCurrentRoute('/identity/console') || isCurrentRoute('/identity/console/dashboard')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'nav.identity_dashboard' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console')" (click)="togglePin('Identity Dashboard', '/identity/console', 'space_dashboard')" [title]="isPinned('/identity/console') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
                   <a routerLink="/identity/console/roles" [class.active]="isCurrentRoute('/identity/console/roles')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">verified_user</span>{{ 'nav.roles_permissions' | translate }}</span>
                   </a>
@@ -3992,7 +4002,10 @@ export class AdminLayoutComponent implements OnInit {
     else if (url.includes('/content/console/templates') || url.includes('/admin/templates')) { tabTitle = 'My Templates'; tabIcon = 'layers'; }
     else if (url.includes('/content/console') || url.includes('/admin/content')) { tabTitle = 'CMS Studio'; tabIcon = 'dynamic_feed'; }
     else if (url.includes('/users/console') || url.includes('/admin/users')) { tabTitle = 'User Directory'; tabIcon = 'groups'; }
-    else if (url.includes('/identity/console') || url.includes('/admin/identity')) { tabTitle = 'Identity & Roles'; tabIcon = 'admin_panel_settings'; }
+    else if (url.includes('/identity/console/roles')) { tabTitle = 'Roles & Permissions'; tabIcon = 'verified_user'; }
+    else if (url.includes('/identity/console/invitations')) { tabTitle = 'Member Invitations'; tabIcon = 'mail'; }
+    else if (url.includes('/identity/console/policies')) { tabTitle = 'Global Policies'; tabIcon = 'password'; }
+    else if (url.includes('/identity/console') || url.includes('/admin/identity')) { tabTitle = 'Identity Dashboard'; tabIcon = 'space_dashboard'; }
     else if (url.includes('/users/workspace/chat')) { tabTitle = 'Chat Room'; tabIcon = 'chat'; }
     else if (url.includes('/users/workspace/groups')) { tabTitle = 'Groups Directory'; tabIcon = 'groups'; }
     else if (url.includes('/users/workspace/alumni')) { tabTitle = 'Alumni Network'; tabIcon = 'school'; }

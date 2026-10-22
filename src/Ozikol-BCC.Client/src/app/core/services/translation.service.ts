@@ -112,6 +112,7 @@ export class TranslationService {
 
       // Additional Suite Navigation Items
       'nav.identity_control': 'Identity & Access Control',
+      'nav.identity_dashboard': 'Identity Dashboard',
       'nav.roles_permissions': 'Roles & Permissions',
       'nav.user_invitations': 'Member Invitations',
       'nav.global_policies': 'Global Security Policies',
@@ -298,6 +299,7 @@ export class TranslationService {
 
       // Additional Suite Navigation Items
       'nav.identity_control': 'Contrôle d’Identité & Accès',
+      'nav.identity_dashboard': 'Tableau de Bord d’Identité',
       'nav.roles_permissions': 'Rôles & Permissions',
       'nav.user_invitations': 'Invitations de Membres',
       'nav.global_policies': 'Politiques de Sécurité Globales',
@@ -484,6 +486,7 @@ export class TranslationService {
 
       // Additional Suite Navigation Items
       'nav.identity_control': 'Control de Identidad y Acceso',
+      'nav.identity_dashboard': 'Panel de Control de Identidad',
       'nav.roles_permissions': 'Roles y Permisos',
       'nav.user_invitations': 'Invitaciones de Miembros',
       'nav.global_policies': 'Políticas Globales de Seguridad',
@@ -670,6 +673,7 @@ export class TranslationService {
 
       // Additional Suite Navigation Items
       'nav.identity_control': 'Identitäts- & Zugriffskontrolle',
+      'nav.identity_dashboard': 'Identitäts-Dashboard',
       'nav.roles_permissions': 'Rollen & Berechtigungen',
       'nav.user_invitations': 'Mitgliedereinladungen',
       'nav.global_policies': 'Globale Sicherheitsrichtlinien',
