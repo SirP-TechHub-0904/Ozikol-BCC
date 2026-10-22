@@ -77,6 +77,7 @@ namespace Ozikol_BCC.Application.Services
                             var context = scope.ServiceProvider.GetRequiredService<DashboardDbContext>();
                             var zeptoMailService = scope.ServiceProvider.GetRequiredService<IZeptoMailService>();
                             var postmarkService = scope.ServiceProvider.GetService<IPostmarkEmailService>();
+                            var emailShellService = scope.ServiceProvider.GetService<Ozikol_BCC.Application.Interfaces.Services.ITenantEmailShellService>();
 
                             var settings = await context.MisConfigurationSettings.FirstOrDefaultAsync();
                             bool hasZepto = settings != null && !string.IsNullOrWhiteSpace(settings.ZeptoMailApiKey);
@@ -105,13 +106,26 @@ namespace Ozikol_BCC.Application.Services
                                 bool isSuccess = false;
                                 string? errorMessage = null;
 
+                                // Dynamically wrap inner HTML snippets in tenant-branded shell if not already full document
+                                var outgoingHtml = email.HtmlBody;
+                                if (emailShellService != null &&
+                                    outgoingHtml.IndexOf("<!DOCTYPE html", StringComparison.OrdinalIgnoreCase) < 0 &&
+                                    outgoingHtml.IndexOf("<html", StringComparison.OrdinalIgnoreCase) < 0)
+                                {
+                                    outgoingHtml = await emailShellService.WrapWithTenantShellAsync(
+                                        context,
+                                        innerHtml: outgoingHtml,
+                                        title: email.Subject,
+                                        recipientFirstName: email.RecipientName);
+                                }
+
                                 if (hasZepto)
                                 {
                                     var result = await zeptoMailService.SendEmailAsync(
                                         email.RecipientEmail, 
                                         email.RecipientName ?? "Recipient", 
                                         email.Subject, 
-                                        email.HtmlBody, 
+                                        outgoingHtml, 
                                         email.Id.ToString());
 
                                     isSuccess = result.IsSuccess;
@@ -122,7 +136,7 @@ namespace Ozikol_BCC.Application.Services
                                     var result = await postmarkService.SendHtmlEmailAsync(
                                         to: email.RecipientEmail,
                                         subject: email.Subject,
-                                        htmlBody: email.HtmlBody,
+                                        htmlBody: outgoingHtml,
                                         tag: email.EventType.ToString().ToLowerInvariant());
 
                                     isSuccess = result.Status == PostmarkStatus.Success;

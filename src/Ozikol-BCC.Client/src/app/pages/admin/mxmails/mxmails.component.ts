@@ -411,7 +411,7 @@ export interface EmailQueueStats {
                 type="text" 
                 [(ngModel)]="testSubject" 
                 name="testSubject" 
-                placeholder="e.g. Ozikol BCC Outbound Deliverability Test" 
+                placeholder="e.g. Workspace Outbound Deliverability Test" 
                 class="form-control"
               />
             </div>
@@ -1293,7 +1293,7 @@ export class MxMailsComponent implements OnInit, OnDestroy {
 
   openTestEmailModal(): void {
     this.testRecipientEmail = '';
-    this.testSubject = 'Ozikol BCC Outbound Deliverability Test';
+    this.testSubject = 'Workspace Outbound Deliverability Test';
     this.testRecipientName = '';
     this.showTestEmailModal = true;
   }

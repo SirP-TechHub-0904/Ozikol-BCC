@@ -630,10 +630,17 @@ namespace Ozikol_BCC.Api.Controllers
             _dbContext.BcpUserInvitations.Add(invitation);
 
             // 5. Resolve client register link host dynamically
-            var origin = Request.Headers.Origin.ToString();
-            if (string.IsNullOrEmpty(origin)) origin = "http://localhost:4200";
+            var origin = Request.Headers.Origin.FirstOrDefault() 
+                ?? Request.Headers.Referer.FirstOrDefault() 
+                ?? $"{Request.Scheme}://{Request.Host}";
 
-            var registrationUrl = $"{origin}/auth/register?token={token}&email={Uri.EscapeDataString(emailClean)}";
+            var registrationUrl = $"{origin.TrimEnd('/')}/auth/register?token={token}&email={Uri.EscapeDataString(emailClean)}";
+
+            // Resolve dynamic tenant brand name
+            var tenantSettings = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var tenantBrand = !string.IsNullOrWhiteSpace(tenantSettings?.BrandName)
+                ? tenantSettings.BrandName.Trim()
+                : (!string.IsNullOrWhiteSpace(tenantSettings?.CompanyName) ? tenantSettings.CompanyName.Trim() : "Workspace");
 
             var customMsgBlock = string.IsNullOrWhiteSpace(request.CustomMessage)
                 ? string.Empty
@@ -652,29 +659,26 @@ namespace Ozikol_BCC.Api.Controllers
                 : (!string.IsNullOrEmpty(actionDescription) ? $" with <strong>{actionDescription}</strong> operational access" : string.Empty);
 
             var emailBody = $@"
-                <div style='font-family:sans-serif; padding:32px; max-width:550px; margin:0 auto; border:1px solid #e2e8f0; border-radius:16px; background-color:#ffffff;'>
-                    <h2 style='color:#0f172a; margin-top:0; font-size:22px; font-weight:800; letter-spacing:-0.02em;'>Workspace Onboarding</h2>
-                    <p style='color:#334155; font-size:14.5px; line-height:1.6; margin-bottom:20px;'>
-                        You have been invited to join the <strong>Ozikol Workspace Portal</strong> as a <strong>{baseRole}</strong>{featureScopeNotice}. Accept the invitation below to establish your account credentials and access the workspace.
-                    </p>
-                    {customMsgBlock}
-                    <div style='margin:30px 0; text-align:center;'>
-                        <a href='{registrationUrl}' 
-                           style='background-color:#0050e5; color:#ffffff; padding:13px 28px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block; font-size:14px; box-shadow:0 4px 6px -1px rgba(0, 80, 229, 0.2);'>
-                            Accept Invitation & Register
-                        </a>
-                    </div>
-                    <p style='color:#64748b; font-size:12px; line-height:1.5; border-top:1px solid #f1f5f9; padding-top:16px;'>
-                        This invitation is secure and will expire in {expiresDays} days. If you did not request this invitation, you can safely ignore this message.
-                    </p>
-                </div>";
+                <p style='color:#334155; font-size:14.5px; line-height:1.6; margin-top:0; margin-bottom:18px;'>
+                    You have been invited to join the <strong>{System.Net.WebUtility.HtmlEncode(tenantBrand)}</strong> workspace as a <strong>{baseRole}</strong>{featureScopeNotice}. Accept the invitation below to establish your account credentials and access the workspace.
+                </p>
+                {customMsgBlock}
+                <div style='margin:28px 0; text-align:center;'>
+                    <a href='{registrationUrl}' 
+                       style='background-color:#0050e5; color:#ffffff; padding:13px 28px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block; font-size:14px; box-shadow:0 4px 6px -1px rgba(0, 80, 229, 0.2);'>
+                        Accept Invitation & Register
+                    </a>
+                </div>
+                <p style='color:#64748b; font-size:12px; line-height:1.5; border-top:1px solid #f1f5f9; padding-top:16px; margin-bottom:0;'>
+                    This invitation is secure and will expire in {expiresDays} days. If you did not request this invitation, you can safely ignore this message.
+                </p>";
 
             var emailQueueItem = new BcpEmailQueue
             {
                 Id = Guid.CreateVersion7(),
                 RecipientEmail = emailClean,
                 RecipientName = emailClean.Split('@')[0],
-                Subject = "You are invited to join Ozikol BCC Workspace",
+                Subject = $"You are invited to join {tenantBrand} Workspace",
                 HtmlBody = emailBody,
                 Category = BcpMessageCategory.General,
                 Priority = BcpMessagePriority.High,
@@ -937,27 +941,25 @@ namespace Ozikol_BCC.Api.Controllers
                 };
                 _dbContext.BcpNotifications.Add(notif);
 
-                // Email Notification
+                // Email Notification - pure content snippet enqueued to the pool
                 var emailBody = $@"
-                    <div style='font-family:sans-serif; padding:24px; max-width:550px; margin:0 auto; border:1px solid #e2e8f0; border-radius:12px;'>
-                        <h3 style='color:#ef4444; margin-top:0;'>Device Session Terminated</h3>
-                        <p style='color:#334155; font-size:14px; line-height:1.6;'>
-                            Hello, a logged-in device session on your account was successfully revoked/terminated.
-                        </p>
-                        <ul style='color:#475569; font-size:13.5px; line-height:1.5;'>
-                            <li><strong>Device:</strong> {session.DeviceName}</li>
-                            <li><strong>IP Address:</strong> {session.IpAddress}</li>
-                            <li><strong>Action Time:</strong> {DateTime.UtcNow:f} UTC</li>
-                        </ul>
-                        <p style='color:#64748b; font-size:12px;'>
-                            If you did not authorize this action, please change your login credentials immediately to secure your account.
-                        </p>
-                    </div>";
+                    <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>
+                        An active logged-in device session on your account was recently terminated by a workspace administrator.
+                    </p>
+                    <ul style='color:#475569; font-size:13.5px; line-height:1.8; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 20px 14px 34px;'>
+                        <li><strong>Device:</strong> {session.DeviceName}</li>
+                        <li><strong>IP Address:</strong> {session.IpAddress}</li>
+                        <li><strong>Action Time:</strong> {DateTime.UtcNow:MMMM dd, yyyy HH:mm} UTC</li>
+                    </ul>
+                    <p style='color:#64748b; font-size:12px; margin-bottom:0;'>
+                        If you did not authorize this session termination or suspect unauthorized access, please update your login credentials immediately to secure your account.
+                    </p>";
 
                 var emailQueueItem = new BcpEmailQueue
                 {
                     Id = Guid.CreateVersion7(),
                     RecipientEmail = user.Email ?? string.Empty,
+                    RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : "Member",
                     Subject = "Security Alert: Active Session Terminated",
                     HtmlBody = emailBody,
                     Category = BcpMessageCategory.General,
@@ -1246,7 +1248,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Saves updated security feature roles, assigns system access tiers, and dispatches real-time security notifications & emails.
+        /// Saves updated security feature roles, assigns system access tiers, and dispatches real-time security notifications &amp; emails.
         /// </summary>
         [HttpPost("users/{userId}/feature-roles")]
         [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
@@ -1375,54 +1377,40 @@ namespace Ozikol_BCC.Api.Controllers
             };
             _dbContext.BcpNotifications.Add(notif);
 
-            // 2. Transactional Email Layout (Royal Blue #0050E5, Anti-Spam Compliant)
-            var recipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? $"{user.FirstName} {user.LastName}".Trim() : (user.Email ?? "Member");
+            // 2. Transactional Email Layout (Pure content snippet enqueued to the pool, wrapped by TenantEmailShellService)
+            var origin = Request.Headers.Origin.FirstOrDefault()
+                ?? Request.Headers.Referer.FirstOrDefault()
+                ?? $"{Request.Scheme}://{Request.Host}";
+            var securityUrl = $"{origin.TrimEnd('/')}/users/workspace/security";
+
+            var recipientFirstName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName.Trim() : "Member";
             var emailBody = $@"
-<!DOCTYPE html>
-<html>
-<head><meta charset='utf-8'></head>
-<body style='font-family:-apple-system,BlinkMacSystemFont,&quot;Segoe UI&quot;,Roboto,sans-serif; background-color:#f8fafc; padding:24px; margin:0;'>
-  <div style='max-width:580px; margin:0 auto; background:#ffffff; border-radius:12px; border:1px solid #e2e8f0; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.05);'>
-    <div style='background:#0050e5; padding:24px 30px; text-align:left;'>
-      <h2 style='color:#ffffff; margin:0; font-size:20px; font-weight:700;'>Ozikol BCC • Security Notification</h2>
-      <p style='color:#e0e7ff; margin:4px 0 0 0; font-size:13px;'>Workspace Role & Capability Scope Adjustment</p>
-    </div>
-    <div style='padding:28px 30px; color:#334155;'>
-      <p style='font-size:15px; line-height:1.6; margin-top:0;'>
-        Hello <strong>{recipientName}</strong>,
-      </p>
-      <p style='font-size:14px; line-height:1.6; color:#475569;'>
-        This is an official security advisory to inform you that a workspace administrator has updated your system role and action authorizations.
-      </p>
-      <div style='background:#f1f5f9; border-left:4px solid #0050e5; padding:14px 18px; border-radius:4px; margin:20px 0;'>
-        <p style='margin:0 0 6px 0; font-size:14px;'><strong>Primary System Role:</strong> <span style='color:#0050e5; font-weight:700;'>{targetRole}</span></p>
-        <p style='margin:0 0 6px 0; font-size:14px;'><strong>Administrative Privileges:</strong> {(targetRole == "Admin" || targetRole == "SuperAdmin" || request.IsAdmin ? "Granted (Administrator)" : "Restricted (Standard Member)")}</p>
-        <p style='margin:0; font-size:14px;'><strong>Effective Date:</strong> {DateTime.UtcNow:MMMM dd, yyyy HH:mm} UTC</p>
-      </div>
-      <h4 style='color:#0f172a; margin:20px 0 10px 0; font-size:14px; font-weight:700;'>Assigned Modular Capability Scopes:</h4>
-      <div style='background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 18px; font-size:13px; line-height:1.8; color:#334155;'>
-        {scopesHtmlSummary}
-      </div>
-      <p style='color:#64748b; font-size:12.5px; line-height:1.5; margin-top:24px;'>
-        <strong>Security Tip:</strong> To ensure all updated privileges take effect immediately across your active sessions, please log out and sign back into your workspace.
-      </p>
-      <div style='margin-top:24px; text-align:center;'>
-        <a href='https://testspace.localhost:4200/users/workspace/security' style='background:#0050e5; color:#ffffff; padding:10px 22px; text-decoration:none; border-radius:8px; font-size:13px; font-weight:700; display:inline-block;'>
-          Review Security Settings
-        </a>
-      </div>
-    </div>
-    <div style='background:#f8fafc; padding:14px 30px; border-top:1px solid #e2e8f0; text-align:center; font-size:11.5px; color:#94a3b8;'>
-      This automated alert was dispatched by Ozikol Business Command Center. If you did not expect this adjustment, please contact your workspace administrator immediately.
-    </div>
-  </div>
-</body>
-</html>";
+<p style='font-size:14px; line-height:1.6; color:#475569; margin-top:0;'>
+  This is an official security advisory to inform you that a workspace administrator has updated your system role and action authorizations.
+</p>
+<div style='background:#f1f5f9; border-left:4px solid #0050e5; padding:14px 18px; border-radius:4px; margin:20px 0;'>
+  <p style='margin:0 0 6px 0; font-size:14px;'><strong>Primary System Role:</strong> <span style='color:#0050e5; font-weight:700;'>{targetRole}</span></p>
+  <p style='margin:0 0 6px 0; font-size:14px;'><strong>Administrative Privileges:</strong> {(targetRole == "Admin" || targetRole == "SuperAdmin" || request.IsAdmin ? "Granted (Administrator)" : "Restricted (Standard Member)")}</p>
+  <p style='margin:0; font-size:14px;'><strong>Effective Date:</strong> {DateTime.UtcNow:MMMM dd, yyyy HH:mm} UTC</p>
+</div>
+<h4 style='color:#0f172a; margin:20px 0 10px 0; font-size:14px; font-weight:700;'>Assigned Modular Capability Scopes:</h4>
+<div style='background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 18px; font-size:13px; line-height:1.8; color:#334155;'>
+  {scopesHtmlSummary}
+</div>
+<p style='color:#64748b; font-size:12.5px; line-height:1.5; margin-top:24px;'>
+  <strong>Security Tip:</strong> To ensure all updated privileges take effect immediately across your active sessions, please log out and sign back into your workspace.
+</p>
+<div style='margin-top:24px; text-align:center;'>
+  <a href='{securityUrl}' style='background:#0050e5; color:#ffffff; padding:10px 22px; text-decoration:none; border-radius:8px; font-size:13px; font-weight:700; display:inline-block;'>
+    Review Security Settings
+  </a>
+</div>";
 
             var emailQueueItem = new BcpEmailQueue
             {
                 Id = Guid.CreateVersion7(),
                 RecipientEmail = user.Email ?? string.Empty,
+                RecipientName = recipientFirstName,
                 Subject = "Security Alert: Workspace Role & Permissions Matrix Updated",
                 HtmlBody = emailBody,
                 Category = BcpMessageCategory.Security,

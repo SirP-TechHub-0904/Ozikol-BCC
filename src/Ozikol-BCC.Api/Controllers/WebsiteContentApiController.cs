@@ -337,7 +337,7 @@ namespace Ozikol_BCC.Api.Controllers
                 ? siteSetting.BrandName
                 : (!string.IsNullOrWhiteSpace(siteSetting?.CompanyName)
                     ? siteSetting.CompanyName
-                    : (!string.IsNullOrWhiteSpace(siteSetting?.WebsiteTitle) ? siteSetting.WebsiteTitle : "Ozikol"));
+                    : (!string.IsNullOrWhiteSpace(siteSetting?.WebsiteTitle) ? siteSetting.WebsiteTitle : "Workspace"));
 
             var faviconUrl = !string.IsNullOrWhiteSpace(siteSetting?.FaviconUrl)
                 ? siteSetting.FaviconUrl

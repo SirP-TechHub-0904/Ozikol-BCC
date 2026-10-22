@@ -263,7 +263,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             var subject = !string.IsNullOrWhiteSpace(request.Subject)
                 ? request.Subject.Trim()
-                : "Ozikol BCC Outbound Deliverability Test";
+                : "Workspace Outbound Deliverability Test";
 
             var htmlBody = !string.IsNullOrWhiteSpace(request.HtmlBody)
                 ? request.HtmlBody
@@ -271,13 +271,13 @@ namespace Ozikol_BCC.Api.Controllers
                     <div style='max-width:560px; margin:0 auto; background:#ffffff; border-radius:16px; border:1px solid #e2e8f0; padding:32px; box-shadow:0 4px 20px rgba(0,0,0,0.04);'>
                         <div style='display:inline-block; padding:6px 12px; background:#eff6ff; color:#0050e5; font-weight:700; font-size:12px; border-radius:9999px; margin-bottom:16px;'>SYSTEM DIAGNOSTIC TEST</div>
                         <h2 style='margin:0 0 12px; font-size:22px; font-weight:800; color:#0f172a;'>Email Deliverability Verified</h2>
-                        <p style='margin:0 0 16px; font-size:14px; line-height:1.6; color:#475569;'>This is a live diagnostic verification email dispatched from the <strong>Ozikol Business Command Center</strong> administration portal.</p>
+                        <p style='margin:0 0 16px; font-size:14px; line-height:1.6; color:#475569;'>This is a live diagnostic verification email dispatched from the <strong>Business Command Center</strong> administration portal.</p>
                         <div style='background:#f1f5f9; border-radius:10px; padding:14px; font-size:13px; font-family:monospace; margin-bottom:20px;'>
                             <div><strong>Recipient:</strong> {request.RecipientEmail}</div>
                             <div><strong>Dispatched At:</strong> {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC</div>
                             <div><strong>Provider:</strong> Postmark Transactional Engine</div>
                         </div>
-                        <div style='font-size:12px; color:#94a3b8; border-top:1px solid #f1f5f9; padding-top:16px;'>Ozikol BCC Email Subsystem &bull; Diagnostic Telemetry</div>
+                        <div style='font-size:12px; color:#94a3b8; border-top:1px solid #f1f5f9; padding-top:16px;'>Workspace Email Subsystem &bull; Diagnostic Telemetry</div>
                     </div>
                 </div>";
 

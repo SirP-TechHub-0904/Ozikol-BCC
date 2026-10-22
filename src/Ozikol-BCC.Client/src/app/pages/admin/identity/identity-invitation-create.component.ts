@@ -599,7 +599,7 @@ export interface FeatureScopeOption {
                 <div class="email-mockup-header">
                   <div class="brand-pill">
                     <span class="material-symbols-outlined brand-icon">token</span>
-                    <span>Ozikol BCC Workspace</span>
+                    <span>Workspace Portal</span>
                   </div>
                   <span class="email-date-mock">{{ today | date:'mediumDate' }}</span>
                 </div>
@@ -607,7 +607,7 @@ export interface FeatureScopeOption {
                 <div class="email-mockup-body">
                   <h4 class="mock-heading">Workspace Onboarding Invitation</h4>
                   <p class="mock-intro">
-                    Hello, you have been invited to join the <strong>Ozikol Workspace Portal</strong> as a
+                    Hello, you have been invited to join the <strong>Workspace Portal</strong> as a
                     <span class="mock-role-pill" [ngClass]="currentRoleObj?.badgeClass">
                       {{ selectedRole }}
                     </span>

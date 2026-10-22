@@ -612,7 +612,7 @@ export class UsersListComponent implements OnInit {
   exportPdf(): void {
     this.exportService.printReport(
       'Official Member Directory Register',
-      'Ozikol Business Command Center',
+      'Business Command Center',
       this.getExportColumns(),
       this.filteredUsers,
       this.searchQuery ? `Search: "${this.searchQuery}"` : undefined
@@ -632,7 +632,7 @@ export class UsersListComponent implements OnInit {
     this.exportService.exportToWord(
       `Member_Register_${new Date().toISOString().substring(0,10)}`,
       'Official Member Directory Register',
-      'Ozikol Business Command Center',
+      'Business Command Center',
       this.getExportColumns(),
       this.filteredUsers
     );
@@ -644,7 +644,7 @@ export class UsersListComponent implements OnInit {
     const categoryMembers = this.users.filter(u => u.bcpUserCategoryId === cat.id);
     this.exportService.printReport(
       `Member Register - ${cat.name}`,
-      'Ozikol Business Command Center',
+      'Business Command Center',
       this.getExportColumns(),
       categoryMembers,
       `Category: ${cat.name}`

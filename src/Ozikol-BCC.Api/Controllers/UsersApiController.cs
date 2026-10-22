@@ -435,16 +435,22 @@ namespace Ozikol_BCC.Api.Controllers
             await _userManager.SetAuthenticationTokenAsync(user, "OzikolReset", "PasswordResetOtp", $"{otp}:{expiryTicks}");
             await _userManager.SetAuthenticationTokenAsync(user, "OzikolResetOtp", "ResetOtp", $"{otp}:{expiryTicks}");
 
+            // Resolve tenant brand identity dynamically from MisWebsiteSettings
+            var tenantSite = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var tenantBrand = !string.IsNullOrWhiteSpace(tenantSite?.BrandName)
+                ? tenantSite.BrandName.Trim()
+                : (!string.IsNullOrWhiteSpace(tenantSite?.CompanyName) ? tenantSite.CompanyName.Trim() : "Workspace");
+
             // Queue in BcpEmailQueue
             if (!string.IsNullOrWhiteSpace(user.Email))
             {
                 _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
                 {
                     RelatedUserId = user.Id,
-                    RecipientEmail = user.Email,
-                    RecipientName = user.FullName,
+                    RecipientEmail = user.Email.Trim(),
+                    RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                     Subject = "Your Account Activation & Password Reset OTP",
-                    HtmlBody = $"<div style='font-family:sans-serif; padding:20px;'><h2>Account Activation Code</h2><p>Hello <strong>{user.FullName}</strong>,</p><p>Your 6-digit one-time passcode (OTP) for password setup is:</p><div style='font-size:32px; font-weight:800; letter-spacing:6px; color:#0050e5; padding:16px 0;'>{otp}</div><p>This code is valid for 15 minutes. Enter this code at the reset password screen to activate your account.</p></div>",
+                    HtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your 6-digit one-time passcode (OTP) for account activation and password setup is:</p><div style='font-size:32px; font-weight:800; letter-spacing:6px; color:#0050e5; padding:16px 0; text-align:center;'>{otp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>This code is valid for 15 minutes. Enter this code at the reset password screen to activate your account.</p>",
                     Category = BcpMessageCategory.Security,
                     Priority = BcpMessagePriority.Urgent,
                     EventType = BcpEventType.PasswordReset,
@@ -460,7 +466,7 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     RelatedUserId = user.Id,
                     RecipientPhone = user.PhoneNumber,
-                    Message = $"Your Ozikol activation OTP code is {otp}. Valid for 15 minutes.",
+                    Message = $"Your {tenantBrand} activation OTP code is {otp}. Valid for 15 minutes.",
                     Category = BcpMessageCategory.Security,
                     Priority = BcpMessagePriority.Urgent,
                     EventType = BcpEventType.PasswordReset,
@@ -624,27 +630,24 @@ namespace Ozikol_BCC.Api.Controllers
                     Id = Guid.NewGuid(),
                     RelatedUserId = newUser.Id,
                     RecipientEmail = newUser.Email,
-                    RecipientName = newUser.FullName,
+                    RecipientName = !string.IsNullOrWhiteSpace(newUser.FirstName) ? newUser.FirstName : newUser.FullName,
                     Subject = "Welcome to Your Portal - Account Credentials",
                     HtmlBody = $@"
-                        <div style='font-family:-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width:560px; margin:0 auto; padding:32px 24px; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px;'>
-                            <h2 style='color:#0f172a; margin:0 0 12px; font-size:20px; font-weight:800;'>Welcome, {newUser.FullName}!</h2>
-                            <p style='color:#334155; font-size:14px; line-height:1.5;'>Your member account has been registered on the portal. Below are your login details:</p>
-                            
-                            <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0;'>
-                                <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Member ID:</span> <strong style='color:#0f172a;'>{newUser.MemberId}</strong></div>
-                                <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Email:</span> <strong style='color:#0f172a;'>{newUser.Email}</strong></div>
-                                <div><span style='font-size:12px; color:#64748b;'>Temporary Password:</span> <strong style='color:#0050e5; font-family:monospace; font-size:16px;'>{password}</strong></div>
-                            </div>
+                        <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Your member account has been registered on the portal. Below are your login credentials:</p>
+                        
+                        <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0;'>
+                            <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Member ID:</span> <strong style='color:#0f172a;'>{newUser.MemberId}</strong></div>
+                            <div style='margin-bottom:8px;'><span style='font-size:12px; color:#64748b;'>Email:</span> <strong style='color:#0f172a;'>{newUser.Email}</strong></div>
+                            <div><span style='font-size:12px; color:#64748b;'>Temporary Password:</span> <strong style='color:#0050e5; font-family:monospace; font-size:16px;'>{password}</strong></div>
+                        </div>
 
-                            {(mustChangePassword ? @"<div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
-                                <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Temporary Password Notice:</strong>
-                                <span style='font-size:12.5px; color:#1e40af;'>Upon your first sign-in, you will be prompted to set your personal permanent password.</span>
-                            </div>" : "")}
+                        {(mustChangePassword ? @"<div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
+                            <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Temporary Password Notice:</strong>
+                            <span style='font-size:12.5px; color:#1e40af;'>Upon your first sign-in, you will be prompted to set your personal permanent password.</span>
+                        </div>" : "")}
 
-                            <div style='text-align:center; margin:24px 0 16px;'>
-                                <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
-                            </div>
+                        <div style='text-align:center; margin:24px 0 8px;'>
+                            <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
                         </div>",
                     Category = BcpMessageCategory.Security,
                     Priority = BcpMessagePriority.Urgent,
@@ -713,29 +716,23 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = Guid.NewGuid(),
                         RelatedUserId = user.Id,
                         RecipientEmail = user.Email.Trim(),
-                        RecipientName = user.FullName,
+                        RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                         Subject = "Your Temporary Login Credentials & Password Setup",
                         HtmlBody = $@"
-                            <div style='font-family:-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; max-width:560px; margin:0 auto; padding:32px 24px; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px;'>
-                                <h2 style='color:#0f172a; margin:0 0 12px; font-size:20px; font-weight:800;'>Temporary Login Password Set</h2>
-                                <p style='color:#334155; font-size:14px; line-height:1.5;'>Hello <strong>{user.FullName}</strong>,</p>
-                                <p style='color:#334155; font-size:14px; line-height:1.5;'>An administrator has assigned a new temporary password for your account:</p>
-                                
-                                <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0; text-align:center;'>
-                                    <span style='font-size:12px; color:#64748b; text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;'>Temporary Password</span>
-                                    <span style='font-family:monospace; font-size:22px; font-weight:800; color:#0050e5; letter-spacing:2px;'>{request.NewPassword}</span>
-                                </div>
+                            <p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>An administrator has assigned a new temporary password for your account:</p>
+                            
+                            <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:16px; margin:18px 0; text-align:center;'>
+                                <span style='font-size:12px; color:#64748b; text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px;'>Temporary Password</span>
+                                <span style='font-family:monospace; font-size:22px; font-weight:800; color:#0050e5; letter-spacing:2px;'>{request.NewPassword}</span>
+                            </div>
 
-                                <div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
-                                    <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Important Note:</strong>
-                                    <span style='font-size:12.5px; color:#1e40af;'>This is a temporary password. When you sign in, you will be prompted to set your new permanent password immediately.</span>
-                                </div>
+                            <div style='background:#eff6ff; border-left:4px solid #0050e5; padding:12px 16px; border-radius:0 8px 8px 0; margin-bottom:20px;'>
+                                <strong style='font-size:13px; color:#0050e5; display:block; margin-bottom:2px;'>Important Note:</strong>
+                                <span style='font-size:12.5px; color:#1e40af;'>This is a temporary password. When you sign in, you will be prompted to set your new permanent password immediately.</span>
+                            </div>
 
-                                <div style='text-align:center; margin:24px 0 16px;'>
-                                    <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
-                                </div>
-
-                                <p style='color:#94a3b8; font-size:12px; margin:0; text-align:center;'>Portal Link: <a href='{loginUrl}' style='color:#0050e5;'>{loginUrl}</a></p>
+                            <div style='text-align:center; margin:24px 0 8px;'>
+                                <a href='{loginUrl}' style='display:inline-block; background:#0050e5; color:#ffffff; font-size:14px; font-weight:700; padding:12px 28px; text-decoration:none; border-radius:8px;'>Sign In to Your Account</a>
                             </div>",
                         Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,

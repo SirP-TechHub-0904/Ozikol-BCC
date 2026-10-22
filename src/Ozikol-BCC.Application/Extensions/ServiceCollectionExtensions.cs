@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<Ozikol_BCC.Application.Interfaces.Services.ICentralLogCollector, Ozikol_BCC.Application.Services.Logging.CentralLogCollector>();
         services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger, Ozikol_BCC.Application.Services.Logging.TenantActivityLogger>();
         services.AddScoped<Ozikol_BCC.Application.Services.LoggerLibrary>();
+        services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.ITenantEmailShellService, Ozikol_BCC.Application.Services.Notifications.TenantEmailShellService>();
         services.AddTransient<Ozikol_BCC.Application.Seeders.DefaultTenantSeeder>();
         return services;
     }

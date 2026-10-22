@@ -371,9 +371,9 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = Guid.CreateVersion7(),
                         RelatedUserId = user.Id,
                         RecipientEmail = user.Email!,
-                        RecipientName = user.FullName,
+                        RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                         Subject = "Your Login Verification Code",
-                        HtmlBody = $"<div style='font-family:sans-serif; padding:24px; border:1px solid #e2e8f0; border-radius:12px;'><h3>Login Verification Code</h3><p>Enter the following code to complete your login:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:4px;'>{mfaOtp}</div><p>This code is valid for 5 minutes.</p></div>",
+                        HtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Enter the following 6-digit one-time verification passcode to complete your sign-in:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:6px; text-align:center;'>{mfaOtp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>This code is valid for 5 minutes. If you did not initiate this login request, please update your password immediately.</p>",
                         Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,
                         Status = BcpQueueStatus.Queued,
@@ -777,9 +777,9 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = Guid.CreateVersion7(),
                         RelatedUserId = user.Id,
                         RecipientEmail = user.Email!,
-                        RecipientName = user.FullName,
+                        RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                         Subject = "Your New Login Verification Code",
-                        HtmlBody = $"<div style='font-family:sans-serif; padding:24px; border:1px solid #e2e8f0; border-radius:12px;'><h3>Login Verification Code</h3><p>Enter the following code to complete your login:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:4px;'>{mfaOtp}</div><p>This code is valid for 5 minutes.</p></div>",
+                        HtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Enter the following 6-digit one-time verification passcode to complete your sign-in:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:6px; text-align:center;'>{mfaOtp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>This code is valid for 5 minutes. If you did not initiate this login request, please update your password immediately.</p>",
                         Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,
                         Status = BcpQueueStatus.Queued,
@@ -874,17 +874,14 @@ namespace Ozikol_BCC.Api.Controllers
                     Id = Guid.CreateVersion7(),
                     RelatedUserId = user.Id,
                     RecipientEmail = user.Email!,
-                    RecipientName = user.FullName,
+                    RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                     Subject = "Your 6-Digit Password Reset Code",
                     HtmlBody = $@"
-                        <div style='font-family:sans-serif; max-width:520px; margin:0 auto; padding:28px; border:1px solid #e2e8f0; border-radius:12px; background:#fff;'>
-                            <h2 style='color:#0f172a; margin:0 0 8px;'>Password Reset Request</h2>
-                            <p style='color:#475569; font-size:14px; line-height:1.5;'>You requested a security code to reset your account password. Enter this code on the verification screen:</p>
-                            <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:18px; margin:20px 0; text-align:center;'>
-                                <span style='font-size:32px; font-weight:800; color:#0050e5; letter-spacing:6px; font-family:monospace;'>{otpCode}</span>
-                            </div>
-                            <p style='color:#64748b; font-size:12.5px;'>This code is valid for 15 minutes. If you did not request this, you can safely ignore this email.</p>
-                        </div>",
+                        <p style='color:#475569; font-size:14px; line-height:1.5; margin-top:0;'>You requested a security code to reset your account password. Enter this code on the verification screen to establish a new password:</p>
+                        <div style='background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:18px; margin:20px 0; text-align:center;'>
+                            <span style='font-size:32px; font-weight:800; color:#0050e5; letter-spacing:6px; font-family:monospace;'>{otpCode}</span>
+                        </div>
+                        <p style='color:#64748b; font-size:12.5px; margin-bottom:0;'>This code is valid for 15 minutes. If you did not request this, you can safely ignore this email.</p>",
                     Category = BcpMessageCategory.Security,
                     Priority = BcpMessagePriority.Urgent,
                     EventType = BcpEventType.PasswordReset,
@@ -1604,7 +1601,7 @@ namespace Ozikol_BCC.Api.Controllers
                 }
 
                 // Resolve dynamic tenant brand name to identify this workspace in authenticator apps
-                string brandName = "Ozikol-BCC";
+                string brandName = "Workspace";
                 if (_dbContext != null)
                 {
                     try
@@ -1657,9 +1654,9 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = Guid.CreateVersion7(),
                         RelatedUserId = user.Id,
                         RecipientEmail = user.Email!,
-                        RecipientName = user.FullName,
+                        RecipientName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                         Subject = "MFA Configuration Verification Code",
-                        HtmlBody = $"<div style='font-family:sans-serif; padding:20px;'><h3>MFA Verification Code</h3><p>Use code: <strong>{mfaOtp}</strong>. Valid for 5 minutes.</p></div>",
+                        HtmlBody = $"<p style='color:#334155; font-size:14px; line-height:1.6; margin-top:0;'>Use the following verification code to complete your two-factor authentication setup:</p><div style='font-size:32px; font-weight:800; color:#0050e5; padding:16px 0; letter-spacing:6px; text-align:center;'>{mfaOtp}</div><p style='color:#64748b; font-size:12px; margin-bottom:0;'>Valid for 5 minutes.</p>",
                         Category = BcpMessageCategory.Security,
                         Priority = BcpMessagePriority.Urgent,
                         Status = BcpQueueStatus.Queued,

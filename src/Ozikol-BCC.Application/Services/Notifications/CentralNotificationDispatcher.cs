@@ -31,6 +31,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
         private readonly IPostmarkEmailService? _emailService;
         private readonly ISmsSendService? _smsService;
         private readonly IMessageTemplateService? _templateService;
+        private readonly ITenantEmailShellService? _emailShellService;
         private readonly ILogger<CentralNotificationDispatcher> _logger;
         private readonly IConfiguration _configuration;
 
@@ -56,6 +57,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
         /// <param name="emailService">Optional Postmark email service.</param>
         /// <param name="smsService">Optional carrier SMS gateway service.</param>
         /// <param name="templateService">Optional multi-channel message template service.</param>
+        /// <param name="emailShellService">Optional tenant email shell wrapping service.</param>
         public CentralNotificationDispatcher(
             DashboardDbContext dbContext,
             IHubContext<NotificationHub> hubContext,
@@ -63,7 +65,8 @@ namespace Ozikol_BCC.Application.Services.Notifications
             IConfiguration configuration,
             IPostmarkEmailService? emailService = null,
             ISmsSendService? smsService = null,
-            IMessageTemplateService? templateService = null)
+            IMessageTemplateService? templateService = null,
+            ITenantEmailShellService? emailShellService = null)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
             _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
@@ -72,6 +75,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
             _emailService = emailService;
             _smsService = smsService;
             _templateService = templateService;
+            _emailShellService = emailShellService;
         }
 
         /// <inheritdoc />
@@ -434,21 +438,54 @@ namespace Ozikol_BCC.Application.Services.Notifications
                 recipients.Add(payload.RecipientEmail.Trim());
             }
 
+            // Resolve tenant brand identity dynamically from MisWebsiteSettings
+            string tenantBrand = "Workspace";
+            string? tenantLogo = null;
+            try
+            {
+                var site = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+                if (site != null)
+                {
+                    tenantBrand = !string.IsNullOrWhiteSpace(site.BrandName)
+                        ? site.BrandName.Trim()
+                        : (!string.IsNullOrWhiteSpace(site.CompanyName) ? site.CompanyName.Trim() : "Workspace");
+                    tenantLogo = site.CompanyWhiteLogoUrl ?? site.WhiteLogoUrl ?? site.CompanyLogoUrl ?? site.LogoUrl;
+                }
+            }
+            catch
+            {
+                // Fallback to Workspace
+            }
+
             foreach (var email in recipients)
             {
                 string htmlBody = string.Empty;
                 try
                 {
                     if (!string.IsNullOrWhiteSpace(payload.EmailHtmlBody) &&
-                        (payload.EmailHtmlBody.Contains("<html", StringComparison.OrdinalIgnoreCase) ||
-                         payload.EmailHtmlBody.Contains("<table", StringComparison.OrdinalIgnoreCase)))
+                        (payload.EmailHtmlBody.Contains("<!DOCTYPE html", StringComparison.OrdinalIgnoreCase) ||
+                         payload.EmailHtmlBody.Contains("<html", StringComparison.OrdinalIgnoreCase)))
                     {
                         htmlBody = payload.EmailHtmlBody;
+                    }
+                    else if (_emailShellService != null)
+                    {
+                        var bodyText = !string.IsNullOrWhiteSpace(payload.EmailHtmlBody) ? payload.EmailHtmlBody : payload.Message;
+                        htmlBody = _emailShellService.WrapWithTenantShell(
+                            innerHtml: bodyText,
+                            title: safeSubject,
+                            recipientFirstName: payload.RecipientName,
+                            tenantBrandName: tenantBrand,
+                            tenantLogoUrl: tenantLogo,
+                            actionUrl: payload.ActionUrl,
+                            actionText: "View in Workspace",
+                            brandColorHex: colorHex,
+                            badgeLabel: severityLabel);
                     }
                     else
                     {
                         var bodyText = !string.IsNullOrWhiteSpace(payload.EmailHtmlBody) ? payload.EmailHtmlBody : payload.Message;
-                        htmlBody = GenerateSeverityEmailHtml(safeSubject, bodyText, payload.ActionUrl, severityLabel, colorHex);
+                        htmlBody = GenerateSeverityEmailHtml(safeSubject, bodyText, payload.ActionUrl, severityLabel, colorHex, tenantBrand, tenantLogo);
                     }
 
                     // Anti-spam body check for suspicious URL shorteners
@@ -542,7 +579,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
             {
                 var cleanTitle = StripHtmlTags(payload.Title).Trim();
                 var cleanBody = StripHtmlTags(payload.Message).Trim();
-                var tenantTag = !string.IsNullOrWhiteSpace(payload.TenantKey) ? $"[{payload.TenantKey.ToUpperInvariant()}] " : "[OZIKOL] ";
+                var tenantTag = !string.IsNullOrWhiteSpace(payload.TenantKey) ? $"[{payload.TenantKey.ToUpperInvariant()}] " : string.Empty;
                 smsContent = $"{tenantTag}{cleanTitle}: {cleanBody}";
             }
 
@@ -681,11 +718,17 @@ namespace Ozikol_BCC.Application.Services.Notifications
             string message,
             string? actionUrl,
             string severityLabel,
-            string colorHex)
+            string colorHex,
+            string tenantBrand = "Workspace",
+            string? logoUrl = null)
         {
             var actionButtonHtml = !string.IsNullOrWhiteSpace(actionUrl)
                 ? $"<div style='margin-top:28px;'><a href='{actionUrl}' style='display:inline-block; background-color:{colorHex}; color:#ffffff; font-weight:600; font-size:14px; padding:12px 28px; border-radius:8px; text-decoration:none;'>View in Workspace</a></div>"
                 : string.Empty;
+
+            var brandDisplayHtml = !string.IsNullOrWhiteSpace(logoUrl)
+                ? $"<img src='{logoUrl.Trim()}' alt='{System.Net.WebUtility.HtmlEncode(tenantBrand)}' style='max-height:32px; max-width:180px; object-fit:contain; vertical-align:middle;' />"
+                : $"<span style='font-size:18px; font-weight:800; color:#FFFFFF; letter-spacing:-0.5px;'>{System.Net.WebUtility.HtmlEncode(tenantBrand)}</span>";
 
             return $@"
 <!DOCTYPE html>
@@ -705,7 +748,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                             <table width='100%' cellpadding='0' cellspacing='0'>
                                 <tr>
                                     <td>
-                                        <span style='font-size:20px; font-weight:800; color:#FFFFFF; letter-spacing:-0.5px;'>OZIKOL <span style='color:#38BDF8;'>BCP</span></span>
+                                        {brandDisplayHtml}
                                     </td>
                                     <td align='right'>
                                         <span style='display:inline-block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; padding:4px 12px; border-radius:100px; background-color:{colorHex}22; color:{colorHex}; border:1px solid {colorHex};'>{severityLabel}</span>
@@ -725,7 +768,7 @@ namespace Ozikol_BCC.Application.Services.Notifications
                     <!-- Footer -->
                     <tr>
                         <td style='background-color:#F8FAFC; padding:20px 32px; border-top:1px solid #E2E8F0; font-size:12px; color:#94A3B8; text-align:center;'>
-                            This is an automated system notification from your Ozikol workspace. Please do not reply directly to this email.
+                            This is an automated system notification from your {System.Net.WebUtility.HtmlEncode(tenantBrand)} workspace. Please do not reply directly to this email.
                         </td>
                     </tr>
                 </table>
