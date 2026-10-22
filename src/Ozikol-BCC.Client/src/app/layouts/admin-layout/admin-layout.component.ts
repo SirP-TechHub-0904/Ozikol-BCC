@@ -419,7 +419,7 @@ export interface SuiteInfoDetail {
 
           <!-- Administrator Account & Security Management Dropdown (Top-Level) -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('admin_manage_account')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/identity/console/account')" (click)="toggleMenu('admin_manage_account')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/identity/console/account') || isCurrentRoute('/users/workspace/profile')" (click)="toggleMenu('admin_manage_account')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">manage_accounts</span>
                 <span>{{ 'nav.manage_my_account' | translate }}</span>
@@ -427,6 +427,16 @@ export interface SuiteInfoDetail {
               <span class="material-symbols-outlined arrow-icon">{{ isMenuOpen('admin_manage_account') ? 'expand_more' : 'chevron_right' }}</span>
             </a>
             <ul class="nav-submenu" *ngIf="isMenuOpen('admin_manage_account')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/workspace/profile" [class.active]="isCurrentRoute('/users/workspace/profile')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">account_circle</span>{{ 'nav.my_account' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/profile')" (click)="togglePin('My Account', '/users/workspace/profile', 'account_circle')" [title]="isPinned('/users/workspace/profile') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/workspace/profile') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/identity/console/account" [queryParams]="{ tab: 'password' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'password')" class="sub-nav-item">
@@ -464,16 +474,6 @@ export interface SuiteInfoDetail {
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account?tab=activity')" (click)="togglePin('Login History', '/identity/console/account?tab=activity', 'history')" [title]="isPinned('/identity/console/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/identity/console/account?tab=activity') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/identity/console/account" [class.active]="isAccountHubActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>{{ 'nav.account_hub' | translate }}</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account')" (click)="togglePin('Account Hub', '/identity/console/account', 'tune')" [title]="isPinned('/identity/console/account') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/account') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
@@ -1380,7 +1380,7 @@ export interface SuiteInfoDetail {
 
           <!-- 2. Manage My Account Dropdown -->
           <div class="nav-item has-sub" [class.open]="isMenuOpen('workspace_account')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/workspace/account') || isParentActive('/identity/console/account')" (click)="toggleMenu('workspace_account')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/users/workspace/account') || isParentActive('/identity/console/account') || isParentActive('/users/workspace/profile')" (click)="toggleMenu('workspace_account')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">manage_accounts</span>
                 <span>{{ 'nav.manage_my_account' | translate }}</span>
@@ -1388,6 +1388,16 @@ export interface SuiteInfoDetail {
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
             <ul class="nav-submenu" *ngIf="isMenuOpen('workspace_account')">
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/users/workspace/profile" [class.active]="isCurrentRoute('/users/workspace/profile')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">account_circle</span>{{ 'nav.my_account' | translate }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/profile')" (click)="togglePin('My Account', '/users/workspace/profile', 'account_circle')" [title]="isPinned('/users/workspace/profile') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/workspace/profile') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/workspace/account" [queryParams]="{ tab: 'password' }" [class.active]="isCurrentRouteWithQuery('/users/workspace/account', 'password')" class="sub-nav-item">
@@ -1425,16 +1435,6 @@ export interface SuiteInfoDetail {
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=activity')" (click)="togglePin('Login History', '/users/workspace/account?tab=activity', 'history')" [title]="isPinned('/users/workspace/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account?tab=activity') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/users/workspace/account" [class.active]="isAccountHubActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>{{ 'nav.account_hub' | translate }}</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account')" (click)="togglePin('Account Hub', '/users/workspace/account', 'tune')" [title]="isPinned('/users/workspace/account') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
@@ -3998,10 +3998,6 @@ export class AdminLayoutComponent implements OnInit {
     return this.router.url.includes(path) && this.router.url.includes(`tab=${tabQuery}`);
   }
 
-  isAccountHubActive(): boolean {
-    return (this.isCurrentRoute('/identity/console/account') || this.isCurrentRoute('/users/workspace/account')) && !this.router.url.includes('tab=');
-  }
-
   toggleDropdown(dropdownName: string, event?: Event): void {
     if (event) {
       event.stopPropagation();
@@ -4065,6 +4061,7 @@ export class AdminLayoutComponent implements OnInit {
     else if (url.includes('/users/workspace/groups')) { tabTitle = 'Groups Directory'; tabIcon = 'groups'; }
     else if (url.includes('/users/workspace/alumni')) { tabTitle = 'Alumni Network'; tabIcon = 'school'; }
     else if (url.includes('/users/workspace/profile/biography')) { tabTitle = 'My CV Biography'; tabIcon = 'assignment_ind'; }
+    else if (url.includes('/users/workspace/profile')) { tabTitle = 'My Account'; tabIcon = 'account_circle'; }
     else if (url.includes('/groups')) { tabTitle = 'Group Channels'; tabIcon = 'diversity_3'; }
     else if (url.includes('/settings')) { tabTitle = 'Brand Settings'; tabIcon = 'palette'; }
 
