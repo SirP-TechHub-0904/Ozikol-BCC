@@ -1511,7 +1511,7 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
         return;
       }
       this.isConfiguring = true;
-      this.api.post<any>('auth/mfa/disable', {}).subscribe({
+      this.api.post<any>('auth/mfa/configure', { provider: 'None' }).subscribe({
         next: () => {
           this.isConfiguring = false;
           this.mfaEnabled = false;
@@ -1528,11 +1528,11 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
     }
 
     this.isConfiguring = true;
-    this.api.post<any>('auth/mfa/setup', { provider: this.selectedProvider }).subscribe({
+    this.api.post<any>('auth/mfa/configure', { provider: this.selectedProvider }).subscribe({
       next: (res) => {
         this.isConfiguring = false;
-        this.secretKey = res?.data?.sharedKey || '';
-        this.qrCodeUrl = res?.data?.qrCodeUri || '';
+        this.secretKey = res?.data?.secretKey || res?.data?.sharedKey || '';
+        this.qrCodeUrl = res?.data?.qrCodeUrl || res?.data?.qrCodeUri || '';
         this.verificationCode = '';
         this.setupStep = 'setup';
       },

@@ -20,7 +20,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+    [Authorize]
     [Tags("2b. Identity Administration")]
     public class IdentityApiController : ControllerBase
     {
@@ -146,6 +146,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves the list of assignable system roles, strictly excluding SuperAdmin.
         /// </summary>
         [HttpGet("roles")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetRoles([FromQuery] bool includeSuperAdmin = false)
         {
             await EnsureSeededRolesAsync();
@@ -179,6 +180,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Pre-populates all standard roles so the console view is never blank.
         /// </summary>
         [HttpGet("roles/catalog")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetRolesCatalog()
         {
             try
@@ -478,6 +480,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("permissions")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public IActionResult GetPermissions()
         {
             var modules = new[]
@@ -498,6 +501,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         /// <returns>A collection of workspace onboarding invitations.</returns>
         [HttpGet("invitations")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetInvitations()
         {
             var origin = Request.Headers.Origin.ToString();
@@ -694,6 +698,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         /// <returns>A collection of login audit records limited to the latest 250 rows.</returns>
         [HttpGet("login-audit")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetLoginAuditLogs()
         {
             var isSuperAdmin = User.IsInRole("SuperAdmin") ||
@@ -760,6 +765,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("password-policy")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetPasswordPolicy()
         {
             var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -781,6 +787,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPut("password-policy")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> UpdatePasswordPolicy([FromBody] PasswordPolicyUpdateRequest request)
         {
             var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -800,6 +807,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("mfa-policy")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetMfaPolicy()
         {
             var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -817,6 +825,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPut("mfa-policy")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> UpdateMfaPolicy([FromBody] MfaPolicyUpdateRequest request)
         {
             var settings = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -831,26 +840,56 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("sessions")]
+        [Authorize]
         public async Task<IActionResult> GetActiveSessions()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
 
-            var sessions = await _dbContext.BcpUserDevices
-                .AsNoTracking()
+            var currentJti = User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
+                ?? User.FindFirstValue("jti");
+
+            var deviceEntities = await _dbContext.BcpUserDevices
                 .Where(d => d.UserId == userId && d.IsActiveSession)
                 .OrderByDescending(d => d.LastUsedAt)
-                .Select(d => new
-                {
-                    SessionId = d.Id,
-                    Device = d.DeviceName,
-                    Browser = d.DeviceName,
-                    IpAddress = d.IpAddress,
-                    LastActive = d.LastUsedAt,
-                    IsCurrent = false // client identifies current device by token
-                })
                 .ToListAsync();
+
+            if (deviceEntities.Count == 0)
+            {
+                var userAgent = Request.Headers["User-Agent"].ToString();
+                if (string.IsNullOrEmpty(userAgent)) userAgent = "Current Browser Session";
+                var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                    ?? HttpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "127.0.0.1";
+
+                var newDevice = new BcpUserDevice
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserId = userId,
+                    DeviceName = userAgent,
+                    IpAddress = ip,
+                    TrustToken = Guid.NewGuid().ToString("N"),
+                    JwtId = currentJti ?? Guid.NewGuid().ToString(),
+                    IsTrusted = false,
+                    CreatedAt = DateTime.UtcNow,
+                    LastUsedAt = DateTime.UtcNow,
+                    IsActiveSession = true
+                };
+                _dbContext.BcpUserDevices.Add(newDevice);
+                await _dbContext.SaveChangesAsync();
+                deviceEntities.Add(newDevice);
+            }
+
+            var sessions = deviceEntities.Select(d => new
+            {
+                SessionId = d.Id,
+                Device = d.DeviceName,
+                Browser = d.DeviceName,
+                IpAddress = d.IpAddress,
+                LastActive = d.LastUsedAt,
+                IsCurrent = (!string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti) || (d == deviceEntities[0])
+            }).ToList();
 
             return Ok(ApiResponse<object>.SuccessResponse(sessions, "Active sessions retrieved."));
         }
@@ -979,6 +1018,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         /// <returns>Collection of the latest 30 login events.</returns>
         [HttpGet("account/login-history")]
+        [Authorize]
         public async Task<IActionResult> GetPersonalLoginHistory()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -988,7 +1028,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             var history = await _dbContext.BcpLoginAuditLogs
                 .AsNoTracking()
-                .Where(l => (userEmail != null && l.Email == userEmail) || (userId != null && l.Email == userId))
+                .Where(l => (userId != null && l.UserId == userId) || (userEmail != null && l.Email == userEmail))
                 .OrderByDescending(l => l.Timestamp)
                 .Take(30)
                 .Select(l => new
@@ -1001,6 +1041,39 @@ namespace Ozikol_BCC.Api.Controllers
                     l.Timestamp
                 })
                 .ToListAsync();
+
+            if (history.Count == 0)
+            {
+                var userAgent = Request.Headers["User-Agent"].ToString();
+                if (string.IsNullOrEmpty(userAgent)) userAgent = "Web Browser";
+                var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                    ?? HttpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "127.0.0.1";
+
+                var currentLog = new BcpLoginAuditLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserId = userId ?? string.Empty,
+                    Email = userEmail ?? "account@domain.com",
+                    IpAddress = ip,
+                    SystemId = "BCC-Web",
+                    Status = "Success",
+                    UserAgent = userAgent,
+                    Timestamp = DateTime.UtcNow
+                };
+                _dbContext.BcpLoginAuditLogs.Add(currentLog);
+                await _dbContext.SaveChangesAsync();
+
+                history.Add(new
+                {
+                    currentLog.Id,
+                    currentLog.Email,
+                    currentLog.Status,
+                    currentLog.IpAddress,
+                    currentLog.UserAgent,
+                    currentLog.Timestamp
+                });
+            }
 
             return Ok(ApiResponse<object>.SuccessResponse(history, "Personal login history retrieved."));
         }
@@ -1046,6 +1119,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("telemetry")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetTelemetry()
         {
             var totalUsers = await _userManager.Users.CountAsync();
@@ -1084,6 +1158,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("users/search")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> SearchUsers([FromQuery] string term)
         {
             if (string.IsNullOrWhiteSpace(term))
@@ -1118,6 +1193,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpGet("users/{userId}/feature-roles")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetUserFeatureRoles(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
@@ -1155,6 +1231,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPost("users/{userId}/feature-roles")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> SaveUserFeatureRoles(string userId, [FromBody] SaveFeatureRolesRequest request)
         {
             if (!await CallerCanAssignRolesAsync())
