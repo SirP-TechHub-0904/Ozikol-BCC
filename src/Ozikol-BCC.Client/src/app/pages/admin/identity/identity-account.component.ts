@@ -480,10 +480,13 @@ interface AccountSummary {
                 <p class="card-desc">Audit trail of recent authentication challenges, timestamps, and network IP addresses.</p>
               </div>
             </div>
-            <button type="button" class="btn-secondary" (click)="loadLoginHistory()">
-              <span class="material-symbols-outlined">refresh</span>
-              <span>Refresh</span>
-            </button>
+            <div class="head-actions-wrap">
+              <span class="counter-badge" *ngIf="loginTotalCount > 0">{{ loginTotalCount }} {{ 'nav.login_history' | translate }}</span>
+              <button type="button" class="btn-secondary" (click)="loadLoginHistory(loginPage)" [disabled]="loadingLogs">
+                <span class="material-symbols-outlined" [class.spin-icon]="loadingLogs">refresh</span>
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
 
           <div class="card-body">
@@ -521,6 +524,50 @@ interface AccountSummary {
                   </tr>
                 </tbody>
               </table>
+
+              <!-- Pagination Toolbar -->
+              <div class="pagination-footer" *ngIf="loginTotalCount > 0">
+                <div class="page-size-selector">
+                  <span>Show</span>
+                  <select [ngModel]="loginPageSize" (ngModelChange)="onLoginPageSizeChange($event)">
+                    <option [ngValue]="10">10</option>
+                    <option [ngValue]="25">25</option>
+                    <option [ngValue]="50">50</option>
+                  </select>
+                  <span>entries per page</span>
+                  <span class="entries-info">
+                    (Showing {{ (loginPage - 1) * loginPageSize + 1 }} to {{ getLoginEndIndex() }} of {{ loginTotalCount }} records)
+                  </span>
+                </div>
+
+                <div class="pagination-controls" *ngIf="loginTotalPages > 1">
+                  <button type="button" class="page-btn" [disabled]="loginPage === 1" (click)="setLoginPage(1)" title="First Page">
+                    <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
+                  </button>
+                  <button type="button" class="page-btn" [disabled]="loginPage === 1" (click)="setLoginPage(loginPage - 1)" title="Previous Page">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                  </button>
+
+                  <ng-container *ngFor="let p of getLoginVisiblePages()">
+                    <span class="page-ellipsis" *ngIf="p === '...'">...</span>
+                    <button
+                      *ngIf="p !== '...'"
+                      type="button"
+                      class="page-btn"
+                      [class.active]="p === loginPage"
+                      (click)="setLoginPage(+p)">
+                      {{ p }}
+                    </button>
+                  </ng-container>
+
+                  <button type="button" class="page-btn" [disabled]="loginPage === loginTotalPages" (click)="setLoginPage(loginPage + 1)" title="Next Page">
+                    <span class="material-symbols-outlined">chevron_right</span>
+                  </button>
+                  <button type="button" class="page-btn" [disabled]="loginPage === loginTotalPages" (click)="setLoginPage(loginTotalPages)" title="Last Page">
+                    <span class="material-symbols-outlined">keyboard_double_arrow_right</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -1269,6 +1316,106 @@ interface AccountSummary {
       color: #0050e5;
     }
 
+    /* Table Pagination Toolbar */
+    .pagination-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-top: 1px solid #e2e8f0;
+      background: #f8fafc;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 4px;
+      border-radius: 0 0 10px 10px;
+    }
+    .page-size-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #64748b;
+    }
+    .page-size-selector select {
+      height: 30px;
+      padding: 0 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      outline: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: #0f172a;
+      cursor: pointer;
+    }
+    .entries-info {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-left: 6px;
+    }
+    .pagination-controls {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .page-btn {
+      min-width: 32px;
+      height: 32px;
+      padding: 0 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .page-btn:hover:not(:disabled) {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+    .page-btn.active {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .page-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .page-btn .material-symbols-outlined {
+      font-size: 18px;
+    }
+    .page-ellipsis {
+      padding: 0 4px;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+    .head-actions-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .counter-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: #0050e5;
+      background: rgba(0, 80, 229, 0.08);
+      padding: 4px 10px;
+      border-radius: 9999px;
+    }
+    .spin-icon {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     /* Roles tab */
     .roles-cards-grid {
       display: grid;
@@ -1374,6 +1521,10 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   /** Login activity logs state */
   loginLogs: LoginAuditItem[] = [];
   loadingLogs: boolean = false;
+  loginPage: number = 1;
+  loginPageSize: number = 10;
+  loginTotalCount: number = 0;
+  loginTotalPages: number = 1;
 
   /** Account profile summary state */
   summary: AccountSummary | null = null;
@@ -1696,19 +1847,82 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Fetches personal login history logs.
+   * Fetches personal login history logs with server-side pagination.
+   * @param page Target page number (defaults to current loginPage).
    */
-  loadLoginHistory(): void {
+  loadLoginHistory(page: number = this.loginPage): void {
     this.loadingLogs = true;
-    this.api.get<any>('IdentityApi/account/login-history').subscribe({
+    this.api.get<any>(`IdentityApi/account/login-history?page=${page}&pageSize=${this.loginPageSize}`).subscribe({
       next: (res) => {
         this.loadingLogs = false;
-        this.loginLogs = res?.data || [];
+        if (Array.isArray(res?.data)) {
+          this.loginLogs = res.data;
+          this.loginTotalCount = res.data.length;
+          this.loginPage = 1;
+          this.loginTotalPages = 1;
+        } else if (res?.data?.items) {
+          this.loginLogs = res.data.items;
+          this.loginTotalCount = res.data.totalCount ?? this.loginLogs.length;
+          this.loginPage = res.data.page ?? page;
+          this.loginPageSize = res.data.pageSize ?? this.loginPageSize;
+          this.loginTotalPages = res.data.totalPages ?? Math.max(1, Math.ceil(this.loginTotalCount / this.loginPageSize));
+        } else {
+          this.loginLogs = [];
+          this.loginTotalCount = 0;
+          this.loginTotalPages = 1;
+        }
       },
       error: () => {
         this.loadingLogs = false;
       }
     });
+  }
+
+  /**
+   * Navigates to a specific login history page.
+   * @param page Target 1-based page index.
+   */
+  setLoginPage(page: number): void {
+    if (page < 1 || page > this.loginTotalPages || page === this.loginPage) return;
+    this.loadLoginHistory(page);
+  }
+
+  /**
+   * Handles page size change for login history.
+   * @param newSize New page size (10, 25, 50).
+   */
+  onLoginPageSizeChange(newSize: number): void {
+    this.loginPageSize = Number(newSize) || 10;
+    this.loginPage = 1;
+    this.loadLoginHistory(1);
+  }
+
+  /**
+   * Calculates the end index of the currently displayed records.
+   */
+  getLoginEndIndex(): number {
+    return Math.min(this.loginPage * this.loginPageSize, this.loginTotalCount);
+  }
+
+  /**
+   * Computes visible page numbers and ellipsis for pagination controls.
+   */
+  getLoginVisiblePages(): (number | string)[] {
+    const total = this.loginTotalPages;
+    const current = this.loginPage;
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [1];
+    if (current > 3) pages.push('...');
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
   }
 
   /**

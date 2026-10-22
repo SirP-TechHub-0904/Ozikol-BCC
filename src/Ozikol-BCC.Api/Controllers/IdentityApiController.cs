@@ -1026,35 +1026,35 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves the personal login audit and security activity history for the authenticated user.
+        /// Retrieves the personal login audit and security activity history for the authenticated user with server-side pagination.
         /// </summary>
-        /// <returns>Collection of the latest 30 login events.</returns>
+        /// <param name="page">Current 1-based page index (defaults to 1).</param>
+        /// <param name="pageSize">Number of records per page (defaults to 10, max 100).</param>
+        /// <returns>Paged collection of login events and pagination metadata.</returns>
         [HttpGet("account/login-history")]
         [Authorize]
-        public async Task<IActionResult> GetPersonalLoginHistory()
+        public async Task<IActionResult> GetPersonalLoginHistory(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var userEmail = User.FindFirstValue(ClaimTypes.Email);
             if (string.IsNullOrEmpty(userId) && string.IsNullOrEmpty(userEmail))
                 return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
 
-            var history = await _dbContext.BcpLoginAuditLogs
-                .AsNoTracking()
-                .Where(l => (userId != null && l.UserId == userId) || (userEmail != null && l.Email == userEmail))
-                .OrderByDescending(l => l.Timestamp)
-                .Take(30)
-                .Select(l => new
-                {
-                    l.Id,
-                    l.Email,
-                    l.Status,
-                    l.IpAddress,
-                    l.UserAgent,
-                    l.Timestamp
-                })
-                .ToListAsync();
+            // Sanitize pagination bounds
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 100) pageSize = 100;
 
-            if (history.Count == 0)
+            var baseQuery = _dbContext.BcpLoginAuditLogs
+                .AsNoTracking()
+                .Where(l => (userId != null && l.UserId == userId) || (userEmail != null && l.Email == userEmail));
+
+            var totalCount = await baseQuery.CountAsync();
+
+            // Guarantee at least current session activity log exists if history is empty
+            if (totalCount == 0)
             {
                 var userAgent = Request.Headers["User-Agent"].ToString();
                 if (string.IsNullOrEmpty(userAgent)) userAgent = "Web Browser";
@@ -1076,18 +1076,25 @@ namespace Ozikol_BCC.Api.Controllers
                 _dbContext.BcpLoginAuditLogs.Add(currentLog);
                 await _dbContext.SaveChangesAsync();
 
-                history.Add(new
-                {
-                    currentLog.Id,
-                    currentLog.Email,
-                    currentLog.Status,
-                    currentLog.IpAddress,
-                    currentLog.UserAgent,
-                    currentLog.Timestamp
-                });
+                totalCount = 1;
             }
 
-            var formatted = history.Select(h =>
+            var pagedLogs = await baseQuery
+                .OrderByDescending(l => l.Timestamp)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(l => new
+                {
+                    l.Id,
+                    l.Email,
+                    l.Status,
+                    l.IpAddress,
+                    l.UserAgent,
+                    l.Timestamp
+                })
+                .ToListAsync();
+
+            var formatted = pagedLogs.Select(h =>
             {
                 var parsed = UserAgentParser.Parse(h.UserAgent);
                 return new
@@ -1103,7 +1110,17 @@ namespace Ozikol_BCC.Api.Controllers
                 };
             }).ToList();
 
-            return Ok(ApiResponse<object>.SuccessResponse(formatted, "Personal login history retrieved."));
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            if (totalPages < 1) totalPages = 1;
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                items = formatted,
+                totalCount,
+                page,
+                pageSize,
+                totalPages
+            }, "Personal login history retrieved."));
         }
 
         /// <summary>
