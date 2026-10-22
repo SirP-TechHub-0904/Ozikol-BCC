@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { TenantStateService } from '../../../core/services/tenant-state.service';
+import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../../core/utils/user-role.utils';
 
 @Component({
   selector: 'app-login',
@@ -1128,26 +1129,28 @@ export class LoginComponent implements OnInit {
   }
 
   private navigateAfterLogin(): void {
-    const rolesJson = localStorage.getItem('user_roles');
-    let isAdmin = false;
-    if (rolesJson) {
-      try {
-        const roles: string[] = JSON.parse(rolesJson);
-        isAdmin = roles.some(r => ['superadmin', 'admin', 'identitymanager', 'cmsmanager', 'systemadministrator'].includes(r.toLowerCase()));
-      } catch {}
-    }
-
+    const userRoles = getStoredUserRoles();
     const returnUrl = this.route.snapshot.queryParams['returnUrl'];
-    // Only navigate to returnUrl if it's a specific deep link, not the generic workspace URL
-    if (returnUrl && typeof returnUrl === 'string' && !returnUrl.startsWith('/auth') && !returnUrl.includes('login') && !returnUrl.includes('access-denied') && returnUrl !== '/dashboard/workspace' && returnUrl !== '/') {
-      this.router.navigateByUrl(returnUrl);
-    } else {
-      if (isAdmin) {
-        this.router.navigate(['/dashboard/console']);
-      } else {
-        this.router.navigate(['/dashboard/workspace']);
+
+    // Only navigate to returnUrl if it's a specific authorized deep link
+    if (
+      returnUrl && 
+      typeof returnUrl === 'string' && 
+      !returnUrl.startsWith('/auth') && 
+      !returnUrl.includes('login') && 
+      !returnUrl.includes('access-denied') && 
+      returnUrl !== '/dashboard/workspace' && 
+      returnUrl !== '/'
+    ) {
+      if (canAccessRoute(undefined, returnUrl, userRoles)) {
+        this.router.navigateByUrl(returnUrl);
+        return;
       }
     }
+
+    // Role-tailored target dashboard
+    const targetDashboard = getReturnUrlForRole(userRoles);
+    this.router.navigate([targetDashboard]);
   }
 
   onForceChangePassword(): void {

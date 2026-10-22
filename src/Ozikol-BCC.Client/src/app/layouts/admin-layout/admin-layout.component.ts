@@ -10,6 +10,13 @@ import { AiAssistantContextService } from '../../core/services/ai-assistant-cont
 import { FirstRunSetupModalComponent } from '../../shared/components/first-run-setup-modal/first-run-setup-modal.component';
 import { TranslationService, SupportedLanguage, LanguageOption, SUPPORTED_LANGUAGES } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../core/pipes/translate.pipe';
+import { 
+  getStoredUserRoles, 
+  canAccessConsole, 
+  isGlobalAdmin, 
+  hasUserRole, 
+  getUserPrimaryRoleName 
+} from '../../core/utils/user-role.utils';
 
 interface TaskTab {
   title: string;
@@ -105,6 +112,7 @@ export interface SuiteInfoDetail {
           </div>
 
           <!-- 2. Website & CMS (Web Exclusive) -->
+          <ng-container *ngIf="canAccessSuite('cms')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.website_cms' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('website_cms', $event)" title="Website & CMS Overview">
@@ -195,6 +203,8 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
+          </ng-container>
+          <ng-container *ngIf="canAccessSuite('settings')">
           <div class="nav-item">
             <a routerLink="/settings/console" [class.active]="isCurrentRoute('/settings/console') || isCurrentRoute('/admin/settings')" class="nav-link">
               <div class="nav-link-content">
@@ -218,6 +228,7 @@ export interface SuiteInfoDetail {
               </span>
             </a>
           </div>
+          </ng-container>
           <div class="nav-item">
             <a routerLink="/content/console/forms" routerLinkActive="active" class="nav-link">
               <div class="nav-link-content">
@@ -263,6 +274,7 @@ export interface SuiteInfoDetail {
           </div>
 
           <!-- Suite 2: User Management -->
+          <ng-container *ngIf="canAccessSuite('user_management')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.user_management' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('user_management', $event)" title="User Management Overview">
@@ -340,6 +352,8 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
+          </ng-container>
+          <ng-container *ngIf="canAccessSuite('identity')">
           <div class="nav-item has-sub" [class.open]="isMenuOpen('identity')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/identity/console') || isParentActive('/admin/identity')" (click)="toggleMenu('identity')">
               <div class="nav-link-content">
@@ -391,8 +405,10 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
+          </ng-container>
 
           <!-- Suite 3: People & Community -->
+          <ng-container *ngIf="canAccessSuite('people_community')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.people_community' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('people_community', $event)" title="People & Community Overview">
@@ -490,6 +506,7 @@ export interface SuiteInfoDetail {
             <span class="nav-link-content"><span class="material-symbols-outlined">feedback</span><span>{{ 'nav.whistleblowing' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
+          </ng-container>
 
           <!-- Suite 4: Workforce & Shifts -->
           <div class="menu-title suite-header-row">
@@ -3263,23 +3280,11 @@ export class AdminLayoutComponent implements OnInit {
   userEmail = localStorage.getItem('user_email') || '';
   userInitials = 'MB';
   get isAdmin(): boolean {
-    const rolesJson = localStorage.getItem('user_roles');
-    if (rolesJson) {
-      try {
-        const roles: string[] = JSON.parse(rolesJson);
-        return roles.some(r => ['superadmin', 'admin', 'identitymanager', 'cmsmanager', 'systemadministrator'].includes(r.toLowerCase()));
-      } catch {}
-    }
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const roleClaim = payload['role'] || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-        const roles = Array.isArray(roleClaim) ? roleClaim : [roleClaim];
-        return roles.some((r: string) => ['superadmin', 'admin', 'identitymanager', 'cmsmanager'].includes(r?.toLowerCase()));
-      } catch {}
-    }
-    return false;
+    return canAccessConsole(this.userRoles);
+  }
+
+  get isGlobalAdmin(): boolean {
+    return isGlobalAdmin(this.userRoles);
   }
 
   showPrivilegesModal = false;
@@ -3293,35 +3298,36 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   get userRoles(): string[] {
-    const rolesJson = localStorage.getItem('user_roles');
-    if (rolesJson) {
-      try {
-        const roles = JSON.parse(rolesJson);
-        if (Array.isArray(roles) && roles.length) return roles;
-      } catch {}
-    }
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        const roleClaim = payload['role'] || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-        if (roleClaim) {
-          return Array.isArray(roleClaim) ? roleClaim : [roleClaim];
-        }
-      } catch {}
-    }
-    return [this.isAdmin ? 'Administrator' : 'Member'];
+    return getStoredUserRoles();
   }
 
   get userRoleBadge(): string {
-    const roles = this.userRoles.map(r => (typeof r === 'string' ? r.toLowerCase() : ''));
-    if (roles.some(r => r === 'superadmin' || r === 'systemadministrator')) {
-      return 'SuperAdmin';
+    return getUserPrimaryRoleName(this.userRoles);
+  }
+
+  /**
+   * Evaluates if the current authenticated user has permission to see and access a management suite.
+   * 
+   * @param suiteKey - Identifier of the suite ('user_management', 'identity', 'cms', 'settings', 'people_community')
+   * @returns True if the suite should be visible and accessible in the sidebar
+   */
+  canAccessSuite(suiteKey: string): boolean {
+    if (this.isGlobalAdmin) return true;
+
+    switch (suiteKey) {
+      case 'user_management':
+        return hasUserRole('UserManager', this.userRoles) || hasUserRole('IdentityManager', this.userRoles);
+      case 'identity':
+        return hasUserRole('IdentityManager', this.userRoles);
+      case 'cms':
+        return hasUserRole('CmsManager', this.userRoles);
+      case 'settings':
+        return this.isGlobalAdmin;
+      case 'people_community':
+        return hasUserRole('UserManager', this.userRoles) || hasUserRole('IdentityManager', this.userRoles);
+      default:
+        return true;
     }
-    if (roles.some(r => ['admin', 'administrator', 'identitymanager', 'cmsmanager', 'storemanager'].includes(r))) {
-      return 'Administrator';
-    }
-    return 'Member';
   }
 
   get userCapabilities(): string[] {

@@ -148,31 +148,31 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       // 1. Unified Dashboards
-      { path: 'dashboard/console', component: DashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager', 'CmsManager'] } },
+      { path: 'dashboard/console', component: DashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager', 'CmsManager'] } },
       { path: 'dashboard/workspace', component: WorkspaceDashboardComponent },
       { path: 'dashboard', redirectTo: 'dashboard/console', pathMatch: 'full' },
 
-      // 2. User Management Suite: Console (Admin)
-      { path: 'users/console', component: UserDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/dashboard', component: UserDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/list', component: UsersListComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/create', component: UserCreateComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/details/:id', component: UserDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/edit/:id', component: UserEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/delete/:id', component: UserDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/categories', component: UserCategoriesComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/categories/create', component: CategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/categories/edit/:id', component: CategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/categories/delete/:id', component: UserCategoryDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/kpi', component: UserKpiComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/kpi/metrics/create', component: KpiMetricEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/kpi/metrics/edit/:id', component: KpiMetricEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/kpi/metrics/delete/:id', component: KpiMetricDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/kpi/grade/:userId', component: KpiGradeComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/activity', component: UserActivityComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/registration-form', component: RegistrationFormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/settings', component: UserSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      // 2. User Management Suite: Console (Admin & User Manager)
+      { path: 'users/console', component: UserDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/dashboard', component: UserDashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/list', component: UsersListComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/create', component: UserCreateComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/details/:id', component: UserDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/edit/:id', component: UserEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/delete/:id', component: UserDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/categories', component: UserCategoriesComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/categories/create', component: CategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/categories/edit/:id', component: CategoryEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/categories/delete/:id', component: UserCategoryDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/kpi', component: UserKpiComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/kpi/metrics/create', component: KpiMetricEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/kpi/metrics/edit/:id', component: KpiMetricEditComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/kpi/metrics/delete/:id', component: KpiMetricDeleteComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/kpi/grade/:userId', component: KpiGradeComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/activity', component: UserActivityComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/registration-form', component: RegistrationFormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/settings', component: UserSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
 
       // Backward-Compatibility Aliases for Admin Users Suite
       { path: 'admin/users', redirectTo: 'users/console/list', pathMatch: 'full' },
@@ -221,7 +221,7 @@ export const routes: Routes = [
       { path: 'notifications', redirectTo: 'users/workspace/notifications', pathMatch: 'full' },
 
       // 3. Groups & Channels
-      { path: 'groups/console', component: GroupsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'groups/console', component: GroupsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'groups/workspace', component: GroupsDirectoryComponent },
       { path: 'groups', component: GroupsComponent },
 
