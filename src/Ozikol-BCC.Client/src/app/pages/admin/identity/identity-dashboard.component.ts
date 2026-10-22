@@ -23,29 +23,73 @@ Chart.register(...registerables);
         [loading]="isLoading"
       ></app-page-header>
 
-      <!-- Metric Grid -->
+      <!-- Metric Grid (Clickable Interactive Telemetry Cards) -->
       <div class="metric-grid" style="margin-bottom: 24px;">
-        <div class="metric-card card-hover">
-          <div class="metric-label">Total Users</div>
+        <!-- Card 1: Total Users -> User Directory -->
+        <div 
+          class="metric-card card-hover clickable" 
+          [routerLink]="['/users/console/list']"
+          role="button"
+          tabindex="0"
+          title="Click to view all registered members in User Directory"
+        >
+          <div class="metric-card-header">
+            <span class="metric-label">Total Users</span>
+            <span class="material-symbols-outlined metric-link-icon">arrow_forward</span>
+          </div>
           <div class="metric-value">{{ telemetry.totalUsers }}</div>
           <span class="metric-trend text-blue">Registered Members</span>
         </div>
-        <div class="metric-card card-hover">
-          <div class="metric-label">Locked Accounts</div>
+
+        <!-- Card 2: Locked Accounts -> Filtered User Directory (Suspended) -->
+        <div 
+          class="metric-card card-hover clickable" 
+          [routerLink]="['/users/console/list']"
+          [queryParams]="{ status: 'Suspended' }"
+          role="button"
+          tabindex="0"
+          title="Click to inspect locked and suspended user accounts in User Directory"
+        >
+          <div class="metric-card-header">
+            <span class="metric-label">Locked Accounts</span>
+            <span class="material-symbols-outlined metric-link-icon">arrow_forward</span>
+          </div>
           <div class="metric-value" [class.text-red]="telemetry.lockedOutCount > 0">{{ telemetry.lockedOutCount }}</div>
           <span class="metric-trend" [class.text-red]="telemetry.lockedOutCount > 0" [class.text-green]="telemetry.lockedOutCount === 0">
             {{ telemetry.lockedOutCount > 0 ? 'Requires Attention' : 'Active Safeguard' }}
           </span>
         </div>
-        <div class="metric-card card-hover">
-          <div class="metric-label">Brute-Force Retries</div>
+
+        <!-- Card 3: Brute-Force Retries -> Security Logs -->
+        <div 
+          class="metric-card card-hover clickable" 
+          [routerLink]="['/identity/console/audit-logs']"
+          role="button"
+          tabindex="0"
+          title="Click to inspect brute-force retry flags and authentication events in Security Logs"
+        >
+          <div class="metric-card-header">
+            <span class="metric-label">Brute-Force Retries</span>
+            <span class="material-symbols-outlined metric-link-icon">arrow_forward</span>
+          </div>
           <div class="metric-value" [class.text-amber]="telemetry.retryAlertsCount > 0">{{ telemetry.retryAlertsCount }}</div>
           <span class="metric-trend" [class.text-amber]="telemetry.retryAlertsCount > 0" [class.text-green]="telemetry.retryAlertsCount === 0">
             {{ telemetry.retryAlertsCount > 0 ? 'Suspicious Retries' : 'Clean Audit Stream' }}
           </span>
         </div>
-        <div class="metric-card card-hover">
-          <div class="metric-label">MFA Enrolled</div>
+
+        <!-- Card 4: MFA Enrolled -> Global Policies -->
+        <div 
+          class="metric-card card-hover clickable" 
+          [routerLink]="['/identity/console/policies']"
+          role="button"
+          tabindex="0"
+          title="Click to configure two-factor authentication and global security policies"
+        >
+          <div class="metric-card-header">
+            <span class="metric-label">MFA Enrolled</span>
+            <span class="material-symbols-outlined metric-link-icon">arrow_forward</span>
+          </div>
           <div class="metric-value text-green">{{ mfaPercentage }}%</div>
           <span class="metric-trend text-green">Preferred Authentication</span>
         </div>
@@ -127,14 +171,49 @@ Chart.register(...registerables);
       display: flex;
       flex-direction: column;
       box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .metric-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .metric-card-header .metric-label {
+      margin-bottom: 0;
+    }
+    .metric-link-icon {
+      font-size: 16px;
+      color: #94a3b8;
+      opacity: 0.6;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateX(0);
+    }
+    .metric-card.clickable {
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      outline: none;
+    }
+    .metric-card.clickable:hover {
+      border-color: #cbd5e1;
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+    }
+    .metric-card.clickable:hover .metric-link-icon {
+      color: #0050e5;
+      opacity: 1;
+      transform: translateX(3px);
+    }
+    .metric-card.clickable:focus-visible {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 2px rgba(0, 80, 229, 0.2);
+    }
+    .metric-card.clickable:active {
+      transform: translateY(-1px);
     }
     .card-hover {
       transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
-      cursor: pointer;
-    }
-    .card-hover:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
     }
     .metric-label {
       font-size: 11px;
@@ -142,7 +221,6 @@ Chart.register(...registerables);
       font-weight: 700;
       color: #64748b;
       letter-spacing: 0.05em;
-      margin-bottom: 6px;
     }
     .metric-value {
       font-size: 32px;
@@ -206,6 +284,12 @@ Chart.register(...registerables);
       align-items: flex-start;
       gap: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+    }
+    .action-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
     }
     .action-icon-bg {
       width: 42px;
@@ -225,6 +309,45 @@ Chart.register(...registerables);
       font-size: 12px;
       color: #64748b;
       line-height: 1.4;
+    }
+
+    /* Dark Mode Context */
+    :host-context(.dark-mode) .metric-card {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .metric-card.clickable:hover {
+      border-color: #475569;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    }
+    :host-context(.dark-mode) .metric-value {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .metric-label {
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .metric-link-icon {
+      color: #64748b;
+    }
+    :host-context(.dark-mode) .metric-card.clickable:hover .metric-link-icon {
+      color: #60a5fa;
+    }
+    :host-context(.dark-mode) .console-widget {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .widget-title {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .action-card {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .action-label {
+      color: #f8fafc;
+    }
+    :host-context(.dark-mode) .action-desc {
+      color: #94a3b8;
     }
   `]
 })
