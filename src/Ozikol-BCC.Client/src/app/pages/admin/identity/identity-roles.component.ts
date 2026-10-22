@@ -40,8 +40,8 @@ interface RoleMemberItem {
  *  1. System & Feature Authority Roles (SuperAdmin, Admin, Identity Manager, User Manager, Member)
  *  2. Operational Access Levels (Global Editor, Feature Editor, Read Only)
  * 
- * Strict Sovereign Identity Rule: Non-Identity Manager users cannot assign roles or issue
- * workspace invitations even from within user management views.
+ * Includes interactive clickable filter stat cards (All, Authority, Operational, Assigned Personnel)
+ * that dynamically filter the view and provide instant access to assigned rosters.
  */
 @Component({
   selector: 'app-identity-roles',
@@ -59,46 +59,102 @@ interface RoleMemberItem {
         [loading]="isLoading"
       ></app-page-header>
 
-      <!-- Overview Stats Strip -->
+      <!-- Overview Stats Strip (Clickable Filter Cards) -->
       <div class="stats-strip" *ngIf="!isLoading">
-        <div class="stat-card">
-          <div class="stat-icon-wrap" style="background: rgba(0,80,229,0.08); color: #0050e5;">
-            <span class="material-symbols-outlined">security</span>
+        <!-- Card 1: All Enterprise Roles -->
+        <div 
+          class="stat-card" 
+          [class.active-all]="activeFilter === 'all'" 
+          (click)="setFilter('all')"
+          role="button"
+          tabindex="0"
+          title="Click to view all enterprise roles"
+        >
+          <div class="stat-card-main">
+            <div class="stat-icon-wrap" style="background: rgba(0,80,229,0.08); color: #0050e5;">
+              <span class="material-symbols-outlined">security</span>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-val">{{ rolesCatalog.length || (isSuperAdmin ? 8 : 7) }}</span>
+              <span class="stat-lbl">Enterprise Roles</span>
+            </div>
           </div>
-          <div class="stat-meta">
-            <span class="stat-val">{{ rolesCatalog.length || (isSuperAdmin ? 8 : 7) }}</span>
-            <span class="stat-lbl">Enterprise Roles</span>
-          </div>
+          <span class="active-indicator-pill indicator-all" *ngIf="activeFilter === 'all'">
+            <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
+            <span>All</span>
+          </span>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon-wrap" style="background: rgba(67,56,202,0.08); color: #4338ca;">
-            <span class="material-symbols-outlined">admin_panel_settings</span>
+        <!-- Card 2: Authority & Feature Roles -->
+        <div 
+          class="stat-card" 
+          [class.active-system]="activeFilter === 'system_feature'" 
+          (click)="setFilter('system_feature')"
+          role="button"
+          tabindex="0"
+          title="Click to filter by System & Feature Authority Roles"
+        >
+          <div class="stat-card-main">
+            <div class="stat-icon-wrap" style="background: rgba(67,56,202,0.08); color: #4338ca;">
+              <span class="material-symbols-outlined">admin_panel_settings</span>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-val">{{ systemFeatureRoles.length }}</span>
+              <span class="stat-lbl">Authority & Feature Roles</span>
+            </div>
           </div>
-          <div class="stat-meta">
-            <span class="stat-val">{{ systemFeatureRoles.length }}</span>
-            <span class="stat-lbl">Authority & Feature Roles</span>
-          </div>
+          <span class="active-indicator-pill indicator-system" *ngIf="activeFilter === 'system_feature'">
+            <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
+            <span>Filtered</span>
+          </span>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon-wrap" style="background: rgba(16,185,129,0.08); color: #10b981;">
-            <span class="material-symbols-outlined">tune</span>
+        <!-- Card 3: Operational Action Levels -->
+        <div 
+          class="stat-card" 
+          [class.active-operational]="activeFilter === 'operational_level'" 
+          (click)="setFilter('operational_level')"
+          role="button"
+          tabindex="0"
+          title="Click to filter by Operational Action Levels"
+        >
+          <div class="stat-card-main">
+            <div class="stat-icon-wrap" style="background: rgba(16,185,129,0.08); color: #10b981;">
+              <span class="material-symbols-outlined">tune</span>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-val">{{ operationalLevelRoles.length }}</span>
+              <span class="stat-lbl">Operational Action Levels</span>
+            </div>
           </div>
-          <div class="stat-meta">
-            <span class="stat-val">{{ operationalLevelRoles.length }}</span>
-            <span class="stat-lbl">Operational Action Levels</span>
-          </div>
+          <span class="active-indicator-pill indicator-operational" *ngIf="activeFilter === 'operational_level'">
+            <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
+            <span>Filtered</span>
+          </span>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon-wrap" style="background: rgba(100,116,139,0.08); color: #475569;">
-            <span class="material-symbols-outlined">groups</span>
+        <!-- Card 4: Assigned Personnel -->
+        <div 
+          class="stat-card" 
+          [class.active-assigned]="activeFilter === 'assigned'" 
+          (click)="setFilter('assigned')"
+          role="button"
+          tabindex="0"
+          title="Click to view assigned personnel directory"
+        >
+          <div class="stat-card-main">
+            <div class="stat-icon-wrap" style="background: rgba(100,116,139,0.08); color: #475569;">
+              <span class="material-symbols-outlined">groups</span>
+            </div>
+            <div class="stat-meta">
+              <span class="stat-val">{{ totalAssignedCount }}</span>
+              <span class="stat-lbl">Assigned Personnel</span>
+            </div>
           </div>
-          <div class="stat-meta">
-            <span class="stat-val">{{ totalAssignedCount }}</span>
-            <span class="stat-lbl">Assigned Personnel</span>
-          </div>
+          <span class="active-indicator-pill indicator-assigned" *ngIf="activeFilter === 'assigned'">
+            <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
+            <span>Roster</span>
+          </span>
         </div>
       </div>
 
@@ -108,7 +164,7 @@ interface RoleMemberItem {
           type="button" 
           class="filter-tab-btn" 
           [class.active]="activeFilter === 'all'" 
-          (click)="activeFilter = 'all'"
+          (click)="setFilter('all')"
         >
           <span class="material-symbols-outlined">dataset</span>
           <span>All Roles ({{ rolesCatalog.length }})</span>
@@ -117,7 +173,7 @@ interface RoleMemberItem {
           type="button" 
           class="filter-tab-btn" 
           [class.active]="activeFilter === 'system_feature'" 
-          (click)="activeFilter = 'system_feature'"
+          (click)="setFilter('system_feature')"
         >
           <span class="material-symbols-outlined">shield_person</span>
           <span>System & Feature Authority ({{ systemFeatureRoles.length }})</span>
@@ -126,10 +182,19 @@ interface RoleMemberItem {
           type="button" 
           class="filter-tab-btn" 
           [class.active]="activeFilter === 'operational_level'" 
-          (click)="activeFilter = 'operational_level'"
+          (click)="setFilter('operational_level')"
         >
           <span class="material-symbols-outlined">tune</span>
           <span>Operational Access Levels ({{ operationalLevelRoles.length }})</span>
+        </button>
+        <button 
+          type="button" 
+          class="filter-tab-btn" 
+          [class.active]="activeFilter === 'assigned'" 
+          (click)="setFilter('assigned')"
+        >
+          <span class="material-symbols-outlined">groups</span>
+          <span>Assigned Personnel ({{ totalAssignedCount }})</span>
         </button>
       </div>
 
@@ -356,6 +421,113 @@ interface RoleMemberItem {
         </div>
       </div>
 
+      <!-- Group 3: Assigned Personnel Roster Card (When activeFilter === 'assigned') -->
+      <div class="table-card" *ngIf="!isLoading && activeFilter === 'assigned'">
+        <div class="table-card-header">
+          <div class="card-header-meta">
+            <div class="header-icon-pill" style="background: rgba(100,116,139,0.08); color: #475569;">
+              <span class="material-symbols-outlined">group</span>
+            </div>
+            <div>
+              <div class="header-title-row">
+                <h3>Assigned Personnel Roster</h3>
+                <span class="section-count-badge badge-member">{{ allAssignedMembers.length }} Members</span>
+              </div>
+              <p>Complete directory of all workspace personnel currently holding active system or operational roles.</p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role assignments">
+            <span class="material-symbols-outlined">refresh</span>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <!-- Populated Assigned Personnel Table -->
+        <div class="table-responsive" *ngIf="allAssignedMembers.length > 0">
+          <table class="roles-data-table">
+            <thead>
+              <tr>
+                <th style="min-width: 240px;">Personnel</th>
+                <th style="min-width: 200px;">Assigned Role</th>
+                <th style="min-width: 240px;">Scope & Module Boundaries</th>
+                <th style="width: 190px; text-align: right; white-space: nowrap;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of allAssignedMembers">
+                <td>
+                  <div class="role-cell">
+                    <div class="member-avatar" [style.background]="getGradient(item.member.fullName)">
+                      {{ getInitials(item.member.fullName) }}
+                    </div>
+                    <div class="member-names">
+                      <strong>{{ item.member.fullName }}</strong>
+                      <span class="m-email">{{ item.member.email }}</span>
+                      <span class="id-tag" *ngIf="item.member.memberId">ID: {{ item.member.memberId }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="role-cell">
+                    <div class="role-icon-box" [ngClass]="item.role.badge" style="width: 34px; height: 34px;">
+                      <span class="material-symbols-outlined" style="font-size: 18px;">{{ item.role.icon }}</span>
+                    </div>
+                    <span class="role-pill-badge" [ngClass]="item.role.badge">{{ item.role.name }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="scope-cell">
+                    <span class="scope-tag">{{ item.role.scope }}</span>
+                    <span class="feature-tag" *ngIf="item.role.name === 'Feature Editor' && item.member.features && item.member.features.length > 0">
+                      Features: {{ item.member.features.join(', ') }}
+                    </span>
+                  </div>
+                </td>
+                <td style="text-align: right; white-space: nowrap;">
+                  <button
+                    type="button"
+                    class="btn-manage-members"
+                    (click)="openManageModal(item.role)"
+                    style="margin-right: 8px;"
+                  >
+                    <span class="material-symbols-outlined btn-icon">edit</span>
+                    <span class="btn-text">Manage</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-remove-role"
+                    [disabled]="isUnassigning"
+                    (click)="unassignRoleFromUser(item.member.userId, item.member.fullName, item.role)"
+                  >
+                    <span class="material-symbols-outlined">person_remove</span>
+                    <span>Remove</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty Roster State -->
+        <div class="empty-roster-state" *ngIf="allAssignedMembers.length === 0">
+          <div class="empty-icon-wrap">
+            <span class="material-symbols-outlined">group_off</span>
+          </div>
+          <h4>No Personnel Assigned Yet</h4>
+          <p>Zero members currently hold administrative or operational roles in this workspace. Select an authority or operational role below to assign personnel.</p>
+          <div class="empty-actions">
+            <button type="button" class="btn btn-primary" (click)="setFilter('all')">
+              <span class="material-symbols-outlined">visibility</span>
+              <span>View All Roles & Assign</span>
+            </button>
+            <a routerLink="/admin/users/list" class="btn btn-outline">
+              <span class="material-symbols-outlined">person_add</span>
+              <span>User Directory</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
       <!-- Manage Members Modal Dialog -->
       <div class="modal-backdrop fade-in" *ngIf="activeModalRole" (click)="closeManageModal()">
         <div class="modal-dialog" (click)="$event.stopPropagation()">
@@ -488,7 +660,7 @@ interface RoleMemberItem {
       width: 100%;
     }
 
-    /* Stats Strip */
+    /* Stats Strip (Clickable Interactive Filter Cards) */
     .stats-strip {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -502,13 +674,32 @@ interface RoleMemberItem {
     }
     .stat-card {
       background: #ffffff;
-      border: 1px solid #e2e8f0;
+      border: 1.5px solid #e2e8f0;
       border-radius: 12px;
       padding: 16px 18px;
       display: flex;
       align-items: center;
-      gap: 14px;
+      justify-content: space-between;
+      gap: 12px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      outline: none;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+      border-color: #cbd5e1;
+    }
+    .stat-card:active {
+      transform: translateY(0);
+    }
+    .stat-card-main {
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
     .stat-icon-wrap {
       width: 44px;
@@ -518,11 +709,55 @@ interface RoleMemberItem {
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .stat-card:hover .stat-icon-wrap {
+      transform: scale(1.06);
     }
     .stat-icon-wrap span { font-size: 22px; }
     .stat-meta { display: flex; flex-direction: column; }
     .stat-val { font-size: 20px; font-weight: 800; color: #0f172a; line-height: 1.2; }
     .stat-lbl { font-size: 11.5px; color: #64748b; font-weight: 500; margin-top: 2px; }
+
+    /* Active Card States */
+    .stat-card.active-all {
+      border-color: #0050e5;
+      background: #fafcff;
+      box-shadow: 0 0 0 2px rgba(0, 80, 229, 0.2), 0 6px 16px rgba(0, 80, 229, 0.08);
+    }
+    .stat-card.active-system {
+      border-color: #4338ca;
+      background: #fafaff;
+      box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.2), 0 6px 16px rgba(67, 56, 202, 0.08);
+    }
+    .stat-card.active-operational {
+      border-color: #10b981;
+      background: #f7fdfa;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2), 0 6px 16px rgba(16, 185, 129, 0.08);
+    }
+    .stat-card.active-assigned {
+      border-color: #64748b;
+      background: #f8fafc;
+      box-shadow: 0 0 0 2px rgba(100, 116, 139, 0.2), 0 6px 16px rgba(100, 116, 139, 0.08);
+    }
+
+    /* Active Card Indicator Badge */
+    .active-indicator-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+    .indicator-all { background: #eff6ff; color: #0050e5; border: 1px solid #bfdbfe; }
+    .indicator-system { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+    .indicator-operational { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+    .indicator-assigned { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 
     /* Category Tabs Nav */
     .category-tabs-nav {
@@ -1014,6 +1249,30 @@ interface RoleMemberItem {
     .empty-assigned span { font-size: 32px; color: #cbd5e1; }
     .empty-assigned p { margin: 0; font-size: 12.5px; }
 
+    /* Empty Roster State in Assigned Card */
+    .empty-roster-state {
+      padding: 48px 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .empty-icon-wrap {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: #f1f5f9;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .empty-icon-wrap span { font-size: 30px; }
+    .empty-roster-state h4 { margin: 0; font-size: 16px; font-weight: 700; color: #0f172a; }
+    .empty-roster-state p { margin: 0; max-width: 460px; font-size: 13px; color: #64748b; line-height: 1.5; }
+    .empty-actions { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+
     .modal-footer {
       padding: 14px 22px;
       border-top: 1px solid #e2e8f0;
@@ -1028,6 +1287,48 @@ interface RoleMemberItem {
     .btn-primary { background: #0050e5; color: #ffffff; }
     .btn-primary:hover:not(:disabled) { background: #0040b8; color: #ffffff !important; }
     .btn-sm { height: 32px; padding: 0 12px; font-size: 12px; }
+
+    /* Dark Mode Context */
+    :host-context(.dark-mode) .stat-card {
+      background: #1e293b;
+      border-color: #334155;
+    }
+    :host-context(.dark-mode) .stat-val { color: #f8fafc; }
+    :host-context(.dark-mode) .stat-lbl { color: #94a3b8; }
+    :host-context(.dark-mode) .stat-card:hover {
+      border-color: #475569;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    }
+    :host-context(.dark-mode) .stat-card.active-all {
+      border-color: #3b82f6;
+      background: rgba(0, 80, 229, 0.12);
+    }
+    :host-context(.dark-mode) .stat-card.active-system {
+      border-color: #818cf8;
+      background: rgba(67, 56, 202, 0.12);
+    }
+    :host-context(.dark-mode) .stat-card.active-operational {
+      border-color: #34d399;
+      background: rgba(16, 185, 129, 0.12);
+    }
+    :host-context(.dark-mode) .stat-card.active-assigned {
+      border-color: #94a3b8;
+      background: rgba(100, 116, 139, 0.12);
+    }
+    :host-context(.dark-mode) .category-tabs-nav {
+      background: #0f172a;
+    }
+    :host-context(.dark-mode) .filter-tab-btn {
+      color: #94a3b8;
+    }
+    :host-context(.dark-mode) .filter-tab-btn:hover {
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.06);
+    }
+    :host-context(.dark-mode) .filter-tab-btn.active {
+      background: #1e293b;
+      color: #60a5fa;
+    }
   `]
 })
 export class IdentityRolesComponent implements OnInit {
@@ -1038,8 +1339,8 @@ export class IdentityRolesComponent implements OnInit {
   rolesCatalog: RoleCatalogItem[] = [];
   assignableUsers: any[] = [];
 
-  // Filter Tab State: 'all' | 'system_feature' | 'operational_level'
-  activeFilter: 'all' | 'system_feature' | 'operational_level' = 'all';
+  // Filter Tab State: 'all' | 'system_feature' | 'operational_level' | 'assigned'
+  activeFilter: 'all' | 'system_feature' | 'operational_level' | 'assigned' = 'all';
 
   // Modal State
   isSuperAdmin: boolean = false;
@@ -1071,6 +1372,18 @@ export class IdentityRolesComponent implements OnInit {
     this.checkCurrentUserRole();
     this.loadRoleCatalog();
     this.loadAssignableUsers();
+  }
+
+  /**
+   * Sets or toggles the active filter view when clicking cards or tabs.
+   * If an active filtered view is clicked again, it toggles back to 'all'.
+   */
+  setFilter(filter: 'all' | 'system_feature' | 'operational_level' | 'assigned'): void {
+    if (this.activeFilter === filter && filter !== 'all') {
+      this.activeFilter = 'all';
+    } else {
+      this.activeFilter = filter;
+    }
   }
 
   /**
@@ -1110,6 +1423,21 @@ export class IdentityRolesComponent implements OnInit {
    */
   get totalAssignedCount(): number {
     return this.rolesCatalog.reduce((acc, curr) => acc + curr.memberCount, 0);
+  }
+
+  /**
+   * Complete flat roster of all assigned members mapped to their respective roles.
+   */
+  get allAssignedMembers(): { role: RoleCatalogItem; member: RoleMemberItem }[] {
+    const list: { role: RoleCatalogItem; member: RoleMemberItem }[] = [];
+    for (const role of this.rolesCatalog) {
+      if (role.members && role.members.length > 0) {
+        for (const m of role.members) {
+          list.push({ role, member: m });
+        }
+      }
+    }
+    return list;
   }
 
   /**
@@ -1197,10 +1525,11 @@ export class IdentityRolesComponent implements OnInit {
     });
   }
 
-  unassignRoleFromUser(userId: string, userName: string): void {
-    if (!this.activeModalRole) return;
+  unassignRoleFromUser(userId: string, userName: string, roleOverride?: RoleCatalogItem): void {
+    const targetRole = roleOverride || this.activeModalRole;
+    if (!targetRole) return;
 
-    if (this.activeModalRole.name === 'SuperAdmin') {
+    if (targetRole.name === 'SuperAdmin') {
       this.toast.error('Cannot unassign the root SuperAdmin role.');
       return;
     }
@@ -1208,13 +1537,13 @@ export class IdentityRolesComponent implements OnInit {
     this.isUnassigning = true;
     const payload = {
       userId,
-      roleName: this.activeModalRole.name
+      roleName: targetRole.name
     };
 
     this.api.post<any>('IdentityApi/roles/unassign', payload).subscribe({
       next: () => {
         this.isUnassigning = false;
-        this.toast.success(`Removed ${this.activeModalRole?.name} from ${userName}.`);
+        this.toast.success(`Removed ${targetRole.name} from ${userName}.`);
         this.loadRoleCatalog();
       },
       error: (err) => {
