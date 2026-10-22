@@ -1,6 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { Title, Meta } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
 
 /**
@@ -581,8 +584,9 @@ import { ApiService } from '../../core/services/api.service';
     }
   `]
 })
-export class AuthLayoutComponent implements OnInit {
+export class AuthLayoutComponent implements OnInit, OnDestroy {
   brandName: string = 'Workspace';
+  websiteTitle: string = '';
   brandLogoUrl: string = '';
   brandWhiteLogoUrl: string = '';
   brandIconUrl: string = '';
@@ -593,18 +597,29 @@ export class AuthLayoutComponent implements OnInit {
   loginNoteTitle: string = '';
   loginNote: string = '';
   loginNoteFooter: string = '';
+  private routerSub?: Subscription;
 
   // Default curated royalty-free enterprise modern glass architecture wallpaper
   readonly defaultBgUrl: string = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=85';
   readonly currentYear: number = new Date().getFullYear();
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private titleService: Title,
+    private metaService: Meta,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
+    // 1. Initial page title calculation
+    this.updateDocumentTitle();
+
+    // 2. Fetch tenant brand settings and customize head title + favicon
     this.api.get<any>('SettingsApi/brand').subscribe({
       next: (res) => {
         if (res?.data) {
           this.brandName = res.data.companyName || 'Workspace';
+          this.websiteTitle = res.data.websiteTitle || '';
           this.brandLogoUrl = res.data.companyLogoUrl || '';
           this.brandWhiteLogoUrl = res.data.companyWhiteLogoUrl || '';
           const rawIcon = res.data.companyIconUrl;
@@ -616,10 +631,116 @@ export class AuthLayoutComponent implements OnInit {
           this.loginNoteTitle = res.data.loginNoteTitle || '';
           this.loginNote = res.data.loginNote || '';
           this.loginNoteFooter = res.data.loginNoteFooter || '';
+
+          // Apply head document title, SEO metadata, and dynamic favicon
+          this.applyHeadMetaAndFavicon();
         }
       },
-      error: () => {}
+      error: () => {
+        this.updateDocumentTitle();
+      }
     });
+
+    // 3. Listen to child route transitions to keep the head <title> updated
+    this.routerSub = this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.updateDocumentTitle();
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.routerSub) {
+      this.routerSub.unsubscribe();
+    }
+  }
+
+  /**
+   * Evaluates the active route and updates the browser document title (<title>) accordingly.
+   */
+  private updateDocumentTitle(): void {
+    const url = this.router.url.toLowerCase();
+    let actionTitle = 'Sign In';
+
+    if (url.includes('reset-password')) {
+      actionTitle = 'Reset Password';
+    } else if (url.includes('forgot-password')) {
+      actionTitle = 'Forgot Password';
+    } else if (url.includes('access-denied')) {
+      actionTitle = 'Access Denied';
+    } else if (url.includes('register')) {
+      actionTitle = 'Member Registration';
+    } else {
+      actionTitle = this.loginTitle?.trim() || 'Sign In';
+    }
+
+    const brand = this.websiteTitle || this.brandName || 'Workspace';
+    const pageTitle = `${actionTitle} | ${brand}`;
+    this.titleService.setTitle(pageTitle);
+
+    try {
+      this.metaService.updateTag({ property: 'og:title', content: pageTitle });
+    } catch {
+      // Non-blocking in headless contexts
+    }
+  }
+
+  /**
+   * Synchronizes browser head meta tags and dynamic page icon (favicon).
+   */
+  private applyHeadMetaAndFavicon(): void {
+    this.updateDocumentTitle();
+
+    const brand = this.brandName || 'Workspace';
+    const metaDesc = this.loginNote?.trim() || `Sign In to ${brand} unified enterprise workspace.`;
+    try {
+      this.metaService.updateTag({ name: 'description', content: metaDesc });
+      this.metaService.updateTag({ property: 'og:description', content: metaDesc });
+      this.metaService.updateTag({ property: 'og:type', content: 'website' });
+    } catch {
+      // Non-blocking in headless contexts
+    }
+
+    // High-resolution SVG fallback icon so the browser tab is never iconless
+    const defaultIconSvg = `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%230050e5%22/><path d=%22M50 24a14 14 0 1 0 0 28 14 14 0 0 0 0-28zm0 35c-15.5 0-30 8-30 20v3h60v-3c0-12-14.5-20-30-20z%22 fill=%22%23ffffff%22/></svg>`;
+    const iconUrl = this.brandIconUrl || this.brandLogoUrl || defaultIconSvg;
+    this.updateFavicon(iconUrl);
+  }
+
+  /**
+   * Sets or updates the browser tab favicon (<link rel="icon"> and <link rel="shortcut icon">).
+   * @param iconUrl Image URL or SVG data URI for the tab icon.
+   */
+  private updateFavicon(iconUrl: string): void {
+    if (typeof document === 'undefined' || !iconUrl) return;
+
+    try {
+      // 1. Remove all pre-existing icon elements to force the browser to invalidate cached blank icons
+      const existingIcons = document.querySelectorAll("link[rel*='icon']");
+      existingIcons.forEach(el => el.parentNode?.removeChild(el));
+
+      // 2. Create fresh primary icon link
+      const iconLink = document.createElement('link');
+      iconLink.rel = 'icon';
+      iconLink.href = iconUrl;
+      if (iconUrl.startsWith('data:image/svg+xml') || iconUrl.endsWith('.svg')) {
+        iconLink.type = 'image/svg+xml';
+      } else if (iconUrl.endsWith('.png')) {
+        iconLink.type = 'image/png';
+      } else {
+        iconLink.type = 'image/x-icon';
+      }
+      document.head.appendChild(iconLink);
+
+      // 3. Create fresh shortcut icon link for legacy engines
+      const shortcutLink = document.createElement('link');
+      shortcutLink.rel = 'shortcut icon';
+      shortcutLink.type = iconLink.type;
+      shortcutLink.href = iconUrl;
+      document.head.appendChild(shortcutLink);
+    } catch {
+      // Non-blocking in restricted browser security contexts
+    }
   }
 
   get isCentered(): boolean {
