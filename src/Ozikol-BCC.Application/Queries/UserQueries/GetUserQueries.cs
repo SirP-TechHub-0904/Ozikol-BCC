@@ -45,7 +45,8 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
         public async Task<List<UserDto>> Handle(GetUserListQuery request, CancellationToken cancellationToken)
         {
             var userRoles = await _dbContext.UserRoles
-                .Join(_dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
+                .AsNoTracking()
+                .Join(_dbContext.Roles.AsNoTracking(), ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
                 .ToListAsync(cancellationToken);
 
             var rolesByUser = userRoles

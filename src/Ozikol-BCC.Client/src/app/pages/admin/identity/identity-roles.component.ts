@@ -1508,6 +1508,7 @@ export class IdentityRolesComponent implements OnInit {
     const payload = {
       userId: this.selectedUserId,
       roleName: this.activeModalRole.name,
+      featureArea: this.activeModalRole.name === 'Feature Editor' ? this.selectedFeatureName : undefined,
       featureName: this.activeModalRole.name === 'Feature Editor' ? this.selectedFeatureName : undefined
     };
 

@@ -20,10 +20,13 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+    [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
     [Tags("2b. Identity Administration")]
     public class IdentityApiController : ControllerBase
     {
+        private static readonly HashSet<string> _seededDatabases = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly SemaphoreSlim _seedLock = new(1, 1);
+
         private readonly RoleManager<AppRole> _roleManager;
         private readonly UserManager<Profile> _userManager;
         private readonly DashboardDbContext _dbContext;
@@ -56,13 +59,14 @@ namespace Ozikol_BCC.Api.Controllers
             if (HasRoleClaim("SuperAdmin") || HasRoleClaim("Admin"))
                 return true;
 
-            if (HasRoleClaim("Identity Manager"))
+            if (HasRoleClaim("Identity Manager") || HasRoleClaim("IdentityManager"))
                 return true;
 
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!string.IsNullOrEmpty(currentUserId))
             {
                 var hasIdentityFeature = await _dbContext.BcpUserFeatureRoles
+                    .AsNoTracking()
                     .AnyAsync(f => f.ProfileId == currentUserId &&
                                    f.IsActive &&
                                    (f.FeatureAreaKey == "IdentityManager" || f.FeatureAreaKey == "IdentityAccessControl") &&
@@ -76,40 +80,65 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Ensures all standard platform and feature authority roles exist in the tenant Identity role store.
+        /// Uses single-query non-blocking batch lookup and in-memory cache to guarantee zero database overhead on repeated calls.
         /// </summary>
         private async Task EnsureSeededRolesAsync()
         {
-            var systemRoles = new (string Name, RoleCategory Category)[]
-            {
-                ("SuperAdmin", RoleCategory.BCP),
-                ("Admin", RoleCategory.Both),
-                ("Identity Manager", RoleCategory.BCP),
-                ("User Manager", RoleCategory.BCP),
-                ("Global Editor", RoleCategory.BCP),
-                ("Feature Editor", RoleCategory.BCP),
-                ("Read Only", RoleCategory.BCP),
-                ("Member", RoleCategory.BCP)
-            };
+            var dbName = _dbContext.Database.GetDbConnection().Database ?? "TenantDb";
+            if (_seededDatabases.Contains(dbName))
+                return;
 
-            bool changed = false;
-            foreach (var (name, cat) in systemRoles)
+            await _seedLock.WaitAsync();
+            try
             {
-                var roleExists = await _dbContext.Roles.AnyAsync(r => r.Name == name || r.NormalizedName == name.ToUpperInvariant());
-                if (!roleExists)
+                if (_seededDatabases.Contains(dbName))
+                    return;
+
+                var systemRoles = new (string Name, RoleCategory Category)[]
                 {
-                    _dbContext.Roles.Add(new AppRole(name)
-                    {
-                        NormalizedName = name.ToUpperInvariant(),
-                        RoleCategory = cat,
-                        ConcurrencyStamp = Guid.NewGuid().ToString()
-                    });
-                    changed = true;
-                }
-            }
+                    ("SuperAdmin", RoleCategory.BCP),
+                    ("Admin", RoleCategory.Both),
+                    ("Identity Manager", RoleCategory.BCP),
+                    ("User Manager", RoleCategory.BCP),
+                    ("Global Editor", RoleCategory.BCP),
+                    ("Feature Editor", RoleCategory.BCP),
+                    ("Read Only", RoleCategory.BCP),
+                    ("Member", RoleCategory.BCP)
+                };
 
-            if (changed)
+                // Single non-blocking fast query for all existing role names
+                var existingRoleNames = await _dbContext.Roles
+                    .AsNoTracking()
+                    .Select(r => r.Name)
+                    .ToListAsync();
+
+                var existingSet = new HashSet<string>(existingRoleNames.Where(n => !string.IsNullOrEmpty(n))!, StringComparer.OrdinalIgnoreCase);
+
+                bool changed = false;
+                foreach (var (name, cat) in systemRoles)
+                {
+                    if (!existingSet.Contains(name))
+                    {
+                        _dbContext.Roles.Add(new AppRole(name)
+                        {
+                            NormalizedName = name.ToUpperInvariant(),
+                            RoleCategory = cat,
+                            ConcurrencyStamp = Guid.NewGuid().ToString()
+                        });
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                {
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                _seededDatabases.Add(dbName);
+            }
+            finally
             {
-                await _dbContext.SaveChangesAsync();
+                _seedLock.Release();
             }
         }
 
@@ -121,7 +150,7 @@ namespace Ozikol_BCC.Api.Controllers
         {
             await EnsureSeededRolesAsync();
 
-            var rolesQuery = _roleManager.Roles.AsQueryable();
+            var rolesQuery = _roleManager.Roles.AsNoTracking();
             // SuperAdmin can never be selected or assigned from general role dropdowns
             if (!includeSuperAdmin || !User.IsInRole("SuperAdmin"))
             {
@@ -156,13 +185,15 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 await EnsureSeededRolesAsync();
 
-                // Fetch all user roles mapped with profile info
+                // Fetch all user roles mapped with profile info using non-blocking read
                 var allUserRoles = await _dbContext.UserRoles
-                    .Join(_dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
+                    .AsNoTracking()
+                    .Join(_dbContext.Roles.AsNoTracking(), ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name })
                     .ToListAsync();
 
                 var userIds = allUserRoles.Select(ur => ur.UserId).Distinct().ToList();
                 var profilesList = await _dbContext.Users
+                    .AsNoTracking()
                     .Where(u => userIds.Contains(u.Id))
                     .Select(u => new
                     {
@@ -376,7 +407,7 @@ namespace Ozikol_BCC.Api.Controllers
             // If Feature Editor, assign feature scope (default UserManager)
             if (string.Equals(request.RoleName, "Feature Editor", StringComparison.OrdinalIgnoreCase))
             {
-                var featureKey = !string.IsNullOrWhiteSpace(request.FeatureArea) ? request.FeatureArea.Trim() : "UserManager";
+                var featureKey = request.ResolvedFeatureArea;
                 var existingFeature = await _dbContext.BcpUserFeatureRoles
                     .FirstOrDefaultAsync(f => f.ProfileId == user.Id && f.FeatureAreaKey == featureKey);
 
@@ -1053,7 +1084,12 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string RoleName { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
-        public string? FeatureArea { get; set; } = "UserManager";
+        public string? FeatureArea { get; set; }
+        public string? FeatureName { get; set; }
+
+        public string ResolvedFeatureArea =>
+            !string.IsNullOrWhiteSpace(FeatureArea) ? FeatureArea.Trim() :
+            (!string.IsNullOrWhiteSpace(FeatureName) ? FeatureName.Trim() : "UserManager");
     }
 
     public class RoleUnassignmentRequest
