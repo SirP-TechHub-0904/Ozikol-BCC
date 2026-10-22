@@ -463,6 +463,32 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </div>
             </div>
 
+            <!-- Authentication Screen Layout Style (Split vs Centered) -->
+            <div class="form-divider" style="margin: 20px 0 16px;"><span>AUTHENTICATION SCREEN LAYOUT STYLE</span></div>
+            <div class="form-grid-2" style="margin-bottom: 20px;">
+              <div class="toggle-card" [class.active-toggle]="brand.loginLayout !== 'centered'" (click)="brand.loginLayout = 'split'" style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s; display: flex; align-items: flex-start; gap: 12px; background: #ffffff;">
+                <input type="radio" name="loginLayoutPref" [checked]="brand.loginLayout !== 'centered'" style="margin-top: 3px;" />
+                <div>
+                  <strong style="font-size: 13px; display: flex; align-items: center; gap: 6px; color: #0f172a;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #0050e5;">view_column</span>
+                    Split Screen Showcase
+                  </strong>
+                  <span style="font-size: 11.5px; color: #64748b; line-height: 1.4; display: block; margin-top: 2px;">Dual-panel layout with institutional narrative showcase on left and bright auth card on right</span>
+                </div>
+              </div>
+
+              <div class="toggle-card" [class.active-toggle]="brand.loginLayout === 'centered'" (click)="brand.loginLayout = 'centered'" style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s; display: flex; align-items: flex-start; gap: 12px; background: #ffffff;">
+                <input type="radio" name="loginLayoutPref" [checked]="brand.loginLayout === 'centered'" style="margin-top: 3px;" />
+                <div>
+                  <strong style="font-size: 13px; display: flex; align-items: center; gap: 6px; color: #0f172a;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #0050e5;">crop_portrait</span>
+                    Centered Card (Don't Split)
+                  </strong>
+                  <span style="font-size: 11.5px; color: #64748b; line-height: 1.4; display: block; margin-top: 2px;">Single focused card centered on full-bleed background wallpaper with ambient backdrop blur</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Login Copy Fields: 2-Column Grid for Headings, Full-Width for Note -->
             <div class="form-grid-2" style="margin-bottom: 14px;">
               <div class="form-group">
@@ -3986,6 +4012,8 @@ export class SettingsComponent implements OnInit {
     secondaryColor: '#1f6bff',
     loginBackgroundImageUrl: '',
     loginBackgroundImageKey: '',
+    loginLayout: 'split',
+    allowPublicRegistration: true,
     useNormalLogoInLogin: false,
     useWhiteLogoInLogin: false,
     loginTitle: '',

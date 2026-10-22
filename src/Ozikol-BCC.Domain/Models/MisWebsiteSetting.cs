@@ -233,6 +233,18 @@ namespace Ozikol_BCC.Domain.Models
         public string? LoginTitle { get; set; }
 
         /// <summary>
+        /// Layout style for authentication screens ("split" for split-screen showcase, "centered" for single centered glass card).
+        /// Persisted in LoginBackgroundImageKey. Defaults to "split".
+        /// </summary>
+        [NotMapped]
+        [Display(Name = "Login Screen Layout")]
+        public string LoginLayout
+        {
+            get => LoginBackgroundImageKey == "centered" ? "centered" : "split";
+            set => LoginBackgroundImageKey = value == "centered" ? "centered" : "split";
+        }
+
+        /// <summary>
         /// Heading text for informational callout note on login card.
         /// </summary>
         [MaxLength(200)]

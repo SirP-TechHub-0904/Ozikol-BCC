@@ -310,6 +310,8 @@ namespace Ozikol_BCC.Api.Controllers
                 SecondaryColor = "#1f6bff",
                 LoginBackgroundImageUrl = site?.LoginBackgroundImageUrl ?? "",
                 LoginBackgroundImageKey = site?.LoginBackgroundImageKey ?? "",
+                LoginLayout = !string.IsNullOrWhiteSpace(site?.LoginLayout) ? site.LoginLayout : "split",
+                AllowPublicRegistration = _db.MisConfigurationSettings.Select(c => (bool?)c.AllowPublicRegistration).FirstOrDefault() ?? true,
                 UseNormalLogoInLogin = site?.UseNormalLogoInLogin ?? true,
                 UseWhiteLogoInLogin = site?.UseWhiteLogoInLogin ?? false,
                 LoginTitle = site?.LoginTitle ?? "",
@@ -384,6 +386,7 @@ namespace Ozikol_BCC.Api.Controllers
             site.ReloaderIconKey = dto.ReloaderIconKey;
             site.LoginBackgroundImageUrl = dto.LoginBackgroundImageUrl;
             site.LoginBackgroundImageKey = dto.LoginBackgroundImageKey;
+            site.LoginLayout = !string.IsNullOrWhiteSpace(dto.LoginLayout) ? dto.LoginLayout : "split";
             site.UseNormalLogoInLogin = dto.UseNormalLogoInLogin;
             site.UseWhiteLogoInLogin = dto.UseWhiteLogoInLogin;
             site.LoginTitle = dto.LoginTitle;
@@ -394,6 +397,12 @@ namespace Ozikol_BCC.Api.Controllers
             site.ActivateLoginInMenu = dto.ActivateLoginInMenu;
             site.ActivateLoginInFooter = dto.ActivateLoginInFooter;
             site.LoginButtonText = !string.IsNullOrWhiteSpace(dto.LoginButtonText) ? dto.LoginButtonText : "Sign In";
+
+            var config = await _db.MisConfigurationSettings.FirstOrDefaultAsync();
+            if (config != null)
+            {
+                config.AllowPublicRegistration = dto.AllowPublicRegistration;
+            }
             site.EnableBreakingNewsRibon = dto.EnableBreakingNewsRibon;
             site.BreakingNewsRibonTitle = !string.IsNullOrWhiteSpace(dto.BreakingNewsRibonTitle) ? dto.BreakingNewsRibonTitle.Trim() : "BREAKING NEWS";
             site.BreakingNewsRibonPosition = !string.IsNullOrWhiteSpace(dto.BreakingNewsRibonPosition) ? dto.BreakingNewsRibonPosition.Trim() : "after_menu";
@@ -831,6 +840,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string SecondaryColor { get; set; } = "#1f6bff";
         public string LoginBackgroundImageUrl { get; set; } = string.Empty;
         public string LoginBackgroundImageKey { get; set; } = string.Empty;
+        public string LoginLayout { get; set; } = "split";
+        public bool AllowPublicRegistration { get; set; } = true;
         public bool UseNormalLogoInLogin { get; set; } = true;
         public bool UseWhiteLogoInLogin { get; set; }
         public string LoginTitle { get; set; } = string.Empty;
@@ -876,6 +887,8 @@ namespace Ozikol_BCC.Api.Controllers
         public string ReloaderIconKey { get; set; } = string.Empty;
         public string LoginBackgroundImageUrl { get; set; } = string.Empty;
         public string LoginBackgroundImageKey { get; set; } = string.Empty;
+        public string LoginLayout { get; set; } = "split";
+        public bool AllowPublicRegistration { get; set; } = true;
         public bool UseNormalLogoInLogin { get; set; } = true;
         public bool UseWhiteLogoInLogin { get; set; }
         public string LoginTitle { get; set; } = string.Empty;

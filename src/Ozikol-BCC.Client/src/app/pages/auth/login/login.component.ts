@@ -101,7 +101,7 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
         </form>
 
         <div class="card-footer">
-          <p class="signup-prompt">Need a new account? <a routerLink="/auth/register" class="register-link">Register here</a></p>
+          <p class="signup-prompt" *ngIf="allowPublicRegistration">Need a new account? <a routerLink="/auth/register" class="register-link">Register here</a></p>
           <a routerLink="/" class="back-link">
             <span class="material-symbols-outlined">arrow_back</span>
             Return to Home
@@ -814,6 +814,7 @@ export class LoginComponent implements OnInit {
   loading = false;
   errorMessage = '';
   workspaceNotFound = false;
+  allowPublicRegistration = true;
 
   // Brand Logo, Icon & Name
   brandLogoUrl = '';
@@ -883,6 +884,9 @@ export class LoginComponent implements OnInit {
           const rawIcon = res.data.companyIconUrl;
           this.brandIconUrl = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : (this.brandLogoUrl || '');
           this.brandInitials = res.data.companyNameAbbreviation || (this.brandCompanyName ? this.brandCompanyName.substring(0, 2).toUpperCase() : '');
+          if (res.data.allowPublicRegistration !== undefined) {
+            this.allowPublicRegistration = res.data.allowPublicRegistration;
+          }
         }
       },
       error: (err) => {

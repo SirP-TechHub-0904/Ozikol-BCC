@@ -16,15 +16,21 @@ import { ApiService } from '../../core/services/api.service';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="auth-viewport" [style.--auth-bg]="'url(' + activeBackground + ')'">
+    <div class="auth-viewport" [style.--auth-bg]="'url(' + activeBackground + ')'" [class.mode-centered]="isCentered">
       <!-- Ambient Backdrop Overlay -->
       <div class="auth-backdrop-overlay"></div>
+
+      <!-- Floating Return to Home Button in Centered Mode -->
+      <a routerLink="/" class="centered-return-home" *ngIf="isCentered" title="Return to Home">
+        <span class="material-symbols-outlined">arrow_back</span>
+        <span>Return to Home</span>
+      </a>
 
       <div class="auth-split-layout">
         <!-- ============================================== -->
         <!-- LEFT PANEL: BRAND & ENTERPRISE SHOWCASE       -->
         <!-- ============================================== -->
-        <aside class="auth-showcase-panel">
+        <aside class="auth-showcase-panel" *ngIf="!isCentered">
           <div class="showcase-content">
             <!-- Brand Identity Header -->
             <div class="showcase-header">
@@ -73,13 +79,13 @@ import { ApiService } from '../../core/services/api.service';
         </aside>
 
         <!-- ============================================== -->
-        <!-- RIGHT PANEL: CHILD ROUTE OUTLET (BRIGHT CARD) -->
+        <!-- RIGHT / CENTERED PANEL: CHILD ROUTE OUTLET     -->
         <!-- ============================================== -->
         <main class="auth-form-panel">
           <div class="form-panel-scroll">
             <div class="form-wrapper">
-              <!-- Mobile-Only Brand Header -->
-              <div class="mobile-brand-bar">
+              <!-- Brand Header (Always in Centered Mode, Mobile-Only in Split Mode) -->
+              <div class="mobile-brand-bar" [class.always-visible]="isCentered">
                 <a routerLink="/" class="mobile-logo-link">
                   <img *ngIf="displayLogo" [src]="displayLogo" [alt]="brandName" class="mobile-logo-img" />
                   <span *ngIf="!displayLogo" class="mobile-brand-text">{{ brandName }}</span>
@@ -422,6 +428,112 @@ import { ApiService } from '../../core/services/api.service';
     }
 
     /* ---------------------------------------------------- */
+    /* CENTERED (DON'T SPLIT) MODE STYLING                  */
+    /* ---------------------------------------------------- */
+    .centered-return-home {
+      position: fixed;
+      top: 24px;
+      left: 24px;
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 18px;
+      border-radius: 9999px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #f1f5f9;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+
+      &:hover {
+        background: #0050e5;
+        border-color: rgba(255, 255, 255, 0.35);
+        transform: translateX(-3px);
+        color: #ffffff;
+        box-shadow: 0 6px 24px rgba(0, 80, 229, 0.45);
+      }
+
+      .material-symbols-outlined {
+        font-size: 18px;
+      }
+    }
+
+    .auth-viewport.mode-centered {
+      overflow-y: auto;
+      align-items: center;
+      justify-content: center;
+
+      .auth-split-layout {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+        padding: 40px 20px;
+        box-sizing: border-box;
+      }
+
+      .auth-form-panel {
+        background: transparent;
+        width: 100%;
+        max-width: 460px;
+        height: auto;
+        min-height: auto;
+        overflow: visible;
+        padding: 0;
+      }
+
+      .form-panel-scroll {
+        padding: 0;
+        height: auto;
+      }
+
+      .form-wrapper {
+        max-width: 100%;
+        margin: 0;
+      }
+
+      .mobile-brand-bar.always-visible {
+        display: block;
+        margin-bottom: 14px;
+        text-align: center;
+
+        .mobile-logo-img {
+          max-height: 48px;
+          filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45));
+        }
+
+        .mobile-brand-text {
+          color: #ffffff;
+          font-size: 24px;
+          font-weight: 800;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      .form-footer-meta {
+        .auth-terms-note {
+          color: #cbd5e1;
+          text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+        }
+        .powered-by-row {
+          color: #94a3b8;
+          text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+          a {
+            color: #38bdf8;
+          }
+        }
+      }
+    }
+
+    /* ---------------------------------------------------- */
     /* RESPONSIVE BREAKPOINTS                               */
     /* ---------------------------------------------------- */
     @media (max-width: 1080px) {
@@ -476,6 +588,7 @@ export class AuthLayoutComponent implements OnInit {
   brandIconUrl: string = '';
   useWhiteLogo: boolean = false;
   loginBgUrl: string = '';
+  loginLayout: string = 'split';
   loginTitle: string = '';
   loginNoteTitle: string = '';
   loginNote: string = '';
@@ -498,6 +611,7 @@ export class AuthLayoutComponent implements OnInit {
           this.brandIconUrl = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
           this.useWhiteLogo = res.data.useWhiteLogoInLogin || false;
           this.loginBgUrl = res.data.loginBackgroundImageUrl || '';
+          this.loginLayout = res.data.loginLayout || 'split';
           this.loginTitle = res.data.loginTitle || '';
           this.loginNoteTitle = res.data.loginNoteTitle || '';
           this.loginNote = res.data.loginNote || '';
@@ -506,6 +620,10 @@ export class AuthLayoutComponent implements OnInit {
       },
       error: () => {}
     });
+  }
+
+  get isCentered(): boolean {
+    return this.loginLayout?.toLowerCase() === 'centered';
   }
 
   get displayIcon(): string {

@@ -36,6 +36,7 @@ import { KpiGradeComponent } from './pages/admin/users/kpi-grade.component';
 import { UserActivityComponent } from './pages/admin/users/user-activity.component';
 import { NotificationsManagementComponent } from './pages/admin/users/notifications-management.component';
 import { RegistrationFormBuilderComponent } from './pages/admin/users/registration-form-builder.component';
+import { AuthPageSetupComponent } from './pages/admin/users/auth-page-setup.component';
 import { UserSettingsComponent } from './pages/admin/users/user-settings.component';
 import { WorkspaceNotificationsComponent } from './pages/workspace/workspace-notifications.component';
 
@@ -117,7 +118,8 @@ export const routes: Routes = [
       { path: 'login', component: LoginComponent },
       { path: 'reset-password', component: ResetPasswordComponent },
       { path: 'forgot-password', component: ResetPasswordComponent },
-      { path: 'access-denied', component: AccessDeniedComponent }
+      { path: 'access-denied', component: AccessDeniedComponent },
+      { path: 'register', redirectTo: '/register', pathMatch: 'full' }
     ]
   },
 
@@ -171,6 +173,7 @@ export const routes: Routes = [
       { path: 'users/console/kpi/grade/:userId', component: KpiGradeComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/activity', component: UserActivityComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/registration-form', component: RegistrationFormBuilderComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'users/console/auth-setup', component: AuthPageSetupComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/settings', component: UserSettingsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
       { path: 'users/console/notifications', component: NotificationsManagementComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
 

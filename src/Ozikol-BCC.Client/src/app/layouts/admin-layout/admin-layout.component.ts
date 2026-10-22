@@ -332,6 +332,16 @@ export interface SuiteInfoDetail {
               </li>
               <li>
                 <div class="sub-nav-wrapper">
+                  <a routerLink="/users/console/auth-setup" [class.active]="isCurrentRoute('/users/console/auth-setup')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">branding_watermark</span>Auth Page Setup</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/auth-setup')" (click)="togglePin('Auth Page Setup', '/users/console/auth-setup', 'branding_watermark')" [title]="isPinned('/users/console/auth-setup') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/users/console/auth-setup') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/kpi" [class.active]="isUserKpiActive()" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">monitoring</span>{{ 'nav.kpis_leaderboard' | translate }}</span>
                   </a>
