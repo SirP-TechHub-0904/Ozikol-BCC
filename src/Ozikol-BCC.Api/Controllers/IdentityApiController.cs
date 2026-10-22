@@ -929,6 +929,122 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Session '{sessionId}' successfully terminated."));
         }
 
+        /// <summary>
+        /// Revokes all active sessions for the authenticated user except the current active session.
+        /// </summary>
+        /// <returns>Execution confirmation and count of terminated sessions.</returns>
+        [HttpPost("sessions/terminate-others")]
+        public async Task<IActionResult> TerminateOtherSessions()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
+
+            var currentJti = User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
+                ?? User.FindFirstValue("jti");
+
+            // Fetch all other active devices for this user
+            var otherSessions = await _dbContext.BcpUserDevices
+                .Where(d => d.UserId == userId && d.IsActiveSession && (string.IsNullOrEmpty(currentJti) || d.JwtId != currentJti))
+                .ToListAsync();
+
+            if (!otherSessions.Any())
+            {
+                return Ok(ApiResponse<object>.SuccessResponse(new { TerminatedCount = 0 }, "No other active sessions found."));
+            }
+
+            foreach (var session in otherSessions)
+            {
+                session.IsActiveSession = false;
+            }
+
+            var currentUserEmail = User.FindFirstValue(ClaimTypes.Email) ?? "Admin";
+            var log = new BcpLoginAuditLog
+            {
+                Id = Guid.CreateVersion7(),
+                Email = currentUserEmail,
+                Status = "All Other Sessions Revoked",
+                IpAddress = Request.Headers["X-Forwarded-For"].FirstOrDefault() ?? HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                Timestamp = DateTime.UtcNow
+            };
+            _dbContext.BcpLoginAuditLogs.Add(log);
+
+            await _dbContext.SaveChangesAsync();
+            return Ok(ApiResponse<object>.SuccessResponse(new { TerminatedCount = otherSessions.Count }, $"{otherSessions.Count} other session(s) successfully terminated."));
+        }
+
+        /// <summary>
+        /// Retrieves the personal login audit and security activity history for the authenticated user.
+        /// </summary>
+        /// <returns>Collection of the latest 30 login events.</returns>
+        [HttpGet("account/login-history")]
+        public async Task<IActionResult> GetPersonalLoginHistory()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrEmpty(userId) && string.IsNullOrEmpty(userEmail))
+                return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
+
+            var history = await _dbContext.BcpLoginAuditLogs
+                .AsNoTracking()
+                .Where(l => (userEmail != null && l.Email == userEmail) || (userId != null && l.Email == userId))
+                .OrderByDescending(l => l.Timestamp)
+                .Take(30)
+                .Select(l => new
+                {
+                    l.Id,
+                    l.Email,
+                    l.Status,
+                    l.IpAddress,
+                    l.UserAgent,
+                    l.Timestamp
+                })
+                .ToListAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(history, "Personal login history retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves a consolidated summary of account security, active devices count, assigned roles, and MFA state.
+        /// </summary>
+        /// <returns>Account security summary details.</returns>
+        [HttpGet("account/summary")]
+        public async Task<IActionResult> GetAccountSummary()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                return NotFound(ApiResponse<object>.FailureResponse("User not found."));
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var activeSessionCount = await _dbContext.BcpUserDevices
+                .CountAsync(d => d.UserId == userId && d.IsActiveSession);
+
+            var summary = new
+            {
+                user.Id,
+                user.Email,
+                user.UserName,
+                user.FullName,
+                user.FirstName,
+                user.LastName,
+                user.AvatarUrl,
+                user.Designation,
+                user.TwoFactorEnabled,
+                Provider = user.PreferredTwoFactorProvider.ToString(),
+                user.LastLogin,
+                Roles = roles,
+                ActiveSessionsCount = activeSessionCount,
+                user.MustChangePassword
+            };
+
+            return Ok(ApiResponse<object>.SuccessResponse(summary, "Account summary retrieved."));
+        }
+
         [HttpGet("telemetry")]
         public async Task<IActionResult> GetTelemetry()
         {

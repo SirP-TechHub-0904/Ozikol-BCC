@@ -46,6 +46,7 @@ import { IdentityInvitationsComponent } from './pages/admin/identity/identity-in
 import { IdentityInvitationCreateComponent } from './pages/admin/identity/identity-invitation-create.component';
 import { IdentityAuditLogsComponent } from './pages/admin/identity/identity-audit-logs.component';
 import { IdentityPoliciesComponent } from './pages/admin/identity/identity-policies.component';
+import { IdentityAccountComponent } from './pages/admin/identity/identity-account.component';
 import { GroupsComponent } from './pages/admin/groups/groups.component';
 import { SettingsComponent } from './pages/admin/settings/settings.component';
 import { CustomDomainComponent } from './pages/admin/settings/custom-domain.component';
@@ -241,6 +242,7 @@ export const routes: Routes = [
       { path: 'identity/console/invitations/create', component: IdentityInvitationCreateComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/audit-logs', component: IdentityAuditLogsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/policies', component: IdentityPoliciesComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'identity/console/account', component: IdentityAccountComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity', redirectTo: 'identity/console/dashboard', pathMatch: 'full' },
 
       // 5. CMS Studio Suite, Manage Forms, My Templates, & UI Marketplace (Console Only)

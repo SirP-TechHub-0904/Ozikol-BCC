@@ -413,6 +413,55 @@ export interface SuiteInfoDetail {
                   </button>
                 </div>
               </li>
+              <!-- Manage Account Dropdown Group -->
+              <li class="has-nested-sub">
+                <div class="sub-nav-wrapper">
+                  <a href="javascript:void(0)" [class.active]="isCurrentRoute('/identity/console/account')" class="sub-nav-item" (click)="toggleNestedMenu('manage_account', $event)">
+                    <span class="sub-nav-content">
+                      <span class="material-symbols-outlined sub-icon">manage_accounts</span>
+                      {{ 'nav.manage_account' | translate }}
+                    </span>
+                    <span class="material-symbols-outlined nested-arrow-icon" style="font-size: 16px; margin-left: auto;">
+                      {{ isNestedMenuOpen('manage_account') ? 'expand_more' : 'chevron_right' }}
+                    </span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account')" (click)="togglePin('Manage Account', '/identity/console/account', 'manage_accounts')" [title]="isPinned('/identity/console/account') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/identity/console/account') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+                <ul class="nested-sub-menu" *ngIf="isNestedMenuOpen('manage_account')" style="list-style: none; padding: 4px 0 6px 18px; margin: 0; display: flex; flex-direction: column; gap: 4px;">
+                  <li>
+                    <a routerLink="/identity/console/account" [queryParams]="{ tab: 'password' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'password')" class="sub-nav-item" style="padding: 6px 12px; font-size: 12.5px;">
+                      <span class="material-symbols-outlined sub-icon" style="font-size: 15px;">key</span>
+                      <span>{{ 'nav.change_password' | translate }}</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a routerLink="/identity/console/account" [queryParams]="{ tab: '2fa' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', '2fa')" class="sub-nav-item" style="padding: 6px 12px; font-size: 12.5px;">
+                      <span class="material-symbols-outlined sub-icon" style="font-size: 15px;">shield_lock</span>
+                      <span>{{ 'nav.mfa_security' | translate }}</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a routerLink="/identity/console/account" [queryParams]="{ tab: 'devices' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'devices')" class="sub-nav-item" style="padding: 6px 12px; font-size: 12.5px;">
+                      <span class="material-symbols-outlined sub-icon" style="font-size: 15px;">devices</span>
+                      <span>{{ 'nav.manage_devices' | translate }}</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a routerLink="/identity/console/account" [queryParams]="{ tab: 'activity' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'activity')" class="sub-nav-item" style="padding: 6px 12px; font-size: 12.5px;">
+                      <span class="material-symbols-outlined sub-icon" style="font-size: 15px;">history</span>
+                      <span>{{ 'nav.login_history' | translate }}</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a routerLink="/identity/console/account" [class.active]="isAccountHubActive()" class="sub-nav-item" style="padding: 6px 12px; font-size: 12.5px; opacity: 0.9;">
+                      <span class="material-symbols-outlined sub-icon" style="font-size: 15px;">tune</span>
+                      <span>{{ 'nav.account_hub' | translate }}</span>
+                    </a>
+                  </li>
+                </ul>
+              </li>
             </ul>
           </div>
           </ng-container>
@@ -1662,6 +1711,10 @@ export interface SuiteInfoDetail {
               <a routerLink="/users/workspace/profile" (click)="closeDropdowns()" class="dropdown-item">
                 <span class="material-symbols-outlined">account_circle</span>
                 <span>{{ 'nav.my_profile' | translate }}</span>
+              </a>
+              <a routerLink="/identity/console/account" (click)="closeDropdowns()" class="dropdown-item">
+                <span class="material-symbols-outlined">manage_accounts</span>
+                <span>{{ 'nav.manage_account' | translate }}</span>
               </a>
               <a routerLink="/admin/settings" (click)="closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
                 <span class="material-symbols-outlined">settings</span>
@@ -3965,6 +4018,28 @@ export class AdminLayoutComponent implements OnInit {
     return !!this.openMenus[menuKey];
   }
 
+  nestedOpenMenus: { [key: string]: boolean } = { manage_account: false };
+
+  toggleNestedMenu(menuKey: string, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.nestedOpenMenus[menuKey] = !this.nestedOpenMenus[menuKey];
+  }
+
+  isNestedMenuOpen(menuKey: string): boolean {
+    return !!this.nestedOpenMenus[menuKey];
+  }
+
+  isCurrentRouteWithQuery(path: string, tabQuery: string): boolean {
+    return this.router.url.includes(path) && this.router.url.includes(`tab=${tabQuery}`);
+  }
+
+  isAccountHubActive(): boolean {
+    return this.isCurrentRoute('/identity/console/account') && !this.router.url.includes('tab=');
+  }
+
   toggleDropdown(dropdownName: string, event?: Event): void {
     if (event) {
       event.stopPropagation();
@@ -4021,6 +4096,7 @@ export class AdminLayoutComponent implements OnInit {
     else if (url.includes('/identity/console/roles')) { tabTitle = 'Roles & Permissions'; tabIcon = 'verified_user'; }
     else if (url.includes('/identity/console/invitations')) { tabTitle = 'Member Invitations'; tabIcon = 'mail'; }
     else if (url.includes('/identity/console/policies')) { tabTitle = 'Global Policies'; tabIcon = 'password'; }
+    else if (url.includes('/identity/console/account')) { tabTitle = 'Manage Account'; tabIcon = 'manage_accounts'; }
     else if (url.includes('/identity/console') || url.includes('/admin/identity')) { tabTitle = 'Identity Dashboard'; tabIcon = 'space_dashboard'; }
     else if (url.includes('/users/workspace/chat')) { tabTitle = 'Chat Room'; tabIcon = 'chat'; }
     else if (url.includes('/users/workspace/groups')) { tabTitle = 'Groups Directory'; tabIcon = 'groups'; }
