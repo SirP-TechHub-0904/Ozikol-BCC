@@ -930,6 +930,31 @@ class AccountRepository {
   }
 
   /// <summary>
+  /// Applies a pre-configured industry onboarding template archetype.
+  /// </summary>
+  Future<bool> applyRegistrationTemplate({
+    required String templateKey,
+    required String mode,
+    required String layoutMode,
+    required bool applyLayoutMode,
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/RegistrationFormApi/apply-template',
+        data: {
+          'templateKey': templateKey,
+          'mode': mode,
+          'layoutMode': layoutMode,
+          'applyLayoutMode': applyLayoutMode,
+        },
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
   /// Retrieves branding, authentication screen layout, and wallpaper settings.
   /// </summary>
   Future<Map<String, dynamic>> getBrandSettings() async {

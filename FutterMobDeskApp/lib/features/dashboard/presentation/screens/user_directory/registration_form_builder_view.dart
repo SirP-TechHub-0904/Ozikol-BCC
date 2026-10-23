@@ -22,6 +22,7 @@ class _IndustryTemplate {
   final String layoutBadge;
   final String layoutName;
   final String layoutReason;
+  final String sector;
   final List<Map<String, dynamic>> sampleQuestions;
 
   const _IndustryTemplate({
@@ -36,6 +37,7 @@ class _IndustryTemplate {
     required this.layoutBadge,
     required this.layoutName,
     required this.layoutReason,
+    required this.sector,
     required this.sampleQuestions,
   });
 }
@@ -117,6 +119,19 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
   String? _activeTooltip;
 
   // ---------------------------------------------------------------------------
+  // Standard Organization Industry Sectors
+  // ---------------------------------------------------------------------------
+  static const List<String> _validSectors = [
+    'Business & Enterprise',
+    'Education & Academy',
+    'Healthcare & Care Services',
+    'Non-Profit & Foundation',
+    'Government & Public Agency',
+    'Technology & Software',
+    'Community & Alumni Association',
+  ];
+
+  // ---------------------------------------------------------------------------
   // 7 Industry Archetype Templates (1-to-1 with Angular component)
   // ---------------------------------------------------------------------------
   static const List<_IndustryTemplate> _industryTemplates = [
@@ -132,6 +147,7 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
       layoutBadge: 'Category Sections',
       layoutName: 'Category Sections Flow',
       layoutReason: 'Splits personal credentials and corporate compliance into structured category cards.',
+      sector: 'Business & Enterprise',
       sampleQuestions: [
         {'label': 'Company / Organization Name', 'fieldType': 'text', 'isRequired': true, 'placeholder': 'e.g. Acme Global Corporation'},
         {'label': 'Job Title / Role', 'fieldType': 'text', 'isRequired': true, 'placeholder': 'e.g. Managing Director'},
@@ -152,6 +168,7 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
       layoutBadge: 'Step Stepper',
       layoutName: 'Step-by-Step Stepper Wizard',
       layoutReason: 'Guided step-by-step onboarding from department selection to guardian contacts.',
+      sector: 'Education & Academy',
       sampleQuestions: [
         {'label': 'Student / Matriculation ID', 'fieldType': 'text', 'isRequired': true, 'placeholder': 'e.g. STU-2026-0042'},
         {'label': 'Level of Study', 'fieldType': 'select', 'isRequired': true, 'options': ['Undergraduate', 'Postgraduate (Master\'s)', 'Doctorate (Ph.D.)', 'Professional Diploma']},
@@ -172,6 +189,7 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
       layoutBadge: 'Multi-Page',
       layoutName: 'Page-by-Page Multi-Page Form',
       layoutReason: 'Dedicates clean pages for sensitive medical disclosures, blood group, and liability consent.',
+      sector: 'Healthcare & Care Services',
       sampleQuestions: [
         {'label': 'Emergency Contact Full Name', 'fieldType': 'text', 'isRequired': true, 'placeholder': 'e.g. First Last'},
         {'label': 'Emergency Contact Phone', 'fieldType': 'text', 'isRequired': true, 'placeholder': 'e.g. +0 (000) 000-0000'},
@@ -193,6 +211,7 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
       layoutBadge: 'Category Sections',
       layoutName: 'Category Sections Flow',
       layoutReason: 'Organizes academic graduating pedigree, professional roles, and mentorship networking.',
+      sector: 'Community & Alumni Association',
       sampleQuestions: [
         {'label': 'Graduation Class Year', 'fieldType': 'number', 'isRequired': true, 'placeholder': 'e.g. 2022'},
         {'label': 'Degree / Qualification Earned', 'fieldType': 'text', 'isRequired': true, 'placeholder': 'e.g. B.Sc. Mechanical Engineering'},
@@ -213,6 +232,7 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
       layoutBadge: 'Step Stepper',
       layoutName: 'Step-by-Step Stepper Wizard',
       layoutReason: 'Sequences ticket credentials, conference swag preferences, and dietary requirements.',
+      sector: 'Community & Alumni Association',
       sampleQuestions: [
         {'label': 'Organization / Institution Affiliation', 'fieldType': 'text', 'isRequired': true, 'placeholder': 'e.g. TechHub Summit Team'},
         {'label': 'Attendance Mode', 'fieldType': 'select', 'isRequired': true, 'options': ['In-Person Delegate', 'Virtual / Livestream Access', 'Speaker / Panelist', 'VIP Guest']},
@@ -232,6 +252,7 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
       layoutBadge: 'Single Page',
       layoutName: 'Single Page Velocity Stream',
       layoutReason: 'Welcoming, frictionless volunteer intake on a single engaging page.',
+      sector: 'Non-Profit & Foundation',
       sampleQuestions: [
         {'label': 'Preferred Volunteer Program Area', 'fieldType': 'select', 'isRequired': true, 'options': ['Community Outreach & Relief', 'Youth Education & Tutoring', 'Event Coordination', 'Fundraising & Donor Care']},
         {'label': 'Weekly Availability', 'fieldType': 'select', 'isRequired': true, 'options': ['1-3 hours / week', '4-8 hours / week', 'Weekends Only', 'Ad-hoc / On-Call']},
@@ -250,6 +271,7 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
       layoutBadge: 'Single Page',
       layoutName: 'Single Page Velocity Stream',
       layoutReason: 'High-velocity developer signups with zero friction in a single stream.',
+      sector: 'Technology & Software',
       sampleQuestions: [
         {'label': 'Developer / Engineering Role', 'fieldType': 'select', 'isRequired': true, 'options': ['Full-Stack Engineer', 'Frontend Engineer', 'Backend / Systems Engineer', 'DevOps / Cloud Architect', 'Product Manager / Designer']},
         {'label': 'Primary Programming Stack', 'fieldType': 'text', 'isRequired': true, 'placeholder': 'e.g. TypeScript, Node.js, C#, Python'},
@@ -465,16 +487,32 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0050E5), foregroundColor: Colors.white),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
               setState(() {
                 _policy['formLayoutMode'] = tpl.layoutMode;
-                _policy['defaultIndustrySector'] = tpl.name;
+                _policy['defaultIndustrySector'] = tpl.sector;
               });
-              _savePolicy();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Applied "${tpl.name}" template flow!'), backgroundColor: const Color(0xFF10B981)),
-              );
+              await _savePolicy();
+
+              try {
+                final repo = ref.read(accountRepositoryProvider);
+                await repo.applyRegistrationTemplate(
+                  templateKey: tpl.key,
+                  mode: 'replace',
+                  layoutMode: tpl.layoutMode,
+                  applyLayoutMode: true,
+                );
+                if (mounted) {
+                  _loadData();
+                }
+              } catch (_) {}
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Applied "${tpl.name}" template flow!'), backgroundColor: const Color(0xFF10B981)),
+                );
+              }
             },
             child: const Text('Apply Template'),
           ),
@@ -1065,27 +1103,27 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
                   children: [
                     Text('DEFAULT INDUSTRY SECTOR', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
                     const SizedBox(height: 5),
-                    DropdownButtonFormField<String>(
-                      initialValue: _policy['defaultIndustrySector'] as String? ?? 'Business & Enterprise',
-                      style: TextStyle(fontSize: 13, color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1))),
-                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1))),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'Business & Enterprise', child: Text('Business & Enterprise')),
-                        DropdownMenuItem(value: 'Education & Academy', child: Text('Education & Academy')),
-                        DropdownMenuItem(value: 'Healthcare & Care Services', child: Text('Healthcare & Care Services')),
-                        DropdownMenuItem(value: 'Non-Profit & Foundation', child: Text('Non-Profit & Foundation')),
-                        DropdownMenuItem(value: 'Government & Public Agency', child: Text('Government & Public Agency')),
-                        DropdownMenuItem(value: 'Technology & Software', child: Text('Technology & Software')),
-                        DropdownMenuItem(value: 'Community & Alumni Association', child: Text('Community & Alumni Association')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _policy['defaultIndustrySector'] = val);
+                    Builder(
+                      builder: (context) {
+                        final currentSector = _policy['defaultIndustrySector'] as String?;
+                        final effectiveSector = _validSectors.contains(currentSector) ? currentSector : _validSectors.first;
+
+                        return DropdownButtonFormField<String>(
+                          key: ValueKey('sector_$effectiveSector'),
+                          initialValue: effectiveSector,
+                          style: TextStyle(fontSize: 13, color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1))),
+                            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1))),
+                          ),
+                          items: _validSectors.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                          onChanged: (val) {
+                            if (val != null) setState(() => _policy['defaultIndustrySector'] = val);
+                          },
+                        );
                       },
                     ),
                     const SizedBox(height: 4),
@@ -2298,18 +2336,27 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
           const SizedBox(height: 8),
           Text('CATEGORY TIER', style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8))),
           const SizedBox(height: 3),
-          DropdownButtonFormField<String>(
-            initialValue: _simSelectedCategory ?? _categories.first['id']?.toString(),
-            dropdownColor: const Color(0xFF1E293B),
-            style: const TextStyle(fontSize: 11.5, color: Colors.white),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: const Color(0xFF1E293B),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFF334155))),
-            ),
-            items: _categories.map((c) => DropdownMenuItem(value: c['id']?.toString(), child: Text(c['name']?.toString() ?? ''))).toList(),
-            onChanged: (val) => setState(() => _simSelectedCategory = val),
+          Builder(
+            builder: (context) {
+              final selectedCat = _categories.any((c) => c['id']?.toString() == _simSelectedCategory)
+                  ? _simSelectedCategory
+                  : (_categories.isNotEmpty ? _categories.first['id']?.toString() : null);
+
+              return DropdownButtonFormField<String>(
+                key: ValueKey('sim_cat_$selectedCat'),
+                initialValue: selectedCat,
+                dropdownColor: const Color(0xFF1E293B),
+                style: const TextStyle(fontSize: 11.5, color: Colors.white),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFF1E293B),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFF334155))),
+                ),
+                items: _categories.map((c) => DropdownMenuItem(value: c['id']?.toString(), child: Text(c['name']?.toString() ?? ''))).toList(),
+                onChanged: (val) => setState(() => _simSelectedCategory = val),
+              );
+            },
           ),
         ],
         if (reqPwd) ...[
@@ -2344,18 +2391,27 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
               Text('$label ${isReq ? '*' : ''}', style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Color(0xFF94A3B8))),
               const SizedBox(height: 3),
               if (type == 'select' && f['options'] is List)
-                DropdownButtonFormField<String>(
-                  initialValue: _simAnswers[key] as String? ?? ((f['options'] as List).isNotEmpty ? (f['options'] as List).first.toString() : null),
-                  dropdownColor: const Color(0xFF1E293B),
-                  style: const TextStyle(fontSize: 11.5, color: Colors.white),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: const Color(0xFF1E293B),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFF334155))),
-                  ),
-                  items: (f['options'] as List).map((o) => DropdownMenuItem(value: o.toString(), child: Text(o.toString()))).toList(),
-                  onChanged: (v) => setState(() => _simAnswers[key] = v),
+                Builder(
+                  builder: (context) {
+                    final opts = (f['options'] as List).map((o) => o.toString()).toList();
+                    final currentVal = _simAnswers[key] as String?;
+                    final selectedVal = opts.contains(currentVal) ? currentVal : (opts.isNotEmpty ? opts.first : null);
+
+                    return DropdownButtonFormField<String>(
+                      key: ValueKey('sim_opt_${key}_$selectedVal'),
+                      initialValue: selectedVal,
+                      dropdownColor: const Color(0xFF1E293B),
+                      style: const TextStyle(fontSize: 11.5, color: Colors.white),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFF1E293B),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFF334155))),
+                      ),
+                      items: opts.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
+                      onChanged: (v) => setState(() => _simAnswers[key] = v),
+                    );
+                  },
                 )
               else if (type == 'checkbox')
                 Row(
