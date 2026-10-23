@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../../core/models/workspace.dart';
@@ -8,6 +7,8 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/central_adjuster.dart';
 import '../../../data/account_repository.dart';
 import 'user_create_view.dart';
+import 'user_details_view.dart';
+import 'user_edit_view.dart';
 
 /// <summary>
 /// Full enterprise Member Directory & Register screen with 1-to-1 parity matching the Angular Web client.
@@ -28,6 +29,12 @@ class AllMembersView extends ConsumerStatefulWidget {
   /// Optional callback to navigate back to the previous screen.
   final VoidCallback? onNavigateBack;
 
+  /// Optional callback to navigate to dedicated full-page member details view.
+  final ValueChanged<Map<String, dynamic>>? onNavigateToMemberDetails;
+
+  /// Optional callback to navigate to dedicated full-page member edit view.
+  final ValueChanged<Map<String, dynamic>>? onNavigateToMemberEdit;
+
   /// Creates an [AllMembersView] instance.
   const AllMembersView({
     super.key,
@@ -35,6 +42,8 @@ class AllMembersView extends ConsumerStatefulWidget {
     this.onNavigateToTab,
     this.initialStatusFilter,
     this.onNavigateBack,
+    this.onNavigateToMemberDetails,
+    this.onNavigateToMemberEdit,
   });
 
   @override
@@ -978,13 +987,60 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     );
   }
 
+  /// <summary>
+  /// Navigates to the full-page 360-degree Member Command Center view.
+  /// </summary>
+  void _navigateToMemberDetails(Map<String, dynamic> member) {
+    if (widget.onNavigateToMemberDetails != null) {
+      widget.onNavigateToMemberDetails!(member);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            body: UserDetailsView(
+              workspace: widget.workspace,
+              member: member,
+              onNavigateBack: () => Navigator.of(context).pop(),
+              onNavigateToEdit: (m) => _navigateToMemberEdit(m),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  /// <summary>
+  /// Navigates to the full-page member profile edit view.
+  /// </summary>
+  void _navigateToMemberEdit(Map<String, dynamic> member) {
+    if (widget.onNavigateToMemberEdit != null) {
+      widget.onNavigateToMemberEdit!(member);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            body: UserEditView(
+              workspace: widget.workspace,
+              member: member,
+              onNavigateBack: () => Navigator.of(context).pop(),
+              onUserUpdated: () {
+                Navigator.of(context).pop();
+                _loadData();
+              },
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
   // =========================================================================
   // 3. ENTERPRISE DATA TABLE WITH SORTING & PAGINATION
   // =========================================================================
 
   Widget _buildDataTable(bool isDark) {
     return CentralAdjuster.tableContainer(
-      minWidth: 1040.0,
+      minWidth: 840.0,
       numColumns: 7,
       footer: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1004,8 +1060,8 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           headingRowHeight: 44,
           dataRowMinHeight: 64,
           dataRowMaxHeight: 68,
-          horizontalMargin: 16,
-          columnSpacing: 20.0 + extraSpacing,
+          horizontalMargin: 12,
+          columnSpacing: 12.0 + (extraSpacing * 0.45),
           headingRowColor: WidgetStateProperty.all(
             isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
           ),
@@ -1322,7 +1378,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
             children: [
               // Details Button
               OutlinedButton.icon(
-                onPressed: () => _showMemberDossierDialog(u),
+                onPressed: () => _navigateToMemberDetails(u),
                 icon: const Icon(Icons.visibility_outlined, size: 14),
                 label: const Text('Details'),
                 style: OutlinedButton.styleFrom(
@@ -1337,7 +1393,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
 
               // Edit Button
               ElevatedButton.icon(
-                onPressed: () => _showEditMemberDialog(u),
+                onPressed: () => _navigateToMemberEdit(u),
                 icon: const Icon(Icons.edit_outlined, size: 14, color: AppColors.primary),
                 label: const Text('Edit', style: TextStyle(color: AppColors.primary)),
                 style: ElevatedButton.styleFrom(
@@ -1508,548 +1564,4 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     }
   }
 
-  /// <summary>
-  /// Displays the Edit Member Profile dialog.
-  /// </summary>
-  void _showEditMemberDialog(Map<String, dynamic> member) {
-    final userId = member['id']?.toString() ?? '';
-    final fullName = (member['fullName'] ?? '').toString();
-    final nameParts = fullName.split(' ');
-    final firstNameCtrl = TextEditingController(text: member['firstName']?.toString() ?? (nameParts.isNotEmpty ? nameParts.first : ''));
-    final lastNameCtrl = TextEditingController(text: member['lastName']?.toString() ?? (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : ''));
-    final phoneCtrl = TextEditingController(text: member['phoneNumber']?.toString() ?? '');
-    final designationCtrl = TextEditingController(text: member['designation']?.toString() ?? 'Member');
-
-    String selectedTitle = member['title']?.toString() ?? 'Mr.';
-    String? selectedCategoryId = member['bcpUserCategoryId']?.toString();
-    final existingRoles = (member['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-    String selectedRole = existingRoles.contains('Admin')
-        ? 'Admin'
-        : (existingRoles.contains('Global Editor')
-            ? 'Global Editor'
-            : (existingRoles.contains('Feature Editor')
-                ? 'Feature Editor'
-                : (existingRoles.contains('Read Only') ? 'Read Only' : 'Member')));
-    bool isSaving = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return AlertDialog(
-              backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primary),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text('Edit Member Profile', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                ],
-              ),
-              content: SizedBox(
-                width: 500,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 80,
-                            child: DropdownButtonFormField<String>(
-                              initialValue: selectedTitle,
-                              decoration: const InputDecoration(labelText: 'Title', contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                              items: const [
-                                DropdownMenuItem(value: 'Mr.', child: Text('Mr.')),
-                                DropdownMenuItem(value: 'Mrs.', child: Text('Mrs.')),
-                                DropdownMenuItem(value: 'Ms.', child: Text('Ms.')),
-                                DropdownMenuItem(value: 'Dr.', child: Text('Dr.')),
-                                DropdownMenuItem(value: 'Engr.', child: Text('Engr.')),
-                                DropdownMenuItem(value: 'Prof.', child: Text('Prof.')),
-                              ],
-                              onChanged: (val) => setModalState(() => selectedTitle = val ?? 'Mr.'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: firstNameCtrl,
-                              decoration: const InputDecoration(labelText: 'First Name *', hintText: 'e.g. First Name'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: lastNameCtrl,
-                              decoration: const InputDecoration(labelText: 'Last Name *', hintText: 'e.g. Last Name'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-
-                      TextField(
-                        controller: phoneCtrl,
-                        decoration: const InputDecoration(labelText: 'Phone Number', hintText: 'e.g. +0 (000) 000-0000'),
-                      ),
-                      const SizedBox(height: 14),
-
-                      TextField(
-                        controller: designationCtrl,
-                        decoration: const InputDecoration(labelText: 'Designation / Title', hintText: 'e.g. Lead Developer'),
-                      ),
-                      const SizedBox(height: 14),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: selectedCategoryId,
-                              decoration: const InputDecoration(labelText: 'Category Tier'),
-                              items: [
-                                const DropdownMenuItem(value: null, child: Text('Unassigned')),
-                                ..._categories.map((c) => DropdownMenuItem(
-                                      value: c['id']?.toString(),
-                                      child: Text(c['name']?.toString() ?? 'Category'),
-                                    )),
-                              ],
-                              onChanged: (val) => setModalState(() => selectedCategoryId = val),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: selectedRole,
-                              decoration: const InputDecoration(labelText: 'Assigned Role'),
-                              items: const [
-                                DropdownMenuItem(value: 'Member', child: Text('Member')),
-                                DropdownMenuItem(value: 'Read Only', child: Text('Read Only')),
-                                DropdownMenuItem(value: 'Feature Editor', child: Text('Feature Editor')),
-                                DropdownMenuItem(value: 'Global Editor', child: Text('Global Editor')),
-                                DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                              ],
-                              onChanged: (val) => setModalState(() => selectedRole = val ?? 'Member'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          setModalState(() => isSaving = true);
-                          final repo = ref.read(accountRepositoryProvider);
-                          final success = await repo.updateUserProfile(userId, {
-                            'firstName': firstNameCtrl.text.trim(),
-                            'lastName': lastNameCtrl.text.trim(),
-                            'title': selectedTitle,
-                            'phoneNumber': phoneCtrl.text.trim().isNotEmpty ? phoneCtrl.text.trim() : null,
-                            'designation': designationCtrl.text.trim(),
-                            'bcpUserCategoryId': selectedCategoryId,
-                            'role': selectedRole,
-                          });
-
-                          if (ctx.mounted) Navigator.of(ctx).pop();
-                          if (success) {
-                            _showToast('Profile updated successfully.');
-                            _loadData();
-                          } else {
-                            _showToast('Failed to update profile.');
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                  child: isSaving
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Save Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  /// <summary>
-  /// Displays the comprehensive 360-degree Member Dossier with OTP generation, status toggles, and security actions.
-  /// </summary>
-  Future<void> _showMemberDossierDialog(Map<String, dynamic> member) async {
-    final userId = member['id']?.toString() ?? '';
-    final fullName = (member['fullName'] ?? member['userName'] ?? 'Member').toString();
-    final repo = ref.read(accountRepositoryProvider);
-
-    // Fetch full 360 dossier from backend
-    final dossier = await repo.getUserDossier(userId);
-    final data = dossier.isNotEmpty ? dossier : member;
-
-    if (!mounted) return;
-
-    String? activeOtp;
-    bool isGeneratingOtp = false;
-    final directPassCtrl = TextEditingController();
-    bool sendEmailOnReset = true;
-    bool isResettingPass = false;
-    String userStatus = (data['userStatus'] ?? member['userStatus'] ?? 'Active').toString();
-    bool isActive = userStatus.toLowerCase() == 'active';
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return AlertDialog(
-              backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              contentPadding: const EdgeInsets.all(24),
-              content: SizedBox(
-                width: 680,
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Header with Avatar & Details
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              gradient: _getGradient(fullName),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              _getInitials(fullName),
-                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        fullName,
-                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: (isActive ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(100),
-                                      ),
-                                      child: Text(
-                                        isActive ? 'Active' : 'Suspended',
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w700,
-                                          color: isActive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  data['email']?.toString() ?? '',
-                                  style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : AppColors.gray600),
-                                ),
-                                const SizedBox(height: 6),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  children: [
-                                    if (data['categoryName'] != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          data['categoryName'].toString(),
-                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary),
-                                        ),
-                                      ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                                      decoration: BoxDecoration(
-                                        color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        _sanitizeId(data['memberId']?.toString()),
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      const Divider(height: 1),
-                      const SizedBox(height: 16),
-
-                      // Information Grid
-                      Wrap(
-                        spacing: 24,
-                        runSpacing: 12,
-                        children: [
-                          _buildDossierInfoItem('Phone Number', data['phoneNumber']?.toString() ?? 'Not provided', isDark),
-                          _buildDossierInfoItem('Designation', data['designation']?.toString() ?? 'Member', isDark),
-                          _buildDossierInfoItem('Assigned Roles', ((data['roles'] as List<dynamic>?)?.join(', ') ?? 'Member'), isDark),
-                          _buildDossierInfoItem('Registration Source', data['registrationSource']?.toString() ?? 'Admin Console', isDark),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // 6-Digit One-Time Activation Passcode (OTP) Section
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.key_rounded, size: 18, color: AppColors.primary),
-                                SizedBox(width: 8),
-                                Text(
-                                  '6-Digit One-Time Activation Passcode (OTP)',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Generate a secure 6-digit code valid for 15 minutes for member account activation or password recovery.',
-                              style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
-                            ),
-                            const SizedBox(height: 10),
-                            if (activeOtp != null) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      activeOtp!,
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 4,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        Clipboard.setData(ClipboardData(text: activeOtp!));
-                                        _showToast('OTP copied to clipboard.');
-                                      },
-                                      icon: const Icon(Icons.content_copy_rounded, size: 15),
-                                      label: const Text('Copy OTP'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                            ElevatedButton.icon(
-                              onPressed: isGeneratingOtp
-                                  ? null
-                                  : () async {
-                                      setModalState(() => isGeneratingOtp = true);
-                                      final res = await repo.generateUserOtp(userId);
-                                      setModalState(() {
-                                        isGeneratingOtp = false;
-                                        if (res != null && res['otp'] != null) {
-                                          activeOtp = res['otp'].toString();
-                                        }
-                                      });
-                                      _showToast(activeOtp != null
-                                          ? '6-Digit OTP generated and queued for delivery.'
-                                          : 'Failed to generate OTP.');
-                                    },
-                              icon: const Icon(Icons.pin_rounded, size: 16),
-                              label: Text(isGeneratingOtp ? 'Generating...' : 'Generate 6-Digit Reset OTP'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Direct Temporary Password Setter
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Set Temporary Password Directly (Admin Override)',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: directPassCtrl,
-                                    decoration: const InputDecoration(
-                                      hintText: 'e.g. TempPass@2026',
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: isResettingPass
-                                      ? null
-                                      : () async {
-                                          final newPass = directPassCtrl.text.trim();
-                                          if (newPass.isEmpty) {
-                                            _showToast('Please enter a temporary password.');
-                                            return;
-                                          }
-                                          setModalState(() => isResettingPass = true);
-                                          final success = await repo.adminResetPassword(
-                                            userId,
-                                            newPass,
-                                            mustChangePassword: true,
-                                            sendEmailNotification: sendEmailOnReset,
-                                          );
-                                          setModalState(() => isResettingPass = false);
-                                          if (success) {
-                                            directPassCtrl.clear();
-                                            _showToast('Temporary password applied.');
-                                          } else {
-                                            _showToast('Failed to apply password.');
-                                          }
-                                        },
-                                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                                  child: const Text('Apply', style: TextStyle(color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Account Status Management (Suspend / Activate)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: () async {
-                              final newActive = !isActive;
-                              final success = await repo.toggleUserStatus(userId, newActive);
-                              if (success) {
-                                setModalState(() {
-                                  isActive = newActive;
-                                  userStatus = newActive ? 'Active' : 'Suspended';
-                                });
-                                _loadData();
-                                _showToast(newActive ? 'Account reactivated.' : 'Account suspended.');
-                              } else {
-                                _showToast('Failed to update account status.');
-                              }
-                            },
-                            icon: Icon(
-                              isActive ? Icons.block_rounded : Icons.check_circle_outline_rounded,
-                              size: 16,
-                              color: isActive ? AppColors.error : AppColors.success,
-                            ),
-                            label: Text(
-                              isActive ? 'Suspend Account' : 'Reactivate Account',
-                              style: TextStyle(color: isActive ? AppColors.error : AppColors.success),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(),
-                            child: const Text('Close Dossier'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildDossierInfoItem(String label, String value, bool isDark) {
-    return SizedBox(
-      width: 280,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

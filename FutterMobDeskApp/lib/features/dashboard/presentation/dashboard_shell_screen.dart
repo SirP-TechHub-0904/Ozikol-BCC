@@ -34,6 +34,8 @@ import 'screens/user_directory/auth_page_setup_view.dart';
 import 'screens/user_directory/kpis_leaderboard_view.dart';
 import 'screens/user_directory/user_settings_view.dart';
 import 'screens/user_directory/user_create_view.dart';
+import 'screens/user_directory/user_details_view.dart';
+import 'screens/user_directory/user_edit_view.dart';
 import 'screens/identity_access/identity_dashboard_view.dart';
 import 'screens/identity_access/roles_permissions_view.dart';
 import 'screens/identity_access/member_invitations_view.dart';
@@ -64,6 +66,27 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   String? _activeStatusFilter;
   bool _isSidebarCollapsed = false;
   late AnimationController _refreshAnimController;
+  Map<String, dynamic>? _selectedMember;
+
+  /// <summary>
+  /// Navigates to the full-page 360-degree Member Command Center view for a member.
+  /// </summary>
+  void _navigateToMemberDetails(Map<String, dynamic> member) {
+    setState(() {
+      _selectedMember = member;
+    });
+    _navigateToTab(17);
+  }
+
+  /// <summary>
+  /// Navigates to the full-page Member Edit view for a member.
+  /// </summary>
+  void _navigateToMemberEdit(Map<String, dynamic> member) {
+    setState(() {
+      _selectedMember = member;
+    });
+    _navigateToTab(18);
+  }
 
   /// <summary>
   /// Navigates to a specific screen index with optional filtering and history tracking.
@@ -1763,6 +1786,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             initialStatusFilter: _activeStatusFilter,
             onNavigateToTab: (idx) => _navigateToTab(idx),
             onNavigateBack: _navigateBack,
+            onNavigateToMemberDetails: _navigateToMemberDetails,
+            onNavigateToMemberEdit: _navigateToMemberEdit,
           );
         case 2:
           return UserCategoriesView(
@@ -1820,6 +1845,21 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             workspace: activeWs,
             onNavigateBack: _navigateBack,
             onUserCreated: () => _navigateToTab(1, clearHistory: true),
+          );
+        case 17:
+          return UserDetailsView(
+            workspace: activeWs,
+            member: _selectedMember ?? {},
+            onNavigateBack: _navigateBack,
+            onNavigateToEdit: (m) => _navigateToMemberEdit(m),
+            onNavigateToTab: (idx) => _navigateToTab(idx),
+          );
+        case 18:
+          return UserEditView(
+            workspace: activeWs,
+            member: _selectedMember ?? {},
+            onNavigateBack: _navigateBack,
+            onUserUpdated: () => _navigateToTab(1, clearHistory: true),
           );
         default:
           return UserDashboardOverviewView(workspace: activeWs);

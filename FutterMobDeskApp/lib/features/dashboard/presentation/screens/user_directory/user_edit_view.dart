@@ -1,0 +1,761 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/models/workspace.dart';
+import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/central_adjuster.dart';
+import '../../../../../core/widgets/custom_dropdown_field.dart';
+import '../../../../../core/widgets/custom_text_field.dart';
+import '../../../../../core/widgets/primary_button.dart';
+import '../../../data/account_repository.dart';
+
+/// <summary>
+/// Dedicated full-page view for editing an existing workspace member profile.
+/// Achieves 1-to-1 operational and visual parity with the Angular web client's UserEditComponent.
+/// Features personal identity management, organizational category tier assignment,
+/// system role configuration, and immutable member ID locks.
+/// </summary>
+class UserEditView extends ConsumerStatefulWidget {
+  /// The active workspace context.
+  final Workspace? workspace;
+
+  /// The member data object to edit.
+  final Map<String, dynamic> member;
+
+  /// Callback invoked when navigating back.
+  final VoidCallback? onNavigateBack;
+
+  /// Callback invoked after profile changes are successfully saved.
+  final VoidCallback? onUserUpdated;
+
+  /// Creates a [UserEditView].
+  const UserEditView({
+    super.key,
+    this.workspace,
+    required this.member,
+    this.onNavigateBack,
+    this.onUserUpdated,
+  });
+
+  @override
+  ConsumerState<UserEditView> createState() => _UserEditViewState();
+}
+
+class _UserEditViewState extends ConsumerState<UserEditView> {
+  final _formKey = GlobalKey<FormState>();
+
+  late TextEditingController _firstNameController;
+  late TextEditingController _lastNameController;
+  late TextEditingController _suffixController;
+  late TextEditingController _phoneController;
+  late TextEditingController _designationController;
+
+  String? _selectedTitle;
+  int _selectedGender = 0;
+  String? _selectedCategoryId;
+  String _selectedRole = 'Member';
+
+  List<Map<String, dynamic>> _categories = [];
+  bool _isLoading = false;
+  bool _isSaving = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.member;
+    final fullName = (m['fullName'] ?? '').toString();
+    final nameParts = fullName.split(' ');
+
+    _firstNameController = TextEditingController(
+      text: m['firstName']?.toString() ?? (nameParts.isNotEmpty ? nameParts.first : ''),
+    );
+    _lastNameController = TextEditingController(
+      text: m['lastName']?.toString() ?? (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : ''),
+    );
+    _suffixController = TextEditingController(text: m['suffix']?.toString() ?? '');
+    _phoneController = TextEditingController(text: m['phoneNumber']?.toString() ?? '');
+    _designationController = TextEditingController(text: m['designation']?.toString() ?? 'Member');
+
+    _selectedTitle = m['title']?.toString();
+    _selectedGender = (m['gender'] is int) ? m['gender'] as int : 0;
+    _selectedCategoryId = m['bcpUserCategoryId']?.toString();
+
+    final roles = (m['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    if (roles.contains('Admin')) {
+      _selectedRole = 'Admin';
+    } else if (roles.contains('Global Editor')) {
+      _selectedRole = 'Global Editor';
+    } else if (roles.contains('Feature Editor')) {
+      _selectedRole = 'Feature Editor';
+    } else if (roles.contains('Read Only')) {
+      _selectedRole = 'Read Only';
+    } else {
+      _selectedRole = 'Member';
+    }
+
+    _loadInitialData();
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _suffixController.dispose();
+    _phoneController.dispose();
+    _designationController.dispose();
+    super.dispose();
+  }
+
+  /// <summary>
+  /// Loads available categories from UsersApi.
+  /// </summary>
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
+    final repo = ref.read(accountRepositoryProvider);
+
+    try {
+      final cats = await repo.getCategories();
+      if (mounted) {
+        setState(() {
+          _categories = cats;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// <summary>
+  /// Validates and submits updated member details to UsersApi.
+  /// </summary>
+  Future<void> _handleSaveUser() async {
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+
+    if (firstName.isEmpty || lastName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('First name and last name are required.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    final userId = widget.member['id']?.toString() ?? '';
+    if (userId.isEmpty) return;
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    final repo = ref.read(accountRepositoryProvider);
+    final payload = <String, dynamic>{
+      'title': _selectedTitle,
+      'firstName': firstName,
+      'lastName': lastName,
+      'suffix': _suffixController.text.trim().isNotEmpty ? _suffixController.text.trim() : null,
+      'gender': _selectedGender,
+      'phoneNumber': _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+      'designation': _designationController.text.trim(),
+      'bcpUserCategoryId': _selectedCategoryId,
+      'role': _selectedRole,
+      'roles': [_selectedRole],
+    };
+
+    final success = await repo.updateUserProfile(userId, payload);
+
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Profile for $firstName $lastName updated successfully!'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      if (widget.onUserUpdated != null) {
+        widget.onUserUpdated!();
+      } else if (widget.onNavigateBack != null) {
+        widget.onNavigateBack!();
+      } else {
+        Navigator.of(context).maybePop();
+      }
+    } else {
+      setState(() {
+        _errorMessage = 'Failed to update member profile. Please verify your network connection.';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update member profile.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  String _sanitizeId(String? id) {
+    if (id == null || id.isEmpty) return 'Pending Assignment';
+    return id.startsWith('ID-') ? id : 'ID-$id';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fullName = (widget.member['fullName'] ?? widget.member['userName'] ?? 'Member').toString();
+
+    return CentralAdjuster.pageShell(
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Standardized Profile Management Header
+            _buildPageHeader(isDark, fullName),
+            const SizedBox(height: 20),
+
+            // Loading / Error Banner
+            if (_isLoading) ...[
+              const LinearProgressIndicator(minHeight: 2.5),
+              const SizedBox(height: 16),
+            ],
+            if (_errorMessage != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline_rounded, size: 18, color: Color(0xFFEF4444)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: const TextStyle(fontSize: 12.5, color: Color(0xFFDC2626)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // 2. Responsive 2-Column Form Cards
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth >= 960;
+
+                if (isDesktop) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _buildIdentityCard(isDark)),
+                      const SizedBox(width: 18),
+                      Expanded(child: _buildOrganizationCard(isDark)),
+                    ],
+                  );
+                }
+
+                return Column(
+                  children: [
+                    _buildIdentityCard(isDark),
+                    const SizedBox(height: 18),
+                    _buildOrganizationCard(isDark),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // 3. Card Footer Action Bar
+            _buildFooterActionBar(isDark),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // =========================================================================
+  // 1. PAGE HEADER
+  // =========================================================================
+
+  Widget _buildPageHeader(bool isDark, String fullName) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.manage_accounts_rounded, size: 26, color: AppColors.primary),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PROFILE MANAGEMENT',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.08,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Edit Profile: $fullName',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Update member identity, change organizational category tier, and reassign system security roles.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+
+          // Back button
+          OutlinedButton.icon(
+            onPressed: () {
+              if (widget.onNavigateBack != null) {
+                widget.onNavigateBack!();
+              } else {
+                Navigator.of(context).maybePop();
+              }
+            },
+            icon: const Icon(Icons.arrow_back_rounded, size: 15),
+            label: const Text('Cancel & Back'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+              foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // 2. FORM CARDS
+  // =========================================================================
+
+  /// Card 1: Personal & Contact Details.
+  Widget _buildIdentityCard(bool isDark) {
+    final email = (widget.member['email'] ?? '').toString();
+
+    return _buildFormCard(
+      isDark: isDark,
+      icon: Icons.badge_outlined,
+      title: 'Personal & Contact Details',
+      subtitle: 'Member name, gender, salutation, and direct contact line',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Name row with Title, First Name, Last Name, Suffix
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 86,
+                child: CustomDropdownField<String?>(
+                  label: 'Title',
+                  value: _selectedTitle,
+                  items: const [
+                    DropdownMenuItem(value: null, child: Text('None')),
+                    DropdownMenuItem(value: 'Mr.', child: Text('Mr.')),
+                    DropdownMenuItem(value: 'Mrs.', child: Text('Mrs.')),
+                    DropdownMenuItem(value: 'Ms.', child: Text('Ms.')),
+                    DropdownMenuItem(value: 'Dr.', child: Text('Dr.')),
+                    DropdownMenuItem(value: 'Prof.', child: Text('Prof.')),
+                    DropdownMenuItem(value: 'Engr.', child: Text('Engr.')),
+                  ],
+                  onChanged: (val) => setState(() => _selectedTitle = val),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 4,
+                child: CustomTextField(
+                  controller: _firstNameController,
+                  label: 'First Name *',
+                  placeholder: 'e.g. First Name',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 4,
+                child: CustomTextField(
+                  controller: _lastNameController,
+                  label: 'Last Name *',
+                  placeholder: 'e.g. Last Name',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: CustomTextField(
+                  controller: _suffixController,
+                  label: 'Suffix',
+                  placeholder: 'e.g. mni',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Gender & Read-only Email
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: CustomDropdownField<int>(
+                  label: 'Gender *',
+                  value: _selectedGender,
+                  items: const [
+                    DropdownMenuItem(value: 0, child: Text('Male')),
+                    DropdownMenuItem(value: 1, child: Text('Female')),
+                  ],
+                  onChanged: (val) => setState(() => _selectedGender = val ?? 0),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Work Email Address',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.gray300 : const Color(0xFF334155),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+                      ),
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              email,
+                              style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                            ),
+                          ),
+                          const Icon(Icons.lock_outline_rounded, size: 16, color: Color(0xFF94A3B8)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Email address is permanently bound to the identity record.',
+                      style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Phone Number
+          CustomTextField(
+            controller: _phoneController,
+            label: 'Phone Number',
+            placeholder: 'e.g. +0 (000) 000-0000',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Card 2: Organizational Hierarchy & System Role.
+  Widget _buildOrganizationCard(bool isDark) {
+    final memberId = _sanitizeId(widget.member['memberId']?.toString());
+
+    return _buildFormCard(
+      isDark: isDark,
+      icon: Icons.corporate_fare_rounded,
+      title: 'Organizational Hierarchy & System Role',
+      subtitle: 'Category tier, designation, and member ID',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Category Tier
+          CustomDropdownField<String?>(
+            label: 'Category Tier',
+            value: _selectedCategoryId,
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Select Category (Unassigned)')),
+              ..._categories.map((c) => DropdownMenuItem(
+                    value: c['id']?.toString(),
+                    child: Text(c['name']?.toString() ?? 'Category'),
+                  )),
+            ],
+            onChanged: (val) => setState(() => _selectedCategoryId = val),
+          ),
+          const SizedBox(height: 16),
+
+          // Designation & Role
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: CustomTextField(
+                  controller: _designationController,
+                  label: 'Designation / Job Title',
+                  placeholder: 'e.g. Senior Analyst',
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: CustomDropdownField<String>(
+                  label: 'System Role',
+                  value: _selectedRole,
+                  items: const [
+                    DropdownMenuItem(value: 'Member', child: Text('Member')),
+                    DropdownMenuItem(value: 'Admin', child: Text('Admin')),
+                    DropdownMenuItem(value: 'Global Editor', child: Text('Global Editor')),
+                    DropdownMenuItem(value: 'Feature Editor', child: Text('Feature Editor')),
+                    DropdownMenuItem(value: 'Read Only', child: Text('Read Only')),
+                  ],
+                  onChanged: (val) => setState(() => _selectedRole = val ?? 'Member'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Member ID / Code (Permanent & Locked)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Member ID / Code',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.gray300 : const Color(0xFF334155),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0050E5).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock_rounded, size: 11, color: Color(0xFF0050E5)),
+                        SizedBox(width: 3),
+                        Text(
+                          'Permanent / Immutable',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF0050E5)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Container(
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        memberId,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'monospace',
+                          color: Color(0xFF0050E5),
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.tag_rounded, size: 16, color: Color(0xFF94A3B8)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Member ID is permanently bound to this profile upon creation and cannot be modified.',
+                style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================================
+  // 3. FOOTER ACTION BAR
+  // =========================================================================
+
+  Widget _buildFooterActionBar(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          OutlinedButton(
+            onPressed: () {
+              if (widget.onNavigateBack != null) {
+                widget.onNavigateBack!();
+              } else {
+                Navigator.of(context).maybePop();
+              }
+            },
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+              foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+            ),
+            child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          ),
+          PrimaryButton(
+            text: _isSaving ? 'Saving Changes...' : 'Save Profile Changes',
+            icon: const Icon(Icons.save_outlined, size: 16),
+            isLoading: _isSaving,
+            isFullWidth: false,
+            onPressed: _isSaving ? null : _handleSaveUser,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormCard({
+    required bool isDark,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 20, color: AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          const Divider(height: 1),
+          const SizedBox(height: 18),
+          child,
+        ],
+      ),
+    );
+  }
+}

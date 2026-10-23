@@ -894,6 +894,7 @@ class AdaptiveTableContainer extends StatelessWidget {
               ? constraints.maxWidth
               : MediaQuery.of(context).size.width;
 
+          final bool hasEnoughWidth = availableWidth >= minWidth;
           final double targetWidth = math.max(availableWidth, minWidth);
           final double extraWidth = targetWidth > minWidth ? (targetWidth - minWidth) : 0.0;
           final int gapCount = math.max(1, numColumns - 1);
@@ -909,9 +910,12 @@ class AdaptiveTableContainer extends StatelessWidget {
               ],
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                physics: const ClampingScrollPhysics(),
+                physics: hasEnoughWidth ? const NeverScrollableScrollPhysics() : const ClampingScrollPhysics(),
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: targetWidth),
+                  constraints: BoxConstraints(
+                    minWidth: targetWidth,
+                    maxWidth: hasEnoughWidth ? availableWidth : targetWidth,
+                  ),
                   child: builder(context, targetWidth, extraSpacing),
                 ),
               ),
