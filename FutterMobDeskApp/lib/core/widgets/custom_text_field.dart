@@ -184,6 +184,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           widget.label,
@@ -217,6 +218,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
             color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
           ),
           decoration: InputDecoration(
+            isDense: true,
+            constraints: const BoxConstraints(minHeight: 48),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             hintText: widget.placeholder,
             hintStyle: TextStyle(
               fontSize: 13,

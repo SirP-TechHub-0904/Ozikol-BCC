@@ -129,7 +129,8 @@ class CustomDropdownField<T> extends StatelessWidget {
               : null,
           decoration: InputDecoration(
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            constraints: const BoxConstraints(minHeight: 48),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             helperText: helperText,
             filled: true,
             fillColor: isDark ? const Color(0xFF151F30) : AppColors.surfaceLight,

@@ -398,7 +398,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
             children: [
               if (_enableTitle) ...[
                 SizedBox(
-                  width: 110,
+                  width: 120,
                   child: CustomDropdownField<String?>(
                     label: 'Title',
                     value: _selectedTitle,
@@ -450,7 +450,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: 140,
+                width: 120,
                 child: CustomDropdownField<int>(
                   label: 'Gender *',
                   value: _selectedGender,
@@ -461,7 +461,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                   onChanged: (val) => setState(() => _selectedGender = val ?? 0),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: CustomTextField(
                   controller: _emailController,
