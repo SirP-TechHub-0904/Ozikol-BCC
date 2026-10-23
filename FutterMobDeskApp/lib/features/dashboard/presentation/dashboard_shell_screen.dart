@@ -536,214 +536,352 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
     final textColor = isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A);
 
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
-        border: Border(bottom: BorderSide(color: borderColor, width: 1)),
-      ),
-      child: Row(
-        children: [
-          // Sidebar minimize / maximize toggle button
-          IconButton(
-            icon: Icon(
-              _isSidebarCollapsed ? Icons.menu_rounded : Icons.menu_open_rounded,
-              size: 20,
-              color: isDark ? AppColors.gray300 : const Color(0xFF475569),
-            ),
-            tooltip: _isSidebarCollapsed ? 'Maximize sidebar' : 'Minimize sidebar',
-            splashRadius: 18,
-            onPressed: _toggleSidebarCollapse,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final topBarWidth = constraints.maxWidth;
+
+        // Progressive responsive breakpoints
+        final isWide = topBarWidth >= 1050;
+        final isMedium = topBarWidth >= 780 && topBarWidth < 1050;
+        final isCompact = topBarWidth < 780;
+        final isUltraNarrow = topBarWidth < 620;
+
+        // Adaptive search box sizing: scales gracefully with the viewport
+        final double searchMaxWidth;
+        if (isWide) {
+          searchMaxWidth = (topBarWidth * 0.28).clamp(280.0, 440.0);
+        } else if (isMedium) {
+          searchMaxWidth = (topBarWidth * 0.24).clamp(190.0, 280.0);
+        } else {
+          searchMaxWidth = (topBarWidth * 0.22).clamp(130.0, 190.0);
+        }
+
+        return Container(
+          height: 64,
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 20),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : Colors.white,
+            border: Border(bottom: BorderSide(color: borderColor, width: 1)),
           ),
-          const SizedBox(width: 8),
-
-          // Brand Emblem Icon (matching Angular Web BCC Admin topbar parity)
-          if (activeWs != null) ...[
-            Tooltip(
-              message: '${activeWs.displayName} Workspace',
-              child: TenantAvatar(
-                iconUrl: activeWs.iconUrl,
-                logoUrl: activeWs.logoUrl,
-                name: activeWs.displayName,
-                tenantKey: activeWs.tenantKey,
-                size: 28,
-                borderRadius: 7,
+          child: Row(
+            children: [
+              // 1. Sidebar toggle button
+              IconButton(
+                icon: Icon(
+                  _isSidebarCollapsed ? Icons.menu_rounded : Icons.menu_open_rounded,
+                  size: 20,
+                  color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                ),
+                tooltip: _isSidebarCollapsed ? 'Maximize sidebar' : 'Minimize sidebar',
+                splashRadius: 18,
+                onPressed: _toggleSidebarCollapse,
               ),
-            ),
-            const SizedBox(width: 10),
-          ],
+              const SizedBox(width: 4),
 
-          // Search workspace bar (Flexible with responsive width limits)
-          Flexible(
-            flex: 2,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 280, minWidth: 120),
-              child: Container(
-                height: 38,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isDark ? Colors.transparent : const Color(0xFFE2E8F0),
+              // 2. Brand Emblem Icon (hidden only on ultra-narrow windows)
+              if (activeWs != null && !isUltraNarrow) ...[
+                Tooltip(
+                  message: '${activeWs.displayName} Workspace',
+                  child: TenantAvatar(
+                    iconUrl: activeWs.iconUrl,
+                    logoUrl: activeWs.logoUrl,
+                    name: activeWs.displayName,
+                    tenantKey: activeWs.tenantKey,
+                    size: 28,
+                    borderRadius: 7,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.search_rounded,
-                      size: 18,
-                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                const SizedBox(width: 8),
+              ],
+
+              // 3. Adaptive Search workspace bar
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: searchMaxWidth,
+                  minWidth: isUltraNarrow ? 110 : 140,
+                ),
+                child: Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isDark ? Colors.transparent : const Color(0xFFE2E8F0),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'shell.search_placeholder'.tr(ref, fallback: 'Search workspace...'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.search_rounded,
+                        size: 18,
+                        color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isCompact
+                              ? 'Search...'
+                              : 'shell.search_placeholder'.tr(ref, fallback: 'Search workspace...'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          const Spacer(),
-
-          // Central Pattern Multi-Language Switcher Component
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 6),
-            child: OzLangSwitcher(),
-          ),
-
-          // Utility Action Icons (Refresh, Calendar, Help, Dark Mode, Notifications)
-          _buildTopRefreshBtn(isDark),
-          _buildTopIconBtn(
-            icon: Icons.calendar_today_outlined,
-            tooltip: 'Calendar & Schedules',
-            isDark: isDark,
-            onTap: () => _showCalendarDialog(context, isDark),
-          ),
-          _buildTopIconBtn(
-            icon: Icons.help_outline_rounded,
-            tooltip: 'Help & Knowledge Base',
-            isDark: isDark,
-            onTap: () => _showHelpSupportDialog(context, isDark),
-          ),
-          _buildTopIconBtn(
-            icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-            tooltip: 'Toggle Color Theme',
-            isDark: isDark,
-            onTap: () => _toggleTheme(),
-          ),
-          _buildTopIconBtn(
-            icon: Icons.notifications_none_rounded,
-            tooltip: 'Notifications',
-            isDark: isDark,
-            badgeCount: notifCount,
-            onTap: () => NotificationsSheet.show(context),
-          ),
-
-          const SizedBox(width: 10),
-
-          // Live Online / Offline Presence Notice Badge
-          _buildOnlineOfflineStatusPill(isDark, isOnline),
-
-          const SizedBox(width: 10),
-
-          // User Profile Pill (OP - Onwuka Peter - SuperAdmin) - Clickable with Presence Dot
-          Material(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: () => _showUserProfileDialog(context, isDark, activeWs),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
+                      if (isWide) ...[
+                        const SizedBox(width: 6),
                         Container(
-                          width: 34,
-                          height: 34,
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(8),
+                            color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                          alignment: Alignment.center,
                           child: Text(
-                            _getUserInitials(activeWs?.userFullName),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          right: -1,
-                          bottom: -1,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: isOnline ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isDark ? AppColors.surfaceDark : Colors.white,
-                                width: 1.5,
-                              ),
+                            '⌘K',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
                             ),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(width: 8),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 120),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            activeWs?.userFullName ?? 'Workspace Admin',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: textColor,
+                    ],
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              // 4. Central Pattern Multi-Language Switcher (compact when space is tighter)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: OzLangSwitcher(compact: !isWide),
+              ),
+
+              // 5. Utility Action Icons (Progressively responsive)
+              if (isWide) ...[
+                _buildTopRefreshBtn(isDark),
+                _buildTopIconBtn(
+                  icon: Icons.calendar_today_outlined,
+                  tooltip: 'Calendar & Schedules',
+                  isDark: isDark,
+                  onTap: () => _showCalendarDialog(context, isDark),
+                ),
+                _buildTopIconBtn(
+                  icon: Icons.help_outline_rounded,
+                  tooltip: 'Help & Knowledge Base',
+                  isDark: isDark,
+                  onTap: () => _showHelpSupportDialog(context, isDark),
+                ),
+              ] else if (isMedium) ...[
+                _buildTopRefreshBtn(isDark),
+                _buildTopMoreMenuBtn(context, isDark),
+              ] else ...[
+                _buildTopMoreMenuBtn(context, isDark, includeRefresh: true),
+              ],
+
+              // Theme Mode Toggle Icon
+              _buildTopIconBtn(
+                icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                tooltip: 'Toggle Color Theme',
+                isDark: isDark,
+                onTap: () => _toggleTheme(),
+              ),
+
+              // Notifications Icon with live counter badge
+              _buildTopIconBtn(
+                icon: Icons.notifications_none_rounded,
+                tooltip: 'Notifications',
+                isDark: isDark,
+                badgeCount: notifCount,
+                onTap: () => NotificationsSheet.show(context),
+              ),
+
+              // 6. Live Online / Offline Presence Notice Badge (on wider views)
+              if (isWide) ...[
+                const SizedBox(width: 8),
+                _buildOnlineOfflineStatusPill(isDark, isOnline),
+              ],
+
+              const SizedBox(width: 8),
+
+              // 7. Responsive User Profile Pill
+              Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => _showUserProfileDialog(context, isDark, activeWs),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // User Avatar with live presence dot
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                _getUserInitials(activeWs?.userFullName),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
-                          ),
-                          Text(
-                            _getUserRoleBadge(activeWs),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                            Positioned(
+                              right: -1,
+                              bottom: -1,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: isOnline ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Name & Role labels (adapt based on available width)
+                        if (!isCompact) ...[
+                          const SizedBox(width: 8),
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth: isWide ? 130 : 90,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  activeWs?.userFullName ?? 'Workspace Admin',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: textColor,
+                                  ),
+                                ),
+                                if (isWide)
+                                  Text(
+                                    _getUserRoleBadge(activeWs),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Dropdown menu for secondary topbar actions on compact screen widths.
+  Widget _buildTopMoreMenuBtn(
+    BuildContext context,
+    bool isDark, {
+    bool includeRefresh = false,
+  }) {
+    return PopupMenuButton<String>(
+      icon: Icon(
+        Icons.more_horiz_rounded,
+        size: 20,
+        color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+      ),
+      tooltip: 'More actions',
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: isDark ? AppColors.surfaceDark : Colors.white,
+      onSelected: (val) {
+        switch (val) {
+          case 'refresh':
+            _triggerRefresh();
+            break;
+          case 'calendar':
+            _showCalendarDialog(context, isDark);
+            break;
+          case 'help':
+            _showHelpSupportDialog(context, isDark);
+            break;
+        }
+      },
+      itemBuilder: (context) => [
+        if (includeRefresh)
+          PopupMenuItem(
+            value: 'refresh',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                  color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                ),
+                const SizedBox(width: 10),
+                const Text('Refresh Workspace', style: TextStyle(fontSize: 13)),
+              ],
             ),
           ),
-        ],
-      ),
+        PopupMenuItem(
+          value: 'calendar',
+          child: Row(
+            children: [
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 18,
+                color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+              ),
+              const SizedBox(width: 10),
+              const Text('Calendar & Schedules', style: TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'help',
+          child: Row(
+            children: [
+              Icon(
+                Icons.help_outline_rounded,
+                size: 18,
+                color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+              ),
+              const SizedBox(width: 10),
+              const Text('Help & Knowledge Base', style: TextStyle(fontSize: 13)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
