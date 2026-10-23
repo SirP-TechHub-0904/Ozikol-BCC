@@ -630,6 +630,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         final isCompact = topBarWidth < 780;
         final isUltraNarrow = topBarWidth < 620;
 
+        final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
+        final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
+
         // Adaptive search box sizing: scales gracefully with the viewport
         final double searchMaxWidth;
         if (isWide) {
@@ -763,6 +766,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
 
               const Spacer(),
+
+              // 3b. Desktop Console Mode Switcher (Visible to Admins / SuperAdmins)
+              if (canAccessAdmin) ...[
+                _buildDesktopConsoleModeSwitcher(isDark, isAdministration, isCompact: isCompact || isMedium),
+                const SizedBox(width: 8),
+              ],
 
               // 4. Central Pattern Multi-Language Switcher (compact when space is tighter)
               Padding(
@@ -2226,6 +2235,135 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     );
   }
 
+  /// Builds the desktop top-bar console mode switcher allowing administrators to toggle
+  /// between the full Administration Console and their Personal Workspace Hub.
+  Widget _buildDesktopConsoleModeSwitcher(
+    bool isDark,
+    bool isAdministration, {
+    bool isCompact = false,
+  }) {
+    final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1);
+    final bg = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+    final activeBg = AppColors.primary;
+    final inactiveTextColor = isDark ? AppColors.gray400 : const Color(0xFF64748B);
+
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Administration Console Tab
+          Tooltip(
+            message: 'Administration Console (User Management, Roles & Settings)',
+            child: InkWell(
+              onTap: () {
+                if (!isAdministration) {
+                  ref.read(workspaceStateProvider.notifier).switchConsoleMode('administration');
+                  _navigateToTab(0, clearHistory: true);
+                }
+              },
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isAdministration ? activeBg : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: isAdministration
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          )
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.admin_panel_settings_rounded,
+                      size: 15,
+                      color: isAdministration ? Colors.white : inactiveTextColor,
+                    ),
+                    if (!isCompact) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        'Admin Console',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isAdministration ? FontWeight.w700 : FontWeight.w500,
+                          color: isAdministration ? Colors.white : inactiveTextColor,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 2),
+          // Personal Workspace Hub Tab
+          Tooltip(
+            message: 'Personal Workspace Hub (My Profile, Security & Personal Credentials)',
+            child: InkWell(
+              onTap: () {
+                if (isAdministration) {
+                  ref.read(workspaceStateProvider.notifier).switchConsoleMode('workspace');
+                  _navigateToTab(0, clearHistory: true);
+                }
+              },
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: !isAdministration ? activeBg : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: !isAdministration
+                      ? [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.25),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          )
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.person_rounded,
+                      size: 15,
+                      color: !isAdministration ? Colors.white : inactiveTextColor,
+                    ),
+                    if (!isCompact) ...[
+                      const SizedBox(width: 6),
+                      Text(
+                        'Personal Hub',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: !isAdministration ? FontWeight.w700 : FontWeight.w500,
+                          color: !isAdministration ? Colors.white : inactiveTextColor,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Displays the interactive Calendar & Schedules modal dialog.
   void _showCalendarDialog(BuildContext context, bool isDark) {
     final dialogBg = isDark ? AppColors.surfaceDark : Colors.white;
@@ -2509,6 +2647,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final borderColor = isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0);
     final connStatus = ref.read(connectivityStatusProvider);
     final isOnline = connStatus == ConnectivityStatus.online;
+    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
+    final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
 
     showDialog(
       context: context,
@@ -2610,6 +2750,100 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                   ),
                 ],
               ),
+              if (canAccessAdmin) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.of(dialogCtx).pop();
+                            if (!isAdministration) {
+                              ref.read(workspaceStateProvider.notifier).switchConsoleMode('administration');
+                              _navigateToTab(0, clearHistory: true);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isAdministration ? AppColors.primary : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.admin_panel_settings_rounded,
+                                  size: 16,
+                                  color: isAdministration ? Colors.white : subColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Admin Console',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: isAdministration ? FontWeight.w700 : FontWeight.w600,
+                                    color: isAdministration ? Colors.white : textColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.of(dialogCtx).pop();
+                            if (isAdministration) {
+                              ref.read(workspaceStateProvider.notifier).switchConsoleMode('workspace');
+                              _navigateToTab(0, clearHistory: true);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: !isAdministration ? AppColors.primary : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.person_rounded,
+                                  size: 16,
+                                  color: !isAdministration ? Colors.white : subColor,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Personal Hub',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: !isAdministration ? FontWeight.w700 : FontWeight.w600,
+                                    color: !isAdministration ? Colors.white : textColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               Divider(color: borderColor, height: 1),
               const SizedBox(height: 16),

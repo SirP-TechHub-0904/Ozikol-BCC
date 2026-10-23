@@ -111,6 +111,27 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
       final token = (authMap['token'] ?? authMap['Token']) as String?;
       final fullName = (authMap['fullName'] ?? authMap['FullName'] ?? authMap['userName']) as String?;
       final roles = ((authMap['roles'] ?? authMap['Roles']) as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+      final effectivePerms = (authMap['effectivePermissions'] ?? authMap['EffectivePermissions']) is Map
+          ? Map<String, dynamic>.from((authMap['effectivePermissions'] ?? authMap['EffectivePermissions']) as Map)
+          : <String, dynamic>{};
+      final licensedFeatures = ((authMap['licensedTenantFeatures'] ?? authMap['LicensedTenantFeatures'] ?? authMap['licensedFeatures']) as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          <String>[];
+
+      // Automatically default SuperAdmin and Administrators to Administration Console mode
+      final canAccessAdmin = (effectivePerms['canAccessAdminConsole'] == true) ||
+          roles.any((r) => [
+                'superadmin',
+                'admin',
+                'administrator',
+                'identitymanager',
+                'cmsmanager',
+                'editor',
+                'featureedit',
+                'systemadministrator'
+              ].contains(r.toLowerCase().trim()));
+      final defaultMode = canAccessAdmin ? 'administration' : 'workspace';
 
       final updatedWorkspace = widget.workspace.copyWith(
         authToken: token,
@@ -118,6 +139,9 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
         userEmail: widget.email,
         userFullName: fullName,
         userRoles: roles,
+        effectivePermissions: effectivePerms,
+        licensedFeatures: licensedFeatures,
+        activeConsoleMode: defaultMode,
         lastAccessed: DateTime.now(),
       );
 

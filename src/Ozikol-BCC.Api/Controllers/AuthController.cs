@@ -763,6 +763,21 @@ namespace Ozikol_BCC.Api.Controllers
             var userRoles = (await activeUserManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
             var token = await GenerateJwtTokenAsync(user, resolvedTenantKey, userRoles, jwtId);
 
+            var effectivePermsOnLogin = ComputeEffectivePermissions(userRoles);
+            var licensedFeaturesOnLogin = new List<string>();
+            if (!string.IsNullOrEmpty(resolvedTenantKey) && _featureGateService != null)
+            {
+                try
+                {
+                    var ent = await _featureGateService.GetTenantFeatureEntitlementsAsync(resolvedTenantKey);
+                    licensedFeaturesOnLogin = ent.ActiveFeatureCodes.ToList();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not resolve dynamic tenant features on MFA login for {TenantKey}", resolvedTenantKey);
+                }
+            }
+
             var responseData = new LoginResponseModel
             {
                 Token = token,
@@ -772,7 +787,9 @@ namespace Ozikol_BCC.Api.Controllers
                 AvatarUrl = user.AvatarUrl,
                 TenantKey = resolvedTenantKey,
                 MustChangePassword = user.MustChangePassword,
-                Roles = userRoles
+                Roles = userRoles,
+                EffectivePermissions = effectivePermsOnLogin,
+                LicensedTenantFeatures = licensedFeaturesOnLogin
             };
 
             // Set secure custom response header for trust token if selected

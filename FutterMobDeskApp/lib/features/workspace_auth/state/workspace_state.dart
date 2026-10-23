@@ -481,7 +481,16 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
       final effectivePerms = (result['effectivePermissions'] as Map<String, dynamic>?) ?? {};
       final licensedFeatures = (result['licensedTenantFeatures'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
       final canAccessAdmin = (effectivePerms['canAccessAdminConsole'] == true) ||
-          roles.any((r) => ['superadmin', 'admin', 'identitymanager', 'cmsmanager', 'editor', 'featureedit'].contains(r.toLowerCase()));
+          roles.any((r) => [
+                'superadmin',
+                'admin',
+                'administrator',
+                'identitymanager',
+                'cmsmanager',
+                'editor',
+                'featureedit',
+                'systemadministrator'
+              ].contains(r.toLowerCase().trim()));
       final defaultMode = canAccessAdmin ? 'administration' : 'workspace';
 
       final updatedWorkspace = workspace.copyWith(
