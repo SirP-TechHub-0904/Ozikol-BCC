@@ -63,6 +63,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   int _selectedNavIndex = 0;
   final List<int> _navHistory = [0];
   String? _activeStatusFilter;
+  String? _activeCategoryFilter;
   bool _isSidebarCollapsed = false;
   late AnimationController _refreshAnimController;
   Map<String, dynamic>? _selectedMember;
@@ -92,9 +93,14 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   /// </summary>
   /// <param name="index">Target tab index.</param>
   /// <param name="filterStatus">Optional member status filter to pre-select.</param>
+  /// <param name="categoryFilter">Optional category filter (ID or name) to pre-select.</param>
   /// <param name="clearHistory">If true, resets navigation history stack.</param>
-  void _navigateToTab(int index, {String? filterStatus, bool clearHistory = false}) {
-    if (_selectedNavIndex == index && _activeStatusFilter == filterStatus) return;
+  void _navigateToTab(int index, {String? filterStatus, String? categoryFilter, bool clearHistory = false}) {
+    if (_selectedNavIndex == index &&
+        _activeStatusFilter == filterStatus &&
+        _activeCategoryFilter == categoryFilter) {
+      return;
+    }
     setState(() {
       if (clearHistory) {
         _navHistory.clear();
@@ -113,6 +119,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       }
       _selectedNavIndex = index;
       _activeStatusFilter = filterStatus;
+      _activeCategoryFilter = categoryFilter;
     });
   }
 
@@ -130,6 +137,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         _navHistory.add(0);
       }
       _activeStatusFilter = null;
+      _activeCategoryFilter = null;
     });
   }
 
@@ -1774,6 +1782,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           return AllMembersView(
             workspace: activeWs,
             initialStatusFilter: _activeStatusFilter,
+            initialCategoryFilter: _activeCategoryFilter,
             onNavigateToTab: (idx) => _navigateToTab(idx),
             onNavigateBack: _navigateBack,
             onNavigateToMemberDetails: _navigateToMemberDetails,
@@ -1782,7 +1791,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         case 2:
           return UserCategoriesView(
             workspace: activeWs,
-            onNavigateToTab: (idx, {categoryFilter}) => _navigateToTab(idx),
+            onNavigateToTab: (idx, {categoryFilter}) => _navigateToTab(idx, categoryFilter: categoryFilter),
             onNavigateBack: _navigateBack,
           );
         case 3:
@@ -1790,6 +1799,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           return AllMembersView(
             workspace: activeWs,
             initialStatusFilter: _activeStatusFilter,
+            initialCategoryFilter: _activeCategoryFilter,
             onNavigateToTab: (idx) => _navigateToTab(idx),
             onNavigateBack: _navigateBack,
             onNavigateToMemberDetails: _navigateToMemberDetails,

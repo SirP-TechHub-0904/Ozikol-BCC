@@ -818,51 +818,29 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            OutlinedButton.icon(
-                              onPressed: () => widget.onNavigateToTab?.call(1, categoryFilter: cat['id']?.toString() ?? name),
-                              icon: const Icon(Icons.group_rounded, size: 14),
-                              label: const Text('Members'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
-                                foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
-                                side: BorderSide(
-                                  color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
+                            _buildRowActionButton(
+                              icon: Icons.groups_rounded,
+                              label: 'Members',
+                              tooltip: 'View Category Members',
+                              onTap: () => widget.onNavigateToTab?.call(1, categoryFilter: cat['id']?.toString() ?? name),
+                              isDark: isDark,
                             ),
                             const SizedBox(width: 6),
-                            OutlinedButton.icon(
-                              onPressed: () => _startEdit(cat),
-                              icon: const Icon(Icons.edit_rounded, size: 14),
-                              label: const Text('Edit'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
-                                foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
-                                side: BorderSide(
-                                  color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
+                            _buildRowActionButton(
+                              icon: Icons.edit_rounded,
+                              label: 'Edit',
+                              tooltip: 'Edit Category',
+                              onTap: () => _startEdit(cat),
+                              isDark: isDark,
                             ),
                             const SizedBox(width: 6),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline_rounded, size: 16),
-                              color: const Color(0xFFEF4444),
+                            _buildRowActionButton(
+                              icon: Icons.delete_outline_rounded,
+                              label: null,
                               tooltip: 'Delete Category',
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                              onPressed: () => _startDelete(cat),
+                              onTap: () => _startDelete(cat),
+                              isDark: isDark,
+                              isDestructive: true,
                             ),
                           ],
                         ),
@@ -901,6 +879,77 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
           ),
         );
       },
+    );
+  }
+
+  /// <summary>
+  /// Renders a standardized, unified table row action button (Members, Edit, Delete)
+  /// with exact 30px height, 6px border radius, crisp borders, and refined hover/touch feedback.
+  /// Eliminates mismatched capsule shapes and ensures 1-to-1 parity with enterprise dashboard tables.
+  /// </summary>
+  Widget _buildRowActionButton({
+    required IconData icon,
+    required String? label,
+    required VoidCallback onTap,
+    required String tooltip,
+    required bool isDark,
+    bool isDestructive = false,
+  }) {
+    final borderColor = isDestructive
+        ? (isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFECACA))
+        : (isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1));
+    final bgColor = isDestructive
+        ? (isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2))
+        : (isDark ? AppColors.surfaceVariantDark : Colors.white);
+    final fgColor = isDestructive
+        ? const Color(0xFFDC2626)
+        : (isDark ? AppColors.onSurfaceDark : const Color(0xFF334155));
+    final iconColor = isDestructive ? const Color(0xFFDC2626) : const Color(0xFF0050E5);
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            height: 30,
+            padding: EdgeInsets.symmetric(horizontal: label != null ? 10 : 8),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: borderColor),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.02),
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(icon, size: 14, color: iconColor),
+                if (label != null) ...[
+                  const SizedBox(width: 5),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: fgColor,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

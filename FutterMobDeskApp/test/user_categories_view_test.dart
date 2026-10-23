@@ -138,4 +138,45 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('User Categories & Departments'), findsOneWidget);
   });
+
+  testWidgets('Clicking Members button triggers navigation with category filter', (tester) async {
+    tester.view.physicalSize = const Size(1920, 1080);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    int? capturedIndex;
+    String? capturedCategoryFilter;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          accountRepositoryProvider.overrideWithValue(FakeCategoriesAccountRepository()),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: UserCategoriesView(
+              onNavigateToTab: (index, {categoryFilter}) {
+                capturedIndex = index;
+                capturedCategoryFilter = categoryFilter;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Verify Members button exists in the row
+    final membersBtn = find.text('Members');
+    expect(membersBtn, findsOneWidget);
+
+    // Tap Members action button
+    await tester.tap(membersBtn);
+    await tester.pumpAndSettle();
+
+    // Verify navigation was triggered with category filter
+    expect(capturedIndex, equals(1));
+    expect(capturedCategoryFilter, equals('4951ea6b-6741-451d-9bbb-c3e686aae6cb'));
+  });
 }

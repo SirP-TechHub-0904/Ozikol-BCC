@@ -26,6 +26,9 @@ class AllMembersView extends ConsumerStatefulWidget {
   /// Optional initial account status filter to pre-select upon navigation.
   final String? initialStatusFilter;
 
+  /// Optional initial category filter (ID or Name) to pre-select upon navigation.
+  final String? initialCategoryFilter;
+
   /// Optional callback to navigate back to the previous screen.
   final VoidCallback? onNavigateBack;
 
@@ -41,6 +44,7 @@ class AllMembersView extends ConsumerStatefulWidget {
     this.workspace,
     this.onNavigateToTab,
     this.initialStatusFilter,
+    this.initialCategoryFilter,
     this.onNavigateBack,
     this.onNavigateToMemberDetails,
     this.onNavigateToMemberEdit,
@@ -78,15 +82,42 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   void initState() {
     super.initState();
     _selectedStatusFilter = widget.initialStatusFilter ?? 'All';
+    _selectedCategoryFilter = widget.initialCategoryFilter ?? '';
     _loadData();
   }
 
   @override
   void didUpdateWidget(covariant AllMembersView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    bool shouldReapply = false;
     if (widget.initialStatusFilter != null && widget.initialStatusFilter != oldWidget.initialStatusFilter) {
       _selectedStatusFilter = widget.initialStatusFilter!;
+      shouldReapply = true;
+    }
+    if (widget.initialCategoryFilter != oldWidget.initialCategoryFilter) {
+      _selectedCategoryFilter = widget.initialCategoryFilter ?? '';
+      _syncCategoryFilterValue();
+      shouldReapply = true;
+    }
+    if (shouldReapply) {
       _applyFilters();
+    }
+  }
+
+  /// <summary>
+  /// Ensures _selectedCategoryFilter aligns with a category ID if a name was supplied.
+  /// </summary>
+  void _syncCategoryFilterValue() {
+    if (_selectedCategoryFilter.isNotEmpty && _categories.isNotEmpty) {
+      final query = _selectedCategoryFilter.toLowerCase();
+      for (final c in _categories) {
+        final id = (c['id']?.toString() ?? '').toLowerCase();
+        final name = (c['name']?.toString() ?? '').toLowerCase();
+        if (id == query || name == query) {
+          _selectedCategoryFilter = c['id']?.toString() ?? _selectedCategoryFilter;
+          return;
+        }
+      }
     }
   }
 
@@ -124,6 +155,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           _categories = rawCategories;
           _isLoading = false;
         });
+        _syncCategoryFilterValue();
         _applyFilters();
       }
     } catch (_) {
@@ -161,10 +193,20 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     // 2. Category Tier filter
     if (_selectedCategoryFilter.isNotEmpty) {
       final filterVal = _selectedCategoryFilter.toLowerCase();
+      String? matchingName;
+      for (final c in _categories) {
+        if ((c['id']?.toString() ?? '').toLowerCase() == filterVal) {
+          matchingName = (c['name']?.toString() ?? '').toLowerCase();
+          break;
+        }
+      }
+
       list = list.where((u) {
-        final catId = (u['bcpUserCategoryId'] ?? '').toString().toLowerCase();
-        final catName = (u['categoryName'] ?? '').toString().toLowerCase();
-        return catId == filterVal || catName == filterVal;
+        final catId = (u['bcpUserCategoryId'] ?? u['categoryId'] ?? '').toString().toLowerCase();
+        final catName = (u['categoryName'] ?? u['category'] ?? '').toString().toLowerCase();
+        return catId == filterVal ||
+            catName == filterVal ||
+            (matchingName != null && matchingName.isNotEmpty && catName == matchingName);
       }).toList();
     }
 
@@ -514,7 +556,9 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                         _buildFilterLabel('CATEGORY TIER'),
                         const SizedBox(height: 6),
                         _buildDropdownField<String>(
-                          value: _selectedCategoryFilter,
+                          value: _categories.any((c) => (c['id']?.toString() ?? '') == _selectedCategoryFilter)
+                              ? _selectedCategoryFilter
+                              : '',
                           items: [
                             const DropdownMenuItem(value: '', child: Text('All Categories')),
                             ..._categories.map((c) => DropdownMenuItem(
