@@ -5,20 +5,41 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/central_adjuster.dart';
 import '../../../data/account_repository.dart';
 
+/// <summary>
+/// Operational view modes for the [UserCategoriesView].
+/// Supports viewing the categories table, creating a category, editing an existing category,
+/// or conducting an impact-assessed deletion workflow—strictly in-page with zero modal dialogs.
+/// </summary>
+enum CategoryViewMode {
+  /// Enterprise table listing all categories.
+  list,
+
+  /// In-page form for creating a new user category.
+  create,
+
+  /// In-page form for editing an existing category.
+  edit,
+
+  /// In-page confirmation view for safely deleting a category.
+  delete,
+}
+
+/// <summary>
 /// Enterprise List Table component for managing tenant organizational categories and departments.
 /// Replicates Angular Web UserCategoriesComponent 1-to-1 with live search, headcount badges,
-/// sort order pills, publication status badges, and complete in-dialog Create/Edit/Delete flows.
+/// sort order pills, publication status badges, and dedicated full in-page Create, Edit, and Delete flows.
+/// </summary>
 class UserCategoriesView extends ConsumerStatefulWidget {
-  /// The active workspace context.
+  /// <summary>The active workspace context.</summary>
   final Workspace? workspace;
 
-  /// Optional navigation callback to jump to other tabs (e.g. User Directory).
+  /// <summary>Optional navigation callback to jump to other tabs (e.g. User Directory).</summary>
   final void Function(int tabIndex, {String? categoryFilter})? onNavigateToTab;
 
-  /// Optional callback to navigate back to previous screen.
+  /// <summary>Optional callback to navigate back to previous screen.</summary>
   final VoidCallback? onNavigateBack;
 
-  /// Creates a [UserCategoriesView].
+  /// <summary>Creates a [UserCategoriesView].</summary>
   const UserCategoriesView({
     super.key,
     this.workspace,
@@ -31,10 +52,25 @@ class UserCategoriesView extends ConsumerStatefulWidget {
 }
 
 class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
+  CategoryViewMode _viewMode = CategoryViewMode.list;
+  Map<String, dynamic>? _selectedCategory;
+
   bool _isLoading = true;
   List<Map<String, dynamic>> _categories = [];
   List<Map<String, dynamic>> _filteredCategories = [];
   final TextEditingController _searchCtrl = TextEditingController();
+
+  // Form controllers for Create / Edit
+  final TextEditingController _nameCtrl = TextEditingController();
+  final TextEditingController _descCtrl = TextEditingController();
+  final TextEditingController _sortCtrl = TextEditingController();
+  bool _isActive = true;
+  bool _isSaving = false;
+
+  // Deletion state
+  final TextEditingController _confirmDeleteCtrl = TextEditingController();
+  bool _isDeleting = false;
+  String? _deleteError;
 
   @override
   void initState() {
@@ -46,9 +82,16 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _nameCtrl.dispose();
+    _descCtrl.dispose();
+    _sortCtrl.dispose();
+    _confirmDeleteCtrl.dispose();
     super.dispose();
   }
 
+  /// <summary>
+  /// Fetches tenant user categories from the backend repository.
+  /// </summary>
   Future<void> _loadCategories() async {
     setState(() => _isLoading = true);
     try {
@@ -66,6 +109,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
     }
   }
 
+  /// <summary>
+  /// Filters the loaded categories in real-time by search query.
+  /// </summary>
   void _applyFilter() {
     final query = _searchCtrl.text.trim().toLowerCase();
     if (query.isEmpty) {
@@ -81,366 +127,232 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
     }
   }
 
-  void _openCreateOrEditDialog({Map<String, dynamic>? existingCategory}) {
-    final isEditing = existingCategory != null;
-    final nameCtrl = TextEditingController(text: existingCategory?['name'] as String? ?? '');
-    final descCtrl = TextEditingController(text: existingCategory?['description'] as String? ?? '');
-    final sortCtrl = TextEditingController(text: (existingCategory?['sortOrder'] ?? 0).toString());
-    String selectedColor = existingCategory?['colorCode'] as String? ?? '#0050E5';
-    bool isActive = existingCategory?['isActive'] != false;
-    bool isSaving = false;
-
-    final presetColors = [
-      '#0050E5', // Royal Blue
-      '#10B981', // Emerald
-      '#8B5CF6', // Purple
-      '#F59E0B', // Amber
-      '#0284C7', // Sky Blue
-      '#DB2777', // Pink
-      '#475569', // Slate
-    ];
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-
-          return AlertDialog(
-            backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    isEditing ? Icons.edit_rounded : Icons.add_rounded,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  isEditing ? 'Edit Category / Department' : 'Create Category / Department',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                  ),
-                ),
-              ],
-            ),
-            content: SizedBox(
-              width: 480,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CATEGORY NAME *',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: nameCtrl,
-                      decoration: InputDecoration(
-                        hintText: 'e.g. Engineering & Product',
-                        filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    Text(
-                      'DESCRIPTION',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: descCtrl,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        hintText: 'Functional purpose and organizational mandate',
-                        filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'SORT ORDER',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? AppColors.gray400 : AppColors.gray600,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              TextField(
-                                controller: sortCtrl,
-                                keyboardType: TextInputType.number,
-                                decoration: InputDecoration(
-                                  hintText: '0',
-                                  filled: true,
-                                  fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(
-                                      color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'PUBLICATION STATUS',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? AppColors.gray400 : AppColors.gray600,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Switch(
-                                    value: isActive,
-                                    onChanged: (val) => setDialogState(() => isActive = val),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    isActive ? 'Published' : 'Draft',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: isActive ? const Color(0xFF15803D) : AppColors.gray500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    Text(
-                      'BRAND COLOR ACCENT',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: presetColors.map((hex) {
-                        final color = Color(int.parse(hex.replaceFirst('#', '0xFF')));
-                        final isSelected = selectedColor.toUpperCase() == hex.toUpperCase();
-                        return InkWell(
-                          onTap: () => setDialogState(() => selectedColor = hex),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: color,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isSelected ? Colors.white : Colors.transparent,
-                                width: 2,
-                              ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: color.withValues(alpha: 0.4),
-                                        blurRadius: 6,
-                                        spreadRadius: 1,
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: isSelected
-                                ? const Icon(Icons.check, color: Colors.white, size: 16)
-                                : null,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: isSaving ? null : () => Navigator.of(ctx).pop(),
-                child: const Text('Cancel'),
-              ),
-              FilledButton.icon(
-                onPressed: isSaving
-                    ? null
-                    : () async {
-                        final name = nameCtrl.text.trim();
-                        if (name.isEmpty) return;
-                        setDialogState(() => isSaving = true);
-                        try {
-                          final repo = ref.read(accountRepositoryProvider);
-                          final sort = int.tryParse(sortCtrl.text.trim()) ?? 0;
-                          if (isEditing) {
-                            final id = existingCategory['id'] as String;
-                            await repo.updateCategory(id, {
-                              'name': name,
-                              'description': descCtrl.text.trim(),
-                              'colorCode': selectedColor,
-                              'sortOrder': sort,
-                              'isActive': isActive,
-                            });
-                          } else {
-                            await repo.createCategory(
-                              name,
-                              descCtrl.text.trim(),
-                              colorCode: selectedColor,
-                              sortOrder: sort,
-                              isActive: isActive,
-                            );
-                          }
-                          if (ctx.mounted) Navigator.of(ctx).pop();
-                          _loadCategories();
-                        } catch (_) {
-                          setDialogState(() => isSaving = false);
-                        }
-                      },
-                icon: isSaving
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(Icons.save_rounded, size: 16),
-                label: Text(isEditing ? 'Save Changes' : 'Create Category'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+  /// <summary>
+  /// Switches into in-page Create Category view mode.
+  /// </summary>
+  void _startCreate() {
+    setState(() {
+      _viewMode = CategoryViewMode.create;
+      _selectedCategory = null;
+      _nameCtrl.clear();
+      _descCtrl.clear();
+      _sortCtrl.text = '0';
+      _isActive = true;
+      _isSaving = false;
+      _deleteError = null;
+    });
   }
 
-  void _confirmDeleteCategory(Map<String, dynamic> cat) {
-    final catId = cat['id'] as String? ?? '';
-    final name = cat['name'] as String? ?? 'Category';
+  /// <summary>
+  /// Switches into in-page Edit Category view mode with pre-populated values.
+  /// </summary>
+  void _startEdit(Map<String, dynamic> cat) {
+    setState(() {
+      _viewMode = CategoryViewMode.edit;
+      _selectedCategory = cat;
+      _nameCtrl.text = cat['name'] as String? ?? '';
+      _descCtrl.text = cat['description'] as String? ?? '';
+      _sortCtrl.text = (cat['sortOrder'] ?? 0).toString();
+      _isActive = cat['isActive'] != false;
+      _isSaving = false;
+      _deleteError = null;
+    });
+  }
 
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Category'),
-        content: Text('Are you sure you want to delete "$name"? Members assigned to this category will become unassigned.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
+  /// <summary>
+  /// Switches into in-page Delete Category confirmation view mode.
+  /// </summary>
+  void _startDelete(Map<String, dynamic> cat) {
+    setState(() {
+      _viewMode = CategoryViewMode.delete;
+      _selectedCategory = cat;
+      _confirmDeleteCtrl.clear();
+      _isDeleting = false;
+      _deleteError = null;
+    });
+  }
+
+  /// <summary>
+  /// Reverts any active sub-view mode back to the primary category list table.
+  /// </summary>
+  void _backToList() {
+    setState(() {
+      _viewMode = CategoryViewMode.list;
+      _selectedCategory = null;
+      _deleteError = null;
+      _isSaving = false;
+      _isDeleting = false;
+    });
+  }
+
+  /// <summary>
+  /// Persists either a new or updated category tier to the backend.
+  /// </summary>
+  Future<void> _saveCategory() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty || _isSaving) return;
+
+    setState(() => _isSaving = true);
+    final repo = ref.read(accountRepositoryProvider);
+    final sort = int.tryParse(_sortCtrl.text.trim()) ?? 0;
+    final isEditing = _viewMode == CategoryViewMode.edit;
+
+    bool success = false;
+    try {
+      if (isEditing && _selectedCategory != null) {
+        final id = _selectedCategory!['id'] as String;
+        success = await repo.updateCategory(id, {
+          'name': name,
+          'description': _descCtrl.text.trim(),
+          'colorCode': _selectedCategory!['colorCode'] ?? '#0050e5',
+          'icon': _selectedCategory!['icon'] ?? 'folder_shared',
+          'sortOrder': sort,
+          'isActive': _isActive,
+        });
+      } else {
+        success = await repo.createCategory(
+          name,
+          _descCtrl.text.trim(),
+          colorCode: '#0050e5',
+          icon: 'folder_shared',
+          sortOrder: sort,
+          isActive: _isActive,
+        );
+      }
+    } catch (_) {
+      success = false;
+    }
+
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isEditing
+                ? 'Category updated successfully.'
+                : 'User category created successfully.',
           ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              try {
-                final repo = ref.read(accountRepositoryProvider);
-                await repo.deleteCategory(catId);
-                _loadCategories();
-              } catch (_) {}
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Delete'),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      _backToList();
+      _loadCategories();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isEditing
+                ? 'Failed to update category. Please verify your connection.'
+                : 'Failed to create category. Please verify your connection.',
           ),
-        ],
-      ),
-    );
+          backgroundColor: const Color(0xFFDC2626),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// <summary>
+  /// Executes category deletion after checking confirmation text input.
+  /// </summary>
+  Future<void> _executeDelete() async {
+    if (_selectedCategory == null || _isDeleting) return;
+    final targetName = _selectedCategory!['name'] as String? ?? '';
+    if (_confirmDeleteCtrl.text.trim() != targetName.trim()) return;
+
+    final id = _selectedCategory!['id'] as String? ?? '';
+    final memberCount = (_selectedCategory!['memberCount'] ?? _selectedCategory!['count'] ?? 0) as int;
+
+    if (memberCount > 0) {
+      setState(() {
+        _deleteError = 'Cannot delete category "$targetName" because it currently has $memberCount member(s) assigned. Please reassign them in the User Directory first.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isDeleting = true;
+      _deleteError = null;
+    });
+
+    final repo = ref.read(accountRepositoryProvider);
+    final success = await repo.deleteCategory(id);
+
+    if (!mounted) return;
+    setState(() => _isDeleting = false);
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Category "$targetName" has been deleted.'),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      _backToList();
+      _loadCategories();
+    } else {
+      setState(() {
+        _deleteError = 'Could not delete category "$targetName". Active members may still be assigned, or server rejected the request.';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ===================================================================
-          // STANDARDIZED PAGE HEADER (1-to-1 with Angular AppPageHeader)
-          // ===================================================================
-          _buildPageHeader(isDark),
-          const SizedBox(height: 18),
-
-          // ===================================================================
-          // SEARCH & SUMMARY FILTER TOOLBAR
-          // ===================================================================
-          _buildSearchToolbar(isDark),
-          const SizedBox(height: 18),
-
-          // ===================================================================
-          // ENTERPRISE LIST TABLE
-          // ===================================================================
-          _buildEnterpriseTable(isDark),
-        ],
+    return PopScope(
+      canPop: _viewMode == CategoryViewMode.list,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_viewMode != CategoryViewMode.list) {
+          _backToList();
+        }
+      },
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_viewMode == CategoryViewMode.list) ...[
+              // ===================================================================
+              // ENTERPRISE CATEGORIES TABLE (1-to-1 with Angular Web)
+              // ===================================================================
+              _buildListHeader(isDark),
+              const SizedBox(height: 18),
+              _buildSearchToolbar(isDark),
+              const SizedBox(height: 18),
+              _buildEnterpriseTable(isDark),
+            ] else if (_viewMode == CategoryViewMode.create || _viewMode == CategoryViewMode.edit) ...[
+              // ===================================================================
+              // IN-PAGE CREATE / EDIT CATEGORY (Zero Modals)
+              // ===================================================================
+              _buildFormHeader(isDark),
+              const SizedBox(height: 18),
+              _buildFormCard(isDark),
+            ] else if (_viewMode == CategoryViewMode.delete) ...[
+              // ===================================================================
+              // IN-PAGE DELETE CONFIRMATION (Zero Modals)
+              // ===================================================================
+              _buildDeleteHeader(isDark),
+              const SizedBox(height: 18),
+              _buildDeleteLayout(isDark),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPageHeader(bool isDark) {
+  // ===========================================================================
+  // 1. LIST VIEW COMPONENTS
+  // ===========================================================================
+
+  Widget _buildListHeader(bool isDark) {
     return CentralAdjuster.pageHeader(
       icon: Icons.corporate_fare_rounded,
       eyebrow: 'ORGANIZATIONAL HIERARCHY',
@@ -456,8 +368,8 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
             icon: const Icon(Icons.arrow_back_rounded, size: 16),
             label: const Text('Back'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-              side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+              foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+              side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
@@ -469,15 +381,15 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
           icon: const Icon(Icons.groups_rounded, size: 16),
           label: const Text('User Directory'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-            side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+            foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+            side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
           ),
         ),
         FilledButton.icon(
-          onPressed: () => _openCreateOrEditDialog(),
+          onPressed: _startCreate,
           icon: const Icon(Icons.add_rounded, size: 16),
           label: const Text('Create Category'),
           style: FilledButton.styleFrom(
@@ -552,11 +464,31 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
             ),
           ),
           const SizedBox(width: 16),
-          Text(
-            'Showing ${_filteredCategories.length} of ${_categories.length} categories',
-            style: TextStyle(
-              fontSize: 12,
-              color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+          RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+              ),
+              children: [
+                const TextSpan(text: 'Showing '),
+                TextSpan(
+                  text: '${_filteredCategories.length}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                  ),
+                ),
+                const TextSpan(text: ' of '),
+                TextSpan(
+                  text: '${_categories.length}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                  ),
+                ),
+                const TextSpan(text: ' categories'),
+              ],
             ),
           ),
         ],
@@ -600,7 +532,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
             const SizedBox(height: 12),
             if (_categories.isEmpty)
               FilledButton.icon(
-                onPressed: () => _openCreateOrEditDialog(),
+                onPressed: _startCreate,
                 icon: const Icon(Icons.add_rounded, size: 16),
                 label: const Text('Create First Category'),
                 style: FilledButton.styleFrom(
@@ -621,19 +553,11 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
       );
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tableContent = Column(
           children: [
-            // Table Header
+            // Table Header Row
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFFAFBFC),
@@ -725,8 +649,6 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                 final memberCount = (cat['memberCount'] ?? cat['count'] ?? 0) as int;
                 final sortOrder = (cat['sortOrder'] ?? 0) as int;
                 final isActive = cat['isActive'] != false;
-                final colorHex = cat['colorCode'] as String? ?? '#0050E5';
-                final color = Color(int.tryParse(colorHex.replaceFirst('#', '0xFF')) ?? 0xFF0050E5);
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -741,10 +663,14 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.1),
+                                color: AppColors.primary.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Icon(Icons.folder_shared_rounded, color: color, size: 20),
+                              child: const Icon(
+                                Icons.folder_shared_rounded,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -752,7 +678,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   InkWell(
-                                    onTap: () => _openCreateOrEditDialog(existingCategory: cat),
+                                    onTap: () => _startEdit(cat),
                                     child: Text(
                                       name,
                                       style: TextStyle(
@@ -787,7 +713,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                         flex: 2,
                         child: Center(
                           child: InkWell(
-                            onTap: () => widget.onNavigateToTab?.call(1, categoryFilter: name),
+                            onTap: () => widget.onNavigateToTab?.call(1, categoryFilter: cat['id']?.toString() ?? name),
                             borderRadius: BorderRadius.circular(999),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -893,14 +819,15 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             OutlinedButton.icon(
-                              onPressed: () => widget.onNavigateToTab?.call(1, categoryFilter: name),
+                              onPressed: () => widget.onNavigateToTab?.call(1, categoryFilter: cat['id']?.toString() ?? name),
                               icon: const Icon(Icons.group_rounded, size: 14),
                               label: const Text('Members'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+                                foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
                                 side: BorderSide(
                                   color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
                                 ),
@@ -911,14 +838,15 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                             ),
                             const SizedBox(width: 6),
                             OutlinedButton.icon(
-                              onPressed: () => _openCreateOrEditDialog(existingCategory: cat),
+                              onPressed: () => _startEdit(cat),
                               icon: const Icon(Icons.edit_rounded, size: 14),
                               label: const Text('Edit'),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+                                foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
                                 side: BorderSide(
                                   color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
                                 ),
@@ -934,7 +862,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                               tooltip: 'Delete Category',
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                              onPressed: () => _confirmDeleteCategory(cat),
+                              onPressed: () => _startDelete(cat),
                             ),
                           ],
                         ),
@@ -945,8 +873,917 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
               },
             ),
           ],
+        );
+
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.02),
+                blurRadius: 3,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: constraints.maxWidth < 840
+                ? SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(width: 840, child: tableContent),
+                  )
+                : tableContent,
+          ),
+        );
+      },
+    );
+  }
+
+  // ===========================================================================
+  // 2. CREATE / EDIT IN-PAGE VIEW (Zero Modals)
+  // ===========================================================================
+
+  Widget _buildFormHeader(bool isDark) {
+    final isEditing = _viewMode == CategoryViewMode.edit;
+    final catName = _selectedCategory?['name'] as String? ?? 'Department';
+
+    return CentralAdjuster.pageHeader(
+      icon: Icons.corporate_fare_rounded,
+      eyebrow: 'ORGANIZATIONAL HIERARCHY',
+      title: isEditing ? 'Edit Category: $catName' : 'Create User Category',
+      subtitle:
+          'Configure organizational department or user category tier, description, sort order, and publication status.',
+      isDark: isDark,
+      onBack: _backToList,
+      actions: [
+        OutlinedButton.icon(
+          onPressed: _backToList,
+          icon: const Icon(Icons.arrow_back_rounded, size: 16),
+          label: const Text('Back to Categories'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+            side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildFormCard(bool isDark) {
+    final isEditing = _viewMode == CategoryViewMode.edit;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color.fromRGBO(0, 0, 0, 0.02),
+            blurRadius: 3,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Card Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFFAFBFC),
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark ? AppColors.outlineDark : const Color(0xFFF1F5F9),
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.corporate_fare_rounded,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Category Details',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Organizational department name, description, priority order, and publication visibility',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Card Body
+          Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name & Sort Order Row
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 600;
+                    final nameField = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CATEGORY / DEPARTMENT NAME *',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.05,
+                            color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: _nameCtrl,
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            hintText: 'e.g. Engineering Team, Software Team, Operations',
+                            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                            filled: true,
+                            fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFF0050E5), width: 1.5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+
+                    final sortField = Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'SORT ORDER / DISPLAY PRIORITY',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.05,
+                            color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: _sortCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            hintText: '0',
+                            hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                            filled: true,
+                            fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Color(0xFF0050E5), width: 1.5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+
+                    if (isNarrow) {
+                      return Column(
+                        children: [
+                          nameField,
+                          const SizedBox(height: 16),
+                          sortField,
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(flex: 3, child: nameField),
+                        const SizedBox(width: 16),
+                        Expanded(flex: 2, child: sortField),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 18),
+
+                // Description Field
+                Text(
+                  'DESCRIPTION (OPTIONAL)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.05,
+                    color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _descCtrl,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Briefly describe the responsibilities, members, or purpose of this category...',
+                    hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                    filled: true,
+                    fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Color(0xFF0050E5), width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Publication Status Card
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: _isActive
+                        ? (isDark ? const Color(0xFF052E16) : const Color(0xFFF0FDF4))
+                        : (isDark ? AppColors.surfaceVariantDark : const Color(0xFFFAFBFC)),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _isActive
+                          ? const Color(0xFFBBF7D0)
+                          : (isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  _isActive ? Icons.check_circle_rounded : Icons.pause_circle_rounded,
+                                  size: 20,
+                                  color: _isActive ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Publication Status',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: _isActive ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    _isActive ? 'Published' : 'Unpublished',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.04,
+                                      color: _isActive ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _isActive
+                                  ? 'Active & Published: Visible to administrators, member registration forms, and departmental directories.'
+                                  : 'Unpublished / Draft: Temporarily hidden from registration forms and disabled for new member assignments.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: _isActive
+                                    ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
+                                    : (isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Switch(
+                        value: _isActive,
+                        activeThumbColor: const Color(0xFF0050E5),
+                        activeTrackColor: const Color(0xFF93C5FD),
+                        onChanged: (val) => setState(() => _isActive = val),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Card Footer
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+              border: Border(
+                top: BorderSide(
+                  color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+                ),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton(
+                  onPressed: _isSaving ? null : _backToList,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                    side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 12),
+                FilledButton.icon(
+                  onPressed: (_isSaving || _nameCtrl.text.trim().isEmpty) ? null : _saveCategory,
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.save_rounded, size: 16),
+                  label: Text(_isSaving
+                      ? 'Saving Category...'
+                      : (isEditing ? 'Save Changes' : 'Create Category')),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.5),
+                    disabledForegroundColor: Colors.white70,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // 3. DELETE IN-PAGE CONFIRMATION VIEW (Zero Modals)
+  // ===========================================================================
+
+  Widget _buildDeleteHeader(bool isDark) {
+    return CentralAdjuster.pageHeader(
+      icon: Icons.warning_amber_rounded,
+      iconColor: const Color(0xFFDC2626),
+      iconBgColor: const Color(0xFFFEE2E2),
+      eyebrow: 'USERS SUITE / USER CATEGORIES / DELETE CATEGORY',
+      title: 'Confirm User Category Deletion',
+      subtitle:
+          'Review organizational impact and verify identity before permanently destroying this classification category.',
+      isDark: isDark,
+      onBack: _backToList,
+      actions: [
+        OutlinedButton.icon(
+          onPressed: _backToList,
+          icon: const Icon(Icons.arrow_back_rounded, size: 16),
+          label: const Text('Cancel & Go Back'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+            side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeleteLayout(bool isDark) {
+    final cat = _selectedCategory ?? {};
+    final name = cat['name'] as String? ?? 'Category';
+    final desc = cat['description'] as String? ?? '';
+    final memberCount = (cat['memberCount'] ?? cat['count'] ?? 0) as int;
+    final sortOrder = (cat['sortOrder'] ?? 0) as int;
+    final isActive = cat['isActive'] != false;
+    final isMatched = _confirmDeleteCtrl.text.trim() == name.trim();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Error Banner
+        if (_deleteError != null) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFF87171)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _deleteError!,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFDC2626),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+        ],
+
+        // Target Record Summary Card
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.02),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFFAFBFC),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark ? AppColors.outlineDark : const Color(0xFFF1F5F9),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.category_rounded, size: 18, color: Color(0xFF0050E5)),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Category to be Deleted',
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(22),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.folder_shared_rounded,
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            desc.isNotEmpty ? desc : 'No description provided.',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.groups_rounded, size: 14, color: Color(0xFF0050E5)),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      '$memberCount Active Members',
+                                      style: const TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF0050E5),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Sort Order: #$sortOrder',
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isActive ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  isActive ? 'Published' : 'Unpublished',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: isActive ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Consequences Warning Card
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEF2F2),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark ? const Color(0xFF991B1B) : const Color(0xFFFECACA),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.dangerous_rounded, color: Color(0xFFDC2626), size: 22),
+                  SizedBox(width: 10),
+                  Text(
+                    'Consequences of Deleting this Category',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFDC2626),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _buildConsequenceBullet(
+                'Member Reassignment: ',
+                'All members currently grouped under this category will have their organizational category reset to Uncategorized.',
+                isDark,
+              ),
+              const SizedBox(height: 8),
+              _buildConsequenceBullet(
+                'Portal Badges & Grouping: ',
+                'Any department badges, directory filters, or analytics grouped by this category will no longer reference it.',
+                isDark,
+              ),
+              const SizedBox(height: 8),
+              _buildConsequenceBullet(
+                'Permanent Record Eradication: ',
+                'This category configuration cannot be recovered after deletion.',
+                isDark,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Exact Name Confirmation Card
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.02),
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'To confirm that you understand these consequences and intend to permanently destroy this user category, please type the exact category name:',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'TYPE CATEGORY NAME TO CONFIRM DELETION:',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.05,
+                  color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _confirmDeleteCtrl,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Type the exact category name here...',
+                  hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                  filled: true,
+                  fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: isMatched
+                          ? const Color(0xFF16A34A)
+                          : (isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: isMatched ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              if (_confirmDeleteCtrl.text.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      isMatched ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                      size: 16,
+                      color: isMatched ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      isMatched
+                          ? 'Category name matched. Deletion unlocked.'
+                          : 'Category name does not match yet.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isMatched ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: _isDeleting ? null : _backToList,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                      side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
+                    onPressed: (!isMatched || _isDeleting) ? null : _executeDelete,
+                    icon: _isDeleting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.delete_forever_rounded, size: 16),
+                    label: Text(_isDeleting
+                        ? 'Deleting Category...'
+                        : 'I understand the consequences, delete this category'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(0xFFFCA5A5),
+                      disabledForegroundColor: Colors.white70,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConsequenceBullet(String boldPrefix, String text, bool isDark) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 6),
+          width: 5,
+          height: 5,
+          decoration: const BoxDecoration(
+            color: Color(0xFFDC2626),
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? AppColors.gray200 : const Color(0xFF334155),
+                height: 1.4,
+              ),
+              children: [
+                TextSpan(
+                  text: boldPrefix,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                TextSpan(text: text),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
