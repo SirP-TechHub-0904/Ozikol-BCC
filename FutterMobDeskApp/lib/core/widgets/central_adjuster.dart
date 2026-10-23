@@ -908,13 +908,16 @@ class AdaptiveTableContainer extends StatelessWidget {
                 header!,
                 Divider(height: 1, color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
               ],
+              // Never cap maxWidth to the viewport: forcing intrinsic-width DataTable
+              // cells into a narrower box causes RenderFlex overflow stripes on small
+              // desktop windows. The table fills at least the viewport, and scrolls
+              // horizontally only when its real content is genuinely wider.
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                physics: hasEnoughWidth ? const NeverScrollableScrollPhysics() : const ClampingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    minWidth: targetWidth,
-                    maxWidth: hasEnoughWidth ? availableWidth : targetWidth,
+                    minWidth: hasEnoughWidth ? availableWidth : targetWidth,
                   ),
                   child: builder(context, targetWidth, extraSpacing),
                 ),

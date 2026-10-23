@@ -514,6 +514,8 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     children: [
                       Text(
                         'USER MANAGEMENT & DIRECTORY',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -524,20 +526,28 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                       const SizedBox(height: 3),
                       Text(
                         'Member Directory & Register',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                           color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
+                      // Description is hidden on smaller desktop windows (< 1280px) so the
+                      // title and action buttons keep a clean single-row header.
+                      if (MediaQuery.sizeOf(context).width >= 1280) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: isDark ? AppColors.gray400 : AppColors.gray600,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -546,20 +556,6 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (canGoBack) ...[
-                      OutlinedButton.icon(
-                        onPressed: goBack,
-                        icon: const Icon(Icons.arrow_back_rounded, size: 16),
-                        label: const Text('Back'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                          foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                    ],
                     OutlinedButton.icon(
                       onPressed: () {
                         if (widget.onNavigateToTab != null) {
@@ -1042,14 +1038,81 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     }
   }
 
+  /// <summary>
+  /// Compact square icon-only action button used in the table on narrow windows.
+  /// </summary>
+  /// <param name="icon">Icon to display.</param>
+  /// <param name="tooltip">Accessible tooltip label.</param>
+  /// <param name="onTap">Tap handler.</param>
+  /// <param name="isDark">Whether dark mode is active.</param>
+  /// <param name="isPrimary">Use Royal Blue tinted styling when true.</param>
+  /// <returns>The icon action widget.</returns>
+  Widget _buildIconAction({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+    required bool isDark,
+    required bool isPrimary,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isPrimary ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: isPrimary
+                ? null
+                : Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+          ),
+          child: Icon(
+            icon,
+            size: 15,
+            color: isPrimary
+                ? AppColors.primary
+                : (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
+          ),
+        ),
+      ),
+    );
+  }
+
   // =========================================================================
   // 3. ENTERPRISE DATA TABLE WITH SORTING & PAGINATION
   // =========================================================================
 
+  /// <summary>
+  /// Builds the responsive member data table. Resolves a [_MemberTableLayout] tier from
+  /// the available width so narrow desktop windows hide low-priority columns and truncate
+  /// long text instead of producing RenderFlex overflow stripes.
+  /// </summary>
+  /// <param name="isDark">Whether dark mode is active.</param>
+  /// <returns>The adaptive table card widget.</returns>
   Widget _buildDataTable(bool isDark) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final layout = _MemberTableLayout.forWidth(constraints.maxWidth);
+        return _buildDataTableForLayout(isDark, layout);
+      },
+    );
+  }
+
+  /// <summary>
+  /// Renders the table card for a resolved responsive [layout] tier.
+  /// </summary>
+  /// <param name="isDark">Whether dark mode is active.</param>
+  /// <param name="layout">Responsive column visibility and width caps.</param>
+  /// <returns>The table container widget.</returns>
+  Widget _buildDataTableForLayout(bool isDark, _MemberTableLayout layout) {
     return CentralAdjuster.tableContainer(
-      minWidth: 840.0,
-      numColumns: 7,
+      // Estimated natural width of the visible columns; the container only scrolls
+      // horizontally if the window is genuinely narrower than this.
+      minWidth: layout.estimatedWidth,
+      numColumns: layout.columnCount,
       footer: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1088,9 +1151,9 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           columns: [
             _buildSortableColumn('fullName', 'MEMBER NAME'),
             _buildSortableColumn('email', 'EMAIL ADDRESS'),
-            _buildSortableColumn('memberId', 'MEMBER ID'),
+            if (layout.showMemberId) _buildSortableColumn('memberId', 'MEMBER ID'),
             _buildSortableColumn('categoryName', 'CATEGORY'),
-            _buildSortableColumn('roles', 'ROLE'),
+            if (layout.showRole) _buildSortableColumn('roles', 'ROLE'),
             _buildSortableColumn('userStatus', 'STATUS'),
             const DataColumn(
               label: Text(
@@ -1107,7 +1170,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           rows: _paginatedUsers.isEmpty
               ? []
               : _paginatedUsers.map((u) {
-                  return _buildDataRow(u, isDark);
+                  return _buildDataRow(u, isDark, layout);
                 }).toList(),
         );
       },
@@ -1143,7 +1206,14 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     );
   }
 
-  DataRow _buildDataRow(Map<String, dynamic> u, bool isDark) {
+  /// <summary>
+  /// Builds a single member row honoring the responsive [layout] tier.
+  /// </summary>
+  /// <param name="u">Member record.</param>
+  /// <param name="isDark">Whether dark mode is active.</param>
+  /// <param name="layout">Responsive column visibility and width caps.</param>
+  /// <returns>The populated [DataRow].</returns>
+  DataRow _buildDataRow(Map<String, dynamic> u, bool isDark, _MemberTableLayout layout) {
     final fullName = (u['fullName'] ?? u['userName'] ?? 'Member').toString();
     final designation = u['designation']?.toString();
     final email = (u['email'] ?? '').toString();
@@ -1168,6 +1238,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
         // 1. Member Name with Avatar initials & Designation
         DataCell(
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 40,
@@ -1183,28 +1254,41 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    fullName,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  if (designation != null && designation.isNotEmpty)
-                    Text(
-                      designation,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
+              // Cap name width so long names ellipsize rather than overflow the cell
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: layout.nameMax),
+                child: Tooltip(
+                  message: fullName,
+                  waitDuration: const Duration(milliseconds: 600),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        fullName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                        ),
                       ),
-                    ),
-                ],
+                      if (designation != null && designation.isNotEmpty)
+                        Text(
+                          designation,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -1212,18 +1296,30 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
 
         // 2. Email Address & Verified Badge + Phone
         DataCell(
-          Column(
+          ConstrainedBox(
+            // Cap email width; long addresses ellipsize with full value in tooltip
+            constraints: BoxConstraints(maxWidth: layout.emailMax),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    email,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF1E293B),
+                  Flexible(
+                    child: Tooltip(
+                      message: email,
+                      waitDuration: const Duration(milliseconds: 600),
+                      child: Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF1E293B),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -1252,9 +1348,11 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                 ),
             ],
           ),
+          ),
         ),
 
-        // 3. Member ID
+        // 3. Member ID (hidden on narrow windows)
+        if (layout.showMemberId)
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1279,6 +1377,8 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
         DataCell(
           categoryName != null && categoryName.isNotEmpty
               ? Container(
+                  // Cap category pill width so long tier names ellipsize
+                  constraints: BoxConstraints(maxWidth: layout.categoryMax),
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                   decoration: BoxDecoration(
                     color: categoryColor.withValues(alpha: 0.12),
@@ -1294,12 +1394,20 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                         color: categoryColor,
                       ),
                       const SizedBox(width: 5),
-                      Text(
-                        categoryName,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: categoryColor,
+                      Flexible(
+                        child: Tooltip(
+                          message: categoryName,
+                          waitDuration: const Duration(milliseconds: 600),
+                          child: Text(
+                            categoryName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: categoryColor,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -1315,7 +1423,8 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                 ),
         ),
 
-        // 5. Role
+        // 5. Role (hidden on narrow windows)
+        if (layout.showRole)
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1396,6 +1505,24 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (layout.iconOnlyActions) ...[
+                // Compact icon-only actions with tooltips for narrow windows
+                _buildIconAction(
+                  icon: Icons.visibility_outlined,
+                  tooltip: 'Details',
+                  onTap: () => _navigateToMemberDetails(u),
+                  isDark: isDark,
+                  isPrimary: false,
+                ),
+                const SizedBox(width: 6),
+                _buildIconAction(
+                  icon: Icons.edit_outlined,
+                  tooltip: 'Edit',
+                  onTap: () => _navigateToMemberEdit(u),
+                  isDark: isDark,
+                  isPrimary: true,
+                ),
+              ] else ...[
               // Details Button
               OutlinedButton.icon(
                 onPressed: () => _navigateToMemberDetails(u),
@@ -1424,6 +1551,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                   textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
                 ),
               ),
+              ],
             ],
           ),
         ),
@@ -1584,4 +1712,75 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     }
   }
 
+}
+
+/// <summary>
+/// Responsive column layout tier for the member directory table.
+/// Hides low-priority columns, caps long text widths, and switches actions to
+/// icon-only buttons as the available table width shrinks on small desktop windows.
+/// </summary>
+class _MemberTableLayout {
+  /// Whether the MEMBER ID column is shown.
+  final bool showMemberId;
+
+  /// Whether the ROLE column is shown.
+  final bool showRole;
+
+  /// Whether Details/Edit render as compact icon-only buttons.
+  final bool iconOnlyActions;
+
+  /// Maximum width of the name/designation text block.
+  final double nameMax;
+
+  /// Maximum width of the email/phone text block.
+  final double emailMax;
+
+  /// Maximum width of the category pill.
+  final double categoryMax;
+
+  const _MemberTableLayout({
+    required this.showMemberId,
+    required this.showRole,
+    required this.iconOnlyActions,
+    required this.nameMax,
+    required this.emailMax,
+    required this.categoryMax,
+  });
+
+  /// <summary>
+  /// Resolves the layout tier for the given available table width.
+  /// </summary>
+  /// <param name="width">Available width of the table card.</param>
+  /// <returns>The matching responsive layout tier.</returns>
+  factory _MemberTableLayout.forWidth(double width) {
+    final isWide = width >= 1150;
+    return _MemberTableLayout(
+      showMemberId: width >= 1000,
+      showRole: width >= 880,
+      iconOnlyActions: width < 1100,
+      nameMax: isWide ? 220 : 160,
+      emailMax: isWide ? 240 : 180,
+      categoryMax: isWide ? 190 : 140,
+    );
+  }
+
+  /// Number of visible columns.
+  int get columnCount => 5 + (showMemberId ? 1 : 0) + (showRole ? 1 : 0);
+
+  /// <summary>
+  /// Conservative estimate of the table natural width for the visible columns
+  /// (margins + capped content widths + base column gaps). Used as the scroll threshold.
+  /// </summary>
+  double get estimatedWidth {
+    double w = 24; // horizontal margins (12 * 2)
+    w += 52 + nameMax; // avatar (40) + gap (12) + name block
+    w += emailMax + 20; // email block + verified icon
+    if (showMemberId) w += 110;
+    w += categoryMax;
+    if (showRole) w += 90;
+    w += 95; // status pill
+    w += iconOnlyActions ? 72 : 170; // actions
+    w += (columnCount - 1) * 12; // base column spacing
+    return w;
+  }
 }
