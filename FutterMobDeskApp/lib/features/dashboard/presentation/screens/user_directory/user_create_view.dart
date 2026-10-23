@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
@@ -207,21 +208,44 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
       'mustChangePassword': _mustChangePassword,
     };
 
-    final success = await repo.createUser(payload);
+    final createdData = await repo.createUser(payload);
 
     if (!mounted) return;
 
     setState(() => _isSaving = false);
 
-    if (success) {
+    if (createdData != null) {
+      final assignedMemberId = createdData['memberId']?.toString() ?? _activeIdPreview;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Account for $firstName $lastName provisioned successfully!'),
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Account for $firstName $lastName ($assignedMemberId) provisioned successfully!'),
+              ),
+            ],
+          ),
           backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
         ),
       );
-      widget.onUserCreated?.call();
-      widget.onNavigateBack?.call();
+
+      // Present success credential summary modal, with 1-click button to redirect to Member Directory Index
+      await _showProvisionedSuccessDialog(
+        isDark: Theme.of(context).brightness == Brightness.dark,
+        title: _selectedTitle,
+        firstName: firstName,
+        lastName: lastName,
+        suffix: _suffixController.text.trim(),
+        email: email,
+        memberId: assignedMemberId,
+        password: password,
+        role: _selectedRole,
+      );
     } else {
       setState(() {
         _errorMessage = 'Failed to provision member account. Please verify the email is unique in this workspace.';
@@ -233,6 +257,267 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
         ),
       );
     }
+  }
+
+  /// <summary>
+  /// Displays a credential summary dialog after member provisioning,
+  /// with 1-click clipboard password copy, and buttons to either view in Directory or provision another member.
+  /// </summary>
+  Future<void> _showProvisionedSuccessDialog({
+    required bool isDark,
+    required String? title,
+    required String firstName,
+    required String lastName,
+    required String suffix,
+    required String email,
+    required String memberId,
+    required String password,
+    required String role,
+  }) async {
+    final fullName = [if (title != null && title.isNotEmpty) title, firstName, lastName, if (suffix.isNotEmpty) suffix].join(' ');
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          contentPadding: const EdgeInsets.all(24),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header badge + title
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 24),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Member Account Provisioned',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'The new member has been successfully registered.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Credentials summary card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildSummaryRow(label: 'Member Name', value: fullName, isDark: isDark),
+                      const Divider(height: 16),
+                      _buildSummaryRow(label: 'Member ID', value: memberId, isDark: isDark, isHighlight: true),
+                      const Divider(height: 16),
+                      _buildSummaryRow(label: 'Work Email', value: email, isDark: isDark),
+                      const Divider(height: 16),
+                      _buildSummaryRow(label: 'System Role', value: role, isDark: isDark),
+                      const Divider(height: 16),
+                      // Temporary password with copy button
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Temporary Password',
+                            style: TextStyle(fontSize: 12, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                password,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: 'monospace',
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              IconButton(
+                                icon: const Icon(Icons.copy_rounded, size: 16, color: AppColors.primary),
+                                tooltip: 'Copy password',
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                                onPressed: () {
+                                  Clipboard.setData(ClipboardData(text: password));
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Temporary password copied to clipboard!'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Info banner
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.mail_outline_rounded, size: 16, color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'A welcome email with these credentials has been queued for delivery.',
+                          style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray300 : const Color(0xFF1E40AF)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Action buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _resetForm();
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+                        foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                      ),
+                      child: const Text('Provision Another', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _redirectToDirectory();
+                      },
+                      icon: const Icon(Icons.groups_rounded, size: 16, color: Colors.white),
+                      label: const Text('Go to Directory', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSummaryRow({
+    required String label,
+    required String value,
+    required bool isDark,
+    bool isHighlight = false,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isHighlight ? FontWeight.w800 : FontWeight.w600,
+            color: isHighlight
+                ? AppColors.primary
+                : (isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// <summary>
+  /// Redirects to the Member Directory index.
+  /// </summary>
+  void _redirectToDirectory() {
+    if (widget.onUserCreated != null) {
+      widget.onUserCreated!.call();
+    } else if (widget.onNavigateBack != null) {
+      widget.onNavigateBack!.call();
+    }
+  }
+
+  /// <summary>
+  /// Resets the form fields and refreshes member ID and password for another entry.
+  /// </summary>
+  void _resetForm() {
+    _firstNameController.clear();
+    _lastNameController.clear();
+    _suffixController.clear();
+    _emailController.clear();
+    _phoneController.clear();
+    _designationController.clear();
+    _generatePassword();
+    _loadInitialData();
+    setState(() {
+      _selectedTitle = null;
+      _selectedGender = 0;
+      _selectedCategoryId = null;
+      _selectedRole = 'Member';
+    });
   }
 
   @override

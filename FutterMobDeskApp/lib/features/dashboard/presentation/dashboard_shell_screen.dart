@@ -1819,7 +1819,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           return UserCreateView(
             workspace: activeWs,
             onNavigateBack: _navigateBack,
-            onUserCreated: () => _navigateToTab(1, clearHistory: false),
+            onUserCreated: () => _navigateToTab(1, clearHistory: true),
           );
         default:
           return UserDashboardOverviewView(workspace: activeWs);

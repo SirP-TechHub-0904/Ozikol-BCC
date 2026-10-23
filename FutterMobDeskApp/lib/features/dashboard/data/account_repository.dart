@@ -682,12 +682,18 @@ class AccountRepository {
   /// <summary>
   /// Creates a new user profile with role assignment.
   /// </summary>
-  Future<bool> createUser(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>?> createUser(Map<String, dynamic> data) async {
     try {
       final response = await _dio.post('api/UsersApi', data: data);
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data is Map && response.data['data'] is Map) {
+          return Map<String, dynamic>.from(response.data['data'] as Map);
+        }
+        return {'success': true};
+      }
+      return null;
     } catch (_) {
-      return false;
+      return null;
     }
   }
 
