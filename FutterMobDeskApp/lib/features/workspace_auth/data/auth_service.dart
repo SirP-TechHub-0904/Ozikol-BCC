@@ -37,7 +37,7 @@ class AuthService {
   }) async {
     try {
       final response = await _dio.post(
-        'api/Auth/login/verify-mfa',
+        ApiConstants.verifyLoginMfaEndpoint,
         data: {
           'userId': userId,
           'code': code.trim(),
@@ -81,7 +81,8 @@ class AuthService {
       } else if (data is String && data.isNotEmpty) {
         msg = data;
       }
-      throw Exception(msg ?? (e.response != null ? 'Server error (${e.response?.statusCode}): ${e.response?.statusMessage}' : 'Network error: ${e.message}'));
+      final underlyingError = e.error?.toString() ?? e.message;
+      throw Exception(msg ?? (e.response != null ? 'Server error (${e.response?.statusCode}): ${e.response?.statusMessage}' : 'Network error: ${underlyingError ?? "connection aborted"}'));
     }
   }
 
@@ -97,7 +98,7 @@ class AuthService {
   }) async {
     try {
       final response = await _dio.post(
-        'api/Auth/login/resend-mfa',
+        ApiConstants.resendLoginMfaEndpoint,
         data: {
           'userId': userId,
           'tenantKey': tenantKey,
@@ -130,7 +131,7 @@ class AuthService {
   }) async {
     try {
       final response = await _dio.post(
-        'api/Auth/password/forgot',
+        ApiConstants.forgotPasswordEndpoint,
         data: {'email': email.trim()},
         options: Options(headers: {ApiConstants.headerTenantKey: tenantKey}),
       );
@@ -164,7 +165,7 @@ class AuthService {
   }) async {
     try {
       final response = await _dio.post(
-        'api/Auth/password/reset',
+        ApiConstants.resetPasswordEndpoint,
         data: {
           'email': email.trim(),
           'token': token.trim(),
@@ -200,7 +201,7 @@ class AuthService {
   }) async {
     try {
       final response = await _dio.post(
-        'api/Auth/password/force-change',
+        ApiConstants.forceChangePasswordEndpoint,
         data: {
           'oldPassword': oldPassword,
           'newPassword': newPassword,
@@ -233,7 +234,7 @@ class AuthService {
   }) async {
     try {
       final response = await _dio.post(
-        'api/Auth/password/change',
+        ApiConstants.changePasswordEndpoint,
         data: {
           'oldPassword': oldPassword,
           'newPassword': newPassword,
@@ -260,7 +261,7 @@ class AuthService {
   Future<Map<String, dynamic>> getMfaStatus({required String tenantKey}) async {
     try {
       final response = await _dio.get(
-        'api/Auth/mfa',
+        ApiConstants.mfaStatusEndpoint,
         options: Options(headers: {ApiConstants.headerTenantKey: tenantKey}),
       );
 
@@ -291,7 +292,7 @@ class AuthService {
   }) async {
     try {
       final response = await _dio.post(
-        'api/Auth/mfa/configure',
+        ApiConstants.mfaConfigureEndpoint,
         data: {'provider': provider},
         options: Options(headers: {ApiConstants.headerTenantKey: tenantKey}),
       );
@@ -327,7 +328,7 @@ class AuthService {
   }) async {
     try {
       final response = await _dio.post(
-        'api/Auth/mfa/verify',
+        ApiConstants.mfaVerifyEndpoint,
         data: {
           'provider': provider,
           'code': code.trim(),

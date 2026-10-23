@@ -9,7 +9,8 @@ class ApiClient {
   late final Dio dio;
 
   ApiClient(SecureStorageService storageService, {String? customBaseUrl}) {
-    final effectiveUrl = customBaseUrl ?? storageService.getCustomBaseUrl() ?? ApiConstants.defaultBaseUrl;
+    final rawUrl = customBaseUrl ?? storageService.getCustomBaseUrl() ?? ApiConstants.defaultBaseUrl;
+    final effectiveUrl = rawUrl.endsWith('/') ? rawUrl : '$rawUrl/';
     final baseOptions = BaseOptions(
       baseUrl: effectiveUrl,
       connectTimeout: ApiConstants.connectTimeout,

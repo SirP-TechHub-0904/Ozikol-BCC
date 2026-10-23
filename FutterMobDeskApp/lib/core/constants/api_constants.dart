@@ -26,6 +26,15 @@ class ApiConstants {
   static const String sessionEndpoint = '/api/Auth/me';
   static const String verifyOtpEndpoint = '/api/Auth/verify-otp';
   static const String resendOtpEndpoint = '/api/Auth/resend-otp';
+  static const String verifyLoginMfaEndpoint = '/api/Auth/login/verify-mfa';
+  static const String resendLoginMfaEndpoint = '/api/Auth/login/resend-mfa';
+  static const String forgotPasswordEndpoint = '/api/Auth/password/forgot';
+  static const String resetPasswordEndpoint = '/api/Auth/password/reset';
+  static const String forceChangePasswordEndpoint = '/api/Auth/password/force-change';
+  static const String changePasswordEndpoint = '/api/Auth/password/change';
+  static const String mfaStatusEndpoint = '/api/Auth/mfa';
+  static const String mfaConfigureEndpoint = '/api/Auth/mfa/configure';
+  static const String mfaVerifyEndpoint = '/api/Auth/mfa/verify';
   static const String tenantsEndpoint = '/api/TenantsApi';
   static const String resolveTenantEndpoint = '/api/TenantsApi/resolve';
   static const String clientConfigEndpoint = '/api/SetupApi/client-config';
