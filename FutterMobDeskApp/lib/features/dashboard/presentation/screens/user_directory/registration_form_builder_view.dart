@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/central_adjuster.dart';
 import '../../../data/account_repository.dart';
 
 /// Screen presenting the Administrative Registration Form Builder under User Directory.
@@ -1052,83 +1053,73 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
             ),
           ),
           const SizedBox(height: 16),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final width = constraints.maxWidth;
-              final crossAxisCount = width >= 900 ? 4 : (width >= 500 ? 2 : 1);
-              final childAspectRatio = width >= 900 ? 1.22 : (width >= 500 ? 1.45 : 2.2);
-
-              return GridView.count(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: childAspectRatio,
-                children: modes.map((m) {
-                  final isSelected = currentMode == m['key'];
-                  return InkWell(
-                    onTap: () {
-                      setState(() => _policy['formLayoutMode'] = m['key']);
-                      _savePolicy();
-                    },
+          CentralAdjuster.grid(
+            minItemWidth: 200,
+            spacing: 12,
+            runSpacing: 12,
+            maxColumns: 4,
+            children: modes.map((m) {
+              final isSelected = currentMode == m['key'];
+              return InkWell(
+                onTap: () {
+                  setState(() => _policy['formLayoutMode'] = m['key']);
+                  _savePolicy();
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF))
+                        : (isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC)),
                     borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF))
-                            : (isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC)),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isSelected
-                              ? const Color(0xFF0050E5)
-                              : (isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
+                    border: Border.all(
+                      color: isSelected
+                          ? const Color(0xFF0050E5)
+                          : (isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Icon(m['icon'] as IconData, color: isSelected ? const Color(0xFF0050E5) : const Color(0xFF64748B), size: 20),
-                              Icon(
-                                isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
-                                color: isSelected ? const Color(0xFF0050E5) : const Color(0xFFCBD5E1),
-                                size: 16,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            m['title'] as String,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              height: 1.15,
-                              color: isSelected ? const Color(0xFF0050E5) : (isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            m['desc'] as String,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 10, height: 1.2, color: Color(0xFF64748B)),
+                          Icon(m['icon'] as IconData, color: isSelected ? const Color(0xFF0050E5) : const Color(0xFF64748B), size: 20),
+                          Icon(
+                            isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded,
+                            color: isSelected ? const Color(0xFF0050E5) : const Color(0xFFCBD5E1),
+                            size: 16,
                           ),
                         ],
                       ),
-                    ),
-                  );
-                }).toList(),
+                      const SizedBox(height: 6),
+                      Text(
+                        m['title'] as String,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          height: 1.15,
+                          color: isSelected ? const Color(0xFF0050E5) : (isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        m['desc'] as String,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 10, height: 1.2, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ),
               );
-            },
+            }).toList(),
           ),
         ],
       ),

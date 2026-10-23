@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/central_adjuster.dart';
 
 /// Screen presenting the personal Workspace Home dashboard for regular workspace members.
 /// Features a personalized welcome hero, quick action shortcuts, and workspace announcements.
@@ -25,8 +26,7 @@ class WorkspaceHomeView extends ConsumerWidget {
     final ws = workspace;
     final fullName = ws?.userFullName ?? 'Member';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+    return CentralAdjuster.pageShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -113,13 +113,11 @@ class WorkspaceHomeView extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
 
-          GridView.count(
-            crossAxisCount: MediaQuery.of(context).size.width >= 900 ? 4 : 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.5,
+          CentralAdjuster.grid(
+            minItemWidth: 200,
+            spacing: 16,
+            runSpacing: 16,
+            maxColumns: 4,
             children: [
               _buildShortcutCard(
                 context,

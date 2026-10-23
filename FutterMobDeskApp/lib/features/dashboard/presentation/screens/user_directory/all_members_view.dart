@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/services/export_service.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/central_adjuster.dart';
 import '../../../data/account_repository.dart';
 import 'user_create_view.dart';
 
@@ -390,8 +391,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+    return CentralAdjuster.pageShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

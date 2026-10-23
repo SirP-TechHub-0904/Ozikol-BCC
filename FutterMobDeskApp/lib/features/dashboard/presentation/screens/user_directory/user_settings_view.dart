@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/central_adjuster.dart';
 import '../../../data/account_repository.dart';
 
 /// Screen presenting User Management Settings under User Directory.
@@ -616,13 +617,11 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
           Text('ACTIVE GENERATION PATTERN', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
           const SizedBox(height: 10),
 
-          GridView.count(
-            crossAxisCount: MediaQuery.of(context).size.width >= 1000 ? 4 : 2,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.6,
+          CentralAdjuster.grid(
+            minItemWidth: 220,
+            spacing: 14,
+            runSpacing: 14,
+            maxColumns: 4,
             children: _formatPreviews.map((p) {
               final isSelected = currentFormat == p['key'];
               return InkWell(

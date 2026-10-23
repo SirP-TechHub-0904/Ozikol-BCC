@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/central_adjuster.dart';
 import '../../../data/account_repository.dart';
 
 /// Screen presenting the Auth Page Setup & Experience Studio under User Directory.
@@ -464,13 +465,11 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                 ),
               ),
               const SizedBox(height: 10),
-              GridView.count(
-                crossAxisCount: MediaQuery.of(context).size.width >= 900 ? 3 : 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.8,
+              CentralAdjuster.grid(
+                minItemWidth: 220,
+                spacing: 12,
+                runSpacing: 12,
+                maxColumns: 3,
                 children: _wallpaperPresets.map((preset) {
                   final isSelected = _bgUrlCtrl.text == preset['url'];
                   return InkWell(

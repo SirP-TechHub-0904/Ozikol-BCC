@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/central_adjuster.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../data/account_repository.dart';
@@ -236,11 +237,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1000;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+    return CentralAdjuster.pageShell(
       child: Form(
         key: _formKey,
         child: Column(
@@ -279,20 +276,11 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
             ],
 
             // Cards Grid (Two columns on desktop, single on mobile)
-            if (isDesktop)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _buildPersonalCard(isDark)),
-                  const SizedBox(width: 18),
-                  Expanded(child: _buildOrganizationalCard(isDark)),
-                ],
-              )
-            else ...[
-              _buildPersonalCard(isDark),
-              const SizedBox(height: 18),
-              _buildOrganizationalCard(isDark),
-            ],
+            CentralAdjuster.split(
+              breakpoint: 1000,
+              first: _buildPersonalCard(isDark),
+              second: _buildOrganizationalCard(isDark),
+            ),
 
             const SizedBox(height: 18),
 

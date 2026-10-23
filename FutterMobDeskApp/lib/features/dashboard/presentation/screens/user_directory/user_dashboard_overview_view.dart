@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/central_adjuster.dart';
 import '../../../data/account_repository.dart';
 
 /// Screen presenting the full Member Management & Directory Hub dashboard overview.
@@ -110,12 +111,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
     final recentRegistrations = List<Map<String, dynamic>>.from(_stats['recentRegistrations'] ?? []);
     final recentLogs = List<Map<String, dynamic>>.from(_stats['recentLogs'] ?? []);
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1100;
-    final isTablet = screenWidth >= 700;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+    return CentralAdjuster.pageShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -130,8 +126,6 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           // ===================================================================
           _buildRow1Metrics(
             isDark: isDark,
-            isDesktop: isDesktop,
-            isTablet: isTablet,
             totalMembers: totalMembers,
             activeMembers: activeMembers,
             suspiciousAccounts: suspiciousAccounts,
@@ -142,43 +136,15 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           // ===================================================================
           // ROW 2: DEMOGRAPHICS (MALE/FEMALE) & MEMBERSHIP PLAN QUOTA
           // ===================================================================
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildGenderDemographicsCard(
-                    isDark: isDark,
-                    maleCount: maleMembers,
-                    femaleCount: femaleMembers,
-                    malePercent: malePercent,
-                    femalePercent: femalePercent,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: _buildPlanQuotaCard(
-                    isDark: isDark,
-                    planType: planType,
-                    usedSeats: usedSeats,
-                    maximumUsers: maximumUsers,
-                    isUnlimited: isUnlimited,
-                    remainingSeats: remainingSeats,
-                    seatUsagePercent: seatUsagePercent,
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            _buildGenderDemographicsCard(
+          CentralAdjuster.split(
+            first: _buildGenderDemographicsCard(
               isDark: isDark,
               maleCount: maleMembers,
               femaleCount: femaleMembers,
               malePercent: malePercent,
               femalePercent: femalePercent,
             ),
-            const SizedBox(height: 18),
-            _buildPlanQuotaCard(
+            second: _buildPlanQuotaCard(
               isDark: isDark,
               planType: planType,
               usedSeats: usedSeats,
@@ -187,116 +153,54 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
               remainingSeats: remainingSeats,
               seatUsagePercent: seatUsagePercent,
             ),
-          ],
+          ),
           const SizedBox(height: 20),
 
           // ===================================================================
           // ROW 3: 50% GROWTH TREND + 50% BEST PERFORMING KPI BAR CHART
           // ===================================================================
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildGrowthTrendCard(
-                    isDark: isDark,
-                    labels: growthLabels,
-                    counts: growthCounts,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: _buildKpiComparisonCard(
-                    isDark: isDark,
-                    labels: kpiBarLabels,
-                    scores: kpiBarScores,
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            _buildGrowthTrendCard(
+          CentralAdjuster.split(
+            first: _buildGrowthTrendCard(
               isDark: isDark,
               labels: growthLabels,
               counts: growthCounts,
             ),
-            const SizedBox(height: 18),
-            _buildKpiComparisonCard(
+            second: _buildKpiComparisonCard(
               isDark: isDark,
               labels: kpiBarLabels,
               scores: kpiBarScores,
             ),
-          ],
+          ),
           const SizedBox(height: 20),
 
           // ===================================================================
           // ROW 4: KPI LEADERBOARD & PERFORMANCE HEALTH
           // ===================================================================
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildLeaderboardCard(
-                    isDark: isDark,
-                    leaderboard: leaderboard,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: _buildKpiHealthCard(
-                    isDark: isDark,
-                    avgOrgScore: avgOrgScore,
-                    indicatorsCount: indicatorsCount,
-                    evaluatedMembersCount: evaluatedMembersCount,
-                    totalEvaluations: totalEvaluations,
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            _buildLeaderboardCard(
+          CentralAdjuster.split(
+            first: _buildLeaderboardCard(
               isDark: isDark,
               leaderboard: leaderboard,
             ),
-            const SizedBox(height: 18),
-            _buildKpiHealthCard(
+            second: _buildKpiHealthCard(
               isDark: isDark,
               avgOrgScore: avgOrgScore,
               indicatorsCount: indicatorsCount,
               evaluatedMembersCount: evaluatedMembersCount,
               totalEvaluations: totalEvaluations,
             ),
-          ],
+          ),
           const SizedBox(height: 20),
 
           // ===================================================================
           // ROW 5: QUICK ACTIONS & RECENTLY ONBOARDED MEMBERS
           // ===================================================================
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildQuickActionsCard(isDark: isDark),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: _buildRecentRegistrationsCard(
-                    isDark: isDark,
-                    registrations: recentRegistrations,
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            _buildQuickActionsCard(isDark: isDark),
-            const SizedBox(height: 18),
-            _buildRecentRegistrationsCard(
+          CentralAdjuster.split(
+            first: _buildQuickActionsCard(isDark: isDark),
+            second: _buildRecentRegistrationsCard(
               isDark: isDark,
               registrations: recentRegistrations,
             ),
-          ],
+          ),
           const SizedBox(height: 20),
 
           // ===================================================================
@@ -424,25 +328,14 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   // ===========================================================================
   Widget _buildRow1Metrics({
     required bool isDark,
-    required bool isDesktop,
-    required bool isTablet,
     required int totalMembers,
     required int activeMembers,
     required int suspiciousAccounts,
     required int suspendedMembers,
   }) {
-    final crossAxisCount = isDesktop ? 4 : (isTablet ? 2 : 1);
-
-    return GridView.count(
-      crossAxisCount: crossAxisCount,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: isDesktop ? 1.75 : (isTablet ? 2.0 : 2.5),
-      children: [
-        _buildStatCard(
-          isDark: isDark,
+    return CentralAdjuster.metricGrid(
+      cards: [
+        CentralAdjuster.metricCard(
           title: 'Total Members',
           value: totalMembers.toString(),
           subtext: 'Registered Profiles • View All →',
@@ -450,8 +343,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           gradientColors: const [Color(0xFF0050E5), Color(0xFF3B82F6)],
           onTap: () => widget.onNavigateToTab?.call(1),
         ),
-        _buildStatCard(
-          isDark: isDark,
+        CentralAdjuster.metricCard(
           title: 'Active Accounts',
           value: activeMembers.toString(),
           subtext: 'Good Standing • Filter →',
@@ -460,8 +352,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           valueColor: const Color(0xFF10B981),
           onTap: () => widget.onNavigateToTab?.call(1, filterStatus: 'Active'),
         ),
-        _buildStatCard(
-          isDark: isDark,
+        CentralAdjuster.metricCard(
           title: 'Suspicious / Flagged',
           value: suspiciousAccounts.toString(),
           subtext: 'Lockouts & Logins • Filter →',
@@ -471,8 +362,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           isAlert: suspiciousAccounts > 0,
           onTap: () => widget.onNavigateToTab?.call(1, filterStatus: 'Suspicious'),
         ),
-        _buildStatCard(
-          isDark: isDark,
+        CentralAdjuster.metricCard(
           title: 'Suspended',
           value: suspendedMembers.toString(),
           subtext: 'Access Restricted • Filter →',
@@ -482,94 +372,6 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           onTap: () => widget.onNavigateToTab?.call(1, filterStatus: 'Suspended'),
         ),
       ],
-    );
-  }
-
-  Widget _buildStatCard({
-    required bool isDark,
-    required String title,
-    required String value,
-    required String subtext,
-    required IconData icon,
-    required List<Color> gradientColors,
-    Color? valueColor,
-    bool isAlert = false,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isAlert
-              ? (isDark ? const Color(0xFF38151D) : const Color(0xFFFFF1F2))
-              : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isAlert
-                ? const Color(0xFFFECDD3)
-                : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: gradientColors,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      letterSpacing: 0.05,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: valueColor ?? (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtext,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: isDark ? AppColors.gray500 : AppColors.gray500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1252,13 +1054,11 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           ),
         ),
       ),
-      child: GridView.count(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        childAspectRatio: 1.55,
+      child: CentralAdjuster.grid(
+        minItemWidth: 160,
+        spacing: 12,
+        runSpacing: 12,
+        maxColumns: 2,
         children: [
           _buildHealthTile(
             isDark: isDark,
