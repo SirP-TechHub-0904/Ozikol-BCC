@@ -556,13 +556,17 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                 Positioned(
                   top: -80,
                   left: -60,
-                  child: Container(
-                    width: 380,
-                    height: 380,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [Colors.white.withAlpha(25), Colors.transparent],
+                  child: IgnorePointer(
+                    child: ExcludeSemantics(
+                      child: Container(
+                        width: 380,
+                        height: 380,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [Colors.white.withAlpha(25), Colors.transparent],
+                          ),
+                        ),
                       ),
                     ),
                   ),

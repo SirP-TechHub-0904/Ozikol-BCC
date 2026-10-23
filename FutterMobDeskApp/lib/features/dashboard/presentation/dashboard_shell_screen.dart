@@ -155,11 +155,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final metrics = metricsAsync.value ?? DashboardMetrics.empty();
     final isTelemetryLoading = metricsAsync.isLoading;
 
-    if (isTelemetryLoading && !_refreshAnimController.isAnimating) {
-      _refreshAnimController.repeat();
-    } else if (!isTelemetryLoading && _refreshAnimController.isAnimating) {
-      _refreshAnimController.reset();
-    }
+    ref.listen<AsyncValue<DashboardMetrics>>(dashboardMetricsProvider, (prev, next) {
+      if (next.isLoading && !_refreshAnimController.isAnimating) {
+        _refreshAnimController.repeat();
+      } else if (!next.isLoading && _refreshAnimController.isAnimating && !_isRefreshing) {
+        _refreshAnimController.reset();
+      }
+    });
 
     return PopScope(
       canPop: false,
@@ -448,8 +450,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     ),
                   ),
                   Positioned(
-                    right: -1,
-                    bottom: -1,
+                    right: 0,
+                    bottom: 0,
                     child: Container(
                       width: 8,
                       height: 8,
@@ -744,8 +746,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                               ),
                             ),
                             Positioned(
-                              right: -1,
-                              bottom: -1,
+                              right: 0,
+                              bottom: 0,
                               child: Container(
                                 width: 10,
                                 height: 10,
@@ -922,61 +924,63 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   /// <param name="isDark">Whether dark mode is currently active.</param>
   /// <returns>A centered overlay widget with glassmorphism blur and progress feedback.</returns>
   Widget _buildRefreshingOverlay(bool isDark) {
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        color: (isDark ? Colors.black : Colors.white).withAlpha(140),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
-                  width: 1,
+    return AbsorbPointer(
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          color: (isDark ? Colors.black : Colors.white).withAlpha(140),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(isDark ? 80 : 30),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(isDark ? 80 : 30),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const SizedBox(
-                    width: 36,
-                    height: 36,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 3,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Refreshing Workspace...',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : AppColors.onBackgroundLight,
-                      letterSpacing: 0.2,
+                    const SizedBox(height: 16),
+                    Text(
+                      'Refreshing Workspace...',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : AppColors.onBackgroundLight,
+                        letterSpacing: 0.2,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Synchronizing branding, telemetry, and metrics',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? AppColors.gray400 : AppColors.gray500,
+                    const SizedBox(height: 4),
+                    Text(
+                      'Synchronizing branding, telemetry, and metrics',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? AppColors.gray400 : AppColors.gray500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -2411,8 +2415,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                         ),
                       ),
                       Positioned(
-                        right: -2,
-                        bottom: -2,
+                        right: 0,
+                        bottom: 0,
                         child: Container(
                           width: 14,
                           height: 14,

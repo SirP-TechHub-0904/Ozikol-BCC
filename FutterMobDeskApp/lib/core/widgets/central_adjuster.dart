@@ -122,7 +122,7 @@ class CentralAdjuster {
     double runSpacing = defaultSpacing,
     int? maxColumns,
     int? minColumns,
-    bool equalizeRowHeights = true,
+    bool equalizeRowHeights = false,
   }) {
     return AdaptiveResponsiveGrid(
       minItemWidth: minItemWidth,
@@ -190,6 +190,7 @@ class CentralAdjuster {
     bool isAlert = false,
     VoidCallback? onTap,
     Widget? trailing,
+    bool? isCompact,
   }) {
     return AdaptiveMetricCard(
       title: title,
@@ -202,6 +203,7 @@ class CentralAdjuster {
       isAlert: isAlert,
       onTap: onTap,
       trailing: trailing,
+      isCompact: isCompact,
     );
   }
 
@@ -268,6 +270,39 @@ class CentralAdjuster {
       child: child,
     );
   }
+
+  /// <summary>
+  /// Creates an adaptive enterprise table container that provides smooth horizontal scrolling
+  /// on compact/mobile screens while automatically expanding to 100% card width on maximized
+  /// desktop monitors, eliminating awkward blank space and distributing column spacing.
+  /// </summary>
+  /// <param name="builder">Builder function providing the context, resolved table width, and extra distributed spacing.</param>
+  /// <param name="minWidth">Minimum width floor before horizontal scrolling begins (default 1040.0).</param>
+  /// <param name="header">Optional header widget placed above the scrollable table.</param>
+  /// <param name="footer">Optional footer widget placed below the scrollable table (e.g. pagination bar).</param>
+  /// <param name="decoration">Optional custom box decoration for the table card.</param>
+  /// <param name="borderRadius">Corner border radius (default 12.0).</param>
+  /// <param name="numColumns">Column count used to compute per-column extra space distribution.</param>
+  /// <returns>An [AdaptiveTableContainer] widget.</returns>
+  static Widget tableContainer({
+    required Widget Function(BuildContext context, double tableWidth, double extraSpacing) builder,
+    double minWidth = 1040.0,
+    Widget? header,
+    Widget? footer,
+    BoxDecoration? decoration,
+    double borderRadius = 12.0,
+    int numColumns = 7,
+  }) {
+    return AdaptiveTableContainer(
+      builder: builder,
+      minWidth: minWidth,
+      header: header,
+      footer: footer,
+      decoration: decoration,
+      borderRadius: borderRadius,
+      numColumns: numColumns,
+    );
+  }
 }
 
 /// Adaptive responsive grid that automatically calculates columns from available container width
@@ -303,7 +338,7 @@ class AdaptiveResponsiveGrid extends StatelessWidget {
     this.runSpacing = CentralAdjuster.defaultSpacing,
     this.maxColumns,
     this.minColumns,
-    this.equalizeRowHeights = true,
+    this.equalizeRowHeights = false,
   });
 
   @override
@@ -406,6 +441,9 @@ class AdaptiveMetricCard extends StatelessWidget {
   /// Internal padding override.
   final EdgeInsetsGeometry? padding;
 
+  /// Optional compact sizing override. Defaults to responsive width detection.
+  final bool? isCompact;
+
   /// Creates an [AdaptiveMetricCard].
   const AdaptiveMetricCard({
     super.key,
@@ -420,125 +458,120 @@ class AdaptiveMetricCard extends StatelessWidget {
     this.onTap,
     this.trailing,
     this.padding,
+    this.isCompact,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final compact = isCompact ?? CentralAdjuster.isMobile(context);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cardWidth = constraints.maxWidth;
-        final isCompact = cardWidth < 220;
+    final iconBoxSize = compact ? 36.0 : 42.0;
+    final iconGlyphSize = compact ? 18.0 : 20.0;
+    final titleFontSize = compact ? 9.5 : 10.5;
+    final valueFontSize = compact ? 19.0 : 22.0;
+    final subtextFontSize = compact ? 10.0 : 11.0;
+    final cardPadding = padding ??
+        EdgeInsets.symmetric(
+          horizontal: compact ? 11.0 : 14.0,
+          vertical: compact ? 9.0 : 11.0,
+        );
 
-        final iconBoxSize = isCompact ? 36.0 : 42.0;
-        final iconGlyphSize = isCompact ? 18.0 : 20.0;
-        final titleFontSize = isCompact ? 9.5 : 10.5;
-        final valueFontSize = isCompact ? 19.0 : 22.0;
-        final subtextFontSize = isCompact ? 10.0 : 11.0;
-        final cardPadding = padding ??
-            EdgeInsets.symmetric(
-              horizontal: isCompact ? 11.0 : 14.0,
-              vertical: isCompact ? 9.0 : 11.0,
-            );
-
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: cardPadding,
+          decoration: BoxDecoration(
+            color: isAlert
+                ? (isDark ? const Color(0xFF38151D) : const Color(0xFFFFF1F2))
+                : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
             borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: cardPadding,
-              decoration: BoxDecoration(
-                color: isAlert
-                    ? (isDark ? const Color(0xFF38151D) : const Color(0xFFFFF1F2))
-                    : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isAlert
-                      ? const Color(0xFFFECDD3)
-                      : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: iconBoxSize,
-                    height: iconBoxSize,
-                    decoration: BoxDecoration(
-                      gradient: gradientColors != null
-                          ? LinearGradient(
-                              colors: gradientColors!,
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : null,
-                      color: gradientColors == null
-                          ? (iconColor?.withValues(alpha: 0.12) ?? AppColors.primary.withValues(alpha: 0.12))
-                          : null,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: gradientColors != null ? Colors.white : (iconColor ?? AppColors.primary),
-                      size: iconGlyphSize,
-                    ),
-                  ),
-                  SizedBox(width: isCompact ? 10 : 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          title.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: titleFontSize,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.05,
-                            color: isDark ? AppColors.gray400 : AppColors.gray600,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          value,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: valueFontSize,
-                            fontWeight: FontWeight.w800,
-                            color: valueColor ??
-                                (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtext,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: subtextFontSize,
-                            fontWeight: FontWeight.w500,
-                            color: isDark ? AppColors.gray400 : AppColors.gray500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (trailing != null) ...[
-                    const SizedBox(width: 8),
-                    trailing!,
-                  ],
-                ],
-              ),
+            border: Border.all(
+              color: isAlert
+                  ? const Color(0xFFFECDD3)
+                  : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
             ),
           ),
-        );
-      },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: iconBoxSize,
+                height: iconBoxSize,
+                decoration: BoxDecoration(
+                  gradient: gradientColors != null
+                      ? LinearGradient(
+                          colors: gradientColors!,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: gradientColors == null
+                      ? (iconColor?.withValues(alpha: 0.12) ?? AppColors.primary.withValues(alpha: 0.12))
+                      : null,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: gradientColors != null ? Colors.white : (iconColor ?? AppColors.primary),
+                  size: iconGlyphSize,
+                ),
+              ),
+              SizedBox(width: compact ? 10 : 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: titleFontSize,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.05,
+                        color: isDark ? AppColors.gray400 : AppColors.gray600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: valueFontSize,
+                        fontWeight: FontWeight.w800,
+                        color: valueColor ??
+                            (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtext,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: subtextFontSize,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? AppColors.gray400 : AppColors.gray500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing!,
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -577,7 +610,7 @@ class AdaptiveMetricGrid extends StatelessWidget {
       runSpacing: runSpacing,
       maxColumns: maxColumns,
       minItemWidth: minItemWidth,
-      equalizeRowHeights: true,
+      equalizeRowHeights: false,
       children: children,
     );
   }
@@ -751,6 +784,106 @@ class AdaptivePageShell extends StatelessWidget {
     return SingleChildScrollView(
       padding: effectivePadding,
       child: child,
+    );
+  }
+}
+
+/// <summary>
+/// Adaptive enterprise table container widget that dynamically responds to window resize events.
+/// Provides smooth horizontal scrolling on compact/unmaximized windows while automatically
+/// expanding table width and column spacing to 100% of the canvas on maximized desktop displays.
+/// </summary>
+class AdaptiveTableContainer extends StatelessWidget {
+  /// Builder receiving active context, resolved table width, and distributed extra spacing.
+  final Widget Function(BuildContext context, double tableWidth, double extraSpacing) builder;
+
+  /// Minimum width required by the table content before horizontal scrolling begins.
+  final double minWidth;
+
+  /// Optional header widget placed above the scrollable table (e.g. search/filter or quick stats).
+  final Widget? header;
+
+  /// Optional footer widget placed below the scrollable table (e.g. pagination controls).
+  final Widget? footer;
+
+  /// Optional box decoration override.
+  final BoxDecoration? decoration;
+
+  /// Corner radius for the enclosing card container.
+  final double borderRadius;
+
+  /// Number of columns in the table, used to compute per-column extra space distribution.
+  final int numColumns;
+
+  /// <summary>
+  /// Creates an [AdaptiveTableContainer] instance.
+  /// </summary>
+  const AdaptiveTableContainer({
+    super.key,
+    required this.builder,
+    this.minWidth = 1040.0,
+    this.header,
+    this.footer,
+    this.decoration,
+    this.borderRadius = 12.0,
+    this.numColumns = 7,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final defaultDecoration = BoxDecoration(
+      color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+      borderRadius: BorderRadius.circular(borderRadius),
+      border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.02),
+          blurRadius: 3,
+          offset: const Offset(0, 1),
+        ),
+      ],
+    );
+
+    return Container(
+      decoration: decoration ?? defaultDecoration,
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double availableWidth = constraints.maxWidth.isFinite
+              ? constraints.maxWidth
+              : MediaQuery.of(context).size.width;
+
+          final double targetWidth = math.max(availableWidth, minWidth);
+          final double extraWidth = targetWidth > minWidth ? (targetWidth - minWidth) : 0.0;
+          final int gapCount = math.max(1, numColumns - 1);
+          final double extraSpacing = extraWidth / gapCount;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (header != null) ...[
+                header!,
+                Divider(height: 1, color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+              ],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const ClampingScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: targetWidth),
+                  child: builder(context, targetWidth, extraSpacing),
+                ),
+              ),
+              if (footer != null) ...[
+                Divider(height: 1, color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                footer!,
+              ],
+            ],
+          );
+        },
+      ),
     );
   }
 }

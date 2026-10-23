@@ -912,64 +912,13 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   // =========================================================================
 
   Widget _buildDataTable(bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
+    return CentralAdjuster.tableContainer(
+      minWidth: 1040.0,
+      numColumns: 7,
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Table Scroll View
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 1040),
-              child: DataTable(
-                headingRowHeight: 44,
-                dataRowMinHeight: 64,
-                dataRowMaxHeight: 68,
-                horizontalMargin: 16,
-                columnSpacing: 20,
-                headingRowColor: WidgetStateProperty.all(
-                  isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                ),
-                columns: [
-                  _buildSortableColumn('fullName', 'MEMBER NAME'),
-                  _buildSortableColumn('email', 'EMAIL ADDRESS'),
-                  _buildSortableColumn('memberId', 'MEMBER ID'),
-                  _buildSortableColumn('categoryName', 'CATEGORY'),
-                  _buildSortableColumn('roles', 'ROLE'),
-                  _buildSortableColumn('userStatus', 'STATUS'),
-                  const DataColumn(
-                    label: Text(
-                      'ACTIONS',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.05,
-                        color: Color(0xFF475569),
-                      ),
-                    ),
-                  ),
-                ],
-                rows: _paginatedUsers.isEmpty
-                    ? []
-                    : _paginatedUsers.map((u) {
-                        return _buildDataRow(u, isDark);
-                      }).toList(),
-              ),
-            ),
-          ),
-
           // Empty state if no records
           if (_paginatedUsers.isEmpty && !_isLoading)
             _buildEmptyState(isDark),
@@ -979,6 +928,42 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
             _buildPaginationToolbar(isDark),
         ],
       ),
+      builder: (context, tableWidth, extraSpacing) {
+        return DataTable(
+          headingRowHeight: 44,
+          dataRowMinHeight: 64,
+          dataRowMaxHeight: 68,
+          horizontalMargin: 16,
+          columnSpacing: 20.0 + extraSpacing,
+          headingRowColor: WidgetStateProperty.all(
+            isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+          ),
+          columns: [
+            _buildSortableColumn('fullName', 'MEMBER NAME'),
+            _buildSortableColumn('email', 'EMAIL ADDRESS'),
+            _buildSortableColumn('memberId', 'MEMBER ID'),
+            _buildSortableColumn('categoryName', 'CATEGORY'),
+            _buildSortableColumn('roles', 'ROLE'),
+            _buildSortableColumn('userStatus', 'STATUS'),
+            const DataColumn(
+              label: Text(
+                'ACTIONS',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.05,
+                  color: Color(0xFF475569),
+                ),
+              ),
+            ),
+          ],
+          rows: _paginatedUsers.isEmpty
+              ? []
+              : _paginatedUsers.map((u) {
+                  return _buildDataRow(u, isDark);
+                }).toList(),
+        );
+      },
     );
   }
 
@@ -1315,7 +1300,6 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-        border: Border(top: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
