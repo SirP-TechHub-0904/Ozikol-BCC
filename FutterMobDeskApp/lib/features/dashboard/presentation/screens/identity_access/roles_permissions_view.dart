@@ -4,6 +4,7 @@ import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../data/account_repository.dart';
+import '../../../../../core/widgets/page_header.dart';
 
 /// <summary>
 /// Screen presenting System Roles & Authority Matrix under Identity & Access Control.
@@ -458,62 +459,21 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'ACCESS CONTROL & GOVERNANCE',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.8,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'System Roles & Authority Matrix',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Manage the ${_catalog.length} enterprise roles organized into System & Feature Authority and Operational Access Levels.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  PrimaryButton(
-                    text: 'Create Role',
-                    icon: const Icon(Icons.add, size: 18),
-                    onPressed: _showCreateRoleDialog,
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.refresh_rounded),
-                    tooltip: 'Refresh Roles',
-                    onPressed: _loadRolesData,
-                  ),
-                ],
-              ),
+          // Header
+          // Shared PageHeader mold: top-level sidebar destination, so no back control.
+          PageHeader(
+            icon: Icons.admin_panel_settings_outlined,
+            eyebrow: 'Access Control & Governance',
+            title: 'System Roles & Authority Matrix',
+            description: 'Manage the ${_catalog.length} enterprise roles organized into System & Feature Authority and Operational Access Levels.',
+            primaryAction: PageHeaderAction(label: 'Create Role', icon: Icons.add, style: PageHeaderActionStyle.primary, onPressed: _showCreateRoleDialog),
+            secondaryActions: [
+            PageHeaderAction(
+              label: 'Refresh Roles',
+              compactLabel: 'Refresh',
+              icon: Icons.refresh_rounded,
+              onPressed: _loadRolesData,
+            ),
             ],
           ),
           const SizedBox(height: 24),

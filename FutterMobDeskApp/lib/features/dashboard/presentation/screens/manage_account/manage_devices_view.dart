@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../data/account_repository.dart';
+import '../../../../../core/widgets/page_header.dart';
 
 /// Screen presenting the active logged-in device sessions for the authenticated member.
 /// 100% white-labeled per tenant governance rules (zero vendor branding in device names).
@@ -140,59 +141,22 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Card
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.devices_rounded, size: 26, color: AppColors.primary),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Manage Devices & Connected Sessions',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Review and govern all active desktop and mobile device connections signed into your workspace.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_sessions.length > 1) ...[
-                const SizedBox(width: 12),
-                OutlinedButton.icon(
-                  onPressed: _isTerminatingOthers ? null : _handleTerminateOthers,
-                  icon: const Icon(Icons.phonelink_erase_rounded, size: 16, color: AppColors.error),
-                  label: Text(
-                    _isTerminatingOthers ? 'Terminating...' : 'Terminate Other Sessions',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.error),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ],
-            ],
+          // Shared PageHeader mold: top-level account destination, so no back control.
+          PageHeader(
+            icon: Icons.devices_rounded,
+            eyebrow: 'Session Governance',
+            title: 'Manage Devices & Connected Sessions',
+            description: 'Review and govern all active desktop and mobile device connections signed into your workspace.',
+            primaryAction: _sessions.length > 1
+                ? PageHeaderAction(
+                    label: _isTerminatingOthers ? 'Terminating...' : 'Terminate Other Sessions',
+                    compactLabel: 'Terminate Others',
+                    icon: Icons.phonelink_erase_rounded,
+                    style: PageHeaderActionStyle.destructive,
+                    isLoading: _isTerminatingOthers,
+                    onPressed: _handleTerminateOthers,
+                  )
+                : null,
           ),
           const SizedBox(height: 24),
 

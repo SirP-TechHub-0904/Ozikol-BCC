@@ -5,6 +5,7 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../workspace_auth/data/auth_service.dart';
+import '../../../../../core/widgets/page_header.dart';
 
 /// Screen enabling authenticated members to update their account password.
 class ChangePasswordView extends ConsumerStatefulWidget {
@@ -145,42 +146,12 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Card
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.key_outlined, size: 26, color: AppColors.primary),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Update Password',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Change your workspace account password to maintain security standards.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          // Shared PageHeader mold: top-level account destination, so no back control.
+          PageHeader(
+            icon: Icons.key_outlined,
+            eyebrow: 'Account Security',
+            title: 'Update Password',
+            description: 'Change your workspace account password to maintain security standards.',
           ),
           const SizedBox(height: 24),
 

@@ -5,6 +5,7 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../data/account_repository.dart';
+import '../../../../../core/widgets/page_header.dart';
 
 /// <summary>
 /// Screen presenting the personal member account profile details and organization dossier.
@@ -175,52 +176,19 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'PERSONAL IDENTITY & BIO',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.8,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'My Profile & Dossier',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Manage your personal credentials, contact info, bio, and organization dossier.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                tooltip: 'Refresh Profile',
-                onPressed: _loadProfile,
-              ),
+          // Shared PageHeader mold: top-level account destination, so no back control.
+          PageHeader(
+            icon: Icons.badge_outlined,
+            eyebrow: 'Personal Identity & Bio',
+            title: 'My Profile & Dossier',
+            description: 'Manage your personal credentials, contact info, bio, and organization dossier.',
+            secondaryActions: [
+                PageHeaderAction(
+                  label: 'Refresh Profile',
+                  compactLabel: 'Refresh',
+                  icon: Icons.refresh_rounded,
+                  onPressed: _loadProfile,
+                ),
             ],
           ),
           const SizedBox(height: 24),

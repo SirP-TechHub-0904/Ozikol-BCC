@@ -6,6 +6,7 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../data/account_repository.dart';
+import '../../../../../core/widgets/page_header.dart';
 
 /// <summary>
 /// Screen presenting Member Invitations under Identity & Access Control.
@@ -323,62 +324,21 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'WORKSPACE RECRUITMENT',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.8,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Member Invitations',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Invite prospective users to join your workspace and monitor token activation status.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  PrimaryButton(
-                    text: 'Send Invitation',
-                    icon: const Icon(Icons.send_outlined, size: 18),
-                    onPressed: _showSendInvitationDialog,
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.refresh_rounded),
-                    tooltip: 'Refresh Invitations',
-                    onPressed: _loadInvitations,
-                  ),
-                ],
-              ),
+          // Header
+          // Shared PageHeader mold: top-level sidebar destination, so no back control.
+          PageHeader(
+            icon: Icons.mark_email_unread_outlined,
+            eyebrow: 'Workspace Recruitment',
+            title: 'Member Invitations',
+            description: 'Invite prospective users to join your workspace and monitor token activation status.',
+            primaryAction: PageHeaderAction(label: 'Send Invitation', compactLabel: 'Invite', icon: Icons.send_outlined, style: PageHeaderActionStyle.primary, onPressed: _showSendInvitationDialog),
+            secondaryActions: [
+            PageHeaderAction(
+              label: 'Refresh Invitations',
+              compactLabel: 'Refresh',
+              icon: Icons.refresh_rounded,
+              onPressed: _loadInvitations,
+            ),
             ],
           ),
           const SizedBox(height: 20),

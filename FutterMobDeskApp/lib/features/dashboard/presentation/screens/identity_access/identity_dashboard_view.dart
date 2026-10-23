@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../data/account_repository.dart';
+import '../../../../../core/widgets/page_header.dart';
 
 /// <summary>
 /// Screen presenting the Identity & Access Control Security Console Overview.
@@ -117,52 +118,20 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Standardized Page Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'IDENTITY SECURITY CONTROL',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.8,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Security Console Overview',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Real-time telemetry, 2FA adoption metrics, brute-force retry flags, and remote session controls.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded),
-                tooltip: 'Refresh Telemetry',
-                onPressed: _loadIdentityData,
-              ),
+          // Standardized Page Header
+          // Shared PageHeader mold: top-level sidebar destination, so no back control.
+          PageHeader(
+            icon: Icons.shield_outlined,
+            eyebrow: 'Identity Security Control',
+            title: 'Security Console Overview',
+            description: 'Real-time telemetry, 2FA adoption metrics, brute-force retry flags, and remote session controls.',
+            secondaryActions: [
+            PageHeaderAction(
+              label: 'Refresh Telemetry',
+              compactLabel: 'Refresh',
+              icon: Icons.refresh_rounded,
+              onPressed: _loadIdentityData,
+            ),
             ],
           ),
           const SizedBox(height: 24),

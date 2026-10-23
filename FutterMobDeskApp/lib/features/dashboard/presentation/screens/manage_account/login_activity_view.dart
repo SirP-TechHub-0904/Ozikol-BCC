@@ -4,6 +4,7 @@ import '../../../../../core/models/workspace.dart';
 import '../../../../../core/services/export_service.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../data/account_repository.dart';
+import '../../../../../core/widgets/page_header.dart';
 
 /// <summary>
 /// Screen presenting the server-side paginated login and authentication security audit history.
@@ -163,62 +164,25 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'FORENSIC AUDIT STREAM',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.8,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Login & Authentication Activity',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Comprehensive audit trail of recent sign-in attempts, client IPs, and authentication statuses.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.download_rounded, size: 16),
-                    label: const Text('Export CSV', style: TextStyle(fontSize: 12)),
-                    onPressed: _items.isNotEmpty ? _handleExportCsv : null,
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.refresh_rounded),
-                    tooltip: 'Refresh Activity Logs',
-                    onPressed: _loadHistory,
-                  ),
-                ],
-              ),
+          // Shared PageHeader mold: top-level account destination, so no back control.
+          PageHeader(
+            icon: Icons.manage_search_rounded,
+            eyebrow: 'Forensic Audit Stream',
+            title: 'Login & Authentication Activity',
+            description: 'Comprehensive audit trail of recent sign-in attempts, client IPs, and authentication statuses.',
+            secondaryActions: [
+                PageHeaderAction(
+                  label: 'Export CSV',
+                  compactLabel: 'Export',
+                  icon: Icons.download_rounded,
+                  onPressed: _items.isNotEmpty ? _handleExportCsv : null,
+                ),
+                PageHeaderAction(
+                  label: 'Refresh Activity Logs',
+                  compactLabel: 'Refresh',
+                  icon: Icons.refresh_rounded,
+                  onPressed: _loadHistory,
+                ),
             ],
           ),
           const SizedBox(height: 20),

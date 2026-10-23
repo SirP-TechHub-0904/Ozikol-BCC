@@ -6,6 +6,7 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../workspace_auth/data/auth_service.dart';
+import '../../../../../core/widgets/page_header.dart';
 
 /// Screen enabling users to configure, enroll, and manage Two-Factor Authentication (2FA).
 class TwoFactorSecurityView extends ConsumerStatefulWidget {
@@ -183,42 +184,12 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Row
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.shield_outlined, size: 26, color: AppColors.primary),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Two-Factor Authentication (2FA)',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Fortify your account credentials by requiring a secondary verification step during sign-in.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          // Shared PageHeader mold: top-level account destination, so no back control.
+          PageHeader(
+            icon: Icons.shield_outlined,
+            eyebrow: 'Account Security',
+            title: 'Two-Factor Authentication (2FA)',
+            description: 'Fortify your account credentials by requiring a secondary verification step during sign-in.',
           ),
           const SizedBox(height: 24),
 
