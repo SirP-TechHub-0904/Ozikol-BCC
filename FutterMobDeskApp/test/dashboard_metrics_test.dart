@@ -56,7 +56,7 @@ void main() {
       expect(empty.recentActivities.length, 0);
     });
 
-    testWidgets('DashboardShellScreen renders Console Dashboard, 6 Health Counters, and Quick Actions',
+    testWidgets('DashboardShellScreen renders Member Management & Directory Hub and Metric Cards',
         (tester) async {
       tester.view.physicalSize = const Size(1440, 900);
       tester.view.devicePixelRatio = 1.0;
@@ -72,40 +72,19 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 1. Verify Command Header (appears in sidebar and command strip header)
-      expect(find.text('Console Dashboard'), findsNWidgets(2));
-      expect(find.text('Refresh Telemetry'), findsOneWidget);
-      expect(find.text('New Web Page'), findsOneWidget);
+      // 1. Verify Page Header
+      expect(find.text('Member Management & Directory Hub'), findsOneWidget);
+      expect(find.text('Directory Register'), findsOneWidget);
+      expect(find.text('Add Member'), findsOneWidget);
 
-      // 2. Verify Core Performance & Health Counters Header & Pill
-      expect(find.text('Core Performance & Health Counters'), findsOneWidget);
-      expect(find.text('All Services Operational'), findsOneWidget);
-
-      // 3. Verify Metric Cards
+      // 2. Verify Metric Cards
       expect(find.text('TOTAL MEMBERS'), findsOneWidget);
-      expect(find.text('GROUP CHANNELS'), findsOneWidget);
-      expect(find.text('PUBLISHED PAGES'), findsOneWidget);
-      expect(find.text('HERO SLIDERS'), findsOneWidget);
-      expect(find.text('ACTIVE FAQS'), findsOneWidget);
-      expect(find.text('PLATFORM ROLES'), findsOneWidget);
+      expect(find.text('ACTIVE ACCOUNTS'), findsOneWidget);
+      expect(find.text('SUSPICIOUS / FLAGGED'), findsOneWidget);
+      expect(find.text('SUSPENDED'), findsOneWidget);
 
-      // 4. Verify Recently Registered Members Widget
-      expect(find.text('Recently Registered Members'), findsOneWidget);
-      expect(find.text('View Directory →'), findsOneWidget);
-
-      // 5. Verify Quick Actions & Shortcuts
-      expect(find.text('Quick Actions & Shortcuts'), findsOneWidget);
-      expect(find.text('Create Dynamic Web Page'), findsOneWidget);
-      expect(find.text('Register New Member'), findsOneWidget);
-      expect(find.text('Create Group Channel'), findsOneWidget);
-      expect(find.text('Brand & Theme Customizer'), findsOneWidget);
-
-      // 6. Verify Recent Activity & Audit Trail
-      expect(find.text('Recent Activity & Audit Trail'), findsOneWidget);
-      expect(find.text('Telemetry Log'), findsOneWidget);
-
-      // 7. Verify Floating Ozi AI button
-      expect(find.text('Ozi AI'), findsOneWidget);
+      // 3. Verify Floating AI Assistant button
+      expect(find.text('AI Assistant'), findsOneWidget);
     });
 
     testWidgets('DashboardShellScreen minimizes and maximizes sidebar via toggle buttons', (tester) async {
@@ -123,8 +102,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 1. Initially expanded: 'Workspace Vault' is visible, single top-bar minimize button is present
-      expect(find.text('Workspace Vault'), findsOneWidget);
+      // 1. Initially expanded: 'User Directory' is visible, single top-bar minimize button is present
+      expect(find.text('User Directory'), findsOneWidget);
       expect(find.byTooltip('Minimize sidebar'), findsOneWidget);
 
       // 2. Click 'Minimize sidebar' from the top bar
@@ -132,8 +111,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // 3. Sidebar is now collapsed into icon rail:
-      // 'Workspace Vault' is removed from view, and 'Maximize sidebar' appears in the top bar
-      expect(find.text('Workspace Vault'), findsNothing);
+      // 'User Directory' text is removed from view, and 'Maximize sidebar' appears in the top bar
+      expect(find.text('User Directory'), findsNothing);
       expect(find.byTooltip('Maximize sidebar'), findsOneWidget);
 
       // 4. Click 'Maximize sidebar'
@@ -141,7 +120,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 5. Sidebar is restored back to expanded mode
-      expect(find.text('Workspace Vault'), findsOneWidget);
+      expect(find.text('User Directory'), findsOneWidget);
       expect(find.byTooltip('Minimize sidebar'), findsOneWidget);
     });
 
@@ -245,7 +224,7 @@ void main() {
       // 5. Tap User Profile Pill to open Account & Workspace Profile dialog
       await tester.tap(find.text('Member'));
       await tester.pumpAndSettle();
-      expect(find.text('Active Workspace'), findsOneWidget);
+      expect(find.text('Active Workspace'), findsWidgets);
       expect(find.text('Primary Domain'), findsOneWidget);
 
       // Close Profile dialog

@@ -264,106 +264,45 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
   }
 
   Widget _buildPageHeader(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+    return CentralAdjuster.pageHeader(
+      icon: Icons.tune_rounded,
+      eyebrow: 'USER MANAGEMENT PREFERENCES',
+      title: 'User Management Settings',
+      subtitle:
+          'Configure name salutations, professional suffixes, member ID generation rules, and directory governance policies.',
+      isDark: isDark,
+      actions: [
+        OutlinedButton.icon(
+          onPressed: () => widget.onNavigateToTab?.call(1),
+          icon: const Icon(Icons.groups_rounded, size: 16),
+          label: const Text('Members Directory'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+            side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+          ),
         ),
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 16,
-        runSpacing: 12,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.tune_rounded, color: AppColors.primary, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'USER MANAGEMENT PREFERENCES',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.06,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'User Management Settings',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Configure name salutations, professional suffixes, member ID generation rules, and directory governance policies.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        FilledButton.icon(
+          onPressed: _isSaving ? null : _saveSettings,
+          icon: _isSaving
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Icon(Icons.save_rounded, size: 16),
+          label: Text(_isSaving ? 'Saving...' : 'Save Settings'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => widget.onNavigateToTab?.call(1),
-                icon: const Icon(Icons.groups_rounded, size: 16),
-                label: const Text('Members Directory'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                  side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(width: 10),
-              FilledButton.icon(
-                onPressed: _isSaving ? null : _saveSettings,
-                icon: _isSaving
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(Icons.save_rounded, size: 16),
-                label: Text(_isSaving ? 'Saving...' : 'Save Settings'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

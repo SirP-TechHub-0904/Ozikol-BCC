@@ -576,107 +576,46 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
   }
 
   Widget _buildPageHeader(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+    return CentralAdjuster.pageHeader(
+      icon: Icons.how_to_reg_rounded,
+      eyebrow: 'USER MANAGEMENT & ONBOARDING',
+      title: 'Registration Form Builder',
+      subtitle:
+          'Configure custom onboarding questions, field types, and registration rules for your business.',
+      isDark: isDark,
+      actions: [
+        OutlinedButton.icon(
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Live Get Started URL: /auth/${_slugCtrl.text}'),
+                backgroundColor: const Color(0xFF0050E5),
+              ),
+            );
+          },
+          icon: const Icon(Icons.open_in_new_rounded, size: 16),
+          label: const Text('Live "Get Started" Page'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+            side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+          ),
         ),
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 16,
-        runSpacing: 12,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.how_to_reg_rounded, color: AppColors.primary, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'USER MANAGEMENT & ONBOARDING',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.06,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Registration Form Builder',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Configure custom onboarding questions, field types, and registration rules for your business.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        FilledButton.icon(
+          onPressed: () => _openCreateOrEditQuestionDialog(),
+          icon: const Icon(Icons.add_circle_rounded, size: 16),
+          label: const Text('Add Custom Question'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Live Get Started URL: /auth/${_slugCtrl.text}'),
-                      backgroundColor: const Color(0xFF0050E5),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                label: const Text('Live "Get Started" Page'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                  side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(width: 10),
-              FilledButton.icon(
-                onPressed: () => _openCreateOrEditQuestionDialog(),
-                icon: const Icon(Icons.add_circle_rounded, size: 16),
-                label: const Text('Add Custom Question'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

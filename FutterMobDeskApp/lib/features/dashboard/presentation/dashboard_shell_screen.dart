@@ -1188,15 +1188,17 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                               ),
                             ),
                             const SizedBox(width: 4),
-                            const Text(
-                              'Active Workspace',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
-                                letterSpacing: 0.2,
+                            const Flexible(
+                              child: Text(
+                                'Active Workspace',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                  letterSpacing: 0.2,
+                                ),
                               ),
                             ),
                           ],
@@ -1249,15 +1251,17 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text(
-                            'Active Workspace',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                              letterSpacing: 0.2,
+                          const Flexible(
+                            child: Text(
+                              'Active Workspace',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                                letterSpacing: 0.2,
+                              ),
                             ),
                           ),
                         ],

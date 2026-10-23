@@ -272,6 +272,42 @@ class CentralAdjuster {
   }
 
   /// <summary>
+  /// Creates a standardized, responsive enterprise page header matching BCC design tokens.
+  /// Automatically spans 100% width, gracefully handles actions wrapping, and adapts
+  /// between single-row (desktop) and stacked column (mobile/compact) layouts.
+  /// </summary>
+  /// <param name="icon">Leading category or feature icon.</param>
+  /// <param name="eyebrow">Upper category or module eyebrow tag (e.g. USER MANAGEMENT & DIRECTORY).</param>
+  /// <param name="title">Headline page title.</param>
+  /// <param name="subtitle">Descriptive subtext explaining the screen.</param>
+  /// <param name="actions">List of action buttons or controls (e.g. Add Member, Export, Refresh).</param>
+  /// <param name="isDark">Theme mode indicator.</param>
+  /// <param name="iconColor">Optional icon color override (defaults to royal blue).</param>
+  /// <param name="iconBgColor">Optional icon container background color.</param>
+  /// <returns>An [AdaptivePageHeader] widget.</returns>
+  static Widget pageHeader({
+    required IconData icon,
+    required String eyebrow,
+    required String title,
+    required String subtitle,
+    required List<Widget> actions,
+    required bool isDark,
+    Color? iconColor,
+    Color? iconBgColor,
+  }) {
+    return AdaptivePageHeader(
+      icon: icon,
+      eyebrow: eyebrow,
+      title: title,
+      subtitle: subtitle,
+      actions: actions,
+      isDark: isDark,
+      iconColor: iconColor,
+      iconBgColor: iconBgColor,
+    );
+  }
+
+  /// <summary>
   /// Creates an adaptive enterprise table container that provides smooth horizontal scrolling
   /// on compact/mobile screens while automatically expanding to 100% card width on maximized
   /// desktop monitors, eliminating awkward blank space and distributing column spacing.
@@ -887,3 +923,150 @@ class AdaptiveTableContainer extends StatelessWidget {
     );
   }
 }
+
+/// <summary>
+/// Standardized responsive page header matching the BCC web application design system.
+/// Spans 100% of the available width, elegantly aligns title metadata to the left and
+/// actions to the right, and automatically transitions to stacked wrap layout on narrow screens.
+/// </summary>
+class AdaptivePageHeader extends StatelessWidget {
+  /// Leading icon.
+  final IconData icon;
+
+  /// Eyebrow tag text above title (e.g. USER MANAGEMENT & DIRECTORY).
+  final String eyebrow;
+
+  /// Main headline title.
+  final String title;
+
+  /// Descriptive subtitle.
+  final String subtitle;
+
+  /// Action buttons or controls aligned to the right or wrapped below.
+  final List<Widget> actions;
+
+  /// Dark mode indicator.
+  final bool isDark;
+
+  /// Optional icon color override.
+  final Color? iconColor;
+
+  /// Optional icon container background color.
+  final Color? iconBgColor;
+
+  /// Creates an [AdaptivePageHeader].
+  const AdaptivePageHeader({
+    super.key,
+    required this.icon,
+    required this.eyebrow,
+    required this.title,
+    required this.subtitle,
+    required this.actions,
+    required this.isDark,
+    this.iconColor,
+    this.iconBgColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveIconColor = iconColor ?? AppColors.primary;
+    final effectiveIconBg = iconBgColor ?? AppColors.primary.withValues(alpha: 0.1);
+    final borderColor = isDark ? AppColors.outlineDark : AppColors.outlineLight;
+    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isStacked = constraints.maxWidth < 780;
+
+          final titleBlock = Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: effectiveIconBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: effectiveIconColor, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      eyebrow.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.06,
+                        color: isDark ? AppColors.gray400 : AppColors.gray600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.gray400 : AppColors.gray600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+
+          final actionsBlock = Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: actions,
+          );
+
+          if (isStacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                titleBlock,
+                const SizedBox(height: 14),
+                actionsBlock,
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(child: titleBlock),
+              const SizedBox(width: 16),
+              actionsBlock,
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+

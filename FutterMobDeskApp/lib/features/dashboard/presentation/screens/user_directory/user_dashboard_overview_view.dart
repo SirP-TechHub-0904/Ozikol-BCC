@@ -216,110 +216,44 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   // PAGE HEADER (1-to-1 with Angular AppPageHeader)
   // ===========================================================================
   Widget _buildPageHeader(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+    return CentralAdjuster.pageHeader(
+      icon: Icons.groups_rounded,
+      eyebrow: 'User Management & Directory',
+      title: 'Member Management & Directory Hub',
+      subtitle:
+          'Executive real-time intelligence, demographic distributions, category tiers, KPI scorecards, and forensic audit logs.',
+      isDark: isDark,
+      actions: [
+        OutlinedButton.icon(
+          onPressed: () => widget.onNavigateToTab?.call(1),
+          icon: const Icon(Icons.table_view_rounded, size: 16),
+          label: const Text('Directory Register'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+            side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+          ),
         ),
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 16,
-        runSpacing: 12,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.groups_rounded, color: AppColors.primary, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'USER MANAGEMENT & DIRECTORY',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.06,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Member Management & Directory Hub',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Executive real-time intelligence, demographic distributions, category tiers, KPI scorecards, and forensic audit logs.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        FilledButton.icon(
+          onPressed: () => widget.onNavigateToTab?.call(16),
+          icon: const Icon(Icons.person_add_rounded, size: 16),
+          label: const Text('Add Member'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => widget.onNavigateToTab?.call(1),
-                icon: const Icon(Icons.table_view_rounded, size: 16),
-                label: const Text('Directory Register'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                  side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(width: 10),
-              FilledButton.icon(
-                onPressed: () => widget.onNavigateToTab?.call(1),
-                icon: const Icon(Icons.person_add_rounded, size: 16),
-                label: const Text('Add Member'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                tooltip: 'Refresh Intelligence',
-                onPressed: _loadStats,
-              ),
-            ],
-          ),
-        ],
-      ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.refresh_rounded, size: 18),
+          tooltip: 'Refresh Intelligence',
+          onPressed: _loadStats,
+        ),
+      ],
     );
   }
 
@@ -548,28 +482,40 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '♂ Male $malePercent%',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF64748B),
+              Flexible(
+                child: Text(
+                  '♂ Male $malePercent%',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
               ),
-              const Text(
-                '100% Total Representation',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF94A3B8),
+              const SizedBox(width: 4),
+              const Flexible(
+                child: Text(
+                  '100% Total Representation',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF94A3B8),
+                  ),
                 ),
               ),
-              Text(
-                'Female $femalePercent% ♀',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF64748B),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  'Female $femalePercent% ♀',
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
               ),
             ],
@@ -703,19 +649,27 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                isUnlimited ? 'Enterprise Unlimited' : '$seatUsagePercent% Capacity Used',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF475569),
+              Flexible(
+                child: Text(
+                  isUnlimited ? 'Enterprise Unlimited' : '$seatUsagePercent% Capacity Used',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF475569),
+                  ),
                 ),
               ),
-              Text(
-                isUnlimited ? 'Full Platform Unrestricted' : 'Hard Cap Enforced by Central Admin',
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  color: Color(0xFF94A3B8),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  isUnlimited ? 'Full Platform Unrestricted' : 'Hard Cap Enforced by Central Admin',
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: Color(0xFF94A3B8),
+                  ),
                 ),
               ),
             ],
