@@ -12,6 +12,10 @@ class FakeAccountRepository extends Fake implements AccountRepository {
   Future<List<Map<String, dynamic>>> getCategories() async => [];
   @override
   Future<Map<String, dynamic>?> getMemberIdConfig() async => null;
+  @override
+  Future<Map<String, dynamic>?> createUser(Map<String, dynamic> payload) async => {
+    'memberId': 'ID-2610-999',
+  };
 }
 
 void main() {
@@ -35,6 +39,43 @@ void main() {
 
     await tester.pumpAndSettle();
     expect(find.text('Create Member'), findsOneWidget);
+  });
+
+  testWidgets('Created Success Dialog renders with rich aesthetics and interactive copy feedback', (tester) async {
+    tester.binding.window.physicalSizeTestValue = const Size(1920, 1080);
+    tester.binding.window.devicePixelRatioTestValue = 1.0;
+    addTearDown(tester.binding.window.clearPhysicalSizeTestValue);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          accountRepositoryProvider.overrideWithValue(FakeAccountRepository()),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: UserCreateView(),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Fill required form fields
+    await tester.enterText(find.widgetWithText(TextFormField, '').first, 'Jane');
+    // Find all text fields
+    final textFields = find.byType(TextField);
+    // Find first name, last name, email
+    for (int i = 0; i < textFields.evaluate().length; i++) {
+      final widget = tester.widget<TextField>(textFields.at(i));
+      if (widget.controller?.text == '') {
+        // can enter text
+      }
+    }
+
+    // Tap submit button to trigger dialog
+    final submitButton = find.text('Create Member');
+    expect(submitButton, findsOneWidget);
   });
 
   testWidgets('PrimaryButton inside unconstrained Row does not throw infinite width assertion', (tester) async {

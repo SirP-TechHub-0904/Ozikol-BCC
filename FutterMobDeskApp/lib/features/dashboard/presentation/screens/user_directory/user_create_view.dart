@@ -260,8 +260,9 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
   }
 
   /// <summary>
-  /// Displays a credential summary dialog after member creation,
-  /// with 1-click clipboard password copy, and buttons to either view in Directory or add another member.
+  /// Displays an ultra-clean, celebratory credential summary dialog after member creation,
+  /// featuring an initials avatar badge, 1-click clipboard copy with instant feedback,
+  /// password show/hide toggle, and responsive directory navigation.
   /// </summary>
   Future<void> _showCreatedSuccessDialog({
     required bool isDark,
@@ -276,216 +277,517 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
   }) async {
     final fullName = [if (title != null && title.isNotEmpty) title, firstName, lastName, if (suffix.isNotEmpty) suffix].join(' ');
 
+    bool obscurePassword = false;
+    bool isPasswordCopied = false;
+    bool isMemberIdCopied = false;
+
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
-        return AlertDialog(
-          backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          contentPadding: const EdgeInsets.all(24),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header badge + title
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 24),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Member Account Created',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'The new member has been successfully registered.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final fInitial = firstName.isNotEmpty ? firstName[0].toUpperCase() : '';
+            final lInitial = lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
+            final initials = (fInitial + lInitial).isNotEmpty ? (fInitial + lInitial) : 'U';
 
-                // Credentials summary card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildSummaryRow(label: 'Member Name', value: fullName, isDark: isDark),
-                      const Divider(height: 16),
-                      _buildSummaryRow(label: 'Member ID', value: memberId, isDark: isDark, isHighlight: true),
-                      const Divider(height: 16),
-                      _buildSummaryRow(label: 'Work Email', value: email, isDark: isDark),
-                      const Divider(height: 16),
-                      _buildSummaryRow(label: 'System Role', value: role, isDark: isDark),
-                      const Divider(height: 16),
-                      // Temporary password with copy button
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Temporary Password',
-                            style: TextStyle(fontSize: 12, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                password,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  fontFamily: 'monospace',
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              IconButton(
-                                icon: const Icon(Icons.copy_rounded, size: 16, color: AppColors.primary),
-                                tooltip: 'Copy password',
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                                onPressed: () {
-                                  Clipboard.setData(ClipboardData(text: password));
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Temporary password copied to clipboard!'),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
+            return AlertDialog(
+              backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+                  width: 1,
+                ),
+              ),
+              contentPadding: const EdgeInsets.all(26),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. Header with Emerald Badge, Title, and Active status
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [Color(0xFF10B981), Color(0xFF059669)],
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.28),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
+                          child: const Icon(Icons.check_circle_rounded, color: Colors.white, size: 26),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'Member Account Created',
+                                    style: TextStyle(
+                                      fontSize: 17.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.3,
+                                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(9999),
+                                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.25)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.circle, size: 6, color: Color(0xFF10B981)),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Active',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF059669),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Member profile registered & workspace access granted.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 2. Member Profile Preview Card
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFF0050E5), Color(0xFF3B82F6)],
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF0050E5).withValues(alpha: 0.25),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              initials,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  fullName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  email,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF),
+                              borderRadius: BorderRadius.circular(9999),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF475569) : const Color(0xFFC7D2FE),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.shield_outlined,
+                                  size: 12,
+                                  color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF0050E5),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  role,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF0050E5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
+                    ),
+                    const SizedBox(height: 12),
 
-                // Info banner
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.mail_outline_rounded, size: 16, color: AppColors.primary),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'A welcome email with these credentials has been queued for delivery.',
-                          style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray300 : const Color(0xFF1E40AF)),
+                    // 3. Member ID Spec Row
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.6) : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.badge_outlined, size: 16, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Member ID',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                            ),
+                          ),
+                          const Spacer(),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(6),
+                            onTap: () {
+                              Clipboard.setData(ClipboardData(text: memberId));
+                              setModalState(() => isMemberIdCopied = true);
+                              Future.delayed(const Duration(seconds: 2), () {
+                                if (ctx.mounted) setModalState(() => isMemberIdCopied = false);
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF3B82F6).withValues(alpha: 0.4) : const Color(0xFFBFDBFE),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    memberId,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      fontFamily: 'monospace',
+                                      color: Color(0xFF0050E5),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Icon(
+                                    isMemberIdCopied ? Icons.check_rounded : Icons.copy_rounded,
+                                    size: 13,
+                                    color: isMemberIdCopied ? const Color(0xFF10B981) : const Color(0xFF0050E5),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 4. Credential Vault: Temporary Password Container
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isDark
+                              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+                              : [const Color(0xFFF0FDF4), const Color(0xFFF8FAFC)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF10B981).withValues(alpha: 0.3) : const Color(0xFF86EFAC),
+                          width: 1.2,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Action buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    OutlinedButton(
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        _resetForm();
-                      },
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
-                        foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.vpn_key_rounded, size: 15, color: Color(0xFF059669)),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'TEMPORARY LOGIN PASSWORD',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                      color: isDark ? const Color(0xFF34D399) : const Color(0xFF065F46),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'One-time setup',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF92400E),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: SelectableText(
+                                    obscurePassword ? '••••••••••••' : password,
+                                    style: const TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w700,
+                                      fontFamily: 'monospace',
+                                      letterSpacing: 0.5,
+                                      color: Color(0xFF0050E5),
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    size: 16,
+                                    color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                                  ),
+                                  tooltip: obscurePassword ? 'Show password' : 'Hide password',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                                  onPressed: () => setModalState(() => obscurePassword = !obscurePassword),
+                                ),
+                                const SizedBox(width: 6),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    Clipboard.setData(ClipboardData(text: password));
+                                    setModalState(() => isPasswordCopied = true);
+                                    Future.delayed(const Duration(seconds: 2), () {
+                                      if (ctx.mounted) setModalState(() => isPasswordCopied = false);
+                                    });
+                                  },
+                                  icon: Icon(
+                                    isPasswordCopied ? Icons.check_circle_rounded : Icons.copy_rounded,
+                                    size: 13,
+                                    color: isPasswordCopied ? const Color(0xFF059669) : Colors.white,
+                                  ),
+                                  label: Text(
+                                    isPasswordCopied ? 'Copied!' : 'Copy',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: isPasswordCopied ? const Color(0xFF059669) : Colors.white,
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isPasswordCopied ? const Color(0xFFD1FAE5) : const Color(0xFF0050E5),
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      child: const Text('Add Another Member', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
                     ),
-                    const SizedBox(width: 10),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        _redirectToDirectory();
-                      },
-                      icon: const Icon(Icons.groups_rounded, size: 16, color: Colors.white),
-                      label: const Text('Go to Directory', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    const SizedBox(height: 12),
+
+                    // 5. Welcome Email Delivery Banner
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0050E5).withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF0050E5).withValues(alpha: 0.16)),
                       ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0050E5).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(Icons.mark_email_read_rounded, size: 15, color: Color(0xFF0050E5)),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Welcome Email Dispatched',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF1E3A8A),
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  'Login credentials & sign-in instructions queued for delivery.',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isDark ? AppColors.gray400 : const Color(0xFF475569),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 6. Action Buttons: Add Another Member + Go to Directory
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              _resetForm();
+                            },
+                            icon: const Icon(Icons.person_add_rounded, size: 16),
+                            label: const Text(
+                              'Add Another Member',
+                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 11),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              side: BorderSide(
+                                color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1),
+                                width: 1.2,
+                              ),
+                              foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              _redirectToDirectory();
+                            },
+                            icon: const Icon(Icons.groups_rounded, size: 16, color: Colors.white),
+                            label: const Text(
+                              'Go to Directory',
+                              style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              elevation: 2,
+                              shadowColor: AppColors.primary.withValues(alpha: 0.35),
+                              padding: const EdgeInsets.symmetric(vertical: 11),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
-    );
-  }
-
-  Widget _buildSummaryRow({
-    required String label,
-    required String value,
-    required bool isDark,
-    bool isHighlight = false,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isHighlight ? FontWeight.w800 : FontWeight.w600,
-            color: isHighlight
-                ? AppColors.primary
-                : (isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
-          ),
-        ),
-      ],
     );
   }
 
