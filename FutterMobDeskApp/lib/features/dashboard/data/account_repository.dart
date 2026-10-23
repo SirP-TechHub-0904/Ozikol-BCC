@@ -500,7 +500,7 @@ class AccountRepository {
   /// <summary>
   /// Generates a secure ASP.NET Identity tokenized password setup/activation link.
   /// </summary>
-  Future<Map<String, dynamic>?> generateResetLink(String userId) async {
+  Future<Map<String, dynamic>> generateResetLink(String userId) async {
     try {
       final response = await _dio.post('api/UsersApi/$userId/generate-reset-link');
       if (response.statusCode == 200 && response.data != null) {
@@ -509,9 +509,329 @@ class AccountRepository {
           return Map<String, dynamic>.from(data['data'] as Map);
         }
       }
-      return null;
+      return {};
     } catch (_) {
-      return null;
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Retrieves real-time executive dashboard statistics for tenant user management.
+  /// </summary>
+  Future<Map<String, dynamic>> getDashboardStats() async {
+    try {
+      final response = await _dio.get('api/UsersApi/dashboard-stats');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Updates an existing user category.
+  /// </summary>
+  Future<bool> updateCategory(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('api/UsersApi/categories/$id', data: data);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Deletes a user category.
+  /// </summary>
+  Future<bool> deleteCategory(String id) async {
+    try {
+      final response = await _dio.delete('api/UsersApi/categories/$id');
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Retrieves configured registration form fields.
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getRegistrationFields() async {
+    try {
+      final response = await _dio.get('api/RegistrationFormApi/fields');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        List<dynamic> list = [];
+        if (data is Map && data['data'] is List) {
+          list = data['data'] as List;
+        } else if (data is List) {
+          list = data;
+        }
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// <summary>
+  /// Retrieves the self-registration and onboarding policy.
+  /// </summary>
+  Future<Map<String, dynamic>> getRegistrationPolicy() async {
+    try {
+      final response = await _dio.get('api/RegistrationFormApi/policy');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Saves the self-registration and onboarding policy.
+  /// </summary>
+  Future<bool> saveRegistrationPolicy(Map<String, dynamic> policy) async {
+    try {
+      final response = await _dio.post('api/RegistrationFormApi/policy', data: policy);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Creates a new custom question/field for member onboarding.
+  /// </summary>
+  Future<bool> createRegistrationField(Map<String, dynamic> field) async {
+    try {
+      final response = await _dio.post('api/RegistrationFormApi/fields', data: field);
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Updates a custom registration field.
+  /// </summary>
+  Future<bool> updateRegistrationField(String id, Map<String, dynamic> field) async {
+    try {
+      final response = await _dio.put('api/RegistrationFormApi/fields/$id', data: field);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Deletes a custom registration field.
+  /// </summary>
+  Future<bool> deleteRegistrationField(String id) async {
+    try {
+      final response = await _dio.delete('api/RegistrationFormApi/fields/$id');
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Retrieves branding, authentication screen layout, and wallpaper settings.
+  /// </summary>
+  Future<Map<String, dynamic>> getBrandSettings() async {
+    try {
+      final response = await _dio.get('api/SettingsApi/brand');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Updates authentication screen layout, wallpaper, and narrative branding.
+  /// </summary>
+  Future<bool> updateBrandSettings(Map<String, dynamic> brand) async {
+    try {
+      final response = await _dio.put('api/SettingsApi/brand', data: brand);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Retrieves performance evaluation metric indicators.
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getKpiIndicators() async {
+    try {
+      final response = await _dio.get('api/UsersApi/kpi/indicators');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        List<dynamic> list = [];
+        if (data is Map && data['data'] is List) {
+          list = data['data'] as List;
+        } else if (data is List) {
+          list = data;
+        }
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// <summary>
+  /// Creates a new KPI indicator rubric.
+  /// </summary>
+  Future<bool> createKpiIndicator(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('api/UsersApi/kpi/indicators', data: data);
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Updates a KPI indicator rubric.
+  /// </summary>
+  Future<bool> updateKpiIndicator(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('api/UsersApi/kpi/indicators/$id', data: data);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Deletes a KPI indicator rubric.
+  /// </summary>
+  Future<bool> deleteKpiIndicator(String id) async {
+    try {
+      final response = await _dio.delete('api/UsersApi/kpi/indicators/$id');
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Retrieves KPI evaluation periods.
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getKpiPeriods() async {
+    try {
+      final response = await _dio.get('api/UsersApi/kpi/periods');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        List<dynamic> list = [];
+        if (data is Map && data['data'] is List) {
+          list = data['data'] as List;
+        } else if (data is List) {
+          list = data;
+        }
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// <summary>
+  /// Creates a new KPI evaluation cycle period.
+  /// </summary>
+  Future<bool> createKpiPeriod(String title, String description) async {
+    try {
+      final response = await _dio.post('api/UsersApi/kpi/periods', data: {'title': title, 'description': description});
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Retrieves the member performance leaderboard for a given period.
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getKpiLeaderboard(String period) async {
+    try {
+      final response = await _dio.get('api/UsersApi/kpi/leaderboard', queryParameters: {'period': period});
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        List<dynamic> list = [];
+        if (data is Map && data['data'] is List) {
+          list = data['data'] as List;
+        } else if (data is List) {
+          list = data;
+        }
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// <summary>
+  /// Submits an evaluation grade scorecard for a member.
+  /// </summary>
+  Future<bool> gradeMemberKpi(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('api/UsersApi/kpi/grade', data: data);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Retrieves comprehensive user management and directory settings.
+  /// </summary>
+  Future<Map<String, dynamic>> getUserManagementSettings() async {
+    try {
+      final response = await _dio.get('api/UsersApi/settings');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Updates user management and directory settings.
+  /// </summary>
+  Future<bool> saveUserManagementSettings(Map<String, dynamic> settings) async {
+    try {
+      final response = await _dio.put('api/UsersApi/settings', data: settings);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
     }
   }
 }
