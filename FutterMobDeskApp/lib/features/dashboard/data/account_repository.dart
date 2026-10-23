@@ -398,4 +398,120 @@ class AccountRepository {
       return true;
     }
   }
+
+  /// <summary>
+  /// Fetches complete 360-degree member dossier including category, roles, KPI history, notes, and activity.
+  /// </summary>
+  Future<Map<String, dynamic>> getUserDossier(String userId) async {
+    try {
+      final response = await _dio.get('api/UsersApi/$userId/dossier');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Creates a new user profile with role assignment.
+  /// </summary>
+  Future<bool> createUser(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post('api/UsersApi', data: data);
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Updates profile information for a user.
+  /// </summary>
+  Future<bool> updateUserProfile(String userId, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('api/UsersApi/$userId', data: data);
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Toggles user account status (Active vs Suspended).
+  /// </summary>
+  Future<bool> toggleUserStatus(String userId, bool isActive) async {
+    try {
+      final response = await _dio.put('api/UsersApi/$userId/status', data: {'isActive': isActive});
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Resets a user's password directly from the Admin console with temporary password and email instructions.
+  /// </summary>
+  Future<bool> adminResetPassword(
+    String userId,
+    String newPassword, {
+    bool mustChangePassword = true,
+    bool sendEmailNotification = true,
+  }) async {
+    try {
+      final response = await _dio.put(
+        'api/UsersApi/$userId/reset-password',
+        data: {
+          'newPassword': newPassword,
+          'mustChangePassword': mustChangePassword,
+          'sendEmailNotification': sendEmailNotification,
+        },
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Generates a 6-digit OTP code for password reset or activation and queues email/SMS.
+  /// </summary>
+  Future<Map<String, dynamic>?> generateUserOtp(String userId) async {
+    try {
+      final response = await _dio.post('api/UsersApi/$userId/generate-otp');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// <summary>
+  /// Generates a secure ASP.NET Identity tokenized password setup/activation link.
+  /// </summary>
+  Future<Map<String, dynamic>?> generateResetLink(String userId) async {
+    try {
+      final response = await _dio.post('api/UsersApi/$userId/generate-reset-link');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
 }

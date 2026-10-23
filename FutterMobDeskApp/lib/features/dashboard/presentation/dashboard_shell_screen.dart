@@ -1671,7 +1671,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         case 0:
           return UserDashboardOverviewView(workspace: activeWs);
         case 1:
-          return AllMembersView(workspace: activeWs);
+          return AllMembersView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+          );
         case 2:
           return UserCategoriesView(workspace: activeWs);
         case 3:
