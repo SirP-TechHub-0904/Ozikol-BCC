@@ -1669,7 +1669,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     if (isAdministration) {
       switch (_selectedNavIndex) {
         case 0:
-          return UserDashboardOverviewView(workspace: activeWs);
+          return UserDashboardOverviewView(
+            workspace: activeWs,
+            onNavigateToTab: (idx, {filterStatus}) => setState(() => _selectedNavIndex = idx),
+          );
         case 1:
           return AllMembersView(
             workspace: activeWs,
