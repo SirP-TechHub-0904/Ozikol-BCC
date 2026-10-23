@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'page_header.dart';
+
+export 'page_header.dart';
 
 /// Screen categorization types based on available layout width.
 enum DeviceScreenType {
@@ -981,127 +984,23 @@ class AdaptivePageHeader extends StatelessWidget {
     this.onBack,
   });
 
+  /// <summary>
+  /// Delegates to the standardized [PageHeader] mold so legacy callers inherit the
+  /// shared responsive behavior (description hiding, single-line title, wrapping actions).
+  /// Legacy [actions] widgets are passed through as trailing widgets; [onBack] maps to
+  /// a history-back control.
+  /// </summary>
   @override
   Widget build(BuildContext context) {
-    final effectiveIconColor = iconColor ?? AppColors.primary;
-    final effectiveIconBg = iconBgColor ?? AppColors.primary.withValues(alpha: 0.1);
-    final borderColor = isDark ? AppColors.outlineDark : AppColors.outlineLight;
-    final bgColor = isDark ? AppColors.surfaceDark : AppColors.surfaceLight;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isStacked = constraints.maxWidth < 780;
-
-          final titleBlock = Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (onBack != null) ...[
-                Tooltip(
-                  message: 'Back',
-                  child: InkWell(
-                    onTap: onBack,
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: isDark ? AppColors.outlineDark : const Color(0xFFBFDBFE),
-                        ),
-                      ),
-                      child: const Icon(Icons.arrow_back_rounded, size: 20, color: AppColors.primary),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-              ],
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: effectiveIconBg,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: effectiveIconColor, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      eyebrow.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.06,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-
-          final actionsBlock = Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: actions,
-          );
-
-          if (isStacked) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                titleBlock,
-                const SizedBox(height: 14),
-                actionsBlock,
-              ],
-            );
-          }
-
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: titleBlock),
-              const SizedBox(width: 16),
-              actionsBlock,
-            ],
-          );
-        },
-      ),
+    return PageHeader(
+      icon: icon,
+      eyebrow: eyebrow,
+      title: title,
+      description: subtitle,
+      back: onBack != null ? PageHeaderBack.previous(onBack!) : PageHeaderBack.none,
+      trailing: actions,
+      iconColor: iconColor,
+      iconBgColor: iconBgColor,
     );
   }
 }
