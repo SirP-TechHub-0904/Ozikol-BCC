@@ -7,8 +7,8 @@ import '../../../data/account_repository.dart';
 
 /// <summary>
 /// Screen presenting Global Security Policies under Identity & Access Control.
-/// Allows administrators to govern password complexity, MFA enforcement, session timeouts,
-/// and brute-force account lockout thresholds across the tenant workspace.
+/// Configures system-wide password complexity thresholds, account brute-force lockouts,
+/// and multi-factor enforcement options with 1-to-1 operational parity to the web client.
 /// </summary>
 class GlobalSecurityPoliciesView extends ConsumerStatefulWidget {
   /// The active workspace context.
@@ -23,7 +23,8 @@ class GlobalSecurityPoliciesView extends ConsumerStatefulWidget {
 
 class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPoliciesView> {
   bool _isLoading = true;
-  bool _isSaving = false;
+  bool _isSavingPassword = false;
+  bool _isSavingMfa = false;
 
   // Password Policy
   double _minPasswordLength = 8.0;
@@ -31,16 +32,18 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
   bool _requireLowercase = true;
   bool _requireNumbers = true;
   bool _requireSpecialCharacters = true;
+  int _maxFailedAccessAttempts = 5;
+  int _defaultLockoutTimeSpanMinutes = 15;
 
   // MFA Policy
-  String _mfaPolicy = 'Optional'; // 'Disabled', 'Optional', 'MandatoryAdmins', 'MandatoryAll'
-  int _rememberDeviceDays = 30;
-
-  // Session & Lockout Policy
-  int _sessionIdleTimeout = 60;
-  int _maxConcurrentSessions = 3;
-  int _lockoutThreshold = 5;
-  int _lockoutDuration = 15;
+  bool _enforceMfaForAllUsers = false;
+  bool _enforceMfaForAdmins = false;
+  final List<String> _allowedMethods = [
+    'Google Authenticator',
+    'Microsoft Authenticator',
+    'Email OTP',
+    'SMS OTP',
+  ];
 
   @override
   void initState() {
@@ -51,55 +54,96 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
   Future<void> _loadPolicies() async {
     setState(() => _isLoading = true);
     final repo = ref.read(accountRepositoryProvider);
-    final policies = await repo.getSecurityPolicies();
 
-    if (mounted) {
-      setState(() {
-        _minPasswordLength = (policies['minPasswordLength'] as num?)?.toDouble() ?? 8.0;
-        _requireUppercase = policies['requireUppercase'] ?? true;
-        _requireLowercase = policies['requireLowercase'] ?? true;
-        _requireNumbers = policies['requireNumbers'] ?? true;
-        _requireSpecialCharacters = policies['requireSpecialCharacters'] ?? true;
-        _mfaPolicy = policies['mfaPolicy'] ?? 'Optional';
-        _rememberDeviceDays = policies['rememberDeviceDays'] ?? 30;
-        _sessionIdleTimeout = policies['sessionIdleTimeoutMinutes'] ?? 60;
-        _maxConcurrentSessions = policies['maxConcurrentSessions'] ?? 3;
-        _lockoutThreshold = policies['lockoutThresholdAttempts'] ?? 5;
-        _lockoutDuration = policies['lockoutDurationMinutes'] ?? 15;
-        _isLoading = false;
-      });
+    try {
+      final pwdFuture = repo.getPasswordPolicy();
+      final mfaFuture = repo.getMfaPolicy();
+      final results = await Future.wait([pwdFuture, mfaFuture]);
+
+      final pwd = results[0];
+      final mfa = results[1];
+
+      if (mounted) {
+        setState(() {
+          _minPasswordLength = (pwd['minLength'] as num?)?.toDouble() ??
+              (pwd['minPasswordLength'] as num?)?.toDouble() ??
+              8.0;
+          _requireUppercase = pwd['requireUppercase'] ?? true;
+          _requireLowercase = pwd['requireLowercase'] ?? true;
+          _requireNumbers = pwd['requireDigit'] ?? pwd['requireNumbers'] ?? true;
+          _requireSpecialCharacters = pwd['requireNonAlphanumeric'] ?? pwd['requireSpecialCharacters'] ?? true;
+          _maxFailedAccessAttempts = (pwd['maxFailedAccessAttempts'] as num?)?.toInt() ?? 5;
+          _defaultLockoutTimeSpanMinutes = (pwd['defaultLockoutTimeSpanMinutes'] as num?)?.toInt() ??
+              (pwd['lockoutDurationMinutes'] as num?)?.toInt() ??
+              15;
+
+          _enforceMfaForAllUsers = mfa['enforceMfaForAllUsers'] ?? false;
+          _enforceMfaForAdmins = mfa['enforceMfaForAdmins'] ?? false;
+
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  Future<void> _savePolicies() async {
-    setState(() => _isSaving = true);
+  Future<void> _savePasswordPolicy() async {
+    setState(() => _isSavingPassword = true);
+    final messenger = ScaffoldMessenger.of(context);
     final repo = ref.read(accountRepositoryProvider);
 
-    final success = await repo.updateSecurityPolicies({
-      'minPasswordLength': _minPasswordLength.toInt(),
+    final success = await repo.updatePasswordPolicy({
+      'minLength': _minPasswordLength.toInt(),
       'requireUppercase': _requireUppercase,
       'requireLowercase': _requireLowercase,
-      'requireNumbers': _requireNumbers,
-      'requireSpecialCharacters': _requireSpecialCharacters,
-      'mfaPolicy': _mfaPolicy,
-      'rememberDeviceDays': _rememberDeviceDays,
-      'sessionIdleTimeoutMinutes': _sessionIdleTimeout,
-      'maxConcurrentSessions': _maxConcurrentSessions,
-      'lockoutThresholdAttempts': _lockoutThreshold,
-      'lockoutDurationMinutes': _lockoutDuration,
+      'requireDigit': _requireNumbers,
+      'requireNonAlphanumeric': _requireSpecialCharacters,
+      'maxFailedAccessAttempts': _maxFailedAccessAttempts,
+      'defaultLockoutTimeSpanMinutes': _defaultLockoutTimeSpanMinutes,
     });
 
     if (mounted) {
-      setState(() => _isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
+      setState(() => _isSavingPassword = false);
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
-            success ? 'Global security policies updated successfully' : 'Failed to update security policies',
+            success ? 'Password complexity policies updated successfully' : 'Failed to save password policy',
           ),
           backgroundColor: success ? AppColors.success : AppColors.error,
         ),
       );
     }
+  }
+
+  Future<void> _saveMfaPolicy() async {
+    setState(() => _isSavingMfa = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(accountRepositoryProvider);
+
+    final success = await repo.updateMfaPolicy({
+      'enforceMfaForAllUsers': _enforceMfaForAllUsers,
+      'enforceMfaForAdmins': _enforceMfaForAdmins,
+    });
+
+    if (mounted) {
+      setState(() => _isSavingMfa = false);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            success ? 'Multi-factor authentication policy updated successfully' : 'Failed to save MFA policy',
+          ),
+          backgroundColor: success ? AppColors.success : AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _saveAllPolicies() async {
+    await _savePasswordPolicy();
+    await _saveMfaPolicy();
   }
 
   @override
@@ -110,17 +154,37 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
       return const Center(child: CircularProgressIndicator());
     }
 
+    final isSavingAny = _isSavingPassword || _isSavingMfa;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'SECURITY STANDARDS',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.8,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   Text(
                     'Global Security Policies',
                     style: TextStyle(
@@ -129,358 +193,9 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
                       color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
-                    'Enterprise governance: passwords, multi-factor enforcement, and session life cycle',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                    ),
-                  ),
-                ],
-              ),
-              PrimaryButton(
-                text: _isSaving ? 'Saving...' : 'Save Policies',
-                icon: const Icon(Icons.save_outlined, size: 18),
-                onPressed: _isSaving ? null : _savePolicies,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Password Complexity Policy
-          _buildPolicyCard(
-            isDark: isDark,
-            title: 'Password Complexity & Hygiene',
-            subtitle: 'Enforce strong entropy rules across all user accounts',
-            icon: Icons.password_outlined,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Minimum Password Length',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                        ),
-                      ),
-                      Text(
-                        '${_minPasswordLength.toInt()} characters',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Slider(
-                    value: _minPasswordLength,
-                    min: 8,
-                    max: 24,
-                    divisions: 16,
-                    label: '${_minPasswordLength.toInt()}',
-                    activeColor: AppColors.primary,
-                    onChanged: (val) => setState(() => _minPasswordLength = val),
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-              _buildSwitchTile(
-                title: 'Require Uppercase Letter (A-Z)',
-                subtitle: 'At least one uppercase character must be included',
-                value: _requireUppercase,
-                onChanged: (val) => setState(() => _requireUppercase = val),
-                isDark: isDark,
-              ),
-              const Divider(height: 24),
-              _buildSwitchTile(
-                title: 'Require Lowercase Letter (a-z)',
-                subtitle: 'At least one lowercase character must be included',
-                value: _requireLowercase,
-                onChanged: (val) => setState(() => _requireLowercase = val),
-                isDark: isDark,
-              ),
-              const Divider(height: 24),
-              _buildSwitchTile(
-                title: 'Require Numeric Digit (0-9)',
-                subtitle: 'At least one number must be included',
-                value: _requireNumbers,
-                onChanged: (val) => setState(() => _requireNumbers = val),
-                isDark: isDark,
-              ),
-              const Divider(height: 24),
-              _buildSwitchTile(
-                title: 'Require Special Symbol (!@#\$%^&*)',
-                subtitle: 'At least one special non-alphanumeric character is required',
-                value: _requireSpecialCharacters,
-                onChanged: (val) => setState(() => _requireSpecialCharacters = val),
-                isDark: isDark,
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Multi-Factor Authentication (MFA)
-          _buildPolicyCard(
-            isDark: isDark,
-            title: 'Multi-Factor Authentication (MFA / 2FA)',
-            subtitle: 'Govern two-factor authentication adoption and enforcement',
-            icon: Icons.shield_outlined,
-            children: [
-              Text(
-                'MFA Enforcement Mode',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  borderRadius: BorderRadius.circular(10),
-                  color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: _mfaPolicy,
-                    items: const [
-                      DropdownMenuItem(value: 'Disabled', child: Text('Disabled - Do not allow 2FA')),
-                      DropdownMenuItem(value: 'Optional', child: Text('Optional - Users may self-enroll')),
-                      DropdownMenuItem(
-                        value: 'MandatoryAdmins',
-                        child: Text('Mandatory for Administrators (Recommended)'),
-                      ),
-                      DropdownMenuItem(value: 'MandatoryAll', child: Text('Mandatory for All Members')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setState(() => _mfaPolicy = val);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Remember Trusted Device Duration',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                        ),
-                      ),
-                      Text(
-                        'Days before 2FA challenge is re-prompted on trusted devices',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  DropdownButton<int>(
-                    value: _rememberDeviceDays,
-                    items: const [
-                      DropdownMenuItem(value: 7, child: Text('7 days')),
-                      DropdownMenuItem(value: 14, child: Text('14 days')),
-                      DropdownMenuItem(value: 30, child: Text('30 days')),
-                      DropdownMenuItem(value: 60, child: Text('60 days')),
-                      DropdownMenuItem(value: 90, child: Text('90 days')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setState(() => _rememberDeviceDays = val);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Session & Brute-Force Lockout Policy
-          _buildPolicyCard(
-            isDark: isDark,
-            title: 'Sessions & Brute-Force Defense',
-            subtitle: 'Control session lifetimes and automated brute-force protection',
-            icon: Icons.timer_outlined,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Session Inactivity Timeout',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                        ),
-                      ),
-                      Text(
-                        'Automatically lock or terminate idle client sessions',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  DropdownButton<int>(
-                    value: _sessionIdleTimeout,
-                    items: const [
-                      DropdownMenuItem(value: 15, child: Text('15 minutes')),
-                      DropdownMenuItem(value: 30, child: Text('30 minutes')),
-                      DropdownMenuItem(value: 60, child: Text('1 hour')),
-                      DropdownMenuItem(value: 120, child: Text('2 hours')),
-                      DropdownMenuItem(value: 480, child: Text('8 hours')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setState(() => _sessionIdleTimeout = val);
-                    },
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Max Concurrent Sessions per User',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                        ),
-                      ),
-                      Text(
-                        'Maximum simultaneously connected devices per account',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  DropdownButton<int>(
-                    value: _maxConcurrentSessions,
-                    items: const [
-                      DropdownMenuItem(value: 1, child: Text('1 session')),
-                      DropdownMenuItem(value: 2, child: Text('2 sessions')),
-                      DropdownMenuItem(value: 3, child: Text('3 sessions')),
-                      DropdownMenuItem(value: 5, child: Text('5 sessions')),
-                      DropdownMenuItem(value: 10, child: Text('10 sessions')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setState(() => _maxConcurrentSessions = val);
-                    },
-                  ),
-                ],
-              ),
-              const Divider(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Failed Login Lockout Threshold',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                        ),
-                      ),
-                      Text(
-                        'Consecutive failed attempts before account is temporarily locked',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  DropdownButton<int>(
-                    value: _lockoutThreshold,
-                    items: const [
-                      DropdownMenuItem(value: 3, child: Text('3 attempts')),
-                      DropdownMenuItem(value: 5, child: Text('5 attempts')),
-                      DropdownMenuItem(value: 10, child: Text('10 attempts')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setState(() => _lockoutThreshold = val);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPolicyCard({
-    required bool isDark,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
+                    'Configure system-wide password complexity thresholds, account brute-force lockouts, and multi-factor enforcement options.',
                     style: TextStyle(
                       fontSize: 13,
                       color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -488,23 +203,329 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
                   ),
                 ],
               ),
+              Row(
+                children: [
+                  PrimaryButton(
+                    text: isSavingAny ? 'Saving...' : 'Save All Policies',
+                    icon: const Icon(Icons.save_outlined, size: 18),
+                    onPressed: isSavingAny ? null : _saveAllPolicies,
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.refresh_rounded),
+                    tooltip: 'Refresh Policies',
+                    onPressed: _loadPolicies,
+                  ),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 20),
-          ...children,
+          const SizedBox(height: 24),
+
+          // Two Panels (Password Complexity & Multi-Factor Authentication)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isStacked = constraints.maxWidth < 900;
+
+              final passwordPanel = _buildPasswordPanel(isDark);
+              final mfaPanel = _buildMfaPanel(isDark);
+
+              if (isStacked) {
+                return Column(
+                  children: [
+                    passwordPanel,
+                    const SizedBox(height: 20),
+                    mfaPanel,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: passwordPanel),
+                  const SizedBox(width: 20),
+                  Expanded(child: mfaPanel),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSwitchTile({
+  Widget _buildPasswordPanel(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.password_rounded, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Password Complexity Controls',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          // Min length slider
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Minimum Character Length',
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${_minPasswordLength.toInt()} characters',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: _minPasswordLength,
+            min: 6,
+            max: 30,
+            divisions: 24,
+            activeColor: AppColors.primary,
+            onChanged: (val) => setState(() => _minPasswordLength = val),
+          ),
+          const Divider(height: 20),
+
+          // Switches
+          _buildSwitchRow(
+            title: 'Require Uppercase Letter',
+            description: 'At least one uppercase character (A-Z) in the password.',
+            value: _requireUppercase,
+            onChanged: (val) => setState(() => _requireUppercase = val),
+            isDark: isDark,
+          ),
+          const Divider(height: 20),
+
+          _buildSwitchRow(
+            title: 'Require Lowercase Letter',
+            description: 'At least one lowercase character (a-z) in the password.',
+            value: _requireLowercase,
+            onChanged: (val) => setState(() => _requireLowercase = val),
+            isDark: isDark,
+          ),
+          const Divider(height: 20),
+
+          _buildSwitchRow(
+            title: 'Require Numeric Digit',
+            description: 'At least one number (0-9) in the password.',
+            value: _requireNumbers,
+            onChanged: (val) => setState(() => _requireNumbers = val),
+            isDark: isDark,
+          ),
+          const Divider(height: 20),
+
+          _buildSwitchRow(
+            title: 'Require Non-Alphanumeric Symbol',
+            description: 'At least one special character (e.g. @, #, \$, %) in the password.',
+            value: _requireSpecialCharacters,
+            onChanged: (val) => setState(() => _requireSpecialCharacters = val),
+            isDark: isDark,
+          ),
+          const Divider(height: 20),
+
+          // Lockout Controls
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Max Failed Attempts',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? AppColors.gray300 : AppColors.gray700),
+                    ),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<int>(
+                      initialValue: _maxFailedAccessAttempts,
+                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                      items: [3, 5, 8, 10, 15]
+                          .map((n) => DropdownMenuItem(value: n, child: Text('$n attempts')))
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _maxFailedAccessAttempts = val);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Lockout Duration',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? AppColors.gray300 : AppColors.gray700),
+                    ),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<int>(
+                      initialValue: _defaultLockoutTimeSpanMinutes,
+                      decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
+                      items: [5, 15, 30, 60, 120]
+                          .map((m) => DropdownMenuItem(value: m, child: Text('$m minutes')))
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) setState(() => _defaultLockoutTimeSpanMinutes = val);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              PrimaryButton(
+                text: _isSavingPassword ? 'Saving...' : 'Save Password Policy',
+                icon: const Icon(Icons.save_outlined, size: 16),
+                onPressed: _isSavingPassword ? null : _savePasswordPolicy,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMfaPanel(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.phonelink_lock_rounded, color: Color(0xFFA855F7), size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Multi-Factor Authentication (MFA)',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          _buildSwitchRow(
+            title: 'Enforce MFA Globally',
+            description: 'Every platform user is required to set up and verify through MFA before accessing workspaces.',
+            value: _enforceMfaForAllUsers,
+            onChanged: (val) => setState(() => _enforceMfaForAllUsers = val),
+            isDark: isDark,
+          ),
+          const Divider(height: 20),
+
+          _buildSwitchRow(
+            title: 'Enforce MFA for Administrators',
+            description: 'Requires users in Admin, SuperAdmin, or Identity Manager groups to complete secondary challenges.',
+            value: _enforceMfaForAdmins,
+            onChanged: (val) => setState(() => _enforceMfaForAdmins = val),
+            isDark: isDark,
+          ),
+          const Divider(height: 20),
+
+          Text(
+            'Allowed Methods Matrix',
+            style: TextStyle(
+              fontSize: 13.5,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _allowedMethods.map((m) {
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF10B981)),
+                    const SizedBox(width: 6),
+                    Text(
+                      m,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 26),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              PrimaryButton(
+                text: _isSavingMfa ? 'Saving...' : 'Save MFA Policy',
+                icon: const Icon(Icons.save_outlined, size: 16),
+                onPressed: _isSavingMfa ? null : _saveMfaPolicy,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSwitchRow({
     required String title,
-    required String subtitle,
+    required String description,
     required bool value,
     required ValueChanged<bool> onChanged,
     required bool isDark,
   }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Column(
@@ -513,26 +534,28 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w600,
                   color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                subtitle,
+                description,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11.5,
                   color: isDark ? AppColors.gray400 : AppColors.gray600,
+                  height: 1.35,
                 ),
               ),
             ],
           ),
         ),
-        Switch(
+        const SizedBox(width: 12),
+        Switch.adaptive(
           value: value,
+          activeTrackColor: AppColors.primary,
           onChanged: onChanged,
-          activeThumbColor: AppColors.primary,
         ),
       ],
     );

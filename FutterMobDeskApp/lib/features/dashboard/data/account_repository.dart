@@ -341,11 +341,11 @@ class AccountRepository {
   }
 
   /// <summary>
-  /// Fetches workspace global identity security policies (password complexity, MFA enforcement, session limits).
+  /// Fetches real-time identity security telemetry metrics (total users, locked accounts, retry alerts, MFA adoption).
   /// </summary>
-  Future<Map<String, dynamic>> getSecurityPolicies() async {
+  Future<Map<String, dynamic>> getIdentityTelemetry() async {
     try {
-      final response = await _dio.get('api/IdentityApi/security-policies');
+      final response = await _dio.get('api/IdentityApi/telemetry');
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         if (data is Map && data['data'] is Map) {
@@ -354,18 +354,188 @@ class AccountRepository {
           return Map<String, dynamic>.from(data);
         }
       }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Fetches the 6-tier system role catalog with assigned members, scopes, and category metadata.
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getRolesCatalog() async {
+    try {
+      final response = await _dio.get('api/IdentityApi/roles/catalog');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        List<dynamic> list = [];
+        if (data is Map && data['data'] is List) {
+          list = data['data'] as List;
+        } else if (data is List) {
+          list = data;
+        }
+        return list.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// <summary>
+  /// Assigns a system role to a designated user account.
+  /// </summary>
+  Future<bool> assignRole(String userId, String roleName, {String? featureArea}) async {
+    try {
+      final response = await _dio.post(
+        'api/IdentityApi/roles/assign',
+        data: {
+          'userId': userId,
+          'roleName': roleName,
+          'featureArea': featureArea,
+        },
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Unassigns a system role from a user account.
+  /// </summary>
+  Future<bool> unassignRole(String userId, String roleName) async {
+    try {
+      final response = await _dio.post(
+        'api/IdentityApi/roles/unassign',
+        data: {
+          'userId': userId,
+          'roleName': roleName,
+        },
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Saves updated security feature roles and assigns system access tiers.
+  /// </summary>
+  Future<bool> saveUserFeatureRoles(
+    String userId, {
+    required bool isAdmin,
+    required String systemRole,
+    List<Map<String, dynamic>>? featureRoles,
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/IdentityApi/users/$userId/feature-roles',
+        data: {
+          'isAdmin': isAdmin,
+          'systemRole': systemRole,
+          'featureRoles': featureRoles ?? [],
+        },
+      );
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Fetches workspace global identity password complexity policies.
+  /// </summary>
+  Future<Map<String, dynamic>> getPasswordPolicy() async {
+    try {
+      final response = await _dio.get('api/IdentityApi/password-policy');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Updates workspace password complexity policy.
+  /// </summary>
+  Future<bool> updatePasswordPolicy(Map<String, dynamic> policy) async {
+    try {
+      final response = await _dio.put('api/IdentityApi/password-policy', data: policy);
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Fetches workspace multi-factor authentication enforcement policy.
+  /// </summary>
+  Future<Map<String, dynamic>> getMfaPolicy() async {
+    try {
+      final response = await _dio.get('api/IdentityApi/mfa-policy');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Updates workspace multi-factor authentication enforcement policy.
+  /// </summary>
+  Future<bool> updateMfaPolicy(Map<String, dynamic> policy) async {
+    try {
+      final response = await _dio.put('api/IdentityApi/mfa-policy', data: policy);
+      return response.statusCode == 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Fetches workspace global identity security policies (password complexity and MFA enforcement combined).
+  /// </summary>
+  Future<Map<String, dynamic>> getSecurityPolicies() async {
+    try {
+      final pwdFuture = getPasswordPolicy();
+      final mfaFuture = getMfaPolicy();
+      final results = await Future.wait([pwdFuture, mfaFuture]);
+
+      final pwd = results[0];
+      final mfa = results[1];
+
       return {
-        'minPasswordLength': 8,
-        'requireUppercase': true,
-        'requireLowercase': true,
-        'requireNumbers': true,
-        'requireSpecialCharacters': true,
-        'mfaPolicy': 'Optional', // 'Disabled', 'Optional', 'MandatoryAdmins', 'MandatoryAll'
+        'minPasswordLength': pwd['minLength'] ?? pwd['minPasswordLength'] ?? 8,
+        'requireUppercase': pwd['requireUppercase'] ?? true,
+        'requireLowercase': pwd['requireLowercase'] ?? true,
+        'requireNumbers': pwd['requireDigit'] ?? pwd['requireNumbers'] ?? true,
+        'requireSpecialCharacters': pwd['requireNonAlphanumeric'] ?? pwd['requireSpecialCharacters'] ?? true,
+        'lockoutThresholdAttempts': pwd['maxFailedAccessAttempts'] ?? pwd['lockoutThresholdAttempts'] ?? 5,
+        'lockoutDurationMinutes': pwd['defaultLockoutTimeSpanMinutes'] ?? pwd['lockoutDurationMinutes'] ?? 15,
+        'enforceMfaForAllUsers': mfa['enforceMfaForAllUsers'] ?? false,
+        'enforceMfaForAdmins': mfa['enforceMfaForAdmins'] ?? false,
+        'mfaPolicy': (mfa['enforceMfaForAllUsers'] == true)
+            ? 'MandatoryAll'
+            : (mfa['enforceMfaForAdmins'] == true ? 'MandatoryAdmins' : 'Optional'),
+        'allowedMethods': mfa['allowedMethods'] ?? ['Google Authenticator', 'Microsoft Authenticator', 'Email OTP', 'SMS OTP'],
         'rememberDeviceDays': 30,
         'sessionIdleTimeoutMinutes': 60,
         'maxConcurrentSessions': 3,
-        'lockoutThresholdAttempts': 5,
-        'lockoutDurationMinutes': 15,
       };
     } catch (_) {
       return {
@@ -375,6 +545,9 @@ class AccountRepository {
         'requireNumbers': true,
         'requireSpecialCharacters': true,
         'mfaPolicy': 'Optional',
+        'enforceMfaForAllUsers': false,
+        'enforceMfaForAdmins': false,
+        'allowedMethods': ['Google Authenticator', 'Microsoft Authenticator', 'Email OTP', 'SMS OTP'],
         'rememberDeviceDays': 30,
         'sessionIdleTimeoutMinutes': 60,
         'maxConcurrentSessions': 3,
@@ -385,14 +558,85 @@ class AccountRepository {
   }
 
   /// <summary>
-  /// Updates global security policies.
+  /// Updates global security policies across password complexity and multi-factor enforcement.
   /// </summary>
   Future<bool> updateSecurityPolicies(Map<String, dynamic> policies) async {
     try {
-      final response = await _dio.put('api/IdentityApi/security-policies', data: policies);
+      final pwdReq = {
+        'minLength': policies['minPasswordLength'] ?? 8,
+        'requireUppercase': policies['requireUppercase'] ?? true,
+        'requireLowercase': policies['requireLowercase'] ?? true,
+        'requireDigit': policies['requireNumbers'] ?? true,
+        'requireNonAlphanumeric': policies['requireSpecialCharacters'] ?? true,
+        'maxFailedAccessAttempts': policies['lockoutThresholdAttempts'] ?? 5,
+        'defaultLockoutTimeSpanMinutes': policies['lockoutDurationMinutes'] ?? 15,
+      };
+
+      final mfaPolicyMode = policies['mfaPolicy']?.toString() ?? 'Optional';
+      final mfaReq = {
+        'enforceMfaForAllUsers': policies['enforceMfaForAllUsers'] ?? (mfaPolicyMode == 'MandatoryAll'),
+        'enforceMfaForAdmins': policies['enforceMfaForAdmins'] ?? (mfaPolicyMode == 'MandatoryAdmins' || mfaPolicyMode == 'MandatoryAll'),
+      };
+
+      final pwdResult = await updatePasswordPolicy(pwdReq);
+      final mfaResult = await updateMfaPolicy(mfaReq);
+      return pwdResult && mfaResult;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Fetches authenticated member personal profile information from PortalUsersApi.
+  /// </summary>
+  Future<Map<String, dynamic>> getPersonalProfile() async {
+    try {
+      final response = await _dio.get('api/PortalUsersApi/me');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Updates authenticated member personal profile details.
+  /// </summary>
+  Future<bool> updatePersonalProfile(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put('api/PortalUsersApi/me', data: data);
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
-      return true; // Graceful simulation fallback
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Fetches personal security and workspace activity audit log history.
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getPersonalActivity() async {
+    try {
+      final response = await _dio.get('api/PortalUsersApi/my-activity');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        List<dynamic> list = [];
+        if (data is Map && data['data'] is List) {
+          list = data['data'] as List;
+        } else if (data is List) {
+          list = data;
+        }
+        return list.map((item) => Map<String, dynamic>.from(item as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
     }
   }
 
