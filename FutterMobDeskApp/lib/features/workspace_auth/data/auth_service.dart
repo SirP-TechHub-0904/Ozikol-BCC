@@ -152,10 +152,14 @@ class AuthService {
       }
       return 'If an account exists, a reset code has been sent.';
     } on DioException catch (e) {
-      final msg = e.response?.data is Map && e.response?.data['message'] != null
-          ? e.response?.data['message'].toString()
-          : 'Unable to dispatch reset instructions.';
-      throw Exception(msg);
+      final data = e.response?.data;
+      String? msg;
+      if (data is Map) {
+        msg = data['message']?.toString() ??
+            data['Message']?.toString() ??
+            data['error']?.toString();
+      }
+      throw Exception(msg ?? (e.response != null ? 'Unable to dispatch reset instructions (${e.response?.statusCode}).' : 'Network error: could not connect to server.'));
     }
   }
 
@@ -178,6 +182,7 @@ class AuthService {
         ApiConstants.resetPasswordEndpoint,
         data: {
           'email': email.trim(),
+          'otp': token.trim(),
           'token': token.trim(),
           'newPassword': newPassword,
         },

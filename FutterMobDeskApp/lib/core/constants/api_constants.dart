@@ -28,8 +28,8 @@ class ApiConstants {
   static const String resendOtpEndpoint = '/api/Auth/resend-otp';
   static const String verifyLoginMfaEndpoint = '/api/Auth/login/verify-mfa';
   static const String resendLoginMfaEndpoint = '/api/Auth/login/resend-mfa';
-  static const String forgotPasswordEndpoint = '/api/Auth/password/forgot';
-  static const String resetPasswordEndpoint = '/api/Auth/password/reset';
+  static const String forgotPasswordEndpoint = '/api/Auth/password/request-otp';
+  static const String resetPasswordEndpoint = '/api/Auth/password/reset-with-otp';
   static const String forceChangePasswordEndpoint = '/api/Auth/password/force-change';
   static const String changePasswordEndpoint = '/api/Auth/password/change';
   static const String mfaStatusEndpoint = '/api/Auth/mfa';
