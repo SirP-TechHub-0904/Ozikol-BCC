@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -357,79 +356,10 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     );
   }
 
-  /// <summary>
-  /// Generates UTF-8 CSV spreadsheet and opens it in system default spreadsheet viewer.
-  /// </summary>
-  Future<void> _exportExcel() async {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final path = await ExportService.exportToCsv(
-      filename: 'Member_Directory_$today',
-      columns: _getExportColumns(),
-      data: _filteredUsers,
-    );
-    if (path != null) {
-      final fileName = path.split(Platform.pathSeparator).last;
-      _showToast('Spreadsheet saved to Downloads: $fileName');
-    } else {
-      _showToast('No records to export.');
-    }
-  }
+
 
   /// <summary>
-  /// Generates Word document (.doc) with complete formatted HTML tables.
   /// </summary>
-  Future<void> _exportWord() async {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final org = widget.workspace?.organizationName ?? 'Business Command Center';
-    final path = await ExportService.exportToWord(
-      filename: 'Member_Register_$today',
-      title: 'Official Member Directory Register',
-      organizationName: org,
-      columns: _getExportColumns(),
-      data: _filteredUsers,
-      filterSummary: _searchQuery.isNotEmpty ? 'Search: "$_searchQuery"' : null,
-    );
-    if (path != null) {
-      final fileName = path.split(Platform.pathSeparator).last;
-      _showToast('Word document saved to Downloads: $fileName');
-    } else {
-      _showToast('No records to export.');
-    }
-  }
-
-  /// <summary>
-  /// Exports members belonging to a specific organizational category tier using in-app preview.
-  /// </summary>
-  Future<void> _exportSpecificCategory(Map<String, dynamic> cat) async {
-    final catId = cat['id']?.toString() ?? '';
-    final catName = cat['name']?.toString() ?? 'Category';
-    final categoryMembers = _allUsers.where((u) => u['bcpUserCategoryId']?.toString() == catId).toList();
-    final org = widget.workspace?.organizationName ?? 'Business Command Center';
-
-    await ExportService.showInAppPdfPreview(
-      context: context,
-      title: 'Member Register - $catName',
-      organizationName: org,
-      columns: _getExportColumns(),
-      data: categoryMembers,
-      filterSummary: 'Category: $catName (${categoryMembers.length} members)',
-    );
-  }
-
-  /// <summary>
-  /// Displays a brief snackbar notification.
-  /// </summary>
-  void _showToast(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -716,93 +646,12 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                 ),
               ),
 
-              // Export Buttons (PDF, Excel, Word, Category Export Menu)
-              Row(
-                children: [
-                  _buildExportButton(
-                    icon: Icons.picture_as_pdf_outlined,
-                    label: 'PDF',
-                    onTap: _exportPdf,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildExportButton(
-                    icon: Icons.table_view_outlined,
-                    label: 'Excel',
-                    onTap: _exportExcel,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildExportButton(
-                    icon: Icons.description_outlined,
-                    label: 'Word',
-                    onTap: _exportWord,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Category Export Menu
-                  PopupMenuButton<Map<String, dynamic>>(
-                    tooltip: 'Export Specific Category',
-                    onSelected: _exportSpecificCategory,
-                    itemBuilder: (context) {
-                      if (_categories.isEmpty) {
-                        return [
-                          const PopupMenuItem(
-                            enabled: false,
-                            child: Text('No categories created', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          )
-                        ];
-                      }
-                      return _categories.map((cat) {
-                        return PopupMenuItem<Map<String, dynamic>>(
-                          value: cat,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Color(int.tryParse(
-                                          (cat['colorCode'] ?? '#0050e5').replaceAll('#', '0xFF')) ??
-                                      0xFF0050E5),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(cat['name']?.toString() ?? 'Category', style: const TextStyle(fontSize: 12.5)),
-                            ],
-                          ),
-                        );
-                      }).toList();
-                    },
-                    child: Container(
-                      height: 32,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceDark : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(7),
-                        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.category_outlined, size: 15, color: isDark ? Colors.white70 : Colors.black87),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Export Category',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white70 : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.expand_more_rounded, size: 16),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+              // Export Action (PDF Only)
+              _buildExportButton(
+                icon: Icons.picture_as_pdf_outlined,
+                label: 'Export PDF',
+                onTap: _exportPdf,
+                isDark: isDark,
               ),
             ],
           ),

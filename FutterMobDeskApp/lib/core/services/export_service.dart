@@ -8,7 +8,7 @@ import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// <summary>
-/// Column specification for exporting tabular data across CSV, Word, and native PDF formats.
+/// Column specification for exporting tabular data across native PDF and document formats.
 /// </summary>
 class ExportColumn {
   /// <summary>
@@ -37,15 +37,14 @@ class ExportColumn {
 }
 
 /// <summary>
-/// Enterprise export service for generating CSV spreadsheets, Microsoft Word documents,
-/// and native in-app vector PDF preview and print capabilities.
+/// Enterprise export service for generating official vector PDF registers and in-app preview/print workflows.
 /// Operates 100% inside the app without requiring an external browser.
 /// </summary>
 class ExportService {
   /// <summary>
   /// Resolves the canonical user downloads directory or system temporary directory as fallback.
   /// </summary>
-  static Directory _getDestinationDirectory() {
+  static Directory getDestinationDirectory() {
     try {
       if (Platform.isWindows) {
         final userProfile = Platform.environment['USERPROFILE'];
@@ -71,7 +70,50 @@ class ExportService {
   }
 
   /// <summary>
-  /// Exports member records to a UTF-8 BOM CSV spreadsheet file and opens it.
+  /// Sanitizes text strings to safe character representations for Helvetica Type 1 PDF fonts.
+  /// </summary>
+  static String _cleanText(String text) {
+    return text
+        .replaceAll('•', '-')
+        .replaceAll('—', '-')
+        .replaceAll('–', '-')
+        .replaceAll('“', '"')
+        .replaceAll('”', '"')
+        .replaceAll('‘', "'")
+        .replaceAll('’', "'");
+  }
+
+  /// <summary>
+  /// Saves a binary PDF document directly to the user's Downloads directory and optionally opens it.
+  /// </summary>
+  static Future<String?> savePdfToDownloads({
+    required String filename,
+    required Uint8List bytes,
+    bool openFile = false,
+  }) async {
+    final targetDir = getDestinationDirectory();
+    final file = File('${targetDir.path}${Platform.pathSeparator}$filename');
+    await file.writeAsBytes(bytes);
+
+    if (openFile) {
+      try {
+        if (Platform.isWindows) {
+          Process.run('cmd', ['/c', 'start', '', file.absolute.path]);
+        } else {
+          await launchUrl(Uri.file(file.absolute.path), mode: LaunchMode.externalApplication);
+        }
+      } catch (_) {
+        try {
+          await launchUrl(Uri.file(file.absolute.path));
+        } catch (_) {}
+      }
+    }
+
+    return file.absolute.path;
+  }
+
+  /// <summary>
+  /// Exports tabular records to a UTF-8 BOM CSV spreadsheet file in the Downloads directory.
   /// </summary>
   /// <param name="filename">The base target filename without extension.</param>
   /// <param name="columns">The column specifications.</param>
@@ -102,13 +144,11 @@ class ExportService {
       }).join(',');
     }).toList();
 
-    // UTF-8 BOM for automatic Excel character encoding recognition
     final csvContent = '\uFEFF${[headers, ...rows].join('\r\n')}';
-    final targetDir = _getDestinationDirectory();
+    final targetDir = getDestinationDirectory();
     final file = File('${targetDir.path}${Platform.pathSeparator}$filename.csv');
     await file.writeAsString(csvContent);
 
-    // Launch with system default application
     try {
       if (Platform.isWindows) {
         Process.run('cmd', ['/c', 'start', '', file.absolute.path]);
@@ -198,7 +238,7 @@ class ExportService {
 </html>
 ''';
 
-    final targetDir = _getDestinationDirectory();
+    final targetDir = getDestinationDirectory();
     final file = File('${targetDir.path}${Platform.pathSeparator}$filename.doc');
     await file.writeAsString(docContent);
 
@@ -221,12 +261,6 @@ class ExportService {
   /// Generates a binary PDF document in memory using pure vector layout.
   /// Formatted in A4 Landscape with BCC branding, metadata headers, and pagination.
   /// </summary>
-  /// <param name="title">Document heading title.</param>
-  /// <param name="organizationName">The tenant organization or workspace brand.</param>
-  /// <param name="columns">The column definitions.</param>
-  /// <param name="data">The list of member records.</param>
-  /// <param name="filterSummary">Optional filter criteria description.</param>
-  /// <returns>Binary PDF byte array.</returns>
   static Future<Uint8List> buildPdfDocument({
     required String title,
     required String organizationName,
@@ -237,14 +271,21 @@ class ExportService {
     final pdf = pw.Document();
     final nowStr = DateFormat('MMMM d, yyyy h:mm a').format(DateTime.now());
 
-    final headers = columns.map((c) => c.header).toList();
+    final headers = columns.map((c) => _cleanText(c.header)).toList();
     final tableData = data.map((row) {
       return columns.map((c) {
         dynamic val = row[c.key];
-        if (c.format != null) return c.format!(val, row);
-        if (val == null) return '-';
-        if (val is List) return val.join(', ');
-        return val.toString();
+        String strVal;
+        if (c.format != null) {
+          strVal = c.format!(val, row);
+        } else if (val == null) {
+          strVal = '-';
+        } else if (val is List) {
+          strVal = val.join(', ');
+        } else {
+          strVal = val.toString();
+        }
+        return _cleanText(strVal);
       }).toList();
     }).toList();
 
@@ -269,7 +310,7 @@ class ExportService {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                      title,
+                      _cleanText(title),
                       style: pw.TextStyle(
                         fontSize: 16,
                         fontWeight: pw.FontWeight.bold,
@@ -278,7 +319,7 @@ class ExportService {
                     ),
                     pw.SizedBox(height: 3),
                     pw.Text(
-                      '$organizationName  |  Generated: $nowStr${filterSummary != null ? '  |  $filterSummary' : ''}',
+                      _cleanText('$organizationName  |  Generated: $nowStr${filterSummary != null ? '  |  $filterSummary' : ''}'),
                       style: const pw.TextStyle(
                         fontSize: 8.5,
                         color: PdfColor.fromInt(0xFF64748B),
@@ -371,15 +412,9 @@ class ExportService {
 
   /// <summary>
   /// Opens a modern in-app modal preview displaying the generated PDF document.
-  /// The user can zoom, pan, print directly to hardware printers, or save to PDF file.
+  /// Includes in-app zoom, pan, print, and one-click Save to Downloads.
   /// Operates 100% inside the desktop/mobile app without opening a web browser.
   /// </summary>
-  /// <param name="context">The Flutter build context.</param>
-  /// <param name="title">Document heading title.</param>
-  /// <param name="organizationName">The tenant organization or workspace brand.</param>
-  /// <param name="columns">The column definitions.</param>
-  /// <param name="data">The list of member records.</param>
-  /// <param name="filterSummary">Optional filter criteria description.</param>
   static Future<void> showInAppPdfPreview({
     required BuildContext context,
     required String title,
@@ -400,7 +435,8 @@ class ExportService {
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cleanFileName = '${title.replaceAll(RegExp(r'[^\w\s-]'), '').trim().replaceAll(RegExp(r'\s+'), '_')}.pdf';
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final cleanFileName = 'Member_Register_$today.pdf';
 
     await showDialog(
       context: context,
@@ -441,7 +477,7 @@ class ExportService {
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              '$organizationName • ${data.length} Members',
+                              '$organizationName - ${data.length} Members',
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 11,
@@ -450,6 +486,40 @@ class ExportService {
                           ],
                         ),
                       ),
+                      // Direct Save Button
+                      FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF0050E5),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: const Icon(Icons.download_rounded, size: 16),
+                        label: const Text(
+                          'Save to Downloads',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                        ),
+                        onPressed: () async {
+                          final bytes = await buildPdfDocument(
+                            title: title,
+                            organizationName: organizationName,
+                            columns: columns,
+                            data: data,
+                            filterSummary: filterSummary,
+                          );
+                          await savePdfToDownloads(filename: cleanFileName, bytes: bytes, openFile: true);
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Saved to Downloads: $cleanFileName'),
+                                backgroundColor: const Color(0xFF10B981),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 8),
                       IconButton(
                         icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
                         tooltip: 'Close Preview',
@@ -479,6 +549,72 @@ class ExportService {
                     loadingWidget: const Center(
                       child: CircularProgressIndicator(color: Color(0xFF0050E5)),
                     ),
+                    onError: (context, error) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(28),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFEFF6FF),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.picture_as_pdf_rounded, size: 48, color: Color(0xFF0050E5)),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Official Member Directory PDF Ready',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Vector PDF with ${data.length} records generated successfully.\nClick below to save and open in your default PDF reader.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDark ? Colors.white70 : const Color(0xFF64748B),
+                                  height: 1.4,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFF0050E5),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.download_rounded, size: 18),
+                                label: const Text('Save & Open PDF', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                                onPressed: () async {
+                                  final bytes = await buildPdfDocument(
+                                    title: title,
+                                    organizationName: organizationName,
+                                    columns: columns,
+                                    data: data,
+                                    filterSummary: filterSummary,
+                                  );
+                                  await savePdfToDownloads(filename: cleanFileName, bytes: bytes, openFile: true);
+                                  if (ctx.mounted) {
+                                    Navigator.of(ctx).pop();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Saved to Downloads: $cleanFileName'),
+                                        backgroundColor: const Color(0xFF10B981),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
