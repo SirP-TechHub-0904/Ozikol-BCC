@@ -95,10 +95,13 @@ public class GlobalExceptionHandlingMiddleware
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
+        var isDev = context.RequestServices.GetService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>()?.EnvironmentName == "Development";
+
         var responsePayload = new
         {
             success = false,
-            message = "An unexpected internal server error occurred. Our engineering team has been notified.",
+            message = isDev ? exception.Message : "An unexpected internal server error occurred. Our engineering team has been notified.",
+            details = isDev ? exception.ToString() : null,
             traceId = context.TraceIdentifier,
             statusCode = 500,
             occurredAtUtc = DateTime.UtcNow

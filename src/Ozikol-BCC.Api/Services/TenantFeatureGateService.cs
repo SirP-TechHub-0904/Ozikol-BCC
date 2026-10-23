@@ -153,7 +153,11 @@ namespace Ozikol_BCC.Api.Services
             }
 
             // Cache for 60 seconds so Central modifications propagate near-instantaneously
-            _memoryCache.Set(cacheKey, entitlements, TimeSpan.FromSeconds(60));
+            _memoryCache.Set(cacheKey, entitlements, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60),
+                Size = 1
+            });
             return entitlements;
         }
 

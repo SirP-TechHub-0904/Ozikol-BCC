@@ -62,14 +62,26 @@ class AuthService {
       if (data is Map) {
         msg = data['message']?.toString() ??
             data['Message']?.toString() ??
-            (data['errors'] is List && (data['errors'] as List).isNotEmpty
-                ? (data['errors'] as List).first.toString()
-                : null) ??
+            data['title']?.toString() ??
+            data['Title']?.toString() ??
             data['error']?.toString();
+
+        if (msg == null && data['errors'] != null) {
+          if (data['errors'] is List && (data['errors'] as List).isNotEmpty) {
+            msg = (data['errors'] as List).first.toString();
+          } else if (data['errors'] is Map && (data['errors'] as Map).isNotEmpty) {
+            final firstVal = (data['errors'] as Map).values.first;
+            if (firstVal is List && firstVal.isNotEmpty) {
+              msg = firstVal.first.toString();
+            } else {
+              msg = firstVal?.toString();
+            }
+          }
+        }
       } else if (data is String && data.isNotEmpty) {
         msg = data;
       }
-      throw Exception(msg ?? 'Invalid or expired 2FA code.');
+      throw Exception(msg ?? (e.response != null ? 'Server error (${e.response?.statusCode}): ${e.response?.statusMessage}' : 'Network error: ${e.message}'));
     }
   }
 
