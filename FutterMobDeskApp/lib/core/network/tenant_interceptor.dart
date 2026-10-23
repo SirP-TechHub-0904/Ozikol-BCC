@@ -36,10 +36,12 @@ class TenantInterceptor extends Interceptor {
     final activeWorkspace = await _storageService.getActiveWorkspace();
 
     if (activeWorkspace != null) {
-      if (!options.headers.containsKey(ApiConstants.headerTenantKey)) {
+      final hasExplicitTenantKey = options.headers.containsKey(ApiConstants.headerTenantKey);
+      if (!hasExplicitTenantKey) {
         options.headers[ApiConstants.headerTenantKey] = activeWorkspace.tenantKey;
       }
-      if (!options.headers.containsKey(ApiConstants.headerTenantDomain)) {
+      if (!options.headers.containsKey(ApiConstants.headerTenantDomain) &&
+          (!hasExplicitTenantKey || options.headers[ApiConstants.headerTenantKey] == activeWorkspace.tenantKey)) {
         options.headers[ApiConstants.headerTenantDomain] =
             activeWorkspace.customDomain ?? activeWorkspace.primaryDomain;
       }

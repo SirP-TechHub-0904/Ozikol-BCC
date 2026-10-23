@@ -596,7 +596,48 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("User Identifier and Verification Code are required."));
             }
 
-            var user = await _userManager.FindByIdAsync(request.UserId);
+            string? resolvedTenantKey = request.TenantKey;
+            if (string.IsNullOrEmpty(resolvedTenantKey) && Request.Headers.TryGetValue("X-Tenant-Key", out var headerKey))
+            {
+                resolvedTenantKey = headerKey.FirstOrDefault();
+            }
+            if (string.IsNullOrEmpty(resolvedTenantKey))
+            {
+                resolvedTenantKey = _tenantProvider?.CurrentTenant;
+            }
+
+            // Probe across active tenants in Master Catalog if tenant key was not explicitly provided
+            if (string.IsNullOrEmpty(resolvedTenantKey) && _masterCatalogDbContext != null && _serviceScopeFactory != null)
+            {
+                var activeTenants = await _masterCatalogDbContext.MasterTenantCatalogs.Where(t => t.IsActive).ToListAsync();
+                foreach (var t in activeTenants)
+                {
+                    using var probeScope = _serviceScopeFactory.CreateScope();
+                    var probeTenantProvider = probeScope.ServiceProvider.GetRequiredService<ITenantProvider>();
+                    using var tScope = probeTenantProvider.BeginScope(t.TenantKey);
+                    var probeUserManager = probeScope.ServiceProvider.GetRequiredService<UserManager<Profile>>();
+                    var probeUser = await probeUserManager.FindByIdAsync(request.UserId);
+                    if (probeUser != null)
+                    {
+                        resolvedTenantKey = t.TenantKey;
+                        break;
+                    }
+                }
+            }
+
+            using var execScope = (!string.IsNullOrEmpty(resolvedTenantKey) && _serviceScopeFactory != null)
+                ? _serviceScopeFactory.CreateScope()
+                : null;
+
+            var activeTenantProvider = execScope?.ServiceProvider.GetService<ITenantProvider>() ?? _tenantProvider;
+            using var activeTenantScope = (!string.IsNullOrEmpty(resolvedTenantKey) && activeTenantProvider != null)
+                ? activeTenantProvider.BeginScope(resolvedTenantKey)
+                : null;
+
+            var activeUserManager = execScope?.ServiceProvider.GetService<UserManager<Profile>>() ?? _userManager;
+            var activeDbContext = execScope?.ServiceProvider.GetService<DashboardDbContext>() ?? _dbContext;
+
+            var user = await activeUserManager.FindByIdAsync(request.UserId);
             if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User not found."));
 
             var provider = user.PreferredTwoFactorProvider;
@@ -605,10 +646,10 @@ namespace Ozikol_BCC.Api.Controllers
             bool isValid = false;
 
             // 1. Check if backup codes matches
-            if (!string.IsNullOrWhiteSpace(request.Code) && _dbContext != null)
+            if (!string.IsNullOrWhiteSpace(request.Code) && activeDbContext != null)
             {
                 var hashedInput = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(request.Code.Trim())));
-                var backupCode = await _dbContext.BcpUserMfaBackupCodes
+                var backupCode = await activeDbContext.BcpUserMfaBackupCodes
                     .FirstOrDefaultAsync(c => c.UserId == user.Id && c.HashedCode == hashedInput && !c.IsUsed);
 
                 if (backupCode != null)
@@ -616,8 +657,8 @@ namespace Ozikol_BCC.Api.Controllers
                     isValid = true;
                     backupCode.IsUsed = true;
                     backupCode.UsedAtUtc = DateTime.UtcNow;
-                    await _dbContext.SaveChangesAsync();
-                    _logger.LogInformation("🔑 [MFA] User [{Email}] used a single-use backup recovery code.", user.Email);
+                    await activeDbContext.SaveChangesAsync();
+                    _logger.LogInformation("🔑 [MFA] User [{Email}] used a single-use backup recovery code in workspace [{Tenant}].", user.Email, resolvedTenantKey);
                 }
             }
 
@@ -626,11 +667,11 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 if (provider == BcpTwoFactorProvider.GoogleAuthenticator || provider == BcpTwoFactorProvider.MicrosoftAuthenticator)
                 {
-                    isValid = await _userManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider, request.Code);
+                    isValid = await activeUserManager.VerifyTwoFactorTokenAsync(user, TokenOptions.DefaultAuthenticatorProvider, request.Code);
                 }
                 else
                 {
-                    var tokenVal = await _userManager.GetAuthenticationTokenAsync(user, "OzikolMfa", "LoginMfaCode");
+                    var tokenVal = await activeUserManager.GetAuthenticationTokenAsync(user, "OzikolMfa", "LoginMfaCode");
                     if (!string.IsNullOrEmpty(tokenVal))
                     {
                         var parts = tokenVal.Split(':');
@@ -641,7 +682,7 @@ namespace Ozikol_BCC.Api.Controllers
                                 if (DateTime.UtcNow.Ticks <= expiryTicks)
                                 {
                                     isValid = true;
-                                    await _userManager.RemoveAuthenticationTokenAsync(user, "OzikolMfa", "LoginMfaCode");
+                                    await activeUserManager.RemoveAuthenticationTokenAsync(user, "OzikolMfa", "LoginMfaCode");
                                 }
                             }
                         }
@@ -654,9 +695,9 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (!isValid)
             {
-                if (_dbContext != null)
+                if (activeDbContext != null)
                 {
-                    _dbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
+                    activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                     {
                         Id = Guid.CreateVersion7(),
                         Email = user.Email!,
@@ -665,7 +706,7 @@ namespace Ozikol_BCC.Api.Controllers
                         UserAgent = userAgent,
                         Timestamp = DateTime.UtcNow
                     });
-                    await _dbContext.SaveChangesAsync();
+                    await activeDbContext.SaveChangesAsync();
                 }
                 return BadRequest(ApiResponse<object>.FailureResponse("Incorrect or expired two-factor verification code."));
             }
@@ -674,10 +715,10 @@ namespace Ozikol_BCC.Api.Controllers
             var jwtId = Guid.NewGuid().ToString();
             string newDeviceTrustToken = string.Empty;
 
-            if (_dbContext != null)
+            if (activeDbContext != null)
             {
                 // Track active sessions limit (up to 3)
-                var activeSessions = await _dbContext.BcpUserDevices
+                var activeSessions = await activeDbContext.BcpUserDevices
                     .Where(d => d.UserId == user.Id && d.IsActiveSession)
                     .OrderBy(d => d.LastUsedAt)
                     .ToListAsync();
@@ -689,7 +730,7 @@ namespace Ozikol_BCC.Api.Controllers
 
                 newDeviceTrustToken = Guid.NewGuid().ToString("N");
 
-                _dbContext.BcpUserDevices.Add(new BcpUserDevice
+                activeDbContext.BcpUserDevices.Add(new BcpUserDevice
                 {
                     Id = Guid.CreateVersion7(),
                     UserId = user.Id,
@@ -703,7 +744,7 @@ namespace Ozikol_BCC.Api.Controllers
                     IsActiveSession = true
                 });
 
-                _dbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
+                activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                 {
                     Id = Guid.CreateVersion7(),
                     Email = user.Email!,
@@ -713,14 +754,13 @@ namespace Ozikol_BCC.Api.Controllers
                     Timestamp = DateTime.UtcNow
                 });
 
-                await _dbContext.SaveChangesAsync();
+                await activeDbContext.SaveChangesAsync();
             }
 
             user.LastLogin = DateTime.UtcNow;
-            await _userManager.UpdateAsync(user);
+            await activeUserManager.UpdateAsync(user);
 
-            var resolvedTenantKey = _tenantProvider?.CurrentTenant;
-            var userRoles = (await _userManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
+            var userRoles = (await activeUserManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
             var token = await GenerateJwtTokenAsync(user, resolvedTenantKey, userRoles, jwtId);
 
             var responseData = new LoginResponseModel
@@ -757,7 +797,47 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("User Identifier is required."));
             }
 
-            var user = await _userManager.FindByIdAsync(request.UserId);
+            string? resolvedTenantKey = request.TenantKey;
+            if (string.IsNullOrEmpty(resolvedTenantKey) && Request.Headers.TryGetValue("X-Tenant-Key", out var headerKey))
+            {
+                resolvedTenantKey = headerKey.FirstOrDefault();
+            }
+            if (string.IsNullOrEmpty(resolvedTenantKey))
+            {
+                resolvedTenantKey = _tenantProvider?.CurrentTenant;
+            }
+
+            if (string.IsNullOrEmpty(resolvedTenantKey) && _masterCatalogDbContext != null && _serviceScopeFactory != null)
+            {
+                var activeTenants = await _masterCatalogDbContext.MasterTenantCatalogs.Where(t => t.IsActive).ToListAsync();
+                foreach (var t in activeTenants)
+                {
+                    using var probeScope = _serviceScopeFactory.CreateScope();
+                    var probeTenantProvider = probeScope.ServiceProvider.GetRequiredService<ITenantProvider>();
+                    using var tScope = probeTenantProvider.BeginScope(t.TenantKey);
+                    var probeUserManager = probeScope.ServiceProvider.GetRequiredService<UserManager<Profile>>();
+                    var probeUser = await probeUserManager.FindByIdAsync(request.UserId);
+                    if (probeUser != null)
+                    {
+                        resolvedTenantKey = t.TenantKey;
+                        break;
+                    }
+                }
+            }
+
+            using var execScope = (!string.IsNullOrEmpty(resolvedTenantKey) && _serviceScopeFactory != null)
+                ? _serviceScopeFactory.CreateScope()
+                : null;
+
+            var activeTenantProvider = execScope?.ServiceProvider.GetService<ITenantProvider>() ?? _tenantProvider;
+            using var activeTenantScope = (!string.IsNullOrEmpty(resolvedTenantKey) && activeTenantProvider != null)
+                ? activeTenantProvider.BeginScope(resolvedTenantKey)
+                : null;
+
+            var activeUserManager = execScope?.ServiceProvider.GetService<UserManager<Profile>>() ?? _userManager;
+            var activeDbContext = execScope?.ServiceProvider.GetService<DashboardDbContext>() ?? _dbContext;
+
+            var user = await activeUserManager.FindByIdAsync(request.UserId);
             if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User not found."));
 
             var provider = user.PreferredTwoFactorProvider;
@@ -766,13 +846,13 @@ namespace Ozikol_BCC.Api.Controllers
             // Generate fresh 6-digit MFA OTP
             var mfaOtp = Random.Shared.Next(100000, 999999).ToString();
             var expiryTicks = DateTime.UtcNow.AddMinutes(5).Ticks;
-            await _userManager.SetAuthenticationTokenAsync(user, "OzikolMfa", "LoginMfaCode", $"{mfaOtp}:{expiryTicks}");
+            await activeUserManager.SetAuthenticationTokenAsync(user, "OzikolMfa", "LoginMfaCode", $"{mfaOtp}:{expiryTicks}");
 
-            if (_dbContext != null)
+            if (activeDbContext != null)
             {
                 if (provider == BcpTwoFactorProvider.Email)
                 {
-                    _dbContext.BcpEmailQueue.Add(new BcpEmailQueue
+                    activeDbContext.BcpEmailQueue.Add(new BcpEmailQueue
                     {
                         Id = Guid.CreateVersion7(),
                         RelatedUserId = user.Id,
@@ -788,7 +868,7 @@ namespace Ozikol_BCC.Api.Controllers
                 }
                 else if (provider == BcpTwoFactorProvider.SMS && !string.IsNullOrEmpty(user.PhoneNumber))
                 {
-                    _dbContext.BcpSmsQueue.Add(new BcpSmsQueue
+                    activeDbContext.BcpSmsQueue.Add(new BcpSmsQueue
                     {
                         Id = Guid.CreateVersion7(),
                         RelatedUserId = user.Id,
@@ -801,7 +881,7 @@ namespace Ozikol_BCC.Api.Controllers
                     });
                 }
 
-                await _dbContext.SaveChangesAsync();
+                await activeDbContext.SaveChangesAsync();
             }
 
             var friendlyProvider = provider == BcpTwoFactorProvider.SMS ? "SMS" : "Email";
@@ -1887,11 +1967,13 @@ namespace Ozikol_BCC.Api.Controllers
         public string UserId { get; set; } = string.Empty;
         public string Code { get; set; } = string.Empty;
         public bool TrustDevice { get; set; } = false;
+        public string? TenantKey { get; set; }
     }
 
     public class ResendLoginMfaRequest
     {
         public string UserId { get; set; } = string.Empty;
+        public string? TenantKey { get; set; }
     }
 
     public class ConfigureMfaRequest

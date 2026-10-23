@@ -42,6 +42,7 @@ class AuthService {
           'userId': userId,
           'code': code.trim(),
           'trustDevice': trustDevice,
+          'tenantKey': tenantKey,
         },
         options: Options(headers: {ApiConstants.headerTenantKey: tenantKey}),
       );
@@ -85,7 +86,10 @@ class AuthService {
     try {
       final response = await _dio.post(
         'api/Auth/login/resend-mfa',
-        data: {'userId': userId},
+        data: {
+          'userId': userId,
+          'tenantKey': tenantKey,
+        },
         options: Options(headers: {ApiConstants.headerTenantKey: tenantKey}),
       );
 
