@@ -59,8 +59,18 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      height: 54,
-                      alignment: Alignment.center,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? (isDark ? AppColors.primary.withAlpha(35) : AppColors.primary.withAlpha(20))
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isActive ? AppColors.primary.withAlpha(100) : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
@@ -69,8 +79,8 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
                             Positioned(
                               left: 0,
                               child: Container(
-                                width: 4,
-                                height: 28,
+                                width: 4.5,
+                                height: 34,
                                 decoration: BoxDecoration(
                                   color: AppColors.primary,
                                   borderRadius: const BorderRadius.only(
@@ -79,30 +89,83 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primary.withAlpha(120),
+                                      color: AppColors.primary.withAlpha(180),
                                       blurRadius: 8,
+                                      spreadRadius: 1,
                                     ),
                                   ],
                                 ),
                               ),
                             ),
 
-                          // Workspace Avatar with active highlight border
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isActive ? AppColors.primary : Colors.transparent,
-                                width: 2,
+                          // Avatar + Subtext
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: isActive ? AppColors.primary : Colors.transparent,
+                                    width: isActive ? 2.5 : 1,
+                                  ),
+                                  boxShadow: isActive
+                                      ? [
+                                          BoxShadow(
+                                            color: AppColors.primary.withAlpha(90),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Opacity(
+                                  opacity: isActive ? 1.0 : 0.85,
+                                  child: TenantAvatar(
+                                    iconUrl: ws.iconUrl,
+                                    logoUrl: ws.logoUrl,
+                                    name: ws.displayName,
+                                    size: 38,
+                                    borderRadius: 12,
+                                  ),
+                                ),
                               ),
-                            ),
-                            child: TenantAvatar(
-                              iconUrl: ws.iconUrl,
-                              logoUrl: ws.logoUrl,
-                              name: ws.displayName,
-                              size: 44,
-                              borderRadius: 14,
-                            ),
+                              const SizedBox(height: 3),
+                              if (isActive)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(4),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.primary.withAlpha(100),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Text(
+                                    'ACTIVE',
+                                    style: TextStyle(
+                                      fontSize: 7.5,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                )
+                              else
+                                Text(
+                                  ws.tenantKey.length > 5 ? ws.tenantKey.substring(0, 5) : ws.tenantKey,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? AppColors.gray500 : const Color(0xFF94A3B8),
+                                  ),
+                                ),
+                            ],
                           ),
                         ],
                       ),

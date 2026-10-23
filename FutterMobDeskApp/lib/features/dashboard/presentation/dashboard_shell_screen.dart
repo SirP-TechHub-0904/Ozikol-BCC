@@ -1096,14 +1096,30 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                             letterSpacing: -0.2,
                           ),
                         ),
-                        Text(
-                          'Workspace Vault',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Active Workspace',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1141,14 +1157,30 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                           letterSpacing: -0.2,
                         ),
                       ),
-                      Text(
-                        'Workspace Vault',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Active Workspace',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
