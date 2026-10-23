@@ -439,7 +439,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
       mainAxisSpacing: 16,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: isDesktop ? 2.2 : 2.4,
+      childAspectRatio: isDesktop ? 1.75 : (isTablet ? 2.0 : 2.5),
       children: [
         _buildStatCard(
           isDark: isDark,
@@ -500,7 +500,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: isAlert
               ? (isDark ? const Color(0xFF38151D) : const Color(0xFFFFF1F2))
@@ -515,8 +515,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
         child: Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 42,
+              height: 42,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: gradientColors,
@@ -525,13 +525,14 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                 ),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: Colors.white, size: 22),
+              child: Icon(icon, color: Colors.white, size: 20),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     title.toUpperCase(),
@@ -1257,7 +1258,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
         mainAxisSpacing: 12,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        childAspectRatio: 1.8,
+        childAspectRatio: 1.55,
         children: [
           _buildHealthTile(
             isDark: isDark,

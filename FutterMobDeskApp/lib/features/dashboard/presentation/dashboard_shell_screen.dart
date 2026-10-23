@@ -33,6 +33,7 @@ import 'screens/user_directory/registration_form_builder_view.dart';
 import 'screens/user_directory/auth_page_setup_view.dart';
 import 'screens/user_directory/kpis_leaderboard_view.dart';
 import 'screens/user_directory/user_settings_view.dart';
+import 'screens/user_directory/user_create_view.dart';
 import 'screens/identity_access/identity_dashboard_view.dart';
 import 'screens/identity_access/roles_permissions_view.dart';
 import 'screens/identity_access/member_invitations_view.dart';
@@ -1724,6 +1725,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           return ManageDevicesView(workspace: activeWs);
         case 15:
           return LoginActivityView(workspace: activeWs);
+        case 16:
+          return UserCreateView(
+            workspace: activeWs,
+            onNavigateBack: () => setState(() => _selectedNavIndex = 1),
+            onUserCreated: () => setState(() => _selectedNavIndex = 1),
+          );
         default:
           return UserDashboardOverviewView(workspace: activeWs);
       }

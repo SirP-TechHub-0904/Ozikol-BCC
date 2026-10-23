@@ -692,6 +692,24 @@ class AccountRepository {
   }
 
   /// <summary>
+  /// Fetches the workspace member ID configuration rules and format previews.
+  /// </summary>
+  Future<Map<String, dynamic>?> getMemberIdConfig() async {
+    try {
+      final response = await _dio.get('api/UsersApi/member-id-config');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// <summary>
   /// Updates profile information for a user.
   /// </summary>
   Future<bool> updateUserProfile(String userId, Map<String, dynamic> data) async {

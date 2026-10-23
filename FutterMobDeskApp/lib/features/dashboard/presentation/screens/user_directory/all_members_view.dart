@@ -6,6 +6,7 @@ import '../../../../../core/models/workspace.dart';
 import '../../../../../core/services/export_service.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../data/account_repository.dart';
+import 'user_create_view.dart';
 
 /// <summary>
 /// Full enterprise Member Directory & Register screen with 1-to-1 parity matching the Angular Web client.
@@ -496,7 +497,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                   ),
                   const SizedBox(width: 10),
                   ElevatedButton.icon(
-                    onPressed: _showAddMemberDialog,
+                    onPressed: _navigateToCreateMember,
                     icon: const Icon(Icons.person_add_rounded, size: 16, color: Colors.white),
                     label: const Text('Add Member', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                     style: ElevatedButton.styleFrom(
@@ -1416,233 +1417,25 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   // =========================================================================
 
   /// <summary>
-  /// Displays the Add Member dialog for registering a new workspace member.
+  /// Navigates to the dedicated full-page User Provisioning view (matching Angular web route /users/console/create).
   /// </summary>
-  void _showAddMemberDialog() {
-    final firstNameCtrl = TextEditingController();
-    final lastNameCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final designationCtrl = TextEditingController(text: 'Member');
-    final passwordCtrl = TextEditingController(text: 'Member@2026');
-
-    String selectedTitle = 'Mr.';
-    String? selectedCategoryId;
-    String selectedRole = 'Member';
-    bool mustChangePassword = true;
-    bool isSaving = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return AlertDialog(
-              backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.person_add_rounded, size: 20, color: AppColors.primary),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text('Add Member to Directory', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                ],
-              ),
-              content: SizedBox(
-                width: 520,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Name row
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 80,
-                            child: DropdownButtonFormField<String>(
-                              initialValue: selectedTitle,
-                              decoration: const InputDecoration(labelText: 'Title', contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                              items: const [
-                                DropdownMenuItem(value: 'Mr.', child: Text('Mr.')),
-                                DropdownMenuItem(value: 'Mrs.', child: Text('Mrs.')),
-                                DropdownMenuItem(value: 'Ms.', child: Text('Ms.')),
-                                DropdownMenuItem(value: 'Dr.', child: Text('Dr.')),
-                                DropdownMenuItem(value: 'Engr.', child: Text('Engr.')),
-                                DropdownMenuItem(value: 'Prof.', child: Text('Prof.')),
-                              ],
-                              onChanged: (val) => setModalState(() => selectedTitle = val ?? 'Mr.'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: firstNameCtrl,
-                              decoration: const InputDecoration(labelText: 'First Name *', hintText: 'e.g. First Name'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: lastNameCtrl,
-                              decoration: const InputDecoration(labelText: 'Last Name *', hintText: 'e.g. Last Name'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Email & Phone
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: emailCtrl,
-                              decoration: const InputDecoration(labelText: 'Work Email *', hintText: 'name@company.com'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: phoneCtrl,
-                              decoration: const InputDecoration(labelText: 'Phone Number', hintText: 'e.g. +0 (000) 000-0000'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Designation & Category Tier
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: designationCtrl,
-                              decoration: const InputDecoration(labelText: 'Designation / Title', hintText: 'e.g. Staff Engineer'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: selectedCategoryId,
-                              decoration: const InputDecoration(labelText: 'Category Tier'),
-                              hint: const Text('Select Category'),
-                              items: [
-                                const DropdownMenuItem(value: null, child: Text('Unassigned')),
-                                ..._categories.map((c) => DropdownMenuItem(
-                                      value: c['id']?.toString(),
-                                      child: Text(c['name']?.toString() ?? 'Category'),
-                                    )),
-                              ],
-                              onChanged: (val) => setModalState(() => selectedCategoryId = val),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Assigned Role & Password
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: selectedRole,
-                              decoration: const InputDecoration(labelText: 'Assigned Role *'),
-                              items: const [
-                                DropdownMenuItem(value: 'Member', child: Text('Member')),
-                                DropdownMenuItem(value: 'Read Only', child: Text('Read Only')),
-                                DropdownMenuItem(value: 'Feature Editor', child: Text('Feature Editor')),
-                                DropdownMenuItem(value: 'Global Editor', child: Text('Global Editor')),
-                                DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                              ],
-                              onChanged: (val) => setModalState(() => selectedRole = val ?? 'Member'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: passwordCtrl,
-                              decoration: const InputDecoration(labelText: 'Temporary Password'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-
-                      // Must change password toggle
-                      CheckboxListTile(
-                        value: mustChangePassword,
-                        onChanged: (val) => setModalState(() => mustChangePassword = val ?? true),
-                        title: const Text('Require password change on first sign in', style: TextStyle(fontSize: 12.5)),
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          final email = emailCtrl.text.trim();
-                          final first = firstNameCtrl.text.trim();
-                          final last = lastNameCtrl.text.trim();
-
-                          if (email.isEmpty || first.isEmpty || last.isEmpty) {
-                            _showToast('Please provide First Name, Last Name, and Email.');
-                            return;
-                          }
-
-                          setModalState(() => isSaving = true);
-                          final repo = ref.read(accountRepositoryProvider);
-                          final success = await repo.createUser({
-                            'email': email,
-                            'firstName': first,
-                            'lastName': last,
-                            'title': selectedTitle,
-                            'phoneNumber': phoneCtrl.text.trim().isNotEmpty ? phoneCtrl.text.trim() : null,
-                            'designation': designationCtrl.text.trim(),
-                            'bcpUserCategoryId': selectedCategoryId,
-                            'role': selectedRole,
-                            'password': passwordCtrl.text.trim(),
-                            'mustChangePassword': mustChangePassword,
-                            'gender': 0, // Male default
-                          });
-
-                          if (ctx.mounted) Navigator.of(ctx).pop();
-                          if (success) {
-                            _showToast('Member created successfully! Welcome email enqueued.');
-                            _loadData();
-                          } else {
-                            _showToast('Failed to create member. Ensure email is unique.');
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                  child: isSaving
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Create Member', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+  void _navigateToCreateMember() {
+    if (widget.onNavigateToTab != null) {
+      widget.onNavigateToTab!(16);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => UserCreateView(
+            workspace: widget.workspace,
+            onNavigateBack: () => Navigator.of(context).pop(),
+            onUserCreated: () {
+              Navigator.of(context).pop();
+              _loadData();
+            },
+          ),
+        ),
+      );
+    }
   }
 
   /// <summary>
