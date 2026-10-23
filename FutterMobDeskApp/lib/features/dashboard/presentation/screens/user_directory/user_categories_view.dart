@@ -589,7 +589,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                     ),
                   ),
                   Expanded(
-                    flex: 2,
+                    flex: 1,
                     child: Text(
                       'SORT ORDER',
                       textAlign: TextAlign.center,
@@ -615,7 +615,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                     ),
                   ),
                   Expanded(
-                    flex: 3,
+                    flex: 4,
                     child: Text(
                       'ACTIONS',
                       textAlign: TextAlign.right,
@@ -751,7 +751,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
 
                       // Sort Order
                       Expanded(
-                        flex: 2,
+                        flex: 1,
                         child: Center(
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -814,7 +814,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
 
                       // Actions
                       Expanded(
-                        flex: 3,
+                        flex: 4,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -870,10 +870,10 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: constraints.maxWidth < 840
+            child: constraints.maxWidth < 920
                 ? SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: SizedBox(width: 840, child: tableContent),
+                    child: SizedBox(width: 920, child: tableContent),
                   )
                 : tableContent,
           ),
@@ -915,7 +915,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
           borderRadius: BorderRadius.circular(6),
           child: Container(
             height: 30,
-            padding: EdgeInsets.symmetric(horizontal: label != null ? 10 : 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: BorderRadius.circular(6),
@@ -935,11 +935,11 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
               children: [
                 Icon(icon, size: 14, color: iconColor),
                 if (label != null) ...[
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 4),
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: 11.5,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: fgColor,
                     ),

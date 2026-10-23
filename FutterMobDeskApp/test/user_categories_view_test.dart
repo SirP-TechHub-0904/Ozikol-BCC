@@ -179,4 +179,32 @@ void main() {
     expect(capturedIndex, equals(1));
     expect(capturedCategoryFilter, equals('4951ea6b-6741-451d-9bbb-c3e686aae6cb'));
   });
+
+  testWidgets('UserCategoriesView does not overflow on narrow screens', (tester) async {
+    // Narrow viewport (e.g. tablet or docked side panel)
+    tester.view.physicalSize = const Size(800, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          accountRepositoryProvider.overrideWithValue(FakeCategoriesAccountRepository()),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: UserCategoriesView(),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Verify all 3 action buttons render cleanly without throwing RenderFlex overflow
+    expect(find.text('Members'), findsOneWidget);
+    expect(find.text('Edit'), findsOneWidget);
+    expect(find.byTooltip('Delete Category'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
