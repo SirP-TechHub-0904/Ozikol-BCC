@@ -97,9 +97,13 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
         tenantKey: widget.workspace.tenantKey,
       );
 
-      final token = result['token'] as String?;
-      final fullName = result['fullName'] as String? ?? result['userName'] as String?;
-      final roles = (result['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+      final authMap = (result['auth'] ?? result['Auth']) is Map
+          ? Map<String, dynamic>.from((result['auth'] ?? result['Auth']) as Map)
+          : result;
+
+      final token = (authMap['token'] ?? authMap['Token']) as String?;
+      final fullName = (authMap['fullName'] ?? authMap['FullName'] ?? authMap['userName']) as String?;
+      final roles = ((authMap['roles'] ?? authMap['Roles']) as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
 
       final updatedWorkspace = widget.workspace.copyWith(
         authToken: token,

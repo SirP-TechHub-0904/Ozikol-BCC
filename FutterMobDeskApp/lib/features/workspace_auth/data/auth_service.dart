@@ -56,10 +56,19 @@ class AuthService {
       }
       throw Exception('Verification failed. Please check the code and try again.');
     } on DioException catch (e) {
-      final msg = e.response?.data is Map && e.response?.data['message'] != null
-          ? e.response?.data['message'].toString()
-          : 'Invalid or expired 2FA code.';
-      throw Exception(msg);
+      final data = e.response?.data;
+      String? msg;
+      if (data is Map) {
+        msg = data['message']?.toString() ??
+            data['Message']?.toString() ??
+            (data['errors'] is List && (data['errors'] as List).isNotEmpty
+                ? (data['errors'] as List).first.toString()
+                : null) ??
+            data['error']?.toString();
+      } else if (data is String && data.isNotEmpty) {
+        msg = data;
+      }
+      throw Exception(msg ?? 'Invalid or expired 2FA code.');
     }
   }
 
