@@ -114,6 +114,55 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
     }
   }
 
+  Future<void> _handleDisable2FA() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Disable Two-Factor Authentication?'),
+        content: const Text(
+          'Are you sure you want to deactivate 2FA? Your workspace account will only be protected by your password credentials.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Disable 2FA'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      await authService.configureMfa(
+        provider: 'None',
+        tenantKey: widget.workspace?.tenantKey ?? '',
+      );
+
+      setState(() {
+        _is2faEnabled = false;
+        _currentProvider = 'None';
+        _isConfiguring = false;
+        _successMessage = 'Two-Factor Authentication disabled successfully.';
+        _errorMessage = null;
+      });
+
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Two-Factor Authentication disabled.')),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to disable 2FA. Please try again.';
+      });
+    }
+  }
+
   @override
   void dispose() {
     _codeController.dispose();
@@ -292,6 +341,18 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                       height: 42,
                       onPressed: () => _startConfiguration('GoogleAuthenticator'),
                     ),
+                  ),
+                ] else if (_is2faEnabled && !_isConfiguring) ...[
+                  const SizedBox(width: 12),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.lock_open_rounded, size: 16, color: AppColors.error),
+                    label: const Text('Disable 2FA', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: _handleDisable2FA,
                   ),
                 ],
               ],
