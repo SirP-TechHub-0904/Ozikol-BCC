@@ -1699,7 +1699,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
           );
         case 6:
-          return UserSettingsView(workspace: activeWs);
+          return UserSettingsView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+          );
         case 7:
           return IdentityDashboardView(
             workspace: activeWs,
