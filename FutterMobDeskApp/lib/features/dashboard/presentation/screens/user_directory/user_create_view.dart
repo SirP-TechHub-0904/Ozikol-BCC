@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/central_adjuster.dart';
+import '../../../../../core/widgets/custom_dropdown_field.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../data/account_repository.dart';
@@ -398,24 +399,16 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
               if (_enableTitle) ...[
                 SizedBox(
                   width: 110,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFieldLabel('Title'),
-                      const SizedBox(height: 6),
-                      DropdownButtonFormField<String?>(
-                        initialValue: _selectedTitle,
-                        isExpanded: true,
-                        decoration: _inputDecoration(isDark),
-                        items: [
-                          const DropdownMenuItem(value: null, child: Text('None', style: TextStyle(fontSize: 13))),
-                          ..._titleOptions.map(
-                            (t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(fontSize: 13))),
-                          ),
-                        ],
-                        onChanged: (val) => setState(() => _selectedTitle = val),
+                  child: CustomDropdownField<String?>(
+                    label: 'Title',
+                    value: _selectedTitle,
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('None', style: TextStyle(fontSize: 14))),
+                      ..._titleOptions.map(
+                        (t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(fontSize: 14))),
                       ),
                     ],
+                    onChanged: (val) => setState(() => _selectedTitle = val),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -458,22 +451,14 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
             children: [
               SizedBox(
                 width: 140,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildFieldLabel('Gender *'),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<int>(
-                      initialValue: _selectedGender,
-                      isExpanded: true,
-                      decoration: _inputDecoration(isDark),
-                      items: const [
-                        DropdownMenuItem(value: 0, child: Text('Male', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 1, child: Text('Female', style: TextStyle(fontSize: 13))),
-                      ],
-                      onChanged: (val) => setState(() => _selectedGender = val ?? 0),
-                    ),
+                child: CustomDropdownField<int>(
+                  label: 'Gender *',
+                  value: _selectedGender,
+                  items: const [
+                    DropdownMenuItem(value: 0, child: Text('Male', style: TextStyle(fontSize: 14))),
+                    DropdownMenuItem(value: 1, child: Text('Female', style: TextStyle(fontSize: 14))),
                   ],
+                  onChanged: (val) => setState(() => _selectedGender = val ?? 0),
                 ),
               ),
               const SizedBox(width: 14),
@@ -514,31 +499,19 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Category Tier Dropdown
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildFieldLabel('Category Tier'),
-              const SizedBox(height: 6),
-              DropdownButtonFormField<String?>(
-                initialValue: _selectedCategoryId,
-                isExpanded: true,
-                decoration: _inputDecoration(isDark),
-                hint: const Text('Select Category (Optional)', style: TextStyle(fontSize: 13)),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('Select Category (Optional)', style: TextStyle(fontSize: 13))),
-                  ..._categories.map((c) => DropdownMenuItem(
-                        value: c['id']?.toString(),
-                        child: Text(c['name']?.toString() ?? 'Category', style: const TextStyle(fontSize: 13)),
-                      )),
-                ],
-                onChanged: (val) => setState(() => _selectedCategoryId = val),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Assign to an organizational unit or department tier.',
-                style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-              ),
+          CustomDropdownField<String?>(
+            label: 'Category Tier',
+            value: _selectedCategoryId,
+            placeholder: 'Select Category (Optional)',
+            helperText: 'Assign to an organizational unit or department tier.',
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Select Category (Optional)', style: TextStyle(fontSize: 14))),
+              ..._categories.map((c) => DropdownMenuItem(
+                    value: c['id']?.toString(),
+                    child: Text(c['name']?.toString() ?? 'Category', style: const TextStyle(fontSize: 14)),
+                  )),
             ],
+            onChanged: (val) => setState(() => _selectedCategoryId = val),
           ),
           const SizedBox(height: 16),
 
@@ -557,25 +530,17 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
               const SizedBox(width: 14),
               Expanded(
                 flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildFieldLabel('System Role'),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedRole,
-                      isExpanded: true,
-                      decoration: _inputDecoration(isDark),
-                      items: const [
-                        DropdownMenuItem(value: 'Member', child: Text('Member', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 'Admin', child: Text('Admin', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 'Global Editor', child: Text('Global Editor', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 'Feature Editor', child: Text('Feature Editor', style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(value: 'Read Only', child: Text('Read Only', style: TextStyle(fontSize: 13))),
-                      ],
-                      onChanged: (val) => setState(() => _selectedRole = val ?? 'Member'),
-                    ),
+                child: CustomDropdownField<String>(
+                  label: 'System Role',
+                  value: _selectedRole,
+                  items: const [
+                    DropdownMenuItem(value: 'Member', child: Text('Member', style: TextStyle(fontSize: 14))),
+                    DropdownMenuItem(value: 'Admin', child: Text('Admin', style: TextStyle(fontSize: 14))),
+                    DropdownMenuItem(value: 'Global Editor', child: Text('Global Editor', style: TextStyle(fontSize: 14))),
+                    DropdownMenuItem(value: 'Feature Editor', child: Text('Feature Editor', style: TextStyle(fontSize: 14))),
+                    DropdownMenuItem(value: 'Read Only', child: Text('Read Only', style: TextStyle(fontSize: 14))),
                   ],
+                  onChanged: (val) => setState(() => _selectedRole = val ?? 'Member'),
                 ),
               ),
             ],
@@ -849,33 +814,14 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
   }
 
   Widget _buildFieldLabel(String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Text(
-      label.toUpperCase(),
-      style: const TextStyle(
-        fontSize: 10.5,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.05,
-        color: Color(0xFF475569),
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration(bool isDark) {
-    return InputDecoration(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      filled: true,
-      fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      label,
+      style: TextStyle(
+        fontWeight: FontWeight.w600,
+        fontSize: 13,
+        color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+        letterSpacing: 0.2,
       ),
     );
   }
