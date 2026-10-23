@@ -664,7 +664,11 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                                borderSide: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight, width: 1),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight, width: 1),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -783,7 +787,11 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           ),
           const SizedBox(height: 16),
 
-          const Divider(height: 1),
+          Divider(
+            height: 24,
+            thickness: 1,
+            color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+          ),
           const SizedBox(height: 14),
 
           // Export Row & Counter
@@ -1062,6 +1070,18 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           dataRowMaxHeight: 68,
           horizontalMargin: 12,
           columnSpacing: 12.0 + (extraSpacing * 0.45),
+          dividerThickness: 1.0,
+          border: TableBorder(
+            top: BorderSide.none,
+            bottom: BorderSide(
+              color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+              width: 1.0,
+            ),
+            horizontalInside: BorderSide(
+              color: isDark ? AppColors.outlineDark : const Color(0xFFF1F5F9),
+              width: 1.0,
+            ),
+          ),
           headingRowColor: WidgetStateProperty.all(
             isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
           ),
