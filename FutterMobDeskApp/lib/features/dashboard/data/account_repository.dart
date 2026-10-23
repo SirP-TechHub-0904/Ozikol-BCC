@@ -179,17 +179,33 @@ class AccountRepository {
   /// <summary>
   /// Creates a new user category in the directory.
   /// </summary>
-  Future<bool> createCategory(String name, String description) async {
+  Future<bool> createCategory(
+    String name,
+    String description, {
+    String? colorCode,
+    String? icon,
+    int sortOrder = 0,
+    bool isActive = true,
+  }) async {
     try {
       final response = await _dio.post(
         'api/UsersApi/categories',
-        data: {'name': name.trim(), 'description': description.trim()},
+        data: {
+          'name': name.trim(),
+          'description': description.trim(),
+          'colorCode': colorCode ?? '#0050e5',
+          'icon': icon ?? 'category',
+          'sortOrder': sortOrder,
+          'isActive': isActive,
+        },
       );
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (_) {
       return false;
     }
   }
+
+
 
   /// <summary>
   /// Fetches system roles and assigned permissions.

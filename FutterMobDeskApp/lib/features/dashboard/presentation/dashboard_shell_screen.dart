@@ -1679,7 +1679,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
           );
         case 2:
-          return UserCategoriesView(workspace: activeWs);
+          return UserCategoriesView(
+            workspace: activeWs,
+            onNavigateToTab: (idx, {categoryFilter}) => setState(() => _selectedNavIndex = idx),
+          );
         case 3:
           return RegistrationFormBuilderView(workspace: activeWs);
         case 4:
