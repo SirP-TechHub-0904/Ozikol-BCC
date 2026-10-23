@@ -114,12 +114,8 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
         lastAccessed: DateTime.now(),
       );
 
-      final storage = ref.read(storageServiceProvider);
-      await storage.saveWorkspace(updatedWorkspace);
-      await storage.setActiveTenantKey(updatedWorkspace.tenantKey);
-
       final notifier = ref.read(workspaceStateProvider.notifier);
-      await notifier.switchWorkspace(updatedWorkspace.tenantKey);
+      await notifier.activateAuthenticatedWorkspace(updatedWorkspace);
 
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(

@@ -544,16 +544,43 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     return raw;
   }
 
+  /// Sets an authenticated workspace as active, updates disk storage, syncs enrolled list,
+  /// and updates the in-memory state so the dashboard immediately switches to this workspace.
+  Future<void> activateAuthenticatedWorkspace(Workspace workspace) async {
+    await _storageService.saveWorkspace(workspace);
+    await _storageService.setActiveTenantKey(workspace.tenantKey);
+
+    if (state.rememberOrganization) {
+      await _storageService.setRememberOrganizationEnabled(true);
+      await _storageService.setRememberedOrganizationCode(workspace.tenantKey);
+      await _storageService.saveRememberedWorkspace(workspace);
+    }
+
+    final updatedList = await _storageService.getWorkspaces();
+    _syncJumpList(updatedList);
+
+    state = state.copyWith(
+      isLoading: false,
+      activeWorkspace: workspace,
+      enrolledWorkspaces: updatedList,
+      clearPending: true,
+    );
+  }
+
   /// Switches active workspace context to another enrolled organization
   Future<void> switchWorkspace(String tenantKey) async {
-    final match = state.enrolledWorkspaces
+    final list = await _storageService.getWorkspaces();
+    final match = list
         .where((w) => w.tenantKey.toLowerCase() == tenantKey.toLowerCase())
         .firstOrNull;
 
     if (match != null) {
       await _storageService.setActiveTenantKey(match.tenantKey);
       final active = await _storageService.getActiveWorkspace();
-      state = state.copyWith(activeWorkspace: active);
+      state = state.copyWith(
+        activeWorkspace: active,
+        enrolledWorkspaces: list,
+      );
     }
   }
 
