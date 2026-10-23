@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/auth_header.dart';
+import '../../../core/widgets/desktop_auth_layout.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../data/auth_service.dart';
@@ -171,43 +171,18 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            AuthHeader(
-              title: _currentStep == 3 ? 'Password Reset Complete' : 'Reset Password',
-              subtitle: _currentStep == 1
-                  ? 'Enter your registered work email to receive password reset instructions.'
-                  : (_currentStep == 2
-                      ? 'Enter the security code sent to ${_emailController.text.trim()} along with your new password.'
-                      : 'Your password has been successfully reset. You can now sign in.'),
-            ),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  child: Container(
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
+    return DesktopAuthLayout(
+      workspace: widget.workspace,
+      title: _currentStep == 3 ? 'Password Reset Complete' : 'Reset Password',
+      subtitle: _currentStep == 1
+          ? 'Enter your registered work email to receive password reset instructions.'
+          : (_currentStep == 2
+              ? 'Enter the security code sent to ${_emailController.text.trim()} along with your new password.'
+              : 'Your password has been successfully reset. You can now sign in.'),
+      onBackTap: () => Navigator.of(context).pop(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
                         // Error Banner
                         if (_errorMessage != null) ...[
                           Container(
@@ -392,13 +367,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         ],
                       ],
                     ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

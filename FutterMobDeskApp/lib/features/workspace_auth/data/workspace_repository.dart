@@ -281,11 +281,35 @@ class WorkspaceRepository {
                   raw['OrganizationName'])
               ?.toString()
               .trim();
+          final whiteLogo = (raw['companyWhiteLogoUrl'] ?? raw['CompanyWhiteLogoUrl'])?.toString().trim();
+          final bgUrl = (raw['loginBackgroundImageUrl'] ?? raw['LoginBackgroundImageUrl'])?.toString().trim();
+          final layout = (raw['loginLayout'] ?? raw['LoginLayout'] ?? raw['loginBackgroundImageKey'] ?? raw['LoginBackgroundImageKey'])?.toString().toLowerCase().trim();
+          final loginTitle = (raw['loginTitle'] ?? raw['LoginTitle'])?.toString().trim();
+          final loginSubtitle = (raw['loginSubtitle'] ?? raw['LoginSubtitle'])?.toString().trim();
+          final loginNoteTitle = (raw['loginNoteTitle'] ?? raw['LoginNoteTitle'])?.toString().trim();
+          final loginNote = (raw['loginNote'] ?? raw['LoginNote'])?.toString().trim();
+          final loginNoteFooter = (raw['loginNoteFooter'] ?? raw['LoginNoteFooter'] ?? raw['loginComplianceNotice'] ?? raw['LoginComplianceNotice'])?.toString().trim();
+          final loginBtnText = (raw['loginButtonText'] ?? raw['LoginButtonText'])?.toString().trim();
+          final allowReg = raw['allowPublicRegistration'] != false && raw['showRegisterLinkOnLogin'] != false;
+          final useWhiteLogo = raw['useWhiteLogoInLogin'] == true;
+
           return TenantBranding(
             logoUrl: (logo != null && logo.isNotEmpty) ? logo : null,
             iconUrl: (icon != null && icon.isNotEmpty) ? icon : null,
             organizationName: (orgName != null && orgName.isNotEmpty) ? orgName : null,
             isResolved: true,
+            loginLayout: (layout == 'split' || layout == 'centered') ? layout! : 'centered',
+            loginBackgroundImageUrl: (bgUrl != null && bgUrl.isNotEmpty) ? bgUrl : null,
+            loginTitle: (loginTitle != null && loginTitle.isNotEmpty) ? loginTitle : null,
+            loginSubtitle: (loginSubtitle != null && loginSubtitle.isNotEmpty) ? loginSubtitle : null,
+            loginNoteTitle: (loginNoteTitle != null && loginNoteTitle.isNotEmpty) ? loginNoteTitle : null,
+            loginNote: (loginNote != null && loginNote.isNotEmpty) ? loginNote : null,
+            loginNoteFooter: (loginNoteFooter != null && loginNoteFooter.isNotEmpty) ? loginNoteFooter : null,
+            loginButtonText: (loginBtnText != null && loginBtnText.isNotEmpty) ? loginBtnText : null,
+            allowPublicRegistration: allowReg,
+            useWhiteLogoInLogin: useWhiteLogo,
+            companyWhiteLogoUrl: (whiteLogo != null && whiteLogo.isNotEmpty) ? whiteLogo : null,
+            rawSettings: Map<String, dynamic>.from(raw),
           );
         }
       }
@@ -308,17 +332,41 @@ class WorkspaceRepository {
   }
 }
 
-/// Resolved branding asset URLs for an organization workspace
+/// Resolved branding asset URLs and authentication screen configuration for an organization workspace
 class TenantBranding {
   final String? logoUrl;
   final String? iconUrl;
   final String? organizationName;
   final bool isResolved;
+  final String loginLayout;
+  final String? loginBackgroundImageUrl;
+  final String? loginTitle;
+  final String? loginSubtitle;
+  final String? loginNoteTitle;
+  final String? loginNote;
+  final String? loginNoteFooter;
+  final String? loginButtonText;
+  final bool allowPublicRegistration;
+  final bool useWhiteLogoInLogin;
+  final String? companyWhiteLogoUrl;
+  final Map<String, dynamic> rawSettings;
 
   const TenantBranding({
     this.logoUrl,
     this.iconUrl,
     this.organizationName,
     this.isResolved = false,
+    this.loginLayout = 'centered',
+    this.loginBackgroundImageUrl,
+    this.loginTitle,
+    this.loginSubtitle,
+    this.loginNoteTitle,
+    this.loginNote,
+    this.loginNoteFooter,
+    this.loginButtonText,
+    this.allowPublicRegistration = true,
+    this.useWhiteLogoInLogin = false,
+    this.companyWhiteLogoUrl,
+    this.rawSettings = const {},
   });
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/auth_header.dart';
+import '../../../core/widgets/desktop_auth_layout.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../dashboard/presentation/dashboard_shell_screen.dart';
@@ -149,56 +149,29 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const AuthHeader(
-              title: 'Change Initial Password',
-              subtitle: 'For your security, please replace your temporary password with a personalized, strong password.',
-            ),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  child: Container(
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Key Avatar
-                        Center(
-                          child: Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.key_rounded,
-                              size: 32,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
+    return DesktopAuthLayout(
+      workspace: widget.workspace,
+      title: 'Change Initial Password',
+      subtitle: 'For your security, please replace your temporary password with a personalized, strong password.',
+      onBackTap: () => Navigator.of(context).pop(),
+      cardAvatar: Center(
+        child: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.key_rounded,
+            size: 26,
+            color: AppColors.primary,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
 
                         // Error Banner
                         if (_errorMessage != null) ...[
@@ -282,13 +255,6 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

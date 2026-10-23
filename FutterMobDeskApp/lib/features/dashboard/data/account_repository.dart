@@ -996,6 +996,43 @@ class AccountRepository {
   }
 
   /// <summary>
+  /// Uploads a branding asset (e.g. background wallpaper image) to Cloudinary and returns its secure URL.
+  /// </summary>
+  /// <param name="fileBytes">Binary bytes of the image file.</param>
+  /// <param name="fileName">Original name of the image file.</param>
+  /// <param name="assetType">Type of branding asset ('bg', 'logo', 'icon').</param>
+  /// <param name="folder">Storage folder path (defaults to 'brand-assets').</param>
+  /// <returns>A map containing the uploaded URL and storage key, or null on failure.</returns>
+  Future<Map<String, dynamic>?> uploadAsset({
+    required List<int> fileBytes,
+    required String fileName,
+    String assetType = 'bg',
+    String folder = 'brand-assets',
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(fileBytes, filename: fileName),
+        'folder': folder,
+      });
+      final response = await _dio.post(
+        'api/SettingsApi/upload-asset?assetType=$assetType',
+        data: formData,
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// <summary>
   /// Retrieves performance evaluation metric indicators.
   /// </summary>
   Future<List<Map<String, dynamic>>> getKpiIndicators() async {

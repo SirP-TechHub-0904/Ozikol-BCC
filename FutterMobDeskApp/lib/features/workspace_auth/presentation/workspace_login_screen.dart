@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/auth_header.dart';
-import '../../../core/widgets/contextual_info_button.dart';
 import '../../../core/widgets/custom_text_field.dart';
+import '../../../core/widgets/desktop_auth_layout.dart';
 import '../../../core/widgets/primary_button.dart';
-import '../../../core/widgets/tenant_avatar.dart';
 import '../../dashboard/presentation/dashboard_shell_screen.dart';
 import '../state/workspace_state.dart';
 import 'first_time_password_screen.dart';
@@ -130,89 +128,17 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
           _handleChangeOrganization();
         }
       },
-      child: Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            // Wave Header with Organization Branding & Back Button
-            AuthHeader(
-              title: ws.displayName,
-              subtitle: 'Sign in to access your organization workspace',
-              showBackButton: true,
-              onBackTap: _handleChangeOrganization,
-              emblem: TenantAvatar(
-                iconUrl: ws.iconUrl,
-                logoUrl: ws.logoUrl,
-                name: ws.displayName,
-                tenantKey: ws.tenantKey,
-                size: 54,
-                borderRadius: 14,
-              ),
-            ),
-
-            // Main Credentials Card
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 460),
-                    child: Container(
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceDark : Colors.white,
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(isDark ? 60 : 12),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Section Title with Contextual Info Icon
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Authentication',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: -0.4,
-                                    color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const ContextualInfoButton(
-                                  title: 'Workspace Authentication',
-                                  purpose: 'Authenticates your identity against your tenant user directory and claims token.',
-                                  expectedInputs: 'Use your organization work email and password.',
-                                  impact: 'Issues a scoped JWT bearer token with tenant role permissions.',
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Enter your organization credentials to proceed.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: isDark ? AppColors.gray400 : AppColors.gray600,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
+      child: DesktopAuthLayout(
+        workspace: ws,
+        title: 'Authentication',
+        subtitle: 'Enter your organization credentials to proceed.',
+        onBackTap: _handleChangeOrganization,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
 
                             // Error Banner
                             if (state.errorMessage != null) ...[
@@ -336,15 +262,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
-    ),
     );
   }
 }
