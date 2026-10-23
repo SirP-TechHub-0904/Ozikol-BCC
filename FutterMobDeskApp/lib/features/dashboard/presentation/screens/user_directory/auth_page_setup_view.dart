@@ -1211,17 +1211,19 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
 
                   // Ambient Radial Gradient & Blur
                   Positioned.fill(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: const Alignment(-0.6, -0.4),
-                            radius: 1.3,
-                            colors: [
-                              const Color(0xFF0F172A).withValues(alpha: 0.72),
-                              const Color(0xFF090D16).withValues(alpha: 0.90),
-                            ],
+                    child: ClipRect(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: RadialGradient(
+                              center: const Alignment(-0.6, -0.4),
+                              radius: 1.3,
+                              colors: [
+                                const Color(0xFF0F172A).withValues(alpha: 0.72),
+                                const Color(0xFF090D16).withValues(alpha: 0.90),
+                              ],
+                            ),
                           ),
                         ),
                       ),

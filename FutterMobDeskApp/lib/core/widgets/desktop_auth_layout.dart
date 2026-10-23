@@ -128,17 +128,19 @@ class DesktopAuthLayout extends ConsumerWidget {
 
           // 2. Ambient Radial Gradient Backdrop & Blur Filter Overlay
           Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(-0.7, -0.5),
-                    radius: 1.4,
-                    colors: [
-                      const Color(0xFF0F172A).withValues(alpha: 0.72),
-                      const Color(0xFF090D16).withValues(alpha: 0.90),
-                    ],
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: const Alignment(-0.7, -0.5),
+                      radius: 1.4,
+                      colors: [
+                        const Color(0xFF0F172A).withValues(alpha: 0.72),
+                        const Color(0xFF090D16).withValues(alpha: 0.90),
+                      ],
+                    ),
                   ),
                 ),
               ),

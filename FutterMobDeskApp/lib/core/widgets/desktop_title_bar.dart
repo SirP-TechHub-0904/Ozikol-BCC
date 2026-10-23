@@ -114,11 +114,10 @@ class _DesktopTitleBarState extends State<DesktopTitleBar> with WindowListener {
         : widget.logoUrl;
 
     return Material(
-      type: MaterialType.transparency,
+      color: widget.backgroundColor ?? defaultBg,
       child: Container(
         height: 36,
         decoration: BoxDecoration(
-          color: widget.backgroundColor ?? defaultBg,
           border: Border(
             bottom: BorderSide(color: borderColor, width: 1),
           ),
