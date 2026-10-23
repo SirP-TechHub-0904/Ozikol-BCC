@@ -60,8 +60,42 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     with SingleTickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _mobileScaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedNavIndex = 0;
+  final List<int> _navHistory = [0];
+  String? _activeStatusFilter;
   bool _isSidebarCollapsed = false;
   late AnimationController _refreshAnimController;
+
+  /// <summary>
+  /// Navigates to a specific screen index with optional filtering and history tracking.
+  /// </summary>
+  /// <param name="index">Target tab index.</param>
+  /// <param name="filterStatus">Optional member status filter to pre-select.</param>
+  /// <param name="clearHistory">If true, resets navigation history stack.</param>
+  void _navigateToTab(int index, {String? filterStatus, bool clearHistory = false}) {
+    setState(() {
+      if (clearHistory) {
+        _navHistory.clear();
+        _navHistory.add(index);
+      } else if (_selectedNavIndex != index) {
+        _navHistory.add(_selectedNavIndex);
+      }
+      _selectedNavIndex = index;
+      _activeStatusFilter = filterStatus;
+    });
+  }
+
+  /// <summary>
+  /// Pops the navigation history stack and returns to the previous screen.
+  /// </summary>
+  void _navigateBack() {
+    if (_navHistory.length > 1) {
+      setState(() {
+        _navHistory.removeLast();
+        _selectedNavIndex = _navHistory.last;
+        _activeStatusFilter = null;
+      });
+    }
+  }
 
   /// Toggles the desktop sidebar between expanded (250px) and collapsed (68px) rail mode.
   void _toggleSidebarCollapse() {
@@ -335,7 +369,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       key: _mobileScaffoldKey,
       backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
       appBar: AppTopBar(
-        leadingType: AppTopBarLeadingType.menu,
+        leadingType: _navHistory.length > 1 ? AppTopBarLeadingType.back : AppTopBarLeadingType.menu,
+        onLeadingPressed: _navHistory.length > 1 ? _navigateBack : null,
         centerContent: Row(
           children: [
             if (activeWs != null) ...[
@@ -580,6 +615,46 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 onPressed: _toggleSidebarCollapse,
               ),
               const SizedBox(width: 4),
+
+              // 1b. Adaptive Back Navigation Button (visible whenever navigation history has depth > 1)
+              if (_navHistory.length > 1) ...[
+                Tooltip(
+                  message: 'Back to previous view',
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _navigateBack,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDark ? AppColors.outlineDark : const Color(0xFFBFDBFE),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.arrow_back_rounded, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Back',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? const Color(0xFF93C5FD) : AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
 
               // 2. Brand Emblem Icon (hidden only on ultra-narrow windows)
               if (activeWs != null && !isUltraNarrow) ...[
@@ -1416,7 +1491,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Dashboard Overview',
                 isSelected: _selectedNavIndex == 0,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 0);
+                  _navigateToTab(0, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1425,7 +1500,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'All Members',
                 isSelected: _selectedNavIndex == 1,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 1);
+                  _navigateToTab(1, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1434,7 +1509,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: categoryAlias,
                 isSelected: _selectedNavIndex == 2,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 2);
+                  _navigateToTab(2, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1443,7 +1518,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Registration Form Builder',
                 isSelected: _selectedNavIndex == 3,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 3);
+                  _navigateToTab(3, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1452,7 +1527,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Auth Page Setup',
                 isSelected: _selectedNavIndex == 4,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 4);
+                  _navigateToTab(4, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1461,7 +1536,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'KPIs & Leaderboard',
                 isSelected: _selectedNavIndex == 5,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 5);
+                  _navigateToTab(5, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1470,7 +1545,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'User Settings',
                 isSelected: _selectedNavIndex == 6,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 6);
+                  _navigateToTab(6, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1488,7 +1563,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Identity Dashboard',
                 isSelected: _selectedNavIndex == 7,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 7);
+                  _navigateToTab(7, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1497,7 +1572,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Roles & Permissions',
                 isSelected: _selectedNavIndex == 8,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 8);
+                  _navigateToTab(8, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1506,7 +1581,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Member Invitations',
                 isSelected: _selectedNavIndex == 9,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 9);
+                  _navigateToTab(9, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1515,7 +1590,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Global Security Policies',
                 isSelected: _selectedNavIndex == 10,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 10);
+                  _navigateToTab(10, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1533,7 +1608,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'My Account',
                 isSelected: _selectedNavIndex == 11,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 11);
+                  _navigateToTab(11, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1542,7 +1617,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Change Password',
                 isSelected: _selectedNavIndex == 12,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 12);
+                  _navigateToTab(12, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1551,7 +1626,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: '2FA Security',
                 isSelected: _selectedNavIndex == 13,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 13);
+                  _navigateToTab(13, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1560,7 +1635,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Manage Devices',
                 isSelected: _selectedNavIndex == 14,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 14);
+                  _navigateToTab(14, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1569,7 +1644,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Login Activity',
                 isSelected: _selectedNavIndex == 15,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 15);
+                  _navigateToTab(15, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1596,7 +1671,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             title: 'Workspace Home',
             isSelected: memberIndex == 0,
             onTap: () {
-              setState(() => _selectedNavIndex = 0);
+              _navigateToTab(0, clearHistory: true);
               _closeMobileDrawer();
             },
           ),
@@ -1612,7 +1687,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'My Account',
                 isSelected: memberIndex == 1,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 1);
+                  _navigateToTab(1, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1621,7 +1696,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Change Password',
                 isSelected: memberIndex == 2,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 2);
+                  _navigateToTab(2, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1630,7 +1705,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: '2FA Security',
                 isSelected: memberIndex == 3,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 3);
+                  _navigateToTab(3, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1639,7 +1714,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Manage Devices',
                 isSelected: memberIndex == 4,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 4);
+                  _navigateToTab(4, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1648,7 +1723,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 title: 'Login Activity',
                 isSelected: memberIndex == 5,
                 onTap: () {
-                  setState(() => _selectedNavIndex = 5);
+                  _navigateToTab(5, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1676,42 +1751,43 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         case 0:
           return UserDashboardOverviewView(
             workspace: activeWs,
-            onNavigateToTab: (idx, {filterStatus}) => setState(() => _selectedNavIndex = idx),
+            onNavigateToTab: (idx, {filterStatus}) => _navigateToTab(idx, filterStatus: filterStatus),
           );
         case 1:
           return AllMembersView(
             workspace: activeWs,
-            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+            initialStatusFilter: _activeStatusFilter,
+            onNavigateToTab: (idx) => _navigateToTab(idx),
           );
         case 2:
           return UserCategoriesView(
             workspace: activeWs,
-            onNavigateToTab: (idx, {categoryFilter}) => setState(() => _selectedNavIndex = idx),
+            onNavigateToTab: (idx, {categoryFilter}) => _navigateToTab(idx),
           );
         case 3:
           return RegistrationFormBuilderView(
             workspace: activeWs,
-            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+            onNavigateToTab: (idx) => _navigateToTab(idx),
           );
         case 4:
           return AuthPageSetupView(
             workspace: activeWs,
-            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+            onNavigateToTab: (idx) => _navigateToTab(idx),
           );
         case 5:
           return KpisLeaderboardView(
             workspace: activeWs,
-            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+            onNavigateToTab: (idx) => _navigateToTab(idx),
           );
         case 6:
           return UserSettingsView(
             workspace: activeWs,
-            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+            onNavigateToTab: (idx) => _navigateToTab(idx),
           );
         case 7:
           return IdentityDashboardView(
             workspace: activeWs,
-            onNavigateToTab: (idx) => setState(() => _selectedNavIndex = idx),
+            onNavigateToTab: (idx) => _navigateToTab(idx),
           );
         case 8:
           return RolesPermissionsView(workspace: activeWs);
@@ -1732,8 +1808,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         case 16:
           return UserCreateView(
             workspace: activeWs,
-            onNavigateBack: () => setState(() => _selectedNavIndex = 1),
-            onUserCreated: () => setState(() => _selectedNavIndex = 1),
+            onNavigateBack: _navigateBack,
+            onUserCreated: () => _navigateToTab(1, clearHistory: false),
           );
         default:
           return UserDashboardOverviewView(workspace: activeWs);
@@ -1745,7 +1821,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         case 0:
           return WorkspaceHomeView(
             workspace: activeWs,
-            onNavigate: (idx) => setState(() => _selectedNavIndex = idx >= 100 ? idx - 100 : idx),
+            onNavigate: (idx) => _navigateToTab(idx >= 100 ? idx - 100 : idx),
           );
         case 1:
           return MyAccountProfileView(workspace: activeWs);

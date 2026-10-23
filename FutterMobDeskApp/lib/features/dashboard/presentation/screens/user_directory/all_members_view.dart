@@ -22,11 +22,15 @@ class AllMembersView extends ConsumerStatefulWidget {
   /// Optional callback to navigate to a specific navigation tab index in the shell.
   final ValueChanged<int>? onNavigateToTab;
 
+  /// Optional initial account status filter to pre-select upon navigation.
+  final String? initialStatusFilter;
+
   /// Creates an [AllMembersView] instance.
   const AllMembersView({
     super.key,
     this.workspace,
     this.onNavigateToTab,
+    this.initialStatusFilter,
   });
 
   @override
@@ -60,7 +64,17 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   @override
   void initState() {
     super.initState();
+    _selectedStatusFilter = widget.initialStatusFilter ?? 'All';
     _loadData();
+  }
+
+  @override
+  void didUpdateWidget(covariant AllMembersView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialStatusFilter != null && widget.initialStatusFilter != oldWidget.initialStatusFilter) {
+      _selectedStatusFilter = widget.initialStatusFilter!;
+      _applyFilters();
+    }
   }
 
   @override
@@ -149,9 +163,15 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
       }).toList();
     }
 
-    // 4. Account Status filter
+    // 4. Account Status filter (Active, Suspended, or Suspicious / Flagged)
     if (_selectedStatusFilter != 'All') {
       list = list.where((u) {
+        if (_selectedStatusFilter == 'Suspicious') {
+          final accessFailed = (u['accessFailedCount'] as num?)?.toInt() ?? 0;
+          final isLockedOut = u['isLockedOut'] == true;
+          final isSuspicious = u['isSuspicious'] == true;
+          return isSuspicious || isLockedOut || accessFailed > 0;
+        }
         final status = (u['userStatus'] ?? u['status'] ?? 'Active').toString();
         return status.toLowerCase() == _selectedStatusFilter.toLowerCase();
       }).toList();
@@ -670,6 +690,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                             DropdownMenuItem(value: 'All', child: Text('All Statuses')),
                             DropdownMenuItem(value: 'Active', child: Text('Active')),
                             DropdownMenuItem(value: 'Suspended', child: Text('Suspended')),
+                            DropdownMenuItem(value: 'Suspicious', child: Text('Suspicious / Flagged')),
                           ],
                           onChanged: (val) {
                             setState(() => _selectedStatusFilter = val ?? 'All');
@@ -971,30 +992,27 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     final isSelected = _sortColumn == key;
     return DataColumn(
       onSort: (columnIndex, ascending) => _sortBy(key),
-      label: InkWell(
-        onTap: () => _sortBy(key),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.05,
-                color: Color(0xFF475569),
-              ),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.05,
+              color: Color(0xFF475569),
             ),
-            const SizedBox(width: 4),
-            Icon(
-              isSelected
-                  ? (_sortAsc ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded)
-                  : Icons.unfold_more_rounded,
-              size: 15,
-              color: isSelected ? AppColors.primary : const Color(0xFF94A3B8),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            isSelected
+                ? (_sortAsc ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded)
+                : Icons.unfold_more_rounded,
+            size: 15,
+            color: isSelected ? AppColors.primary : const Color(0xFF94A3B8),
+          ),
+        ],
       ),
     );
   }
@@ -1193,36 +1211,57 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           ),
         ),
 
-        // 6. Status with live dot
+        // 6. Status with live dot (Active, Suspended, or Flagged)
         DataCell(
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-            decoration: BoxDecoration(
-              color: (isSuspended ? const Color(0xFFEF4444) : const Color(0xFF10B981)).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: isSuspended ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-                    shape: BoxShape.circle,
-                  ),
+          Builder(
+            builder: (context) {
+              final isSuspiciousAccount = (u['isSuspicious'] == true) ||
+                  (u['isLockedOut'] == true) ||
+                  (((u['accessFailedCount'] as num?)?.toInt() ?? 0) > 0);
+              final Color badgeColor;
+              final String displayStatus;
+
+              if (isSuspended) {
+                badgeColor = const Color(0xFFEF4444);
+                displayStatus = 'Suspended';
+              } else if (isSuspiciousAccount) {
+                badgeColor = const Color(0xFFE11D48);
+                displayStatus = 'Flagged';
+              } else {
+                badgeColor = const Color(0xFF10B981);
+                displayStatus = userStatus;
+              }
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(100),
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  userStatus,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: isSuspended ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      displayStatus,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: badgeColor,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
 

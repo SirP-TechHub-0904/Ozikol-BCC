@@ -397,7 +397,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
             children: [
               if (_enableTitle) ...[
                 SizedBox(
-                  width: 95,
+                  width: 110,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -405,6 +405,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String?>(
                         initialValue: _selectedTitle,
+                        isExpanded: true,
                         decoration: _inputDecoration(isDark),
                         items: [
                           const DropdownMenuItem(value: null, child: Text('None', style: TextStyle(fontSize: 13))),
@@ -456,7 +457,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: 130,
+                width: 140,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -464,6 +465,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                     const SizedBox(height: 6),
                     DropdownButtonFormField<int>(
                       initialValue: _selectedGender,
+                      isExpanded: true,
                       decoration: _inputDecoration(isDark),
                       items: const [
                         DropdownMenuItem(value: 0, child: Text('Male', style: TextStyle(fontSize: 13))),
@@ -519,6 +521,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
               const SizedBox(height: 6),
               DropdownButtonFormField<String?>(
                 initialValue: _selectedCategoryId,
+                isExpanded: true,
                 decoration: _inputDecoration(isDark),
                 hint: const Text('Select Category (Optional)', style: TextStyle(fontSize: 13)),
                 items: [
@@ -561,6 +564,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                     const SizedBox(height: 6),
                     DropdownButtonFormField<String>(
                       initialValue: _selectedRole,
+                      isExpanded: true,
                       decoration: _inputDecoration(isDark),
                       items: const [
                         DropdownMenuItem(value: 'Member', child: Text('Member', style: TextStyle(fontSize: 13))),
@@ -759,6 +763,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                 text: _isSaving ? 'Provisioning Account...' : 'Create & Provision Member',
                 icon: const Icon(Icons.person_add_rounded, size: 16),
                 isLoading: _isSaving,
+                isFullWidth: false,
                 onPressed: _isSaving ? null : _handleSaveUser,
               ),
             ],

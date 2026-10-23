@@ -12,6 +12,7 @@ class PrimaryButton extends StatelessWidget {
   final double height;
   final double borderRadius;
   final bool isFullWidth;
+  final double? width;
 
   const PrimaryButton({
     super.key,
@@ -24,6 +25,7 @@ class PrimaryButton extends StatelessWidget {
     this.height = 48.0,
     this.borderRadius = 12.0,
     this.isFullWidth = true,
+    this.width,
   });
 
   @override
@@ -61,23 +63,31 @@ class PrimaryButton extends StatelessWidget {
       ],
     );
 
-    return SizedBox(
-      height: height,
-      width: isFullWidth ? double.infinity : null,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: effectiveBg,
-          foregroundColor: effectiveText,
-          disabledBackgroundColor: effectiveBg.withAlpha(140),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Guard against infinite width assertion when placed inside unconstrained horizontal layouts (e.g. Row).
+        final canExpand = isFullWidth && constraints.hasBoundedWidth;
+        final effectiveWidth = width ?? (canExpand ? double.infinity : null);
+
+        return SizedBox(
+          height: height,
+          width: effectiveWidth,
+          child: ElevatedButton(
+            onPressed: isLoading ? null : onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: effectiveBg,
+              foregroundColor: effectiveText,
+              disabledBackgroundColor: effectiveBg.withAlpha(140),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(borderRadius),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+            ),
+            child: buttonContent,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-        ),
-        child: buttonContent,
-      ),
+        );
+      },
     );
   }
 }

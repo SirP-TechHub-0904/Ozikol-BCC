@@ -265,7 +265,14 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (!string.IsNullOrWhiteSpace(status) && status != "All")
             {
-                query = query.Where(u => string.Equals(u.UserStatus, status, StringComparison.OrdinalIgnoreCase));
+                if (string.Equals(status, "Suspicious", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(u => u.IsSuspicious);
+                }
+                else
+                {
+                    query = query.Where(u => string.Equals(u.UserStatus, status, StringComparison.OrdinalIgnoreCase));
+                }
             }
 
             return Ok(ApiResponse<IEnumerable<UserDto>>.SuccessResponse(query.ToList(), "User directory retrieved successfully."));

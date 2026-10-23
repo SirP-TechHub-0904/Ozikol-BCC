@@ -341,7 +341,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           subtext: 'Registered Profiles • View All →',
           icon: Icons.groups_rounded,
           gradientColors: const [Color(0xFF0050E5), Color(0xFF3B82F6)],
-          onTap: () => widget.onNavigateToTab?.call(1),
+          onTap: () => widget.onNavigateToTab?.call(1, filterStatus: 'All'),
         ),
         CentralAdjuster.metricCard(
           title: 'Active Accounts',
