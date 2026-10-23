@@ -672,23 +672,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 const SizedBox(width: 6),
               ],
 
-              // 2. Brand Emblem Icon (hidden only on ultra-narrow windows)
-              if (activeWs != null && !isUltraNarrow) ...[
-                Tooltip(
-                  message: '${activeWs.displayName} Workspace',
-                  child: TenantAvatar(
-                    iconUrl: activeWs.iconUrl,
-                    logoUrl: activeWs.logoUrl,
-                    name: activeWs.displayName,
-                    tenantKey: activeWs.tenantKey,
-                    size: 28,
-                    borderRadius: 7,
-                  ),
-                ),
-                const SizedBox(width: 8),
-              ],
-
-              // 3. Adaptive Search workspace bar
+              // 2. Adaptive Search workspace bar
               ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: searchMaxWidth,
