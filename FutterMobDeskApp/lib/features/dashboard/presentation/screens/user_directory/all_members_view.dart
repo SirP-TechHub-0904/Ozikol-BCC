@@ -421,105 +421,102 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-      child: Stack(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Header Icon Box
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Header Icon Box
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.groups_rounded, size: 26, color: AppColors.primary),
                 ),
-                child: const Icon(Icons.groups_rounded, size: 26, color: AppColors.primary),
-              ),
-              const SizedBox(width: 16),
+                const SizedBox(width: 16),
 
-              // Title & Eyebrow
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Title & Eyebrow
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'USER MANAGEMENT & DIRECTORY',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.08,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Member Directory & Register',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: isDark ? AppColors.gray400 : AppColors.gray600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Action Buttons Group (Registration Form Builder + Add Member)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'USER MANAGEMENT & DIRECTORY',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.08,
-                        color: AppColors.primary,
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        if (widget.onNavigateToTab != null) {
+                          widget.onNavigateToTab!(3); // Registration Form Builder tab index
+                        } else {
+                          _showToast('Registration Form Builder available in sidebar.');
+                        }
+                      },
+                      icon: const Icon(Icons.dynamic_form_outlined, size: 16),
+                      label: const Text('Registration Form Builder'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                        foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Member Directory & Register',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
+                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      onPressed: _navigateToCreateMember,
+                      icon: const Icon(Icons.person_add_rounded, size: 16, color: Colors.white),
+                      label: const Text('Add Member', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                     ),
                   ],
                 ),
-              ),
-
-              // Action Buttons Group (Registration Form Builder + Add Member)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      if (widget.onNavigateToTab != null) {
-                        widget.onNavigateToTab!(3); // Registration Form Builder tab index
-                      } else {
-                        _showToast('Registration Form Builder available in sidebar.');
-                      }
-                    },
-                    icon: const Icon(Icons.dynamic_form_outlined, size: 16),
-                    label: const Text('Registration Form Builder'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                      foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(
-                    onPressed: _navigateToCreateMember,
-                    icon: const Icon(Icons.person_add_rounded, size: 16, color: Colors.white),
-                    label: const Text('Add Member', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          // Loading line
-          if (_isLoading)
-            const Positioned(
-              bottom: -18,
-              left: -20,
-              right: -20,
-              child: LinearProgressIndicator(minHeight: 2.5),
+              ],
             ),
+          ),
+          if (_isLoading)
+            const LinearProgressIndicator(minHeight: 2.5),
         ],
       ),
     );
