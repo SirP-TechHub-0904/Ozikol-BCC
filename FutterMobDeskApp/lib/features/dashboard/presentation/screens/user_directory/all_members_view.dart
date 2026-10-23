@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -346,14 +347,14 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   Future<void> _exportPdf() async {
     final org = widget.workspace?.organizationName ?? 'Business Command Center';
     final filterSum = _searchQuery.isNotEmpty ? 'Search: "$_searchQuery"' : null;
-    await ExportService.printReport(
+    await ExportService.showInAppPdfPreview(
+      context: context,
       title: 'Official Member Directory Register',
       organizationName: org,
       columns: _getExportColumns(),
       data: _filteredUsers,
       filterSummary: filterSum,
     );
-    _showToast('Printable PDF report opened in browser.');
   }
 
   /// <summary>
@@ -366,7 +367,12 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
       columns: _getExportColumns(),
       data: _filteredUsers,
     );
-    _showToast(path != null ? 'Spreadsheet exported successfully!' : 'No records to export.');
+    if (path != null) {
+      final fileName = path.split(Platform.pathSeparator).last;
+      _showToast('Spreadsheet saved to Downloads: $fileName');
+    } else {
+      _showToast('No records to export.');
+    }
   }
 
   /// <summary>
@@ -383,11 +389,16 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
       data: _filteredUsers,
       filterSummary: _searchQuery.isNotEmpty ? 'Search: "$_searchQuery"' : null,
     );
-    _showToast(path != null ? 'Word document exported successfully!' : 'No records to export.');
+    if (path != null) {
+      final fileName = path.split(Platform.pathSeparator).last;
+      _showToast('Word document saved to Downloads: $fileName');
+    } else {
+      _showToast('No records to export.');
+    }
   }
 
   /// <summary>
-  /// Exports members belonging to a specific organizational category tier.
+  /// Exports members belonging to a specific organizational category tier using in-app preview.
   /// </summary>
   Future<void> _exportSpecificCategory(Map<String, dynamic> cat) async {
     final catId = cat['id']?.toString() ?? '';
@@ -395,14 +406,14 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     final categoryMembers = _allUsers.where((u) => u['bcpUserCategoryId']?.toString() == catId).toList();
     final org = widget.workspace?.organizationName ?? 'Business Command Center';
 
-    await ExportService.printReport(
+    await ExportService.showInAppPdfPreview(
+      context: context,
       title: 'Member Register - $catName',
       organizationName: org,
       columns: _getExportColumns(),
       data: categoryMembers,
       filterSummary: 'Category: $catName (${categoryMembers.length} members)',
     );
-    _showToast('Export report for category "$catName" generated.');
   }
 
   /// <summary>
