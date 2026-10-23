@@ -332,7 +332,7 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
     }
   }
 
-  Future<void> _savePolicy() async {
+  Future<bool> _savePolicy({bool showFeedback = true}) async {
     setState(() => _isSavingPolicy = true);
     _policy['registrationFormTitle'] = _titleCtrl.text.trim();
     _policy['registrationWelcomeMessage'] = _welcomeCtrl.text.trim();
@@ -344,15 +344,31 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
       final ok = await repo.saveRegistrationPolicy(_policy);
       if (mounted) {
         setState(() => _isSavingPolicy = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ok ? 'Registration policies saved successfully.' : 'Failed to save policies.'),
-            backgroundColor: ok ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-          ),
-        );
+        if (showFeedback) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(ok ? 'Registration policies saved successfully.' : 'Failed to save policies.'),
+              backgroundColor: ok ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+            ),
+          );
+        }
       }
+      return ok;
     } catch (_) {
-      if (mounted) setState(() => _isSavingPolicy = false);
+      if (mounted) {
+        setState(() => _isSavingPolicy = false);
+        if (showFeedback) {
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to save policies.'),
+              backgroundColor: Color(0xFFEF4444),
+            ),
+          );
+        }
+      }
+      return false;
     }
   }
 
@@ -493,7 +509,9 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
                 _policy['formLayoutMode'] = tpl.layoutMode;
                 _policy['defaultIndustrySector'] = tpl.sector;
               });
-              await _savePolicy();
+
+              // Silent policy save to guarantee immediate background persistence
+              await _savePolicy(showFeedback: false);
 
               try {
                 final repo = ref.read(accountRepositoryProvider);
@@ -502,6 +520,7 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
                   mode: 'replace',
                   layoutMode: tpl.layoutMode,
                   applyLayoutMode: true,
+                  defaultIndustrySector: tpl.sector,
                 );
                 if (mounted) {
                   _loadData();
@@ -509,8 +528,12 @@ class _RegistrationFormBuilderViewState extends ConsumerState<RegistrationFormBu
               } catch (_) {}
 
               if (mounted) {
+                ScaffoldMessenger.of(context).clearSnackBars();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Applied "${tpl.name}" template flow!'), backgroundColor: const Color(0xFF10B981)),
+                  SnackBar(
+                    content: Text('Applied "${tpl.name}" template flow!'),
+                    backgroundColor: const Color(0xFF10B981),
+                  ),
                 );
               }
             },

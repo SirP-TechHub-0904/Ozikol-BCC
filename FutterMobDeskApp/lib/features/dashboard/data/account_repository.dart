@@ -883,13 +883,19 @@ class AccountRepository {
 
   /// <summary>
   /// Saves the self-registration and onboarding policy.
+  /// Uses PUT with fallback to POST to match the backend registration policy endpoint.
   /// </summary>
   Future<bool> saveRegistrationPolicy(Map<String, dynamic> policy) async {
     try {
-      final response = await _dio.post('api/RegistrationFormApi/policy', data: policy);
+      final response = await _dio.put('api/RegistrationFormApi/policy', data: policy);
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
-      return false;
+      try {
+        final fallback = await _dio.post('api/RegistrationFormApi/policy', data: policy);
+        return fallback.statusCode == 200 || fallback.statusCode == 204;
+      } catch (_) {
+        return false;
+      }
     }
   }
 
@@ -937,6 +943,7 @@ class AccountRepository {
     required String mode,
     required String layoutMode,
     required bool applyLayoutMode,
+    String? defaultIndustrySector,
   }) async {
     try {
       final response = await _dio.post(
@@ -946,6 +953,8 @@ class AccountRepository {
           'mode': mode,
           'layoutMode': layoutMode,
           'applyLayoutMode': applyLayoutMode,
+          if (defaultIndustrySector != null && defaultIndustrySector.isNotEmpty)
+            'defaultIndustrySector': defaultIndustrySector,
         },
       );
       return response.statusCode == 200 || response.statusCode == 204;

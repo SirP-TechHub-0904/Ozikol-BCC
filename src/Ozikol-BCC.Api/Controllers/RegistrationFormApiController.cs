@@ -328,6 +328,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="dto">Updated policy payload.</param>
         /// <returns>Success response.</returns>
         [HttpPut("policy")]
+        [HttpPost("policy")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
         public async Task<IActionResult> UpdateRegistrationPolicy([FromBody] RegistrationPolicyDto dto)
         {
@@ -494,8 +495,8 @@ namespace Ozikol_BCC.Api.Controllers
                 _context.BcpRegistrationFormFields.Add(fieldEntity);
             }
 
-            // Optionally synchronize recommended presentation layout mode
-            if (dto.ApplyLayoutMode && !string.IsNullOrWhiteSpace(dto.LayoutMode))
+            // Optionally synchronize recommended presentation layout mode and default industry sector
+            if ((dto.ApplyLayoutMode && !string.IsNullOrWhiteSpace(dto.LayoutMode)) || !string.IsNullOrWhiteSpace(dto.DefaultIndustrySector))
             {
                 var policyConfigField = await _context.BcpRegistrationFormFields
                     .FirstOrDefaultAsync(f => f.FieldKey == "__form_layout_policy__");
@@ -510,7 +511,16 @@ namespace Ozikol_BCC.Api.Controllers
                     catch { }
                 }
 
-                extra.FormLayoutMode = dto.LayoutMode;
+                if (dto.ApplyLayoutMode && !string.IsNullOrWhiteSpace(dto.LayoutMode))
+                {
+                    extra.FormLayoutMode = dto.LayoutMode;
+                }
+
+                if (!string.IsNullOrWhiteSpace(dto.DefaultIndustrySector))
+                {
+                    extra.DefaultIndustrySector = dto.DefaultIndustrySector.Trim();
+                }
+
                 var extraJson = JsonSerializer.Serialize(extra);
 
                 if (policyConfigField == null)
@@ -752,6 +762,7 @@ namespace Ozikol_BCC.Api.Controllers
         public string Mode { get; set; } = "replace"; // "replace" | "append"
         public string? LayoutMode { get; set; } // "single" | "sections" | "stepper" | "pages"
         public bool ApplyLayoutMode { get; set; } = true;
+        public string? DefaultIndustrySector { get; set; }
     }
 
     /// <summary>
