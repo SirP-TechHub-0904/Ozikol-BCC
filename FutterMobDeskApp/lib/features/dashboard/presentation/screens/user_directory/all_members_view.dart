@@ -25,12 +25,16 @@ class AllMembersView extends ConsumerStatefulWidget {
   /// Optional initial account status filter to pre-select upon navigation.
   final String? initialStatusFilter;
 
+  /// Optional callback to navigate back to the previous screen.
+  final VoidCallback? onNavigateBack;
+
   /// Creates an [AllMembersView] instance.
   const AllMembersView({
     super.key,
     this.workspace,
     this.onNavigateToTab,
     this.initialStatusFilter,
+    this.onNavigateBack,
   });
 
   @override
@@ -435,6 +439,15 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   // =========================================================================
 
   Widget _buildPageHeader(bool isDark) {
+    final canGoBack = widget.onNavigateBack != null || widget.onNavigateToTab != null;
+    void goBack() {
+      if (widget.onNavigateBack != null) {
+        widget.onNavigateBack!();
+      } else if (widget.onNavigateToTab != null) {
+        widget.onNavigateToTab!(0);
+      }
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
@@ -450,6 +463,29 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                if (canGoBack) ...[
+                  Tooltip(
+                    message: 'Back to Overview',
+                    child: InkWell(
+                      onTap: goBack,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isDark ? AppColors.outlineDark : const Color(0xFFBFDBFE),
+                          ),
+                        ),
+                        child: const Icon(Icons.arrow_back_rounded, size: 20, color: AppColors.primary),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+
                 // Header Icon Box
                 Container(
                   width: 48,
@@ -497,10 +533,24 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                   ),
                 ),
 
-                // Action Buttons Group (Registration Form Builder + Add Member)
+                // Action Buttons Group (Back + Registration Form Builder + Add Member)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (canGoBack) ...[
+                      OutlinedButton.icon(
+                        onPressed: goBack,
+                        icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                        label: const Text('Back'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                          foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                    ],
                     OutlinedButton.icon(
                       onPressed: () {
                         if (widget.onNavigateToTab != null) {

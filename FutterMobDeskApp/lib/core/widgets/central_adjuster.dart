@@ -284,6 +284,7 @@ class CentralAdjuster {
   /// <param name="isDark">Theme mode indicator.</param>
   /// <param name="iconColor">Optional icon color override (defaults to royal blue).</param>
   /// <param name="iconBgColor">Optional icon container background color.</param>
+  /// <param name="onBack">Optional back navigation callback. When provided, renders an adaptive back button.</param>
   /// <returns>An [AdaptivePageHeader] widget.</returns>
   static Widget pageHeader({
     required IconData icon,
@@ -294,6 +295,7 @@ class CentralAdjuster {
     required bool isDark,
     Color? iconColor,
     Color? iconBgColor,
+    VoidCallback? onBack,
   }) {
     return AdaptivePageHeader(
       icon: icon,
@@ -304,6 +306,7 @@ class CentralAdjuster {
       isDark: isDark,
       iconColor: iconColor,
       iconBgColor: iconBgColor,
+      onBack: onBack,
     );
   }
 
@@ -954,6 +957,9 @@ class AdaptivePageHeader extends StatelessWidget {
   /// Optional icon container background color.
   final Color? iconBgColor;
 
+  /// Optional back navigation callback. When provided, renders an adaptive back button.
+  final VoidCallback? onBack;
+
   /// Creates an [AdaptivePageHeader].
   const AdaptivePageHeader({
     super.key,
@@ -965,6 +971,7 @@ class AdaptivePageHeader extends StatelessWidget {
     required this.isDark,
     this.iconColor,
     this.iconBgColor,
+    this.onBack,
   });
 
   @override
@@ -989,6 +996,28 @@ class AdaptivePageHeader extends StatelessWidget {
           final titleBlock = Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              if (onBack != null) ...[
+                Tooltip(
+                  message: 'Back',
+                  child: InkWell(
+                    onTap: onBack,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isDark ? AppColors.outlineDark : const Color(0xFFBFDBFE),
+                        ),
+                      ),
+                      child: const Icon(Icons.arrow_back_rounded, size: 20, color: AppColors.primary),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
               Container(
                 width: 44,
                 height: 44,

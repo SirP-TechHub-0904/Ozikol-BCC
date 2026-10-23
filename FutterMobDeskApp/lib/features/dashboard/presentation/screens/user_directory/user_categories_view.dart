@@ -15,11 +15,15 @@ class UserCategoriesView extends ConsumerStatefulWidget {
   /// Optional navigation callback to jump to other tabs (e.g. User Directory).
   final void Function(int tabIndex, {String? categoryFilter})? onNavigateToTab;
 
+  /// Optional callback to navigate back to previous screen.
+  final VoidCallback? onNavigateBack;
+
   /// Creates a [UserCategoriesView].
   const UserCategoriesView({
     super.key,
     this.workspace,
     this.onNavigateToTab,
+    this.onNavigateBack,
   });
 
   @override
@@ -444,7 +448,22 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
       subtitle:
           'Manage organizational departments, business units, and member classification tiers in an enterprise table.',
       isDark: isDark,
+      onBack: widget.onNavigateBack,
       actions: [
+        if (widget.onNavigateBack != null) ...[
+          OutlinedButton.icon(
+            onPressed: widget.onNavigateBack,
+            icon: const Icon(Icons.arrow_back_rounded, size: 16),
+            label: const Text('Back'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+              side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
         OutlinedButton.icon(
           onPressed: () => widget.onNavigateToTab?.call(1),
           icon: const Icon(Icons.groups_rounded, size: 16),

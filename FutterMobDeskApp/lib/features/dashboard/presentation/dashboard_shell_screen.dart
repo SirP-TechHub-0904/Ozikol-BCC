@@ -72,12 +72,22 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   /// <param name="filterStatus">Optional member status filter to pre-select.</param>
   /// <param name="clearHistory">If true, resets navigation history stack.</param>
   void _navigateToTab(int index, {String? filterStatus, bool clearHistory = false}) {
+    if (_selectedNavIndex == index && _activeStatusFilter == filterStatus) return;
     setState(() {
       if (clearHistory) {
         _navHistory.clear();
+        if (index != 0) {
+          _navHistory.add(0);
+        }
         _navHistory.add(index);
-      } else if (_selectedNavIndex != index) {
-        _navHistory.add(_selectedNavIndex);
+      } else {
+        if (_navHistory.isEmpty) {
+          _navHistory.add(0);
+        }
+        if (_navHistory.last != _selectedNavIndex) {
+          _navHistory.add(_selectedNavIndex);
+        }
+        _navHistory.add(index);
       }
       _selectedNavIndex = index;
       _activeStatusFilter = filterStatus;
@@ -88,13 +98,17 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   /// Pops the navigation history stack and returns to the previous screen.
   /// </summary>
   void _navigateBack() {
-    if (_navHistory.length > 1) {
-      setState(() {
+    setState(() {
+      if (_navHistory.length > 1) {
         _navHistory.removeLast();
         _selectedNavIndex = _navHistory.last;
-        _activeStatusFilter = null;
-      });
-    }
+      } else {
+        _selectedNavIndex = 0;
+        _navHistory.clear();
+        _navHistory.add(0);
+      }
+      _activeStatusFilter = null;
+    });
   }
 
   /// Toggles the desktop sidebar between expanded (250px) and collapsed (68px) rail mode.
@@ -369,8 +383,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       key: _mobileScaffoldKey,
       backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
       appBar: AppTopBar(
-        leadingType: _navHistory.length > 1 ? AppTopBarLeadingType.back : AppTopBarLeadingType.menu,
-        onLeadingPressed: _navHistory.length > 1 ? _navigateBack : null,
+        leadingType: (_selectedNavIndex != 0 || _navHistory.length > 1)
+            ? AppTopBarLeadingType.back
+            : AppTopBarLeadingType.menu,
+        onLeadingPressed: (_selectedNavIndex != 0 || _navHistory.length > 1) ? _navigateBack : null,
         centerContent: Row(
           children: [
             if (activeWs != null) ...[
@@ -616,8 +632,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               const SizedBox(width: 4),
 
-              // 1b. Adaptive Back Navigation Button (visible whenever navigation history has depth > 1)
-              if (_navHistory.length > 1) ...[
+              // 1b. Adaptive Back Navigation Button (visible whenever navigation history has depth > 1 or not on root dashboard)
+              if (_selectedNavIndex != 0 || _navHistory.length > 1) ...[
                 Tooltip(
                   message: 'Back to previous view',
                   child: Material(
@@ -643,8 +659,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                               'Back',
                               style: TextStyle(
                                 fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? const Color(0xFF93C5FD) : AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : AppColors.primary,
                               ),
                             ),
                           ],
@@ -653,7 +669,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
               ],
 
               // 2. Brand Emblem Icon (hidden only on ultra-narrow windows)
@@ -1762,31 +1778,37 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             workspace: activeWs,
             initialStatusFilter: _activeStatusFilter,
             onNavigateToTab: (idx) => _navigateToTab(idx),
+            onNavigateBack: _navigateBack,
           );
         case 2:
           return UserCategoriesView(
             workspace: activeWs,
             onNavigateToTab: (idx, {categoryFilter}) => _navigateToTab(idx),
+            onNavigateBack: _navigateBack,
           );
         case 3:
           return RegistrationFormBuilderView(
             workspace: activeWs,
             onNavigateToTab: (idx) => _navigateToTab(idx),
+            onNavigateBack: _navigateBack,
           );
         case 4:
           return AuthPageSetupView(
             workspace: activeWs,
             onNavigateToTab: (idx) => _navigateToTab(idx),
+            onNavigateBack: _navigateBack,
           );
         case 5:
           return KpisLeaderboardView(
             workspace: activeWs,
             onNavigateToTab: (idx) => _navigateToTab(idx),
+            onNavigateBack: _navigateBack,
           );
         case 6:
           return UserSettingsView(
             workspace: activeWs,
             onNavigateToTab: (idx) => _navigateToTab(idx),
+            onNavigateBack: _navigateBack,
           );
         case 7:
           return IdentityDashboardView(
