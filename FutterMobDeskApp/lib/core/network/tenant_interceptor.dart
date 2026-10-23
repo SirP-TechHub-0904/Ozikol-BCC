@@ -44,7 +44,13 @@ class TenantInterceptor extends Interceptor {
             activeWorkspace.customDomain ?? activeWorkspace.primaryDomain;
       }
 
-      if (activeWorkspace.authToken != null &&
+      final isAuthPath = options.path.contains('/login') ||
+          options.path.contains('/password/') ||
+          options.path.contains('/verify-otp') ||
+          options.path.contains('/resend-otp');
+
+      if (!isAuthPath &&
+          activeWorkspace.authToken != null &&
           activeWorkspace.authToken!.isNotEmpty &&
           !options.headers.containsKey(ApiConstants.headerAuthorization)) {
         options.headers[ApiConstants.headerAuthorization] = 'Bearer ${activeWorkspace.authToken}';
