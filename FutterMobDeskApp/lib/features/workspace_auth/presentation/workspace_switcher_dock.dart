@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../state/workspace_state.dart';
 import 'workspace_entry_screen.dart';
+import 'workspace_login_screen.dart';
 
 /// Desktop vertical workspace dock (Slack / Discord style).
 /// Displays enrolled organization avatars, active workspace indicator pill, and "+ Add Workspace" button.
@@ -44,7 +45,18 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
                   message: ws.displayName,
                   waitDuration: const Duration(milliseconds: 300),
                   child: InkWell(
-                    onTap: () => notifier.switchWorkspace(ws.tenantKey),
+                    onTap: () {
+                      if (isActive) return;
+                      if (!ws.isAuthenticated) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => WorkspaceLoginScreen(workspace: ws),
+                          ),
+                        );
+                      } else {
+                        notifier.switchWorkspace(ws.tenantKey);
+                      }
+                    },
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
                       height: 54,

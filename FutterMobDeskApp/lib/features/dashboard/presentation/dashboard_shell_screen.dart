@@ -1959,8 +1959,16 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                       ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
                       : null,
                   onTap: () {
-                    ref.read(workspaceStateProvider.notifier).switchWorkspace(ws.tenantKey);
                     Navigator.of(context).pop();
+                    if (!ws.isAuthenticated) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => WorkspaceLoginScreen(workspace: ws),
+                        ),
+                      );
+                    } else {
+                      ref.read(workspaceStateProvider.notifier).switchWorkspace(ws.tenantKey);
+                    }
                   },
                 );
               }),
