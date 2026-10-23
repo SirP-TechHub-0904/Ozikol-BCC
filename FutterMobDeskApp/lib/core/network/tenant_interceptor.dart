@@ -59,6 +59,13 @@ class TenantInterceptor extends Interceptor {
       }
     }
 
+    // 3. Inject Device Trust Token for seamless 2FA bypass on trusted devices
+    final effectiveTenantKey = options.headers[ApiConstants.headerTenantKey]?.toString() ?? activeWorkspace?.tenantKey;
+    final trustToken = await _storageService.getDeviceTrustToken(effectiveTenantKey);
+    if (trustToken != null && trustToken.isNotEmpty && !options.headers.containsKey('X-Device-Trust-Token')) {
+      options.headers['X-Device-Trust-Token'] = trustToken;
+    }
+
     // Always accept application/json
     options.headers['Accept'] = 'application/json';
 

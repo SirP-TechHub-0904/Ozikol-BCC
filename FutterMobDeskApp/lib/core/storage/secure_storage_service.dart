@@ -397,6 +397,57 @@ class SecureStorageService {
     return deviceId;
   }
 
+  static const String _deviceTrustTokenPrefix = 'ozikol_device_trust_token_';
+  static const String _deviceTrustTokenGlobal = 'ozikol_device_trust_token_global';
+
+  /// Retrieves the saved device trust token for the specified tenant or globally.
+  Future<String?> getDeviceTrustToken([String? tenantKey]) async {
+    final key = tenantKey != null && tenantKey.isNotEmpty
+        ? '$_deviceTrustTokenPrefix$tenantKey'
+        : _deviceTrustTokenGlobal;
+
+    if (_secureStorage != null) {
+      final token = await _secureStorage.read(key: key);
+      if (token != null && token.isNotEmpty) return token;
+      if (tenantKey != null) {
+        return await _secureStorage.read(key: _deviceTrustTokenGlobal);
+      }
+      return null;
+    }
+    return _memoryStore[key] ?? _memoryStore[_deviceTrustTokenGlobal];
+  }
+
+  /// Persists the device trust token for the specified tenant and globally.
+  Future<void> setDeviceTrustToken(String token, [String? tenantKey]) async {
+    final trimmed = token.trim();
+    if (_secureStorage != null) {
+      if (tenantKey != null && tenantKey.isNotEmpty) {
+        await _secureStorage.write(key: '$_deviceTrustTokenPrefix$tenantKey', value: trimmed);
+      }
+      await _secureStorage.write(key: _deviceTrustTokenGlobal, value: trimmed);
+    } else {
+      if (tenantKey != null && tenantKey.isNotEmpty) {
+        _memoryStore['$_deviceTrustTokenPrefix$tenantKey'] = trimmed;
+      }
+      _memoryStore[_deviceTrustTokenGlobal] = trimmed;
+    }
+  }
+
+  /// Clears the device trust token.
+  Future<void> clearDeviceTrustToken([String? tenantKey]) async {
+    if (_secureStorage != null) {
+      if (tenantKey != null && tenantKey.isNotEmpty) {
+        await _secureStorage.delete(key: '$_deviceTrustTokenPrefix$tenantKey');
+      }
+      await _secureStorage.delete(key: _deviceTrustTokenGlobal);
+    } else {
+      if (tenantKey != null && tenantKey.isNotEmpty) {
+        _memoryStore.remove('$_deviceTrustTokenPrefix$tenantKey');
+      }
+      _memoryStore.remove(_deviceTrustTokenGlobal);
+    }
+  }
+
   static String _generateUuidV4() {
     final random = Random.secure();
     final values = List<int>.generate(16, (i) => random.nextInt(256));

@@ -101,6 +101,13 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
           ? Map<String, dynamic>.from((result['auth'] ?? result['Auth']) as Map)
           : result;
 
+      // Persist Device Trust Token if the user opted to trust this device
+      final trustToken = (result['trustToken'] ?? result['TrustToken'])?.toString();
+      if (_trustDevice && trustToken != null && trustToken.isNotEmpty) {
+        final storage = ref.read(storageServiceProvider);
+        await storage.setDeviceTrustToken(trustToken, widget.workspace.tenantKey);
+      }
+
       final token = (authMap['token'] ?? authMap['Token']) as String?;
       final fullName = (authMap['fullName'] ?? authMap['FullName'] ?? authMap['userName']) as String?;
       final roles = ((authMap['roles'] ?? authMap['Roles']) as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];

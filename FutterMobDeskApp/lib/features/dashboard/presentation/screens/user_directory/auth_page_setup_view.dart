@@ -576,16 +576,20 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                         ),
                         const SizedBox(height: 12),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Split Screen Showcase',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: isSplitLayout ? const Color(0xFF0050E5) : (isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
+                            Expanded(
+                              child: Text(
+                                'Split Screen Showcase',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: isSplitLayout ? const Color(0xFF0050E5) : (isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 6),
                             Icon(
                               isSplitLayout ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
                               color: isSplitLayout ? const Color(0xFF0050E5) : const Color(0xFFCBD5E1),
@@ -661,16 +665,20 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                         ),
                         const SizedBox(height: 12),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'Centered Card (Don\'t Split)',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: !isSplitLayout ? const Color(0xFF0050E5) : (isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
+                            Expanded(
+                              child: Text(
+                                'Centered Card (Don\'t Split)',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: !isSplitLayout ? const Color(0xFF0050E5) : (isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            const SizedBox(width: 6),
                             Icon(
                               !isSplitLayout ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
                               color: !isSplitLayout ? const Color(0xFF0050E5) : const Color(0xFFCBD5E1),

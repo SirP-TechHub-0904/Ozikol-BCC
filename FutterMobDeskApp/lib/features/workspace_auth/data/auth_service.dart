@@ -49,10 +49,20 @@ class AuthService {
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
+        Map<String, dynamic>? resultMap;
         if (data is Map && data['data'] is Map) {
-          return Map<String, dynamic>.from(data['data'] as Map);
+          resultMap = Map<String, dynamic>.from(data['data'] as Map);
         } else if (data is Map) {
-          return Map<String, dynamic>.from(data);
+          resultMap = Map<String, dynamic>.from(data);
+        }
+
+        if (resultMap != null) {
+          // Extract trust token from body or response header if provided by backend
+          final headerToken = response.headers.value('x-device-trust-token');
+          if (headerToken != null && headerToken.isNotEmpty && resultMap['trustToken'] == null) {
+            resultMap['trustToken'] = headerToken;
+          }
+          return resultMap;
         }
       }
       throw Exception('Verification failed. Please check the code and try again.');
