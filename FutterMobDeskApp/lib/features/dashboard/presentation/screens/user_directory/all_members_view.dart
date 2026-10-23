@@ -474,20 +474,6 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
       back: canGoBack ? PageHeaderBack.previous(goBack, tooltip: 'Back') : PageHeaderBack.none,
       isLoading: _isLoading,
-      secondaryActions: [
-        PageHeaderAction(
-          label: 'Registration Form Builder',
-          compactLabel: 'Form Builder',
-          icon: Icons.dynamic_form_outlined,
-          onPressed: () {
-            if (widget.onNavigateToTab != null) {
-              widget.onNavigateToTab!(3); // Registration Form Builder tab index
-            } else {
-              _showToast('Registration Form Builder available in sidebar.');
-            }
-          },
-        ),
-      ],
       primaryAction: PageHeaderAction(
         label: 'Add Member',
         icon: Icons.person_add_rounded,

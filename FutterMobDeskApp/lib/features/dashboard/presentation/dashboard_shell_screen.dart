@@ -29,7 +29,6 @@ import 'widgets/user_profile_end_drawer.dart';
 import 'screens/user_directory/user_dashboard_overview_view.dart';
 import 'screens/user_directory/all_members_view.dart';
 import 'screens/user_directory/user_categories_view.dart';
-import 'screens/user_directory/registration_form_builder_view.dart';
 import 'screens/user_directory/auth_page_setup_view.dart';
 import 'screens/user_directory/kpis_leaderboard_view.dart';
 import 'screens/user_directory/user_settings_view.dart';
@@ -1541,15 +1540,6 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.dynamic_form_outlined,
-                title: 'Registration Form Builder',
-                isSelected: _selectedNavIndex == 3,
-                onTap: () {
-                  _navigateToTab(3, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
                 icon: Icons.palette_outlined,
                 title: 'Auth Page Setup',
                 isSelected: _selectedNavIndex == 4,
@@ -1796,10 +1786,14 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onNavigateBack: _navigateBack,
           );
         case 3:
-          return RegistrationFormBuilderView(
+          // Registration Form Builder is managed on the Web Admin Console (/users/console/registration-form)
+          return AllMembersView(
             workspace: activeWs,
+            initialStatusFilter: _activeStatusFilter,
             onNavigateToTab: (idx) => _navigateToTab(idx),
             onNavigateBack: _navigateBack,
+            onNavigateToMemberDetails: _navigateToMemberDetails,
+            onNavigateToMemberEdit: _navigateToMemberEdit,
           );
         case 4:
           return AuthPageSetupView(
