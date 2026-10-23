@@ -447,8 +447,17 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   // 1. STANDARDIZED PAGE HEADER
   // =========================================================================
 
+  /// <summary>
+  /// Builds the Member Directory header using the shared [PageHeader] mold so
+  /// it adapts consistently across wide, medium and compact window widths.
+  /// </summary>
+  /// <param name="isDark">Unused by the mold (it reads the theme) but kept for call-site parity.</param>
+  /// <returns>The standardized page header widget.</returns>
   Widget _buildPageHeader(bool isDark) {
     final canGoBack = widget.onNavigateBack != null || widget.onNavigateToTab != null;
+
+    // Step back one level through history; fall back to the Overview tab when
+    // the shell did not supply a history callback.
     void goBack() {
       if (widget.onNavigateBack != null) {
         widget.onNavigateBack!();
@@ -457,142 +466,33 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
       }
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                if (canGoBack) ...[
-                  Tooltip(
-                    message: 'Back to Overview',
-                    child: InkWell(
-                      onTap: goBack,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isDark ? AppColors.outlineDark : const Color(0xFFBFDBFE),
-                          ),
-                        ),
-                        child: const Icon(Icons.arrow_back_rounded, size: 20, color: AppColors.primary),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                ],
-
-                // Header Icon Box
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.groups_rounded, size: 26, color: AppColors.primary),
-                ),
-                const SizedBox(width: 16),
-
-                // Title & Eyebrow
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'USER MANAGEMENT & DIRECTORY',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.08,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Member Directory & Register',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                        ),
-                      ),
-                      // Description is hidden on smaller desktop windows (< 1280px) so the
-                      // title and action buttons keep a clean single-row header.
-                      if (MediaQuery.sizeOf(context).width >= 1280) ...[
-                        const SizedBox(height: 3),
-                        Text(
-                          'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: isDark ? AppColors.gray400 : AppColors.gray600,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-
-                // Action Buttons Group (Back + Registration Form Builder + Add Member)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        if (widget.onNavigateToTab != null) {
-                          widget.onNavigateToTab!(3); // Registration Form Builder tab index
-                        } else {
-                          _showToast('Registration Form Builder available in sidebar.');
-                        }
-                      },
-                      icon: const Icon(Icons.dynamic_form_outlined, size: 16),
-                      label: const Text('Registration Form Builder'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                        foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton.icon(
-                      onPressed: _navigateToCreateMember,
-                      icon: const Icon(Icons.person_add_rounded, size: 16, color: Colors.white),
-                      label: const Text('Add Member', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (_isLoading)
-            const LinearProgressIndicator(minHeight: 2.5),
-        ],
+    return PageHeader(
+      icon: Icons.groups_rounded,
+      eyebrow: 'User Management & Directory',
+      title: 'Member Directory & Register',
+      description:
+          'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
+      back: canGoBack ? PageHeaderBack.previous(goBack, tooltip: 'Back') : PageHeaderBack.none,
+      isLoading: _isLoading,
+      secondaryActions: [
+        PageHeaderAction(
+          label: 'Registration Form Builder',
+          compactLabel: 'Form Builder',
+          icon: Icons.dynamic_form_outlined,
+          onPressed: () {
+            if (widget.onNavigateToTab != null) {
+              widget.onNavigateToTab!(3); // Registration Form Builder tab index
+            } else {
+              _showToast('Registration Form Builder available in sidebar.');
+            }
+          },
+        ),
+      ],
+      primaryAction: PageHeaderAction(
+        label: 'Add Member',
+        icon: Icons.person_add_rounded,
+        style: PageHeaderActionStyle.primary,
+        onPressed: _navigateToCreateMember,
       ),
     );
   }

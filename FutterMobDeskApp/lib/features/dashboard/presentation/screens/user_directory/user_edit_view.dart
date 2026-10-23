@@ -285,88 +285,30 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
   // 1. PAGE HEADER
   // =========================================================================
 
+  /// <summary>
+  /// Builds the Profile Management header using the shared [PageHeader] mold.
+  /// Back cancels editing and jumps to a specific page via [PageHeaderBack.to].
+  /// </summary>
+  /// <param name="isDark">Kept for call-site parity; the mold reads the theme itself.</param>
+  /// <param name="fullName">Display name of the member being edited.</param>
+  /// <returns>The standardized page header widget.</returns>
   Widget _buildPageHeader(bool isDark, String fullName) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.manage_accounts_rounded, size: 26, color: AppColors.primary),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'PROFILE MANAGEMENT',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.08,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Edit Profile: $fullName',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Update member identity, change organizational category tier, and reassign system security roles.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 14),
-
-          // Back button
-          OutlinedButton.icon(
-            onPressed: () {
-              if (widget.onNavigateBack != null) {
-                widget.onNavigateBack!();
-              } else {
-                Navigator.of(context).maybePop();
-              }
-            },
-            icon: const Icon(Icons.arrow_back_rounded, size: 15),
-            label: const Text('Cancel & Back'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-              foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-            ),
-          ),
-        ],
+    return PageHeader(
+      icon: Icons.manage_accounts_rounded,
+      eyebrow: 'Profile Management',
+      title: 'Edit Profile: $fullName',
+      description:
+          'Update member identity, change organizational category tier, and reassign system security roles.',
+      back: PageHeaderBack.to(
+        () {
+          // Discard edits and return via the shell callback; otherwise pop the route.
+          if (widget.onNavigateBack != null) {
+            widget.onNavigateBack!();
+          } else {
+            Navigator.of(context).maybePop();
+          }
+        },
+        label: 'Cancel & Back',
       ),
     );
   }

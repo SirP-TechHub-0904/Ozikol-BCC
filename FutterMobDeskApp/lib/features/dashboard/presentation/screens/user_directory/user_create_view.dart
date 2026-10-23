@@ -881,88 +881,29 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
   }
 
   /// <summary>
-  /// Builds the standardized full-width page header matching Angular's app-page-header.
+  /// Builds the Create Member header using the shared [PageHeader] mold. The back
+  /// control jumps to a specific destination (the Member Directory), so it uses
+  /// [PageHeaderBack.to] with a visible label on wide screens.
   /// </summary>
+  /// <param name="isDark">Kept for call-site parity; the mold reads the theme itself.</param>
+  /// <returns>The standardized page header widget.</returns>
   Widget _buildPageHeader(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.person_add_rounded, size: 24, color: AppColors.primary),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'NEW MEMBER REGISTRATION',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.08,
-                    color: isDark ? AppColors.gray400 : AppColors.gray600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Create New Member Account',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Create a new member profile, assign category tier, select roles, and configure temporary password credentials.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 14),
-          OutlinedButton.icon(
-            onPressed: () {
-              if (widget.onNavigateBack != null) {
-                widget.onNavigateBack!();
-              } else {
-                Navigator.of(context).maybePop();
-              }
-            },
-            icon: const Icon(Icons.arrow_back_rounded, size: 16),
-            label: const Text('Back to Directory', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-              side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
-              foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
-            ),
-          ),
-        ],
+    return PageHeader(
+      icon: Icons.person_add_rounded,
+      eyebrow: 'New Member Registration',
+      title: 'Create New Member Account',
+      description:
+          'Create a new member profile, assign category tier, select roles, and configure temporary password credentials.',
+      back: PageHeaderBack.to(
+        () {
+          // Prefer the shell callback (returns to the directory); otherwise pop the route.
+          if (widget.onNavigateBack != null) {
+            widget.onNavigateBack!();
+          } else {
+            Navigator.of(context).maybePop();
+          }
+        },
+        label: 'Back to Directory',
       ),
     );
   }

@@ -387,114 +387,39 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
   // 1. PAGE HEADER
   // =========================================================================
 
+  /// <summary>
+  /// Builds the 360° Member Command Center header using the shared [PageHeader]
+  /// mold. Back jumps to a specific page (the member list) via [PageHeaderBack.to].
+  /// </summary>
+  /// <param name="isDark">Kept for call-site parity; the mold reads the theme itself.</param>
+  /// <returns>The standardized page header widget.</returns>
   Widget _buildPageHeader(bool isDark) {
     final fullName = (_userData['fullName'] ?? _userData['userName'] ?? 'Member').toString();
     final memberId = _sanitizeId(_userData['memberId']?.toString());
     final designation = (_userData['designation'] ?? 'Member').toString();
     final categoryName = (_userData['categoryName'] ?? 'Unassigned Category').toString();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return PageHeader(
+      icon: Icons.account_circle_outlined,
+      eyebrow: '360° Member Command Center',
+      title: fullName,
+      description: 'Member ID: $memberId • $designation • $categoryName',
+      back: PageHeaderBack.to(
+        () {
+          // Prefer the shell callback (returns to the member list); otherwise pop the route.
+          if (widget.onNavigateBack != null) {
+            widget.onNavigateBack!();
+          } else {
+            Navigator.of(context).maybePop();
+          }
+        },
+        label: 'Back to List',
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.account_circle_outlined, size: 26, color: AppColors.primary),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '360° MEMBER COMMAND CENTER',
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.08,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  fullName,
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Member ID: $memberId • $designation • $categoryName',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 14),
-
-          // Header action buttons: Edit Profile & Back to List
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () {
-                  if (widget.onNavigateBack != null) {
-                    widget.onNavigateBack!();
-                  } else {
-                    Navigator.of(context).maybePop();
-                  }
-                },
-                icon: const Icon(Icons.arrow_back_rounded, size: 15),
-                label: const Text('Back to List'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                ),
-              ),
-              const SizedBox(width: 10),
-              ElevatedButton.icon(
-                onPressed: () {
-                  if (widget.onNavigateToEdit != null) {
-                    widget.onNavigateToEdit!(_userData);
-                  }
-                },
-                icon: const Icon(Icons.edit_outlined, size: 15, color: Colors.white),
-                label: const Text('Edit Profile', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            ],
-          ),
-        ],
+      primaryAction: PageHeaderAction(
+        label: 'Edit Profile',
+        icon: Icons.edit_outlined,
+        style: PageHeaderActionStyle.primary,
+        onPressed: widget.onNavigateToEdit == null ? null : () => widget.onNavigateToEdit!(_userData),
       ),
     );
   }
