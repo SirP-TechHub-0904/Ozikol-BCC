@@ -34,7 +34,7 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.text('Create & Provision Member'), findsOneWidget);
+    expect(find.text('Create Member'), findsOneWidget);
   });
 
   testWidgets('PrimaryButton inside unconstrained Row does not throw infinite width assertion', (tester) async {

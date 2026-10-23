@@ -1487,7 +1487,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   // =========================================================================
 
   /// <summary>
-  /// Navigates to the dedicated full-page User Provisioning view (matching Angular web route /users/console/create).
+  /// Navigates to the dedicated full-page Create Member view (matching Angular web route /users/console/create).
   /// </summary>
   void _navigateToCreateMember() {
     if (widget.onNavigateToTab != null) {

@@ -308,7 +308,7 @@ Chart.register(...registerables);
               <div class="tile-icon bg-blue"><span class="material-symbols-outlined">person_add</span></div>
               <div class="tile-content">
                 <strong>Add New Member</strong>
-                <span>Provision an account with temporary credentials</span>
+                <span>Add a new member with temporary credentials</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>

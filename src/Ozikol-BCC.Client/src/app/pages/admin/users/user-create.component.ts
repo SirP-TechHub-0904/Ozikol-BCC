@@ -14,10 +14,10 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     <div class="user-form-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="USER PROVISIONING"
+        eyebrow="NEW MEMBER REGISTRATION"
         icon="person_add"
         title="Create New Member Account"
-        subtitle="Provision an authorized user profile, assign category tier, select roles, and configure temporary password credentials."
+        subtitle="Create a new member profile, assign category tier, select roles, and configure temporary password credentials."
         [buttons]="headerButtons"
         [loading]="isSaving"
       ></app-page-header>
@@ -134,12 +134,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
         </div>
 
-        <!-- Card 3: Security & Password Provisioning -->
+        <!-- Card 3: Security & Password Setup -->
         <div class="form-card" style="margin-top: 16px;">
           <div class="card-header">
             <span class="material-symbols-outlined header-icon">lock_open</span>
             <div>
-              <h3>Security & Password Provisioning</h3>
+              <h3>Security & Password Setup</h3>
               <p>Setup temporary access credentials for initial member sign-in</p>
             </div>
           </div>
@@ -174,7 +174,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <a routerLink="/users/console/list" class="btn btn-outline">Cancel</a>
             <button type="submit" class="btn btn-primary" [disabled]="isSaving || !model.email || !model.firstName || !model.lastName">
               <span *ngIf="!isSaving" class="material-symbols-outlined">person_add</span>
-              <span>{{ isSaving ? 'Provisioning Account...' : 'Create & Provision Member' }}</span>
+              <span>{{ isSaving ? 'Creating Member...' : 'Create Member' }}</span>
             </button>
           </div>
         </div>
@@ -355,7 +355,7 @@ export class UserCreateComponent implements OnInit {
     this.api.post<any>('UsersApi', this.model).subscribe({
       next: () => {
         this.isSaving = false;
-        this.toast.success(`Account for ${this.model.firstName} ${this.model.lastName} provisioned successfully!`);
+        this.toast.success(`Account for ${this.model.firstName} ${this.model.lastName} created successfully!`);
         this.router.navigate(['/users/console/list']);
       },
       error: (err) => {

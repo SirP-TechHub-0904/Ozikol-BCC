@@ -11,7 +11,7 @@ import '../../../../../core/widgets/primary_button.dart';
 import '../../../data/account_repository.dart';
 
 /// <summary>
-/// Dedicated full-page view for provisioning a new workspace member profile.
+/// Dedicated full-page view for creating a new workspace member profile.
 /// Mirrors the Angular Web client's UserCreateComponent (1-to-1 operational parity).
 /// </summary>
 class UserCreateView extends ConsumerStatefulWidget {
@@ -21,7 +21,7 @@ class UserCreateView extends ConsumerStatefulWidget {
   /// Callback invoked when navigating back to the members directory.
   final VoidCallback? onNavigateBack;
 
-  /// Callback invoked when a member account is successfully provisioned.
+  /// Callback invoked when a member account is successfully created.
   final VoidCallback? onUserCreated;
 
   /// Creates a [UserCreateView].
@@ -159,7 +159,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
   }
 
   /// <summary>
-  /// Validates and submits the member provisioning form to UsersApi.
+  /// Validates and submits the member creation form to UsersApi.
   /// </summary>
   Future<void> _handleSaveUser() async {
     final firstName = _firstNameController.text.trim();
@@ -224,7 +224,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
               const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Account for $firstName $lastName ($assignedMemberId) provisioned successfully!'),
+                child: Text('Account for $firstName $lastName ($assignedMemberId) created successfully!'),
               ),
             ],
           ),
@@ -235,7 +235,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
       );
 
       // Present success credential summary modal, with 1-click button to redirect to Member Directory Index
-      await _showProvisionedSuccessDialog(
+      await _showCreatedSuccessDialog(
         isDark: Theme.of(context).brightness == Brightness.dark,
         title: _selectedTitle,
         firstName: firstName,
@@ -248,11 +248,11 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
       );
     } else {
       setState(() {
-        _errorMessage = 'Failed to provision member account. Please verify the email is unique in this workspace.';
+        _errorMessage = 'Failed to create member account. Please verify the email is unique in this workspace.';
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Failed to provision member account. Please check your network and ensure email is unique.'),
+          content: Text('Failed to create member account. Please check your network and ensure email is unique.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -260,10 +260,10 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
   }
 
   /// <summary>
-  /// Displays a credential summary dialog after member provisioning,
-  /// with 1-click clipboard password copy, and buttons to either view in Directory or provision another member.
+  /// Displays a credential summary dialog after member creation,
+  /// with 1-click clipboard password copy, and buttons to either view in Directory or add another member.
   /// </summary>
-  Future<void> _showProvisionedSuccessDialog({
+  Future<void> _showCreatedSuccessDialog({
     required bool isDark,
     required String? title,
     required String firstName,
@@ -308,7 +308,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Member Account Provisioned',
+                            'Member Account Created',
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
@@ -432,7 +432,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                         side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
                         foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
                       ),
-                      child: const Text('Provision Another', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                      child: const Text('Add Another Member', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
                     ),
                     const SizedBox(width: 10),
                     ElevatedButton.icon(
@@ -570,7 +570,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
 
             const SizedBox(height: 18),
 
-            // Card 3: Security & Password Provisioning
+            // Card 3: Security & Password Setup
             _buildSecurityCard(isDark),
           ],
         ),
@@ -614,7 +614,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'USER PROVISIONING',
+                  'NEW MEMBER REGISTRATION',
                   style: TextStyle(
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
@@ -633,7 +633,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Provision an authorized user profile, assign category tier, select roles, and configure temporary password credentials.',
+                  'Create a new member profile, assign category tier, select roles, and configure temporary password credentials.',
                   style: TextStyle(
                     fontSize: 12,
                     color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
@@ -897,13 +897,13 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
   }
 
   /// <summary>
-  /// Card 3: Security & Password Provisioning form section.
+  /// Card 3: Security & Password Setup form section.
   /// </summary>
   Widget _buildSecurityCard(bool isDark) {
     return _buildFormCard(
       isDark: isDark,
       icon: Icons.lock_open_rounded,
-      title: 'Security & Password Provisioning',
+      title: 'Security & Password Setup',
       subtitle: 'Setup temporary access credentials for initial member sign-in',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1010,7 +1010,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
               ),
               const SizedBox(width: 12),
               PrimaryButton(
-                text: _isSaving ? 'Provisioning Account...' : 'Create & Provision Member',
+                text: _isSaving ? 'Creating Member...' : 'Create Member',
                 icon: const Icon(Icons.person_add_rounded, size: 16),
                 isLoading: _isSaving,
                 isFullWidth: false,

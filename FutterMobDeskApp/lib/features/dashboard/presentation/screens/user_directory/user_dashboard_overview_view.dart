@@ -1116,7 +1116,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
             icon: Icons.person_add_rounded,
             iconColor: const Color(0xFF0050E5),
             title: 'Add New Member',
-            desc: 'Provision an account with temporary credentials',
+            desc: 'Add a new member with temporary login credentials',
             onTap: () => widget.onNavigateToTab?.call(1),
           ),
           const SizedBox(height: 10),

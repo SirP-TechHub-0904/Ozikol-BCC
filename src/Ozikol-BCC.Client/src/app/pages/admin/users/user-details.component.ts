@@ -341,7 +341,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </div>
           </div>
 
-          <!-- 3. 6-Digit OTP Security & Password Provisioning Card (Moved to Bottom) -->
+          <!-- 3. 6-Digit OTP Security & Credentials Card (Moved to Bottom) -->
           <div class="dossier-card">
             <div class="card-header">
               <span class="material-symbols-outlined header-icon">key</span>
