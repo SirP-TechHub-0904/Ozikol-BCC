@@ -2137,6 +2137,14 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Alias for formatExactDateTime for audit log table timestamp formatting.
+   * @param dateStr ISO date string.
+   */
+  formatDateTime(dateStr: string): string {
+    return this.formatExactDateTime(dateStr);
+  }
+
+  /**
    * Evaluates if a device session is actively used (within 15m) or currently active.
    * @param s The session item.
    */
