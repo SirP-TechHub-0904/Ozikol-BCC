@@ -990,7 +990,25 @@ namespace Ozikol_BCC.Api.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
 
-            var currentJti = User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
+            string? tokenJti = null;
+            var authHeader = Request.Headers.Authorization.ToString();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                var rawToken = authHeader.Substring(7).Trim();
+                try
+                {
+                    var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                    if (tokenHandler.CanReadToken(rawToken))
+                    {
+                        var jwt = tokenHandler.ReadJwtToken(rawToken);
+                        tokenJti = jwt.Claims.FirstOrDefault(c => c.Type == "jti" || c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+                    }
+                }
+                catch { }
+            }
+
+            var currentJti = tokenJti
+                ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
                 ?? User.FindFirstValue("jti")
                 ?? User.Claims.FirstOrDefault(c => c.Type.EndsWith("/jti") || c.Type == "jti")?.Value;
 
@@ -998,6 +1016,32 @@ namespace Ozikol_BCC.Api.Controllers
                 .Where(d => d.UserId == userId && d.IsActiveSession)
                 .OrderByDescending(d => d.LastUsedAt)
                 .ToListAsync();
+
+            // Automatic de-duplication: deactivate older duplicate sessions for the same physical device/browser
+            var seenDeviceKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var duplicatesToDeactivate = new List<BcpUserDevice>();
+            var uniqueDeviceEntities = new List<BcpUserDevice>();
+
+            foreach (var dev in deviceEntities)
+            {
+                var parsedDev = UserAgentParser.Parse(dev.DeviceName);
+                var deviceKey = $"{parsedDev.FriendlyDeviceTitle}";
+                if (seenDeviceKeys.Add(deviceKey))
+                {
+                    uniqueDeviceEntities.Add(dev);
+                }
+                else
+                {
+                    dev.IsActiveSession = false;
+                    duplicatesToDeactivate.Add(dev);
+                }
+            }
+
+            if (duplicatesToDeactivate.Count > 0)
+            {
+                await _dbContext.SaveChangesAsync();
+                deviceEntities = uniqueDeviceEntities;
+            }
 
             if (deviceEntities.Count == 0)
             {
@@ -1025,19 +1069,45 @@ namespace Ozikol_BCC.Api.Controllers
                 deviceEntities.Add(newDevice);
             }
 
-            // Update the current device's LastUsedAt to UtcNow if matched
-            var currentDevice = deviceEntities.FirstOrDefault(d => !string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti);
+            var callerUserAgent = Request.Headers.UserAgent.ToString();
+            var callerParsed = UserAgentParser.Parse(callerUserAgent);
+
+            // Priority 1: Match device by exact JWT JTI
+            var currentDevice = !string.IsNullOrEmpty(currentJti)
+                ? deviceEntities.FirstOrDefault(d => d.JwtId == currentJti)
+                : null;
+
+            // Priority 2: Match by exact caller User-Agent
+            if (currentDevice == null && !string.IsNullOrEmpty(callerUserAgent))
+            {
+                currentDevice = deviceEntities.FirstOrDefault(d => d.DeviceName == callerUserAgent);
+            }
+
+            // Priority 3: Match by matching parsed client application type & operating system (e.g. Web Browser vs Desktop App)
+            if (currentDevice == null)
+            {
+                currentDevice = deviceEntities.FirstOrDefault(d =>
+                {
+                    var dParsed = UserAgentParser.Parse(d.DeviceName);
+                    return dParsed.ClientType == callerParsed.ClientType && dParsed.OperatingSystem == callerParsed.OperatingSystem;
+                });
+            }
+
+            // Touch current device's LastUsedAt and link token if matched
             if (currentDevice != null)
             {
                 currentDevice.LastUsedAt = DateTime.UtcNow;
+                if (!string.IsNullOrEmpty(currentJti) && currentDevice.JwtId != currentJti)
+                {
+                    currentDevice.JwtId = currentJti;
+                }
                 await _dbContext.SaveChangesAsync();
             }
 
             var sessions = deviceEntities.Select(d =>
             {
                 var parsed = UserAgentParser.Parse(d.DeviceName);
-                var isCurrent = (!string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti)
-                    || (string.IsNullOrEmpty(currentJti) && d == deviceEntities[0]);
+                var isCurrent = currentDevice != null && d.Id == currentDevice.Id;
 
                 var utcLastActive = d.LastUsedAt.Kind == DateTimeKind.Utc
                     ? d.LastUsedAt
@@ -1151,7 +1221,25 @@ namespace Ozikol_BCC.Api.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
 
-            var currentJti = User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
+            string? tokenJti = null;
+            var authHeader = Request.Headers.Authorization.ToString();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                var rawToken = authHeader.Substring(7).Trim();
+                try
+                {
+                    var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                    if (tokenHandler.CanReadToken(rawToken))
+                    {
+                        var jwt = tokenHandler.ReadJwtToken(rawToken);
+                        tokenJti = jwt.Claims.FirstOrDefault(c => c.Type == "jti" || c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+                    }
+                }
+                catch { }
+            }
+
+            var currentJti = tokenJti
+                ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
                 ?? User.FindFirstValue("jti")
                 ?? User.Claims.FirstOrDefault(c => c.Type.EndsWith("/jti") || c.Type == "jti")?.Value;
 
@@ -1161,12 +1249,28 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderByDescending(d => d.LastUsedAt)
                 .ToListAsync();
 
-            var otherSessions = allUserSessions.Where(d =>
+            var callerUserAgent = Request.Headers.UserAgent.ToString();
+            var callerParsed = UserAgentParser.Parse(callerUserAgent);
+
+            var currentDevice = !string.IsNullOrEmpty(currentJti)
+                ? allUserSessions.FirstOrDefault(d => d.JwtId == currentJti)
+                : null;
+
+            if (currentDevice == null && !string.IsNullOrEmpty(callerUserAgent))
             {
-                if (!string.IsNullOrEmpty(currentJti))
-                    return d.JwtId != currentJti;
-                return d != allUserSessions.FirstOrDefault();
-            }).ToList();
+                currentDevice = allUserSessions.FirstOrDefault(d => d.DeviceName == callerUserAgent);
+            }
+
+            if (currentDevice == null)
+            {
+                currentDevice = allUserSessions.FirstOrDefault(d =>
+                {
+                    var dParsed = UserAgentParser.Parse(d.DeviceName);
+                    return dParsed.ClientType == callerParsed.ClientType && dParsed.OperatingSystem == callerParsed.OperatingSystem;
+                });
+            }
+
+            var otherSessions = allUserSessions.Where(d => currentDevice != null ? d.Id != currentDevice.Id : d != allUserSessions.FirstOrDefault()).ToList();
 
             if (!otherSessions.Any())
             {

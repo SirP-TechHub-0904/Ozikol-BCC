@@ -437,15 +437,26 @@ namespace Ozikol_BCC.Api.Controllers
                     .ToListAsync();
 
                 var targetIp = ipAddress ?? "127.0.0.1";
-                // Match existing session by same device client name and IP
+                var parsedCaller = UserAgentParser.Parse(userAgent);
+
+                // Match existing session by exact userAgent or parsed device title
                 var existingDevice = activeSessions.FirstOrDefault(d =>
-                    d.DeviceName == userAgent && (d.IpAddress == targetIp || d.IpAddress == "127.0.0.1" || targetIp == "127.0.0.1"));
+                    (d.DeviceName == userAgent || UserAgentParser.Parse(d.DeviceName).FriendlyDeviceTitle == parsedCaller.FriendlyDeviceTitle)
+                    && (d.IpAddress == targetIp || d.IpAddress == "127.0.0.1" || targetIp == "127.0.0.1" || d.IpAddress == "::1" || targetIp == "::1"));
 
                 if (existingDevice != null)
                 {
                     existingDevice.JwtId = jwtId;
                     existingDevice.LastUsedAt = DateTime.UtcNow;
                     existingDevice.IsTrusted = existingDevice.IsTrusted || skipMfa;
+
+                    // Clean up any stale duplicate active records for this device
+                    var staleDuplicates = activeSessions
+                        .Where(d => d.Id != existingDevice.Id && UserAgentParser.Parse(d.DeviceName).FriendlyDeviceTitle == parsedCaller.FriendlyDeviceTitle);
+                    foreach (var dup in staleDuplicates)
+                    {
+                        dup.IsActiveSession = false;
+                    }
                 }
                 else
                 {
@@ -738,9 +749,12 @@ namespace Ozikol_BCC.Api.Controllers
                     .ToListAsync();
 
                 var targetIp = ipAddress ?? "127.0.0.1";
-                // Match existing session by same device client name and IP
+                var parsedCaller = UserAgentParser.Parse(userAgent);
+
+                // Match existing session by exact userAgent or parsed device title
                 var existingDevice = activeSessions.FirstOrDefault(d =>
-                    d.DeviceName == userAgent && (d.IpAddress == targetIp || d.IpAddress == "127.0.0.1" || targetIp == "127.0.0.1"));
+                    (d.DeviceName == userAgent || UserAgentParser.Parse(d.DeviceName).FriendlyDeviceTitle == parsedCaller.FriendlyDeviceTitle)
+                    && (d.IpAddress == targetIp || d.IpAddress == "127.0.0.1" || targetIp == "127.0.0.1" || d.IpAddress == "::1" || targetIp == "::1"));
 
                 newDeviceTrustToken = Guid.NewGuid().ToString("N");
 
@@ -756,6 +770,14 @@ namespace Ozikol_BCC.Api.Controllers
                     else if (!string.IsNullOrEmpty(existingDevice.TrustToken))
                     {
                         newDeviceTrustToken = existingDevice.TrustToken;
+                    }
+
+                    // Clean up any stale duplicate active records for this device
+                    var staleDuplicates = activeSessions
+                        .Where(d => d.Id != existingDevice.Id && UserAgentParser.Parse(d.DeviceName).FriendlyDeviceTitle == parsedCaller.FriendlyDeviceTitle);
+                    foreach (var dup in staleDuplicates)
+                    {
+                        dup.IsActiveSession = false;
                     }
                 }
                 else
