@@ -1209,16 +1209,42 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves evaluation periods (e.g. 2026 Q3, August 2026).
+        /// Retrieves evaluation periods (e.g. 2026 Q4, 2026 Q3, Annual 2026).
         /// </summary>
         [HttpGet("kpi-periods")]
         [HttpGet("kpi/periods")]
         public async Task<IActionResult> GetKpiPeriods()
         {
             var savedPeriods = await _dbContext.BcpKpiPeriods
-                .AsNoTracking()
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
+
+            var existingTitles = savedPeriods.Select(p => p.Title).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var defaultPeriods = new List<BcpKpiPeriod>
+            {
+                new BcpKpiPeriod { Id = Guid.NewGuid(), Title = "2026 Q4", Description = "Fourth Quarter Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-1) },
+                new BcpKpiPeriod { Id = Guid.NewGuid(), Title = "2026 Q3", Description = "Third Quarter Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-90) },
+                new BcpKpiPeriod { Id = Guid.NewGuid(), Title = "2026 Q2", Description = "Second Quarter Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-180) },
+                new BcpKpiPeriod { Id = Guid.NewGuid(), Title = "Annual 2026", Description = "Annual Performance Review", IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-300) }
+            };
+
+            bool needsSave = false;
+            foreach (var dp in defaultPeriods)
+            {
+                if (!existingTitles.Contains(dp.Title))
+                {
+                    _dbContext.BcpKpiPeriods.Add(dp);
+                    savedPeriods.Add(dp);
+                    existingTitles.Add(dp.Title);
+                    needsSave = true;
+                }
+            }
+
+            if (needsSave)
+            {
+                await _dbContext.SaveChangesAsync();
+            }
 
             var scorePeriods = await _dbContext.BcpKpiUserScores
                 .AsNoTracking()
@@ -1226,28 +1252,19 @@ namespace Ozikol_BCC.Api.Controllers
                 .Distinct()
                 .ToListAsync();
 
-            var existingTitles = savedPeriods.Select(p => p.Title).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var allPeriods = new List<object>();
-            foreach (var p in savedPeriods)
-            {
-                allPeriods.Add(new { p.Id, p.Title, p.Description, p.IsActive, p.CreatedAt });
-            }
-
             foreach (var sp in scorePeriods)
             {
                 if (!string.IsNullOrWhiteSpace(sp) && !existingTitles.Contains(sp))
                 {
-                    allPeriods.Add(new { Id = Guid.NewGuid(), Title = sp, Description = "Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow });
+                    savedPeriods.Add(new BcpKpiPeriod { Id = Guid.NewGuid(), Title = sp, Description = "Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow });
                     existingTitles.Add(sp);
                 }
             }
 
-            if (allPeriods.Count == 0)
-            {
-                var currentQ = $"{DateTime.UtcNow.Year} Q{(DateTime.UtcNow.Month - 1) / 3 + 1}";
-                allPeriods.Add(new { Id = Guid.NewGuid(), Title = currentQ, Description = "Current Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow });
-            }
+            var allPeriods = savedPeriods
+                .OrderByDescending(p => p.CreatedAt)
+                .Select(p => new { p.Id, p.Title, p.Description, p.IsActive, p.CreatedAt })
+                .ToList();
 
             return Ok(ApiResponse<object>.SuccessResponse(allPeriods, "KPI periods retrieved."));
         }

@@ -63,7 +63,10 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
 
       String activePeriod = _selectedPeriod;
       if (periodsRes.isNotEmpty) {
-        activePeriod = periodsRes.first['title'] as String? ?? '2026 Q4';
+        final matches = periodsRes.any((p) => p['title'] == _selectedPeriod);
+        if (!matches) {
+          activePeriod = periodsRes.first['title'] as String? ?? '2026 Q4';
+        }
       }
 
       final leaderboardRes = await repo.getKpiLeaderboard(activePeriod);
@@ -823,6 +826,29 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
             textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
           ),
         ),
+        OutlinedButton.icon(
+          onPressed: () async {
+            setState(() => _isLoading = true);
+            await _loadAllKpiData();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('KPI workspace data refreshed.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+          icon: const Icon(Icons.refresh_rounded, size: 16),
+          label: const Text('Refresh'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+            side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+          ),
+        ),
         FilledButton.icon(
           onPressed: () => _openCreateOrEditMetricDialog(),
           icon: const Icon(Icons.add_rounded, size: 16),
@@ -1198,7 +1224,8 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                 children: [
                   Container(
                     height: 32,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    constraints: const BoxConstraints(minWidth: 95),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
                       color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(6),
@@ -1208,7 +1235,9 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        value: _selectedPeriod,
+                        value: _periods.any((p) => p['title'] == _selectedPeriod)
+                            ? _selectedPeriod
+                            : (_periods.isNotEmpty ? _periods.first['title'] as String? : null),
                         isDense: true,
                         items: _periods.map((p) {
                           final title = p['title'] as String? ?? 'Period';
@@ -1216,7 +1245,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                             value: title,
                             child: Text(
                               title,
-                              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                             ),
                           );
                         }).toList(),
@@ -1259,6 +1288,17 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                         ],
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    tooltip: 'Refresh Leaderboard',
+                    padding: const EdgeInsets.all(6),
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                    onPressed: () {
+                      _loadLeaderboard();
+                    },
                   ),
                 ],
               ),
