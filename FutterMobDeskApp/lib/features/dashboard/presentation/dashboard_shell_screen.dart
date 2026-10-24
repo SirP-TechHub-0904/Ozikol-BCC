@@ -838,13 +838,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 _buildTopRefreshBtn(isDark),
                 _buildTopIconBtn(
                   icon: Icons.calendar_today_outlined,
-                  tooltip: 'Calendar & Schedules',
+                  tooltip: 'shell.calendar_schedules'.tr(ref, fallback: 'Calendar & Schedules'),
                   isDark: isDark,
                   onTap: () => _showCalendarDialog(context, isDark),
                 ),
                 _buildTopIconBtn(
                   icon: Icons.help_outline_rounded,
-                  tooltip: 'Help & Knowledge Base',
+                  tooltip: 'shell.help_support'.tr(ref, fallback: 'Help & Knowledge Base'),
                   isDark: isDark,
                   onTap: () => _showHelpSupportDialog(context, isDark),
                 ),
@@ -858,7 +858,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               // Theme Mode Toggle Icon
               _buildTopIconBtn(
                 icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                tooltip: 'Toggle Color Theme',
+                tooltip: 'shell.toggle_theme'.tr(ref, fallback: 'Toggle Color Theme'),
                 isDark: isDark,
                 onTap: () => _toggleTheme(),
               ),
@@ -866,7 +866,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               // Notifications Icon with live counter badge
               _buildTopIconBtn(
                 icon: Icons.notifications_none_rounded,
-                tooltip: 'Notifications',
+                tooltip: 'notif.title'.tr(ref, fallback: 'Notifications'),
                 isDark: isDark,
                 badgeCount: notifCount,
                 onTap: () => NotificationsSheet.show(context),
@@ -1020,7 +1020,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                   color: isDark ? AppColors.gray300 : const Color(0xFF475569),
                 ),
                 const SizedBox(width: 10),
-                const Text('Refresh Workspace', style: TextStyle(fontSize: 13)),
+                Text('shell.refresh_workspace'.tr(ref, fallback: 'Refresh Workspace'), style: const TextStyle(fontSize: 13)),
               ],
             ),
           ),
@@ -1034,7 +1034,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 color: isDark ? AppColors.gray300 : const Color(0xFF475569),
               ),
               const SizedBox(width: 10),
-              const Text('Calendar & Schedules', style: TextStyle(fontSize: 13)),
+              Text('shell.calendar_schedules'.tr(ref, fallback: 'Calendar & Schedules'), style: const TextStyle(fontSize: 13)),
             ],
           ),
         ),
@@ -1048,7 +1048,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 color: isDark ? AppColors.gray300 : const Color(0xFF475569),
               ),
               const SizedBox(width: 10),
-              const Text('Help & Knowledge Base', style: TextStyle(fontSize: 13)),
+              Text('shell.help_support'.tr(ref, fallback: 'Help & Knowledge Base'), style: const TextStyle(fontSize: 13)),
             ],
           ),
         ),
@@ -1575,17 +1575,17 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
     return [
       AppDrawerSection(
-        title: 'USER MANAGEMENT',
+        title: 'nav.user_management'.tr(ref, fallback: 'USER MANAGEMENT').toUpperCase(),
         items: [
           // 1. User Directory (expandable)
           AppDrawerItem(
             icon: Icons.groups_rounded,
-            title: 'User Directory',
+            title: 'nav.user_directory'.tr(ref, fallback: 'User Directory'),
             initiallyExpanded: _selectedNavIndex >= 0 && _selectedNavIndex <= 6,
             subItems: [
               AppDrawerSubItem(
                 icon: Icons.dashboard_outlined,
-                title: 'Dashboard Overview',
+                title: 'nav.console_dashboard'.tr(ref, fallback: 'Dashboard Overview'),
                 isSelected: _selectedNavIndex == 0,
                 onTap: () {
                   _navigateToTab(0, clearHistory: true);
@@ -1594,7 +1594,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.people_outline,
-                title: 'All Members',
+                title: 'nav.all_members'.tr(ref, fallback: 'All Members'),
                 isSelected: _selectedNavIndex == 1,
                 onTap: () {
                   _navigateToTab(1, clearHistory: true);
@@ -1612,7 +1612,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.palette_outlined,
-                title: 'Auth Page Setup',
+                title: 'nav.registration_form_builder'.tr(ref, fallback: 'Auth Page Setup'),
                 isSelected: _selectedNavIndex == 4,
                 onTap: () {
                   _navigateToTab(4, clearHistory: true);
@@ -1621,7 +1621,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.leaderboard_outlined,
-                title: 'KPIs & Leaderboard',
+                title: 'nav.kpis_leaderboard'.tr(ref, fallback: 'KPIs & Leaderboard'),
                 isSelected: _selectedNavIndex == 5,
                 onTap: () {
                   _navigateToTab(5, clearHistory: true);
@@ -1630,7 +1630,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.settings_outlined,
-                title: 'User Settings',
+                title: 'nav.brand_settings'.tr(ref, fallback: 'User Settings'),
                 isSelected: _selectedNavIndex == 6,
                 onTap: () {
                   _navigateToTab(6, clearHistory: true);
@@ -1643,12 +1643,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           // 2. Identity & Access Control (expandable)
           AppDrawerItem(
             icon: Icons.admin_panel_settings_outlined,
-            title: 'Identity & Access Control',
+            title: 'nav.identity_control'.tr(ref, fallback: 'Identity & Access Control'),
             initiallyExpanded: _selectedNavIndex >= 7 && _selectedNavIndex <= 10,
             subItems: [
               AppDrawerSubItem(
                 icon: Icons.shield_outlined,
-                title: 'Identity Dashboard',
+                title: 'nav.identity_control'.tr(ref, fallback: 'Identity Dashboard'),
                 isSelected: _selectedNavIndex == 7,
                 onTap: () {
                   _navigateToTab(7, clearHistory: true);
@@ -1657,7 +1657,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.vpn_key_outlined,
-                title: 'Roles & Permissions',
+                title: 'nav.roles_permissions'.tr(ref, fallback: 'Roles & Permissions'),
                 isSelected: _selectedNavIndex == 8,
                 onTap: () {
                   _navigateToTab(8, clearHistory: true);
@@ -1666,7 +1666,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.mail_outline,
-                title: 'Member Invitations',
+                title: 'nav.user_invitations'.tr(ref, fallback: 'Member Invitations'),
                 isSelected: _selectedNavIndex == 9,
                 onTap: () {
                   _navigateToTab(9, clearHistory: true);
@@ -1675,7 +1675,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.lock_outline,
-                title: 'Global Security Policies',
+                title: 'nav.global_policies'.tr(ref, fallback: 'Global Security Policies'),
                 isSelected: _selectedNavIndex == 10,
                 onTap: () {
                   _navigateToTab(10, clearHistory: true);
@@ -1688,12 +1688,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           // 3. Manage My Account (expandable)
           AppDrawerItem(
             icon: Icons.manage_accounts_outlined,
-            title: 'Manage My Account',
+            title: 'profile.manage_account'.tr(ref, fallback: 'Manage My Account'),
             initiallyExpanded: _selectedNavIndex >= 11 && _selectedNavIndex <= 15,
             subItems: [
               AppDrawerSubItem(
                 icon: Icons.person_outline,
-                title: 'My Account',
+                title: 'nav.my_profile'.tr(ref, fallback: 'My Account'),
                 isSelected: _selectedNavIndex == 11,
                 onTap: () {
                   _navigateToTab(11, clearHistory: true);
@@ -1702,7 +1702,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.password_outlined,
-                title: 'Change Password',
+                title: 'account.tab_password'.tr(ref, fallback: 'Change Password'),
                 isSelected: _selectedNavIndex == 12,
                 onTap: () {
                   _navigateToTab(12, clearHistory: true);
@@ -1711,7 +1711,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.security_outlined,
-                title: '2FA Security',
+                title: 'account.tab_2fa'.tr(ref, fallback: '2FA Security'),
                 isSelected: _selectedNavIndex == 13,
                 onTap: () {
                   _navigateToTab(13, clearHistory: true);
@@ -1720,7 +1720,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.devices_outlined,
-                title: 'Manage Devices',
+                title: 'account.tab_devices'.tr(ref, fallback: 'Manage Devices'),
                 isSelected: _selectedNavIndex == 14,
                 onTap: () {
                   _navigateToTab(14, clearHistory: true);
@@ -1729,7 +1729,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.history_outlined,
-                title: 'Login Activity',
+                title: 'account.tab_activity'.tr(ref, fallback: 'Login Activity'),
                 isSelected: _selectedNavIndex == 15,
                 onTap: () {
                   _navigateToTab(15, clearHistory: true);
@@ -1751,12 +1751,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
     return [
       AppDrawerSection(
-        title: 'PERSONAL WORKSPACE HUB',
+        title: 'shell.users_workspace'.tr(ref, fallback: 'PERSONAL WORKSPACE HUB').toUpperCase(),
         items: [
           // 1. Workspace Home (single top-level item)
           AppDrawerItem(
             icon: Icons.space_dashboard_outlined,
-            title: 'Workspace Home',
+            title: 'nav.workspace_home'.tr(ref, fallback: 'Workspace Home'),
             isSelected: memberIndex == 0,
             onTap: () {
               _navigateToTab(0, clearHistory: true);
@@ -1767,12 +1767,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           // 2. Manage My Account (expandable)
           AppDrawerItem(
             icon: Icons.manage_accounts_outlined,
-            title: 'Manage My Account',
+            title: 'profile.manage_account'.tr(ref, fallback: 'Manage My Account'),
             initiallyExpanded: memberIndex >= 1 && memberIndex <= 5,
             subItems: [
               AppDrawerSubItem(
                 icon: Icons.person_outline,
-                title: 'My Account',
+                title: 'nav.my_profile'.tr(ref, fallback: 'My Account'),
                 isSelected: memberIndex == 1,
                 onTap: () {
                   _navigateToTab(1, clearHistory: true);
@@ -1781,7 +1781,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.password_outlined,
-                title: 'Change Password',
+                title: 'account.tab_password'.tr(ref, fallback: 'Change Password'),
                 isSelected: memberIndex == 2,
                 onTap: () {
                   _navigateToTab(2, clearHistory: true);
@@ -1790,7 +1790,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.security_outlined,
-                title: '2FA Security',
+                title: 'account.tab_2fa'.tr(ref, fallback: '2FA Security'),
                 isSelected: memberIndex == 3,
                 onTap: () {
                   _navigateToTab(3, clearHistory: true);
@@ -1799,7 +1799,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.devices_outlined,
-                title: 'Manage Devices',
+                title: 'account.tab_devices'.tr(ref, fallback: 'Manage Devices'),
                 isSelected: memberIndex == 4,
                 onTap: () {
                   _navigateToTab(4, clearHistory: true);
@@ -1808,7 +1808,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.history_outlined,
-                title: 'Login Activity',
+                title: 'account.tab_activity'.tr(ref, fallback: 'Login Activity'),
                 isSelected: memberIndex == 5,
                 onTap: () {
                   _navigateToTab(5, clearHistory: true);
@@ -2159,9 +2159,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Central Feature Subscriptions Active (Admin Notice)',
-                  style: TextStyle(
+                Text(
+                  'billing.notice_title'.tr(ref, fallback: 'Central Feature Subscriptions Active (Admin Notice)'),
+                  style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFFB45309),
@@ -2169,7 +2169,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Organization capabilities are governed by Central Master Catalog licenses.',
+                  'billing.license_desc'.tr(ref, fallback: 'Organization capabilities are governed by Central Master Catalog licenses.'),
                   style: TextStyle(
                     fontSize: 10,
                     color: isDark ? const Color(0xFFD97706) : const Color(0xFF92400E),
@@ -2184,9 +2184,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               color: const Color(0xFFF59E0B),
               borderRadius: BorderRadius.circular(5),
             ),
-            child: const Text(
-              'LICENSES',
-              style: TextStyle(
+            child: Text(
+              'billing.licenses'.tr(ref, fallback: 'LICENSES'),
+              style: const TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
@@ -2310,7 +2310,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
             const SizedBox(width: 6),
             Text(
-              isOnline ? 'Online' : 'Offline',
+              isOnline ? 'badge.online'.tr(ref, fallback: 'Online') : 'badge.offline'.tr(ref, fallback: 'Offline'),
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -2384,7 +2384,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     if (!isCompact) ...[
                       const SizedBox(width: 6),
                       Text(
-                        'Admin Console',
+                        'shell.admin_console_tab'.tr(ref, fallback: 'Admin Console'),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: isAdministration ? FontWeight.w700 : FontWeight.w500,
@@ -2435,7 +2435,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     if (!isCompact) ...[
                       const SizedBox(width: 6),
                       Text(
-                        'Personal Hub',
+                        'shell.personal_hub_tab'.tr(ref, fallback: 'Personal Hub'),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: !isAdministration ? FontWeight.w700 : FontWeight.w500,
@@ -3176,15 +3176,15 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
   /// Resolves the user's role badge (SuperAdmin, Administrator, or Member).
   String _getUserRoleBadge(Workspace? activeWs) {
-    if (activeWs == null) return 'Member';
+    if (activeWs == null) return 'rbac.role_member'.tr(ref, fallback: 'Member');
     final roles = activeWs.userRoles.map((r) => r.toLowerCase()).toList();
     if (activeWs.isSuperAdmin || roles.contains('superadmin') || roles.contains('systemadministrator')) {
-      return 'SuperAdmin';
+      return 'rbac.role_superadmin'.tr(ref, fallback: 'SuperAdmin');
     }
     if (activeWs.isAdmin || roles.any((r) => ['admin', 'administrator', 'identitymanager', 'cmsmanager', 'storemanager'].contains(r))) {
-      return 'Administrator';
+      return 'rbac.role_admin'.tr(ref, fallback: 'Administrator');
     }
-    return 'Member';
+    return 'rbac.role_member'.tr(ref, fallback: 'Member');
   }
 
   /// Displays the account roles, granted capabilities, and unlocked suites modal dialog or bottom sheet.
@@ -3511,9 +3511,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       },
       backgroundColor: AppColors.primary,
       icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-      label: const Text(
-        'AI Assistant',
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      label: Text(
+        'btn.ai_assistant'.tr(ref, fallback: 'AI Assistant'),
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
     );
   }
