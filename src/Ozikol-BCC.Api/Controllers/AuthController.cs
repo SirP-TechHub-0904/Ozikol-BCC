@@ -464,7 +464,7 @@ namespace Ozikol_BCC.Api.Controllers
                     Email = user.Email!,
                     IpAddress = ipAddress,
                     SystemId = systemId,
-                    Status = "Success",
+                    Status = skipMfa ? "Success (Trusted Device)" : "Success",
                     UserAgent = userAgent,
                     Timestamp = DateTime.UtcNow
                 });
@@ -749,7 +749,7 @@ namespace Ozikol_BCC.Api.Controllers
                     Id = Guid.CreateVersion7(),
                     Email = user.Email!,
                     IpAddress = ipAddress,
-                    Status = "Success",
+                    Status = request.TrustDevice ? "Success (Trusted Device)" : "Success",
                     UserAgent = userAgent,
                     Timestamp = DateTime.UtcNow
                 });

@@ -113,6 +113,30 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
     }).toList();
   }
 
+  String _formatUserAgent(String ua) {
+    if (ua.contains('BCC-Client') || ua.contains('Flutter')) {
+      final isMobile = ua.contains('Mobile') || ua.contains('Android') || ua.contains('iOS');
+      final os = ua.contains('Windows') ? 'Windows' : (ua.contains('macOS') ? 'macOS' : (ua.contains('Linux') ? 'Linux' : (ua.contains('Android') ? 'Android' : 'iOS')));
+      return isMobile ? 'Mobile App on $os' : 'Desktop App on $os';
+    }
+    if (ua.contains('Chrome')) return 'Google Chrome on Windows';
+    if (ua.contains('Firefox')) return 'Mozilla Firefox on Windows';
+    if (ua.contains('Edge') || ua.contains('Edg/')) return 'Microsoft Edge on Windows';
+    if (ua.contains('Safari') && !ua.contains('Chrome')) return 'Apple Safari on macOS';
+    if (ua.contains(' on ')) return ua;
+    return 'Web Browser Session';
+  }
+
+  IconData _getDeviceIcon(String ua) {
+    if (ua.contains('BCC-Client') || ua.contains('Desktop App')) {
+      return Icons.desktop_windows_rounded;
+    }
+    if (ua.contains('Mobile') || ua.contains('Android') || ua.contains('iOS')) {
+      return Icons.smartphone_rounded;
+    }
+    return Icons.language_rounded;
+  }
+
   Widget _buildStatusBadge(String status) {
     final lower = status.toLowerCase();
     Color bg;
@@ -304,16 +328,46 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                     itemBuilder: (context, index) {
                       final item = filtered[index];
                       final status = (item['status'] ?? (item['isSuccessful'] == false ? 'Failed' : 'Success')).toString();
+                      final isTrusted = item['isTrusted'] == true || status.contains('Trusted');
                       final timestamp = item['timestamp'] ?? item['loginTime'] ?? item['createdAt'] ?? 'Just now';
                       final ip = item['ipAddress'] ?? '127.0.0.1';
-                      final userAgent = item['deviceSummary'] ?? item['userAgent'] ?? 'Web Browser';
+                      final rawUserAgent = (item['userAgent'] ?? item['deviceSummary'] ?? 'Web Browser').toString();
+                      final deviceTitle = item['device']?.toString() ?? _formatUserAgent(rawUserAgent);
+                      final browserDetails = item['browser']?.toString();
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         child: Row(
                           children: [
-                            // Status Badge
-                            _buildStatusBadge(status),
+                            // Status Badge & Trusted Indicator
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildStatusBadge(status),
+                                if (isTrusted) ...[
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.success.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(100),
+                                      border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.verified_user_rounded, size: 10, color: AppColors.success),
+                                        SizedBox(width: 3),
+                                        Text(
+                                          'Trusted',
+                                          style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: AppColors.success),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                             const SizedBox(width: 16),
 
                             // Details
@@ -321,17 +375,29 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    userAgent.toString(),
-                                    style: TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        _getDeviceIcon(deviceTitle),
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          deviceTitle,
+                                          style: TextStyle(
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 3),
                                   Text(
-                                    'IP Address: $ip',
+                                    '${browserDetails != null ? '$browserDetails • ' : ''}IP: $ip',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: isDark ? AppColors.gray400 : AppColors.gray600,

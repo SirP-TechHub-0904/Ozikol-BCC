@@ -15,9 +15,17 @@ interface ActiveSessionItem {
   sessionId: string;
   device: string;
   browser: string;
+  browserName?: string;
+  clientType?: string;
+  operatingSystem?: string;
+  deviceType?: string;
+  icon?: string;
+  rawDevice?: string;
   ipAddress: string;
   lastActive: string;
   isCurrent: boolean;
+  isTrusted?: boolean;
+  createdAt?: string;
 }
 
 /**
@@ -29,6 +37,12 @@ interface LoginAuditItem {
   status: string;
   ipAddress: string;
   userAgent: string;
+  device?: string;
+  browser?: string;
+  browserName?: string;
+  clientType?: string;
+  icon?: string;
+  isTrusted?: boolean;
   timestamp: string;
 }
 
@@ -441,16 +455,23 @@ interface AccountSummary {
 
             <div class="devices-grid" *ngIf="sessions.length > 0">
               <div class="device-card" *ngFor="let s of sessions" [class.current-device]="s.isCurrent">
-                <div class="device-icon-wrap">
-                  <span class="material-symbols-outlined">{{ getDeviceIcon(s.device) }}</span>
+                <div class="device-icon-wrap" [class.trusted-wrap]="s.isTrusted">
+                  <span class="material-symbols-outlined">{{ s.icon || getDeviceIcon(s.rawDevice || s.device) }}</span>
                 </div>
                 <div class="device-info">
                   <div class="device-name-row">
-                    <span class="device-name">{{ formatDeviceTitle(s.device) }}</span>
+                    <span class="device-name">{{ s.device || formatDeviceTitle(s.rawDevice || s.device) }}</span>
                     <span class="badge-current" *ngIf="s.isCurrent">{{ 'account.this_device' | translate }}</span>
+                    <span class="badge-trusted" *ngIf="s.isTrusted" title="2FA verification bypassed on this trusted device">
+                      <span class="material-symbols-outlined">verified_user</span>
+                      <span>Trusted Device</span>
+                    </span>
                   </div>
                   <div class="device-meta-row">
-                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">language</span>{{ formatBrowserDetails(s.device) }}</span>
+                    <span class="meta-tag">
+                      <span class="material-symbols-outlined meta-sub-icon">{{ getDeviceSubIcon(s.rawDevice || s.device) }}</span>
+                      {{ s.browser || formatBrowserDetails(s.rawDevice || s.device) }}
+                    </span>
                     <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">router</span>{{ formatIpAddress(s.ipAddress) }}</span>
                     <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">schedule</span>{{ formatRelativeTime(s.lastActive) }}</span>
                   </div>
@@ -508,16 +529,25 @@ interface AccountSummary {
                 <tbody>
                   <tr *ngFor="let log of loginLogs">
                     <td>
-                      <span class="log-status-pill" [ngClass]="getStatusClass(log.status)">
-                        <span class="material-symbols-outlined">{{ getStatusIcon(log.status) }}</span>
-                        {{ log.status }}
-                      </span>
+                      <div class="log-status-col">
+                        <span class="log-status-pill" [ngClass]="getStatusClass(log.status)">
+                          <span class="material-symbols-outlined">{{ getStatusIcon(log.status) }}</span>
+                          {{ log.status }}
+                        </span>
+                        <span class="badge-trusted-pill" *ngIf="log.isTrusted || (log.status && log.status.includes('Trusted'))" title="Trusted device authentication">
+                          <span class="material-symbols-outlined">verified_user</span>
+                          <span>Trusted</span>
+                        </span>
+                      </div>
                     </td>
                     <td><code>{{ formatIpAddress(log.ipAddress) }}</code></td>
                     <td class="log-agent" [title]="log.userAgent">
                       <div class="log-agent-wrap">
-                        <span class="log-device-main">{{ formatDeviceTitle(log.userAgent) }}</span>
-                        <span class="log-device-sub">{{ formatBrowserDetails(log.userAgent) }}</span>
+                        <div class="log-agent-head">
+                          <span class="material-symbols-outlined log-device-icon">{{ log.icon || getDeviceIcon(log.userAgent) }}</span>
+                          <span class="log-device-main">{{ log.device || formatDeviceTitle(log.userAgent) }}</span>
+                        </div>
+                        <span class="log-device-sub">{{ log.browser || formatBrowserDetails(log.userAgent) }}</span>
                       </div>
                     </td>
                     <td>{{ formatDateTime(log.timestamp) }}</td>
@@ -1213,6 +1243,24 @@ interface AccountSummary {
       padding: 2px 8px;
       border-radius: 20px;
     }
+    .badge-trusted {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .badge-trusted .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .device-icon-wrap.trusted-wrap {
+      border: 1.5px solid rgba(16, 185, 129, 0.35);
+    }
     .device-meta-row {
       display: flex;
       align-items: center;
@@ -1273,14 +1321,44 @@ interface AccountSummary {
       border-bottom: 1px solid #f1f5f9;
       color: #1e293b;
     }
+    .log-status-col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .badge-trusted-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    .badge-trusted-pill .material-symbols-outlined {
+      font-size: 11px;
+    }
     .log-agent {
-      min-width: 200px;
-      max-width: 320px;
+      min-width: 220px;
+      max-width: 360px;
     }
     .log-agent-wrap {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
+    }
+    .log-agent-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .log-device-icon {
+      font-size: 16px;
+      color: #0050e5;
     }
     .log-device-main {
       font-weight: 600;
@@ -1290,6 +1368,7 @@ interface AccountSummary {
     .log-device-sub {
       font-size: 11.5px;
       color: #64748b;
+      padding-left: 22px;
     }
     .log-status-pill {
       display: inline-flex;
@@ -1955,6 +2034,17 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
    */
   getDeviceIcon(device: string): string {
     return parseUserAgent(device).icon;
+  }
+
+  /**
+   * Returns a secondary sub-icon for metadata tag (language for browser, terminal/desktop for native apps).
+   * @param device Device name or user agent string.
+   */
+  getDeviceSubIcon(device: string | undefined | null): string {
+    const parsed = parseUserAgent(device);
+    if (parsed.clientType === 'desktop') return 'terminal';
+    if (parsed.clientType === 'mobile') return 'smartphone';
+    return 'language';
   }
 
   /**

@@ -770,7 +770,29 @@ namespace Ozikol_BCC.Api.Controllers
                 .Take(250) // Limit to latest 250 rows for performance
                 .ToListAsync();
 
-            return Ok(ApiResponse<object>.SuccessResponse(logs, "Login audit logs retrieved."));
+            var parsedLogs = logs.Select(l =>
+            {
+                var parsed = UserAgentParser.Parse(l.UserAgent);
+                return new
+                {
+                    l.Id,
+                    l.UserId,
+                    l.Email,
+                    l.IpAddress,
+                    l.SystemId,
+                    l.Status,
+                    l.UserAgent,
+                    Device = parsed.FriendlyDeviceTitle,
+                    Browser = parsed.FriendlyBrowserDetails,
+                    BrowserName = parsed.BrowserName,
+                    ClientType = parsed.ClientType,
+                    Icon = parsed.Icon,
+                    IsTrusted = l.Status != null && l.Status.Contains("Trusted", StringComparison.OrdinalIgnoreCase),
+                    l.Timestamp
+                };
+            }).ToList();
+
+            return Ok(ApiResponse<object>.SuccessResponse(parsedLogs, "Login audit logs retrieved."));
         }
 
         [HttpGet("password-policy")]
@@ -857,7 +879,8 @@ namespace Ozikol_BCC.Api.Controllers
                 return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
 
             var currentJti = User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
-                ?? User.FindFirstValue("jti");
+                ?? User.FindFirstValue("jti")
+                ?? User.Claims.FirstOrDefault(c => c.Type.EndsWith("/jti") || c.Type == "jti")?.Value;
 
             var deviceEntities = await _dbContext.BcpUserDevices
                 .Where(d => d.UserId == userId && d.IsActiveSession)
@@ -893,15 +916,25 @@ namespace Ozikol_BCC.Api.Controllers
             var sessions = deviceEntities.Select(d =>
             {
                 var parsed = UserAgentParser.Parse(d.DeviceName);
+                var isCurrent = (!string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti)
+                    || (string.IsNullOrEmpty(currentJti) && d == deviceEntities[0]);
+
                 return new
                 {
                     SessionId = d.Id,
                     Device = parsed.FriendlyDeviceTitle,
                     Browser = parsed.FriendlyBrowserDetails,
+                    BrowserName = parsed.BrowserName,
+                    ClientType = parsed.ClientType,
+                    OperatingSystem = parsed.OperatingSystem,
+                    DeviceType = parsed.DeviceType,
+                    Icon = parsed.Icon,
                     RawDevice = d.DeviceName,
                     IpAddress = d.IpAddress,
                     LastActive = d.LastUsedAt,
-                    IsCurrent = (!string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti) || (d == deviceEntities[0])
+                    IsCurrent = isCurrent,
+                    IsTrusted = d.IsTrusted,
+                    CreatedAt = d.CreatedAt
                 };
             }).ToList();
 
@@ -992,12 +1025,21 @@ namespace Ozikol_BCC.Api.Controllers
                 return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
 
             var currentJti = User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
-                ?? User.FindFirstValue("jti");
+                ?? User.FindFirstValue("jti")
+                ?? User.Claims.FirstOrDefault(c => c.Type.EndsWith("/jti") || c.Type == "jti")?.Value;
 
-            // Fetch all other active devices for this user
-            var otherSessions = await _dbContext.BcpUserDevices
-                .Where(d => d.UserId == userId && d.IsActiveSession && (string.IsNullOrEmpty(currentJti) || d.JwtId != currentJti))
+            // Fetch all active devices for this user
+            var allUserSessions = await _dbContext.BcpUserDevices
+                .Where(d => d.UserId == userId && d.IsActiveSession)
+                .OrderByDescending(d => d.LastUsedAt)
                 .ToListAsync();
+
+            var otherSessions = allUserSessions.Where(d =>
+            {
+                if (!string.IsNullOrEmpty(currentJti))
+                    return d.JwtId != currentJti;
+                return d != allUserSessions.FirstOrDefault();
+            }).ToList();
 
             if (!otherSessions.Any())
             {
@@ -1106,6 +1148,10 @@ namespace Ozikol_BCC.Api.Controllers
                     h.UserAgent,
                     Device = parsed.FriendlyDeviceTitle,
                     Browser = parsed.FriendlyBrowserDetails,
+                    BrowserName = parsed.BrowserName,
+                    ClientType = parsed.ClientType,
+                    Icon = parsed.Icon,
+                    IsTrusted = h.Status != null && h.Status.Contains("Trusted", StringComparison.OrdinalIgnoreCase),
                     h.Timestamp
                 };
             }).ToList();

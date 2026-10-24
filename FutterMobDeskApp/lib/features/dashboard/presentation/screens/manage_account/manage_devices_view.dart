@@ -116,15 +116,36 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
     }
   }
 
-  IconData _resolveDeviceIcon(String deviceType, String os) {
+  IconData _resolveDeviceIcon(String deviceType, String os, {String? clientType, String? browserName, String? deviceTitle}) {
+    final lowerTitle = (deviceTitle ?? '').toLowerCase();
+    final lowerBrowser = (browserName ?? '').toLowerCase();
+    final lowerClient = (clientType ?? '').toLowerCase();
     final lowerType = deviceType.toLowerCase();
     final lowerOs = os.toLowerCase();
-    if (lowerType.contains('mobile') || lowerOs.contains('android') || lowerOs.contains('ios') || lowerOs.contains('iphone')) {
+
+    // 1. Mobile or Tablet
+    if (lowerType.contains('mobile') || lowerClient.contains('mobile') || lowerOs.contains('android') || lowerOs.contains('ios') || lowerOs.contains('iphone')) {
       return Icons.smartphone_rounded;
     }
     if (lowerType.contains('tablet') || lowerOs.contains('ipad')) {
       return Icons.tablet_mac_rounded;
     }
+
+    // 2. Web Browsers (Chrome, Edge, Firefox, Safari, Web)
+    if (lowerClient.contains('web') ||
+        lowerBrowser.contains('chrome') ||
+        lowerBrowser.contains('firefox') ||
+        lowerBrowser.contains('edge') ||
+        lowerBrowser.contains('safari') ||
+        lowerTitle.contains('chrome') ||
+        lowerTitle.contains('firefox') ||
+        lowerTitle.contains('edge') ||
+        lowerTitle.contains('safari') ||
+        lowerTitle.contains('web browser')) {
+      return Icons.language_rounded;
+    }
+
+    // 3. Desktop Application
     if (lowerOs.contains('mac') || lowerOs.contains('darwin')) {
       return Icons.laptop_mac_rounded;
     }
@@ -227,8 +248,11 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
               itemBuilder: (context, index) {
                 final session = _sessions[index];
                 final isCurrent = session['isCurrent'] == true || session['isCurrentSession'] == true;
+                final isTrusted = session['isTrusted'] == true;
                 final deviceTitle = session['friendlyDeviceTitle'] ?? session['device'] ?? 'Desktop App on Windows';
                 final browserDetails = session['friendlyBrowserDetails'] ?? session['browser'] ?? 'Desktop App • Desktop';
+                final clientType = session['clientType']?.toString();
+                final browserName = session['browserName']?.toString();
                 final os = (session['operatingSystem'] ?? session['os'] ?? 'Unknown OS').toString();
                 final deviceType = (session['deviceType'] ?? 'Desktop').toString();
                 final ip = session['ipAddress'] ?? '127.0.0.1';
@@ -243,7 +267,9 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                     border: Border.all(
                       color: isCurrent
                           ? AppColors.primary.withValues(alpha: 0.5)
-                          : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                          : (isTrusted
+                              ? AppColors.success.withValues(alpha: 0.4)
+                              : (isDark ? AppColors.outlineDark : AppColors.outlineLight)),
                       width: isCurrent ? 1.5 : 1.0,
                     ),
                     boxShadow: [
@@ -263,13 +289,17 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                         decoration: BoxDecoration(
                           color: isCurrent
                               ? AppColors.primary.withValues(alpha: 0.12)
-                              : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
+                              : (isTrusted
+                                  ? AppColors.success.withValues(alpha: 0.12)
+                                  : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9))),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
-                          _resolveDeviceIcon(deviceType, os),
+                          _resolveDeviceIcon(deviceType, os, clientType: clientType, browserName: browserName, deviceTitle: deviceTitle),
                           size: 22,
-                          color: isCurrent ? AppColors.primary : (isDark ? AppColors.gray400 : AppColors.gray600),
+                          color: isCurrent
+                              ? AppColors.primary
+                              : (isTrusted ? AppColors.success : (isDark ? AppColors.gray400 : AppColors.gray600)),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -298,7 +328,7 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                                     decoration: BoxDecoration(
-                                      color: AppColors.success.withValues(alpha: 0.12),
+                                      color: AppColors.primary.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(100),
                                     ),
                                     child: const Text(
@@ -306,8 +336,34 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                                       style: TextStyle(
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.success,
+                                        color: AppColors.primary,
                                       ),
+                                    ),
+                                  ),
+                                ],
+                                if (isTrusted) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.success.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(100),
+                                      border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.verified_user_rounded, size: 12, color: AppColors.success),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Trusted Device',
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.success,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
