@@ -23,6 +23,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [Route("api/Notifications")]
     [Authorize]
     [Tags("10. In-App Notifications & Alerts Engine")]
     public class NotificationsApiController : ControllerBase

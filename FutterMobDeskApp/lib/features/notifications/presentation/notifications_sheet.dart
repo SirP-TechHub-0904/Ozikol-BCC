@@ -9,10 +9,13 @@ import '../domain/notification_model.dart';
 /// Comprehensive notification center sheet rendered as an adaptive slide-over drawer
 /// on desktop and a bottom modal sheet on mobile devices.
 class NotificationsSheet extends ConsumerWidget {
-  const NotificationsSheet({super.key});
+  /// Optional navigation callback invoked when a notification with an ActionUrl is tapped.
+  final void Function(String actionUrl)? onNavigate;
+
+  const NotificationsSheet({super.key, this.onNavigate});
 
   /// Displays the notifications sheet adaptively based on screen width.
-  static void show(BuildContext context) {
+  static void show(BuildContext context, {void Function(String actionUrl)? onNavigate}) {
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
     if (isDesktop) {
@@ -28,9 +31,9 @@ class NotificationsSheet extends ConsumerWidget {
             child: SizedBox(
               width: 460,
               height: double.infinity,
-              child: const Material(
+              child: Material(
                 color: Colors.transparent,
-                child: NotificationsSheet(),
+                child: NotificationsSheet(onNavigate: onNavigate),
               ),
             ),
           );
@@ -52,7 +55,7 @@ class NotificationsSheet extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         builder: (_) => SizedBox(
           height: MediaQuery.of(context).size.height * 0.88,
-          child: const NotificationsSheet(),
+          child: NotificationsSheet(onNavigate: onNavigate),
         ),
       );
     }
@@ -194,7 +197,7 @@ class NotificationsSheet extends ConsumerWidget {
                       separatorBuilder: (context, index) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final notif = state.filteredItems[index];
-                        return _buildNotificationCard(notif, notifier, isDark, ref);
+                        return _buildNotificationCard(context, notif, notifier, isDark, ref);
                       },
                     ),
             ),
@@ -245,7 +248,13 @@ class NotificationsSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotificationCard(NotificationItem notif, NotificationNotifier notifier, bool isDark, WidgetRef ref) {
+  Widget _buildNotificationCard(
+    BuildContext context,
+    NotificationItem notif,
+    NotificationNotifier notifier,
+    bool isDark,
+    WidgetRef ref,
+  ) {
     final sev = notif.severity;
     final timeAgo = _formatTimeAgo(notif.createdAt);
 
@@ -253,6 +262,10 @@ class NotificationsSheet extends ConsumerWidget {
       onTap: () {
         if (!notif.isRead) {
           notifier.markAsRead(notif.id);
+        }
+        if (notif.actionUrl != null && notif.actionUrl!.isNotEmpty) {
+          Navigator.of(context).pop();
+          onNavigate?.call(notif.actionUrl!);
         }
       },
       borderRadius: BorderRadius.circular(14),
@@ -371,6 +384,10 @@ class NotificationsSheet extends ConsumerWidget {
                 child: TextButton.icon(
                   onPressed: () {
                     if (!notif.isRead) notifier.markAsRead(notif.id);
+                    if (notif.actionUrl != null && notif.actionUrl!.isNotEmpty) {
+                      Navigator.of(context).pop();
+                      onNavigate?.call(notif.actionUrl!);
+                    }
                   },
                   icon: const Icon(Icons.arrow_forward_rounded, size: 14),
                   label: Text('notif.view_action'.tr(ref, fallback: 'View Action'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),

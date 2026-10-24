@@ -17,6 +17,7 @@ using Microsoft.IdentityModel.Tokens;
 using Ozikol_BCC.Api.Models;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.Services.Recaptcha;
 using Ozikol_BCC.Infrastructure.TenantSupport;
@@ -44,6 +45,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly IServiceScopeFactory? _serviceScopeFactory;
         private readonly IRecaptchaService? _recaptchaService;
         private readonly ITenantFeatureGateService? _featureGateService;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         public AuthController(
             IMediator mediator,
@@ -58,7 +60,8 @@ namespace Ozikol_BCC.Api.Controllers
             Ozikol_BCC.Application.Services.IOtpVerificationService? otpService = null,
             IServiceScopeFactory? serviceScopeFactory = null,
             IRecaptchaService? recaptchaService = null,
-            ITenantFeatureGateService? featureGateService = null)
+            ITenantFeatureGateService? featureGateService = null,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _mediator = mediator;
             _userManager = userManager;
@@ -73,6 +76,7 @@ namespace Ozikol_BCC.Api.Controllers
             _serviceScopeFactory = serviceScopeFactory;
             _recaptchaService = recaptchaService;
             _featureGateService = featureGateService;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         private static EffectiveUserPermissionsDto ComputeEffectivePermissions(List<string> roles)
@@ -510,20 +514,39 @@ namespace Ozikol_BCC.Api.Controllers
                     UserAgent = userAgent
                 });
 
-                // In-App Notification about new device sign in
-                if (!skipMfa)
+                // Real-time security alert notification for account sign-in
+                var friendlyDevice = UserAgentParser.Parse(userAgent).FriendlyDeviceTitle;
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        TenantKey = resolvedTenantKey,
+                        Title = "Security Alert: New Sign-in Detected",
+                        Message = $"Your account was accessed from '{friendlyDevice}' via IP {ipAddress}.",
+                        Severity = NotificationSeverity.Info,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/account?tab=devices",
+                        Module = "Security",
+                        Icon = "devices",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Normal
+                    });
+                }
+                else
                 {
                     activeDbContext.BcpNotifications.Add(new BcpNotification
                     {
                         Id = Guid.CreateVersion7(),
                         UserId = user.Id,
-                        Title = "New Login Detected",
-                        Message = $"A new sign-in was recorded from '{userAgent}' (IP: {ipAddress}) on {DateTime.UtcNow:MMM dd, yyyy HH:mm} UTC.",
-                        ActionUrl = "/users/workspace/security",
+                        Title = "Security Alert: New Sign-in Detected",
+                        Message = $"Your account was accessed from '{friendlyDevice}' via IP {ipAddress}.",
+                        ActionUrl = "/identity/console/account?tab=devices",
                         Module = "Security",
-                        Icon = "phonelink_lock",
+                        Icon = "devices",
                         Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.High,
+                        Priority = BcpMessagePriority.Normal,
                         CreatedAt = DateTime.UtcNow
                     });
                 }
@@ -805,12 +828,48 @@ namespace Ozikol_BCC.Api.Controllers
                 activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                 {
                     Id = Guid.CreateVersion7(),
+                    UserId = user.Id,
                     Email = user.Email!,
                     IpAddress = ipAddress,
                     Status = request.TrustDevice ? "Success (Trusted Device)" : "Success",
                     UserAgent = userAgent,
                     Timestamp = DateTime.UtcNow
                 });
+
+                // Record operational activity log
+                activeDbContext.BcpActivityLogs.Add(new BcpActivityLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    ActionType = "LOGIN_MFA_SUCCESS",
+                    Description = $"User '{user.Email}' signed in via two-factor verification ({user.PreferredTwoFactorProvider}).",
+                    Module = "Authentication",
+                    PerformedByProfileId = user.Id,
+                    PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    PerformedByUserEmail = user.Email,
+                    Date = DateTime.UtcNow,
+                    IpAddress = ipAddress,
+                    UserAgent = userAgent
+                });
+
+                var parsedCallerDevice = UserAgentParser.Parse(userAgent);
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        TenantKey = resolvedTenantKey,
+                        Title = "Security Alert: Sign-in Verified",
+                        Message = $"Two-factor authentication sign-in verified from '{parsedCallerDevice.FriendlyDeviceTitle}' via IP {ipAddress}.",
+                        Severity = NotificationSeverity.Info,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/account?tab=devices",
+                        Module = "Security",
+                        Icon = "devices",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Normal
+                    });
+                }
 
                 await activeDbContext.SaveChangesAsync();
             }
@@ -1703,6 +1762,45 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", changeResult.Errors.Select(e => e.Description))));
             }
 
+            // Record operational activity log
+            if (_dbContext != null)
+            {
+                _dbContext.BcpActivityLogs.Add(new BcpActivityLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    ActionType = "PASSWORD_CHANGED",
+                    Description = $"User '{user.Email}' updated their account password.",
+                    Module = "Security",
+                    PerformedByProfileId = user.Id,
+                    PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    PerformedByUserEmail = user.Email,
+                    Date = DateTime.UtcNow,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    UserAgent = Request.Headers.UserAgent.ToString()
+                });
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // Dispatch real-time security alert notification
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = user.Id,
+                    TenantKey = _tenantProvider?.CurrentTenant,
+                    Title = "Security Alert: Password Changed",
+                    Message = "Your account password was successfully updated.",
+                    Severity = NotificationSeverity.Success,
+                    Channels = NotificationChannels.InApp,
+                    ActionUrl = "/identity/console/account?tab=password",
+                    Module = "Security",
+                    Icon = "lock_reset",
+                    Category = BcpMessageCategory.Security,
+                    Priority = BcpMessagePriority.High
+                });
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(null, "Password changed successfully."));
         }
 
@@ -1738,6 +1836,44 @@ namespace Ozikol_BCC.Api.Controllers
                 user.TwoFactorEnabled = false;
                 user.PreferredTwoFactorProvider = BcpTwoFactorProvider.None;
                 await _userManager.UpdateAsync(user);
+
+                if (_dbContext != null)
+                {
+                    _dbContext.BcpActivityLogs.Add(new BcpActivityLog
+                    {
+                        Id = Guid.CreateVersion7(),
+                        ActionType = "MFA_DISABLED",
+                        Description = $"User '{user.Email}' disabled two-factor authentication.",
+                        Module = "Security",
+                        PerformedByProfileId = user.Id,
+                        PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                        PerformedByUserEmail = user.Email,
+                        Date = DateTime.UtcNow,
+                        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                        UserAgent = Request.Headers.UserAgent.ToString()
+                    });
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        TenantKey = _tenantProvider?.CurrentTenant,
+                        Title = "Security Alert: Two-Factor Disabled",
+                        Message = "Two-factor authentication has been disabled on your account. Your account security may be reduced.",
+                        Severity = NotificationSeverity.Warning,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/account?tab=2fa",
+                        Module = "Security",
+                        Icon = "warning",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.High
+                    });
+                }
+
                 return Ok(ApiResponse<object>.SuccessResponse(null, "Two-Factor authentication disabled successfully."));
             }
 
@@ -1915,6 +2051,42 @@ namespace Ozikol_BCC.Api.Controllers
                     });
                 }
                 await _dbContext.SaveChangesAsync();
+
+                // Record operational activity log
+                _dbContext.BcpActivityLogs.Add(new BcpActivityLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    ActionType = "MFA_ENABLED",
+                    Description = $"User '{user.Email}' configured and enabled two-factor authentication ({user.PreferredTwoFactorProvider}).",
+                    Module = "Security",
+                    PerformedByProfileId = user.Id,
+                    PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    PerformedByUserEmail = user.Email,
+                    Date = DateTime.UtcNow,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    UserAgent = Request.Headers.UserAgent.ToString()
+                });
+                await _dbContext.SaveChangesAsync();
+
+                // Dispatch real-time security alert notification
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        TenantKey = _tenantProvider?.CurrentTenant,
+                        Title = "Security Update: Two-Factor Enabled",
+                        Message = "Two-factor authentication has been successfully configured and activated on your account.",
+                        Severity = NotificationSeverity.Success,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/account?tab=2fa",
+                        Module = "Security",
+                        Icon = "verified_user",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Normal
+                    });
+                }
             }
 
             return Ok(ApiResponse<object>.SuccessResponse(new { backupCodes = codes }, "Two-factor authentication successfully configured and verified."));

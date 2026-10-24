@@ -202,6 +202,35 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     }
   }
 
+  /// <summary>
+  /// Navigates to an in-app destination triggered by a notification action URL.
+  /// Seamlessly parses path and query parameters (e.g., '?tab=devices', '?tab=password').
+  /// </summary>
+  /// <param name="actionUrl">Relative or absolute action destination path.</param>
+  void _handleNotificationAction(String actionUrl) {
+    try {
+      final uri = Uri.parse(actionUrl);
+      final path = uri.path.toLowerCase();
+      final tab = uri.queryParameters['tab']?.toLowerCase();
+
+      final activeWs = ref.read(workspaceStateProvider).activeWorkspace;
+      final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
+      final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
+
+      if (path.contains('account') || path.contains('security') || path.contains('identity')) {
+        if (isAdministration) {
+          _handleAccountTabAdmin(tab ?? 'devices');
+        } else {
+          _handleAccountTabMember(tab ?? 'devices');
+        }
+      } else if (path.contains('member') || path.contains('user')) {
+        _navigateToTab(isAdministration ? 1 : 0);
+      } else {
+        _navigateToTab(0);
+      }
+    } catch (_) {}
+  }
+
   @override
   void initState() {
     super.initState();
@@ -561,7 +590,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             badge: notifCount > 0
                 ? AppBadge(text: '$notifCount', backgroundColor: AppColors.error)
                 : null,
-            onTap: () => NotificationsSheet.show(context),
+            onTap: () => NotificationsSheet.show(context, onNavigate: _handleNotificationAction),
           ),
           AppTopBarAction(
             icon: Icons.person_rounded,
@@ -876,7 +905,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 tooltip: 'notif.title'.tr(ref, fallback: 'Notifications'),
                 isDark: isDark,
                 badgeCount: notifCount,
-                onTap: () => NotificationsSheet.show(context),
+                onTap: () => NotificationsSheet.show(context, onNavigate: _handleNotificationAction),
               ),
 
               // 6. Live Online / Offline Presence Notice Badge (on wider views)

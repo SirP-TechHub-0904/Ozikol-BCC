@@ -215,6 +215,17 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * **SMS Alerts**: Enqueued into `[dbo].[BcpSmsQueue]` with sender ID compliance, character count validation, and transaction tracking.
   * **WhatsApp Alerts**: Managed through the unified notification queue with template verification and status tracking.
 * **Audit & Idempotency Protection**: Every notification pool entry MUST record the originating `TenantKey`, `UserId`, `SystemId`, `Category`, `Priority`, and timestamp to guarantee zero message loss, deduplication, and complete delivery telemetry.
+* **Mandatory Notifications for High-Impact & Serious Activities (Permanent Rule)**:
+  * Whenever an authentication, security, credential, permission, or serious operational action occurs, the system MUST automatically dispatch an in-app and real-time socket notification to the affected user(s) via `ICentralNotificationDispatcher.DispatchAsync`.
+  * **Mandatory Trigger Events**:
+    1. **New Device / Browser Sign-in**: Alert user of unrecognized device access, IP address, and timestamp with action link to Manage Devices (`/identity/console/account?tab=devices`).
+    2. **Password Updates & Resets**: Immediate confirmation of self-service or administrative password alterations (`/identity/console/account?tab=password`).
+    3. **Two-Factor Authentication (2FA)**: Enabling, disabling, or regenerating recovery codes (`/identity/console/account?tab=2fa`).
+    4. **Session Termination**: Notification when an active device session is revoked remotely (`/identity/console/account?tab=devices`).
+    5. **Role & Privilege Adjustments**: Granting, upgrading, or revoking administrative roles and scopes.
+    6. **Account Status & Membership Changes**: Activation, suspension, category transfers, or administrative profile updates.
+  * **Clickable Deep Linking Requirement**: Every notification MUST populate `ActionUrl` with a clean route (e.g. `/identity/console/account?tab=devices`) enabling users across Web, Mobile, and Desktop to click the notification and immediately navigate to the exact tab/screen.
+  * **Future Feature Mandate**: All future features, modules, and administrative workflows MUST proactively identify high-impact actions and implement corresponding notification dispatches as part of their initial delivery.
 
 ---
 

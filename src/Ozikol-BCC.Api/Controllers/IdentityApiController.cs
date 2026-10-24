@@ -1204,6 +1204,40 @@ namespace Ozikol_BCC.Api.Controllers
                     CreatedAt = DateTime.UtcNow
                 };
                 _dbContext.BcpEmailQueue.Add(emailQueueItem);
+
+                // Dispatch real-time In-App security notification
+                if (_notificationDispatcher != null)
+                {
+                    var terminatedParsed = UserAgentParser.Parse(session.DeviceName);
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        Title = "Security Alert: Session Terminated",
+                        Message = $"Your active session on '{terminatedParsed.FriendlyDeviceTitle}' was terminated.",
+                        Severity = NotificationSeverity.Warning,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/account?tab=devices",
+                        Module = "Security",
+                        Icon = "phonelink_erase",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Normal
+                    });
+                }
+
+                _dbContext.BcpActivityLogs.Add(new BcpActivityLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    ActionType = "SESSION_TERMINATED",
+                    Description = $"Active session on '{UserAgentParser.Parse(session.DeviceName).FriendlyDeviceTitle}' was terminated.",
+                    Module = "Security",
+                    PerformedByProfileId = user.Id,
+                    PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    PerformedByUserEmail = user.Email,
+                    Date = DateTime.UtcNow,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    UserAgent = Request.Headers.UserAgent.ToString()
+                });
             }
 
             await _dbContext.SaveChangesAsync();
@@ -1294,17 +1328,52 @@ namespace Ozikol_BCC.Api.Controllers
             };
             _dbContext.BcpLoginAuditLogs.Add(log);
 
+            // Record operational activity log
+            _dbContext.BcpActivityLogs.Add(new BcpActivityLog
+            {
+                Id = Guid.CreateVersion7(),
+                ActionType = "SESSIONS_REVOKED",
+                Description = $"{otherSessions.Count} other active device sessions were remotely revoked.",
+                Module = "Security",
+                PerformedByProfileId = userId,
+                PerformedByFullName = currentUserEmail,
+                PerformedByUserEmail = currentUserEmail,
+                Date = DateTime.UtcNow,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                UserAgent = callerUserAgent
+            });
+
+            // Dispatch in-app security alert
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = userId,
+                    Title = "Security Alert: Other Sessions Revoked",
+                    Message = $"{otherSessions.Count} other active login session(s) were revoked.",
+                    Severity = NotificationSeverity.Warning,
+                    Channels = NotificationChannels.InApp,
+                    ActionUrl = "/identity/console/account?tab=devices",
+                    Module = "Security",
+                    Icon = "phonelink_erase",
+                    Category = BcpMessageCategory.Security,
+                    Priority = BcpMessagePriority.Normal
+                });
+            }
+
             await _dbContext.SaveChangesAsync();
             return Ok(ApiResponse<object>.SuccessResponse(new { TerminatedCount = otherSessions.Count }, $"{otherSessions.Count} other session(s) successfully terminated."));
         }
 
         /// <summary>
-        /// Retrieves the personal login audit and security activity history for the authenticated user with server-side pagination.
+        /// Retrieves the personal activity audit trail and security history for the authenticated user with a 30-day retention window and server-side pagination.
         /// </summary>
         /// <param name="page">Current 1-based page index (defaults to 1).</param>
         /// <param name="pageSize">Number of records per page (defaults to 10, max 100).</param>
-        /// <returns>Paged collection of login events and pagination metadata.</returns>
+        /// <returns>Paged collection of operational tasks, security events, and retention metadata.</returns>
         [HttpGet("account/login-history")]
+        [HttpGet("account/my-activity")]
         [Authorize]
         public async Task<IActionResult> GetPersonalLoginHistory(
             [FromQuery] int page = 1,
@@ -1320,54 +1389,110 @@ namespace Ozikol_BCC.Api.Controllers
             if (pageSize < 5) pageSize = 5;
             if (pageSize > 100) pageSize = 100;
 
-            var baseQuery = _dbContext.BcpLoginAuditLogs
+            // Strict 30-day retention boundary for personal activity view
+            var cutoffDate = DateTime.UtcNow.AddDays(-30);
+
+            // 1. Query operational activities performed by this user
+            var activityQuery = _dbContext.BcpActivityLogs
+                .AsNoTracking()
+                .Where(a => (userId != null && a.PerformedByProfileId == userId) || (userEmail != null && a.PerformedByUserEmail == userEmail));
+
+            // 2. Query login authentication events for this user
+            var loginQuery = _dbContext.BcpLoginAuditLogs
                 .AsNoTracking()
                 .Where(l => (userId != null && l.UserId == userId) || (userEmail != null && l.Email == userEmail));
 
-            var totalCount = await baseQuery.CountAsync();
+            // Check if older records exist beyond 30 days
+            var hasOlderActivity = await activityQuery.AnyAsync(a => a.Date < cutoffDate);
+            var hasOlderLogin = await loginQuery.AnyAsync(l => l.Timestamp < cutoffDate);
+            var hasOlderRecords = hasOlderActivity || hasOlderLogin;
 
-            // Guarantee at least current session activity log exists if history is empty
-            if (totalCount == 0)
+            // Filter to last 30 days
+            var recentActivities = await activityQuery
+                .Where(a => a.Date >= cutoffDate)
+                .OrderByDescending(a => a.Date)
+                .Take(200)
+                .Select(a => new
+                {
+                    Id = a.Id.ToString(),
+                    Email = a.PerformedByUserEmail ?? userEmail ?? "account@domain.com",
+                    Status = a.ActionType ?? "Operational Task",
+                    Description = a.Description ?? a.ActionType ?? "User activity",
+                    Module = a.Module ?? "System",
+                    IpAddress = a.IpAddress ?? "127.0.0.1",
+                    UserAgent = a.UserAgent ?? "Web Browser",
+                    Timestamp = a.Date
+                })
+                .ToListAsync();
+
+            var recentLogins = await loginQuery
+                .Where(l => l.Timestamp >= cutoffDate)
+                .OrderByDescending(l => l.Timestamp)
+                .Take(200)
+                .Select(l => new
+                {
+                    Id = l.Id.ToString(),
+                    Email = l.Email,
+                    Status = l.Status ?? "Sign-in",
+                    Description = l.Status != null && l.Status.Contains("Success", StringComparison.OrdinalIgnoreCase)
+                        ? "Successful authentication sign-in"
+                        : (l.Status ?? "Authentication challenge"),
+                    Module = "Authentication",
+                    IpAddress = l.IpAddress,
+                    UserAgent = l.UserAgent,
+                    Timestamp = l.Timestamp
+                })
+                .ToListAsync();
+
+            // Unified chronological feed
+            var combinedFeed = recentActivities
+                .Concat(recentLogins)
+                .OrderByDescending(x => x.Timestamp)
+                .ToList();
+
+            // If empty, guarantee at least the current session is registered
+            if (!combinedFeed.Any())
             {
-                var userAgent = Request.Headers["User-Agent"].ToString();
-                if (string.IsNullOrEmpty(userAgent)) userAgent = "Web Browser";
+                var callerUserAgent = Request.Headers.UserAgent.ToString();
+                if (string.IsNullOrEmpty(callerUserAgent)) callerUserAgent = "Web Browser";
                 var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()
                     ?? HttpContext.Connection.RemoteIpAddress?.ToString()
                     ?? "127.0.0.1";
 
-                var currentLog = new BcpLoginAuditLog
+                var initialLog = new BcpLoginAuditLog
                 {
                     Id = Guid.CreateVersion7(),
                     UserId = userId ?? string.Empty,
                     Email = userEmail ?? "account@domain.com",
                     IpAddress = ip,
-                    SystemId = "BCC-Web",
+                    SystemId = "BCC-Client",
                     Status = "Success",
-                    UserAgent = userAgent,
+                    UserAgent = callerUserAgent,
                     Timestamp = DateTime.UtcNow
                 };
-                _dbContext.BcpLoginAuditLogs.Add(currentLog);
+                _dbContext.BcpLoginAuditLogs.Add(initialLog);
                 await _dbContext.SaveChangesAsync();
 
-                totalCount = 1;
+                combinedFeed.Add(new
+                {
+                    Id = initialLog.Id.ToString(),
+                    Email = initialLog.Email,
+                    Status = "Success",
+                    Description = "Initial session authenticated",
+                    Module = "Authentication",
+                    IpAddress = initialLog.IpAddress,
+                    UserAgent = initialLog.UserAgent,
+                    Timestamp = initialLog.Timestamp
+                });
             }
 
-            var pagedLogs = await baseQuery
-                .OrderByDescending(l => l.Timestamp)
+            var totalCount = combinedFeed.Count;
+            var pagedItems = combinedFeed
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(l => new
-                {
-                    l.Id,
-                    l.Email,
-                    l.Status,
-                    l.IpAddress,
-                    l.UserAgent,
-                    l.Timestamp
-                })
-                .ToListAsync();
+                .ToList();
 
-            var formatted = pagedLogs.Select(h =>
+            var formatted = pagedItems.Select(h =>
             {
                 var parsed = UserAgentParser.Parse(h.UserAgent);
                 return new
@@ -1375,6 +1500,8 @@ namespace Ozikol_BCC.Api.Controllers
                     h.Id,
                     h.Email,
                     h.Status,
+                    h.Description,
+                    h.Module,
                     h.IpAddress,
                     h.UserAgent,
                     Device = parsed.FriendlyDeviceTitle,
@@ -1396,8 +1523,11 @@ namespace Ozikol_BCC.Api.Controllers
                 totalCount,
                 page,
                 pageSize,
-                totalPages
-            }, "Personal login history retrieved."));
+                totalPages,
+                hasOlderRecords,
+                retentionDays = 30,
+                retentionNotice = "Showing activity records from the last 30 days. For archival records older than 1 month, please contact your workspace Administrator."
+            }, "Personal activity history retrieved."));
         }
 
         /// <summary>
