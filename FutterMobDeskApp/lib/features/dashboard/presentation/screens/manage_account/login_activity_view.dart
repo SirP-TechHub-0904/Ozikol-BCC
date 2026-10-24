@@ -4,7 +4,7 @@ import '../../../../../core/models/workspace.dart';
 import '../../../../../core/services/export_service.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../data/account_repository.dart';
-import '../../../../../core/widgets/page_header.dart';
+import 'widgets/account_security_header.dart';
 
 /// <summary>
 /// Screen presenting the server-side paginated login and authentication security audit history.
@@ -14,8 +14,15 @@ class LoginActivityView extends ConsumerStatefulWidget {
   /// The active workspace context.
   final Workspace? workspace;
 
+  /// Callback to switch account navigation tabs.
+  final ValueChanged<String>? onSelectTab;
+
   /// Creates a [LoginActivityView].
-  const LoginActivityView({super.key, this.workspace});
+  const LoginActivityView({
+    super.key,
+    this.workspace,
+    this.onSelectTab,
+  });
 
   @override
   ConsumerState<LoginActivityView> createState() => _LoginActivityViewState();
@@ -187,29 +194,45 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
-          // Shared PageHeader mold: top-level account destination, so no back control.
-          PageHeader(
-            icon: Icons.manage_search_rounded,
-            eyebrow: 'Forensic Audit Stream',
-            title: 'Login & Authentication Activity',
-            description: 'Comprehensive audit trail of recent sign-in attempts, client IPs, and authentication statuses.',
-            secondaryActions: [
-                PageHeaderAction(
-                  label: 'Export CSV',
-                  compactLabel: 'Export',
-                  icon: Icons.download_rounded,
-                  onPressed: _items.isNotEmpty ? _handleExportCsv : null,
-                ),
-                PageHeaderAction(
-                  label: 'Refresh Activity Logs',
-                  compactLabel: 'Refresh',
-                  icon: Icons.refresh_rounded,
-                  onPressed: _loadHistory,
-                ),
-            ],
+          // Unified Account Header & Navigation Tabs
+          AccountSecurityHeader(
+            activeTab: 'activity',
+            onSelectTab: widget.onSelectTab,
+            workspace: widget.workspace,
           ),
           const SizedBox(height: 20),
+
+          // Section Card matching Web .card-section and .section-card-head
+          AccountSectionCard(
+            icon: Icons.history_rounded,
+            title: 'Login & Authentication Activity',
+            description: 'Comprehensive audit trail of recent sign-in attempts, client IPs, and authentication statuses.',
+            action: Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _items.isNotEmpty ? _handleExportCsv : null,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.download_rounded, size: 16),
+                  label: const Text('Export CSV', style: TextStyle(fontSize: 12.5)),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _loadHistory,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                  label: const Text('Refresh', style: TextStyle(fontSize: 12.5)),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
 
           // Search and Filters Bar
           Row(
@@ -466,6 +489,9 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
           ],
         ],
       ),
-    );
+    ),
+  ],
+),
+);
   }
 }

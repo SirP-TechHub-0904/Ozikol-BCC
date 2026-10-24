@@ -5,21 +5,22 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../data/account_repository.dart';
-import '../../../../../core/widgets/page_header.dart';
+import 'widgets/account_security_header.dart';
 
-/// <summary>
 /// Screen presenting the personal member account profile details and organization dossier.
-/// Provides 1-to-1 operational and visual parity with the web client, including:
-/// - Organization dossier card with immutable Member ID, category, joined date, and status pills
-/// - Salutation title, first/middle/last name, designation, phone, DOB, and gender fields
-/// - Real backend profile persistence via `api/PortalUsersApi/me`
-/// </summary>
 class MyAccountProfileView extends ConsumerStatefulWidget {
   /// The active workspace organization context.
   final Workspace? workspace;
 
+  /// Callback to switch account navigation tabs.
+  final ValueChanged<String>? onSelectTab;
+
   /// Creates a [MyAccountProfileView].
-  const MyAccountProfileView({super.key, this.workspace});
+  const MyAccountProfileView({
+    super.key,
+    this.workspace,
+    this.onSelectTab,
+  });
 
   @override
   ConsumerState<MyAccountProfileView> createState() => _MyAccountProfileViewState();
@@ -175,23 +176,44 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          // Shared PageHeader mold: top-level account destination, so no back control.
-          PageHeader(
-            icon: Icons.badge_outlined,
-            eyebrow: 'Personal Identity & Bio',
-            title: 'My Profile & Dossier',
-            description: 'Manage your personal credentials, contact info, bio, and organization dossier.',
-            secondaryActions: [
-                PageHeaderAction(
-                  label: 'Refresh Profile',
-                  compactLabel: 'Refresh',
-                  icon: Icons.refresh_rounded,
-                  onPressed: _loadProfile,
+          // Unified Account Header & Navigation Tabs
+          AccountSecurityHeader(
+            activeTab: 'roles',
+            onSelectTab: widget.onSelectTab,
+            workspace: widget.workspace,
+          ),
+          const SizedBox(height: 20),
+
+          // Header action strip matching Web
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.verified_user_rounded, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'My Profile & Roles Privileges',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                    ),
+                  ),
+                ],
+              ),
+              OutlinedButton.icon(
+                onPressed: _loadProfile,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('Refresh Profile', style: TextStyle(fontSize: 12.5)),
+              ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
 
           // Success / Error Banner
           if (_successMessage != null) ...[

@@ -80,6 +80,17 @@ class AppTranslations {
       'profile.linked_devices': 'Linked Devices & Sessions',
       'profile.activity_logs': 'User Activity Logs',
 
+      // Account & Security Management Suite
+      'account.title': 'Account & Security Management',
+      'account.subtitle': 'Manage your credentials, two-factor authentication, active devices, and login activity.',
+      'account.tab_password': 'Password',
+      'account.tab_2fa': '2FA Security',
+      'account.tab_devices': 'Active Devices',
+      'account.tab_activity': 'Login History',
+      'account.tab_roles': 'Roles & Privileges',
+      'account.status_enforced': 'Enforced',
+      'account.status_disabled': 'Disabled',
+
       // Navigation Groups & Items
       'nav.website': 'Website',
       'nav.home': 'Home',
@@ -254,6 +265,17 @@ class AppTranslations {
       'profile.two_factor_status_enabled': '2FA Actif',
       'profile.linked_devices': 'Appareils liés et sessions',
       'profile.activity_logs': "Journaux d'activité",
+
+      // Account & Security Management Suite
+      'account.title': 'Gestion du Compte et de la Sécurité',
+      'account.subtitle': 'Gérez vos identifiants, authentification à deux facteurs, appareils actifs et journal.',
+      'account.tab_password': 'Mot de passe',
+      'account.tab_2fa': 'Sécurité 2FA',
+      'account.tab_devices': 'Appareils Actifs',
+      'account.tab_activity': 'Historique des Connexions',
+      'account.tab_roles': 'Rôles & Privilèges',
+      'account.status_enforced': 'Appliqué',
+      'account.status_disabled': 'Désactivé',
 
       // Navigation Groups & Items
       'nav.website': 'Site Web',
@@ -430,6 +452,17 @@ class AppTranslations {
       'profile.linked_devices': 'Dispositivos vinculados y sesiones',
       'profile.activity_logs': 'Registros de actividad',
 
+      // Account & Security Management Suite
+      'account.title': 'Gestión de Cuenta y Seguridad',
+      'account.subtitle': 'Administre sus credenciales, autenticación en dos pasos, dispositivos activos y actividad.',
+      'account.tab_password': 'Contraseña',
+      'account.tab_2fa': 'Seguridad 2FA',
+      'account.tab_devices': 'Dispositivos Activos',
+      'account.tab_activity': 'Historial de Sesiones',
+      'account.tab_roles': 'Roles y Privilegios',
+      'account.status_enforced': 'Aplicado',
+      'account.status_disabled': 'Desactivado',
+
       // Navigation Groups & Items
       'nav.website': 'Sitio Web',
       'nav.home': 'Inicio',
@@ -604,6 +637,17 @@ class AppTranslations {
       'profile.two_factor_status_enabled': '2FA Aktiv',
       'profile.linked_devices': 'Verknüpfte Geräte & Sitzungen',
       'profile.activity_logs': 'Benutzeraktivitätsprotokolle',
+
+      // Account & Security Management Suite
+      'account.title': 'Konto- und Sicherheitsverwaltung',
+      'account.subtitle': 'Verwalten Sie Anmeldeinformationen, Zwei-Faktor-Authentifizierung, Geräte und Aktivitätsprotokoll.',
+      'account.tab_password': 'Passwort',
+      'account.tab_2fa': '2FA-Sicherheit',
+      'account.tab_devices': 'Aktive Geräte',
+      'account.tab_activity': 'Anmeldeverlauf',
+      'account.tab_roles': 'Rollen & Berechtigungen',
+      'account.status_enforced': 'Aktiviert',
+      'account.status_disabled': 'Deaktiviert',
 
       // Navigation Groups & Items
       'nav.website': 'Webseite',

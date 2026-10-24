@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../data/account_repository.dart';
-import '../../../../../core/widgets/page_header.dart';
+import 'widgets/account_security_header.dart';
 
 /// Screen presenting the active logged-in device sessions for the authenticated member.
 /// 100% white-labeled per tenant governance rules (zero vendor branding in device names).
@@ -11,8 +11,15 @@ class ManageDevicesView extends ConsumerStatefulWidget {
   /// The active workspace organization context.
   final Workspace? workspace;
 
+  /// Callback to switch account navigation tabs.
+  final ValueChanged<String>? onSelectTab;
+
   /// Creates a [ManageDevicesView].
-  const ManageDevicesView({super.key, this.workspace});
+  const ManageDevicesView({
+    super.key,
+    this.workspace,
+    this.onSelectTab,
+  });
 
   @override
   ConsumerState<ManageDevicesView> createState() => _ManageDevicesViewState();
@@ -161,25 +168,45 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Card
-          // Shared PageHeader mold: top-level account destination, so no back control.
-          PageHeader(
+          // Unified Account Header & Navigation Tabs
+          AccountSecurityHeader(
+            activeTab: 'devices',
+            onSelectTab: widget.onSelectTab,
+            workspace: widget.workspace,
+            activeDevicesCount: _sessions.length,
+          ),
+          const SizedBox(height: 20),
+
+          // Section Card matching Web .card-section and .section-card-head
+          AccountSectionCard(
             icon: Icons.devices_rounded,
-            eyebrow: 'Session Governance',
             title: 'Manage Devices & Connected Sessions',
-            description: 'Review and govern all active desktop and mobile device connections signed into your workspace.',
-            primaryAction: _sessions.length > 1
-                ? PageHeaderAction(
-                    label: _isTerminatingOthers ? 'Terminating...' : 'Terminate Other Sessions',
-                    compactLabel: 'Terminate Others',
-                    icon: Icons.phonelink_erase_rounded,
-                    style: PageHeaderActionStyle.destructive,
-                    isLoading: _isTerminatingOthers,
-                    onPressed: _handleTerminateOthers,
+            description: 'Review and revoke active login sessions and trusted devices logged into your account.',
+            action: _sessions.length > 1
+                ? OutlinedButton.icon(
+                    onPressed: _isTerminatingOthers ? null : _handleTerminateOthers,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: _isTerminatingOthers
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.error),
+                          )
+                        : const Icon(Icons.phonelink_erase_rounded, size: 16),
+                    label: Text(
+                      _isTerminatingOthers ? 'Terminating...' : 'Terminate Other Sessions',
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                    ),
                   )
                 : null,
-          ),
-          const SizedBox(height: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
 
           // Error Banner
           if (_errorMessage != null) ...[
@@ -398,6 +425,9 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
           ],
         ],
       ),
-    );
+    ),
+  ],
+),
+);
   }
 }

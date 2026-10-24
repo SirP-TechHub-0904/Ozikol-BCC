@@ -6,15 +6,22 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../workspace_auth/data/auth_service.dart';
-import '../../../../../core/widgets/page_header.dart';
+import 'widgets/account_security_header.dart';
 
 /// Screen enabling users to configure, enroll, and manage Two-Factor Authentication (2FA).
 class TwoFactorSecurityView extends ConsumerStatefulWidget {
   /// The active workspace context.
   final Workspace? workspace;
 
+  /// Callback to switch account navigation tabs.
+  final ValueChanged<String>? onSelectTab;
+
   /// Creates a [TwoFactorSecurityView].
-  const TwoFactorSecurityView({super.key, this.workspace});
+  const TwoFactorSecurityView({
+    super.key,
+    this.workspace,
+    this.onSelectTab,
+  });
 
   @override
   ConsumerState<TwoFactorSecurityView> createState() => _TwoFactorSecurityViewState();
@@ -183,15 +190,14 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
-          // Shared PageHeader mold: top-level account destination, so no back control.
-          PageHeader(
-            icon: Icons.shield_outlined,
-            eyebrow: 'Account Security',
-            title: 'Two-Factor Authentication (2FA)',
-            description: 'Fortify your account credentials by requiring a secondary verification step during sign-in.',
+          // Unified Account Header & Navigation Tabs
+          AccountSecurityHeader(
+            activeTab: '2fa',
+            onSelectTab: widget.onSelectTab,
+            workspace: widget.workspace,
+            is2faEnabled: _is2faEnabled,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Messages
           if (_successMessage != null) ...[

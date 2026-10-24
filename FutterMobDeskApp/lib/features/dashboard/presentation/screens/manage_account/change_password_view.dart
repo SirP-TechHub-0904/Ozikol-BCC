@@ -5,15 +5,22 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../workspace_auth/data/auth_service.dart';
-import '../../../../../core/widgets/page_header.dart';
+import 'widgets/account_security_header.dart';
 
 /// Screen enabling authenticated members to update their account password.
 class ChangePasswordView extends ConsumerStatefulWidget {
   /// The active workspace context.
   final Workspace? workspace;
 
+  /// Callback to switch account navigation tabs.
+  final ValueChanged<String>? onSelectTab;
+
   /// Creates a [ChangePasswordView].
-  const ChangePasswordView({super.key, this.workspace});
+  const ChangePasswordView({
+    super.key,
+    this.workspace,
+    this.onSelectTab,
+  });
 
   @override
   ConsumerState<ChangePasswordView> createState() => _ChangePasswordViewState();
@@ -145,15 +152,13 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Card
-          // Shared PageHeader mold: top-level account destination, so no back control.
-          PageHeader(
-            icon: Icons.key_outlined,
-            eyebrow: 'Account Security',
-            title: 'Update Password',
-            description: 'Change your workspace account password to maintain security standards.',
+          // Unified Account Header & Navigation Tabs
+          AccountSecurityHeader(
+            activeTab: 'password',
+            onSelectTab: widget.onSelectTab,
+            workspace: widget.workspace,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Success / Error Banner
           if (_successMessage != null) ...[
@@ -204,13 +209,21 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
             const SizedBox(height: 16),
           ],
 
-          // Password Form Card
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+          // Password Form Section Card matching Web DOM
+          AccountSectionCard(
+            icon: Icons.key_rounded,
+            title: 'Change Account Password',
+            description: 'Update your administrator password regularly to maintain workspace security.',
+            action: Tooltip(
+              message: 'Password must contain at least 8 characters with upper, lower, numbers, and symbols.',
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.primary),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

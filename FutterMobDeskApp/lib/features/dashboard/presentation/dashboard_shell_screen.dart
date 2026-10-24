@@ -150,6 +150,58 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     });
   }
 
+  /// <summary>
+  /// Switches between Account &amp; Security suite tabs when operating in Administration Console mode.
+  /// Synchronizes horizontal tab navigation with the desktop sidebar menu selection.
+  /// </summary>
+  /// <param name="tabKey">The selected account sub-tab key ('password', '2fa', 'devices', 'activity', 'roles').</param>
+  void _handleAccountTabAdmin(String tabKey) {
+    switch (tabKey) {
+      case 'password':
+        _navigateToTab(12);
+        break;
+      case '2fa':
+        _navigateToTab(13);
+        break;
+      case 'devices':
+        _navigateToTab(14);
+        break;
+      case 'activity':
+        _navigateToTab(15);
+        break;
+      case 'roles':
+      default:
+        _navigateToTab(11);
+        break;
+    }
+  }
+
+  /// <summary>
+  /// Switches between Account &amp; Security suite tabs when operating in Personal Member Workspace mode.
+  /// Synchronizes horizontal tab navigation with the desktop sidebar menu selection.
+  /// </summary>
+  /// <param name="tabKey">The selected account sub-tab key ('password', '2fa', 'devices', 'activity', 'roles').</param>
+  void _handleAccountTabMember(String tabKey) {
+    switch (tabKey) {
+      case 'password':
+        _navigateToTab(2);
+        break;
+      case '2fa':
+        _navigateToTab(3);
+        break;
+      case 'devices':
+        _navigateToTab(4);
+        break;
+      case 'activity':
+        _navigateToTab(5);
+        break;
+      case 'roles':
+      default:
+        _navigateToTab(1);
+        break;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1852,15 +1904,30 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         case 10:
           return GlobalSecurityPoliciesView(workspace: activeWs);
         case 11:
-          return MyAccountProfileView(workspace: activeWs);
+          return MyAccountProfileView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabAdmin,
+          );
         case 12:
-          return ChangePasswordView(workspace: activeWs);
+          return ChangePasswordView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabAdmin,
+          );
         case 13:
-          return TwoFactorSecurityView(workspace: activeWs);
+          return TwoFactorSecurityView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabAdmin,
+          );
         case 14:
-          return ManageDevicesView(workspace: activeWs);
+          return ManageDevicesView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabAdmin,
+          );
         case 15:
-          return LoginActivityView(workspace: activeWs);
+          return LoginActivityView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabAdmin,
+          );
         case 16:
           return UserCreateView(
             workspace: activeWs,
@@ -1901,15 +1968,30 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onNavigate: (idx) => _navigateToTab(idx >= 100 ? idx - 100 : idx),
           );
         case 1:
-          return MyAccountProfileView(workspace: activeWs);
+          return MyAccountProfileView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabMember,
+          );
         case 2:
-          return ChangePasswordView(workspace: activeWs);
+          return ChangePasswordView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabMember,
+          );
         case 3:
-          return TwoFactorSecurityView(workspace: activeWs);
+          return TwoFactorSecurityView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabMember,
+          );
         case 4:
-          return ManageDevicesView(workspace: activeWs);
+          return ManageDevicesView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabMember,
+          );
         case 5:
-          return LoginActivityView(workspace: activeWs);
+          return LoginActivityView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabMember,
+          );
         default:
           return WorkspaceHomeView(
             workspace: activeWs,
