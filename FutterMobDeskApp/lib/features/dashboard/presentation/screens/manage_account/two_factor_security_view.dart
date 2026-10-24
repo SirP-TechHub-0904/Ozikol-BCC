@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
@@ -127,16 +128,16 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Disable Two-Factor Authentication?'),
-        content: const Text(
-          'Are you sure you want to deactivate 2FA? Your workspace account will only be protected by your password credentials.',
+        title: Text('account.disable_2fa_title'.tr(ref, fallback: 'Disable Two-Factor Authentication?')),
+        content: Text(
+          'account.disable_2fa_confirm'.tr(ref, fallback: 'Are you sure you want to deactivate 2FA? Your workspace account will only be protected by your password credentials.'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text('btn.cancel'.tr(ref, fallback: 'Cancel'))),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Disable 2FA'),
+            child: Text('account.disable_2fa'.tr(ref, fallback: 'Disable 2FA')),
           ),
         ],
       ),
@@ -271,7 +272,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                       Row(
                         children: [
                           Text(
-                            _is2faEnabled ? '2FA Protection Active' : '2FA Protection Disabled',
+                            _is2faEnabled ? 'account.mfa_active'.tr(ref, fallback: '2FA Protection Active') : 'account.mfa_disabled'.tr(ref, fallback: '2FA Protection Disabled'),
                             style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.bold,
@@ -286,7 +287,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                               borderRadius: BorderRadius.circular(100),
                             ),
                             child: Text(
-                              _is2faEnabled ? 'Active' : 'Unprotected',
+                              _is2faEnabled ? 'badge.active'.tr(ref, fallback: 'Active') : 'account.mfa_unprotected'.tr(ref, fallback: 'Unprotected'),
                               style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.bold,
@@ -300,7 +301,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                       Text(
                         _is2faEnabled
                             ? 'Your account is secured via $_currentProvider verification.'
-                            : 'Enable two-factor authentication to safeguard your organization workspace from unauthorized access.',
+                            : 'account.mfa_desc'.tr(ref, fallback: 'Enable two-factor authentication to safeguard your organization workspace from unauthorized access.'),
                         style: TextStyle(
                           fontSize: 12.5,
                           color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -314,7 +315,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                   SizedBox(
                     width: 130,
                     child: PrimaryButton(
-                      text: 'Enable 2FA',
+                      text: 'account.enable_2fa'.tr(ref, fallback: 'Enable 2FA'),
                       height: 42,
                       onPressed: () => _startConfiguration('GoogleAuthenticator'),
                     ),
@@ -323,7 +324,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                   const SizedBox(width: 12),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.lock_open_rounded, size: 16, color: AppColors.error),
-                    label: const Text('Disable 2FA', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 12)),
+                    label: Text('account.disable_2fa'.tr(ref, fallback: 'Disable 2FA'), style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 12)),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -361,7 +362,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        'Set Up Authenticator App',
+                        'account.setup_authenticator'.tr(ref, fallback: 'Set Up Authenticator App'),
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -401,7 +402,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.copy_rounded, size: 18),
-                            tooltip: 'Copy Secret Key',
+                            tooltip: 'account.copy_secret'.tr(ref, fallback: 'Copy Secret Key'),
                             onPressed: () {
                               Clipboard.setData(ClipboardData(text: _secretKey!));
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -418,7 +419,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                   // 6-digit verification code input
                   CustomTextField(
                     controller: _codeController,
-                    label: 'Confirmation Code',
+                    label: 'account.confirmation_code'.tr(ref, fallback: 'Confirmation Code'),
                     placeholder: '123456',
                     prefixIcon: const Icon(Icons.lock_clock_outlined, size: 20, color: AppColors.primary),
                     keyboardType: TextInputType.number,
@@ -430,13 +431,13 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                     children: [
                       TextButton(
                         onPressed: () => setState(() => _isConfiguring = false),
-                        child: const Text('Cancel'),
+                        child: Text('btn.cancel'.tr(ref, fallback: 'Cancel')),
                       ),
                       const SizedBox(width: 12),
                       SizedBox(
                         width: 160,
                         child: PrimaryButton(
-                          text: 'Verify & Activate',
+                          text: 'account.verify_activate'.tr(ref, fallback: 'Verify & Activate'),
                           isLoading: _isEnabling,
                           onPressed: _handleVerifyActivation,
                         ),

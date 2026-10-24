@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
@@ -212,10 +213,10 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
           // Password Form Section Card matching Web DOM
           AccountSectionCard(
             icon: Icons.key_rounded,
-            title: 'Change Account Password',
-            description: 'Update your administrator password regularly to maintain workspace security.',
+            title: 'account.update_password'.tr(ref, fallback: 'Change Account Password'),
+            description: 'account.change_password_desc'.tr(ref, fallback: 'Update your administrator password regularly to maintain workspace security.'),
             action: Tooltip(
-              message: 'Password must contain at least 8 characters with upper, lower, numbers, and symbols.',
+              message: 'account.password_requirements'.tr(ref, fallback: 'Password Requirements'),
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
@@ -230,7 +231,7 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
               children: [
                 CustomTextField(
                   controller: _oldPasswordController,
-                  label: 'Current Active Password',
+                  label: 'account.current_password'.tr(ref, fallback: 'Current Password'),
                   placeholder: '••••••••',
                   prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                   isPassword: true,
@@ -238,7 +239,7 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
                 const SizedBox(height: 16),
                 CustomTextField(
                   controller: _newPasswordController,
-                  label: 'New Password',
+                  label: 'account.new_password'.tr(ref, fallback: 'New Password'),
                   placeholder: 'Create a strong password',
                   prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                   isPassword: true,
@@ -256,7 +257,7 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Password Requirements:',
+                        '${'account.password_requirements'.tr(ref, fallback: 'Password Requirements')}:',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -264,10 +265,10 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      _buildComplexityRow('At least 8 characters', _hasMinLength),
-                      _buildComplexityRow('At least one uppercase letter (A-Z)', _hasUppercase),
-                      _buildComplexityRow('At least one numeric digit (0-9)', _hasNumber),
-                      _buildComplexityRow('At least one special symbol (!@#\$%)', _hasSpecialChar),
+                      _buildComplexityRow('account.req_length'.tr(ref, fallback: 'At least 8 characters'), _hasMinLength),
+                      _buildComplexityRow('account.req_uppercase'.tr(ref, fallback: 'At least one uppercase letter (A-Z)'), _hasUppercase),
+                      _buildComplexityRow('account.req_number'.tr(ref, fallback: 'At least one numeric digit (0-9)'), _hasNumber),
+                      _buildComplexityRow('account.req_special'.tr(ref, fallback: 'At least one special symbol (!@#\$%)'), _hasSpecialChar),
                     ],
                   ),
                 ),
@@ -275,7 +276,7 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
 
                 CustomTextField(
                   controller: _confirmPasswordController,
-                  label: 'Confirm New Password',
+                  label: 'account.confirm_password'.tr(ref, fallback: 'Confirm New Password'),
                   placeholder: 'Re-enter your new password',
                   prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                   isPassword: true,
@@ -288,7 +289,7 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
                   child: SizedBox(
                     width: 170,
                     child: PrimaryButton(
-                      text: 'Update Password',
+                      text: 'account.update_password'.tr(ref, fallback: 'Update Password'),
                       isLoading: _isSubmitting,
                       onPressed: _handleChangePassword,
                     ),

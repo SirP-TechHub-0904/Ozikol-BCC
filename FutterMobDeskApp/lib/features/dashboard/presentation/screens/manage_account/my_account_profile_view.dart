@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
@@ -193,7 +194,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                   const Icon(Icons.verified_user_rounded, size: 20, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Text(
-                    'My Profile & Roles Privileges',
+                    'account.roles_summary'.tr(ref, fallback: 'My Profile & Roles Privileges'),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -209,7 +210,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Refresh Profile', style: TextStyle(fontSize: 12.5)),
+                label: Text('account.refresh_profile'.tr(ref, fallback: 'Refresh Profile'), style: const TextStyle(fontSize: 12.5)),
               ),
             ],
           ),
@@ -542,7 +543,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     PrimaryButton(
-                      text: _isSaving ? 'Saving Changes...' : 'Save Personal Details',
+                      text: _isSaving ? '...' : 'btn.save_changes'.tr(ref, fallback: 'Save Personal Details'),
                       icon: const Icon(Icons.save_outlined, size: 16),
                       onPressed: _isSaving ? null : _handleSave,
                     ),

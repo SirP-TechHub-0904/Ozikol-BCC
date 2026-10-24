@@ -219,18 +219,26 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 ---
 
 ## 17. Multi-Language Localization & Translation Engine Standards (Mandatory)
-* **Strict Universal Translation Adherence**:
-  * Every user-facing UI text, title, header, button, subtitle, form field label, placeholder, tooltip, table column header, filter pill, status badge, empty-state illustration note, confirmation dialog, contextual help guide, and notification in both the **Administration Console** and **Users Workspace** MUST strictly use the translation engine.
-  * **Zero Hardcoded Text (Strict Prohibition)**: NEVER write raw English string literals directly inside HTML templates, Razor views, or Flutter widget trees. Every string MUST be bound via standard translation tokens:
+* **Strict Universal Translation Adherence (Mandatory from Phase 1)**:
+  * Every user-facing UI text, title, eyebrow, header, button, subtitle, form field label, placeholder, tooltip, table column header, filter pill, status badge, empty-state illustration headline/description, confirmation dialog, contextual help guide, and custom notification in both the **Administration Console** and **Users Workspace** MUST strictly use the translation engine.
+  * **Zero Hardcoded Text (Absolute Prohibition)**: NEVER write raw English string literals directly inside HTML templates, Razor views, or Flutter widget trees. Every string MUST be bound via standard translation tokens:
     * **Web (Angular)**: Use the `| translate` pipe in templates (e.g. `{{ 'nav.console_dashboard' | translate }}` or `[placeholder]="'shell.search_placeholder' | translate"`).
-    * **Desktop & Mobile (Flutter)**: Use the reactive Riverpod translation extension (e.g. `'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard')`).
+    * **Desktop & Mobile (Flutter)**: Use the reactive Riverpod translation extension (e.g. `'btn.update_password'.tr(ref, fallback: 'Update Password')`).
+* **Clear Distinction: UI Chrome vs Dynamic Database Entities**:
+  * **UI Chrome & Framework Controls (100% Translated)**: All application buttons, table headers, form inputs, dialogs, validation notices, empty states, and in-app notifications MUST resolve through translation tokens.
+  * **Dynamic Database Records (Stored as User Content)**: Only live data values originating from the database (e.g., user-entered names, tenant organization names, user bio text, custom message bodies) are rendered as persisted. If a French-speaking administrator writes in French, their database content will naturally be French, and the entire BCC UI surrounding it will seamlessly match in French.
+* **Pluggable Multi-Language Architecture (Drop-In New Languages)**:
+  * The translation architecture across Web, Desktop, and Mobile is strictly decoupled so that introducing a new language (e.g. Italian, Arabic, Portuguese, Chinese) requires only TWO steps:
+    1. Add the dictionary file / map containing the translated token keys for the new ISO code.
+    2. Register the language entry (code, name, nativeName, flag emoji) in the supported languages catalog (`AppTranslations.supportedLanguages` in Flutter, `translation.service.ts` in Angular).
+  * Once registered, the language switcher automatically displays the new option, and selecting it immediately executes the entire application in that language without modifying any screen, widget, or template.
 * **Central Pattern `.oz-lang-switcher` Component Parity**:
   * The language switcher UI across all applications MUST faithfully replicate the **Ozikol Central** design system:
     * **Pill Trigger Button**: Features a rounded pill (`border-radius: 9999px`), frosted glass background (`rgba(255, 255, 255, 0.75)` on light, `rgba(30, 41, 59, 0.75)` on dark), subtle borders, country flag emoji, uppercase ISO code (e.g. `🇬🇧 EN`, `🇫🇷 FR`, `🇪🇸 ES`, `🇩🇪 DE`), and a 180° animated rotating chevron arrow.
-    * **Desktop Viewports**: Floating frosted glass dropdown menu with flags, native names, subtle hover transitions, and Royal Blue (`#0050E5`) active checkmark indicators.
+    * **Desktop Viewports**: Floating frosted glass dropdown menu anchored directly beneath the trigger button (`RelativeRect.fromRect`), featuring flags, native names, subtle hover transitions, and Royal Blue (`#0050E5`) active checkmark indicators.
     * **Mobile Viewports**: Adaptive modal bottom sheet (`showModalBottomSheet`) with a grab handle bar, translated header (`Select Language`), language list with flags, native names, English subtitles, and Royal Blue active checkmarks.
     * **Local Persistence**: Language selections MUST persist locally across restarts (`localStorage.getItem('bcp_language')` on Web, `SecureStorageService.getLanguage()` on Mobile/Desktop).
-* **Four Canonical Supported Languages**:
+* **Four Canonical Base Languages (Extensible)**:
   * **English (`en`)**: `🇬🇧 EN` (`English`) — Default base language.
   * **French (`fr`)**: `🇫🇷 FR` (`Français`).
   * **Spanish (`es`)**: `🇪🇸 ES` (`Español`).
@@ -238,14 +246,17 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **Standard Hierarchical Token Namespaces**:
   * `shell.*`: Shell labels, mode switcher (`shell.console`, `shell.workspace`), topbar search placeholders, user menu actions, footer credits.
   * `nav.*`: Navigation groups, sidebar sections, menu categories, screen headers.
-  * `btn.*`: Action triggers (e.g. `btn.refresh_telemetry`, `btn.register_new_member`, `btn.save_changes`, `btn.cancel`, `btn.continue`).
-  * `billing.*`: Central subscription notices, entitlements review triggers, license status notices.
-  * `kpi.*`: Performance counters, health scores, audit trail headings, active subscriber metrics.
-  * `badge.*`: Role indicators (`badge.superadmin`, `badge.admin`, `badge.member`), service states (`badge.operational`, `badge.live`, `badge.active`).
-  * `form.*` & `modal.*`: Form labels, validation error alerts, dialog titles, prompt instructions.
+  * `btn.*`: Action triggers (e.g. `btn.refresh_telemetry`, `btn.register_new_member`, `btn.save_changes`, `btn.cancel`, `btn.continue`, `btn.terminate_other_sessions`, `btn.export_csv`).
+  * `account.*`: Account & Security suite titles, tabs, descriptions, credentials, device sessions, and login history.
+  * `table.*`: Table column headers (e.g. `table.device_name`, `table.ip_address`, `table.last_active`, `table.status`, `table.actions`).
+  * `form.*` & `modal.*`: Form labels, input placeholders, validation error alerts, dialog titles, prompt instructions.
+  * `notif.*`: In-app custom notification titles, category labels, severity badges, and notification feed actions.
+  * `badge.*` & `status.*`: Service states, role indicators, and verification pill labels.
 * **Fail-Safe Fallback Contract**:
   * If a token is not defined in the active language dictionary, the engine MUST automatically fall back to the English dictionary.
   * If absent from English as well, it MUST gracefully fall back to the provided fallback argument or token key, preventing runtime crashes or blank UI elements.
+* **Pre-Commit Translation Verification**:
+  * Every code change or feature addition MUST verify that all newly added user-facing strings are bound via translation tokens across all target platforms before creating a commit.
 
 ---
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/services/export_service.dart';
 import '../../../../../core/theme/app_colors.dart';
@@ -205,8 +206,8 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
           // Section Card matching Web .card-section and .section-card-head
           AccountSectionCard(
             icon: Icons.history_rounded,
-            title: 'Login & Authentication Activity',
-            description: 'Comprehensive audit trail of recent sign-in attempts, client IPs, and authentication statuses.',
+            title: 'account.tab_activity'.tr(ref, fallback: 'Login & Authentication Activity'),
+            description: 'account.login_activity_desc'.tr(ref, fallback: 'Comprehensive audit trail of recent sign-in attempts, client IPs, and authentication statuses.'),
             action: Wrap(
               spacing: 8,
               children: [
@@ -217,7 +218,7 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   icon: const Icon(Icons.download_rounded, size: 16),
-                  label: const Text('Export CSV', style: TextStyle(fontSize: 12.5)),
+                  label: Text('account.export_csv'.tr(ref, fallback: 'Export CSV'), style: const TextStyle(fontSize: 12.5)),
                 ),
                 OutlinedButton.icon(
                   onPressed: _loadHistory,
@@ -226,7 +227,7 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   icon: const Icon(Icons.refresh_rounded, size: 16),
-                  label: const Text('Refresh', style: TextStyle(fontSize: 12.5)),
+                  label: Text('account.refresh_logs'.tr(ref, fallback: 'Refresh'), style: const TextStyle(fontSize: 12.5)),
                 ),
               ],
             ),
@@ -240,8 +241,8 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
               Expanded(
                 child: TextField(
                   decoration: InputDecoration(
-                    labelText: 'Search logs',
-                    hintText: 'Search by IP address or browser...',
+                    labelText: 'account.search_logs'.tr(ref, fallback: 'Search logs'),
+                    hintText: 'account.search_placeholder'.tr(ref, fallback: 'Search by IP address or browser...'),
                     prefixIcon: const Icon(Icons.search, size: 20),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -252,10 +253,14 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
               const SizedBox(width: 12),
               Wrap(
                 spacing: 6,
-                children: ['All', 'Success', 'Failed'].map((st) {
-                  final isSelected = _selectedStatus == st;
+                children: [
+                  {'key': 'All', 'label': 'status.all'.tr(ref, fallback: 'All')},
+                  {'key': 'Success', 'label': 'status.success'.tr(ref, fallback: 'Success')},
+                  {'key': 'Failed', 'label': 'status.failed'.tr(ref, fallback: 'Failed')},
+                ].map((st) {
+                  final isSelected = _selectedStatus == st['key'];
                   return ChoiceChip(
-                    label: Text(st),
+                    label: Text(st['label']!),
                     selected: isSelected,
                     selectedColor: AppColors.primary.withValues(alpha: 0.15),
                     labelStyle: TextStyle(
@@ -264,7 +269,7 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                       color: isSelected ? AppColors.primary : (isDark ? AppColors.gray400 : AppColors.gray600),
                     ),
                     onSelected: (val) {
-                      if (val) setState(() => _selectedStatus = st);
+                      if (val) setState(() => _selectedStatus = st['key']!);
                     },
                   );
                 }).toList(),
@@ -292,7 +297,7 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                       style: const TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w500),
                     ),
                   ),
-                  TextButton(onPressed: _loadHistory, child: const Text('Retry')),
+                  TextButton(onPressed: _loadHistory, child: Text('btn.retry'.tr(ref, fallback: 'Retry'))),
                 ],
               ),
             ),
@@ -321,10 +326,10 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                 children: [
                   Icon(Icons.manage_search_rounded, size: 48, color: isDark ? AppColors.gray400 : AppColors.gray500),
                   const SizedBox(height: 12),
-                  const Text('No Login Activity Recorded', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('account.no_history'.tr(ref, fallback: 'No Login Activity Recorded'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
                   Text(
-                    'Recent sign-in attempts will be recorded and displayed here automatically.',
+                    'account.login_activity_desc'.tr(ref, fallback: 'Recent sign-in attempts will be recorded and displayed here automatically.'),
                     style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : AppColors.gray600),
                   ),
                 ],
@@ -376,14 +381,14 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                                       borderRadius: BorderRadius.circular(100),
                                       border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(Icons.verified_user_rounded, size: 10, color: AppColors.success),
                                         SizedBox(width: 3),
                                         Text(
-                                          'Trusted',
-                                          style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: AppColors.success),
+                                          'account.trusted_device'.tr(ref, fallback: 'Trusted'),
+                                          style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: AppColors.success),
                                         ),
                                       ],
                                     ),
@@ -454,7 +459,7 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Showing ${filtered.length} of $_totalCount records',
+                  '${'account.showing_records'.tr(ref, fallback: 'Showing')} ${filtered.length} ${'account.of'.tr(ref, fallback: 'of')} $_totalCount ${'account.records'.tr(ref, fallback: 'records')}',
                   style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
                 ),
                 Row(
@@ -462,7 +467,7 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                     OutlinedButton(
                       onPressed: _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
                       style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
-                      child: const Text('Previous'),
+                      child: Text('btn.previous'.tr(ref, fallback: 'Previous')),
                     ),
                     const SizedBox(width: 8),
                     Container(
@@ -472,7 +477,7 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        'Page $_currentPage of $_totalPages',
+                        '${'account.page'.tr(ref, fallback: 'Page')} $_currentPage ${'account.of'.tr(ref, fallback: 'of')} $_totalPages',
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
                       ),
                     ),
@@ -480,7 +485,7 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
                     OutlinedButton(
                       onPressed: _currentPage < _totalPages ? () => _goToPage(_currentPage + 1) : null,
                       style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
-                      child: const Text('Next'),
+                      child: Text('btn.next'.tr(ref, fallback: 'Next')),
                     ),
                   ],
                 ),

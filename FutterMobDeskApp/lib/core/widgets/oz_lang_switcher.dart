@@ -184,10 +184,16 @@ class _OzLangSwitcherState extends ConsumerState<OzLangSwitcher> {
     if (button == null) return;
 
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final Offset buttonTopLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final Size buttonSize = button.size;
+
+    // Anchor menu directly beneath the trigger button with a 6px vertical offset:
     final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      Rect.fromLTWH(
+        buttonTopLeft.dx,
+        buttonTopLeft.dy + buttonSize.height + 6,
+        buttonSize.width,
+        0,
       ),
       Offset.zero & overlay.size,
     );
@@ -199,12 +205,7 @@ class _OzLangSwitcherState extends ConsumerState<OzLangSwitcher> {
 
     final selected = await showMenu<String>(
       context: context,
-      position: RelativeRect.fromLTRB(
-        position.left,
-        position.bottom + 6,
-        position.right,
-        position.bottom + 200,
-      ),
+      position: position,
       color: isDark ? const Color(0xFF18191F) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),

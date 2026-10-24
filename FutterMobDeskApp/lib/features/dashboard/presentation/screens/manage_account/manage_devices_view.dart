@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ozikol_app/core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../data/account_repository.dart';
@@ -180,8 +181,8 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
           // Section Card matching Web .card-section and .section-card-head
           AccountSectionCard(
             icon: Icons.devices_rounded,
-            title: 'Manage Devices & Connected Sessions',
-            description: 'Review and revoke active login sessions and trusted devices logged into your account.',
+            title: 'account.tab_devices'.tr(ref, fallback: 'Manage Devices & Connected Sessions'),
+            description: 'account.manage_devices_desc'.tr(ref, fallback: 'Review and revoke active login sessions and trusted devices logged into your account.'),
             action: _sessions.length > 1
                 ? OutlinedButton.icon(
                     onPressed: _isTerminatingOthers ? null : _handleTerminateOthers,
@@ -199,7 +200,9 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                           )
                         : const Icon(Icons.phonelink_erase_rounded, size: 16),
                     label: Text(
-                      _isTerminatingOthers ? 'Terminating...' : 'Terminate Other Sessions',
+                      _isTerminatingOthers
+                          ? 'account.terminate_others'.tr(ref, fallback: 'Terminating...')
+                          : 'account.terminate_others'.tr(ref, fallback: 'Terminate All Other Sessions'),
                       style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
                     ),
                   )
@@ -227,7 +230,10 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                       style: const TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w500),
                     ),
                   ),
-                  TextButton(onPressed: _loadSessions, child: const Text('Retry')),
+                  TextButton(
+                    onPressed: _loadSessions,
+                    child: Text('btn.retry'.tr(ref, fallback: 'Retry')),
+                  ),
                 ],
               ),
             ),
@@ -256,10 +262,13 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                 children: [
                   Icon(Icons.devices_other_rounded, size: 48, color: isDark ? AppColors.gray400 : AppColors.gray500),
                   const SizedBox(height: 12),
-                  const Text('No Active Sessions Found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    'account.no_devices'.tr(ref, fallback: 'No active device sessions found.'),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 6),
                   Text(
-                    'Active device sessions will appear here automatically upon sign-in.',
+                    'account.manage_devices_desc'.tr(ref, fallback: 'Active device sessions will appear here automatically upon sign-in.'),
                     style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : AppColors.gray600),
                   ),
                 ],
@@ -358,9 +367,9 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                                       color: AppColors.primary.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(100),
                                     ),
-                                    child: const Text(
-                                      'Current Session',
-                                      style: TextStyle(
+                                    child: Text(
+                                      'account.this_device'.tr(ref, fallback: 'Current Device'),
+                                      style: const TextStyle(
                                         fontSize: 10.5,
                                         fontWeight: FontWeight.bold,
                                         color: AppColors.primary,
@@ -377,14 +386,14 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                                       borderRadius: BorderRadius.circular(100),
                                       border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Icon(Icons.verified_user_rounded, size: 12, color: AppColors.success),
                                         SizedBox(width: 4),
                                         Text(
-                                          'Trusted Device',
-                                          style: TextStyle(
+                                          'account.trusted_device'.tr(ref, fallback: 'Trusted Device'),
+                                          style: const TextStyle(
                                             fontSize: 10.5,
                                             fontWeight: FontWeight.bold,
                                             color: AppColors.success,
@@ -413,7 +422,7 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                         const SizedBox(width: 12),
                         IconButton(
                           icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.error),
-                          tooltip: 'Revoke Session',
+                          tooltip: 'account.terminate_session'.tr(ref, fallback: 'Revoke Session'),
                           onPressed: () => _handleRevoke(sessionId, deviceTitle),
                         ),
                       ],
