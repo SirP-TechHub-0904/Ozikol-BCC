@@ -85,12 +85,16 @@ class AccountRepository {
   }
 
   /// <summary>
-  /// Fetches a server-side paginated list of security login audit history entries.
+  /// Fetches the personal activity audit trail and security history for the authenticated user,
+  /// including operational tasks, security events, and authentication challenges within the 30-day retention window.
   /// </summary>
-  Future<Map<String, dynamic>> getLoginHistory({int page = 1, int pageSize = 10}) async {
+  /// <param name="page">Current 1-based page index (defaults to 1).</param>
+  /// <param name="pageSize">Number of records per page (defaults to 10).</param>
+  /// <returns>Paged collection of operational and security activity records with retention metadata.</returns>
+  Future<Map<String, dynamic>> getMyActivity({int page = 1, int pageSize = 10}) async {
     try {
       final response = await _dio.get(
-        'api/IdentityApi/account/login-history',
+        'api/IdentityApi/account/my-activity',
         queryParameters: {'page': page, 'pageSize': pageSize},
       );
       if (response.statusCode == 200 && response.data != null) {
@@ -101,10 +105,18 @@ class AccountRepository {
           return Map<String, dynamic>.from(data);
         }
       }
-      return {'items': [], 'totalCount': 0, 'page': page, 'pageSize': pageSize, 'totalPages': 1};
+      return {'items': [], 'totalCount': 0, 'page': page, 'pageSize': pageSize, 'totalPages': 1, 'hasOlderRecords': false};
     } catch (_) {
-      return {'items': [], 'totalCount': 0, 'page': page, 'pageSize': pageSize, 'totalPages': 1};
+      return {'items': [], 'totalCount': 0, 'page': page, 'pageSize': pageSize, 'totalPages': 1, 'hasOlderRecords': false};
     }
+  }
+
+  /// <summary>
+  /// Fetches a server-side paginated list of security login audit history entries.
+  /// Delegates directly to [getMyActivity] for unified operational and security activity feed.
+  /// </summary>
+  Future<Map<String, dynamic>> getLoginHistory({int page = 1, int pageSize = 10}) async {
+    return getMyActivity(page: page, pageSize: pageSize);
   }
 
   /// <summary>

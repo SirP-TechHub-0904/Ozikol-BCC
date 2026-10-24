@@ -171,7 +171,7 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
                   ),
                   _buildTab(
                     key: 'activity',
-                    label: 'account.tab_activity'.tr(ref, fallback: 'Login History'),
+                    label: 'account.tab_activity'.tr(ref, fallback: 'My Activity'),
                     icon: Icons.history_rounded,
                     isActive: widget.activeTab == 'activity',
                     isDark: isDark,

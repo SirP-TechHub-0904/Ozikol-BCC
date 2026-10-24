@@ -46,6 +46,7 @@ import 'screens/manage_account/change_password_view.dart';
 import 'screens/manage_account/two_factor_security_view.dart';
 import 'screens/manage_account/manage_devices_view.dart';
 import 'screens/manage_account/login_activity_view.dart';
+import 'screens/manage_account/account_roles_privileges_view.dart';
 import 'screens/member_workspace/workspace_home_view.dart';
 
 /// Clean adaptive dashboard shell delivering 1-to-1 operational and visual parity
@@ -171,7 +172,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         break;
       case 'roles':
       default:
-        _navigateToTab(11);
+        _navigateToTab(20);
         break;
     }
   }
@@ -197,7 +198,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         break;
       case 'roles':
       default:
-        _navigateToTab(1);
+        _navigateToTab(6);
         break;
     }
   }
@@ -1730,11 +1731,11 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           AppDrawerItem(
             icon: Icons.manage_accounts_outlined,
             title: 'profile.manage_account'.tr(ref, fallback: 'Manage My Account'),
-            initiallyExpanded: _selectedNavIndex >= 11 && _selectedNavIndex <= 15,
+            initiallyExpanded: (_selectedNavIndex >= 11 && _selectedNavIndex <= 15) || _selectedNavIndex == 20,
             subItems: [
               AppDrawerSubItem(
                 icon: Icons.person_outline,
-                title: 'nav.my_profile'.tr(ref, fallback: 'My Account'),
+                title: 'nav.my_profile'.tr(ref, fallback: 'My Profile & Dossier'),
                 isSelected: _selectedNavIndex == 11,
                 onTap: () {
                   _navigateToTab(11, clearHistory: true);
@@ -1770,10 +1771,19 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.history_outlined,
-                title: 'account.tab_activity'.tr(ref, fallback: 'Login Activity'),
+                title: 'account.tab_activity'.tr(ref, fallback: 'My Activity'),
                 isSelected: _selectedNavIndex == 15,
                 onTap: () {
                   _navigateToTab(15, clearHistory: true);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.verified_user_outlined,
+                title: 'account.tab_roles'.tr(ref, fallback: 'Roles & Privileges'),
+                isSelected: _selectedNavIndex == 20,
+                onTap: () {
+                  _navigateToTab(20, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -1809,11 +1819,11 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           AppDrawerItem(
             icon: Icons.manage_accounts_outlined,
             title: 'profile.manage_account'.tr(ref, fallback: 'Manage My Account'),
-            initiallyExpanded: memberIndex >= 1 && memberIndex <= 5,
+            initiallyExpanded: memberIndex >= 1 && memberIndex <= 6,
             subItems: [
               AppDrawerSubItem(
                 icon: Icons.person_outline,
-                title: 'nav.my_profile'.tr(ref, fallback: 'My Account'),
+                title: 'nav.my_profile'.tr(ref, fallback: 'My Profile & Dossier'),
                 isSelected: memberIndex == 1,
                 onTap: () {
                   _navigateToTab(1, clearHistory: true);
@@ -1849,10 +1859,19 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.history_outlined,
-                title: 'account.tab_activity'.tr(ref, fallback: 'Login Activity'),
+                title: 'account.tab_activity'.tr(ref, fallback: 'My Activity'),
                 isSelected: memberIndex == 5,
                 onTap: () {
                   _navigateToTab(5, clearHistory: true);
+                  _closeMobileDrawer();
+                },
+              ),
+              AppDrawerSubItem(
+                icon: Icons.verified_user_outlined,
+                title: 'account.tab_roles'.tr(ref, fallback: 'Roles & Privileges'),
+                isSelected: memberIndex == 6,
+                onTap: () {
+                  _navigateToTab(6, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
@@ -2018,6 +2037,11 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onNavigateBack: _navigateBack,
             onInvitationCreated: () => _navigateToTab(9, clearHistory: true),
           );
+        case 20:
+          return AccountRolesPrivilegesView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabAdmin,
+          );
         default:
           return UserDashboardOverviewView(workspace: activeWs);
       }
@@ -2052,6 +2076,11 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           );
         case 5:
           return LoginActivityView(
+            workspace: activeWs,
+            onSelectTab: _handleAccountTabMember,
+          );
+        case 6:
+          return AccountRolesPrivilegesView(
             workspace: activeWs,
             onSelectTab: _handleAccountTabMember,
           );

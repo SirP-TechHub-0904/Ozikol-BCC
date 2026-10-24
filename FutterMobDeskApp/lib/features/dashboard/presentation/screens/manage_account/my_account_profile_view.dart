@@ -5,8 +5,8 @@ import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
+import '../../../../../core/widgets/page_header.dart';
 import '../../../data/account_repository.dart';
-import 'widgets/account_security_header.dart';
 
 /// Screen presenting the personal member account profile details and organization dossier.
 class MyAccountProfileView extends ConsumerStatefulWidget {
@@ -177,11 +177,15 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Unified Account Header & Navigation Tabs
-          AccountSecurityHeader(
-            activeTab: 'roles',
-            onSelectTab: widget.onSelectTab,
-            workspace: widget.workspace,
+          // Standalone Page Header matching Web
+          PageHeader(
+            icon: Icons.person_pin_rounded,
+            eyebrow: 'PERSONAL WORKSPACE DOSSIER',
+            title: 'nav.my_profile'.tr(ref, fallback: 'My Profile & Dossier'),
+            description: 'profile.desc'.tr(
+              ref,
+              fallback: 'View and manage your personal membership dossier, contact information, and workspace attributes.',
+            ),
           ),
           const SizedBox(height: 20),
 
@@ -191,10 +195,10 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.verified_user_rounded, size: 20, color: AppColors.primary),
+                  const Icon(Icons.badge_rounded, size: 20, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Text(
-                    'account.roles_summary'.tr(ref, fallback: 'My Profile & Roles Privileges'),
+                    'nav.my_profile'.tr(ref, fallback: 'Profile Information & Dossier'),
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,

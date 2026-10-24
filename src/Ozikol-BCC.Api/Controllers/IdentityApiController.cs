@@ -1499,6 +1499,7 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     h.Id,
                     h.Email,
+                    ActionType = h.Status,
                     h.Status,
                     h.Description,
                     h.Module,
@@ -1510,6 +1511,7 @@ namespace Ozikol_BCC.Api.Controllers
                     ClientType = parsed.ClientType,
                     Icon = parsed.Icon,
                     IsTrusted = h.Status != null && h.Status.Contains("Trusted", StringComparison.OrdinalIgnoreCase),
+                    Date = h.Timestamp,
                     h.Timestamp
                 };
             }).ToList();

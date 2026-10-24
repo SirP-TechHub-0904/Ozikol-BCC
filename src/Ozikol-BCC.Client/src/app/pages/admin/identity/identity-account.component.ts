@@ -34,7 +34,10 @@ interface ActiveSessionItem {
 interface LoginAuditItem {
   id: string;
   email: string;
+  actionType?: string;
   status: string;
+  description?: string;
+  module?: string;
   ipAddress: string;
   userAgent: string;
   device?: string;
@@ -43,6 +46,7 @@ interface LoginAuditItem {
   clientType?: string;
   icon?: string;
   isTrusted?: boolean;
+  date?: string;
   timestamp: string;
 }
 
@@ -483,18 +487,18 @@ interface AccountSummary {
           </div>
         </section>
 
-        <!-- TAB 4: LOGIN ACTIVITY -->
+        <!-- TAB 4: MY ACTIVITY -->
         <section class="card-section animate-fade" *ngIf="activeTab === 'activity'">
           <div class="section-card-head">
             <div class="card-title-group">
               <span class="material-symbols-outlined head-icon text-primary">history</span>
               <div>
-                <h2 class="card-title">{{ 'nav.login_history' | translate }}</h2>
-                <p class="card-desc">Audit trail of recent authentication challenges, timestamps, and network IP addresses.</p>
+                <h2 class="card-title">{{ 'account.tab_activity' | translate }}</h2>
+                <p class="card-desc">{{ 'account.activity_desc' | translate }}</p>
               </div>
             </div>
             <div class="head-actions-wrap">
-              <span class="counter-badge" *ngIf="loginTotalCount > 0">{{ loginTotalCount }} {{ 'nav.login_history' | translate }}</span>
+              <span class="counter-badge" *ngIf="loginTotalCount > 0">{{ loginTotalCount }} {{ 'account.tab_activity' | translate }}</span>
               <button type="button" class="btn-secondary" (click)="loadLoginHistory(loginPage)" [disabled]="loadingLogs">
                 <span class="material-symbols-outlined" [class.spin-icon]="loadingLogs">refresh</span>
                 <span>Refresh</span>
@@ -503,6 +507,21 @@ interface AccountSummary {
           </div>
 
           <div class="card-body">
+            <!-- 30-Day Retention & Archival Banner -->
+            <div class="retention-banner">
+              <div class="retention-info">
+                <span class="material-symbols-outlined retention-icon">schedule</span>
+                <div>
+                  <span class="retention-title">{{ 'account.activity_retention_notice' | translate }}</span>
+                  <span class="retention-sub" *ngIf="hasOlderRecords">Archival records older than 30 days are secured in deep retention.</span>
+                </div>
+              </div>
+              <button type="button" class="btn-contact-admin" (click)="contactAdminForArchives()">
+                <span class="material-symbols-outlined">support_agent</span>
+                <span>{{ 'account.contact_admin' | translate }}</span>
+              </button>
+            </div>
+
             <div class="empty-state" *ngIf="loginLogs.length === 0 && !loadingLogs">
               <span class="material-symbols-outlined empty-icon">manage_search</span>
               <p>{{ 'account.no_history' | translate }}</p>
@@ -512,7 +531,8 @@ interface AccountSummary {
               <table class="account-table">
                 <thead>
                   <tr>
-                    <th>Status</th>
+                    <th>Action & Status</th>
+                    <th>Description / Module</th>
                     <th>IP Address</th>
                     <th>Browser / Device</th>
                     <th>Timestamp</th>
@@ -522,14 +542,20 @@ interface AccountSummary {
                   <tr *ngFor="let log of loginLogs">
                     <td>
                       <div class="log-status-col">
-                        <span class="log-status-pill" [ngClass]="getStatusClass(log.status)">
-                          <span class="material-symbols-outlined">{{ getStatusIcon(log.status) }}</span>
-                          {{ log.status }}
+                        <span class="log-status-pill" [ngClass]="getStatusClass(log.actionType || log.status)">
+                          <span class="material-symbols-outlined">{{ getStatusIcon(log.actionType || log.status) }}</span>
+                          {{ log.actionType || log.status }}
                         </span>
                         <span class="badge-trusted-pill" *ngIf="log.isTrusted || (log.status && log.status.includes('Trusted'))" title="Trusted device authentication">
                           <span class="material-symbols-outlined">verified_user</span>
                           <span>Trusted</span>
                         </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="log-desc-col">
+                        <span class="log-desc-text">{{ log.description || log.actionType || log.status }}</span>
+                        <span class="log-module-badge" *ngIf="log.module">{{ log.module }}</span>
                       </div>
                     </td>
                     <td><code>{{ formatIpAddress(log.ipAddress) }}</code></td>
@@ -542,7 +568,7 @@ interface AccountSummary {
                         <span class="log-device-sub">{{ log.browser || formatBrowserDetails(log.userAgent) }}</span>
                       </div>
                     </td>
-                    <td>{{ formatDateTime(log.timestamp) }}</td>
+                    <td>{{ formatDateTime(log.timestamp || log.date) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -1412,6 +1438,78 @@ interface AccountSummary {
       color: #0050e5;
     }
 
+    .retention-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 18px;
+      margin-bottom: 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+    }
+    .retention-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .retention-icon {
+      font-size: 22px;
+      color: #0050e5;
+    }
+    .retention-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      display: block;
+    }
+    .retention-sub {
+      font-size: 11.5px;
+      color: #64748b;
+      display: block;
+    }
+    .btn-contact-admin {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0050e5;
+      background: rgba(0, 80, 229, 0.08);
+      border: 1px solid rgba(0, 80, 229, 0.25);
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .btn-contact-admin:hover {
+      background: rgba(0, 80, 229, 0.16);
+      border-color: #0050e5;
+    }
+    .log-desc-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-desc-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .log-module-badge {
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      background: #f1f5f9;
+      color: #475569;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+
     /* Table Pagination Toolbar */
     .pagination-footer {
       display: flex;
@@ -1621,6 +1719,8 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   loginPageSize: number = 10;
   loginTotalCount: number = 0;
   loginTotalPages: number = 1;
+  hasOlderRecords: boolean = false;
+  retentionNotice: string = '';
 
   /** Account profile summary state */
   summary: AccountSummary | null = null;
@@ -1956,22 +2056,33 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
           this.loginTotalCount = res.data.length;
           this.loginPage = 1;
           this.loginTotalPages = 1;
+          this.hasOlderRecords = false;
         } else if (res?.data?.items) {
           this.loginLogs = res.data.items;
           this.loginTotalCount = res.data.totalCount ?? this.loginLogs.length;
           this.loginPage = res.data.page ?? page;
           this.loginPageSize = res.data.pageSize ?? this.loginPageSize;
           this.loginTotalPages = res.data.totalPages ?? Math.max(1, Math.ceil(this.loginTotalCount / this.loginPageSize));
+          this.hasOlderRecords = !!res.data.hasOlderRecords;
+          this.retentionNotice = res.data.retentionNotice || '';
         } else {
           this.loginLogs = [];
           this.loginTotalCount = 0;
           this.loginTotalPages = 1;
+          this.hasOlderRecords = false;
         }
       },
       error: () => {
         this.loadingLogs = false;
       }
     });
+  }
+
+  /**
+   * Guides the user on how to request deep archival activity records beyond 30 days.
+   */
+  contactAdminForArchives(): void {
+    this.toast.info('To request archival activity records older than 30 days, please contact your workspace Super Administrator.', 'Archival Records');
   }
 
   /**
@@ -2140,8 +2251,8 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
    * Alias for formatExactDateTime for audit log table timestamp formatting.
    * @param dateStr ISO date string.
    */
-  formatDateTime(dateStr: string): string {
-    return this.formatExactDateTime(dateStr);
+  formatDateTime(dateStr: string | undefined | null): string {
+    return this.formatExactDateTime(dateStr || '');
   }
 
   /**
