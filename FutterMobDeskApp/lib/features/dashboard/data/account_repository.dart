@@ -252,21 +252,63 @@ class AccountRepository {
   }
 
   /// <summary>
-  /// Sends an invitation to join the workspace with a predefined role.
+  /// Sends an invitation to join the workspace with a predefined role, modular scope, and expiration.
   /// </summary>
-  Future<bool> sendInvitation({required String email, required String role, String? categoryId}) async {
+  /// <param name="email">Recipient prospective member email address.</param>
+  /// <param name="role">Primary authority role to provision.</param>
+  /// <param name="actionRole">Optional operational access level (GlobalEditor, FeatureEditor, Readonly).</param>
+  /// <param name="featureArea">Optional capability domain key when FeatureEditor is selected.</param>
+  /// <param name="categoryId">Optional user directory category identifier.</param>
+  /// <param name="expirationDays">Invitation token lifetime in days (defaults to 7).</param>
+  /// <param name="customMessage">Optional personal welcome note from the administrator.</param>
+  /// <returns>A map containing success status, generated token/invitationUrl, and feedback message.</returns>
+  Future<Map<String, dynamic>> sendInvitation({
+    required String email,
+    required String role,
+    String? actionRole,
+    String? featureArea,
+    String? categoryId,
+    int expirationDays = 7,
+    String? customMessage,
+  }) async {
     try {
       final response = await _dio.post(
         'api/IdentityApi/invitations',
         data: {
           'email': email.trim(),
           'role': role,
+          'actionRole': actionRole,
+          'featureArea': featureArea,
           'categoryId': categoryId,
+          'expirationDays': expirationDays,
+          'customMessage': customMessage,
         },
       );
-      return response.statusCode == 200 || response.statusCode == 201;
-    } catch (_) {
-      return false;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data is Map && data['data'] != null) {
+          final payload = Map<String, dynamic>.from(data['data'] as Map);
+          return {
+            'success': true,
+            'data': payload,
+            'invitationUrl': payload['invitationUrl']?.toString(),
+            'token': payload['token']?.toString(),
+            'message': data['message']?.toString() ?? 'Invitation dispatched successfully.',
+          };
+        }
+        return {'success': true, 'message': 'Invitation dispatched successfully.'};
+      }
+      return {
+        'success': false,
+        'message': response.data?['message']?.toString() ?? 'Failed to send invitation',
+      };
+    } on DioException catch (dioErr) {
+      final errorMsg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': errorMsg ?? 'Network error'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
     }
   }
 

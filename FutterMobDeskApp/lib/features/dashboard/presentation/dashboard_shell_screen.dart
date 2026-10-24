@@ -39,6 +39,7 @@ import 'screens/user_directory/user_edit_view.dart';
 import 'screens/identity_access/identity_dashboard_view.dart';
 import 'screens/identity_access/roles_permissions_view.dart';
 import 'screens/identity_access/member_invitations_view.dart';
+import 'screens/identity_access/member_invitation_create_view.dart';
 import 'screens/identity_access/global_security_policies_view.dart';
 import 'screens/manage_account/my_account_profile_view.dart';
 import 'screens/manage_account/change_password_view.dart';
@@ -1844,7 +1845,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onNavigateToTab: (idx) => _navigateToTab(idx),
           );
         case 9:
-          return MemberInvitationsView(workspace: activeWs);
+          return MemberInvitationsView(
+            workspace: activeWs,
+            onNavigateToCreate: () => _navigateToTab(19),
+          );
         case 10:
           return GlobalSecurityPoliciesView(workspace: activeWs);
         case 11:
@@ -1877,6 +1881,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             member: _selectedMember ?? {},
             onNavigateBack: _navigateBack,
             onUserUpdated: () => _navigateToTab(1, clearHistory: true),
+          );
+        case 19:
+          return MemberInvitationCreateView(
+            workspace: activeWs,
+            onNavigateBack: _navigateBack,
+            onInvitationCreated: () => _navigateToTab(9, clearHistory: true),
           );
         default:
           return UserDashboardOverviewView(workspace: activeWs);
