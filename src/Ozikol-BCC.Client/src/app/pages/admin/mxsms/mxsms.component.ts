@@ -148,6 +148,16 @@ export interface SmsQueueStats {
         </div>
       </div>
 
+      <!-- Server Warning / Error Banner -->
+      <div class="server-error-banner" *ngIf="errorMessage">
+        <span class="material-symbols-outlined text-amber">warning</span>
+        <div class="banner-text">
+          <strong>Backend Synchronization Notice:</strong>
+          <span>{{ errorMessage }}</span>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" (click)="loadLogs()">Retry</button>
+      </div>
+
       <!-- Main Logs Table Card -->
       <div class="logs-card">
         <div class="table-responsive" *ngIf="!isLoading && logs.length > 0">
@@ -457,6 +467,31 @@ export interface SmsQueueStats {
       font-weight: 800;
       color: #0f172a;
       line-height: 1.2;
+    }
+
+    .server-error-banner {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      color: #92400e;
+      font-size: 13.5px;
+    }
+
+    .banner-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .banner-text strong {
+      font-weight: 700;
+      color: #78350f;
     }
 
     .toolbar-card {
@@ -1106,6 +1141,7 @@ export class MxSmsComponent implements OnInit, OnDestroy {
   };
 
   isLoading = false;
+  errorMessage: string | null = null;
   selectedStatus = 'All';
   searchQuery = '';
   page = 1;
@@ -1165,6 +1201,7 @@ export class MxSmsComponent implements OnInit, OnDestroy {
     this.api.get<any>(`MxSmsApi/logs?${params.toString()}`).subscribe({
       next: (res: any) => {
         this.isLoading = false;
+        this.errorMessage = null;
         if (res && res.data) {
           this.logs = res.data.items || [];
           this.totalCount = res.data.totalCount || 0;
@@ -1174,8 +1211,13 @@ export class MxSmsComponent implements OnInit, OnDestroy {
           }
         }
       },
-      error: () => {
+      error: (err: any) => {
         this.isLoading = false;
+        if (err?.status === 404) {
+          this.errorMessage = 'SMS Telemetry endpoint not yet loaded (404). Please restart your running Ozikol-BCC.Api server to activate the new MxSmsApiController.';
+        } else {
+          this.errorMessage = err?.error?.message || 'Failed to fetch SMS dispatch logs from server.';
+        }
       }
     });
   }
