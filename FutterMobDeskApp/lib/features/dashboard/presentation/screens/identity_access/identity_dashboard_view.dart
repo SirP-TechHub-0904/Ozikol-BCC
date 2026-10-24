@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
@@ -500,14 +501,25 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
     );
   }
 
-  /// Builds MFA Verification Method Distribution Console Widget.
+  /// <summary>
+  /// Builds MFA Verification Method Distribution Console Widget featuring an interactive Donut Chart and legend.
+  /// </summary>
+  /// <param name="isDark">Indicates whether the current theme is dark mode.</param>
+  /// <returns>A decorated container hosting the MFA donut chart and category legend.</returns>
   Widget _buildMfaDistributionWidget(bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -526,47 +538,17 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildMethodRow('Google Authenticator', _mfaGoogle, AppColors.primary, isDark),
-          _buildMethodRow('Microsoft Authenticator', _mfaMicrosoft, const Color(0xFF3B82F6), isDark),
-          _buildMethodRow('Email OTP', _mfaEmail, const Color(0xFF10B981), isDark),
-          _buildMethodRow('SMS OTP', _mfaSms, const Color(0xFFF59E0B), isDark),
-          _buildMethodRow('Disabled', _mfaNone, AppColors.gray400, isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMethodRow(String name, int count, Color color, bool isDark) {
-    final total = _totalUsers > 0 ? _totalUsers : 1;
-    final percent = ((count / total) * 100).round();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              name,
-              style: TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w500,
-                color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-              ),
-            ),
-          ),
-          Text(
-            '$count ($percent%)',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: isDark ? AppColors.gray300 : AppColors.gray700,
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 260,
+            child: _MfaDonutChart(
+              mfaGoogle: _mfaGoogle,
+              mfaMicrosoft: _mfaMicrosoft,
+              mfaEmail: _mfaEmail,
+              mfaSms: _mfaSms,
+              mfaNone: _mfaNone,
+              totalUsers: _totalUsers,
+              isDark: isDark,
             ),
           ),
         ],
@@ -574,16 +556,27 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
     );
   }
 
-  /// Builds Identity Operational Overview Widget (Active Guards vs Locked Out vs Retries).
+  /// <summary>
+  /// Builds Identity Operational Overview Widget featuring an interactive Bar Chart with gridlines and Y-axis scale.
+  /// </summary>
+  /// <param name="isDark">Indicates whether the current theme is dark mode.</param>
+  /// <returns>A decorated container hosting the operational bar chart.</returns>
   Widget _buildOperationalOverviewWidget(bool isDark) {
     final activeGuards = _totalUsers > _lockedOutCount ? _totalUsers - _lockedOutCount : 0;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -602,40 +595,14 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildPostureMetricRow('Active Guards', '$activeGuards', AppColors.success, isDark),
-          _buildPostureMetricRow('Locked Out Accounts', '$_lockedOutCount', AppColors.error, isDark),
-          _buildPostureMetricRow('Brute-Force Retries', '$_retryAlertsCount', AppColors.warning, isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPostureMetricRow(String label, String value, Color color, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
-              ),
-            ],
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              value,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 260,
+            child: _OperationalBarChart(
+              activeGuards: activeGuards,
+              lockedOut: _lockedOutCount,
+              retries: _retryAlertsCount,
+              isDark: isDark,
             ),
           ),
         ],
@@ -703,3 +670,540 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
     );
   }
 }
+
+/// <summary>
+/// Data container representing an individual slice in the MFA verification distribution donut chart.
+/// </summary>
+class _MfaSliceData {
+  /// The human-readable label of the MFA method.
+  final String label;
+
+  /// The count of users enrolled with this MFA method.
+  final int count;
+
+  /// The percentage of total users enrolled with this MFA method.
+  final int percent;
+
+  /// The color assigned to this slice and legend indicator.
+  final Color color;
+
+  /// Creates a new [_MfaSliceData] instance.
+  const _MfaSliceData({
+    required this.label,
+    required this.count,
+    required this.percent,
+    required this.color,
+  });
+}
+
+/// <summary>
+/// Interactive Donut Chart widget visualizing MFA verification method distribution.
+/// Replicates Chart.js doughnut chart behavior with smooth entrance animations and right-aligned legend.
+/// </summary>
+class _MfaDonutChart extends StatefulWidget {
+  final int mfaGoogle;
+  final int mfaMicrosoft;
+  final int mfaEmail;
+  final int mfaSms;
+  final int mfaNone;
+  final int totalUsers;
+  final bool isDark;
+
+  const _MfaDonutChart({
+    required this.mfaGoogle,
+    required this.mfaMicrosoft,
+    required this.mfaEmail,
+    required this.mfaSms,
+    required this.mfaNone,
+    required this.totalUsers,
+    required this.isDark,
+  });
+
+  @override
+  State<_MfaDonutChart> createState() => _MfaDonutChartState();
+}
+
+class _MfaDonutChartState extends State<_MfaDonutChart> with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+    _animation = CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic);
+    _animController.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MfaDonutChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mfaGoogle != widget.mfaGoogle ||
+        oldWidget.mfaMicrosoft != widget.mfaMicrosoft ||
+        oldWidget.mfaEmail != widget.mfaEmail ||
+        oldWidget.mfaSms != widget.mfaSms ||
+        oldWidget.mfaNone != widget.mfaNone ||
+        oldWidget.totalUsers != widget.totalUsers) {
+      _animController.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveTotal = widget.totalUsers > 0
+        ? widget.totalUsers
+        : (widget.mfaGoogle + widget.mfaMicrosoft + widget.mfaEmail + widget.mfaSms + widget.mfaNone > 0
+            ? widget.mfaGoogle + widget.mfaMicrosoft + widget.mfaEmail + widget.mfaSms + widget.mfaNone
+            : 1);
+
+    final slices = [
+      _MfaSliceData(
+        label: 'Google Authenticator',
+        count: widget.mfaGoogle,
+        percent: ((widget.mfaGoogle / effectiveTotal) * 100).round(),
+        color: const Color(0xFF0050E5), // Royal blue matching web Chart.js
+      ),
+      _MfaSliceData(
+        label: 'Microsoft Authenticator',
+        count: widget.mfaMicrosoft,
+        percent: ((widget.mfaMicrosoft / effectiveTotal) * 100).round(),
+        color: const Color(0xFF3B82F6), // Light blue matching web Chart.js
+      ),
+      _MfaSliceData(
+        label: 'Email OTP',
+        count: widget.mfaEmail,
+        percent: ((widget.mfaEmail / effectiveTotal) * 100).round(),
+        color: const Color(0xFF10B981), // Emerald green matching web Chart.js
+      ),
+      _MfaSliceData(
+        label: 'SMS OTP',
+        count: widget.mfaSms,
+        percent: ((widget.mfaSms / effectiveTotal) * 100).round(),
+        color: const Color(0xFFF59E0B), // Amber matching web Chart.js
+      ),
+      _MfaSliceData(
+        label: 'Disabled',
+        count: widget.mfaNone,
+        percent: ((widget.mfaNone / effectiveTotal) * 100).round(),
+        color: widget.isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1), // Gray matching web Chart.js
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 360;
+
+        final donutCanvas = AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            return CustomPaint(
+              size: Size.infinite,
+              painter: _MfaDonutPainter(
+                slices: slices,
+                animationProgress: _animation.value,
+                isDark: widget.isDark,
+              ),
+            );
+          },
+        );
+
+        final legendList = Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: slices.map((slice) {
+            return _buildLegendItem(
+              color: slice.color,
+              label: slice.label,
+              count: slice.count,
+              percent: slice.percent,
+              isDark: widget.isDark,
+            );
+          }).toList(),
+        );
+
+        if (isNarrow) {
+          return Column(
+            children: [
+              Expanded(flex: 3, child: donutCanvas),
+              const SizedBox(height: 12),
+              Expanded(flex: 2, child: SingleChildScrollView(child: legendList)),
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              flex: 11,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: donutCanvas,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 10,
+              child: legendList,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildLegendItem({
+    required Color color,
+    required String label,
+    required int count,
+    required int percent,
+    required bool isDark,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.5),
+      child: Row(
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2.5),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$count ($percent%)',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: isDark ? AppColors.gray400 : AppColors.gray600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// <summary>
+/// CustomPainter that renders a smooth anti-aliased Donut Chart for MFA method distribution.
+/// </summary>
+class _MfaDonutPainter extends CustomPainter {
+  final List<_MfaSliceData> slices;
+  final double animationProgress;
+  final bool isDark;
+
+  _MfaDonutPainter({
+    required this.slices,
+    required this.animationProgress,
+    required this.isDark,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final total = slices.fold<int>(0, (sum, item) => sum + item.count);
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) * 0.44;
+    final strokeWidth = radius * 0.45; // Generates clean cutout hole matching Chart.js
+    final arcRadius = radius - strokeWidth / 2;
+
+    if (total == 0) {
+      // Empty state circular ring
+      final emptyPaint = Paint()
+        ..color = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth;
+      canvas.drawCircle(center, arcRadius, emptyPaint);
+      return;
+    }
+
+    double currentAngle = -math.pi / 2; // Starts at 12 o'clock matching Chart.js
+    final totalSweep = 2 * math.pi * animationProgress;
+
+    for (final slice in slices) {
+      if (slice.count <= 0) continue;
+      final sweepAngle = (slice.count / total) * totalSweep;
+      if (sweepAngle <= 0) continue;
+
+      final paint = Paint()
+        ..color = slice.color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.butt;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: arcRadius),
+        currentAngle,
+        sweepAngle,
+        false,
+        paint,
+      );
+
+      currentAngle += sweepAngle;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _MfaDonutPainter oldDelegate) {
+    return oldDelegate.animationProgress != animationProgress ||
+        oldDelegate.slices != slices ||
+        oldDelegate.isDark != isDark;
+  }
+}
+
+/// <summary>
+/// Interactive Bar Chart widget visualizing Identity Operational Posture.
+/// Replicates Chart.js bar chart behavior with gridlines, vertical rounded bars, and Y-axis scale.
+/// </summary>
+class _OperationalBarChart extends StatefulWidget {
+  final int activeGuards;
+  final int lockedOut;
+  final int retries;
+  final bool isDark;
+
+  const _OperationalBarChart({
+    required this.activeGuards,
+    required this.lockedOut,
+    required this.retries,
+    required this.isDark,
+  });
+
+  @override
+  State<_OperationalBarChart> createState() => _OperationalBarChartState();
+}
+
+class _OperationalBarChartState extends State<_OperationalBarChart> with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+    _animation = CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic);
+    _animController.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant _OperationalBarChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activeGuards != widget.activeGuards ||
+        oldWidget.lockedOut != widget.lockedOut ||
+        oldWidget.retries != widget.retries) {
+      _animController.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final values = [widget.activeGuards, widget.lockedOut, widget.retries];
+    final labels = ['Active Guards', 'Locked Out', 'Brute Force Attempts'];
+    final colors = [
+      const Color(0xFF10B981), // Emerald green matching web Chart.js
+      const Color(0xFFEF4444), // Crimson red matching web Chart.js
+      const Color(0xFFF59E0B), // Amber warning matching web Chart.js
+    ];
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return CustomPaint(
+          size: Size.infinite,
+          painter: _OperationalBarChartPainter(
+            values: values,
+            labels: labels,
+            colors: colors,
+            animationProgress: _animation.value,
+            isDark: widget.isDark,
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// <summary>
+/// CustomPainter that renders vertical rounded bars with Y-axis scale, horizontal gridlines, and category labels.
+/// </summary>
+class _OperationalBarChartPainter extends CustomPainter {
+  final List<int> values;
+  final List<String> labels;
+  final List<Color> colors;
+  final double animationProgress;
+  final bool isDark;
+
+  _OperationalBarChartPainter({
+    required this.values,
+    required this.labels,
+    required this.colors,
+    required this.animationProgress,
+    required this.isDark,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const leftMargin = 34.0;
+    const rightMargin = 16.0;
+    const topMargin = 16.0;
+    const bottomMargin = 38.0;
+
+    final chartWidth = size.width - leftMargin - rightMargin;
+    final chartHeight = size.height - topMargin - bottomMargin;
+    if (chartWidth <= 0 || chartHeight <= 0) return;
+
+    final rawMax = values.fold<int>(0, math.max);
+    final effectiveMax = rawMax == 0 ? 5 : (rawMax < 5 ? 5 : rawMax);
+
+    // Calculate integer ticks matching web Chart.js
+    final tickStep = effectiveMax <= 8
+        ? 1
+        : (effectiveMax <= 12 ? 2 : (effectiveMax <= 25 ? 5 : (effectiveMax / 5).ceil()));
+
+    final List<int> ticks = [];
+    for (int t = 0; t <= effectiveMax; t += tickStep) {
+      ticks.add(t);
+    }
+    if (!ticks.contains(effectiveMax)) {
+      ticks.add(effectiveMax);
+    }
+
+    final gridPaint = Paint()
+      ..color = isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)
+      ..strokeWidth = 1.0;
+
+    final axisTickColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    // 1. Draw horizontal grid lines & Y-axis numbers
+    for (final tickVal in ticks) {
+      final normalizedY = tickVal / effectiveMax;
+      final y = (topMargin + chartHeight) - (normalizedY * chartHeight);
+
+      // Grid line
+      canvas.drawLine(
+        Offset(leftMargin, y),
+        Offset(size.width - rightMargin, y),
+        gridPaint,
+      );
+
+      // Y-axis tick label
+      final textSpan = TextSpan(
+        text: '$tickVal',
+        style: TextStyle(
+          color: axisTickColor,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      textPainter.paint(
+        canvas,
+        Offset(leftMargin - textPainter.width - 8, y - textPainter.height / 2),
+      );
+    }
+
+    // 2. Draw 3 Vertical Rounded Bars
+    final slotWidth = chartWidth / values.length;
+    final barWidth = math.min(slotWidth * 0.44, 54.0);
+
+    for (int i = 0; i < values.length; i++) {
+      final val = values[i];
+      final centerX = leftMargin + (i + 0.5) * slotWidth;
+      final barLeft = centerX - barWidth / 2;
+      final barRight = centerX + barWidth / 2;
+      final bottomY = topMargin + chartHeight;
+
+      final animatedVal = val * animationProgress;
+      final barHeight = (animatedVal / effectiveMax) * chartHeight;
+      final topY = bottomY - barHeight;
+
+      if (val > 0 && barHeight > 1.0) {
+        final barPaint = Paint()
+          ..color = colors[i]
+          ..style = PaintingStyle.fill;
+
+        final rrect = RRect.fromRectAndCorners(
+          Rect.fromLTRB(barLeft, topY, barRight, bottomY),
+          topLeft: const Radius.circular(6),
+          topRight: const Radius.circular(6),
+        );
+        canvas.drawRRect(rrect, barPaint);
+      } else {
+        // Subtle indicator baseline bar if value is 0
+        final zeroPaint = Paint()
+          ..color = colors[i].withValues(alpha: 0.25)
+          ..style = PaintingStyle.fill;
+        canvas.drawRRect(
+          RRect.fromRectAndCorners(
+            Rect.fromLTRB(barLeft, bottomY - 2.5, barRight, bottomY),
+            topLeft: const Radius.circular(2),
+            topRight: const Radius.circular(2),
+          ),
+          zeroPaint,
+        );
+      }
+
+      // 3. Draw X-axis label centered under each bar
+      final labelSpan = TextSpan(
+        text: labels[i],
+        style: TextStyle(
+          color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+      final labelPainter = TextPainter(
+        text: labelSpan,
+        textDirection: TextDirection.ltr,
+        textAlign: TextAlign.center,
+      )..layout(maxWidth: slotWidth + 8);
+
+      labelPainter.paint(
+        canvas,
+        Offset(centerX - labelPainter.width / 2, bottomY + 10),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _OperationalBarChartPainter oldDelegate) {
+    return oldDelegate.animationProgress != animationProgress ||
+        oldDelegate.values != values ||
+        oldDelegate.isDark != isDark;
+  }
+}
+
