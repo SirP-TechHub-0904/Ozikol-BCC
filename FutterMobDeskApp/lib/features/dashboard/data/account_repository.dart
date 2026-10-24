@@ -1037,7 +1037,7 @@ class AccountRepository {
   /// </summary>
   Future<List<Map<String, dynamic>>> getKpiIndicators() async {
     try {
-      final response = await _dio.get('api/UsersApi/kpi/indicators');
+      final response = await _dio.get('api/UsersApi/kpi-indicators');
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         List<dynamic> list = [];
@@ -1059,7 +1059,7 @@ class AccountRepository {
   /// </summary>
   Future<bool> createKpiIndicator(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post('api/UsersApi/kpi/indicators', data: data);
+      final response = await _dio.post('api/UsersApi/kpi-indicators', data: data);
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (_) {
       return false;
@@ -1071,7 +1071,7 @@ class AccountRepository {
   /// </summary>
   Future<bool> updateKpiIndicator(String id, Map<String, dynamic> data) async {
     try {
-      final response = await _dio.put('api/UsersApi/kpi/indicators/$id', data: data);
+      final response = await _dio.put('api/UsersApi/kpi-indicators/$id', data: data);
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
       return false;
@@ -1083,7 +1083,7 @@ class AccountRepository {
   /// </summary>
   Future<bool> deleteKpiIndicator(String id) async {
     try {
-      final response = await _dio.delete('api/UsersApi/kpi/indicators/$id');
+      final response = await _dio.delete('api/UsersApi/kpi-indicators/$id');
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
       return false;
@@ -1095,7 +1095,7 @@ class AccountRepository {
   /// </summary>
   Future<List<Map<String, dynamic>>> getKpiPeriods() async {
     try {
-      final response = await _dio.get('api/UsersApi/kpi/periods');
+      final response = await _dio.get('api/UsersApi/kpi-periods');
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         List<dynamic> list = [];
@@ -1117,8 +1117,20 @@ class AccountRepository {
   /// </summary>
   Future<bool> createKpiPeriod(String title, String description) async {
     try {
-      final response = await _dio.post('api/UsersApi/kpi/periods', data: {'title': title, 'description': description});
+      final response = await _dio.post('api/UsersApi/kpi-periods', data: {'title': title, 'description': description});
       return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Deletes a KPI evaluation period.
+  /// </summary>
+  Future<bool> deleteKpiPeriod(String id) async {
+    try {
+      final response = await _dio.delete('api/UsersApi/kpi-periods/$id');
+      return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
       return false;
     }
@@ -1129,7 +1141,7 @@ class AccountRepository {
   /// </summary>
   Future<List<Map<String, dynamic>>> getKpiLeaderboard(String period) async {
     try {
-      final response = await _dio.get('api/UsersApi/kpi/leaderboard', queryParameters: {'period': period});
+      final response = await _dio.get('api/UsersApi/kpi-leaderboard', queryParameters: {'period': period});
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         List<dynamic> list = [];
@@ -1151,10 +1163,32 @@ class AccountRepository {
   /// </summary>
   Future<bool> gradeMemberKpi(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post('api/UsersApi/kpi/grade', data: data);
-      return response.statusCode == 200 || response.statusCode == 204;
+      final response = await _dio.post('api/UsersApi/kpi-scores/batch', data: data);
+      return response.statusCode == 200 || response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// <summary>
+  /// Retrieves evaluation scorecards for a specific member profile.
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getUserKpiScores(String profileId) async {
+    try {
+      final response = await _dio.get('api/UsersApi/kpi-scores/user/$profileId');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        List<dynamic> list = [];
+        if (data is Map && data['data'] is List) {
+          list = data['data'] as List;
+        } else if (data is List) {
+          list = data;
+        }
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
     }
   }
 

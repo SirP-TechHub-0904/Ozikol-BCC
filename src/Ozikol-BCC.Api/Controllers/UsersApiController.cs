@@ -1044,6 +1044,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves all KPI Indicator definitions.
         /// </summary>
         [HttpGet("kpi-indicators")]
+        [HttpGet("kpi/indicators")]
         public async Task<IActionResult> GetKpiIndicators()
         {
             var indicators = await _dbContext.BcpKpiIndicators
@@ -1132,6 +1133,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Defines a new KPI Indicator metric.
         /// </summary>
         [HttpPost("kpi-indicators")]
+        [HttpPost("kpi/indicators")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
         public async Task<IActionResult> CreateKpiIndicator([FromBody] CreateKpiIndicatorRequest request)
         {
@@ -1162,6 +1164,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Updates a KPI Indicator metric.
         /// </summary>
         [HttpPut("kpi-indicators/{id:guid}")]
+        [HttpPut("kpi/indicators/{id:guid}")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
         public async Task<IActionResult> UpdateKpiIndicator(Guid id, [FromBody] CreateKpiIndicatorRequest request)
         {
@@ -1184,6 +1187,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Deletes a KPI Indicator metric.
         /// </summary>
         [HttpDelete("kpi-indicators/{id:guid}")]
+        [HttpDelete("kpi/indicators/{id:guid}")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
         public async Task<IActionResult> DeleteKpiIndicator(Guid id)
         {
@@ -1208,6 +1212,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves evaluation periods (e.g. 2026 Q3, August 2026).
         /// </summary>
         [HttpGet("kpi-periods")]
+        [HttpGet("kpi/periods")]
         public async Task<IActionResult> GetKpiPeriods()
         {
             var savedPeriods = await _dbContext.BcpKpiPeriods
@@ -1251,6 +1256,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Creates an evaluation period.
         /// </summary>
         [HttpPost("kpi-periods")]
+        [HttpPost("kpi/periods")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
         public async Task<IActionResult> CreateKpiPeriod([FromBody] CreateKpiPeriodRequest request)
         {
@@ -1284,6 +1290,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Deletes an evaluation period.
         /// </summary>
         [HttpDelete("kpi-periods/{id:guid}")]
+        [HttpDelete("kpi/periods/{id:guid}")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
         public async Task<IActionResult> DeleteKpiPeriod(Guid id)
         {
@@ -1308,6 +1315,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Submits batch evaluation scores for multiple indicators on a user.
         /// </summary>
         [HttpPost("kpi-scores/batch")]
+        [HttpPost("kpi/grade")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
         public async Task<IActionResult> SubmitBatchKpiScores([FromBody] BatchScoreSubmissionRequest request)
         {
@@ -1319,7 +1327,25 @@ namespace Ozikol_BCC.Api.Controllers
 
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Admin";
 
-            foreach (var item in request.Scores)
+            var scoresToProcess = request.Scores ?? new List<KpiScoreItem>();
+            if (scoresToProcess.Count == 0 && request.Score.HasValue)
+            {
+                var indicators = await _dbContext.BcpKpiIndicators.Where(k => k.IsActive).OrderBy(k => k.SortOrder).ToListAsync();
+                if (indicators.Count > 0)
+                {
+                    var targetIndicator = request.IndicatorId.HasValue
+                        ? indicators.FirstOrDefault(i => i.Id == request.IndicatorId.Value) ?? indicators[0]
+                        : indicators[0];
+                    scoresToProcess.Add(new KpiScoreItem
+                    {
+                        IndicatorId = targetIndicator.Id,
+                        Score = request.Score.Value,
+                        Remarks = request.Remarks ?? request.Notes
+                    });
+                }
+            }
+
+            foreach (var item in scoresToProcess)
             {
                 var existingScore = await _dbContext.BcpKpiUserScores
                     .FirstOrDefaultAsync(s => s.ProfileId == request.ProfileId && s.BcpKpiIndicatorId == item.IndicatorId && s.Period == request.Period);
@@ -1390,6 +1416,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Performance Leaderboard ranking for a period.
         /// </summary>
         [HttpGet("kpi-leaderboard")]
+        [HttpGet("kpi/leaderboard")]
         public async Task<IActionResult> GetKpiLeaderboard([FromQuery] string? period)
         {
             var query = _dbContext.BcpKpiUserScores
@@ -2286,7 +2313,12 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string ProfileId { get; set; } = string.Empty;
         public string Period { get; set; } = string.Empty;
-        public List<KpiScoreItem> Scores { get; set; } = new();
+        public List<KpiScoreItem>? Scores { get; set; } = new();
+
+        public Guid? IndicatorId { get; set; }
+        public decimal? Score { get; set; }
+        public string? Remarks { get; set; }
+        public string? Notes { get; set; }
     }
 
     public class KpiScoreItem

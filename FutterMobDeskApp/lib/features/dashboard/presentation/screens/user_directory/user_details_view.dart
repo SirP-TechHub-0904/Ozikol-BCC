@@ -93,6 +93,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
     setState(() => _isLoading = true);
     final repo = ref.read(accountRepositoryProvider);
     final dossier = await repo.getUserDossier(userId);
+    final userScores = await repo.getUserKpiScores(userId);
 
     if (mounted) {
       setState(() {
@@ -104,6 +105,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             _adminNotes.clear();
             _adminNotes.addAll(notes.map((n) => Map<String, dynamic>.from(n as Map)));
           }
+        }
+        if (userScores.isNotEmpty) {
+          _userData['kpiScores'] = userScores;
         }
       });
     }
@@ -961,7 +965,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                 ],
               ),
               ElevatedButton.icon(
-                onPressed: () => _showToast('Navigating to KPI evaluation...'),
+                onPressed: _openGradeMemberDialog,
                 icon: const Icon(Icons.assignment_turned_in_rounded, size: 14, color: Colors.white),
                 label: const Text('Grade Member', style: TextStyle(color: Colors.white, fontSize: 12)),
                 style: ElevatedButton.styleFrom(
@@ -985,19 +989,289 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
               ),
             )
           else
-            ...kpiScores.map((k) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: kpiScores.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final k = kpiScores[index] is Map ? kpiScores[index] as Map : {};
+                final metricTitle = k['indicatorTitle']?.toString() ??
+                    k['IndicatorTitle']?.toString() ??
+                    k['metric']?.toString() ??
+                    'Performance Rubric';
+                final period = k['period']?.toString() ?? k['Period']?.toString() ?? '';
+                final score = (k['score'] ?? k['Score'] ?? 0.0) as num;
+                final remarks = k['remarks']?.toString() ?? k['Remarks']?.toString() ?? '';
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              metricTitle,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (period.isNotEmpty || remarks.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  [if (period.isNotEmpty) period, if (remarks.isNotEmpty) remarks].join(' • '),
+                                  style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: Text(
+                          '${score.toStringAsFixed(1)}%',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0050E5),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Opens the interactive KPI scorecard evaluation modal for this specific member.
+  Future<void> _openGradeMemberDialog() async {
+    final memberName = _userData['fullName'] as String? ?? 'Member';
+    final profileId = _userData['id']?.toString() ?? '';
+    if (profileId.isEmpty) return;
+
+    final repo = ref.read(accountRepositoryProvider);
+    final periods = await repo.getKpiPeriods();
+    final indicators = await repo.getKpiIndicators();
+
+    if (!mounted) return;
+
+    String selectedPeriod = periods.isNotEmpty ? (periods.first['title'] as String? ?? '2026 Q4') : '2026 Q4';
+    String? selectedIndicatorId = indicators.isNotEmpty ? indicators.first['id']?.toString() : null;
+
+    final scoreCtrl = TextEditingController(text: '85.0');
+    final feedbackCtrl = TextEditingController();
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+
+          return AlertDialog(
+            backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.assignment_turned_in_rounded, color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Evaluate Member: $memberName',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 440,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(k['metric']?.toString() ?? 'KPI Metric', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Text(k['score']?.toString() ?? '0/100', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                    Text('EVALUATION PERIOD *', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedPeriod,
+                          isExpanded: true,
+                          items: (periods.isNotEmpty ? periods : [{'title': '2026 Q4'}]).map((p) {
+                            final title = p['title'] as String? ?? 'Period';
+                            return DropdownMenuItem(value: title, child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)));
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) setDialogState(() => selectedPeriod = val);
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    if (indicators.isNotEmpty) ...[
+                      Text('KPI RUBRIC / INDICATOR *', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: selectedIndicatorId,
+                            isExpanded: true,
+                            items: indicators.map((ind) {
+                              final id = ind['id']?.toString() ?? '';
+                              final title = ind['title'] as String? ?? 'Metric';
+                              return DropdownMenuItem(value: id, child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis));
+                            }).toList(),
+                            onChanged: (val) {
+                              if (val != null) setDialogState(() => selectedIndicatorId = val);
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+
+                    Text('COMPOSITE SCORE (0 - 100%) *', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: scoreCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(
+                        hintText: 'e.g. 92.5',
+                        suffixText: '%',
+                        filled: true,
+                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    Text('EXECUTIVE FEEDBACK & NOTES', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: feedbackCtrl,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Comments, commendations, or areas for performance improvement...',
+                        filled: true,
+                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
                   ],
                 ),
-              );
-            }),
-        ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.of(ctx).pop(),
+                child: const Text('Cancel'),
+              ),
+              FilledButton.icon(
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        final score = double.tryParse(scoreCtrl.text.trim()) ?? 0.0;
+                        setDialogState(() => isSaving = true);
+
+                        final scoreItems = <Map<String, dynamic>>[];
+                        if (selectedIndicatorId != null && selectedIndicatorId!.isNotEmpty) {
+                          scoreItems.add({
+                            'indicatorId': selectedIndicatorId,
+                            'score': score,
+                            'remarks': feedbackCtrl.text.trim(),
+                          });
+                        }
+
+                        final payload = {
+                          'profileId': profileId,
+                          'period': selectedPeriod,
+                          'score': score,
+                          'scores': scoreItems,
+                          'remarks': feedbackCtrl.text.trim(),
+                          'notes': feedbackCtrl.text.trim(),
+                        };
+
+                        try {
+                          final ok = await repo.gradeMemberKpi(payload);
+                          if (ctx.mounted) {
+                            setDialogState(() => isSaving = false);
+                            if (ok) {
+                              Navigator.of(ctx).pop();
+                              _showToast('KPI evaluation recorded for $memberName.');
+                              _loadFullDossier();
+                            } else {
+                              _showToast('Failed to record scorecard. Please try again.');
+                            }
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            setDialogState(() => isSaving = false);
+                            _showToast('Error: $e');
+                          }
+                        }
+                      },
+                icon: isSaving
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.check_rounded, size: 16),
+                label: Text(isSaving ? 'Saving...' : 'Submit Scorecard'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

@@ -139,14 +139,162 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
         });
         if (ok) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Period "$title" created successfully.')),
+            SnackBar(
+              content: Text('Period "$title" created successfully.'),
+              backgroundColor: const Color(0xFF10B981),
+            ),
           );
+          setState(() => _selectedPeriod = title);
           _loadAllKpiData();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to create evaluation period. Please try again.'),
+              backgroundColor: Color(0xFFEF4444),
+            ),
+          );
         }
       }
-    } catch (_) {
-      if (mounted) setState(() => _isCreatingPeriod = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isCreatingPeriod = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating period: $e'), backgroundColor: const Color(0xFFEF4444)),
+        );
+      }
     }
+  }
+
+  /// Opens dialog to create a new evaluation period.
+  void _openCreatePeriodDialog() {
+    final titleCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+
+          return AlertDialog(
+            backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.date_range_rounded, color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Create Evaluation Period',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 420,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('PERIOD TITLE *', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: titleCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. 2026 Q4, Annual 2026',
+                      filled: true,
+                      fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('DESCRIPTION (OPTIONAL)', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: descCtrl,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Fourth quarter evaluation cycle',
+                      filled: true,
+                      fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.of(ctx).pop(),
+                child: const Text('Cancel'),
+              ),
+              FilledButton.icon(
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        final title = titleCtrl.text.trim();
+                        if (title.isEmpty) return;
+                        setDialogState(() => isSaving = true);
+                        try {
+                          final repo = ref.read(accountRepositoryProvider);
+                          final ok = await repo.createKpiPeriod(title, descCtrl.text.trim());
+                          if (ctx.mounted) {
+                            setDialogState(() => isSaving = false);
+                            if (ok) {
+                              Navigator.of(ctx).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Period "$title" created successfully.'),
+                                  backgroundColor: const Color(0xFF10B981),
+                                ),
+                              );
+                              setState(() => _selectedPeriod = title);
+                              _loadAllKpiData();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Failed to create period. Please try again.'),
+                                  backgroundColor: Color(0xFFEF4444),
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            setDialogState(() => isSaving = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e'), backgroundColor: const Color(0xFFEF4444)),
+                            );
+                          }
+                        }
+                      },
+                icon: isSaving
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.check_rounded, size: 16),
+                label: Text(isSaving ? 'Creating...' : 'Create Period'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _openCreateOrEditMetricDialog({Map<String, dynamic>? existingMetric}) {
@@ -316,16 +464,42 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
 
                         try {
                           final repo = ref.read(accountRepositoryProvider);
+                          bool ok = false;
                           if (isEditing) {
                             final id = existingMetric['id'] as String;
-                            await repo.updateKpiIndicator(id, payload);
+                            ok = await repo.updateKpiIndicator(id, payload);
                           } else {
-                            await repo.createKpiIndicator(payload);
+                            ok = await repo.createKpiIndicator(payload);
                           }
-                          if (ctx.mounted) Navigator.of(ctx).pop();
-                          _loadAllKpiData();
-                        } catch (_) {
-                          setDialogState(() => isSaving = false);
+                          if (ctx.mounted) {
+                            setDialogState(() => isSaving = false);
+                            if (ok) {
+                              Navigator.of(ctx).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(isEditing
+                                      ? 'KPI metric updated successfully.'
+                                      : 'KPI metric "$title" created successfully.'),
+                                  backgroundColor: const Color(0xFF10B981),
+                                ),
+                              );
+                              _loadAllKpiData();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Failed to save KPI metric. Please verify fields and try again.'),
+                                  backgroundColor: Color(0xFFEF4444),
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            setDialogState(() => isSaving = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error saving metric: $e'), backgroundColor: const Color(0xFFEF4444)),
+                            );
+                          }
                         }
                       },
                 icon: isSaving
@@ -490,28 +664,54 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                         final score = double.tryParse(scoreCtrl.text.trim()) ?? 0.0;
                         setDialogState(() => isSaving = true);
 
+                        final scoreItems = _metrics
+                            .where((m) => m['id'] != null && !(m['id'].toString().startsWith('m-')))
+                            .map((m) => {
+                                  'indicatorId': m['id'],
+                                  'score': score,
+                                  'remarks': feedbackCtrl.text.trim(),
+                                })
+                            .toList();
+
                         final payload = {
                           'profileId': profileId,
                           'period': _selectedPeriod,
                           'score': score,
+                          'scores': scoreItems,
+                          'remarks': feedbackCtrl.text.trim(),
                           'notes': feedbackCtrl.text.trim(),
                         };
 
                         try {
                           final repo = ref.read(accountRepositoryProvider);
-                          await repo.gradeMemberKpi(payload);
+                          final ok = await repo.gradeMemberKpi(payload);
                           if (ctx.mounted) {
-                            Navigator.of(ctx).pop();
-                            ScaffoldMessenger.of(ctx).showSnackBar(
-                              SnackBar(
-                                content: Text('Scorecard submitted for $memberName.'),
-                                backgroundColor: const Color(0xFF10B981),
-                              ),
+                            setDialogState(() => isSaving = false);
+                            if (ok) {
+                              Navigator.of(ctx).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Scorecard submitted for $memberName.'),
+                                  backgroundColor: const Color(0xFF10B981),
+                                ),
+                              );
+                              _loadLeaderboard();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Failed to submit scorecard. Please try again.'),
+                                  backgroundColor: Color(0xFFEF4444),
+                                ),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (ctx.mounted) {
+                            setDialogState(() => isSaving = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e'), backgroundColor: const Color(0xFFEF4444)),
                             );
                           }
-                          _loadLeaderboard();
-                        } catch (_) {
-                          setDialogState(() => isSaving = false);
                         }
                       },
                 icon: isSaving
@@ -1029,16 +1229,35 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  OutlinedButton.icon(
-                    onPressed: () => setState(() => _showNewPeriodBanner = !_showNewPeriodBanner),
-                    icon: const Icon(Icons.add_circle_outline_rounded, size: 14),
-                    label: const Text('Add Period'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                      minimumSize: Size.zero,
-                      textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: _openCreatePeriodDialog,
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      height: 32,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isDark ? AppColors.outlineDark : const Color(0xFFBFDBFE),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_rounded, size: 16, color: Color(0xFF0050E5)),
+                          SizedBox(width: 4),
+                          Text(
+                            'Add Period',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0050E5),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
