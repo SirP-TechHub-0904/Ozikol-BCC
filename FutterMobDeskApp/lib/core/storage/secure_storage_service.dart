@@ -115,6 +115,43 @@ class SecureStorageService {
     return match.copyWith(authToken: token);
   }
 
+  /// <summary>
+  /// Retrieves the stored encrypted authentication token for a specific tenant workspace if any.
+  /// </summary>
+  /// <param name="tenantKey">Target tenant partition key.</param>
+  /// <returns>Decrypted JWT Bearer token or null if unauthenticated.</returns>
+  Future<String?> getAuthToken(String tenantKey) async {
+    final tokenKey = '$_tokenPrefix${tenantKey.toLowerCase()}';
+    final token = _secureStorage != null
+        ? await _secureStorage.read(key: tokenKey)
+        : _memoryStore[tokenKey];
+
+    if (token != null && token.trim().isNotEmpty) return token.trim();
+
+    // Fall back to checking the enrolled workspace entry
+    final list = await getWorkspaces();
+    final match = list.where((w) => w.tenantKey.toLowerCase() == tenantKey.toLowerCase()).firstOrNull;
+    if (match?.authToken != null && match!.authToken!.trim().isNotEmpty) {
+      return match.authToken!.trim();
+    }
+
+    return null;
+  }
+
+  /// <summary>
+  /// Retrieves an enrolled workspace model fully hydrated with its decrypted authentication token.
+  /// </summary>
+  /// <param name="tenantKey">Target tenant partition key.</param>
+  /// <returns>Workspace model with populated authToken, or null if not enrolled.</returns>
+  Future<Workspace?> getWorkspaceWithToken(String tenantKey) async {
+    final list = await getWorkspaces();
+    final match = list.where((w) => w.tenantKey.toLowerCase() == tenantKey.toLowerCase()).firstOrNull;
+    if (match == null) return null;
+
+    final token = await getAuthToken(tenantKey);
+    return match.copyWith(authToken: token);
+  }
+
   /// Removes an enrolled workspace
   Future<void> removeWorkspace(String tenantKey) async {
     final list = await getWorkspaces();

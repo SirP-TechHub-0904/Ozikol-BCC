@@ -33,7 +33,6 @@ class FakeAccountRepositoryForDetailsAndEdit extends Fake implements AccountRepo
   @override
   Future<bool> updateUserProfile(String userId, Map<String, dynamic> payload) async => true;
 
-  @override
   Future<String?> generateActivationOtp(String userId) async => '839201';
 }
 

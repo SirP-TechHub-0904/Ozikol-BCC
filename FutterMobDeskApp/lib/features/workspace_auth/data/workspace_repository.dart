@@ -330,6 +330,49 @@ class WorkspaceRepository {
     final branding = await probeTenantBranding(tenantKey);
     return branding.logoUrl ?? branding.iconUrl;
   }
+
+  /// <summary>
+  /// Probes the server authentication endpoint (/api/Auth/me) using the specified Bearer token
+  /// and multi-tenant routing headers to verify if an active user session exists.
+  /// </summary>
+  /// <param name="tenantKey">Target tenant partition key.</param>
+  /// <param name="token">Bearer JWT access token.</param>
+  /// <param name="domain">Optional tenant primary or custom domain.</param>
+  /// <returns>Session profile payload if active and valid; null if rejected (401/403).</returns>
+  Future<Map<String, dynamic>?> verifySession(String tenantKey, String token, {String? domain}) async {
+    try {
+      final response = await _dio.get(
+        ApiConstants.sessionEndpoint,
+        options: Options(
+          headers: {
+            ApiConstants.headerTenantKey: tenantKey,
+            if (domain != null && domain.isNotEmpty) ApiConstants.headerTenantDomain: domain,
+            ApiConstants.headerAuthorization: 'Bearer $token',
+          },
+          sendTimeout: const Duration(seconds: 6),
+          receiveTimeout: const Duration(seconds: 8),
+        ),
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        return null;
+      }
+      // Re-throw other network/server errors so caller can handle offline gracefully
+      rethrow;
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 /// Resolved branding asset URLs and authentication screen configuration for an organization workspace

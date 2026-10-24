@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../state/workspace_state.dart';
+import 'widgets/workspace_switch_dialog.dart';
 import 'workspace_entry_screen.dart';
 import 'workspace_login_screen.dart';
 
@@ -47,15 +48,7 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
                   child: InkWell(
                     onTap: () {
                       if (isActive) return;
-                      if (!ws.isAuthenticated) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => WorkspaceLoginScreen(workspace: ws),
-                          ),
-                        );
-                      } else {
-                        notifier.switchWorkspace(ws.tenantKey);
-                      }
+                      showWorkspaceSwitchDialog(context, ws);
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Container(

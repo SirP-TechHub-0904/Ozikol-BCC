@@ -18,6 +18,7 @@ import '../../../core/models/workspace.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../workspace_auth/presentation/workspace_login_screen.dart';
 import '../../workspace_auth/presentation/workspace_switcher_dock.dart';
+import '../../workspace_auth/presentation/widgets/workspace_switch_dialog.dart';
 import '../../workspace_auth/state/workspace_state.dart';
 import '../../notifications/data/notification_service.dart';
 import '../../notifications/presentation/notifications_sheet.dart';
@@ -2163,15 +2164,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                       : null,
                   onTap: () {
                     Navigator.of(context).pop();
-                    if (!ws.isAuthenticated) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => WorkspaceLoginScreen(workspace: ws),
-                        ),
-                      );
-                    } else {
-                      ref.read(workspaceStateProvider.notifier).switchWorkspace(ws.tenantKey);
-                    }
+                    if (isCurrent) return;
+                    showWorkspaceSwitchDialog(context, ws);
                   },
                 );
               }),
