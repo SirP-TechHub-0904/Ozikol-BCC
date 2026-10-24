@@ -59,11 +59,11 @@ import { ApiService } from '../../core/services/api.service';
           <div class="dossier-pills-list">
             <div class="dossier-pill member-id">
               <span class="material-symbols-outlined">badge</span>
-              <span>{{ model.memberId || 'CC-2026-0099' }}</span>
+              <span>ID: {{ model.memberId || 'CC-2026-0099' }}</span>
             </div>
             <div class="dossier-pill category" [style.border-color]="model.categoryColor">
               <span class="material-symbols-outlined" [style.color]="model.categoryColor">category</span>
-              <span>{{ model.categoryName || 'Standard Member' }}</span>
+              <span>Category: {{ model.categoryName || 'Standard Member' }}</span>
             </div>
             <div class="dossier-pill join-date">
               <span class="material-symbols-outlined">event</span>
@@ -71,11 +71,11 @@ import { ApiService } from '../../core/services/api.service';
             </div>
             <div class="dossier-pill status-active">
               <span class="material-symbols-outlined">verified</span>
-              <span>{{ model.userStatus || 'Active Member' }}</span>
+              <span>Status: {{ model.userStatus || 'Active Member' }}</span>
             </div>
             <div *ngFor="let role of model.roles" class="dossier-pill role-pill">
               <span class="material-symbols-outlined">shield</span>
-              <span>{{ role }}</span>
+              <span>Role: {{ role }}</span>
             </div>
           </div>
 
@@ -176,20 +176,13 @@ import { ApiService } from '../../core/services/api.service';
                 <!-- Gender -->
                 <div class="form-group">
                   <label>Gender</label>
-                  <div class="gender-radio-group">
-                    <label class="gender-label" [class.checked]="model.gender === 'Male' || model.gender === '1'">
-                      <input type="radio" [(ngModel)]="model.gender" name="gender" value="Male" />
-                      <span>Male</span>
-                    </label>
-                    <label class="gender-label" [class.checked]="model.gender === 'Female' || model.gender === '2'">
-                      <input type="radio" [(ngModel)]="model.gender" name="gender" value="Female" />
-                      <span>Female</span>
-                    </label>
-                    <label class="gender-label" [class.checked]="model.gender === 'Other' || model.gender === '0'">
-                      <input type="radio" [(ngModel)]="model.gender" name="gender" value="Other" />
-                      <span>Other</span>
-                    </label>
-                  </div>
+                  <select [(ngModel)]="model.gender" name="gender" class="form-input">
+                    <option value="">-- Select Gender --</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
                 </div>
 
                 <!-- Professional Designation -->
