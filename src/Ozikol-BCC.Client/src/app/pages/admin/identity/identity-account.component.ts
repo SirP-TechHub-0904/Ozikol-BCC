@@ -87,18 +87,6 @@ interface AccountSummary {
             <p class="page-sub">{{ 'account.subtitle' | translate }}</p>
           </div>
         </div>
-        <div class="header-right" *ngIf="summary?.email">
-          <div class="user-pill">
-            <div class="user-avatar-small" *ngIf="!summary?.avatarUrl">
-              {{ (summary?.fullName || 'User').substring(0, 2).toUpperCase() }}
-            </div>
-            <img [src]="summary?.avatarUrl" class="user-avatar-img" *ngIf="summary?.avatarUrl" alt="Avatar" />
-            <div class="user-meta">
-              <span class="meta-name">{{ summary?.fullName || summary?.email }}</span>
-              <span class="meta-role">{{ (summary?.roles && summary!.roles!.length > 0) ? summary!.roles![0] : 'Administrator' }}</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- Navigation Tabs -->
