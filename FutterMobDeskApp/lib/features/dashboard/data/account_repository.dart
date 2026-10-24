@@ -673,6 +673,103 @@ class AccountRepository {
   }
 
   /// <summary>
+  /// Requests a 6-digit email confirmation code sent to the member's current email.
+  /// </summary>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> requestEmailVerification() async {
+    try {
+      final response = await _dio.post('api/PortalUsersApi/request-email-verification');
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Verification code sent to your email address.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to send verification code'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Confirms member's current email address using the 6-digit OTP code.
+  /// </summary>
+  /// <param name="otpCode">6-digit confirmation code.</param>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> confirmEmailVerification(String otpCode) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/confirm-email-verification',
+        data: {'otpCode': otpCode.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Email verified successfully.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to verify email'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Requests a 6-digit SMS verification code sent to the member's current phone number.
+  /// </summary>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> requestPhoneVerification() async {
+    try {
+      final response = await _dio.post('api/PortalUsersApi/request-phone-verification');
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Verification code sent to your mobile phone via SMS.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to send SMS verification code'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Confirms member's current mobile phone using the 6-digit SMS OTP code.
+  /// </summary>
+  /// <param name="otpCode">6-digit SMS verification code.</param>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> confirmPhoneVerification(String otpCode) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/confirm-phone-verification',
+        data: {'otpCode': otpCode.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Phone number verified successfully.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to verify phone number'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+
+  /// <summary>
   /// Fetches personal security and workspace activity audit log history.
   /// </summary>
   Future<List<Map<String, dynamic>>> getPersonalActivity() async {

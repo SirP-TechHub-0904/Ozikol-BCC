@@ -75,6 +75,8 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (user == null) return NotFound(ApiResponse<object>.FailureResponse("Profile not found."));
 
+            var roles = await _userManager.GetRolesAsync(user);
+
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 user.Id,
@@ -97,7 +99,8 @@ namespace Ozikol_BCC.Api.Controllers
                 CategoryName = user.BcpUserCategory?.Name ?? "Standard Member",
                 CategoryColor = user.BcpUserCategory?.ColorCode ?? "#0050e5",
                 UserStatus = user.UserStatus.ToString(),
-                user.RegistrationSource
+                user.RegistrationSource,
+                Roles = roles
             }, "Profile retrieved successfully."));
         }
 
@@ -526,6 +529,115 @@ namespace Ozikol_BCC.Api.Controllers
 
             return Ok(ApiResponse<object>.SuccessResponse(logs, "Personal activity history retrieved."));
         }
+
+        /// <summary>
+        /// Requests a 6-digit verification code to confirm the member's primary email address.
+        /// </summary>
+        [HttpPost("request-email-verification")]
+        public async Task<IActionResult> RequestEmailVerification()
+        {
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<object>.FailureResponse("User identity not resolved."));
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User profile not found."));
+
+            if (user.EmailConfirmed)
+                return Ok(ApiResponse<object>.SuccessResponse(new { isAlreadyVerified = true }, "Your primary email address is already verified."));
+
+            if (string.IsNullOrWhiteSpace(user.Email))
+                return BadRequest(ApiResponse<object>.FailureResponse("No email address is associated with your account."));
+
+            var result = await _otpService.SendEmailOtpAsync(user.Id, user.Email.Trim());
+            if (!result.Success)
+                return BadRequest(ApiResponse<object>.FailureResponse(result.Message));
+
+            return Ok(ApiResponse<object>.SuccessResponse(new { email = user.Email, retryAfterSeconds = result.RetryAfterSeconds }, result.Message));
+        }
+
+        /// <summary>
+        /// Confirms the member's primary email address using the received 6-digit OTP code.
+        /// </summary>
+        [HttpPost("confirm-email-verification")]
+        public async Task<IActionResult> ConfirmEmailVerification([FromBody] VerifyCodeRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.OtpCode))
+                return BadRequest(ApiResponse<object>.FailureResponse("6-digit verification code is required."));
+
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<object>.FailureResponse("User identity not resolved."));
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User profile not found."));
+
+            var verifyResult = await _otpService.VerifyEmailOtpAsync(user.Id, request.OtpCode.Trim());
+            if (!verifyResult.Success)
+                return BadRequest(ApiResponse<object>.FailureResponse(verifyResult.Message));
+
+            user.EmailConfirmed = true;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new { email = user.Email, emailConfirmed = true }, "Primary email address verified successfully."));
+        }
+
+        /// <summary>
+        /// Requests a 6-digit SMS verification code to confirm the member's registered mobile phone number.
+        /// </summary>
+        [HttpPost("request-phone-verification")]
+        public async Task<IActionResult> RequestPhoneVerification()
+        {
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<object>.FailureResponse("User identity not resolved."));
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User profile not found."));
+
+            if (user.PhoneNumberConfirmed)
+                return Ok(ApiResponse<object>.SuccessResponse(new { isAlreadyVerified = true }, "Your mobile phone number is already verified."));
+
+            if (string.IsNullOrWhiteSpace(user.PhoneNumber))
+                return BadRequest(ApiResponse<object>.FailureResponse("Please add a mobile phone number to your profile first."));
+
+            var result = await _otpService.SendPhoneOtpAsync(user.Id, user.PhoneNumber.Trim());
+            if (!result.Success)
+                return BadRequest(ApiResponse<object>.FailureResponse(result.Message));
+
+            return Ok(ApiResponse<object>.SuccessResponse(new { phoneNumber = user.PhoneNumber, retryAfterSeconds = result.RetryAfterSeconds }, result.Message));
+        }
+
+        /// <summary>
+        /// Confirms the member's mobile phone number using the received 6-digit SMS OTP code.
+        /// </summary>
+        [HttpPost("confirm-phone-verification")]
+        public async Task<IActionResult> ConfirmPhoneVerification([FromBody] VerifyCodeRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.OtpCode))
+                return BadRequest(ApiResponse<object>.FailureResponse("6-digit verification code is required."));
+
+            var userId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(ApiResponse<object>.FailureResponse("User identity not resolved."));
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User profile not found."));
+
+            var verifyResult = await _otpService.VerifyPhoneOtpAsync(user.Id, request.OtpCode.Trim());
+            if (!verifyResult.Success)
+                return BadRequest(ApiResponse<object>.FailureResponse(verifyResult.Message));
+
+            user.PhoneNumberConfirmed = true;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new { phoneNumber = user.PhoneNumber, phoneNumberConfirmed = true }, "Mobile phone number verified successfully."));
+        }
+    }
+
+    public class VerifyCodeRequest
+    {
+        public string OtpCode { get; set; } = string.Empty;
     }
 
     public class UpdateMyProfileRequest
