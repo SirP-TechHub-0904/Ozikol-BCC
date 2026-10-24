@@ -1839,7 +1839,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onNavigateToTab: (idx) => _navigateToTab(idx),
           );
         case 8:
-          return RolesPermissionsView(workspace: activeWs);
+          return RolesPermissionsView(
+            workspace: activeWs,
+            onNavigateToTab: (idx) => _navigateToTab(idx),
+          );
         case 9:
           return MemberInvitationsView(workspace: activeWs);
         case 10:
