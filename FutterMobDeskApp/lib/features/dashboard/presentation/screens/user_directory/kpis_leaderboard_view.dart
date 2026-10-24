@@ -1072,7 +1072,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _metrics.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 10),
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final m = _metrics[index];
                 final title = m['title'] as String? ?? 'Metric';
@@ -1082,10 +1082,10 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                 final weight = m['weight'] ?? 1.0;
 
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
                     ),
@@ -1093,18 +1093,19 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                   child: Row(
                     children: [
                       Container(
-                        width: 36,
-                        height: 36,
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           color: const Color(0xFFEFF6FF),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Icon(Icons.analytics_rounded, color: Color(0xFF0050E5), size: 20),
+                        child: const Icon(Icons.analytics_rounded, color: Color(0xFF0050E5), size: 18),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Row(
                               children: [
@@ -1122,49 +1123,49 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                                 ),
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFE2E8F0),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     cat.toUpperCase(),
-                                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+                                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              desc,
+                              'Max: $maxScore • Weight: ${weight}x${desc.isNotEmpty ? ' • $desc' : ''}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Max Score: $maxScore • Weight: ${weight}x',
-                              style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.edit_rounded, size: 16),
+                        icon: const Icon(Icons.edit_rounded, size: 15),
                         color: const Color(0xFF0050E5),
                         tooltip: 'Edit Metric',
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                        splashRadius: 16,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                        splashRadius: 14,
                         onPressed: () => _openCreateOrEditMetricDialog(existingMetric: m),
                       ),
+                      const SizedBox(width: 4),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                        icon: const Icon(Icons.delete_outline_rounded, size: 15),
                         color: const Color(0xFFEF4444),
                         tooltip: 'Delete Metric',
-                        padding: const EdgeInsets.all(6),
-                        constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                        splashRadius: 16,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                        splashRadius: 14,
                         onPressed: () => _confirmDeleteMetric(m),
                       ),
                     ],

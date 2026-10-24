@@ -63,26 +63,26 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
 
           <div class="metrics-list" *ngIf="!isLoading">
-            <div class="metric-card" *ngFor="let m of metrics">
+            <div class="metric-row-item" *ngFor="let m of metrics">
               <div class="metric-icon-box">
                 <span class="material-symbols-outlined">analytics</span>
               </div>
-              <div class="metric-details">
-                <div class="metric-title-row">
-                  <strong>{{ m.title }}</strong>
+              <div class="metric-main-info">
+                <div class="metric-heading">
+                  <span class="metric-title">{{ m.title }}</span>
                   <span class="metric-cat-badge">{{ m.category || 'General' }}</span>
                 </div>
-                <p class="metric-desc">{{ m.description || 'Standard performance evaluation indicator.' }}</p>
-                <div class="metric-meta-row">
-                  <span>Max Score: <strong>{{ m.maxScore || 100 }}</strong></span>
-                  <span>Weight: <strong>{{ m.weight || 1.0 }}x</strong></span>
+                <div class="metric-subtext">
+                  <span class="metric-score-weight">Max: <strong>{{ m.maxScore || 100 }}</strong> • Weight: <strong>{{ m.weight || 1.0 }}x</strong></span>
+                  <span class="metric-dot" *ngIf="m.description">•</span>
+                  <span *ngIf="m.description" class="metric-desc-text" [title]="m.description">{{ m.description }}</span>
                 </div>
               </div>
               <div class="metric-actions">
-                <a [routerLink]="['/users/console/kpi/metrics/edit', m.id]" class="btn-icon" title="Edit Metric">
+                <a [routerLink]="['/users/console/kpi/metrics/edit', m.id]" class="btn-icon-sm" title="Edit Metric">
                   <span class="material-symbols-outlined">edit</span>
                 </a>
-                <a [routerLink]="['/users/console/kpi/metrics/delete', m.id]" class="btn-icon text-danger" title="Delete Metric">
+                <a [routerLink]="['/users/console/kpi/metrics/delete', m.id]" class="btn-icon-sm text-danger" title="Delete Metric">
                   <span class="material-symbols-outlined">delete</span>
                 </a>
               </div>
@@ -204,21 +204,119 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
     .period-picker select { height: 34px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; outline: none; background: #fff; font-weight: 600; color: #0f172a; }
     .btn-add-period { height: 34px; padding: 0 10px; display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; border-radius: 8px; }
 
-    /* Metrics List */
-    .metrics-list { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-    .metric-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; transition: all 0.15s ease; min-width: 0; }
-    .metric-card:hover { background: #f1f5f9; border-color: #cbd5e1; }
-    .metric-icon-box { width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; color: #0050e5; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .metric-details { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .metric-title-row { display: flex; align-items: center; gap: 8px; }
-    .metric-title-row strong { font-size: 13.5px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .metric-cat-badge { font-size: 10px; font-weight: 700; background: #e2e8f0; color: #475569; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; }
-    .metric-desc { margin: 0; font-size: 11.5px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .metric-meta-row { display: flex; gap: 12px; font-size: 11px; color: #64748b; margin-top: 2px; }
-    .metric-actions { display: flex; gap: 6px; flex-shrink: 0; }
-    .btn-icon { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e2e8f0; background: #ffffff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; text-decoration: none; transition: all 0.15s; }
-    .btn-icon:hover { background: #0050e5; color: #ffffff; border-color: #0050e5; }
-    .btn-icon.text-danger:hover { background: #e11d48; color: #ffffff; border-color: #e11d48; }
+    /* Clean Simple Metrics List */
+    .metrics-list { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .metric-row-item {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 12px;
+      padding: 9px 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+      min-width: 0;
+      text-align: left !important;
+    }
+    .metric-row-item:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    .metric-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .metric-icon-box span { font-size: 18px; }
+    .metric-main-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      text-align: left;
+    }
+    .metric-heading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .metric-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .metric-cat-badge {
+      font-size: 9.5px;
+      font-weight: 700;
+      background: #e2e8f0;
+      color: #475569;
+      padding: 1px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .metric-subtext {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .metric-score-weight { font-weight: 500; color: #64748b; }
+    .metric-score-weight strong { color: #334155; font-weight: 600; }
+    .metric-dot { color: #cbd5e1; font-weight: 700; }
+    .metric-desc-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #94a3b8;
+    }
+    .metric-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .btn-icon-sm {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #475569;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn-icon-sm span { font-size: 15px; }
+    .btn-icon-sm:hover {
+      background: #0050e5;
+      color: #ffffff;
+      border-color: #0050e5;
+    }
+    .btn-icon-sm.text-danger:hover {
+      background: #ef4444;
+      color: #ffffff;
+      border-color: #ef4444;
+    }
 
     /* Leaderboard Table */
     .table-responsive { overflow-x: auto; min-width: 0; }
