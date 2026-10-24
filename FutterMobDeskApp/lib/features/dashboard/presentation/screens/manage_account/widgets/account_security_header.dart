@@ -130,57 +130,63 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
         const SizedBox(height: 16),
 
         // 2. Horizontal Tab Navigation Bar (1-to-1 Web DOM Alignment)
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: borderColor, width: 2),
+        Stack(
+          alignment: Alignment.bottomLeft,
+          children: [
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                height: 2,
+                color: borderColor,
+              ),
             ),
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildTab(
-                  key: 'password',
-                  label: 'account.tab_password'.tr(ref, fallback: 'Password'),
-                  icon: Icons.key_rounded,
-                  isActive: widget.activeTab == 'password',
-                  isDark: isDark,
-                ),
-                _buildTab(
-                  key: '2fa',
-                  label: 'account.tab_2fa'.tr(ref, fallback: '2FA Security'),
-                  icon: Icons.shield_outlined,
-                  isActive: widget.activeTab == '2fa',
-                  isDark: isDark,
-                  badge: _buildMfaBadge(mfaActive),
-                ),
-                _buildTab(
-                  key: 'devices',
-                  label: 'account.tab_devices'.tr(ref, fallback: 'Active Devices'),
-                  icon: Icons.devices_rounded,
-                  isActive: widget.activeTab == 'devices',
-                  isDark: isDark,
-                  badge: _buildCounterBadge(devicesCount, isDark),
-                ),
-                _buildTab(
-                  key: 'activity',
-                  label: 'account.tab_activity'.tr(ref, fallback: 'Login History'),
-                  icon: Icons.history_rounded,
-                  isActive: widget.activeTab == 'activity',
-                  isDark: isDark,
-                ),
-                _buildTab(
-                  key: 'roles',
-                  label: 'account.tab_roles'.tr(ref, fallback: 'Roles & Privileges'),
-                  icon: Icons.verified_user_rounded,
-                  isActive: widget.activeTab == 'roles',
-                  isDark: isDark,
-                ),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildTab(
+                    key: 'password',
+                    label: 'account.tab_password'.tr(ref, fallback: 'Password'),
+                    icon: Icons.key_rounded,
+                    isActive: widget.activeTab == 'password',
+                    isDark: isDark,
+                  ),
+                  _buildTab(
+                    key: '2fa',
+                    label: 'account.tab_2fa'.tr(ref, fallback: '2FA Security'),
+                    icon: Icons.shield_outlined,
+                    isActive: widget.activeTab == '2fa',
+                    isDark: isDark,
+                    badge: _buildMfaBadge(mfaActive),
+                  ),
+                  _buildTab(
+                    key: 'devices',
+                    label: 'account.tab_devices'.tr(ref, fallback: 'Active Devices'),
+                    icon: Icons.devices_rounded,
+                    isActive: widget.activeTab == 'devices',
+                    isDark: isDark,
+                    badge: _buildCounterBadge(devicesCount, isDark),
+                  ),
+                  _buildTab(
+                    key: 'activity',
+                    label: 'account.tab_activity'.tr(ref, fallback: 'Login History'),
+                    icon: Icons.history_rounded,
+                    isActive: widget.activeTab == 'activity',
+                    isDark: isDark,
+                  ),
+                  _buildTab(
+                    key: 'roles',
+                    label: 'account.tab_roles'.tr(ref, fallback: 'Roles & Privileges'),
+                    icon: Icons.verified_user_rounded,
+                    isActive: widget.activeTab == 'roles',
+                    isDark: isDark,
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
         ),
       ],
     );
@@ -217,7 +223,6 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
             ),
           ),
         ),
-        margin: const EdgeInsets.only(bottom: -2), // aligns active border with tab bar bottom border
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
