@@ -46,10 +46,12 @@ class TenantInterceptor extends Interceptor {
             activeWorkspace.customDomain ?? activeWorkspace.primaryDomain;
       }
 
-      final isAuthPath = options.path.contains('/login') ||
-          options.path.contains('/password/') ||
-          options.path.contains('/verify-otp') ||
-          options.path.contains('/resend-otp');
+      final normalizedPath = options.path.toLowerCase();
+      final isAuthPath = normalizedPath.contains('/auth/login') ||
+          normalizedPath.contains('/auth/password/request-otp') ||
+          normalizedPath.contains('/auth/password/reset-with-otp') ||
+          normalizedPath.contains('/auth/verify-otp') ||
+          normalizedPath.contains('/auth/resend-otp');
 
       if (!isAuthPath &&
           activeWorkspace.authToken != null &&

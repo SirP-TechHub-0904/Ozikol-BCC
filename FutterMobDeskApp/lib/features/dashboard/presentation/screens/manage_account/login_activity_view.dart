@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/services/export_service.dart';
@@ -119,6 +120,19 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
 
       return true;
     }).toList();
+  }
+
+  /// <summary>
+  /// Formats raw timestamp to exact local date and time string.
+  /// </summary>
+  String _formatExactTime(dynamic raw) {
+    if (raw == null) return '—';
+    final str = raw.toString().trim();
+    if (str.isEmpty || str == 'Just now') return str;
+    final dt = DateTime.tryParse(str);
+    if (dt == null) return str;
+    final localDt = dt.toLocal();
+    return DateFormat('MMM d, yyyy • h:mm a').format(localDt);
   }
 
   String _formatUserAgent(String ua) {
@@ -437,7 +451,7 @@ class _LoginActivityViewState extends ConsumerState<LoginActivityView> {
 
                             // Timestamp
                             Text(
-                              timestamp.toString(),
+                              _formatExactTime(timestamp),
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
