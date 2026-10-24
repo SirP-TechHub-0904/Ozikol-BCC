@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Domain.Models.Ai;
 using Ozikol_BCC.Infrastructure.TenantSupport;
+using System.Security.Claims;
+using System.Text.Json;
 
 
 namespace Ozikol_BCC.Persistence.EF.SQL
@@ -193,100 +195,328 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         _tenantProvider = tenantProvider;
         _httpContextAccessor = httpContextAccessor;
     }
+    private static readonly HashSet<Type> ExcludedAuditTypes = new()
+    {
+        typeof(BcpActivityLog),
+        typeof(BcpLoginAuditLog),
+        typeof(WebPageViewLog),
+        typeof(BcpEmailQueue),
+        typeof(BcpSmsQueue),
+        typeof(BcpScheduledJobQueue),
+        typeof(UserDeviceSession),
+        typeof(BcpUserDevice),
+        typeof(BcpUserRecentVisit),
+        typeof(BcpMessageReadReceipt),
+        typeof(BcpAiChatHistory),
+        typeof(BcpUserMfaBackupCode)
+    };
+
+    private static readonly HashSet<string> SensitiveAuditProperties = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "PasswordHash",
+        "SecurityStamp",
+        "ConcurrencyStamp",
+        "ResetOtp",
+        "OtpCode",
+        "Token",
+        "Password",
+        "NormalizedEmail",
+        "NormalizedUserName"
+    };
 
     /// <summary>
-    /// Adds lightweight audit rows for sensitive BCP user-management changes before saving.
-    /// This currently tracks feature roles, KPI scores, and private user notes.
+    /// Automatically tracks database entity changes (Added, Modified, Deleted) across the tenant database.
+    /// Captures property-level string diffs ('old' ➔ 'new') and persists audit rows directly to [dbo].[BcpActivityLogs].
     /// </summary>
+    /// <param name="cancellationToken">Cancellation token for async execution.</param>
+    /// <returns>The total number of state entries written to the database.</returns>
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var auditedEntities = new[] { typeof(BcpUserFeatureRole), typeof(BcpKpiUserScore), typeof(BcpUserNote) };
-
-        var entries = ChangeTracker.Entries()
-            .Where(e => (e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted)
-                        && auditedEntities.Contains(e.Entity.GetType()))
-            .ToList();
-
-        if (entries.Any())
+        try
         {
-            var httpContext = _httpContextAccessor?.HttpContext;
-            var user = httpContext?.User;
-            var userEmail = user?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
-                ?? user?.FindFirst("email")?.Value
-                ?? (user?.Identity?.Name?.Contains('@') == true ? user.Identity.Name : null);
-            string? ipAddress = httpContext?.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(ipAddress))
+            // Inspect entries that were added, modified, or deleted, excluding telemetry and queue items
+            var entries = ChangeTracker.Entries()
+                .Where(e => (e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted)
+                            && !ExcludedAuditTypes.Contains(e.Entity.GetType()))
+                .ToList();
+
+            if (entries.Any())
             {
-                var forwarded = httpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(forwarded))
+                var httpContext = _httpContextAccessor?.HttpContext;
+                var user = httpContext?.User;
+                var userEmail = user?.FindFirst(ClaimTypes.Email)?.Value
+                    ?? user?.FindFirst("email")?.Value
+                    ?? (user?.Identity?.Name?.Contains('@') == true ? user.Identity.Name : null);
+                
+                string? ipAddress = httpContext?.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
+                if (string.IsNullOrWhiteSpace(ipAddress))
                 {
-                    ipAddress = forwarded.Split(',')[0].Trim();
+                    var forwarded = httpContext?.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(forwarded))
+                    {
+                        ipAddress = forwarded.Split(',')[0].Trim();
+                    }
                 }
-            }
-            if (string.IsNullOrWhiteSpace(ipAddress))
-            {
-                ipAddress = httpContext?.Request.Headers["X-Real-IP"].FirstOrDefault();
-            }
-            if (string.IsNullOrWhiteSpace(ipAddress))
-            {
-                ipAddress = httpContext?.Connection?.RemoteIpAddress?.ToString();
-            }
-            string? systemId = httpContext?.Request.Headers["X-System-Id"].FirstOrDefault()
-                ?? httpContext?.Request.Headers["X-Device-Id"].FirstOrDefault();
-            string? userAgent = httpContext?.Request.Headers["User-Agent"].FirstOrDefault();
-            var userId = user?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var userName = user?.Identity?.Name ?? "System";
-
-            var logs = new List<BcpActivityLog>();
-
-            foreach (var entry in entries)
-            {
-                string actionType = entry.State.ToString();
-
-                var log = new BcpActivityLog
+                if (string.IsNullOrWhiteSpace(ipAddress))
                 {
-                    ActionType = actionType,
-                    Description = $"{actionType} a record.",
-                    PerformedByProfileId = userId,
-                    PerformedByFullName = userName,
-                    Module = "User Management",
-                    Date = DateTime.UtcNow,
-                    PerformedByUserEmail = userEmail,
-                    IpAddress = ipAddress,
-                    SystemId = systemId,
-                    UserAgent = userAgent
-                };
-
-                if (entry.Entity is BcpUserFeatureRole role)
-                {
-                    // Feature-role changes affect authorization, sidebar visibility, and feature actions.
-                    log.ActionType = $"{actionType} Role";
-                    log.Description = $"{actionType} Role '{role.ActionRole}' for module '{role.FeatureAreaKey}'.";
-                    log.TargetProfileId = role.ProfileId;
+                    ipAddress = httpContext?.Request.Headers["X-Real-IP"].FirstOrDefault();
                 }
-                else if (entry.Entity is BcpUserNote note)
+                if (string.IsNullOrWhiteSpace(ipAddress))
                 {
-                    log.ActionType = $"{actionType} Note";
-                    log.Description = $"{actionType} HR Note (Private: {note.IsPrivate}).";
-                    log.TargetProfileId = note.ProfileId;
-                }
-                else if (entry.Entity is BcpKpiUserScore score)
-                {
-                    log.ActionType = $"{actionType} KPI";
-                    log.Description = $"{actionType} KPI Score for Period: {score.Period}.";
-                    log.TargetProfileId = score.ProfileId;
+                    ipAddress = httpContext?.Connection?.RemoteIpAddress?.ToString();
                 }
 
-                logs.Add(log);
-            }
+                string? systemId = httpContext?.Request.Headers["X-System-Id"].FirstOrDefault()
+                    ?? httpContext?.Request.Headers["X-Device-Id"].FirstOrDefault();
+                string? userAgent = httpContext?.Request.Headers["User-Agent"].FirstOrDefault();
+                var userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userName = user?.Identity?.Name ?? "System";
 
-            if (logs.Any())
-            {
-                BcpActivityLogs.AddRange(logs);
+                // Check for explicit BcpActivityLogs staged in this transaction
+                var existingStagedLogs = ChangeTracker.Entries<BcpActivityLog>()
+                    .Where(e => e.State == EntityState.Added)
+                    .Select(e => e.Entity)
+                    .ToList();
+
+                var auditLogs = new List<BcpActivityLog>();
+
+                foreach (var entry in entries)
+                {
+                    var entityType = entry.Entity.GetType();
+                    var entityTypeName = entityType.Name;
+                    string actionType = entry.State.ToString();
+
+                    // Infer module categorization
+                    string module = ResolveModuleForEntity(entry.Entity);
+
+                    // Extract target user details if applicable
+                    string? targetProfileId = null;
+                    string? targetFullName = null;
+
+                    if (entry.Entity is Profile p)
+                    {
+                        targetProfileId = p.Id;
+                        targetFullName = p.FullName;
+                    }
+                    else if (entry.Entity is BcpUserFeatureRole role)
+                    {
+                        targetProfileId = role.ProfileId;
+                    }
+                    else if (entry.Entity is BcpUserNote note)
+                    {
+                        targetProfileId = note.ProfileId;
+                    }
+                    else if (entry.Entity is BcpKpiUserScore score)
+                    {
+                        targetProfileId = score.ProfileId;
+                    }
+
+                    // If an explicit business log is already staged targeting this entity, skip redundant generic row
+                    if (existingStagedLogs.Any(l => (!string.IsNullOrEmpty(targetProfileId) && l.TargetProfileId == targetProfileId)))
+                    {
+                        continue;
+                    }
+
+                    string identifier = GetEntityIdentifier(entry.Entity);
+
+                    if (entry.State == EntityState.Modified)
+                    {
+                        var diffList = new List<string>();
+                        var changeRecords = new List<object>();
+
+                        foreach (var prop in entry.Properties)
+                        {
+                            if (prop.Metadata.IsPrimaryKey() || !prop.IsModified)
+                                continue;
+
+                            var propName = prop.Metadata.Name;
+                            if (SensitiveAuditProperties.Contains(propName))
+                            {
+                                if (!Equals(prop.OriginalValue, prop.CurrentValue))
+                                {
+                                    diffList.Add($"{propName}: '[PROTECTED]' ➔ '[UPDATED]'");
+                                    changeRecords.Add(new { property = propName, previous = "[PROTECTED]", @new = "[UPDATED]" });
+                                }
+                                continue;
+                            }
+
+                            var originalVal = prop.OriginalValue?.ToString() ?? "null";
+                            var currentVal = prop.CurrentValue?.ToString() ?? "null";
+
+                            if (!string.Equals(originalVal, currentVal, StringComparison.Ordinal))
+                            {
+                                var origDisplay = originalVal.Length > 40 ? originalVal.Substring(0, 37) + "..." : originalVal;
+                                var currDisplay = currentVal.Length > 40 ? currentVal.Substring(0, 37) + "..." : currentVal;
+
+                                diffList.Add($"{propName}: '{origDisplay}' ➔ '{currDisplay}'");
+                                changeRecords.Add(new { property = propName, previous = origDisplay, @new = currDisplay });
+                            }
+                        }
+
+                        // Skip modified log if no tracked values actually differed
+                        if (diffList.Count == 0)
+                            continue;
+
+                        string diffString = string.Join(", ", diffList);
+                        string description = $"Modified {entityTypeName} '{identifier}': [{diffString}]";
+                        if (description.Length > 1000) description = description.Substring(0, 997) + "...";
+
+                        auditLogs.Add(new BcpActivityLog
+                        {
+                            Id = Guid.CreateVersion7(),
+                            ActionType = $"UPDATE_{entityTypeName.ToUpperInvariant()}",
+                            Description = description,
+                            PerformedByProfileId = userId,
+                            PerformedByFullName = userName,
+                            PerformedByUserEmail = userEmail,
+                            TargetProfileId = targetProfileId,
+                            TargetFullName = targetFullName,
+                            Module = module,
+                            IpAddress = ipAddress,
+                            SystemId = systemId,
+                            UserAgent = userAgent,
+                            Date = DateTime.UtcNow,
+                            MetadataJson = JsonSerializer.Serialize(new
+                            {
+                                entity = entityTypeName,
+                                action = "Modified",
+                                changes = changeRecords
+                            })
+                        });
+                    }
+                    else if (entry.State == EntityState.Added)
+                    {
+                        string description = $"Created {entityTypeName} '{identifier}'";
+                        if (description.Length > 1000) description = description.Substring(0, 997) + "...";
+
+                        auditLogs.Add(new BcpActivityLog
+                        {
+                            Id = Guid.CreateVersion7(),
+                            ActionType = $"CREATE_{entityTypeName.ToUpperInvariant()}",
+                            Description = description,
+                            PerformedByProfileId = userId,
+                            PerformedByFullName = userName,
+                            PerformedByUserEmail = userEmail,
+                            TargetProfileId = targetProfileId,
+                            TargetFullName = targetFullName,
+                            Module = module,
+                            IpAddress = ipAddress,
+                            SystemId = systemId,
+                            UserAgent = userAgent,
+                            Date = DateTime.UtcNow,
+                            MetadataJson = JsonSerializer.Serialize(new
+                            {
+                                entity = entityTypeName,
+                                action = "Added"
+                            })
+                        });
+                    }
+                    else if (entry.State == EntityState.Deleted)
+                    {
+                        string description = $"Deleted {entityTypeName} '{identifier}'";
+                        if (description.Length > 1000) description = description.Substring(0, 997) + "...";
+
+                        auditLogs.Add(new BcpActivityLog
+                        {
+                            Id = Guid.CreateVersion7(),
+                            ActionType = $"DELETE_{entityTypeName.ToUpperInvariant()}",
+                            Description = description,
+                            PerformedByProfileId = userId,
+                            PerformedByFullName = userName,
+                            PerformedByUserEmail = userEmail,
+                            TargetProfileId = targetProfileId,
+                            TargetFullName = targetFullName,
+                            Module = module,
+                            IpAddress = ipAddress,
+                            SystemId = systemId,
+                            UserAgent = userAgent,
+                            Date = DateTime.UtcNow,
+                            MetadataJson = JsonSerializer.Serialize(new
+                            {
+                                entity = entityTypeName,
+                                action = "Deleted"
+                            })
+                        });
+                    }
+                }
+
+                if (auditLogs.Any())
+                {
+                    BcpActivityLogs.AddRange(auditLogs);
+                }
             }
+        }
+        catch
+        {
+            // Safeguard: audit logging failures must never block database transactions
         }
 
         return await base.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Resolves the human-readable workspace module categorization for an audited entity.
+    /// </summary>
+    private static string ResolveModuleForEntity(object entity)
+    {
+        if (entity is Profile || entity is AppRole || entity is BcpUserCategory ||
+            entity is BcpUserFeatureRole || entity is BcpUserNote || entity is BcpKpiUserScore ||
+            entity is BcpKpiIndicator || entity is BcpRegistrationFormField)
+            return "User Management";
+
+        if (entity is MisWebsiteSetting || entity is MisConfigurationSetting || entity is BcpWidget)
+            return "Settings & Configuration";
+
+        if (entity is WebPage || entity is PageSection || entity is TemplateCategory ||
+            entity is TemplateType || entity is Blog || entity is SiteCodeInjectionTag)
+            return "CMS & Content";
+
+        if (entity is BcpGroup || entity is BcpGroupMember || entity is BcpDirectMessage || entity is BcpGroupPost)
+            return "Committees & Groups";
+
+        if (entity is BcpFinanceCategory || entity is BcpFinanceTransaction || entity is BcpWallet)
+            return "Financials";
+
+        if (entity is BcpProduct || entity is BcpProductOrder || entity is BcpNewsletterPlan)
+            return "Commerce";
+
+        if (entity is BcpEvent || entity is BcpEventTicket)
+            return "Events";
+
+        return "System";
+    }
+
+    /// <summary>
+    /// Extracts a concise, human-readable identifier for an entity to enrich audit descriptions.
+    /// </summary>
+    private static string GetEntityIdentifier(object entity)
+    {
+        if (entity is Profile p) return !string.IsNullOrWhiteSpace(p.FullName) ? p.FullName : (p.Email ?? p.Id);
+        if (entity is AppRole r) return r.Name ?? r.Id;
+        if (entity is BcpUserCategory c) return c.Name ?? c.Id.ToString();
+        if (entity is BcpUserFeatureRole fr) return $"{fr.ActionRole} ({fr.FeatureAreaKey})";
+        if (entity is BcpUserNote un) return $"Note ({un.ProfileId})";
+        if (entity is BcpKpiUserScore ks) return $"KPI Score ({ks.Period})";
+        if (entity is BcpKpiIndicator ki) return ki.Title ?? ki.Id.ToString();
+        if (entity is MisWebsiteSetting ws) return ws.BrandName ?? ws.CompanyName ?? "Website Settings";
+        if (entity is MisConfigurationSetting) return "System Configuration";
+        if (entity is WebPage wp) return wp.Title ?? wp.Id.ToString();
+        if (entity is BcpGroup bg) return bg.Title ?? bg.Id.ToString();
+
+        var type = entity.GetType();
+        var nameProp = type.GetProperty("Name") ?? type.GetProperty("Title");
+        if (nameProp != null)
+        {
+            var val = nameProp.GetValue(entity)?.ToString();
+            if (!string.IsNullOrWhiteSpace(val)) return val;
+        }
+        var idProp = type.GetProperty("Id");
+        if (idProp != null)
+        {
+            var val = idProp.GetValue(entity)?.ToString();
+            if (!string.IsNullOrWhiteSpace(val)) return val;
+        }
+        return entity.ToString() ?? type.Name;
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

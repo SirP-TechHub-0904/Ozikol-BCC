@@ -1438,8 +1438,8 @@ namespace Ozikol_BCC.Api.Controllers
                         ? "Successful authentication sign-in"
                         : (l.Status ?? "Authentication challenge"),
                     Module = "Authentication",
-                    IpAddress = l.IpAddress,
-                    UserAgent = l.UserAgent,
+                    IpAddress = l.IpAddress ?? "127.0.0.1",
+                    UserAgent = l.UserAgent ?? "Web Browser",
                     Timestamp = l.Timestamp
                 })
                 .ToListAsync();
@@ -1912,8 +1912,10 @@ namespace Ozikol_BCC.Api.Controllers
                 PerformedByFullName = currentUserEmail,
                 TargetProfileId = user.Id,
                 TargetFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                PerformedByUserEmail = currentUserEmail,
                 Date = DateTime.UtcNow,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1"
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                UserAgent = Request.Headers.UserAgent.ToString()
             };
             _dbContext.BcpActivityLogs.Add(activityLog);
 

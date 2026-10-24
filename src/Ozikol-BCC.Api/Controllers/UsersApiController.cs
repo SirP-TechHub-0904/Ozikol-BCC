@@ -793,17 +793,42 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Updates profile information for a user (MemberId is immutable).
+        /// Captures property-level previous vs new string diffs for the audit log.
         /// </summary>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProfile(string id, [FromBody] UpdateUserProfileRequest request)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+            var user = await _dbContext.Users.Include(u => u.BcpUserCategory).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User not found."));
 
-            user.FirstName = request.FirstName?.Trim();
-            user.LastName = request.LastName?.Trim();
-            user.Title = request.Title?.Trim();
-            if (request.Gender.HasValue) user.Gender = request.Gender.Value;
+            var profileDiffs = new List<string>();
+
+            var trimmedFirst = request.FirstName?.Trim();
+            if (trimmedFirst != null && user.FirstName != trimmedFirst)
+            {
+                profileDiffs.Add($"FirstName: '{user.FirstName}' ➔ '{trimmedFirst}'");
+                user.FirstName = trimmedFirst;
+            }
+
+            var trimmedLast = request.LastName?.Trim();
+            if (trimmedLast != null && user.LastName != trimmedLast)
+            {
+                profileDiffs.Add($"LastName: '{user.LastName}' ➔ '{trimmedLast}'");
+                user.LastName = trimmedLast;
+            }
+
+            var trimmedTitle = request.Title?.Trim();
+            if (trimmedTitle != null && user.Title != trimmedTitle)
+            {
+                profileDiffs.Add($"Title: '{user.Title}' ➔ '{trimmedTitle}'");
+                user.Title = trimmedTitle;
+            }
+
+            if (request.Gender.HasValue && user.Gender != request.Gender.Value)
+            {
+                profileDiffs.Add($"Gender: '{user.Gender}' ➔ '{request.Gender.Value}'");
+                user.Gender = request.Gender.Value;
+            }
 
             if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
             {
@@ -812,23 +837,39 @@ namespace Ozikol_BCC.Api.Controllers
                 if (phoneExists)
                     return BadRequest(ApiResponse<object>.FailureResponse($"A member with phone number '{trimmedPhone}' is already registered."));
 
-                // If phone number changed, reset phone verification status
                 if (user.PhoneNumber != trimmedPhone)
                 {
+                    profileDiffs.Add($"Phone: '{user.PhoneNumber}' ➔ '{trimmedPhone}'");
                     user.PhoneNumber = trimmedPhone;
                     user.PhoneNumberConfirmed = false;
                 }
             }
-            else
+            else if (!string.IsNullOrEmpty(user.PhoneNumber))
             {
+                profileDiffs.Add($"Phone: '{user.PhoneNumber}' ➔ 'null'");
                 user.PhoneNumber = null;
                 user.PhoneNumberConfirmed = false;
             }
 
-            user.Designation = request.Designation?.Trim();
-            user.AvatarUrl = request.AvatarUrl;
-            if (request.BcpUserCategoryId.HasValue) user.BcpUserCategoryId = request.BcpUserCategoryId;
-            // NOTE: MemberId is permanently immutable and cannot be updated once created.
+            var trimmedDesignation = request.Designation?.Trim();
+            if (trimmedDesignation != null && user.Designation != trimmedDesignation)
+            {
+                profileDiffs.Add($"Designation: '{user.Designation}' ➔ '{trimmedDesignation}'");
+                user.Designation = trimmedDesignation;
+            }
+
+            if (request.AvatarUrl != null && user.AvatarUrl != request.AvatarUrl)
+            {
+                profileDiffs.Add($"Avatar: updated");
+                user.AvatarUrl = request.AvatarUrl;
+            }
+
+            if (request.BcpUserCategoryId.HasValue && user.BcpUserCategoryId != request.BcpUserCategoryId.Value)
+            {
+                var newCat = await _dbContext.BcpUserCategories.FirstOrDefaultAsync(c => c.Id == request.BcpUserCategoryId.Value);
+                profileDiffs.Add($"Category: '{user.BcpUserCategory?.Name ?? "Unassigned"}' ➔ '{newCat?.Name ?? "Unassigned"}'");
+                user.BcpUserCategoryId = request.BcpUserCategoryId;
+            }
 
             if (request.Suffix != null)
             {
@@ -848,14 +889,19 @@ namespace Ozikol_BCC.Api.Controllers
                 }
 
                 var currentRoles = await _userManager.GetRolesAsync(user);
-                await _userManager.RemoveFromRolesAsync(user, currentRoles);
-                if (await _roleManager.RoleExistsAsync(request.Role))
+                if (!currentRoles.Contains(request.Role))
                 {
-                    await _userManager.AddToRoleAsync(user, request.Role);
+                    profileDiffs.Add($"Role: '{string.Join(",", currentRoles)}' ➔ '{request.Role}'");
+                    await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                    if (await _roleManager.RoleExistsAsync(request.Role))
+                    {
+                        await _userManager.AddToRoleAsync(user, request.Role);
+                    }
                 }
             }
 
-            await LogActivityAsync("Update Profile", $"Updated profile for '{user.FullName}'", user.Id, user.FullName);
+            var diffSummary = profileDiffs.Count > 0 ? $"Updated profile for '{user.FullName}': [{string.Join(", ", profileDiffs)}]" : $"Updated profile for '{user.FullName}' (no field changes)";
+            await LogActivityAsync("Update Profile", diffSummary, user.Id, user.FullName, profileDiffs.Count > 0 ? JsonSerializer.Serialize(new { changes = profileDiffs }) : null);
             return Ok(ApiResponse<object>.SuccessResponse(null, "User profile updated successfully."));
         }
 
@@ -993,7 +1039,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Updates an existing category tier.
+        /// Updates an existing category tier and records property diffs in audit logs.
         /// </summary>
         [HttpPut("categories/{id:guid}")]
         [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
@@ -1002,14 +1048,50 @@ namespace Ozikol_BCC.Api.Controllers
             var existing = await _dbContext.BcpUserCategories.FirstOrDefaultAsync(c => c.Id == id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Category not found."));
 
-            existing.Name = request.Name?.Trim() ?? existing.Name;
-            existing.Description = request.Description?.Trim();
-            existing.ColorCode = !string.IsNullOrWhiteSpace(request.ColorCode) ? request.ColorCode : existing.ColorCode;
-            existing.Icon = !string.IsNullOrWhiteSpace(request.Icon) ? request.Icon : existing.Icon;
-            existing.SortOrder = request.SortOrder;
-            if (request.IsActive.HasValue) existing.IsActive = request.IsActive.Value;
+            var catDiffs = new List<string>();
+            var trimmedName = request.Name?.Trim();
+            if (trimmedName != null && existing.Name != trimmedName)
+            {
+                catDiffs.Add($"Name: '{existing.Name}' ➔ '{trimmedName}'");
+                existing.Name = trimmedName;
+            }
+
+            var trimmedDesc = request.Description?.Trim();
+            if (existing.Description != trimmedDesc)
+            {
+                catDiffs.Add($"Description: '{existing.Description}' ➔ '{trimmedDesc}'");
+                existing.Description = trimmedDesc;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.ColorCode) && existing.ColorCode != request.ColorCode)
+            {
+                catDiffs.Add($"Color: '{existing.ColorCode}' ➔ '{request.ColorCode}'");
+                existing.ColorCode = request.ColorCode;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Icon) && existing.Icon != request.Icon)
+            {
+                catDiffs.Add($"Icon: '{existing.Icon}' ➔ '{request.Icon}'");
+                existing.Icon = request.Icon;
+            }
+
+            if (existing.SortOrder != request.SortOrder)
+            {
+                catDiffs.Add($"SortOrder: '{existing.SortOrder}' ➔ '{request.SortOrder}'");
+                existing.SortOrder = request.SortOrder;
+            }
+
+            if (request.IsActive.HasValue && existing.IsActive != request.IsActive.Value)
+            {
+                catDiffs.Add($"IsActive: '{existing.IsActive}' ➔ '{request.IsActive.Value}'");
+                existing.IsActive = request.IsActive.Value;
+            }
 
             await _dbContext.SaveChangesAsync();
+
+            var catSummary = catDiffs.Count > 0 ? $"Updated category tier '{existing.Name}': [{string.Join(", ", catDiffs)}]" : $"Updated category tier '{existing.Name}' (no changes)";
+            await LogActivityAsync("Update Category", catSummary, null, null, catDiffs.Count > 0 ? JsonSerializer.Serialize(new { changes = catDiffs }) : null);
+
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Category updated successfully."));
         }
 
@@ -2196,25 +2278,45 @@ namespace Ozikol_BCC.Api.Controllers
             }
         }
 
-        private async Task LogActivityAsync(string actionType, string description, string? targetProfileId, string? targetFullName)
+        /// <summary>
+        /// Logs a business activity or administrative database change into [dbo].[BcpActivityLogs].
+        /// </summary>
+        /// <param name="actionType">The high-level action category (e.g., 'Update Profile', 'Create User').</param>
+        /// <param name="description">Human-readable description including property diffs ('old' ➔ 'new').</param>
+        /// <param name="targetProfileId">The user ID affected by this change, if applicable.</param>
+        /// <param name="targetFullName">The full name of the user affected by this change.</param>
+        /// <param name="metadataJson">Optional JSON metadata capturing property diffs or structured state.</param>
+        private async Task LogActivityAsync(string actionType, string description, string? targetProfileId, string? targetFullName, string? metadataJson = null)
         {
             try
             {
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var currentUserName = User.Identity?.Name ?? "Administrator";
+                var currentUserEmail = User.FindFirst(ClaimTypes.Email)?.Value
+                    ?? User.FindFirst("email")?.Value
+                    ?? (User.Identity?.Name?.Contains('@') == true ? User.Identity.Name : null);
                 var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+                var systemId = Request.Headers["X-System-Id"].FirstOrDefault()
+                    ?? Request.Headers["X-Device-Id"].FirstOrDefault();
+                var userAgent = Request.Headers["User-Agent"].FirstOrDefault();
+
+                var desc = description.Length > 1000 ? description.Substring(0, 997) + "..." : description;
 
                 _dbContext.BcpActivityLogs.Add(new BcpActivityLog
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     ActionType = actionType,
-                    Description = description,
+                    Description = desc,
                     PerformedByProfileId = currentUserId,
                     PerformedByFullName = currentUserName,
+                    PerformedByUserEmail = currentUserEmail,
                     TargetProfileId = targetProfileId,
                     TargetFullName = targetFullName,
                     Module = "User Management",
                     IpAddress = ip,
+                    SystemId = systemId,
+                    UserAgent = userAgent,
+                    MetadataJson = metadataJson,
                     Date = DateTime.UtcNow
                 });
                 await _dbContext.SaveChangesAsync();
