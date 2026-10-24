@@ -408,12 +408,16 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                   child: const Icon(Icons.assignment_turned_in_rounded, color: AppColors.primary, size: 20),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Evaluate Member: $memberName',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                Expanded(
+                  child: Text(
+                    'Evaluate Member: $memberName',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                    ),
                   ),
                 ),
               ],
@@ -541,51 +545,59 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
       );
     }
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1100;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth;
+        // Require at least 980px available content width to render side-by-side columns without squeezing
+        final isDesktop = availableWidth >= 980;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ===================================================================
-          // PAGE HEADER (1-to-1 with Angular AppPageHeader)
-          // ===================================================================
-          _buildPageHeader(isDark),
-          const SizedBox(height: 18),
+        return SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: availableWidth < 600 ? 16 : 24,
+            vertical: 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ===================================================================
+              // PAGE HEADER (1-to-1 with Angular AppPageHeader)
+              // ===================================================================
+              _buildPageHeader(isDark),
+              const SizedBox(height: 18),
 
-          // ===================================================================
-          // INLINE CREATE PERIOD BANNER (WHEN OPENED)
-          // ===================================================================
-          if (_showNewPeriodBanner) ...[
-            _buildCreatePeriodBanner(isDark),
-            const SizedBox(height: 18),
-          ],
-
-          // ===================================================================
-          // MAIN 2-COLUMN KPI WORKSPACE GRID (METRICS + LEADERBOARD)
-          // ===================================================================
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildMetricsPanel(isDark),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: _buildLeaderboardPanel(isDark),
-                ),
+              // ===================================================================
+              // INLINE CREATE PERIOD BANNER (WHEN OPENED)
+              // ===================================================================
+              if (_showNewPeriodBanner) ...[
+                _buildCreatePeriodBanner(isDark),
+                const SizedBox(height: 18),
               ],
-            )
-          else ...[
-            _buildMetricsPanel(isDark),
-            const SizedBox(height: 18),
-            _buildLeaderboardPanel(isDark),
-          ],
-        ],
-      ),
+
+              // ===================================================================
+              // MAIN 2-COLUMN KPI WORKSPACE GRID (METRICS + LEADERBOARD)
+              // ===================================================================
+              if (isDesktop)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _buildMetricsPanel(isDark),
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: _buildLeaderboardPanel(isDark),
+                    ),
+                  ],
+                )
+              else ...[
+                _buildMetricsPanel(isDark),
+                const SizedBox(height: 18),
+                _buildLeaderboardPanel(isDark),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -599,20 +611,6 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
       isDark: isDark,
       onBack: widget.onNavigateBack,
       actions: [
-        if (widget.onNavigateBack != null) ...[
-          OutlinedButton.icon(
-            onPressed: widget.onNavigateBack,
-            icon: const Icon(Icons.arrow_back_rounded, size: 16),
-            label: const Text('Back'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-              side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
         OutlinedButton.icon(
           onPressed: () => widget.onNavigateToTab?.call(1),
           icon: const Icon(Icons.groups_rounded, size: 16),
@@ -642,41 +640,42 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
   }
 
   Widget _buildCreatePeriodBanner(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
-        boxShadow: const [
-          BoxShadow(color: Color(0x0F0050E5), blurRadius: 10, offset: Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.calendar_month_rounded, color: Color(0xFF0050E5), size: 20),
-                  SizedBox(width: 8),
-                  Text('Create New Evaluation Period / Cycle', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded, size: 18),
-                onPressed: () => setState(() => _showNewPeriodBanner = false),
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 680;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFBFDBFE)),
+            boxShadow: const [
+              BoxShadow(color: Color(0x0F0050E5), blurRadius: 10, offset: Offset(0, 4)),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                flex: 4,
-                child: TextField(
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.calendar_month_rounded, color: Color(0xFF0050E5), size: 20),
+                      SizedBox(width: 8),
+                      Text('Create New Evaluation Period / Cycle', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                    ],
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    onPressed: () => setState(() => _showNewPeriodBanner = false),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (isNarrow) ...[
+                TextField(
                   controller: _newPeriodTitleCtrl,
                   decoration: InputDecoration(
                     labelText: 'Period Title *',
@@ -686,11 +685,8 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 6,
-                child: TextField(
+                const SizedBox(height: 10),
+                TextField(
                   controller: _newPeriodDescCtrl,
                   decoration: InputDecoration(
                     labelText: 'Description (Optional)',
@@ -700,25 +696,74 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton.icon(
-                onPressed: _isCreatingPeriod ? null : _createPeriod,
-                icon: _isCreatingPeriod
-                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.save_rounded, size: 16),
-                label: Text(_isCreatingPeriod ? 'Saving...' : 'Save Period'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _isCreatingPeriod ? null : _createPeriod,
+                    icon: _isCreatingPeriod
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.save_rounded, size: 16),
+                    label: Text(_isCreatingPeriod ? 'Saving...' : 'Save Period'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
                 ),
-              ),
+              ] else ...[
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: TextField(
+                        controller: _newPeriodTitleCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Period Title *',
+                          hintText: 'e.g. 2026 Q4, Annual 2026',
+                          filled: true,
+                          fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 6,
+                      child: TextField(
+                        controller: _newPeriodDescCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Description (Optional)',
+                          hintText: 'e.g. Fourth quarter review cycle',
+                          filled: true,
+                          fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton.icon(
+                      onPressed: _isCreatingPeriod ? null : _createPeriod,
+                      icon: _isCreatingPeriod
+                          ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.save_rounded, size: 16),
+                      label: Text(_isCreatingPeriod ? 'Saving...' : 'Save Period'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -738,26 +783,30 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Performance Evaluation Metrics',
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Performance Evaluation Metrics',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Rubrics and numerical indicators used during member evaluations',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Rubrics and numerical indicators used during member evaluations',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 12),
               FilledButton.icon(
                 onPressed: () => _openCreateOrEditMetricDialog(),
                 icon: const Icon(Icons.add_rounded, size: 16),
@@ -833,12 +882,16 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  title,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                                Flexible(
+                                  child: Text(
+                                    title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -874,12 +927,18 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                         icon: const Icon(Icons.edit_rounded, size: 16),
                         color: const Color(0xFF0050E5),
                         tooltip: 'Edit Metric',
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                        splashRadius: 16,
                         onPressed: () => _openCreateOrEditMetricDialog(existingMetric: m),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete_outline_rounded, size: 16),
                         color: const Color(0xFFEF4444),
                         tooltip: 'Delete Metric',
+                        padding: const EdgeInsets.all(6),
+                        constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                        splashRadius: 16,
                         onPressed: () => _confirmDeleteMetric(m),
                       ),
                     ],
@@ -908,51 +967,78 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Member Performance Leaderboard',
-                    style: TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Member Performance Leaderboard',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Rankings derived from genuine evaluation scorecards',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Rankings derived from genuine evaluation scorecards',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  DropdownButton<String>(
-                    value: _selectedPeriod,
-                    underline: const SizedBox(),
-                    items: _periods.map((p) {
-                      final title = p['title'] as String? ?? 'Period';
-                      return DropdownMenuItem(value: title, child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)));
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() => _selectedPeriod = val);
-                        _loadLeaderboard();
-                      }
-                    },
+                  Container(
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedPeriod,
+                        isDense: true,
+                        items: _periods.map((p) {
+                          final title = p['title'] as String? ?? 'Period';
+                          return DropdownMenuItem(
+                            value: title,
+                            child: Text(
+                              title,
+                              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _selectedPeriod = val);
+                            _loadLeaderboard();
+                          }
+                        },
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   OutlinedButton.icon(
                     onPressed: () => setState(() => _showNewPeriodBanner = !_showNewPeriodBanner),
                     icon: const Icon(Icons.add_circle_outline_rounded, size: 14),
                     label: const Text('Add Period'),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                       minimumSize: Size.zero,
                       textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                   ),
                 ],
@@ -1019,8 +1105,8 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                            Text('$cat • $email', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                            Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            Text('$cat • $email', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)), maxLines: 1, overflow: TextOverflow.ellipsis),
                           ],
                         ),
                       ),
