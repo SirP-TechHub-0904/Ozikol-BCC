@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/localization/language_provider.dart';
 import '../../../../core/models/workspace.dart';
 import '../../../../core/services/realtime_sync_service.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -43,7 +44,7 @@ class WorkspaceSwitchConfirmDialog extends ConsumerStatefulWidget {
 
 class _WorkspaceSwitchConfirmDialogState extends ConsumerState<WorkspaceSwitchConfirmDialog> {
   bool _isChecking = false;
-  String _statusMessage = 'Switching workspace, checking for last login user...';
+  String? _statusMessage;
   bool? _switchSuccess;
 
   /// <summary>
@@ -52,7 +53,7 @@ class _WorkspaceSwitchConfirmDialogState extends ConsumerState<WorkspaceSwitchCo
   Future<void> _handleConfirmSwitch() async {
     setState(() {
       _isChecking = true;
-      _statusMessage = 'Switching workspace, checking for last login user...';
+      _statusMessage = 'ws.checking_last_login'.tr(ref, fallback: 'Switching workspace, checking for last login user...');
     });
 
     final notifier = ref.read(workspaceStateProvider.notifier);
@@ -71,7 +72,7 @@ class _WorkspaceSwitchConfirmDialogState extends ConsumerState<WorkspaceSwitchCo
       // 1. Active Login Found -> Transition to Dashboard
       setState(() {
         _switchSuccess = true;
-        _statusMessage = 'Active login verified! Loading dashboard...';
+        _statusMessage = 'ws.login_verified'.tr(ref, fallback: 'Active login verified! Loading dashboard...');
       });
 
       await Future.delayed(const Duration(milliseconds: 400));
@@ -92,7 +93,7 @@ class _WorkspaceSwitchConfirmDialogState extends ConsumerState<WorkspaceSwitchCo
       // 2. No Active Login Found -> Transition to Login
       setState(() {
         _switchSuccess = false;
-        _statusMessage = 'No active login found. Redirecting to login...';
+        _statusMessage = 'ws.no_active_login'.tr(ref, fallback: 'No active login found. Redirecting to login...');
       });
 
       await Future.delayed(const Duration(milliseconds: 400));
@@ -180,7 +181,7 @@ class _WorkspaceSwitchConfirmDialogState extends ConsumerState<WorkspaceSwitchCo
 
         // Title
         Text(
-          'Switch Workspace',
+          'ws.switch_title'.tr(ref, fallback: 'Switch Workspace'),
           style: TextStyle(
             fontSize: 19,
             fontWeight: FontWeight.w800,
@@ -200,7 +201,7 @@ class _WorkspaceSwitchConfirmDialogState extends ConsumerState<WorkspaceSwitchCo
               color: isDark ? AppColors.gray300 : AppColors.gray600,
             ),
             children: [
-              const TextSpan(text: 'Do you want to switch to '),
+              TextSpan(text: '${'ws.switch_prompt'.tr(ref, fallback: 'Do you want to switch to')} '),
               TextSpan(
                 text: ws.displayName,
                 style: TextStyle(
@@ -262,9 +263,9 @@ class _WorkspaceSwitchConfirmDialogState extends ConsumerState<WorkspaceSwitchCo
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Text(
-                  'Cancel',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                child: Text(
+                  'btn.cancel'.tr(ref, fallback: 'Cancel'),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
                 ),
               ),
             ),
@@ -282,9 +283,9 @@ class _WorkspaceSwitchConfirmDialogState extends ConsumerState<WorkspaceSwitchCo
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Text(
-                  'Yes, Switch',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                child: Text(
+                  'ws.confirm_switch'.tr(ref, fallback: 'Yes, Switch'),
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                 ),
               ),
             ),
@@ -341,7 +342,7 @@ class _WorkspaceSwitchConfirmDialogState extends ConsumerState<WorkspaceSwitchCo
 
         // Primary status message as required
         Text(
-          _statusMessage,
+          _statusMessage ?? 'ws.checking_last_login'.tr(ref, fallback: 'Switching workspace, checking for last login user...'),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14.5,
@@ -353,7 +354,7 @@ class _WorkspaceSwitchConfirmDialogState extends ConsumerState<WorkspaceSwitchCo
 
         // Subtitle
         Text(
-          'Configuring tenant partitions and reloading client environment...',
+          'ws.sync_environment'.tr(ref, fallback: 'Configuring tenant partitions and reloading client environment...'),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12,

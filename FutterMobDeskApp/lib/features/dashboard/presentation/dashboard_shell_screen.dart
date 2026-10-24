@@ -713,7 +713,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                   size: 20,
                   color: isDark ? AppColors.gray300 : const Color(0xFF475569),
                 ),
-                tooltip: _isSidebarCollapsed ? 'Maximize sidebar' : 'Minimize sidebar',
+                tooltip: _isSidebarCollapsed
+                    ? 'shell.maximize_sidebar'.tr(ref, fallback: 'Maximize sidebar')
+                    : 'shell.minimize_sidebar'.tr(ref, fallback: 'Minimize sidebar'),
                 splashRadius: 18,
                 onPressed: _toggleSidebarCollapse,
               ),
@@ -722,7 +724,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               // 1b. Adaptive Back Navigation Button (visible whenever navigation history has depth > 1 or not on root dashboard)
               if (_selectedNavIndex != 0 || _navHistory.length > 1) ...[
                 Tooltip(
-                  message: 'Back to previous view',
+                  message: 'shell.back_previous'.tr(ref, fallback: 'Back to previous view'),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -743,7 +745,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                             const Icon(Icons.arrow_back_rounded, size: 16, color: AppColors.primary),
                             const SizedBox(width: 4),
                             Text(
-                              'Back',
+                              'shell.back'.tr(ref, fallback: 'Back'),
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
@@ -786,7 +788,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                       Expanded(
                         child: Text(
                           isCompact
-                              ? 'Search...'
+                              ? 'shell.search_short'.tr(ref, fallback: 'Search...')
                               : 'shell.search_placeholder'.tr(ref, fallback: 'Search workspace...'),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -992,7 +994,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         size: 20,
         color: isDark ? AppColors.gray300 : const Color(0xFF475569),
       ),
-      tooltip: 'More actions',
+      tooltip: 'shell.more_actions'.tr(ref, fallback: 'More actions'),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: isDark ? AppColors.surfaceDark : Colors.white,
       onSelected: (val) {
@@ -1079,7 +1081,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                   color: isDark ? AppColors.gray300 : const Color(0xFF475569),
                 ),
               ),
-        tooltip: _isRefreshing ? 'Refreshing...' : 'Refresh Workspace & Telemetry',
+        tooltip: _isRefreshing
+            ? 'shell.refreshing'.tr(ref, fallback: 'Refreshing...')
+            : 'shell.refresh_title'.tr(ref, fallback: 'Refresh Workspace & Telemetry'),
         onPressed: _isRefreshing ? null : _triggerRefresh,
       ),
     );
@@ -1130,7 +1134,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Refreshing Workspace...',
+                      'shell.refreshing_workspace'.tr(ref, fallback: 'Refreshing Workspace...'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1140,7 +1144,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Synchronizing branding, telemetry, and metrics',
+                      'shell.sync_telemetry'.tr(ref, fallback: 'Synchronizing branding, telemetry, and metrics'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -1281,12 +1285,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                               ),
                             ),
                             const SizedBox(width: 4),
-                            const Flexible(
+                            Flexible(
                               child: Text(
-                                'Active Workspace',
+                                'shell.active_workspace'.tr(ref, fallback: 'Active Workspace'),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.primary,
@@ -1344,12 +1348,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Flexible(
+                          Flexible(
                             child: Text(
-                              'Active Workspace',
+                              'shell.active_workspace'.tr(ref, fallback: 'Active Workspace'),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.primary,
@@ -1571,7 +1575,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   /// 2. Identity & Access Control (4 sub-items)
   /// 3. Manage My Account (5 sub-items)
   List<AppDrawerSection> _buildAdminConsoleSections(bool isDark, Workspace? activeWs) {
-    final categoryAlias = activeWs?.effectiveCategoryAlias ?? 'Category';
+    final rawAlias = activeWs?.categoryAlias?.trim();
+    final categoryAlias = (rawAlias != null && rawAlias.isNotEmpty && rawAlias != 'User Categories')
+        ? rawAlias
+        : 'nav.user_categories'.tr(ref, fallback: 'User Categories');
 
     return [
       AppDrawerSection(
@@ -1612,7 +1619,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.palette_outlined,
-                title: 'nav.registration_form_builder'.tr(ref, fallback: 'Auth Page Setup'),
+                title: 'nav.auth_page_setup'.tr(ref, fallback: 'Auth Page Setup'),
                 isSelected: _selectedNavIndex == 4,
                 onTap: () {
                   _navigateToTab(4, clearHistory: true);
@@ -1630,7 +1637,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
               AppDrawerSubItem(
                 icon: Icons.settings_outlined,
-                title: 'nav.brand_settings'.tr(ref, fallback: 'User Settings'),
+                title: 'nav.user_settings'.tr(ref, fallback: 'User Settings'),
                 isSelected: _selectedNavIndex == 6,
                 onTap: () {
                   _navigateToTab(6, clearHistory: true);
@@ -1648,7 +1655,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             subItems: [
               AppDrawerSubItem(
                 icon: Icons.shield_outlined,
-                title: 'nav.identity_control'.tr(ref, fallback: 'Identity Dashboard'),
+                title: 'nav.identity_dashboard'.tr(ref, fallback: 'Identity Dashboard'),
                 isSelected: _selectedNavIndex == 7,
                 onTap: () {
                   _navigateToTab(7, clearHistory: true);
@@ -2237,9 +2244,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Switch Tenant Workspace',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              Text(
+                'ws.switch_title'.tr(ref, fallback: 'Switch Tenant Workspace'),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               ...state.enrolledWorkspaces.map((ws) {
@@ -2253,7 +2260,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     size: 36,
                   ),
                   title: Text(ws.displayName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Organization Workspace', style: TextStyle(fontSize: 12)),
+                  subtitle: Text(
+                    'profile.active_workspace'.tr(ref, fallback: 'Organization Workspace'),
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   trailing: isCurrent
                       ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
                       : null,
@@ -2288,8 +2298,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
     return Tooltip(
       message: isOnline
-          ? 'Network Online • Real-Time Connected'
-          : 'Network Offline • Showing Cached Workspace Data',
+          ? 'shell.net_online_tooltip'.tr(ref, fallback: 'Network Online • Real-Time Connected')
+          : 'shell.net_offline_tooltip'.tr(ref, fallback: 'Network Offline • Showing Cached Workspace Data'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
@@ -2349,7 +2359,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         children: [
           // Administration Console Tab
           Tooltip(
-            message: 'Administration Console (User Management, Roles & Settings)',
+            message: 'shell.admin_console_tooltip'.tr(ref, fallback: 'Administration Console (User Management, Roles & Settings)'),
             child: InkWell(
               onTap: () {
                 if (!isAdministration) {
@@ -2400,7 +2410,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           const SizedBox(width: 2),
           // Personal Workspace Hub Tab
           Tooltip(
-            message: 'Personal Workspace Hub (My Profile, Security & Personal Credentials)',
+            message: 'shell.personal_hub_tooltip'.tr(ref, fallback: 'Personal Workspace Hub (My Profile, Security & Personal Credentials)'),
             child: InkWell(
               onTap: () {
                 if (isAdministration) {
@@ -2821,7 +2831,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              isOnline ? 'Online' : 'Offline Mode',
+                              isOnline ? 'badge.online'.tr(ref, fallback: 'Online') : 'badge.offline'.tr(ref, fallback: 'Offline Mode'),
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -2939,22 +2949,24 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               _buildProfileDetailRow(
                 isDark,
                 icon: Icons.business_rounded,
-                label: 'Active Workspace',
+                label: 'shell.active_workspace'.tr(ref, fallback: 'Active Workspace'),
                 value: activeWs?.displayName ?? 'Business Command Center',
               ),
               const SizedBox(height: 10),
               _buildProfileDetailRow(
                 isDark,
                 icon: Icons.language_rounded,
-                label: 'Primary Domain',
+                label: 'nav.custom_domain'.tr(ref, fallback: 'Primary Domain'),
                 value: activeWs?.primaryDomain ?? 'mb-cocacola.localhost:4200',
               ),
               const SizedBox(height: 10),
               _buildProfileDetailRow(
                 isDark,
                 icon: Icons.wifi_rounded,
-                label: 'Network Status',
-                value: isOnline ? 'Online • Real-Time Connected' : 'Offline • Local Cache Active',
+                label: 'shell.network_status'.tr(ref, fallback: 'Network Status'),
+                value: isOnline
+                    ? 'shell.net_online_tooltip'.tr(ref, fallback: 'Online • Real-Time Connected')
+                    : 'shell.net_offline_tooltip'.tr(ref, fallback: 'Offline • Local Cache Active'),
                 valueColor: isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
               ),
               const SizedBox(height: 14),
@@ -2991,7 +3003,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                         _showMobileWorkspaceSheet(context);
                       },
                       icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                      label: const Text('Switch Tenant'),
+                      label: Text('ws.switch_title'.tr(ref, fallback: 'Switch Tenant')),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: borderColor),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -3007,7 +3019,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                         _handleSignOut(activeWs);
                       },
                       icon: const Icon(Icons.logout_rounded, size: 16, color: Colors.white),
-                      label: const Text('Sign Out', style: TextStyle(color: Colors.white)),
+                      label: Text('shell.sign_out'.tr(ref, fallback: 'Sign Out'), style: const TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFEF4444),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

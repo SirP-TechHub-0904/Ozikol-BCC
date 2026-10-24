@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/services/export_service.dart';
 import '../../../../../core/theme/app_colors.dart';
@@ -451,14 +452,18 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
 
     return PageHeader(
       icon: Icons.groups_rounded,
-      eyebrow: 'User Management & Directory',
-      title: 'Member Directory & Register',
-      description:
-          'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
-      back: canGoBack ? PageHeaderBack.previous(goBack, tooltip: 'Back') : PageHeaderBack.none,
+      eyebrow: 'dashboard.eyebrow'.tr(ref, fallback: 'User Management & Directory'),
+      title: 'directory.title'.tr(ref, fallback: 'Member Directory & Register'),
+      description: 'directory.description'.tr(
+        ref,
+        fallback: 'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
+      ),
+      back: canGoBack
+          ? PageHeaderBack.previous(goBack, tooltip: 'shell.back'.tr(ref, fallback: 'Back'))
+          : PageHeaderBack.none,
       isLoading: _isLoading,
       primaryAction: PageHeaderAction(
-        label: 'Add Member',
+        label: 'dashboard.add_member'.tr(ref, fallback: 'Add Member'),
         icon: Icons.person_add_rounded,
         style: PageHeaderActionStyle.primary,
         onPressed: _navigateToCreateMember,
@@ -501,7 +506,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFilterLabel('SEARCH MEMBERS'),
+                        _buildFilterLabel('directory.search_members'.tr(ref, fallback: 'SEARCH MEMBERS')),
                         const SizedBox(height: 6),
                         SizedBox(
                           height: 40,
@@ -513,7 +518,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                             },
                             style: const TextStyle(fontSize: 13),
                             decoration: InputDecoration(
-                              hintText: 'Search by name, email, ID, or category...',
+                              hintText: 'directory.search_placeholder'.tr(ref, fallback: 'Search by name, email, ID, or category...'),
                               hintStyle: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray500),
                               prefixIcon: const Icon(Icons.search_rounded, size: 18),
                               suffixIcon: _searchController.text.isNotEmpty
@@ -553,14 +558,14 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFilterLabel('CATEGORY TIER'),
+                        _buildFilterLabel('directory.category_tier'.tr(ref, fallback: 'CATEGORY TIER')),
                         const SizedBox(height: 6),
                         _buildDropdownField<String>(
                           value: _categories.any((c) => (c['id']?.toString() ?? '') == _selectedCategoryFilter)
                               ? _selectedCategoryFilter
                               : '',
                           items: [
-                            const DropdownMenuItem(value: '', child: Text('All Categories')),
+                            DropdownMenuItem(value: '', child: Text('directory.all_categories'.tr(ref, fallback: 'All Categories'))),
                             ..._categories.map((c) => DropdownMenuItem(
                                   value: c['id']?.toString() ?? '',
                                   child: Text(c['name']?.toString() ?? 'Category'),
@@ -583,17 +588,17 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFilterLabel('ASSIGNED ROLE'),
+                        _buildFilterLabel('directory.assigned_role'.tr(ref, fallback: 'ASSIGNED ROLE')),
                         const SizedBox(height: 6),
                         _buildDropdownField<String>(
                           value: _selectedRoleFilter,
-                          items: const [
-                            DropdownMenuItem(value: 'All', child: Text('All Roles')),
-                            DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                            DropdownMenuItem(value: 'Global Editor', child: Text('Global Editor')),
-                            DropdownMenuItem(value: 'Feature Editor', child: Text('Feature Editor')),
-                            DropdownMenuItem(value: 'Read Only', child: Text('Read Only')),
-                            DropdownMenuItem(value: 'Member', child: Text('Member')),
+                          items: [
+                            DropdownMenuItem(value: 'All', child: Text('directory.all_roles'.tr(ref, fallback: 'All Roles'))),
+                            DropdownMenuItem(value: 'Admin', child: Text('rbac.role_admin'.tr(ref, fallback: 'Admin'))),
+                            DropdownMenuItem(value: 'Global Editor', child: Text('rbac.role_global_editor'.tr(ref, fallback: 'Global Editor'))),
+                            DropdownMenuItem(value: 'Feature Editor', child: Text('rbac.role_feature_editor'.tr(ref, fallback: 'Feature Editor'))),
+                            DropdownMenuItem(value: 'Read Only', child: Text('rbac.role_read_only'.tr(ref, fallback: 'Read Only'))),
+                            DropdownMenuItem(value: 'Member', child: Text('rbac.role_member'.tr(ref, fallback: 'Member'))),
                           ],
                           onChanged: (val) {
                             setState(() => _selectedRoleFilter = val ?? 'All');
@@ -612,15 +617,15 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFilterLabel('ACCOUNT STATUS'),
+                        _buildFilterLabel('directory.account_status'.tr(ref, fallback: 'ACCOUNT STATUS')),
                         const SizedBox(height: 6),
                         _buildDropdownField<String>(
                           value: _selectedStatusFilter,
-                          items: const [
-                            DropdownMenuItem(value: 'All', child: Text('All Statuses')),
-                            DropdownMenuItem(value: 'Active', child: Text('Active')),
-                            DropdownMenuItem(value: 'Suspended', child: Text('Suspended')),
-                            DropdownMenuItem(value: 'Suspicious', child: Text('Suspicious / Flagged')),
+                          items: [
+                            DropdownMenuItem(value: 'All', child: Text('directory.all_statuses'.tr(ref, fallback: 'All Statuses'))),
+                            DropdownMenuItem(value: 'Active', child: Text('status.active'.tr(ref, fallback: 'Active'))),
+                            DropdownMenuItem(value: 'Suspended', child: Text('status.suspended'.tr(ref, fallback: 'Suspended'))),
+                            DropdownMenuItem(value: 'Suspicious', child: Text('status.suspicious'.tr(ref, fallback: 'Suspicious / Flagged'))),
                           ],
                           onChanged: (val) {
                             setState(() => _selectedStatusFilter = val ?? 'All');
@@ -639,7 +644,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     child: OutlinedButton.icon(
                       onPressed: _resetFilters,
                       icon: const Icon(Icons.restart_alt_rounded, size: 16),
-                      label: const Text('Reset'),
+                      label: Text('btn.reset'.tr(ref, fallback: 'Reset')),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -670,17 +675,17 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                 text: TextSpan(
                   style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : AppColors.gray600),
                   children: [
-                    const TextSpan(text: 'Showing '),
+                    TextSpan(text: '${'directory.showing'.tr(ref, fallback: 'Showing')} '),
                     TextSpan(
                       text: '${_paginatedUsers.length}',
                       style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
                     ),
-                    const TextSpan(text: ' of '),
+                    TextSpan(text: ' ${'directory.of'.tr(ref, fallback: 'of')} '),
                     TextSpan(
                       text: '${_filteredUsers.length}',
                       style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
                     ),
-                    const TextSpan(text: ' filtered members (Total: '),
+                    TextSpan(text: ' ${'directory.filtered_members'.tr(ref, fallback: 'filtered members (Total:')} '),
                     TextSpan(
                       text: '${_allUsers.length}',
                       style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
@@ -693,7 +698,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
               // Export Action (PDF Only)
               _buildExportButton(
                 icon: Icons.picture_as_pdf_outlined,
-                label: 'Export PDF',
+                label: 'directory.export_pdf'.tr(ref, fallback: 'Export PDF'),
                 onTap: _exportPdf,
                 isDark: isDark,
               ),
@@ -939,15 +944,15 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
             isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
           ),
           columns: [
-            _buildSortableColumn('fullName', 'MEMBER NAME'),
-            _buildSortableColumn('email', 'EMAIL ADDRESS'),
-            if (layout.showMemberId) _buildSortableColumn('memberId', 'MEMBER ID'),
-            _buildSortableColumn('categoryName', 'CATEGORY'),
-            if (layout.showRole) _buildSortableColumn('roles', 'ROLE'),
-            _buildSortableColumn('userStatus', 'STATUS'),
-            const DataColumn(
+            _buildSortableColumn('fullName', 'directory.col_name'.tr(ref, fallback: 'MEMBER NAME')),
+            _buildSortableColumn('email', 'directory.col_email'.tr(ref, fallback: 'EMAIL ADDRESS')),
+            if (layout.showMemberId) _buildSortableColumn('memberId', 'directory.col_member_id'.tr(ref, fallback: 'MEMBER ID')),
+            _buildSortableColumn('categoryName', 'directory.col_category'.tr(ref, fallback: 'CATEGORY')),
+            if (layout.showRole) _buildSortableColumn('roles', 'directory.col_role'.tr(ref, fallback: 'ROLE')),
+            _buildSortableColumn('userStatus', 'directory.col_status'.tr(ref, fallback: 'STATUS')),
+            DataColumn(
               label: Text(
-                'ACTIONS',
+                'directory.col_actions'.tr(ref, fallback: 'ACTIONS'),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -1209,7 +1214,10 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text('Unassigned', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                  child: Text(
+                    'directory.unassigned'.tr(ref, fallback: 'Unassigned'),
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                  ),
                 ),
         ),
 
@@ -1248,13 +1256,15 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
 
               if (isSuspended) {
                 badgeColor = const Color(0xFFEF4444);
-                displayStatus = 'Suspended';
+                displayStatus = 'status.suspended'.tr(ref, fallback: 'Suspended');
               } else if (isSuspiciousAccount) {
                 badgeColor = const Color(0xFFE11D48);
-                displayStatus = 'Flagged';
+                displayStatus = 'status.flagged'.tr(ref, fallback: 'Flagged');
               } else {
                 badgeColor = const Color(0xFF10B981);
-                displayStatus = userStatus;
+                displayStatus = userStatus.toLowerCase() == 'active'
+                    ? 'status.active'.tr(ref, fallback: 'Active')
+                    : userStatus;
               }
 
               return Container(
@@ -1299,7 +1309,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                 // Compact icon-only actions with tooltips for narrow windows
                 _buildIconAction(
                   icon: Icons.visibility_outlined,
-                  tooltip: 'Details',
+                  tooltip: 'btn.details'.tr(ref, fallback: 'Details'),
                   onTap: () => _navigateToMemberDetails(u),
                   isDark: isDark,
                   isPrimary: false,
@@ -1307,7 +1317,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                 const SizedBox(width: 6),
                 _buildIconAction(
                   icon: Icons.edit_outlined,
-                  tooltip: 'Edit',
+                  tooltip: 'btn.edit'.tr(ref, fallback: 'Edit'),
                   onTap: () => _navigateToMemberEdit(u),
                   isDark: isDark,
                   isPrimary: true,
@@ -1317,7 +1327,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
               OutlinedButton.icon(
                 onPressed: () => _navigateToMemberDetails(u),
                 icon: const Icon(Icons.visibility_outlined, size: 14),
-                label: const Text('Details'),
+                label: Text('btn.details'.tr(ref, fallback: 'Details')),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -1332,7 +1342,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
               ElevatedButton.icon(
                 onPressed: () => _navigateToMemberEdit(u),
                 icon: const Icon(Icons.edit_outlined, size: 14, color: AppColors.primary),
-                label: const Text('Edit', style: TextStyle(color: AppColors.primary)),
+                label: Text('btn.edit'.tr(ref, fallback: 'Edit'), style: const TextStyle(color: AppColors.primary)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   elevation: 0,
@@ -1357,7 +1367,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           Icon(Icons.person_search_rounded, size: 48, color: isDark ? AppColors.gray400 : AppColors.gray500),
           const SizedBox(height: 12),
           Text(
-            'No members found matching your search or filters.',
+            'directory.no_members_found'.tr(ref, fallback: 'No members found matching your search or filters.'),
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -1367,7 +1377,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           const SizedBox(height: 14),
           OutlinedButton(
             onPressed: _resetFilters,
-            child: const Text('Clear Filters'),
+            child: Text('directory.clear_filters'.tr(ref, fallback: 'Clear Filters')),
           ),
         ],
       ),
@@ -1390,7 +1400,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           // Entries per page selector
           Row(
             children: [
-              Text('Show ', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+              Text('${'directory.show'.tr(ref, fallback: 'Show')} ', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
               Container(
                 height: 32,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1421,7 +1431,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                   ),
                 ),
               ),
-              Text(' entries per page', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+              Text(' ${'directory.entries_per_page'.tr(ref, fallback: 'entries per page')}', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
             ],
           ),
 

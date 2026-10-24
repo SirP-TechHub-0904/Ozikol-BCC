@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../state/workspace_state.dart';
 import 'widgets/workspace_switch_dialog.dart';
 import 'workspace_entry_screen.dart';
-import 'workspace_login_screen.dart';
 
 /// Desktop vertical workspace dock (Slack / Discord style).
 /// Displays enrolled organization avatars, active workspace indicator pill, and "+ Add Workspace" button.
@@ -15,7 +15,6 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(workspaceStateProvider);
-    final notifier = ref.read(workspaceStateProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final dockBg = isDark ? AppColors.dockBackgroundDark : AppColors.dockBackgroundLight;
@@ -137,9 +136,9 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
                                       ),
                                     ],
                                   ),
-                                  child: const Text(
-                                    'ACTIVE',
-                                    style: TextStyle(
+                                  child: Text(
+                                    'shell.active_pill'.tr(ref, fallback: 'ACTIVE'),
+                                    style: const TextStyle(
                                       fontSize: 7.5,
                                       fontWeight: FontWeight.w900,
                                       color: Colors.white,
@@ -173,7 +172,7 @@ class WorkspaceSwitcherDock extends ConsumerWidget {
 
           // "+ Add Workspace" Button
           Tooltip(
-            message: 'Add Another Organization Workspace',
+            message: 'shell.add_workspace_tooltip'.tr(ref, fallback: 'Add Another Organization Workspace'),
             child: InkWell(
               onTap: () {
                 Navigator.of(context).push(
