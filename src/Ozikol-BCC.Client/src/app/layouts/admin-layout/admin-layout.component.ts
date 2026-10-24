@@ -4235,6 +4235,7 @@ export class AdminLayoutComponent implements OnInit {
     let tabIcon = 'description';
 
     if (url.includes('/dashboard/mxmails') || url.includes('/admin/mxmails') || url.includes('/mxmails')) { tabTitle = 'MX Email Logs'; tabIcon = 'mark_email_read'; }
+    else if (url.includes('/dashboard/mxsms') || url.includes('/admin/mxsms') || url.includes('/mxsms')) { tabTitle = 'MX SMS Logs'; tabIcon = 'sms'; }
     else if (url.includes('/users/console/notifications')) { tabTitle = 'Notification Studio'; tabIcon = 'campaign'; }
     else if (url.includes('/users/workspace/notifications')) { tabTitle = 'Notifications'; tabIcon = 'notifications'; }
     else if (url.includes('/dashboard/workspace')) { tabTitle = 'Workspace Home'; tabIcon = 'space_dashboard'; }

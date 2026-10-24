@@ -157,6 +157,10 @@ export const routes: Routes = [
       { path: 'admin/dashboard/mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
       { path: 'admin/mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
       { path: 'mxmails', redirectTo: 'dashboard/mxmails', pathMatch: 'full' },
+      { path: 'dashboard/mxsms', loadComponent: () => import('./pages/admin/mxsms/mxsms.component').then(m => m.MxSmsComponent), data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'admin/dashboard/mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
+      { path: 'admin/mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
+      { path: 'mxsms', redirectTo: 'dashboard/mxsms', pathMatch: 'full' },
       { path: 'dashboard', redirectTo: 'dashboard/console', pathMatch: 'full' },
 
       // 2. User Management Suite: Console (Admin & User Manager)
