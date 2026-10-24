@@ -702,6 +702,118 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Resends an existing pending invitation email and refreshes the token expiration window.
+        /// </summary>
+        /// <param name="id">Unique identifier of the invitation to resend.</param>
+        /// <returns>A response indicating whether the email was re-enqueued.</returns>
+        [HttpPost("invitations/{id}/resend")]
+        public async Task<IActionResult> ResendInvitation([FromRoute] string id)
+        {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or Identity Managers can manage invitations."));
+            }
+
+            if (!Guid.TryParse(id, out var invitationId))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Invalid invitation identifier format."));
+            }
+
+            var invitation = await _dbContext.BcpUserInvitations.FirstOrDefaultAsync(i => i.Id == invitationId);
+            if (invitation == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Invitation record not found."));
+            }
+
+            if (invitation.IsAccepted)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("This invitation has already been accepted and activated."));
+            }
+
+            // Refresh expiration duration by another 7 days
+            invitation.ExpiresAt = DateTime.UtcNow.AddDays(7);
+
+            var origin = Request.Headers.Origin.FirstOrDefault() 
+                ?? Request.Headers.Referer.FirstOrDefault() 
+                ?? $"{Request.Scheme}://{Request.Host}";
+
+            var registrationUrl = $"{origin.TrimEnd('/')}/auth/register?token={invitation.Token}&email={Uri.EscapeDataString(invitation.Email)}";
+
+            var tenantSettings = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var tenantBrand = !string.IsNullOrWhiteSpace(tenantSettings?.BrandName)
+                ? tenantSettings.BrandName.Trim()
+                : (!string.IsNullOrWhiteSpace(tenantSettings?.CompanyName) ? tenantSettings.CompanyName.Trim() : "Workspace");
+
+            var baseRole = invitation.RoleName?.Split(':')[0] ?? "Member";
+
+            var emailBody = $@"
+                <p style='color:#334155; font-size:14.5px; line-height:1.6; margin-top:0; margin-bottom:18px;'>
+                    You have been invited to join the <strong>{System.Net.WebUtility.HtmlEncode(tenantBrand)}</strong> workspace as a <strong>{baseRole}</strong>. This is a reminder to establish your account credentials and access the workspace.
+                </p>
+                <div style='margin:28px 0; text-align:center;'>
+                    <a href='{registrationUrl}' 
+                       style='background-color:#0050e5; color:#ffffff; padding:13px 28px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block; font-size:14px; box-shadow:0 4px 6px -1px rgba(0, 80, 229, 0.2);'>
+                        Accept Invitation & Register
+                    </a>
+                </div>
+                <p style='color:#64748b; font-size:12px; line-height:1.5; border-top:1px solid #f1f5f9; padding-top:16px; margin-bottom:0;'>
+                    This invitation is secure and will expire in 7 days. If you did not request this invitation, you can safely ignore this message.
+                </p>";
+
+            var emailQueueItem = new BcpEmailQueue
+            {
+                Id = Guid.CreateVersion7(),
+                RecipientEmail = invitation.Email,
+                RecipientName = invitation.Email.Split('@')[0],
+                Subject = $"Reminder: You are invited to join {tenantBrand} Workspace",
+                HtmlBody = emailBody,
+                Category = BcpMessageCategory.General,
+                Priority = BcpMessagePriority.High,
+                Status = BcpQueueStatus.Queued,
+                CreatedAt = DateTime.UtcNow
+            };
+            _dbContext.BcpEmailQueue.Add(emailQueueItem);
+
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                invitationUrl = registrationUrl,
+                expiresAt = invitation.ExpiresAt
+            }, $"Invitation email successfully re-enqueued for '{invitation.Email}'."));
+        }
+
+        /// <summary>
+        /// Revokes an existing invitation token, preventing prospective user registration.
+        /// </summary>
+        /// <param name="id">Unique identifier of the invitation to revoke.</param>
+        /// <returns>A response indicating whether the token was revoked.</returns>
+        [HttpDelete("invitations/{id}")]
+        public async Task<IActionResult> RevokeInvitation([FromRoute] string id)
+        {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or Identity Managers can revoke invitations."));
+            }
+
+            if (!Guid.TryParse(id, out var invitationId))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Invalid invitation identifier format."));
+            }
+
+            var invitation = await _dbContext.BcpUserInvitations.FirstOrDefaultAsync(i => i.Id == invitationId);
+            if (invitation == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Invitation record not found."));
+            }
+
+            _dbContext.BcpUserInvitations.Remove(invitation);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Invitation token successfully revoked."));
+        }
+
+        /// <summary>
         /// Retrieves the real-time security login audit stream.
         /// When the calling user is not a SuperAdmin, audit records associated with SuperAdmin accounts are strictly filtered out.
         /// </summary>
