@@ -5,6 +5,7 @@ import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
+import '../../../../../core/widgets/custom_dropdown_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../../core/widgets/page_header.dart';
 import '../../../data/account_repository.dart';
@@ -670,7 +671,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(width: 130, child: _buildTitleDropdown(isDark)),
+              SizedBox(width: 145, child: _buildTitleDropdown(isDark)),
               const SizedBox(width: 14),
               Expanded(
                 child: CustomTextField(
@@ -719,66 +720,38 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Gender',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.gray300 : AppColors.gray700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      initialValue: _selectedGender,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'Male', child: Text('Male')),
-                        DropdownMenuItem(value: 'Female', child: Text('Female')),
-                        DropdownMenuItem(value: 'Other', child: Text('Other')),
-                        DropdownMenuItem(value: 'Prefer not to say', child: Text('Prefer not to say')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _selectedGender = val);
-                      },
-                    ),
+                child: CustomDropdownField<String>(
+                  label: 'Gender',
+                  value: _selectedGender,
+                  items: const [
+                    DropdownMenuItem(value: 'Male', child: Text('Male')),
+                    DropdownMenuItem(value: 'Female', child: Text('Female')),
+                    DropdownMenuItem(value: 'Other', child: Text('Other')),
+                    DropdownMenuItem(value: 'Prefer not to say', child: Text('Prefer not to say')),
                   ],
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedGender = val);
+                  },
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'Date of Birth',
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.gray300 : AppColors.gray700,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                        letterSpacing: 0.2,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.calendar_today_outlined, size: 16),
-                      label: Text(
-                        _selectedDob != null
-                            ? '${_selectedDob!.year}-${_selectedDob!.month.toString().padLeft(2, '0')}-${_selectedDob!.day.toString().padLeft(2, '0')}'
-                            : 'Select Date',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        alignment: Alignment.centerLeft,
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                      onPressed: () async {
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () async {
                         final picked = await showDatePicker(
                           context: context,
                           initialDate: _selectedDob ?? DateTime(1995, 1, 1),
@@ -789,6 +762,42 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                           setState(() => _selectedDob = picked);
                         }
                       },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF151F30) : AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today_outlined,
+                              size: 16,
+                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _selectedDob != null
+                                    ? '${_selectedDob!.year}-${_selectedDob!.month.toString().padLeft(2, '0')}-${_selectedDob!.day.toString().padLeft(2, '0')}'
+                                    : 'Select Date',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: _selectedDob != null
+                                      ? (isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight)
+                                      : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1344,38 +1353,21 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
   }
 
   Widget _buildTitleDropdown(bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Title',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: isDark ? AppColors.gray300 : AppColors.gray700,
-          ),
-        ),
-        const SizedBox(height: 6),
-        DropdownButtonFormField<String?>(
-          initialValue: _selectedTitle,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          ),
-          items: const [
-            DropdownMenuItem(value: null, child: Text('-- None --')),
-            DropdownMenuItem(value: 'Mr', child: Text('Mr')),
-            DropdownMenuItem(value: 'Mrs', child: Text('Mrs')),
-            DropdownMenuItem(value: 'Ms', child: Text('Ms')),
-            DropdownMenuItem(value: 'Dr', child: Text('Dr')),
-            DropdownMenuItem(value: 'Prof', child: Text('Prof')),
-            DropdownMenuItem(value: 'Engr', child: Text('Engr')),
-            DropdownMenuItem(value: 'Chief', child: Text('Chief')),
-            DropdownMenuItem(value: 'Barr', child: Text('Barr')),
-          ],
-          onChanged: (val) => setState(() => _selectedTitle = val),
-        ),
+    return CustomDropdownField<String?>(
+      label: 'Title',
+      value: _selectedTitle,
+      items: const [
+        DropdownMenuItem(value: null, child: Text('-- None --', overflow: TextOverflow.ellipsis)),
+        DropdownMenuItem(value: 'Mr', child: Text('Mr')),
+        DropdownMenuItem(value: 'Mrs', child: Text('Mrs')),
+        DropdownMenuItem(value: 'Ms', child: Text('Ms')),
+        DropdownMenuItem(value: 'Dr', child: Text('Dr')),
+        DropdownMenuItem(value: 'Prof', child: Text('Prof')),
+        DropdownMenuItem(value: 'Engr', child: Text('Engr')),
+        DropdownMenuItem(value: 'Chief', child: Text('Chief')),
+        DropdownMenuItem(value: 'Barr', child: Text('Barr')),
       ],
+      onChanged: (val) => setState(() => _selectedTitle = val),
     );
   }
 
