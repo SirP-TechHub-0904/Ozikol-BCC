@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/workspace.dart';
 import '../theme/app_colors.dart';
+import 'oz_lang_switcher.dart';
 import '../../features/workspace_auth/data/workspace_repository.dart';
 import '../../features/workspace_auth/presentation/workspace_entry_screen.dart';
 import '../../features/workspace_auth/state/workspace_state.dart';
@@ -212,6 +213,8 @@ class DesktopAuthLayout extends ConsumerWidget {
                         letterSpacing: -0.3,
                       ),
                     ),
+                    const Spacer(),
+                    const OzLangSwitcher(),
                   ],
                 ),
 
@@ -356,6 +359,13 @@ class DesktopAuthLayout extends ConsumerWidget {
           top: 18,
           left: 20,
           child: _buildChangeWorkspacePill(context, ref),
+        ),
+
+        // Floating Top-Right Language Switcher Pill
+        const Positioned(
+          top: 18,
+          right: 20,
+          child: OzLangSwitcher(),
         ),
 
         // Centered Glass Card Content

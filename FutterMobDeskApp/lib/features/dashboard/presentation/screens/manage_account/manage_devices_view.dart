@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:ozikol_app/core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
@@ -57,6 +58,36 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
         _errorMessage = 'Unable to retrieve connected devices.';
       });
     }
+  }
+
+  /// <summary>
+  /// Formats raw UTC timestamp into clean, exact local device time (e.g. Oct 24, 2026 • 7:45 AM).
+  /// </summary>
+  /// <param name="raw">The raw ISO string or timestamp from the backend.</param>
+  /// <returns>Formatted local date and time string.</returns>
+  String _formatExactTime(dynamic raw) {
+    if (raw == null) return 'account.active_now'.tr(ref, fallback: 'Active Now');
+    final str = raw.toString().trim();
+    if (str.isEmpty || str == 'Active Now') return 'account.active_now'.tr(ref, fallback: 'Active Now');
+    final dt = DateTime.tryParse(str);
+    if (dt == null) return str;
+    final localDt = dt.toLocal();
+    return DateFormat('MMM d, yyyy • h:mm a').format(localDt);
+  }
+
+  /// <summary>
+  /// Determines whether a session is actively in communication (within last 15 mins) or idle.
+  /// </summary>
+  /// <param name="raw">The raw lastActive timestamp.</param>
+  /// <param name="isCurrent">Whether this is the current active client session.</param>
+  /// <returns>True if active, false if idle.</returns>
+  bool _isSessionActive(dynamic raw, bool isCurrent) {
+    if (isCurrent) return true;
+    if (raw == null) return false;
+    final dt = DateTime.tryParse(raw.toString().trim());
+    if (dt == null) return false;
+    final diff = DateTime.now().toUtc().difference(dt.toUtc());
+    return diff.inMinutes <= 15;
   }
 
   Future<void> _handleRevoke(String sessionId, String deviceName) async {
@@ -292,7 +323,9 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                 final os = (session['operatingSystem'] ?? session['os'] ?? 'Unknown OS').toString();
                 final deviceType = (session['deviceType'] ?? 'Desktop').toString();
                 final ip = session['ipAddress'] ?? '127.0.0.1';
-                final lastActive = session['lastActive'] ?? session['lastUsedAt'] ?? 'Active Now';
+                final rawLastActive = session['lastActive'] ?? session['lastUsedAt'];
+                final isActive = _isSessionActive(rawLastActive, isCurrent);
+                final formattedTime = _formatExactTime(rawLastActive);
                 final sessionId = session['sessionId'] ?? session['id'] ?? '';
 
                 return Container(
@@ -377,8 +410,50 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                                     ),
                                   ),
                                 ],
+                                const SizedBox(width: 6),
+                                // Device Activity Status: Active Now vs Idle
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                                  decoration: BoxDecoration(
+                                    color: isActive
+                                        ? AppColors.success.withValues(alpha: 0.12)
+                                        : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(100),
+                                    border: Border.all(
+                                      color: isActive
+                                          ? AppColors.success.withValues(alpha: 0.3)
+                                          : const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isActive ? AppColors.success : const Color(0xFFF59E0B),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        isActive
+                                            ? (isCurrent
+                                                ? 'account.active_now'.tr(ref, fallback: 'Active Now')
+                                                : 'status.active'.tr(ref, fallback: 'Active'))
+                                            : 'account.idle'.tr(ref, fallback: 'Idle'),
+                                        style: TextStyle(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: isActive ? AppColors.success : const Color(0xFFD97706),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 if (isTrusted) ...[
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 6),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                                     decoration: BoxDecoration(
@@ -389,8 +464,8 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.verified_user_rounded, size: 12, color: AppColors.success),
-                                        SizedBox(width: 4),
+                                        const Icon(Icons.verified_user_rounded, size: 12, color: AppColors.success),
+                                        const SizedBox(width: 4),
                                         Text(
                                           'account.trusted_device'.tr(ref, fallback: 'Trusted Device'),
                                           style: const TextStyle(
@@ -407,7 +482,7 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '$browserDetails • IP: $ip • Last active: $lastActive',
+                              '$browserDetails • IP: $ip • ${'account.last_active'.tr(ref, fallback: 'Last active')}: $formattedTime',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isDark ? AppColors.gray400 : AppColors.gray600,

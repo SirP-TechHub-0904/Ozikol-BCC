@@ -41,6 +41,12 @@ export class TranslationService {
       'shell.powered_by': 'Powered by Ozikol',
       'shell.workspace_vault': 'Workspace Vault',
       'shell.pin_nav': 'Pin Navigation',
+      'shell.confirm_lang_title': 'Change System Language?',
+      'shell.confirm_lang_desc': 'Do you want to switch the interface language? All screens, navigation menus, and workspace labels will translate immediately.',
+      'shell.confirm_lang_btn': 'Change Language',
+      'btn.confirm': 'Confirm',
+      'account.active_now': 'Active Now',
+      'account.idle': 'Idle',
 
       // Navigation Groups & Items
       'nav.website': 'Website',
@@ -256,6 +262,12 @@ export class TranslationService {
       'shell.powered_by': 'Propulsé par Ozikol',
       'shell.workspace_vault': 'Coffre-fort de l’espace',
       'shell.pin_nav': 'Navigation Épinglée',
+      'shell.confirm_lang_title': 'Changer la langue du système ?',
+      'shell.confirm_lang_desc': 'Voulez-vous changer la langue de l’interface ? Tous les écrans, menus de navigation et libellés seront traduits immédiatement.',
+      'shell.confirm_lang_btn': 'Changer de langue',
+      'btn.confirm': 'Confirmer',
+      'account.active_now': 'Actif maintenant',
+      'account.idle': 'Inactif',
 
       // Navigation Groups & Items
       'nav.website': 'Site Web',
@@ -471,6 +483,12 @@ export class TranslationService {
       'shell.powered_by': 'Desarrollado por Ozikol',
       'shell.workspace_vault': 'Bóveda del Espacio',
       'shell.pin_nav': 'Navegación Fijada',
+      'shell.confirm_lang_title': '¿Cambiar el idioma del sistema?',
+      'shell.confirm_lang_desc': '¿Desea cambiar el idioma de la interfaz? Todas las pantallas, menús de navegación y etiquetas se traducirán inmediatamente.',
+      'shell.confirm_lang_btn': 'Cambiar idioma',
+      'btn.confirm': 'Confirmar',
+      'account.active_now': 'Activo ahora',
+      'account.idle': 'Inactivo',
 
       // Navigation Groups & Items
       'nav.website': 'Sitio Web',
@@ -686,6 +704,12 @@ export class TranslationService {
       'shell.powered_by': 'Bereitgestellt von Ozikol',
       'shell.workspace_vault': 'Tresor des Arbeitsbereichs',
       'shell.pin_nav': 'Angeheftete Navigation',
+      'shell.confirm_lang_title': 'Systemsprache ändern?',
+      'shell.confirm_lang_desc': 'Möchten Sie die Sprache der Benutzeroberfläche wechseln? Alle Ansichten, Navigationsmenüs und Beschriftungen werden sofort übersetzt.',
+      'shell.confirm_lang_btn': 'Sprache ändern',
+      'btn.confirm': 'Bestätigen',
+      'account.active_now': 'Jetzt aktiv',
+      'account.idle': 'Untätig',
 
       // Navigation Groups & Items
       'nav.website': 'Webseite',

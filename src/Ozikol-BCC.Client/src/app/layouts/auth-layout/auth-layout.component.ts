@@ -5,6 +5,8 @@ import { Title, Meta } from '@angular/platform-browser';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { ApiService } from '../../core/services/api.service';
+import { TranslationService, SupportedLanguage, LanguageOption } from '../../core/services/translation.service';
+import { TranslatePipe } from '../../core/pipes/translate.pipe';
 
 /**
  * Unified authentication shell housing all auth child routes (Login, 2FA, Recovery Code, Reset Password, Registration).
@@ -17,7 +19,7 @@ import { ApiService } from '../../core/services/api.service';
 @Component({
   selector: 'app-auth-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TranslatePipe],
   template: `
     <div class="auth-viewport" [style.--auth-bg]="'url(' + activeBackground + ')'" [class.mode-centered]="isCentered">
       <!-- Ambient Backdrop Overlay -->
@@ -28,6 +30,25 @@ import { ApiService } from '../../core/services/api.service';
         <span class="material-symbols-outlined">arrow_back</span>
         <span>Return to Home</span>
       </a>
+
+      <!-- Floating Auth Top Utility Bar (Language Selector) -->
+      <div class="auth-top-floating-bar" (click)="$event.stopPropagation()">
+        <div class="oz-lang-switcher" id="authLangSwitcher">
+          <button type="button" class="oz-lang-btn" (click)="toggleLangDropdown($event)" [attr.aria-expanded]="showLangDropdown" aria-label="Select Language">
+            <span class="oz-lang-flag">{{ currentLangOption.shortLabel }}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 1L5 5L9 1"/>
+            </svg>
+          </button>
+          <div class="oz-lang-menu" *ngIf="showLangDropdown">
+            <a href="javascript:void(0)" *ngFor="let opt of supportedLanguages" (click)="selectLanguage(opt.code)" class="oz-lang-item" [class.active]="currentLang === opt.code">
+              <span class="oz-flag-icon">{{ opt.flag }}</span>
+              <span class="oz-lang-name">{{ opt.nativeName }}</span>
+              <span class="material-symbols-outlined check-icon" *ngIf="currentLang === opt.code">check</span>
+            </a>
+          </div>
+        </div>
+      </div>
 
       <div class="auth-split-layout">
         <!-- ============================================== -->
@@ -95,6 +116,35 @@ import { ApiService } from '../../core/services/api.service';
             </div>
           </div>
         </main>
+      </div>
+
+      <!-- Language Change Confirmation Modal -->
+      <div class="modal-backdrop oz-lang-modal-backdrop" *ngIf="showLanguageConfirmModal" (click)="cancelLanguageChange()">
+        <div class="oz-lang-modal-card" (click)="$event.stopPropagation()">
+          <div class="oz-lang-modal-icon-wrap">
+            <span class="material-symbols-outlined">translate</span>
+          </div>
+          <h3 class="oz-lang-modal-title">{{ 'shell.confirm_lang_title' | translate }}</h3>
+          <p class="oz-lang-modal-desc">{{ 'shell.confirm_lang_desc' | translate }}</p>
+
+          <div class="oz-lang-modal-target-pill" *ngIf="pendingLanguage">
+            <span class="oz-flag-lg">{{ pendingLanguage.flag }}</span>
+            <div class="oz-lang-modal-target-names">
+              <span class="oz-lang-modal-target-native">{{ pendingLanguage.nativeName }}</span>
+              <span class="oz-lang-modal-target-en">({{ pendingLanguage.name }})</span>
+            </div>
+          </div>
+
+          <div class="oz-lang-modal-actions">
+            <button type="button" class="btn-lang-modal-cancel" (click)="cancelLanguageChange()">
+              {{ 'btn.cancel' | translate }}
+            </button>
+            <button type="button" class="btn-lang-modal-confirm" (click)="confirmLanguageChange()">
+              <span class="material-symbols-outlined">check</span>
+              <span>{{ 'shell.confirm_lang_btn' | translate }}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   `,
@@ -584,6 +634,228 @@ import { ApiService } from '../../core/services/api.service';
         display: block;
       }
     }
+
+    /* Floating Auth Top Utility Bar (Language Selector) */
+    .auth-top-floating-bar {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 20;
+    }
+    @media (max-width: 900px) {
+      .auth-top-floating-bar {
+        top: 14px;
+        right: 14px;
+      }
+    }
+    .oz-lang-switcher {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .oz-lang-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: #f1f5f9;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 9999px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      line-height: 1;
+    }
+    .oz-lang-btn:hover {
+      background: rgba(15, 23, 42, 0.9);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+    .oz-lang-btn[aria-expanded="true"] {
+      border-color: #0050e5;
+      box-shadow: 0 0 0 2px rgba(0, 80, 229, 0.25);
+    }
+    .oz-lang-btn svg {
+      transition: transform 0.2s ease;
+    }
+    .oz-lang-btn[aria-expanded="true"] svg {
+      transform: rotate(180deg);
+    }
+    .oz-lang-flag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .oz-lang-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 170px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      padding: 6px;
+      z-index: 1050;
+    }
+    .oz-lang-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #334155;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: background 0.15s ease, color 0.15s ease;
+      cursor: pointer;
+    }
+    .oz-lang-item:hover {
+      background: #f1f5f9;
+      color: #0050e5;
+    }
+    .oz-lang-item.active {
+      color: #0050e5;
+      font-weight: 700;
+      background: rgba(0, 80, 229, 0.08);
+    }
+    .oz-flag-icon {
+      font-size: 15px;
+    }
+    .oz-lang-name {
+      flex: 1;
+    }
+    .check-icon {
+      font-size: 16px;
+      color: #0050e5;
+    }
+
+    /* Language Change Confirmation Modal */
+    .oz-lang-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 10005;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .oz-lang-modal-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      max-width: 440px;
+      width: 100%;
+      padding: 28px 24px 24px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+    .oz-lang-modal-icon-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(0, 80, 229, 0.1);
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .oz-lang-modal-icon-wrap .material-symbols-outlined {
+      font-size: 28px;
+    }
+    .oz-lang-modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 8px;
+    }
+    .oz-lang-modal-desc {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #64748b;
+      margin: 0 0 20px;
+    }
+    .oz-lang-modal-target-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 18px;
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    .oz-flag-lg {
+      font-size: 24px;
+    }
+    .oz-lang-modal-target-names {
+      text-align: left;
+    }
+    .oz-lang-modal-target-native {
+      display: block;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .oz-lang-modal-target-en {
+      display: block;
+      font-size: 11.5px;
+      color: #64748b;
+    }
+    .oz-lang-modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .btn-lang-modal-cancel {
+      flex: 1;
+      padding: 10px 16px;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-lang-modal-cancel:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .btn-lang-modal-confirm {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0, 80, 229, 0.25);
+    }
+    .btn-lang-modal-confirm:hover {
+      background: #003db3;
+    }
+    .btn-lang-modal-confirm .material-symbols-outlined {
+      font-size: 18px;
+    }
   `]
 })
 export class AuthLayoutComponent implements OnInit, OnDestroy {
@@ -606,11 +878,55 @@ export class AuthLayoutComponent implements OnInit, OnDestroy {
   readonly defaultBgUrl: string = 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=85';
   readonly currentYear: number = new Date().getFullYear();
 
+  showLangDropdown: boolean = false;
+  pendingLanguage: LanguageOption | null = null;
+  showLanguageConfirmModal: boolean = false;
+
+  get currentLang(): SupportedLanguage {
+    return this.translation.currentLanguage;
+  }
+
+  get currentLangOption(): LanguageOption {
+    return this.translation.currentLanguageOption;
+  }
+
+  get supportedLanguages(): LanguageOption[] {
+    return this.translation.supportedLanguages;
+  }
+
+  toggleLangDropdown(event?: Event): void {
+    if (event) event.stopPropagation();
+    this.showLangDropdown = !this.showLangDropdown;
+  }
+
+  selectLanguage(lang: SupportedLanguage): void {
+    this.showLangDropdown = false;
+    if (lang === this.currentLang) return;
+    const target = this.supportedLanguages.find(l => l.code === lang);
+    if (!target) return;
+    this.pendingLanguage = target;
+    this.showLanguageConfirmModal = true;
+  }
+
+  confirmLanguageChange(): void {
+    if (this.pendingLanguage) {
+      this.translation.setLanguage(this.pendingLanguage.code);
+    }
+    this.showLanguageConfirmModal = false;
+    this.pendingLanguage = null;
+  }
+
+  cancelLanguageChange(): void {
+    this.showLanguageConfirmModal = false;
+    this.pendingLanguage = null;
+  }
+
   constructor(
     private api: ApiService,
     private titleService: Title,
     private metaService: Meta,
-    private router: Router
+    private router: Router,
+    public translation: TranslationService
   ) {}
 
   ngOnInit(): void {

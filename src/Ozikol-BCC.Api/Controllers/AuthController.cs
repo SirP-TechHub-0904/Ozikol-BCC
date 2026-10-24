@@ -436,26 +436,40 @@ namespace Ozikol_BCC.Api.Controllers
                     .OrderBy(d => d.LastUsedAt)
                     .ToListAsync();
 
-                if (activeSessions.Count >= 3)
-                {
-                    // terminate oldest
-                    activeSessions[0].IsActiveSession = false;
-                }
+                var targetIp = ipAddress ?? "127.0.0.1";
+                // Match existing session by same device client name and IP
+                var existingDevice = activeSessions.FirstOrDefault(d =>
+                    d.DeviceName == userAgent && (d.IpAddress == targetIp || d.IpAddress == "127.0.0.1" || targetIp == "127.0.0.1"));
 
-                // Add current session
-                activeDbContext.BcpUserDevices.Add(new BcpUserDevice
+                if (existingDevice != null)
                 {
-                    Id = Guid.CreateVersion7(),
-                    UserId = user.Id,
-                    DeviceName = userAgent,
-                    IpAddress = ipAddress ?? "127.0.0.1",
-                    TrustToken = Guid.NewGuid().ToString("N"),
-                    JwtId = jwtId,
-                    IsTrusted = skipMfa, // trusted if bypassed
-                    CreatedAt = DateTime.UtcNow,
-                    LastUsedAt = DateTime.UtcNow,
-                    IsActiveSession = true
-                });
+                    existingDevice.JwtId = jwtId;
+                    existingDevice.LastUsedAt = DateTime.UtcNow;
+                    existingDevice.IsTrusted = existingDevice.IsTrusted || skipMfa;
+                }
+                else
+                {
+                    if (activeSessions.Count >= 3)
+                    {
+                        // Terminate oldest
+                        activeSessions[0].IsActiveSession = false;
+                    }
+
+                    // Add current session
+                    activeDbContext.BcpUserDevices.Add(new BcpUserDevice
+                    {
+                        Id = Guid.CreateVersion7(),
+                        UserId = user.Id,
+                        DeviceName = userAgent,
+                        IpAddress = targetIp,
+                        TrustToken = Guid.NewGuid().ToString("N"),
+                        JwtId = jwtId,
+                        IsTrusted = skipMfa, // trusted if bypassed
+                        CreatedAt = DateTime.UtcNow,
+                        LastUsedAt = DateTime.UtcNow,
+                        IsActiveSession = true
+                    });
+                }
 
                 activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                 {
@@ -723,26 +737,48 @@ namespace Ozikol_BCC.Api.Controllers
                     .OrderBy(d => d.LastUsedAt)
                     .ToListAsync();
 
-                if (activeSessions.Count >= 3)
-                {
-                    activeSessions[0].IsActiveSession = false;
-                }
+                var targetIp = ipAddress ?? "127.0.0.1";
+                // Match existing session by same device client name and IP
+                var existingDevice = activeSessions.FirstOrDefault(d =>
+                    d.DeviceName == userAgent && (d.IpAddress == targetIp || d.IpAddress == "127.0.0.1" || targetIp == "127.0.0.1"));
 
                 newDeviceTrustToken = Guid.NewGuid().ToString("N");
 
-                activeDbContext.BcpUserDevices.Add(new BcpUserDevice
+                if (existingDevice != null)
                 {
-                    Id = Guid.CreateVersion7(),
-                    UserId = user.Id,
-                    DeviceName = userAgent,
-                    IpAddress = ipAddress ?? "127.0.0.1",
-                    TrustToken = newDeviceTrustToken,
-                    JwtId = jwtId,
-                    IsTrusted = request.TrustDevice, // save trust choice
-                    CreatedAt = DateTime.UtcNow,
-                    LastUsedAt = DateTime.UtcNow,
-                    IsActiveSession = true
-                });
+                    existingDevice.JwtId = jwtId;
+                    existingDevice.LastUsedAt = DateTime.UtcNow;
+                    existingDevice.IsTrusted = existingDevice.IsTrusted || request.TrustDevice;
+                    if (request.TrustDevice && string.IsNullOrEmpty(existingDevice.TrustToken))
+                    {
+                        existingDevice.TrustToken = newDeviceTrustToken;
+                    }
+                    else if (!string.IsNullOrEmpty(existingDevice.TrustToken))
+                    {
+                        newDeviceTrustToken = existingDevice.TrustToken;
+                    }
+                }
+                else
+                {
+                    if (activeSessions.Count >= 3)
+                    {
+                        activeSessions[0].IsActiveSession = false;
+                    }
+
+                    activeDbContext.BcpUserDevices.Add(new BcpUserDevice
+                    {
+                        Id = Guid.CreateVersion7(),
+                        UserId = user.Id,
+                        DeviceName = userAgent,
+                        IpAddress = targetIp,
+                        TrustToken = newDeviceTrustToken,
+                        JwtId = jwtId,
+                        IsTrusted = request.TrustDevice, // save trust choice
+                        CreatedAt = DateTime.UtcNow,
+                        LastUsedAt = DateTime.UtcNow,
+                        IsActiveSession = true
+                    });
+                }
 
                 activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                 {

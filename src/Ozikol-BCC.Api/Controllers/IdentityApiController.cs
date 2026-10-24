@@ -1025,11 +1025,26 @@ namespace Ozikol_BCC.Api.Controllers
                 deviceEntities.Add(newDevice);
             }
 
+            // Update the current device's LastUsedAt to UtcNow if matched
+            var currentDevice = deviceEntities.FirstOrDefault(d => !string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti);
+            if (currentDevice != null)
+            {
+                currentDevice.LastUsedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
+
             var sessions = deviceEntities.Select(d =>
             {
                 var parsed = UserAgentParser.Parse(d.DeviceName);
                 var isCurrent = (!string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti)
                     || (string.IsNullOrEmpty(currentJti) && d == deviceEntities[0]);
+
+                var utcLastActive = d.LastUsedAt.Kind == DateTimeKind.Utc
+                    ? d.LastUsedAt
+                    : DateTime.SpecifyKind(d.LastUsedAt, DateTimeKind.Utc);
+                var utcCreatedAt = d.CreatedAt.Kind == DateTimeKind.Utc
+                    ? d.CreatedAt
+                    : DateTime.SpecifyKind(d.CreatedAt, DateTimeKind.Utc);
 
                 return new
                 {
@@ -1043,10 +1058,10 @@ namespace Ozikol_BCC.Api.Controllers
                     Icon = parsed.Icon,
                     RawDevice = d.DeviceName,
                     IpAddress = d.IpAddress,
-                    LastActive = d.LastUsedAt,
+                    LastActive = utcLastActive,
                     IsCurrent = isCurrent,
                     IsTrusted = d.IsTrusted,
-                    CreatedAt = d.CreatedAt
+                    CreatedAt = utcCreatedAt
                 };
             }).ToList();
 

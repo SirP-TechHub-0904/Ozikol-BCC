@@ -450,6 +450,10 @@ interface AccountSummary {
                   <div class="device-name-row">
                     <span class="device-name">{{ s.device || formatDeviceTitle(s.rawDevice || s.device) }}</span>
                     <span class="badge-current" *ngIf="s.isCurrent">{{ 'account.this_device' | translate }}</span>
+                    <span class="badge-activity" [class.badge-active]="isSessionActive(s)" [class.badge-idle]="!isSessionActive(s)">
+                      <span class="activity-dot"></span>
+                      <span>{{ (isSessionActive(s) ? 'account.active_now' : 'account.idle') | translate }}</span>
+                    </span>
                     <span class="badge-trusted" *ngIf="s.isTrusted" title="2FA verification bypassed on this trusted device">
                       <span class="material-symbols-outlined">verified_user</span>
                       <span>Trusted Device</span>
@@ -461,7 +465,7 @@ interface AccountSummary {
                       {{ s.browser || formatBrowserDetails(s.rawDevice || s.device) }}
                     </span>
                     <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">router</span>{{ formatIpAddress(s.ipAddress) }}</span>
-                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">schedule</span>{{ formatRelativeTime(s.lastActive) }}</span>
+                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">schedule</span>{{ formatExactDateTime(s.lastActive) }}</span>
                   </div>
                 </div>
                 <div class="device-actions" *ngIf="!s.isCurrent">
@@ -1245,6 +1249,31 @@ interface AccountSummary {
     }
     .badge-trusted .material-symbols-outlined {
       font-size: 13px;
+    }
+    .badge-activity {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .badge-activity.badge-active {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-activity.badge-idle {
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .activity-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
     }
     .device-icon-wrap.trusted-wrap {
       border: 1.5px solid rgba(16, 185, 129, 0.35);
@@ -2085,22 +2114,42 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Formats an ISO date string into readable date and time.
+   * Formats an ISO date string into readable local date and exact time.
+   * Ensures UTC representation is correctly converted to the device's local timezone.
    * @param dateStr ISO date string.
    */
-  formatDateTime(dateStr: string): string {
+  formatExactDateTime(dateStr: string): string {
     if (!dateStr) return '—';
     try {
-      const d = new Date(dateStr);
+      const utcStr = (dateStr.endsWith('Z') || dateStr.includes('+')) ? dateStr : `${dateStr}Z`;
+      const d = new Date(utcStr);
       return d.toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
       });
     } catch {
       return dateStr;
+    }
+  }
+
+  /**
+   * Evaluates if a device session is actively used (within 15m) or currently active.
+   * @param s The session item.
+   */
+  isSessionActive(s: any): boolean {
+    if (!s) return false;
+    if (s.isCurrent) return true;
+    if (!s.lastActive) return false;
+    try {
+      const utcStr = (s.lastActive.endsWith('Z') || s.lastActive.includes('+')) ? s.lastActive : `${s.lastActive}Z`;
+      const last = new Date(utcStr).getTime();
+      return (Date.now() - last) <= 15 * 60 * 1000;
+    } catch {
+      return false;
     }
   }
 }

@@ -221,11 +221,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }
 
   bool _isRefreshing = false;
+  int _activeCanvasRefreshTick = 0;
 
   /// Remakes all requests across the workspace:
   /// 1. Tenant organization branding (logo, icon, organization name) via /api/SettingsApi/brand
   /// 2. Dashboard operational metrics, member counters, and telemetry audit trail via /api/DashboardApi/metrics
   /// 3. Unread notification counters and feed via /api/Notifications/feed
+  /// 4. Invalidate and re-fetch currently active screen canvas
   Future<void> _triggerRefresh() async {
     if (_isRefreshing) return;
     setState(() => _isRefreshing = true);
@@ -245,6 +247,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       // 3. Refetch notifications feed and unread count
       await ref.read(notificationProvider.notifier).loadFeed();
 
+      // 4. Force reload signal on active canvas view
+      _activeCanvasRefreshTick++;
+
       // Brief animation dwell so spin feels responsive and organic
       await Future.delayed(const Duration(milliseconds: 600));
 
@@ -256,7 +261,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               children: [
                 Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
                 SizedBox(width: 8),
-                Text('Workspace branding, telemetry, and metrics refreshed.'),
+                Text('Workspace branding, telemetry, and active view refreshed.'),
               ],
             ),
             duration: Duration(seconds: 2),
@@ -1831,6 +1836,28 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
   /// Renders the active sub-feature view corresponding to the active mode and selected menu index.
   Widget _buildActiveViewCanvas({
+    required bool isDark,
+    required bool isOnline,
+    required bool isLoading,
+    required DashboardMetrics metrics,
+    required Workspace? activeWs,
+    bool isMobile = false,
+  }) {
+    return KeyedSubtree(
+      key: ValueKey('active_canvas_${_selectedNavIndex}_$_activeCanvasRefreshTick'),
+      child: _buildActiveViewContent(
+        isDark: isDark,
+        isOnline: isOnline,
+        isLoading: isLoading,
+        metrics: metrics,
+        activeWs: activeWs,
+        isMobile: isMobile,
+      ),
+    );
+  }
+
+  /// Inner content selector for the active sub-feature canvas.
+  Widget _buildActiveViewContent({
     required bool isDark,
     required bool isOnline,
     required bool isLoading,

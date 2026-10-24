@@ -10,6 +10,7 @@ import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../../core/widgets/theme_mode_switcher.dart';
+import '../../../core/widgets/oz_lang_switcher.dart';
 import '../state/workspace_state.dart';
 import 'workspace_login_screen.dart';
 
@@ -760,6 +761,8 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
+                        const OzLangSwitcher(compact: true),
+                        const SizedBox(width: 8),
                         const ThemeModeSwitcher(compact: true),
                         const SizedBox(width: 8),
                         Tooltip(
@@ -1020,6 +1023,8 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(width: 6),
+                const OzLangSwitcher(compact: true),
                 const SizedBox(width: 6),
                 const ThemeModeSwitcher(compact: true),
                 IconButton(

@@ -1864,6 +1864,35 @@ export interface SuiteInfoDetail {
       [brandName]="brandName"
       (completed)="onFirstRunCompleted($event)">
     </app-first-run-setup-modal>
+
+    <!-- Language Change Confirmation Modal -->
+    <div class="modal-backdrop oz-lang-modal-backdrop" *ngIf="showLanguageConfirmModal" (click)="cancelLanguageChange()">
+      <div class="oz-lang-modal-card" (click)="$event.stopPropagation()">
+        <div class="oz-lang-modal-icon-wrap">
+          <span class="material-symbols-outlined">translate</span>
+        </div>
+        <h3 class="oz-lang-modal-title">{{ 'shell.confirm_lang_title' | translate }}</h3>
+        <p class="oz-lang-modal-desc">{{ 'shell.confirm_lang_desc' | translate }}</p>
+
+        <div class="oz-lang-modal-target-pill" *ngIf="pendingLanguage">
+          <span class="oz-flag-lg">{{ pendingLanguage.flag }}</span>
+          <div class="oz-lang-modal-target-names">
+            <span class="oz-lang-modal-target-native">{{ pendingLanguage.nativeName }}</span>
+            <span class="oz-lang-modal-target-en">({{ pendingLanguage.name }})</span>
+          </div>
+        </div>
+
+        <div class="oz-lang-modal-actions">
+          <button type="button" class="btn-lang-modal-cancel" (click)="cancelLanguageChange()">
+            {{ 'btn.cancel' | translate }}
+          </button>
+          <button type="button" class="btn-lang-modal-confirm" (click)="confirmLanguageChange()">
+            <span class="material-symbols-outlined">check</span>
+            <span>{{ 'shell.confirm_lang_btn' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
   `,
   styles: [`
     :host {
@@ -2963,6 +2992,150 @@ export interface SuiteInfoDetail {
       cursor: pointer;
       transition: background 0.15s ease;
     }
+
+    /* Language Change Confirmation Modal */
+    .oz-lang-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 10005;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .oz-lang-modal-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      max-width: 440px;
+      width: 100%;
+      padding: 28px 24px 24px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+    :host-context(.dark-mode) .oz-lang-modal-card {
+      background: #1e293b;
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    .oz-lang-modal-icon-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(0, 80, 229, 0.1);
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .oz-lang-modal-icon-wrap .material-symbols-outlined {
+      font-size: 28px;
+    }
+    .oz-lang-modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 8px;
+    }
+    :host-context(.dark-mode) .oz-lang-modal-title {
+      color: #f8fafc;
+    }
+    .oz-lang-modal-desc {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #64748b;
+      margin: 0 0 20px;
+    }
+    :host-context(.dark-mode) .oz-lang-modal-desc {
+      color: #94a3b8;
+    }
+    .oz-lang-modal-target-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 18px;
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    :host-context(.dark-mode) .oz-lang-modal-target-pill {
+      background: #0f172a;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+    .oz-flag-lg {
+      font-size: 24px;
+    }
+    .oz-lang-modal-target-names {
+      text-align: left;
+    }
+    .oz-lang-modal-target-native {
+      display: block;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    :host-context(.dark-mode) .oz-lang-modal-target-native {
+      color: #f8fafc;
+    }
+    .oz-lang-modal-target-en {
+      display: block;
+      font-size: 11.5px;
+      color: #64748b;
+    }
+    :host-context(.dark-mode) .oz-lang-modal-target-en {
+      color: #94a3b8;
+    }
+    .oz-lang-modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .btn-lang-modal-cancel {
+      flex: 1;
+      padding: 10px 16px;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    :host-context(.dark-mode) .btn-lang-modal-cancel {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+    }
+    .btn-lang-modal-cancel:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .btn-lang-modal-confirm {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0, 80, 229, 0.25);
+    }
+    .btn-lang-modal-confirm:hover {
+      background: #003db3;
+    }
+    .btn-lang-modal-confirm .material-symbols-outlined {
+      font-size: 18px;
+    }
     .btn-secondary:hover {
       background: #cbd5e1;
     }
@@ -3554,8 +3727,28 @@ export class AdminLayoutComponent implements OnInit {
     return this.translation.supportedLanguages;
   }
 
+  public pendingLanguage: LanguageOption | null = null;
+  public showLanguageConfirmModal = false;
+
   public selectLanguage(lang: SupportedLanguage): void {
-    this.translation.setLanguage(lang);
+    if (lang === this.currentLang) return;
+    const target = this.supportedLanguages.find(l => l.code === lang);
+    if (!target) return;
+    this.pendingLanguage = target;
+    this.showLanguageConfirmModal = true;
+  }
+
+  public confirmLanguageChange(): void {
+    if (this.pendingLanguage) {
+      this.translation.setLanguage(this.pendingLanguage.code);
+    }
+    this.showLanguageConfirmModal = false;
+    this.pendingLanguage = null;
+  }
+
+  public cancelLanguageChange(): void {
+    this.showLanguageConfirmModal = false;
+    this.pendingLanguage = null;
   }
 
   ngOnInit(): void {
