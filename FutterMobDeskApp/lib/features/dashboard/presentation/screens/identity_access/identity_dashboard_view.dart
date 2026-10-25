@@ -634,7 +634,7 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
           borderRadius: BorderRadius.circular(16),
           child: Container(
             width: width,
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
               color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(16),
@@ -653,34 +653,44 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                          color: isDark ? AppColors.gray400 : AppColors.gray600,
+                        ),
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.gray400),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.arrow_forward_rounded, size: 13, color: AppColors.gray400),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: valueColor ?? (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
+                const SizedBox(height: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: valueColor ?? (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w600,
                     color: subtitleColor,
                   ),
