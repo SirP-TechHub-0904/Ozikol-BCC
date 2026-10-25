@@ -1624,7 +1624,7 @@ export interface SuiteInfoDetail {
                   <div class="notif-content">
                     <div class="notif-title">{{ notif.title }}</div>
                     <div class="notif-desc">{{ notif.message }}</div>
-                    <div class="notif-time">{{ notif.createdAt | date:'short' }}</div>
+                    <div class="notif-time">{{ formatTimeAgo(notif.createdAt) }}</div>
                   </div>
                   <span class="unread-dot" *ngIf="!notif.isRead"></span>
                 </div>
@@ -4365,6 +4365,27 @@ export class AdminLayoutComponent implements OnInit {
     if (key.includes('user') || key.includes('membership')) return 'notif-icon-blue';
     if (key.includes('announcement') || key.includes('system')) return 'notif-icon-purple';
     return 'notif-icon-blue';
+  }
+
+  formatTimeAgo(dateStr: any): string {
+    if (!dateStr) return '';
+    const dt = new Date(dateStr);
+    if (isNaN(dt.getTime())) return '';
+    const now = new Date();
+    const diffMs = now.getTime() - dt.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHours = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSec < 45 || diffMs < 0) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return '1d ago';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    const day = dt.getDate().toString().padStart(2, '0');
+    const month = (dt.getMonth() + 1).toString().padStart(2, '0');
+    return `${day}/${month}`;
   }
 
   onLogout(): void {

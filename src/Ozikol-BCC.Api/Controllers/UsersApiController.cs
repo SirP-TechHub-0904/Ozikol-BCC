@@ -2051,6 +2051,16 @@ namespace Ozikol_BCC.Api.Controllers
 
             var user = await _userManager.FindByIdAsync(id);
             await LogActivityAsync("Verify Email OTP", $"Verified email address for '{user?.FullName}'", id, user?.FullName);
+
+            await NotifyUserAsync(
+                id,
+                "Email Address Verified",
+                $"Your email address '{user?.Email}' was verified successfully.",
+                "/identity/console/account?tab=overview",
+                NotificationSeverity.Success,
+                "mark_email_read"
+            );
+
             return Ok(ApiResponse<object>.SuccessResponse(new { emailConfirmed = true }, result.Message));
         }
 
@@ -2093,6 +2103,16 @@ namespace Ozikol_BCC.Api.Controllers
 
             var user = await _userManager.FindByIdAsync(id);
             await LogActivityAsync("Verify Phone OTP", $"Verified phone number for '{user?.FullName}'", id, user?.FullName);
+
+            await NotifyUserAsync(
+                id,
+                "Phone Number Verified",
+                $"Your mobile phone number '{user?.PhoneNumber}' was verified successfully.",
+                "/identity/console/account?tab=overview",
+                NotificationSeverity.Success,
+                "verified"
+            );
+
             return Ok(ApiResponse<object>.SuccessResponse(new { phoneNumberConfirmed = true }, result.Message));
         }
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
@@ -8,7 +9,7 @@ import '../domain/notification_model.dart';
 
 /// Comprehensive notification center sheet rendered as an adaptive slide-over drawer
 /// on desktop and a bottom modal sheet on mobile devices.
-class NotificationsSheet extends ConsumerWidget {
+class NotificationsSheet extends ConsumerStatefulWidget {
   /// Optional navigation callback invoked when a notification with an ActionUrl is tapped.
   final void Function(String actionUrl)? onNavigate;
 
@@ -62,7 +63,29 @@ class NotificationsSheet extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsSheet> createState() => _NotificationsSheetState();
+}
+
+class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
+  Timer? _tickerTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Live ticking timer to update relative timestamps ('Just now', '1m ago', etc.) in real time
+    _tickerTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tickerTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(notificationProvider);
     final notifier = ref.read(notificationProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -265,7 +288,7 @@ class NotificationsSheet extends ConsumerWidget {
         }
         if (notif.actionUrl != null && notif.actionUrl!.isNotEmpty) {
           Navigator.of(context).pop();
-          onNavigate?.call(notif.actionUrl!);
+          widget.onNavigate?.call(notif.actionUrl!);
         }
       },
       borderRadius: BorderRadius.circular(14),
@@ -386,7 +409,7 @@ class NotificationsSheet extends ConsumerWidget {
                     if (!notif.isRead) notifier.markAsRead(notif.id);
                     if (notif.actionUrl != null && notif.actionUrl!.isNotEmpty) {
                       Navigator.of(context).pop();
-                      onNavigate?.call(notif.actionUrl!);
+                      widget.onNavigate?.call(notif.actionUrl!);
                     }
                   },
                   icon: const Icon(Icons.arrow_forward_rounded, size: 14),
@@ -458,7 +481,8 @@ class NotificationsSheet extends ConsumerWidget {
     if (diff.inSeconds < 45 || diff.isNegative) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return '1d ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${localDt.day}/${localDt.month}';
+    return '${localDt.day.toString().padLeft(2, '0')}/${localDt.month.toString().padLeft(2, '0')}';
   }
 }

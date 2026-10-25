@@ -9,6 +9,7 @@ using Ozikol_BCC.Application.Services;
 using Ozikol_BCC.Application.Services.Cloudinary;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
+using Ozikol_BCC.Application.Interfaces.Services;
 using System.Security.Claims;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
@@ -30,19 +31,22 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly IMediator _mediator;
         private readonly IOtpVerificationService _otpService;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         public PortalUsersApiController(
             DashboardDbContext dbContext,
             UserManager<Profile> userManager,
             IMediator mediator,
             IOtpVerificationService otpService,
-            ICloudinaryService cloudinaryService)
+            ICloudinaryService cloudinaryService,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _dbContext = dbContext;
             _userManager = userManager;
             _mediator = mediator;
             _otpService = otpService;
             _cloudinaryService = cloudinaryService;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         private string? GetCurrentUserId()
@@ -298,6 +302,15 @@ namespace Ozikol_BCC.Api.Controllers
 
             user.PhoneNumberConfirmed = true;
             await _dbContext.SaveChangesAsync();
+
+            await NotifyUserAsync(
+                user.Id,
+                "Phone Number Verified",
+                $"Your mobile phone number was updated and verified as '{cleanPhone}' successfully.",
+                "/users/workspace/profile",
+                NotificationSeverity.Success,
+                "verified"
+            );
 
             return Ok(ApiResponse<object>.SuccessResponse(new { newPhoneNumber = cleanPhone }, "Phone number verified and updated successfully."));
         }
@@ -579,6 +592,15 @@ namespace Ozikol_BCC.Api.Controllers
             user.EmailConfirmed = true;
             await _dbContext.SaveChangesAsync();
 
+            await NotifyUserAsync(
+                user.Id,
+                "Email Address Verified",
+                $"Your email address '{user.Email}' was verified successfully.",
+                "/users/workspace/profile",
+                NotificationSeverity.Success,
+                "mark_email_read"
+            );
+
             return Ok(ApiResponse<object>.SuccessResponse(new { email = user.Email, emailConfirmed = true }, "Primary email address verified successfully."));
         }
 
@@ -631,7 +653,61 @@ namespace Ozikol_BCC.Api.Controllers
             user.PhoneNumberConfirmed = true;
             await _dbContext.SaveChangesAsync();
 
+            await NotifyUserAsync(
+                user.Id,
+                "Phone Number Verified",
+                $"Your mobile phone number '{user.PhoneNumber}' was verified successfully.",
+                "/users/workspace/profile",
+                NotificationSeverity.Success,
+                "verified"
+            );
+
             return Ok(ApiResponse<object>.SuccessResponse(new { phoneNumber = user.PhoneNumber, phoneNumberConfirmed = true }, "Mobile phone number verified successfully."));
+        }
+
+        private async Task NotifyUserAsync(string userId, string title, string message, string actionUrl = "/users/workspace/profile", NotificationSeverity severity = NotificationSeverity.Success, string icon = "verified")
+        {
+            try
+            {
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = userId,
+                        Title = title,
+                        Message = message,
+                        ActionUrl = actionUrl,
+                        Module = "Security",
+                        Icon = icon,
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Normal,
+                        Severity = severity,
+                        Channels = NotificationChannels.InApp
+                    });
+                }
+                else
+                {
+                    var notif = new BcpNotification
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        Title = title,
+                        Message = message,
+                        ActionUrl = actionUrl,
+                        Module = "Security",
+                        Icon = icon,
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Normal,
+                        Severity = severity,
+                        CreatedAt = DateTime.UtcNow,
+                        IsRead = false
+                    };
+                    _dbContext.BcpNotifications.Add(notif);
+                    await _dbContext.SaveChangesAsync();
+                }
+            }
+            catch { }
         }
     }
 
