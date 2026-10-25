@@ -12,6 +12,7 @@ import '../../../core/widgets/tenant_avatar.dart';
 import '../../../core/widgets/theme_mode_switcher.dart';
 import '../../../core/widgets/oz_lang_switcher.dart';
 import '../state/workspace_state.dart';
+import 'widgets/workspace_switch_dialog.dart';
 import 'workspace_login_screen.dart';
 
 /// Clean, responsive Landing & Workspace Entry Screen for Mobile and Desktop.
@@ -172,6 +173,21 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     if (directCode == null && !_formKey.currentState!.validate()) return;
     if (code.isEmpty) return;
 
+    // 1. If an enrolled workspace matches and already has an active authenticated session,
+    // transition directly into that workspace without requiring re-authentication.
+    final enrolled = ref.read(workspaceStateProvider).enrolledWorkspaces;
+    final matchingActive = enrolled.where((w) =>
+        w.tenantKey.toLowerCase() == code.toLowerCase() ||
+        w.primaryDomain.toLowerCase() == code.toLowerCase() ||
+        (w.customDomain != null && w.customDomain!.toLowerCase() == code.toLowerCase())
+    ).firstOrNull;
+
+    if (matchingActive != null && matchingActive.isAuthenticated) {
+      await showWorkspaceSwitchDialog(context, matchingActive);
+      return;
+    }
+
+    // 2. Otherwise verify workspace with the backend and show login screen
     final notifier = ref.read(workspaceStateProvider.notifier);
     final resolved = await notifier.verifyWorkspace(code, remember: _rememberOrganization);
 
@@ -281,13 +297,20 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
   Widget _buildEnrolledWorkspaceCard(Workspace ws, bool isDark) {
     final borderColor = isDark ? AppColors.outlineDark : AppColors.outlineLight;
     final cardBg = isDark ? AppColors.surfaceVariantDark.withAlpha(140) : AppColors.gray50;
+    final isAuthed = ws.isAuthenticated;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _handleContinue(ws.tenantKey),
+          onTap: () {
+            if (isAuthed) {
+              showWorkspaceSwitchDialog(context, ws);
+            } else {
+              _handleContinue(ws.tenantKey);
+            }
+          },
           borderRadius: BorderRadius.circular(14),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -295,7 +318,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               color: cardBg,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: borderColor,
+                color: isAuthed ? const Color(0xFF10B981).withAlpha(isDark ? 80 : 60) : borderColor,
                 width: 1,
               ),
             ),
@@ -318,23 +341,66 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        ws.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              ws.displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
+                              ),
+                            ),
+                          ),
+                          if (isAuthed) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withAlpha(isDark ? 35 : 20),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFF10B981).withAlpha(80)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF10B981),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Logged In',
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Connected Workspace',
+                        isAuthed
+                            ? (ws.userEmail != null && ws.userEmail!.isNotEmpty ? 'Signed in as ${ws.userEmail}' : 'Active session • Tap to open')
+                            : 'Sign in required',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: isDark ? AppColors.gray400 : AppColors.gray500,
+                          color: isAuthed
+                              ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+                              : (isDark ? AppColors.gray400 : AppColors.gray500),
                         ),
                       ),
                     ],
@@ -359,8 +425,12 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                   shadowColor: Colors.black.withAlpha(30),
                   offset: const Offset(0, 38),
                   onSelected: (action) {
-                    if (action == 'continue') {
+                    if (action == 'switch') {
+                      showWorkspaceSwitchDialog(context, ws);
+                    } else if (action == 'login') {
                       _handleContinue(ws.tenantKey);
+                    } else if (action == 'signout') {
+                      ref.read(workspaceStateProvider.notifier).signOutSession(ws.tenantKey);
                     } else if (action == 'remove') {
                       _confirmRemoveWorkspace(ws);
                     }
@@ -385,40 +455,112 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                     ),
                   ),
                   itemBuilder: (context) => [
-                    PopupMenuItem<String>(
-                      value: 'continue',
-                      height: 38,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: isDark ? AppColors.primary.withAlpha(35) : const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.login_rounded,
-                                size: 14,
-                                color: AppColors.primary,
+                    if (isAuthed) ...[
+                      PopupMenuItem<String>(
+                        value: 'switch',
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.primary.withAlpha(35) : const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.space_dashboard_rounded,
+                                  size: 14,
+                                  color: AppColors.primary,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Continue',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : AppColors.gray900,
-                              letterSpacing: 0.1,
+                            const SizedBox(width: 10),
+                            Text(
+                              'Switch to Workspace',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : AppColors.gray900,
+                                letterSpacing: 0.1,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                      _CustomMenuDivider(isDark: isDark),
+                      PopupMenuItem<String>(
+                        value: 'signout',
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFFF59E0B).withAlpha(35) : const Color(0xFFFFFBEB),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.logout_rounded,
+                                  size: 14,
+                                  color: Color(0xFFD97706),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Sign Out Session',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309),
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      PopupMenuItem<String>(
+                        value: 'login',
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.primary.withAlpha(35) : const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.login_rounded,
+                                  size: 14,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Sign In',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : AppColors.gray900,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     _CustomMenuDivider(isDark: isDark),
                     PopupMenuItem<String>(
                       value: 'remove',
