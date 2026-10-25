@@ -644,6 +644,546 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
     );
   }
 
+  /// <summary>
+  /// Retrieves structured governance capabilities and boundary rules for a given role name.
+  /// </summary>
+  /// <param name="roleName">The name of the role (e.g. Admin, Identity Manager, etc.).</param>
+  /// <returns>A list of key-value pairs representing core capabilities and operational bounds.</returns>
+  List<Map<String, String>> _getRoleCapabilities(String roleName) {
+    switch (roleName) {
+      case 'Admin':
+        return [
+          {
+            'title': 'Full Workspace Governance',
+            'desc': 'Unrestricted authority across identity, content, configuration, billing, and system settings.',
+          },
+          {
+            'title': 'IAM & Security Authority',
+            'desc': 'Full control over security policies, API integrations, and tenant governance.',
+          },
+          {
+            'title': 'Personnel Lifecycle',
+            'desc': 'Provision, manage, deactivate members, and assign administrative roles.',
+          },
+          {
+            'title': 'Data & Audit Rights',
+            'desc': 'Unrestricted access to security audit trails, telemetry, and system exports.',
+          },
+        ];
+      case 'Identity Manager':
+        return [
+          {
+            'title': 'IAM Sovereign Role',
+            'desc': 'Assign and revoke system roles, configure permission boundaries, and manage invitations.',
+          },
+          {
+            'title': 'Access Reviews',
+            'desc': 'Inspect user credentials, 2FA configurations, and active device sessions.',
+          },
+          {
+            'title': 'Security Invitations',
+            'desc': 'Generate secure workspace join codes and dispatch role-based onboarding emails.',
+          },
+          {
+            'title': 'Root Protection Guard',
+            'desc': 'Restricted from altering sovereign or root administrative credentials.',
+          },
+        ];
+      case 'User Manager':
+        return [
+          {
+            'title': 'Directory Administration',
+            'desc': 'Manage member records, profiles, contact details, and account lifecycle.',
+          },
+          {
+            'title': 'Cohort & Category Governance',
+            'desc': 'Organize members into cohorts, custom categories, tags, and custom fields.',
+          },
+          {
+            'title': 'Status Moderation',
+            'desc': 'Activate, suspend, or update directory member states.',
+          },
+          {
+            'title': 'Privilege Boundary',
+            'desc': 'Cannot assign administrative roles without Identity Manager clearance.',
+          },
+        ];
+      case 'Member':
+        return [
+          {
+            'title': 'Standard Workspace Access',
+            'desc': 'Directory participation and personal workspace self-service.',
+          },
+          {
+            'title': 'Profile & Security',
+            'desc': 'Manage personal profile, login credentials, 2FA, and authorized devices.',
+          },
+          {
+            'title': 'Assigned Capabilities',
+            'desc': 'Access features and channels explicitly provisioned for member cohorts.',
+          },
+          {
+            'title': 'Zero Admin Privileges',
+            'desc': 'Restricted from all workspace administration and user management consoles.',
+          },
+        ];
+      case 'Global Editor':
+        return [
+          {
+            'title': 'Omni-Module Content Creation',
+            'desc': 'Create, edit, and update records across all active features in the workspace.',
+          },
+          {
+            'title': 'Publishing & Operations',
+            'desc': 'Publish live content and manage operational workflows across all modules.',
+          },
+          {
+            'title': 'Configuration Protection',
+            'desc': 'Restricted from modifying system security, tenant settings, or billing.',
+          },
+        ];
+      case 'Feature Editor':
+        return [
+          {
+            'title': 'Scoped Feature Modification',
+            'desc': 'Modify content, data, and records strictly within explicitly assigned feature modules.',
+          },
+          {
+            'title': 'Module Boundary Guard',
+            'desc': 'Zero modification privileges outside assigned feature domains.',
+          },
+          {
+            'title': 'System Settings Restriction',
+            'desc': 'Cannot alter workspace-level settings or user directories.',
+          },
+        ];
+      case 'Read Only':
+        return [
+          {
+            'title': 'Comprehensive Module Audit',
+            'desc': 'Inspect operational records, metrics, and content across all features.',
+          },
+          {
+            'title': 'Zero Mutation Rights',
+            'desc': 'Strictly prohibited from creating, updating, or deleting any data.',
+          },
+        ];
+      default:
+        return [
+          {
+            'title': 'Standard Scope',
+            'desc': 'Operational access governed by tenant workspace security policies.',
+          },
+        ];
+    }
+  }
+
+  /// <summary>
+  /// Displays the interactive "Role & Scope Details" modal dialog, presenting complete
+  /// unabridged description, governance boundaries, capabilities, and assigned personnel.
+  /// </summary>
+  /// <param name="role">The role data map containing name, scope, description, and members.</param>
+  /// <param name="tierLabel">The authority tier display label (e.g. SYSTEM AUTHORITY, OPERATIONAL LEVEL).</param>
+  void _showRoleDetailsModal(Map<String, dynamic> role, String tierLabel) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final name = (role['name'] ?? '').toString();
+        final desc = (role['description'] ?? '').toString();
+        final scope = (role['scope'] ?? '').toString();
+        final canAssign = role['canAssign'] ?? true;
+        final members = (role['members'] as List?)?.map((m) => Map<String, dynamic>.from(m as Map)).toList() ?? [];
+        final count = (role['memberCount'] as num?)?.toInt() ?? members.length;
+        final capabilities = _getRoleCapabilities(name);
+
+        return Dialog(
+          backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 580, maxHeight: 720),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Modal Header
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFFAFBFC),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    border: Border(bottom: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            _buildRoleIconBox(name, isDark, size: 42),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          name,
+                                          style: TextStyle(
+                                            fontSize: 17,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: _getRolePillBg(name, tierLabel),
+                                          borderRadius: BorderRadius.circular(100),
+                                        ),
+                                        child: Text(
+                                          tierLabel,
+                                          style: TextStyle(
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.4,
+                                            color: _getRolePillColor(name, tierLabel),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Role & Authority Specifications',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(dialogCtx).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Modal Body
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Scope & Boundary Highlight Box
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.verified_outlined, size: 16, color: Color(0xFF0050E5)),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'GOVERNANCE SCOPE BOUNDARY',
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFFBFDBFE)),
+                                ),
+                                child: Text(
+                                  scope,
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0050E5),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Full Authority Description',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                desc,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  height: 1.45,
+                                  color: isDark ? AppColors.onSurfaceDark : const Color(0xFF1E293B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Key Capabilities & Scoped Rights
+                        Text(
+                          'KEY CAPABILITIES & PRIVILEGE BOUNDARIES',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                            color: isDark ? AppColors.gray400 : AppColors.gray600,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...capabilities.map((cap) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.only(top: 3),
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: const Color(0xFF0050E5).withValues(alpha: 0.1),
+                                ),
+                                child: const Icon(Icons.check, size: 12, color: Color(0xFF0050E5)),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      height: 1.4,
+                                      color: isDark ? AppColors.gray300 : const Color(0xFF334155),
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: '${cap['title']}: ',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      TextSpan(text: cap['desc']),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                        const SizedBox(height: 20),
+
+                        // Assigned Personnel Roster for this Role
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'ASSIGNED PERSONNEL',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                                color: isDark ? AppColors.gray400 : AppColors.gray600,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                '$count ${count == 1 ? 'Member' : 'Members'}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: count > 0 ? const Color(0xFF0050E5) : (isDark ? AppColors.gray400 : AppColors.gray600),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (members.isEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                            ),
+                            child: Center(
+                              child: Text(
+                                'No members currently assigned to this role.',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontStyle: FontStyle.italic,
+                                  color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8),
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 180),
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              itemCount: members.length,
+                              separatorBuilder: (context, index) => const SizedBox(height: 6),
+                              itemBuilder: (ctx, idx) {
+                                final m = members[idx];
+                                final mName = (m['fullName'] ?? 'Member').toString();
+                                final mEmail = (m['email'] ?? '').toString();
+                                final mId = (m['memberId'] ?? '').toString();
+
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 14,
+                                        backgroundColor: _getAvatarColor(mName),
+                                        child: Text(
+                                          _getInitials(mName),
+                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              mName,
+                                              style: TextStyle(
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                              ),
+                                            ),
+                                            Text(
+                                              mId.isNotEmpty ? '$mEmail • ID: $mId' : mEmail,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Modal Footer
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFFAFBFC),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                    border: Border(top: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (canAssign)
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.person_add_alt_1, size: 15),
+                          label: const Text('Manage Personnel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0050E5),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () {
+                            Navigator.of(dialogCtx).pop();
+                            _showManageMembersDialog(role);
+                          },
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.lock_outline, size: 13, color: AppColors.gray400),
+                              SizedBox(width: 4),
+                              Text('Root Account Protected', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.gray400)),
+                            ],
+                          ),
+                        ),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        child: const Text('Close'),
+                        onPressed: () => Navigator.of(dialogCtx).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -1112,6 +1652,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                 dataRowMaxHeight: 74,
                 horizontalMargin: 22,
                 columnSpacing: 24,
+                showCheckboxColumn: false,
                 headingRowColor: WidgetStateProperty.all(
                   isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
                 ),
@@ -1184,84 +1725,113 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                   final count = (role['memberCount'] as num?)?.toInt() ?? members.length;
 
                   return DataRow(
+                    onSelectChanged: (_) => _showRoleDetailsModal(role, tierLabel),
                     cells: [
                       // Role & Tier Cell
                       DataCell(
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildRoleIconBox(name, isDark),
-                            const SizedBox(width: 12),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                        InkWell(
+                          onTap: () => _showRoleDetailsModal(role, tierLabel),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  name,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
-                                  decoration: BoxDecoration(
-                                    color: _getRolePillBg(name, tierLabel),
-                                    borderRadius: BorderRadius.circular(100),
-                                  ),
-                                  child: Text(
-                                    tierLabel,
-                                    style: TextStyle(
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.4,
-                                      color: _getRolePillColor(name, tierLabel),
+                                _buildRoleIconBox(name, isDark),
+                                const SizedBox(width: 12),
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 3),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: _getRolePillBg(name, tierLabel),
+                                        borderRadius: BorderRadius.circular(100),
+                                      ),
+                                      child: Text(
+                                        tierLabel,
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.4,
+                                          color: _getRolePillColor(name, tierLabel),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
 
                       // Scope & Boundaries Cell
                       DataCell(
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 420),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEFF6FF),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  scope,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0050E5),
+                        InkWell(
+                          onTap: () => _showRoleDetailsModal(role, tierLabel),
+                          borderRadius: BorderRadius.circular(6),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 420),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFEFF6FF),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            scope,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF0050E5),
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Tooltip(
+                                        message: 'Tap to view full unabridged boundaries',
+                                        child: Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF0050E5)),
+                                      ),
+                                    ],
                                   ),
-                                ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    desc,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                      height: 1.35,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 3),
-                              Text(
-                                desc,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  color: isDark ? AppColors.gray400 : AppColors.gray600,
-                                  height: 1.35,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
@@ -1334,33 +1904,50 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
 
                       // Action Button Cell
                       DataCell(
-                        !canAssign
-                            ? Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.lock_outline, size: 14, color: AppColors.gray400),
-                                    SizedBox(width: 4),
-                                    Text('Root Account Only', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.gray400)),
-                                  ],
-                                ),
-                              )
-                            : OutlinedButton.icon(
-                                icon: const Icon(Icons.person_add_alt_1, size: 15),
-                                label: const Text('Manage Members', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.primary,
-                                  side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                ),
-                                onPressed: () => _showManageMembersDialog(role),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            OutlinedButton.icon(
+                              icon: const Icon(Icons.info_outline_rounded, size: 14),
+                              label: const Text('Details', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF0050E5),
+                                side: const BorderSide(color: Color(0xFFBFDBFE)),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                               ),
+                              onPressed: () => _showRoleDetailsModal(role, tierLabel),
+                            ),
+                            const SizedBox(width: 8),
+                            !canAssign
+                                ? Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.lock_outline, size: 14, color: AppColors.gray400),
+                                        SizedBox(width: 4),
+                                        Text('Root Account Only', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.gray400)),
+                                      ],
+                                    ),
+                                  )
+                                : OutlinedButton.icon(
+                                    icon: const Icon(Icons.person_add_alt_1, size: 15),
+                                    label: const Text('Manage Members', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.primary,
+                                      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                    onPressed: () => _showManageMembersDialog(role),
+                                  ),
+                          ],
+                        ),
                       ),
                     ],
                   );
@@ -1487,6 +2074,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                   dataRowMaxHeight: 68,
                   horizontalMargin: 22,
                   columnSpacing: 24,
+                  showCheckboxColumn: false,
                   columns: const [
                     DataColumn(label: Text('PERSONNEL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5))),
                     DataColumn(label: Text('ASSIGNED ROLE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5))),
@@ -1504,6 +2092,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                     final scope = (role['scope'] ?? '').toString();
 
                     return DataRow(
+                      onSelectChanged: (_) => _showRoleDetailsModal(role, 'ASSIGNED ROLE'),
                       cells: [
                         DataCell(
                           Row(
@@ -1527,39 +2116,74 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                           ),
                         ),
                         DataCell(
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildRoleIconBox(roleName, isDark, size: 30),
-                              const SizedBox(width: 8),
-                              Text(roleName, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                        DataCell(
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(4),
+                          InkWell(
+                            onTap: () => _showRoleDetailsModal(role, 'ASSIGNED ROLE'),
+                            borderRadius: BorderRadius.circular(4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildRoleIconBox(roleName, isDark, size: 30),
+                                const SizedBox(width: 8),
+                                Text(roleName, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold)),
+                              ],
                             ),
-                            child: Text(scope, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0050E5))),
+                          ),
+                        ),
+                        DataCell(
+                          InkWell(
+                            onTap: () => _showRoleDetailsModal(role, 'ASSIGNED ROLE'),
+                            borderRadius: BorderRadius.circular(4),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEFF6FF),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(scope, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0050E5))),
+                                ),
+                                const SizedBox(width: 6),
+                                const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF0050E5)),
+                              ],
+                            ),
                           ),
                         ),
                         DataCell(
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.info_outline_rounded, size: 13),
+                                label: const Text('Details', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF0050E5),
+                                  side: const BorderSide(color: Color(0xFFBFDBFE)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                onPressed: () => _showRoleDetailsModal(role, 'ASSIGNED ROLE'),
+                              ),
+                              const SizedBox(width: 6),
                               OutlinedButton.icon(
                                 icon: const Icon(Icons.edit_outlined, size: 14),
                                 label: const Text('Manage', style: TextStyle(fontSize: 11.5)),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  visualDensity: VisualDensity.compact,
+                                ),
                                 onPressed: () => _showManageMembersDialog(role),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               OutlinedButton.icon(
                                 icon: const Icon(Icons.person_remove_outlined, size: 14, color: AppColors.error),
                                 label: const Text('Remove', style: TextStyle(fontSize: 11.5, color: AppColors.error)),
-                                style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFFFECACA))),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFFFECACA)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  visualDensity: VisualDensity.compact,
+                                ),
                                 onPressed: () async {
                                   final repo = ref.read(accountRepositoryProvider);
                                   await repo.unassignRole(mUserId, roleName);
