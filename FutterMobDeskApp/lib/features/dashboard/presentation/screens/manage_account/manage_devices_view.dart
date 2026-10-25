@@ -326,6 +326,8 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                 final rawLastActive = session['lastActive'] ?? session['lastUsedAt'];
                 final isActive = _isSessionActive(rawLastActive, isCurrent);
                 final formattedTime = _formatExactTime(rawLastActive);
+                final rawCreatedAt = session['createdAt'] ?? session['firstLoginAt'] ?? session['created'];
+                final formattedCreatedTime = rawCreatedAt != null ? _formatExactTime(rawCreatedAt) : null;
                 final sessionId = session['sessionId'] ?? session['id'] ?? '';
 
                 return Container(
@@ -480,13 +482,51 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                                 ],
                               ],
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '$browserDetails • IP: $ip • ${'account.last_active'.tr(ref, fallback: 'Last active')}: $formattedTime',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark ? AppColors.gray400 : AppColors.gray600,
-                              ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 4,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  '$browserDetails • IP: $ip',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                  ),
+                                ),
+                                if (formattedCreatedTime != null && formattedCreatedTime.isNotEmpty)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.login_rounded, size: 13, color: isDark ? AppColors.gray400 : AppColors.gray500),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${'account.logged_in_since'.tr(ref, fallback: 'Logged in since')}: $formattedCreatedTime',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.schedule_rounded, size: 13, color: isDark ? AppColors.gray400 : AppColors.gray500),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${'account.last_active'.tr(ref, fallback: 'Last active')}: $formattedTime',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ],
                         ),

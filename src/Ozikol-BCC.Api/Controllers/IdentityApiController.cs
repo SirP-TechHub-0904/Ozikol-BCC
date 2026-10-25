@@ -15,6 +15,7 @@ using static Ozikol_BCC.Domain.Enum.Enum;
 
 using Microsoft.AspNetCore.SignalR;
 using Ozikol_BCC.Api.Hubs;
+using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Application.Common;
 using Ozikol_BCC.Application.Interfaces.Services;
 
@@ -33,6 +34,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly UserManager<Profile> _userManager;
         private readonly DashboardDbContext _dbContext;
         private readonly IHubContext<GroupChatHub>? _hubContext;
+        private readonly IHubContext<NotificationHub>? _notificationHubContext;
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         public IdentityApiController(
@@ -40,12 +42,14 @@ namespace Ozikol_BCC.Api.Controllers
             UserManager<Profile> userManager,
             DashboardDbContext dbContext,
             IHubContext<GroupChatHub>? hubContext = null,
+            IHubContext<NotificationHub>? notificationHubContext = null,
             ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _roleManager = roleManager;
             _userManager = userManager;
             _dbContext = dbContext;
             _hubContext = hubContext;
+            _notificationHubContext = notificationHubContext;
             _notificationDispatcher = notificationDispatcher;
         }
 
@@ -1012,6 +1016,19 @@ namespace Ozikol_BCC.Api.Controllers
                 ?? User.FindFirstValue("jti")
                 ?? User.Claims.FirstOrDefault(c => c.Type.EndsWith("/jti") || c.Type == "jti")?.Value;
 
+            // Reject if this calling session has been explicitly revoked/terminated
+            if (!string.IsNullOrEmpty(currentJti))
+            {
+                var isExplicitlyDeactivated = await _dbContext.BcpUserDevices
+                    .AsNoTracking()
+                    .AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && !d.IsActiveSession);
+
+                if (isExplicitlyDeactivated)
+                {
+                    return Unauthorized(ApiResponse<object>.FailureResponse("This device session has been terminated. Please sign in again."));
+                }
+            }
+
             var deviceEntities = await _dbContext.BcpUserDevices
                 .Where(d => d.UserId == userId && d.IsActiveSession)
                 .OrderByDescending(d => d.LastUsedAt)
@@ -1045,6 +1062,15 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (deviceEntities.Count == 0)
             {
+                // Check if user already had sessions that were terminated; if so, do not resurrect a new session!
+                var wasTerminated = !string.IsNullOrEmpty(currentJti) &&
+                    await _dbContext.BcpUserDevices.AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && !d.IsActiveSession);
+
+                if (wasTerminated)
+                {
+                    return Unauthorized(ApiResponse<object>.FailureResponse("This device session has been terminated. Please sign in again."));
+                }
+
                 var userAgent = Request.Headers["User-Agent"].ToString();
                 if (string.IsNullOrEmpty(userAgent)) userAgent = "Current Browser Session";
                 var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()
@@ -1093,13 +1119,17 @@ namespace Ozikol_BCC.Api.Controllers
                 });
             }
 
-            // Touch current device's LastUsedAt and link token if matched
+            // Touch current device's LastUsedAt, synchronize latest User-Agent (e.g. Edge vs Chrome), and link token if matched
             if (currentDevice != null)
             {
                 currentDevice.LastUsedAt = DateTime.UtcNow;
                 if (!string.IsNullOrEmpty(currentJti) && currentDevice.JwtId != currentJti)
                 {
                     currentDevice.JwtId = currentJti;
+                }
+                if (!string.IsNullOrWhiteSpace(callerUserAgent) && currentDevice.DeviceName != callerUserAgent)
+                {
+                    currentDevice.DeviceName = callerUserAgent;
                 }
                 await _dbContext.SaveChangesAsync();
             }
@@ -1241,6 +1271,36 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             await _dbContext.SaveChangesAsync();
+
+            // Broadcast real-time session termination event over SignalR so connected sockets disconnect immediately
+            var singleTerminatedPayload = new
+            {
+                userId = session.UserId,
+                terminatedSessionIds = new[] { session.Id },
+                terminatedJwtIds = !string.IsNullOrEmpty(session.JwtId) ? new[] { session.JwtId } : Array.Empty<string>(),
+                timestamp = DateTime.UtcNow
+            };
+
+            if (_hubContext != null)
+            {
+                try
+                {
+                    await _hubContext.Clients.Group($"user-{session.UserId}").SendAsync("SessionRevoked", singleTerminatedPayload);
+                    await _hubContext.Clients.Group($"user_{session.UserId}").SendAsync("SessionRevoked", singleTerminatedPayload);
+                }
+                catch { }
+            }
+
+            if (_notificationHubContext != null)
+            {
+                try
+                {
+                    await _notificationHubContext.Clients.Group($"user-{session.UserId}").SendAsync("SessionRevoked", singleTerminatedPayload);
+                    await _notificationHubContext.Clients.Group($"user_{session.UserId}").SendAsync("SessionRevoked", singleTerminatedPayload);
+                }
+                catch { }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Session '{sessionId}' successfully terminated."));
         }
 
@@ -1363,6 +1423,36 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             await _dbContext.SaveChangesAsync();
+
+            // Broadcast real-time session termination event over SignalR so all other connected sockets disconnect immediately
+            var allOtherTerminatedPayload = new
+            {
+                userId = userId,
+                terminatedSessionIds = otherSessions.Select(s => s.Id).ToList(),
+                terminatedJwtIds = otherSessions.Select(s => s.JwtId).Where(j => !string.IsNullOrEmpty(j)).ToList(),
+                timestamp = DateTime.UtcNow
+            };
+
+            if (_hubContext != null)
+            {
+                try
+                {
+                    await _hubContext.Clients.Group($"user-{userId}").SendAsync("SessionRevoked", allOtherTerminatedPayload);
+                    await _hubContext.Clients.Group($"user_{userId}").SendAsync("SessionRevoked", allOtherTerminatedPayload);
+                }
+                catch { }
+            }
+
+            if (_notificationHubContext != null)
+            {
+                try
+                {
+                    await _notificationHubContext.Clients.Group($"user-{userId}").SendAsync("SessionRevoked", allOtherTerminatedPayload);
+                    await _notificationHubContext.Clients.Group($"user_{userId}").SendAsync("SessionRevoked", allOtherTerminatedPayload);
+                }
+                catch { }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(new { TerminatedCount = otherSessions.Count }, $"{otherSessions.Count} other session(s) successfully terminated."));
         }
 

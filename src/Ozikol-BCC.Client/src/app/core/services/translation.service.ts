@@ -150,6 +150,8 @@ export class TranslationService {
       'account.terminate_others': 'Terminate All Other Sessions',
       'account.terminate_session': 'Revoke Session',
       'account.this_device': 'Current Device',
+      'account.logged_in_since': 'Logged in since',
+      'account.last_active': 'Last active',
       'account.no_devices': 'No active device sessions found.',
       'account.no_history': 'No recent login records available.',
       'account.roles_summary': 'Your Account Roles & Access Matrix',
@@ -272,6 +274,8 @@ export class TranslationService {
       'btn.confirm': 'Confirmer',
       'account.active_now': 'Actif maintenant',
       'account.idle': 'Inactif',
+      'account.logged_in_since': 'Connecté depuis',
+      'account.last_active': 'Dernière activité',
 
       // Navigation Groups & Items
       'nav.website': 'Site Web',
@@ -497,6 +501,8 @@ export class TranslationService {
       'btn.confirm': 'Confirmar',
       'account.active_now': 'Activo ahora',
       'account.idle': 'Inactivo',
+      'account.logged_in_since': 'Conectado desde',
+      'account.last_active': 'Última actividad',
 
       // Navigation Groups & Items
       'nav.website': 'Sitio Web',
@@ -722,6 +728,8 @@ export class TranslationService {
       'btn.confirm': 'Bestätigen',
       'account.active_now': 'Jetzt aktiv',
       'account.idle': 'Untätig',
+      'account.logged_in_since': 'Angemeldet seit',
+      'account.last_active': 'Zuletzt aktiv',
 
       // Navigation Groups & Items
       'nav.website': 'Webseite',

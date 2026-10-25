@@ -65,6 +65,9 @@ export class SignalRService {
   private aliasesUpdatedSubject = new Subject<any>();
   public aliasesUpdated$ = this.aliasesUpdatedSubject.asObservable();
 
+  private sessionRevokedSubject = new Subject<{ userId: string, terminatedSessionIds: string[], terminatedJwtIds: string[], timestamp: string }>();
+  public sessionRevoked$ = this.sessionRevokedSubject.asObservable();
+
   private connectionStatusSubject = new Subject<boolean>();
   public connectionStatus$ = this.connectionStatusSubject.asObservable();
 
@@ -167,6 +170,12 @@ export class SignalRService {
     this.hubConnection.on('TenantAliasesUpdated', (data: any) => {
       console.log('[SignalR] Real-time TenantAliasesUpdated event received:', data);
       this.aliasesUpdatedSubject.next(data);
+    });
+
+    // 11. Real-time Session Revocation & Disconnect
+    this.hubConnection.on('SessionRevoked', (data: { userId: string, terminatedSessionIds: string[], terminatedJwtIds: string[], timestamp: string }) => {
+      console.log('[SignalR] Real-time SessionRevoked event received:', data);
+      this.sessionRevokedSubject.next(data);
     });
   }
 

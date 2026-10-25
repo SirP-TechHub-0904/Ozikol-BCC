@@ -25,8 +25,9 @@ namespace Ozikol_BCC.Application.Hubs
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
-                // Join private user-specific notifications group
+                // Join private user-specific notifications group (both naming conventions supported)
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
             }
 
             // Join workspace-wide broadcast announcements group

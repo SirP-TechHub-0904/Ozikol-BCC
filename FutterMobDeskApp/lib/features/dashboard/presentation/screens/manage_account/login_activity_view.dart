@@ -307,9 +307,9 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
                   : (ua.contains('Android') ? 'Android' : 'iOS')));
       return isMobile ? 'Mobile App on $os' : 'Desktop App on $os';
     }
+    if (ua.contains('Edge') || ua.contains('Edg/') || ua.contains('Edg')) return 'Microsoft Edge on Windows';
     if (ua.contains('Chrome')) return 'Google Chrome on Windows';
     if (ua.contains('Firefox')) return 'Mozilla Firefox on Windows';
-    if (ua.contains('Edge') || ua.contains('Edg/')) return 'Microsoft Edge on Windows';
     if (ua.contains('Safari') && !ua.contains('Chrome')) return 'Apple Safari on macOS';
     if (ua.contains(' on ')) return ua;
     return 'Web Browser Session';

@@ -452,11 +452,13 @@ class NotificationsSheet extends ConsumerWidget {
   }
 
   static String _formatTimeAgo(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inSeconds < 60) return 'Just now';
+    final now = DateTime.now();
+    final localDt = dt.toLocal();
+    final diff = now.difference(localDt);
+    if (diff.inSeconds < 45 || diff.isNegative) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${dt.day}/${dt.month}';
+    return '${localDt.day}/${localDt.month}';
   }
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Canonical 6-tier platform notification and alert severity hierarchy across web, mobile, and desktop.
 enum NotificationSeverity {
   error(1, 'Error', Color(0xFFF06548), Icons.error_outline_rounded),
-  failed(2, 'Failed', Color(0xFFF7B84B), Icons.warning_amber_rounded),
+  failed(2, 'Warning', Color(0xFFF7B84B), Icons.warning_amber_rounded),
   success(3, 'Success', Color(0xFF0AB39C), Icons.check_circle_outline_rounded),
   newFeature(4, 'New Feature', Color(0xFF38BDF8), Icons.auto_awesome_rounded),
   update(5, 'Update', Color(0xFF1F6BFF), Icons.info_outline_rounded),
@@ -22,6 +22,7 @@ enum NotificationSeverity {
     return switch (normalized) {
       'error' => NotificationSeverity.error,
       'failed' => NotificationSeverity.failed,
+      'warning' => NotificationSeverity.failed,
       'success' => NotificationSeverity.success,
       'newfeature' => NotificationSeverity.newFeature,
       'update' => NotificationSeverity.update,
@@ -97,7 +98,12 @@ class NotificationItem {
       metadataJson: json['metadataJson']?.toString(),
       isBroadcast: json['isBroadcast'] == true,
       createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+          ? () {
+              final str = json['createdAt'].toString().trim();
+              if (str.isEmpty) return DateTime.now();
+              final normalized = (str.endsWith('Z') || str.contains('+')) ? str : '${str}Z';
+              return (DateTime.tryParse(normalized) ?? DateTime.now()).toLocal();
+            }()
           : DateTime.now(),
     );
   }

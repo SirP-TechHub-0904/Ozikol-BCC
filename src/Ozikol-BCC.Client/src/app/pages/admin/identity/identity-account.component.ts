@@ -5,6 +5,7 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { SignalRService } from '../../../core/services/signalr.service';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { parseUserAgent, formatClientIpAddress } from '../../../core/utils/user-agent.util';
 
@@ -468,8 +469,18 @@ interface AccountSummary {
                       <span class="material-symbols-outlined meta-sub-icon">{{ getDeviceSubIcon(s.rawDevice || s.device) }}</span>
                       {{ s.browser || formatBrowserDetails(s.rawDevice || s.device) }}
                     </span>
-                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">router</span>{{ formatIpAddress(s.ipAddress) }}</span>
-                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">schedule</span>{{ formatExactDateTime(s.lastActive) }}</span>
+                    <span class="meta-tag">
+                      <span class="material-symbols-outlined meta-sub-icon">router</span>
+                      {{ formatIpAddress(s.ipAddress) }}
+                    </span>
+                    <span class="meta-tag" *ngIf="s.createdAt" [title]="'account.logged_in_since' | translate">
+                      <span class="material-symbols-outlined meta-sub-icon">login</span>
+                      {{ 'account.logged_in_since' | translate }}: {{ formatExactDateTime(s.createdAt) }}
+                    </span>
+                    <span class="meta-tag" [title]="'account.last_active' | translate">
+                      <span class="material-symbols-outlined meta-sub-icon">schedule</span>
+                      {{ 'account.last_active' | translate }}: {{ formatExactDateTime(s.lastActive) }}
+                    </span>
                   </div>
                 </div>
                 <div class="device-actions" *ngIf="!s.isCurrent">
@@ -1307,7 +1318,8 @@ interface AccountSummary {
     .device-meta-row {
       display: flex;
       align-items: center;
-      gap: 16px;
+      flex-wrap: wrap;
+      gap: 14px;
       font-size: 12px;
       color: #64748b;
     }
@@ -1726,12 +1738,14 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   summary: AccountSummary | null = null;
 
   private routeSub?: Subscription;
+  private signalRSub?: Subscription;
 
   constructor(
     private readonly api: ApiService,
     private readonly toast: ToastService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly signalR: SignalRService
   ) {}
 
   ngOnInit(): void {
@@ -1747,10 +1761,30 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
     this.loadMfaStatus();
     this.loadSessions();
     this.loadLoginHistory();
+
+    // Listen to real-time session revocation events via SignalR
+    this.signalRSub = this.signalR.sessionRevoked$.subscribe((data: any) => {
+      const token = localStorage.getItem('access_token');
+      if (token && data?.terminatedJwtIds?.length) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const myJti = payload?.jti;
+          if (myJti && data.terminatedJwtIds.includes(myJti)) {
+            this.toast.warning('Your session was terminated remotely from another device.', 'Session Terminated');
+            localStorage.removeItem('access_token');
+            this.router.navigate(['/auth/login'], { queryParams: { sessionTerminated: 'true' } });
+            return;
+          }
+        } catch {}
+      }
+      this.loadSessions();
+      this.loadAccountSummary();
+    });
   }
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    this.signalRSub?.unsubscribe();
   }
 
   /**

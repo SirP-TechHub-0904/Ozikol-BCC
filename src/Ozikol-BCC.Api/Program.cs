@@ -131,6 +131,24 @@ namespace Ozikol_BCC.Api
                             context.Token = accessToken;
                         }
                         return Task.CompletedTask;
+                    },
+                    OnTokenValidated = async context =>
+                    {
+                        var jti = context.Principal?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value
+                            ?? context.Principal?.FindFirst("jti")?.Value;
+
+                        if (!string.IsNullOrEmpty(jti))
+                        {
+                            var dbContext = context.HttpContext.RequestServices.GetRequiredService<DashboardDbContext>();
+                            var isRevoked = await dbContext.BcpUserDevices
+                                .AsNoTracking()
+                                .AnyAsync(d => d.JwtId == jti && !d.IsActiveSession);
+
+                            if (isRevoked)
+                            {
+                                context.Fail("This device session has been revoked.");
+                            }
+                        }
                     }
                 };
             });

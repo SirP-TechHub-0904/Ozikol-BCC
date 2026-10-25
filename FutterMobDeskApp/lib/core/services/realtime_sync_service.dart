@@ -202,6 +202,35 @@ class RealtimeSyncService {
       AppLogger.info('RealtimeSync', 'Live dashboard telemetry update received from backend');
       _ref.read(dashboardMetricsProvider.notifier).refresh();
     });
+
+    // 7. Real-Time Session Revocation & Disconnect
+    connection.on('SessionRevoked', (arguments) async {
+      final map = _extractMapPayload(arguments);
+      AppLogger.info('RealtimeSync', 'Live SessionRevoked event received via SignalR: $map');
+      if (map != null) {
+        final currentToken = _ref.read(workspaceStateProvider).activeWorkspace?.authToken;
+        if (currentToken != null && currentToken.isNotEmpty) {
+          final terminatedJwtIds = map['terminatedJwtIds'];
+          if (terminatedJwtIds is List) {
+            try {
+              final parts = currentToken.split('.');
+              if (parts.length > 1) {
+                final normalized = base64Url.normalize(parts[1]);
+                final payload = jsonDecode(utf8.decode(base64Url.decode(normalized)));
+                final myJti = payload['jti'];
+                if (myJti != null && terminatedJwtIds.contains(myJti)) {
+                  AppLogger.warning('RealtimeSync', 'Current desktop session was terminated remotely. Signing out immediately...');
+                  await _ref.read(workspaceStateProvider.notifier).signOut();
+                  return;
+                }
+              }
+            } catch (e) {
+              AppLogger.warning('RealtimeSync', 'Error verifying terminated JWT JTI: $e');
+            }
+          }
+        }
+      }
+    });
   }
 
   /// <summary>

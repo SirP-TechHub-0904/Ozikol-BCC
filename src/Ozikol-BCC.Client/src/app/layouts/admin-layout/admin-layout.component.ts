@@ -3765,6 +3765,24 @@ export class AdminLayoutComponent implements OnInit {
       this.verifyAndRefreshSession();
     });
 
+    this.signalR.sessionRevoked$.subscribe((data: any) => {
+      console.log('[AdminLayout] Live real-time session revocation received via SignalR:', data);
+      const token = localStorage.getItem('access_token');
+      if (token && data?.terminatedJwtIds?.length) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const myJti = payload?.jti;
+          if (myJti && data.terminatedJwtIds.includes(myJti)) {
+            console.warn('[AdminLayout] Current session JTI was terminated remotely. Logging out immediately...');
+            this.toast.warning('Your session was terminated remotely from another device. Please sign in again.', 'Session Terminated');
+            localStorage.removeItem('access_token');
+            this.router.navigate(['/auth/login'], { queryParams: { sessionTerminated: 'true' } });
+            return;
+          }
+        } catch {}
+      }
+    });
+
     this.signalR.brandUpdated$.subscribe((data: any) => {
       console.log('[AdminLayout] Live real-time brand update received via SignalR -> Syncing brand...', data);
       if (data) {
