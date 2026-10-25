@@ -1021,7 +1021,10 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 var isExplicitlyDeactivated = await _dbContext.BcpUserDevices
                     .AsNoTracking()
-                    .AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && !d.IsActiveSession);
+                    .AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && !d.IsActiveSession)
+                    && !await _dbContext.BcpUserDevices
+                        .AsNoTracking()
+                        .AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && d.IsActiveSession);
 
                 if (isExplicitlyDeactivated)
                 {
@@ -1064,7 +1067,8 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 // Check if user already had sessions that were terminated; if so, do not resurrect a new session!
                 var wasTerminated = !string.IsNullOrEmpty(currentJti) &&
-                    await _dbContext.BcpUserDevices.AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && !d.IsActiveSession);
+                    await _dbContext.BcpUserDevices.AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && !d.IsActiveSession)
+                    && !await _dbContext.BcpUserDevices.AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && d.IsActiveSession);
 
                 if (wasTerminated)
                 {
