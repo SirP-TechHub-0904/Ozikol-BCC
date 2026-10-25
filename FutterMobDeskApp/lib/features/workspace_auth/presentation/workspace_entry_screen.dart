@@ -1132,13 +1132,10 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
             child: Row(
               children: [
                 Image.asset(
-                  isDark ? 'assets/images/ozikol-white.png' : 'assets/images/ozikol.png',
-                  height: 26,
+                  isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
+                  height: 28,
+                  width: 28,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Text(
-                    'OZIKOL',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.8),
-                  ),
                 ),
                 const Spacer(),
                 // Online/Offline Status Dot
