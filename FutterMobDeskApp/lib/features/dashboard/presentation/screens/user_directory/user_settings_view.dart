@@ -824,59 +824,95 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
             onChanged: (val) => setState(() => _settings['enablePublicLeaderboard'] = val),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('DEFAULT EVALUATION CYCLE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      initialValue: _settings['defaultKpiPeriodCycle'] as String? ?? 'Quarterly',
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 500;
+
+              final cycleSection = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'DEFAULT EVALUATION CYCLE',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _settings['defaultKpiPeriodCycle'] as String? ?? 'Quarterly',
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'Quarterly', child: Text('Quarterly (Every 3 Months)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'Semi-Annually', child: Text('Semi-Annually (Every 6 Months)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'Annually', child: Text('Annually (Year-End Review)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
+                      DropdownMenuItem(value: 'Monthly', child: Text('Monthly (Sprint Review)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => _settings['defaultKpiPeriodCycle'] = val);
+                    },
+                  ),
+                ],
+              );
+
+              final benchmarkSection = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'BENCHMARK PASSING SCORE',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.gray400 : AppColors.gray600,
+                        ),
                       ),
-                      items: const [
-                        DropdownMenuItem(value: 'Quarterly', child: Text('Quarterly (Every 3 Months)', style: TextStyle(fontSize: 12.5))),
-                        DropdownMenuItem(value: 'Semi-Annually', child: Text('Semi-Annually (Every 6 Months)', style: TextStyle(fontSize: 12.5))),
-                        DropdownMenuItem(value: 'Annually', child: Text('Annually (Year-End Review)', style: TextStyle(fontSize: 12.5))),
-                        DropdownMenuItem(value: 'Monthly', child: Text('Monthly (Sprint Review)', style: TextStyle(fontSize: 12.5))),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _settings['defaultKpiPeriodCycle'] = val);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
+                      Text(
+                        '$passingScore%',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0050E5)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Slider(
+                    value: passingScore.toDouble(),
+                    min: 50,
+                    max: 100,
+                    divisions: 10,
+                    label: '$passingScore%',
+                    onChanged: (val) => setState(() => _settings['kpiPassingScore'] = val.toInt()),
+                  ),
+                ],
+              );
+
+              if (isCompact) {
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('BENCHMARK PASSING SCORE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
-                        Text('$passingScore%', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0050E5))),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Slider(
-                      value: passingScore.toDouble(),
-                      min: 50,
-                      max: 100,
-                      divisions: 10,
-                      label: '$passingScore%',
-                      onChanged: (val) => setState(() => _settings['kpiPassingScore'] = val.toInt()),
-                    ),
+                    cycleSection,
+                    const SizedBox(height: 14),
+                    benchmarkSection,
                   ],
-                ),
-              ),
-            ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: cycleSection),
+                  const SizedBox(width: 14),
+                  Expanded(child: benchmarkSection),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -925,12 +961,16 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
     required ValueChanged<bool> onChanged,
   }) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   Text(
                     title,
@@ -940,9 +980,8 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
                       color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
                     ),
                   ),
-                  const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: statusBadgeActive ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(4),
@@ -959,7 +998,7 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
                   ),
                 ],
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
                 desc,
                 style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
@@ -967,6 +1006,7 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
             ],
           ),
         ),
+        const SizedBox(width: 12),
         Switch(
           value: value,
           onChanged: onChanged,
@@ -983,7 +1023,7 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
     required Widget child,
   }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
@@ -1020,6 +1060,7 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
                     ),
                     Text(
                       subtitle,
+                      softWrap: true,
                       style: TextStyle(
                         fontSize: 11.5,
                         color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
@@ -1030,7 +1071,7 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           child,
         ],
       ),
