@@ -657,15 +657,18 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     final state = ref.watch(workspaceStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth >= 900;
-          return isDesktop
-              ? _buildDesktopLayout(context, state, isDark)
-              : _buildMobileLayout(context, state, isDark);
-        },
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 900;
+            return isDesktop
+                ? _buildDesktopLayout(context, state, isDark)
+                : _buildMobileLayout(context, state, isDark);
+          },
+        ),
       ),
     );
   }

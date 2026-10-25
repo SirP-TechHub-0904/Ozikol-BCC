@@ -3,6 +3,7 @@ package com.ozikol.ozikol_app
 import android.os.Build
 import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.RenderMode
 
 class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -12,5 +13,9 @@ class MainActivity : FlutterActivity() {
                 splashScreenView.remove()
             }
         }
+    }
+
+    override fun getRenderMode(): RenderMode {
+        return RenderMode.texture
     }
 }
