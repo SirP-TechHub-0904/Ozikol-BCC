@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/custom_text_field.dart';
@@ -152,6 +153,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final state = ref.watch(workspaceStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final ws = widget.workspace;
@@ -165,8 +167,8 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
       },
       child: DesktopAuthLayout(
         workspace: ws,
-        title: 'Authentication',
-        subtitle: 'Enter your organization credentials to proceed.',
+        title: 'auth.sign_in'.tr(ref, fallback: 'Authentication'),
+        subtitle: 'auth.enter_workspace_desc'.tr(ref, fallback: 'Enter your organization credentials to proceed.'),
         onBackTap: _handleChangeOrganization,
         child: Form(
           key: _formKey,
@@ -207,7 +209,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                             // Work Email Input Field
                             CustomTextField(
                               controller: _emailController,
-                              label: 'Work Email',
+                              label: 'auth.work_email'.tr(ref, fallback: 'Work Email'),
                               placeholder: 'name@company.com',
                               keyboardType: TextInputType.emailAddress,
                               prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20, color: AppColors.primary),
@@ -215,10 +217,10 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                               textInputAction: TextInputAction.next,
                               validator: (val) {
                                 if (val == null || val.trim().isEmpty) {
-                                  return 'Please enter your work email.';
+                                  return 'auth.work_email_required'.tr(ref, fallback: 'Please enter your work email.');
                                 }
                                 if (!val.contains('@') || !val.contains('.')) {
-                                  return 'Please enter a valid email address.';
+                                  return 'auth.work_email_invalid'.tr(ref, fallback: 'Please enter a valid email address.');
                                 }
                                 return null;
                               },
@@ -228,7 +230,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                             // Password Input Field
                             CustomTextField(
                               controller: _passwordController,
-                              label: 'Password',
+                              label: 'auth.password'.tr(ref, fallback: 'Password'),
                               placeholder: '••••••••',
                               isPassword: true,
                               prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
@@ -236,7 +238,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                               onSubmitted: (_) => _handleSignIn(),
                               validator: (val) {
                                 if (val == null || val.isEmpty) {
-                                  return 'Please enter your password.';
+                                  return 'auth.password_required'.tr(ref, fallback: 'Please enter your password.');
                                 }
                                 return null;
                               },
@@ -278,7 +280,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                                           const SizedBox(width: 6),
                                           Flexible(
                                             child: Text(
-                                              'Remember me',
+                                              'auth.remember_me'.tr(ref, fallback: 'Remember me'),
                                               overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
                                                 fontSize: 12,
@@ -310,7 +312,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                                     );
                                   },
                                   child: Text(
-                                    'Forgot Password?',
+                                    'auth.forgot_password'.tr(ref, fallback: 'Forgot Password?'),
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -324,7 +326,9 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
 
                             // Sign In Action Button
                             PrimaryButton(
-                              text: 'Sign In to Workspace',
+                              text: state.isLoading
+                                  ? 'auth.signing_in'.tr(ref, fallback: 'Signing In...')
+                                  : 'auth.sign_in_workspace'.tr(ref, fallback: 'Sign In to Workspace'),
                               height: 52,
                               borderRadius: 14,
                               isLoading: state.isLoading,
@@ -337,7 +341,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                             Center(
                               child: TextButton.icon(
                                 icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                                label: const Text('Change Organization'),
+                                label: Text('auth.change_org'.tr(ref, fallback: 'Change Organization')),
                                 style: TextButton.styleFrom(
                                   foregroundColor: isDark ? AppColors.gray400 : AppColors.gray600,
                                   textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),

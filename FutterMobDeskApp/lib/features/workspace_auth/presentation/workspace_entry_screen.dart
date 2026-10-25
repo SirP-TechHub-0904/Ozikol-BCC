@@ -11,6 +11,7 @@ import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../../core/widgets/theme_mode_switcher.dart';
 import '../../../core/widgets/oz_lang_switcher.dart';
+import '../../../core/localization/language_provider.dart';
 import '../state/workspace_state.dart';
 import 'widgets/workspace_switch_dialog.dart';
 import 'workspace_login_screen.dart';
@@ -36,29 +37,28 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
   bool _isOnline = true;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
-  static const List<_FeatureSlide> _slides = [
+  List<_FeatureSlide> _getSlides(WidgetRef ref) => [
     _FeatureSlide(
-      badgeText: 'WORKSPACE',
-      title: 'All Your Work in One Place',
-      subtitle:
-          'Connect to your organization and access your tools, projects, and team data in one simple workspace.',
+      badgeText: 'auth.workspace_pill'.tr(ref, fallback: 'WORKSPACE'),
+      title: 'auth.slide1_title'.tr(ref, fallback: 'All Your Work in One Place'),
+      subtitle: 'auth.slide1_desc'.tr(ref, fallback: 'Connect to your organization and access your tools, projects, and team data in one simple workspace.'),
       icon: Icons.business_center_rounded,
     ),
     _FeatureSlide(
-      badgeText: 'NOTIFICATIONS',
-      title: 'Stay Updated in Real Time',
-      subtitle:
-          'Receive instant notifications, alerts, and messages across email, in-app feeds, and chat right as they happen.',
+      badgeText: 'auth.notifications_pill'.tr(ref, fallback: 'NOTIFICATIONS'),
+      title: 'auth.slide2_title'.tr(ref, fallback: 'Stay Updated in Real Time'),
+      subtitle: 'auth.slide2_desc'.tr(ref, fallback: 'Receive instant notifications, alerts, and messages across email, in-app feeds, and chat right as they happen.'),
       icon: Icons.notifications_active_rounded,
     ),
     _FeatureSlide(
-      badgeText: 'SYNC & SPEED',
-      title: 'Fast and Reliable Everywhere',
-      subtitle:
-          'Everything stays in sync across your desktop, phone, and tablet so you can work seamlessly without interruption.',
+      badgeText: 'auth.sync_speed_pill'.tr(ref, fallback: 'SYNC & SPEED'),
+      title: 'auth.slide3_title'.tr(ref, fallback: 'Fast and Reliable Everywhere'),
+      subtitle: 'auth.slide3_desc'.tr(ref, fallback: 'Everything stays in sync across your desktop, phone, and tablet so you can work seamlessly without interruption.'),
       icon: Icons.bolt_rounded,
     ),
   ];
+
+  List<_FeatureSlide> get _slides => _getSlides(ref);
 
   @override
   void initState() {
@@ -236,10 +236,10 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Remove Workspace',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                'auth.remove_confirm_title'.tr(ref, fallback: 'Remove Workspace'),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -256,7 +256,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(false),
             child: Text(
-              'Cancel',
+              'auth.cancel'.tr(ref, fallback: 'Cancel'),
               style: TextStyle(
                 color: isDark ? AppColors.gray400 : AppColors.gray600,
                 fontWeight: FontWeight.w600,
@@ -273,9 +273,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               ),
             ),
             onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: const Text(
-              'Remove',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            child: Text(
+              'auth.remove'.tr(ref, fallback: 'Remove'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -377,7 +377,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Logged In',
+                                    'auth.logged_in'.tr(ref, fallback: 'Logged In'),
                                     style: TextStyle(
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w700,
@@ -393,8 +393,10 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                       const SizedBox(height: 2),
                       Text(
                         isAuthed
-                            ? (ws.userEmail != null && ws.userEmail!.isNotEmpty ? 'Signed in as ${ws.userEmail}' : 'Active session • Tap to open')
-                            : 'Sign in required',
+                            ? (ws.userEmail != null && ws.userEmail!.isNotEmpty
+                                ? '${'auth.signed_in_as'.tr(ref, fallback: 'Signed in as')} ${ws.userEmail}'
+                                : 'auth.active_session'.tr(ref, fallback: 'Active session • Tap to open'))
+                            : 'auth.sign_in_required'.tr(ref, fallback: 'Sign in required'),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
@@ -411,7 +413,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
                 // 3-Dot Options Dropdown (Refined micro-button matching border lines)
                 PopupMenuButton<String>(
-                  tooltip: 'Workspace options',
+                  tooltip: 'auth.options'.tr(ref, fallback: 'Workspace options'),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
@@ -479,7 +481,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Switch to Workspace',
+                              'shell.switch_workspace'.tr(ref, fallback: 'Switch to Workspace'),
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
@@ -514,7 +516,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Sign Out Session',
+                              'shell.sign_out'.tr(ref, fallback: 'Sign Out Session'),
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
@@ -549,7 +551,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Continue',
+                              'auth.continue'.tr(ref, fallback: 'Continue'),
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
@@ -584,9 +586,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const Text(
-                            'Remove Workspace',
-                            style: TextStyle(
+                          Text(
+                            'auth.remove_workspace'.tr(ref, fallback: 'Remove Workspace'),
+                            style: const TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               color: AppColors.error,
@@ -637,7 +639,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               const SizedBox(width: 10),
               Flexible(
                 child: Text(
-                  'Remember this organization in future',
+                  'auth.remember_org'.tr(ref, fallback: 'Remember this organization in future'),
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -654,6 +656,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final state = ref.watch(workspaceStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1158,7 +1161,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        _isOnline ? 'Online' : 'Offline',
+                        _isOnline
+                            ? 'auth.online'.tr(ref, fallback: 'Online')
+                            : 'auth.offline'.tr(ref, fallback: 'Offline'),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -1175,7 +1180,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                 IconButton(
                   icon: const Icon(Icons.help_outline_rounded, size: 20),
                   onPressed: _openTourGuide,
-                  tooltip: 'Tour Guide',
+                  tooltip: 'auth.tour_guide'.tr(ref, fallback: 'Tour Guide'),
                 ),
               ],
             ),
@@ -1188,105 +1193,112 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               child: Column(
                 children: [
                   // Feature Carousel
-                  SizedBox(
-                    height: (screenHeight * 0.28).clamp(180.0, 230.0),
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: _slides.length,
-                      onPageChanged: (index) {
-                        setState(() => _carouselIndex = index);
-                      },
-                      itemBuilder: (context, index) {
-                        final slide = _slides[index];
-                        return Container(
-                          padding: const EdgeInsets.all(18),
-                          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: isDark
-                                  ? [AppColors.surfaceDark, AppColors.surfaceVariantDark]
-                                  : [const Color(0xFFF1F6FF), const Color(0xFFE6F0FF)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: isDark ? AppColors.outlineDark : const Color(0xFFD6E4FF),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 38,
-                                    height: 38,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withAlpha(isDark ? 50 : 25),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(slide.icon, color: AppColors.primary, size: 20),
+                  Builder(builder: (context) {
+                    final slides = _getSlides(ref);
+                    return Column(
+                      children: [
+                        SizedBox(
+                          height: (screenHeight * 0.28).clamp(180.0, 230.0),
+                          child: PageView.builder(
+                            controller: _pageController,
+                            itemCount: slides.length,
+                            onPageChanged: (index) {
+                              setState(() => _carouselIndex = index);
+                            },
+                            itemBuilder: (context, index) {
+                              final slide = slides[index];
+                              return Container(
+                                padding: const EdgeInsets.all(18),
+                                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: isDark
+                                        ? [AppColors.surfaceDark, AppColors.surfaceVariantDark]
+                                        : [const Color(0xFFF1F6FF), const Color(0xFFE6F0FF)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    slide.badgeText,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
-                                      letterSpacing: 0.5,
-                                    ),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: isDark ? AppColors.outlineDark : const Color(0xFFD6E4FF),
                                   ),
-                                ],
-                              ),
-                              const Spacer(),
-                              Text(
-                                slide.title,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                slide.subtitle,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  height: 1.4,
-                                  color: isDark ? AppColors.gray400 : AppColors.gray700,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 38,
+                                          height: 38,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withAlpha(isDark ? 50 : 25),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Icon(slide.icon, color: AppColors.primary, size: 20),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          slide.badgeText,
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.primary,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      slide.title,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      slide.subtitle,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        height: 1.4,
+                                        color: isDark ? AppColors.gray400 : AppColors.gray700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ),
+                        ),
 
-                  // Carousel Indicators
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_slides.length, (index) {
-                        final active = index == _carouselIndex;
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          width: active ? 22 : 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: active ? AppColors.primary : (isDark ? AppColors.outlineDark : AppColors.gray300),
-                            borderRadius: BorderRadius.circular(3),
+                        // Carousel Indicators
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(slides.length, (index) {
+                              final active = index == _carouselIndex;
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 250),
+                                margin: const EdgeInsets.symmetric(horizontal: 3),
+                                width: active ? 22 : 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: active ? AppColors.primary : (isDark ? AppColors.outlineDark : AppColors.gray300),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              );
+                            }),
                           ),
-                        );
-                      }),
-                    ),
-                  ),
+                        ),
+                      ],
+                    );
+                  }),
 
                   const SizedBox(height: 8),
 
@@ -1315,7 +1327,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                           Row(
                             children: [
                               Text(
-                                'Enter Workspace',
+                                'auth.enter_workspace'.tr(ref, fallback: 'Enter Workspace'),
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w800,
@@ -1332,7 +1344,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Enter your organization access code or custom URL.',
+                            'auth.enter_workspace_desc'.tr(ref, fallback: 'Enter your organization access code or custom URL.'),
                             style: TextStyle(
                               fontSize: 13,
                               color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -1359,15 +1371,15 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
                           CustomTextField(
                             controller: _controller,
-                            label: 'Organization Code',
-                            placeholder: 'e.g. access code or url',
+                            label: 'auth.org_code_label'.tr(ref, fallback: 'Organization Code'),
+                            placeholder: 'auth.org_code_placeholder'.tr(ref, fallback: 'e.g. access code or url'),
                             prefixIcon: const Icon(Icons.apartment_rounded, size: 20, color: AppColors.primary),
                             showPasteButton: true,
                             textInputAction: TextInputAction.done,
                             onSubmitted: (_) => _handleContinue(),
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) {
-                                return 'Please enter your organization code.';
+                                return 'auth.org_code_required'.tr(ref, fallback: 'Please enter your organization code.');
                               }
                               return null;
                             },
@@ -1376,7 +1388,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                           const SizedBox(height: 18),
 
                           PrimaryButton(
-                            text: 'Continue',
+                            text: state.isLoading
+                                ? 'auth.verifying'.tr(ref, fallback: 'Verifying...')
+                                : 'auth.continue'.tr(ref, fallback: 'Continue'),
                             height: 50,
                             borderRadius: 14,
                             isLoading: state.isLoading,
@@ -1390,7 +1404,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                             const Divider(),
                             const SizedBox(height: 8),
                             Text(
-                              'Previously Connected Workspaces:',
+                              'auth.previously_connected_title'.tr(ref, fallback: 'Previously Connected Workspaces:'),
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? AppColors.gray400 : AppColors.gray600),
                             ),
                             const SizedBox(height: 8),
@@ -1407,7 +1421,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
                   const SizedBox(height: 20),
                   Text(
-                    'Powered by Ozikol',
+                    'auth.powered_by'.tr(ref, fallback: 'Powered by Ozikol'),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,

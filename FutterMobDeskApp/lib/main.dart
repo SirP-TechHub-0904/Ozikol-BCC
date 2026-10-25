@@ -21,6 +21,7 @@ import 'core/services/client_config_service.dart';
 import 'core/services/realtime_sync_service.dart';
 import 'core/services/windows_clipboard_fix.dart';
 import 'core/services/windows_jump_list_service.dart';
+import 'core/localization/language_provider.dart';
 import 'core/widgets/desktop_title_bar.dart';
 import 'core/widgets/maintenance_screen.dart';
 
@@ -166,6 +167,7 @@ class OzikolApp extends ConsumerWidget {
     final configAsync = ref.watch(clientConfigProvider);
     final crashReporter = ref.watch(crashReporterServiceProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final currentLang = ref.watch(languageProvider);
 
     // Synchronize duplex real-time push connection with active workspace session
     ref.listen<WorkspaceState>(workspaceStateProvider, (previous, next) {
@@ -180,6 +182,7 @@ class OzikolApp extends ConsumerWidget {
 
     return MaterialApp(
       title: 'Ozikol BCC',
+      locale: Locale(currentLang),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
