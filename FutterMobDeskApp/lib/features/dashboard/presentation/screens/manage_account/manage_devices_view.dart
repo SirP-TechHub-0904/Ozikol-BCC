@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:ozikol_app/core/localization/language_provider.dart';
@@ -322,221 +323,137 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                 final browserName = session['browserName']?.toString();
                 final os = (session['operatingSystem'] ?? session['os'] ?? 'Unknown OS').toString();
                 final deviceType = (session['deviceType'] ?? 'Desktop').toString();
-                final ip = session['ipAddress'] ?? '127.0.0.1';
                 final rawLastActive = session['lastActive'] ?? session['lastUsedAt'];
                 final isActive = _isSessionActive(rawLastActive, isCurrent);
                 final formattedTime = _formatExactTime(rawLastActive);
-                final rawCreatedAt = session['createdAt'] ?? session['firstLoginAt'] ?? session['created'];
-                final formattedCreatedTime = rawCreatedAt != null ? _formatExactTime(rawCreatedAt) : null;
                 final sessionId = session['sessionId'] ?? session['id'] ?? '';
 
-                return Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _showDeviceDetailsModal(session),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isCurrent
-                          ? AppColors.primary.withValues(alpha: 0.5)
-                          : (isTrusted
-                              ? AppColors.success.withValues(alpha: 0.4)
-                              : (isDark ? AppColors.outlineDark : AppColors.outlineLight)),
-                      width: isCurrent ? 1.5 : 1.0,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Device Form Factor Avatar
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
                           color: isCurrent
-                              ? AppColors.primary.withValues(alpha: 0.12)
+                              ? AppColors.primary.withValues(alpha: 0.5)
                               : (isTrusted
-                                  ? AppColors.success.withValues(alpha: 0.12)
-                                  : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9))),
-                          borderRadius: BorderRadius.circular(12),
+                                  ? AppColors.success.withValues(alpha: 0.4)
+                                  : (isDark ? AppColors.outlineDark : AppColors.outlineLight)),
+                          width: isCurrent ? 1.5 : 1.0,
                         ),
-                        child: Icon(
-                          _resolveDeviceIcon(deviceType, os, clientType: clientType, browserName: browserName, deviceTitle: deviceTitle),
-                          size: 22,
-                          color: isCurrent
-                              ? AppColors.primary
-                              : (isTrusted ? AppColors.success : (isDark ? AppColors.gray400 : AppColors.gray600)),
-                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 16),
-
-                      // Device Telemetry Details (White-Labeled)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 5,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  deviceTitle,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                                  ),
-                                ),
-                                if (isCurrent)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(100),
-                                    ),
-                                    child: Text(
-                                      'account.this_device'.tr(ref, fallback: 'Current Device'),
-                                      style: const TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ),
-                                // Device Activity Status: Active Now vs Idle
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                                  decoration: BoxDecoration(
-                                    color: isActive
-                                        ? AppColors.success.withValues(alpha: 0.12)
-                                        : const Color(0xFFF59E0B).withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(100),
-                                    border: Border.all(
-                                      color: isActive
-                                          ? AppColors.success.withValues(alpha: 0.3)
-                                          : const Color(0xFFF59E0B).withValues(alpha: 0.3),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 6,
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: isActive ? AppColors.success : const Color(0xFFF59E0B),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        isActive
-                                            ? (isCurrent
-                                                ? 'account.active_now'.tr(ref, fallback: 'Active Now')
-                                                : 'status.active'.tr(ref, fallback: 'Active'))
-                                            : 'account.idle'.tr(ref, fallback: 'Idle'),
-                                        style: TextStyle(
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.bold,
-                                          color: isActive ? AppColors.success : const Color(0xFFD97706),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (isTrusted)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.success.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(100),
-                                      border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.verified_user_rounded, size: 12, color: AppColors.success),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'account.trusted_device'.tr(ref, fallback: 'Trusted Device'),
-                                          style: const TextStyle(
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.success,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
+                      child: Row(
+                        children: [
+                          // Device Form Factor Avatar
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: isCurrent
+                                  ? AppColors.primary.withValues(alpha: 0.12)
+                                  : (isTrusted
+                                      ? AppColors.success.withValues(alpha: 0.12)
+                                      : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9))),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(height: 6),
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 4,
-                              crossAxisAlignment: WrapCrossAlignment.center,
+                            child: Icon(
+                              _resolveDeviceIcon(deviceType, os, clientType: clientType, browserName: browserName, deviceTitle: deviceTitle),
+                              size: 20,
+                              color: isCurrent
+                                  ? AppColors.primary
+                                  : (isTrusted ? AppColors.success : (isDark ? AppColors.gray400 : AppColors.gray600)),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+
+                          // Device Telemetry Details (Minimized for maximum mobile clarity)
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        deviceTitle,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    if (isCurrent)
+                                      _buildStatusBadge(
+                                        text: 'account.this_device'.tr(ref, fallback: 'Current'),
+                                        color: AppColors.primary,
+                                      )
+                                    else if (isActive)
+                                      _buildStatusBadge(
+                                        text: 'status.active'.tr(ref, fallback: 'Active'),
+                                        color: AppColors.success,
+                                        isDot: true,
+                                      )
+                                    else
+                                      _buildStatusBadge(
+                                        text: 'account.idle'.tr(ref, fallback: 'Idle'),
+                                        color: const Color(0xFFD97706),
+                                        isDot: true,
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
                                 Text(
-                                  '$browserDetails • IP: $ip',
+                                  '$browserDetails • $formattedTime',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: 11.5,
                                     color: isDark ? AppColors.gray400 : AppColors.gray600,
                                   ),
                                 ),
-                                if (formattedCreatedTime != null && formattedCreatedTime.isNotEmpty)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.login_rounded, size: 13, color: isDark ? AppColors.gray400 : AppColors.gray500),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${'account.logged_in_since'.tr(ref, fallback: 'Logged in since')}: $formattedCreatedTime',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          color: isDark ? AppColors.gray400 : AppColors.gray600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.schedule_rounded, size: 13, color: isDark ? AppColors.gray400 : AppColors.gray500),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${'account.last_active'.tr(ref, fallback: 'Last active')}: $formattedTime',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
 
-                      // Revoke Button (only for remote sessions)
-                      if (!isCurrent) ...[
-                        const SizedBox(width: 12),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.error),
-                          tooltip: 'account.terminate_session'.tr(ref, fallback: 'Revoke Session'),
-                          onPressed: () => _handleRevoke(sessionId, deviceTitle),
-                        ),
-                      ],
-                    ],
+                          const SizedBox(width: 4),
+
+                          // Info Action (Opens Modal)
+                          IconButton(
+                            icon: Icon(
+                              Icons.info_outline_rounded,
+                              size: 19,
+                              color: isDark ? AppColors.gray400 : AppColors.gray500,
+                            ),
+                            tooltip: 'account.view_details'.tr(ref, fallback: 'View Details'),
+                            onPressed: () => _showDeviceDetailsModal(session),
+                          ),
+
+                          // Revoke Button (only for remote sessions)
+                          if (!isCurrent)
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline_rounded, size: 19, color: AppColors.error),
+                              tooltip: 'account.terminate_session'.tr(ref, fallback: 'Revoke Session'),
+                              onPressed: () => _handleRevoke(sessionId, deviceTitle),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
@@ -545,8 +462,427 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
         ],
       ),
     ),
+    // Safe bottom spacing to prevent floating AI assistant button from obstructing list content
+    const SizedBox(height: 80),
   ],
 ),
 );
+  }
+
+  /// <summary>
+  /// Builds a compact status badge pill for list items.
+  /// </summary>
+  /// <param name="text">The label text to display.</param>
+  /// <param name="color">The theme accent color.</param>
+  /// <param name="isDot">Whether to render a pulsing indicator dot.</param>
+  /// <returns>A styled badge widget.</returns>
+  Widget _buildStatusBadge({
+    required String text,
+    required Color color,
+    bool isDot = false,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isDot) ...[
+            Container(
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// <summary>
+  /// Displays a comprehensive bottom sheet modal presenting the full device telemetry,
+  /// verified trust status, client browser fingerprints, and remote session termination controls.
+  /// </summary>
+  /// <param name="session">The device session map.</param>
+  void _showDeviceDetailsModal(Map<String, dynamic> session) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isCurrent = session['isCurrent'] == true || session['isCurrentSession'] == true;
+    final isTrusted = session['isTrusted'] == true;
+    final deviceTitle = session['friendlyDeviceTitle'] ?? session['device'] ?? 'Desktop App on Windows';
+    final browserDetails = session['friendlyBrowserDetails'] ?? session['browser'] ?? 'Desktop App • Desktop';
+    final clientType = session['clientType']?.toString();
+    final browserName = session['browserName']?.toString();
+    final os = (session['operatingSystem'] ?? session['os'] ?? 'Unknown OS').toString();
+    final deviceType = (session['deviceType'] ?? 'Desktop').toString();
+    final ip = session['ipAddress'] ?? '127.0.0.1';
+    final rawLastActive = session['lastActive'] ?? session['lastUsedAt'];
+    final isActive = _isSessionActive(rawLastActive, isCurrent);
+    final formattedTime = _formatExactTime(rawLastActive);
+    final rawCreatedAt = session['createdAt'] ?? session['firstLoginAt'] ?? session['created'];
+    final formattedCreatedTime = rawCreatedAt != null ? _formatExactTime(rawCreatedAt) : 'Unknown';
+    final sessionId = session['sessionId'] ?? session['id'] ?? '';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 540),
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(modalContext).viewInsets.bottom,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Pull Handle
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Header: Avatar + Title + Badges
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: isCurrent
+                                ? AppColors.primary.withValues(alpha: 0.12)
+                                : (isTrusted
+                                    ? AppColors.success.withValues(alpha: 0.12)
+                                    : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9))),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            _resolveDeviceIcon(deviceType, os, clientType: clientType, browserName: browserName, deviceTitle: deviceTitle),
+                            size: 26,
+                            color: isCurrent
+                                ? AppColors.primary
+                                : (isTrusted ? AppColors.success : (isDark ? AppColors.gray400 : AppColors.gray600)),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                deviceTitle,
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 6,
+                                children: [
+                                  if (isCurrent)
+                                    _buildBadge(
+                                      text: 'account.this_device'.tr(ref, fallback: 'Current Device'),
+                                      bg: AppColors.primary.withValues(alpha: 0.12),
+                                      fg: AppColors.primary,
+                                      border: AppColors.primary.withValues(alpha: 0.3),
+                                    ),
+                                  _buildBadge(
+                                    text: isActive
+                                        ? (isCurrent
+                                            ? 'account.active_now'.tr(ref, fallback: 'Active Now')
+                                            : 'status.active'.tr(ref, fallback: 'Active'))
+                                        : 'account.idle'.tr(ref, fallback: 'Idle'),
+                                    bg: isActive
+                                        ? AppColors.success.withValues(alpha: 0.12)
+                                        : const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                                    fg: isActive ? AppColors.success : const Color(0xFFD97706),
+                                    border: isActive
+                                        ? AppColors.success.withValues(alpha: 0.3)
+                                        : const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                                    dotColor: isActive ? AppColors.success : const Color(0xFFF59E0B),
+                                  ),
+                                  if (isTrusted)
+                                    _buildBadge(
+                                      text: 'account.trusted_device'.tr(ref, fallback: 'Trusted Device'),
+                                      bg: AppColors.success.withValues(alpha: 0.12),
+                                      fg: AppColors.success,
+                                      border: AppColors.success.withValues(alpha: 0.3),
+                                      icon: Icons.verified_user_rounded,
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.of(modalContext).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(height: 1),
+                    const SizedBox(height: 16),
+
+                    // Details Section Title
+                    Text(
+                      'account.session_telemetry'.tr(ref, fallback: 'Session Telemetry & Security'),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                        color: isDark ? AppColors.gray400 : AppColors.gray600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Telemetry Tiles
+                    _buildModalTile(
+                      icon: Icons.devices_rounded,
+                      label: 'account.client_and_os'.tr(ref, fallback: 'Client & Platform'),
+                      value: '$browserDetails • $os',
+                      isDark: isDark,
+                    ),
+                    _buildModalTile(
+                      icon: Icons.language_rounded,
+                      label: 'account.ip_address'.tr(ref, fallback: 'IP Address'),
+                      value: ip,
+                      isDark: isDark,
+                      trailing: IconButton(
+                        icon: const Icon(Icons.copy_rounded, size: 16),
+                        tooltip: 'Copy IP',
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: ip));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('IP address copied to clipboard')),
+                          );
+                        },
+                      ),
+                    ),
+                    _buildModalTile(
+                      icon: Icons.login_rounded,
+                      label: 'account.logged_in_since'.tr(ref, fallback: 'Logged In Since'),
+                      value: formattedCreatedTime,
+                      isDark: isDark,
+                    ),
+                    _buildModalTile(
+                      icon: Icons.schedule_rounded,
+                      label: 'account.last_active'.tr(ref, fallback: 'Last Active'),
+                      value: formattedTime,
+                      isDark: isDark,
+                    ),
+                    if (sessionId.isNotEmpty)
+                      _buildModalTile(
+                        icon: Icons.fingerprint_rounded,
+                        label: 'account.session_id'.tr(ref, fallback: 'Session Identifier'),
+                        value: sessionId,
+                        isDark: isDark,
+                        trailing: IconButton(
+                          icon: const Icon(Icons.copy_rounded, size: 16),
+                          tooltip: 'Copy Session ID',
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: sessionId));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Session ID copied to clipboard')),
+                            );
+                          },
+                        ),
+                      ),
+
+                    const SizedBox(height: 24),
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        if (!isCurrent) ...[
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.of(modalContext).pop();
+                                _handleRevoke(sessionId, deviceTitle);
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.error,
+                                side: BorderSide(color: AppColors.error.withValues(alpha: 0.5)),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                              label: Text(
+                                'account.terminate_session'.tr(ref, fallback: 'Terminate Session'),
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.of(modalContext).pop(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                              foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: const Text('Close', style: TextStyle(fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// <summary>
+  /// Builds a colored pill badge for status highlights.
+  /// </summary>
+  Widget _buildBadge({
+    required String text,
+    required Color bg,
+    required Color fg,
+    Color? border,
+    Color? dotColor,
+    IconData? icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(100),
+        border: border != null ? Border.all(color: border) : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (dotColor != null) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: dotColor,
+              ),
+            ),
+            const SizedBox(width: 5),
+          ],
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: fg),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// <summary>
+  /// Builds a key-value detail tile for the modal dialog.
+  /// </summary>
+  Widget _buildModalTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isDark,
+    Widget? trailing,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? AppColors.gray400 : AppColors.gray500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
+    );
   }
 }

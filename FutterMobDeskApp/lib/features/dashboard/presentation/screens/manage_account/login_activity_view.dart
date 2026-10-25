@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../../core/localization/language_provider.dart';
@@ -295,6 +296,288 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
     return DateFormat('MMM d, yyyy • h:mm a').format(localDt);
   }
 
+  /// <summary>
+  /// Formats raw timestamp to concise local date and time string (MMM d • h:mm a or h:mm a for today).
+  /// </summary>
+  String _formatShortTime(dynamic raw) {
+    if (raw == null) return '—';
+    final str = raw.toString().trim();
+    if (str.isEmpty || str == 'Just now') return str;
+    final dt = DateTime.tryParse(str);
+    if (dt == null) return str;
+    final localDt = dt.toLocal();
+    final now = DateTime.now();
+    if (localDt.year == now.year && localDt.month == now.month && localDt.day == now.day) {
+      return DateFormat('h:mm a').format(localDt);
+    }
+    return DateFormat('MMM d • h:mm a').format(localDt);
+  }
+
+  /// <summary>
+  /// Displays a comprehensive bottom sheet modal presenting the full audit log telemetry,
+  /// complete parameter change sets, client agent details, and network metadata.
+  /// </summary>
+  /// <param name="item">The activity audit item payload.</param>
+  void _showActivityDetailModal(Map<String, dynamic> item) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final action = (item['actionType'] ?? item['status'] ?? 'Operational Task').toString();
+    final description = (item['description'] ?? item['actionType'] ?? action).toString();
+    final module = (item['module'] ?? 'System').toString();
+    final isTrusted = item['isTrusted'] == true || action.contains('Trusted');
+    final timestamp = item['timestamp'] ?? item['date'] ?? 'Just now';
+    final ip = item['ipAddress'] ?? '127.0.0.1';
+    final rawUserAgent = (item['userAgent'] ?? item['deviceSummary'] ?? 'Web Browser').toString();
+    final deviceTitle = item['device']?.toString() ?? _formatUserAgent(rawUserAgent);
+    final browserDetails = item['browser']?.toString();
+    final exactTime = _formatExactTime(timestamp);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 560),
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(modalContext).viewInsets.bottom,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Pull Handle
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+
+                    // Header: Badges & Close Button
+                    Row(
+                      children: [
+                        _buildActivityBadge(action, module: module),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: isDark ? const Color(0xFF475569) : const Color(0xFFE2E8F0)),
+                          ),
+                          child: Text(
+                            module,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.gray300 : const Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                        if (isTrusted) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: AppColors.success.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(100),
+                              border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.verified_user_rounded, size: 11, color: AppColors.success),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Trusted',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.success),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const Spacer(),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.of(modalContext).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Event Full Title / Description Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'AUDIT LOG RECORD',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          SelectableText(
+                            description,
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                              height: 1.45,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Key Telemetry Tiles
+                    _buildModalTile(
+                      icon: Icons.schedule_rounded,
+                      label: 'Timestamp & Execution Time',
+                      value: exactTime,
+                      isDark: isDark,
+                    ),
+                    _buildModalTile(
+                      icon: Icons.devices_rounded,
+                      label: 'Client Device & Platform',
+                      value: browserDetails != null && browserDetails.isNotEmpty ? '$deviceTitle • $browserDetails' : deviceTitle,
+                      isDark: isDark,
+                    ),
+                    _buildModalTile(
+                      icon: Icons.language_rounded,
+                      label: 'IP Address',
+                      value: ip,
+                      isDark: isDark,
+                      trailing: IconButton(
+                        icon: const Icon(Icons.copy_rounded, size: 16),
+                        tooltip: 'Copy IP',
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: ip));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('IP address copied to clipboard')),
+                          );
+                        },
+                      ),
+                    ),
+                    _buildModalTile(
+                      icon: Icons.category_rounded,
+                      label: 'System Module',
+                      value: module,
+                      isDark: isDark,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Close Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(modalContext).pop(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                          foregroundColor: isDark ? Colors.white : const Color(0xFF1E293B),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Close', style: TextStyle(fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// <summary>
+  /// Builds a key-value detail tile for the activity bottom sheet modal.
+  /// </summary>
+  Widget _buildModalTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isDark,
+    Widget? trailing,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? AppColors.gray400 : AppColors.gray500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+
   String _formatUserAgent(String ua) {
     if (ua.contains('BCC-Client') || ua.contains('Flutter')) {
       final isMobile = ua.contains('Mobile') || ua.contains('Android') || ua.contains('iOS');
@@ -412,69 +695,17 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
     );
   }
 
-  /// <summary>
-  /// Renders a flexible device and IP metadata row using [Wrap] to prevent horizontal overflow.
-  /// </summary>
-  Widget _buildDeviceMetaWrap(String deviceTitle, String ip, String? browserDetails, bool isDark) {
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 6,
-      runSpacing: 4,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(_getDeviceIcon(deviceTitle), size: 13, color: AppColors.primary),
-            const SizedBox(width: 4),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 190),
-              child: Text(
-                deviceTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: isDark ? AppColors.gray300 : const Color(0xFF334155),
-                ),
-              ),
-            ),
-          ],
-        ),
-        Text('•', style: TextStyle(color: isDark ? AppColors.gray500 : AppColors.gray400, fontSize: 11)),
-        Text(
-          'IP: $ip',
-          style: TextStyle(
-            fontSize: 12,
-            color: isDark ? AppColors.gray400 : AppColors.gray600,
-          ),
-        ),
-        if (browserDetails != null && browserDetails.isNotEmpty) ...[
-          Text('•', style: TextStyle(color: isDark ? AppColors.gray500 : AppColors.gray400, fontSize: 11)),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 220),
-            child: Text(
-              browserDetails,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11.5,
-                color: isDark ? AppColors.gray400 : AppColors.gray600,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isMobile = MediaQuery.of(context).size.width < 600;
     final filtered = _getFilteredItems();
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16 : 24,
+        vertical: 20,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -754,177 +985,97 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
                         final action = (item['actionType'] ?? item['status'] ?? 'Operational Task').toString();
                         final description = (item['description'] ?? item['actionType'] ?? action).toString();
                         final module = (item['module'] ?? 'System').toString();
-                        final isTrusted = item['isTrusted'] == true || action.contains('Trusted');
                         final timestamp = item['timestamp'] ?? item['date'] ?? 'Just now';
                         final ip = item['ipAddress'] ?? '127.0.0.1';
                         final rawUserAgent = (item['userAgent'] ?? item['deviceSummary'] ?? 'Web Browser').toString();
                         final deviceTitle = item['device']?.toString() ?? _formatUserAgent(rawUserAgent);
-                        final browserDetails = item['browser']?.toString();
 
-                        return LayoutBuilder(
-                          builder: (context, itemConstraints) {
-                            final isCompact = itemConstraints.maxWidth < 620;
-
-                            if (isCompact) {
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Compact Header: Badge + Module + Trusted + Timestamp
-                                    Row(
-                                      children: [
-                                        _buildActivityBadge(action, module: module),
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(color: isDark ? const Color(0xFF475569) : const Color(0xFFE2E8F0)),
-                                          ),
-                                          child: Text(
-                                            module,
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w700,
-                                              color: isDark ? AppColors.gray300 : const Color(0xFF475569),
-                                            ),
-                                          ),
-                                        ),
-                                        if (isTrusted) ...[
-                                          const SizedBox(width: 6),
-                                          const Icon(Icons.verified_user_rounded, size: 12, color: AppColors.success),
-                                        ],
-                                        const Spacer(),
-                                        Text(
-                                          _formatExactTime(timestamp),
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w500,
-                                            color: isDark ? AppColors.gray400 : AppColors.gray600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-
-                                    // Description
-                                    Text(
-                                      description,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-
-                                    // Wrapped Device Meta
-                                    _buildDeviceMetaWrap(deviceTitle, ip, browserDetails, isDark),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            // Wide Screen Row Layout
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showActivityDetailModal(item),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Action Badge & Trusted Indicator
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      _buildActivityBadge(action, module: module),
-                                      if (isTrusted) ...[
-                                        const SizedBox(height: 4),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.success.withValues(alpha: 0.12),
-                                            borderRadius: BorderRadius.circular(100),
-                                            border: Border.all(color: AppColors.success.withValues(alpha: 0.25)),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(Icons.verified_user_rounded, size: 10, color: AppColors.success),
-                                              const SizedBox(width: 3),
-                                              Text(
-                                                'account.trusted_device'.tr(ref, fallback: 'Trusted'),
-                                                style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: AppColors.success),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                  const SizedBox(width: 14),
+                                  // 1. Action Badge
+                                  _buildActivityBadge(action, module: module),
+                                  const SizedBox(width: 12),
 
-                                  // Description & Module & Device Details
+                                  // 2. Main Content (Clean & Minimized)
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
+                                        // Clean description / title (max 2 lines)
+                                        Text(
+                                          description,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                            height: 1.35,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 5),
+
+                                        // Metadata subtitle (Device • IP • Short Timestamp)
                                         Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Expanded(
-                                              child: Text(
-                                                description,
-                                                style: TextStyle(
-                                                  fontSize: 13.5,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                                                ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    _getDeviceIcon(deviceTitle),
+                                                    size: 12,
+                                                    color: isDark ? AppColors.gray400 : AppColors.gray500,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Flexible(
+                                                    child: Text(
+                                                      '$deviceTitle • $ip',
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        color: isDark ? AppColors.gray400 : AppColors.gray500,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                             const SizedBox(width: 8),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                              decoration: BoxDecoration(
-                                                color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                                                borderRadius: BorderRadius.circular(6),
-                                                border: Border.all(color: isDark ? const Color(0xFF475569) : const Color(0xFFE2E8F0)),
-                                              ),
-                                              child: Text(
-                                                module,
-                                                style: TextStyle(
-                                                  fontSize: 10.5,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: isDark ? AppColors.gray300 : const Color(0xFF475569),
-                                                ),
+                                            Text(
+                                              _formatShortTime(timestamp),
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                                color: isDark ? AppColors.gray400 : AppColors.gray600,
                                               ),
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 5),
-                                        _buildDeviceMetaWrap(deviceTitle, ip, browserDetails, isDark),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 14),
 
-                                  // Exact Formatted Local Time
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(minWidth: 110),
-                                    child: Text(
-                                      _formatExactTime(timestamp),
-                                      textAlign: TextAlign.end,
-                                      style: TextStyle(
-                                        fontSize: 11.5,
-                                        fontWeight: FontWeight.w500,
-                                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                                      ),
-                                    ),
+                                  const SizedBox(width: 6),
+
+                                  // Tappable Chevron indicator
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 18,
+                                    color: isDark ? AppColors.gray500 : AppColors.gray400,
                                   ),
                                 ],
                               ),
-                            );
-                          },
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -972,6 +1123,8 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
               ],
             ),
           ),
+          // Safe bottom spacing to avoid floating AI assistant button from obstructing list content
+          const SizedBox(height: 80),
         ],
       ),
     );

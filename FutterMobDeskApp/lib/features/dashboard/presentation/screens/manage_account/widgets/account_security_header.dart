@@ -56,10 +56,41 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
   bool? _loaded2faEnabled;
   late final ScrollController _scrollController;
 
+  /// Global keys mapped to each tab key for precise auto-scrolling into view.
+  final Map<String, GlobalKey> _tabKeys = {
+    'password': GlobalKey(),
+    '2fa': GlobalKey(),
+    'devices': GlobalKey(),
+    'activity': GlobalKey(),
+    'roles': GlobalKey(),
+  };
+
+  /// <summary>
+  /// Computes an immediate estimated horizontal scroll offset based on the active tab
+  /// to eliminate any initial jump or delay before layout finishes.
+  /// </summary>
+  static double _getEstimatedOffset(String tab) {
+    switch (tab) {
+      case 'password':
+        return 0.0;
+      case '2fa':
+        return 40.0;
+      case 'devices':
+        return 140.0;
+      case 'activity':
+        return 240.0;
+      case 'roles':
+        return 360.0;
+      default:
+        return 0.0;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
+    final initialOffset = _getEstimatedOffset(widget.activeTab);
+    _scrollController = ScrollController(initialScrollOffset: initialOffset);
     _loadedDevicesCount = widget.activeDevicesCount;
     _loaded2faEnabled = widget.is2faEnabled;
 
@@ -80,7 +111,7 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
       _loaded2faEnabled = widget.is2faEnabled;
     }
     if (widget.activeTab != oldWidget.activeTab) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToActiveTab());
+      _scrollToActiveTab();
     }
   }
 
@@ -91,34 +122,22 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
   }
 
   /// <summary>
-  /// Scrolls the tab bar to ensure the active tab is properly in view.
+  /// Smoothly centers the active tab in the horizontal scrollable view using Flutter's built-in Scrollable.ensureVisible.
   /// </summary>
   void _scrollToActiveTab() {
-    if (!_scrollController.hasClients) return;
-    double targetOffset = 0;
-    switch (widget.activeTab) {
-      case 'devices':
-        targetOffset = 110;
-        break;
-      case 'activity':
-        targetOffset = 210;
-        break;
-      case 'roles':
-        targetOffset = 320;
-        break;
-      case 'password':
-      case '2fa':
-      default:
-        targetOffset = 0;
-        break;
-    }
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final clamped = targetOffset.clamp(0.0, maxScroll);
-    _scrollController.animateTo(
-      clamped,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final key = _tabKeys[widget.activeTab];
+      final tabCtx = key?.currentContext;
+      if (tabCtx != null) {
+        Scrollable.ensureVisible(
+          tabCtx,
+          alignment: 0.5,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
   }
 
   /// <summary>
@@ -253,6 +272,7 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
     final inactiveColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return InkWell(
+      key: _tabKeys[key],
       onTap: () => widget.onSelectTab?.call(key),
       hoverColor: activeColor.withValues(alpha: 0.04),
       borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
@@ -412,7 +432,7 @@ class AccountSectionCard extends StatelessWidget {
           // Section Card Head (.section-card-head)
           LayoutBuilder(
             builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 600;
+              final isNarrow = constraints.maxWidth < 850;
 
               final titleContent = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -474,13 +494,17 @@ class AccountSectionCard extends StatelessWidget {
                   ),
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(icon, size: 22, color: AppColors.primary),
                     const SizedBox(width: 12),
                     Expanded(child: titleContent),
                     if (action != null) ...[
                       const SizedBox(width: 16),
-                      action!,
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.45),
+                        child: action!,
+                      ),
                     ],
                   ],
                 ),
