@@ -260,8 +260,8 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         if (action.badge != null)
           Positioned(
-            top: 6,
-            right: 6,
+            top: 2,
+            right: 2,
             child: action.badge!,
           ),
       ],

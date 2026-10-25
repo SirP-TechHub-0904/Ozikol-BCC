@@ -1196,6 +1196,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     );
   }
 
+  /// Builds a top bar icon button with an optional unread notification badge.
+  /// Uses Flutter's native [Badge] widget positioned at the top-right corner of the icon
+  /// to ensure the bell and action icons remain 100% visible, crisp, and unobstructed.
   Widget _buildTopIconBtn({
     required IconData icon,
     required String tooltip,
@@ -1203,31 +1206,36 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     required VoidCallback onTap,
     int badgeCount = 0,
   }) {
+    final iconColor = isDark ? AppColors.gray300 : const Color(0xFF475569);
+    final iconWidget = Icon(
+      icon,
+      size: 20,
+      color: iconColor,
+    );
+
     return Padding(
       padding: const EdgeInsets.only(left: 4),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          IconButton(
-            icon: Icon(
-              icon,
-              size: 20,
-              color: isDark ? AppColors.gray300 : const Color(0xFF475569),
-            ),
-            tooltip: tooltip,
-            onPressed: onTap,
-          ),
-          if (badgeCount > 0)
-            Positioned(
-              top: 6,
-              right: 6,
-              child: AppBadge(
-                text: '$badgeCount',
+      child: IconButton(
+        icon: badgeCount > 0
+            ? Badge(
+                isLabelVisible: true,
+                label: Text(
+                  badgeCount > 99 ? '99+' : '$badgeCount',
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    height: 1.0,
+                  ),
+                ),
                 backgroundColor: AppColors.error,
-                size: 16,
-              ),
-            ),
-        ],
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                offset: const Offset(4, -4),
+                child: iconWidget,
+              )
+            : iconWidget,
+        tooltip: tooltip,
+        onPressed: onTap,
       ),
     );
   }
