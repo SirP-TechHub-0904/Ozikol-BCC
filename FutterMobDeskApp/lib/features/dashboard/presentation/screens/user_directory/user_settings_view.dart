@@ -54,6 +54,7 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
   List<String> _titleChips = [];
   final _newTitleCtrl = TextEditingController();
   final _prefixCtrl = TextEditingController();
+  final _nextNumberCtrl = TextEditingController(text: '1');
   List<Map<String, dynamic>> _formatPreviews = [];
 
   @override
@@ -66,6 +67,7 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
   void dispose() {
     _newTitleCtrl.dispose();
     _prefixCtrl.dispose();
+    _nextNumberCtrl.dispose();
     super.dispose();
   }
 
@@ -83,6 +85,8 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
           final titlesStr = _settings['preFilledTitles'] as String? ?? 'Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor';
           _titleChips = titlesStr.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
           _prefixCtrl.text = _settings['memberIdPrefix'] as String? ?? 'CC';
+          final nextNum = _settings['memberIdNextNumber'] ?? _settings['nextNumber'] ?? 1;
+          _nextNumberCtrl.text = nextNum.toString();
 
           if (_settings['previews'] is List) {
             _formatPreviews = List<Map<String, dynamic>>.from(_settings['previews'] as List);
@@ -138,7 +142,8 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
     final prefix = _prefixCtrl.text.trim().isEmpty ? 'CC' : _prefixCtrl.text.trim().toUpperCase();
     final delim = _settings['memberIdDelimiter'] as String? ?? '-';
     final padding = (_settings['memberIdPadding'] as num?)?.toInt() ?? 4;
-    final seqNum = '1'.padLeft(padding, '0');
+    final startNum = int.tryParse(_nextNumberCtrl.text.trim()) ?? 1;
+    final seqNum = startNum.toString().padLeft(padding, '0');
 
     setState(() {
       _formatPreviews = [
@@ -192,6 +197,7 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
     setState(() => _isSaving = true);
     _settings['preFilledTitles'] = _titleChips.join(', ');
     _settings['memberIdPrefix'] = _prefixCtrl.text.trim().toUpperCase();
+    _settings['memberIdNextNumber'] = int.tryParse(_nextNumberCtrl.text.trim()) ?? 1;
 
     try {
       final repo = ref.read(accountRepositoryProvider);
@@ -478,6 +484,13 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
   }
 
   Widget _buildSection2MemberIdRules(bool isDark, String currentFormat) {
+    final activeFormatObj = _formatPreviews.firstWhere(
+      (p) => p['key'] == currentFormat,
+      orElse: () => _formatPreviews.isNotEmpty ? _formatPreviews.first : {'previewExample': 'CC-2026-0001', 'isSequential': true},
+    );
+    final activeSample = activeFormatObj['previewExample'] as String? ?? 'CC-2026-0001';
+    final isSequential = activeFormatObj['isSequential'] as bool? ?? true;
+
     return _buildSectionContainer(
       isDark: isDark,
       icon: Icons.tag_rounded,
@@ -486,88 +499,97 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          // Dynamic Live Preview Box
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1), width: 1.5),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text('PREFIX CODE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _prefixCtrl,
-                      onChanged: (_) => _updatePreviews(),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. CC or ID',
-                        filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    Icon(Icons.visibility_outlined, size: 14, color: isDark ? AppColors.gray400 : AppColors.gray600),
+                    const SizedBox(width: 6),
+                    Text(
+                      'NEXT GENERATED MEMBER ID PREVIEW',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.05,
+                        color: isDark ? AppColors.gray400 : AppColors.gray600,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 8),
+                Text(
+                  activeSample,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'monospace',
+                    color: Color(0xFF0050E5),
+                    letterSpacing: 0.05,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
                   children: [
-                    Text('DELIMITER SEPARATOR', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<String>(
-                      initialValue: _settings['memberIdDelimiter'] as String? ?? '-',
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: '-', child: Text('Hyphen (-)', style: TextStyle(fontSize: 12.5))),
-                        DropdownMenuItem(value: '/', child: Text('Forward Slash (/)', style: TextStyle(fontSize: 12.5))),
-                        DropdownMenuItem(value: '_', child: Text('Underscore (_)', style: TextStyle(fontSize: 12.5))),
-                        DropdownMenuItem(value: '.', child: Text('Dot (.)', style: TextStyle(fontSize: 12.5))),
+                    const Icon(Icons.check_circle, size: 14, color: Color(0xFF10B981)),
+                    const SizedBox(width: 5),
+                    Text(
+                      isSequential ? 'Strict Serial Auto-Incrementing Sequence (1, 2, 3...)' : 'Cryptographic Random Secure Format',
+                      style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : AppColors.gray600),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // 4 Token Controls
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 650;
+              if (isNarrow) {
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: _buildPrefixField(isDark)),
+                        const SizedBox(width: 14),
+                        Expanded(child: _buildNextNumberField(isDark)),
                       ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          _settings['memberIdDelimiter'] = val;
-                          _updatePreviews();
-                        }
-                      },
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('ZERO-PADDING WIDTH', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<int>(
-                      initialValue: (_settings['memberIdPadding'] as num?)?.toInt() ?? 4,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 3, child: Text('3 Digits (001)', style: TextStyle(fontSize: 12.5))),
-                        DropdownMenuItem(value: 4, child: Text('4 Digits (0001)', style: TextStyle(fontSize: 12.5))),
-                        DropdownMenuItem(value: 5, child: Text('5 Digits (00001)', style: TextStyle(fontSize: 12.5))),
-                        DropdownMenuItem(value: 6, child: Text('6 Digits (000001)', style: TextStyle(fontSize: 12.5))),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(child: _buildPaddingDropdown(isDark)),
+                        const SizedBox(width: 14),
+                        Expanded(child: _buildDelimiterDropdown(isDark)),
                       ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          _settings['memberIdPadding'] = val;
-                          _updatePreviews();
-                        }
-                      },
                     ),
                   ],
-                ),
-              ),
-            ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: _buildPrefixField(isDark)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildNextNumberField(isDark)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildPaddingDropdown(isDark)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildDelimiterDropdown(isDark)),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 20),
 
@@ -650,6 +672,111 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPrefixField(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('PREFIX CODE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _prefixCtrl,
+          onChanged: (_) => _updatePreviews(),
+          decoration: InputDecoration(
+            hintText: 'e.g. CC or ID',
+            filled: true,
+            fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNextNumberField(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('NEXT SERIAL COUNTER', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _nextNumberCtrl,
+          keyboardType: TextInputType.number,
+          onChanged: (_) => _updatePreviews(),
+          decoration: InputDecoration(
+            hintText: '1',
+            filled: true,
+            fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaddingDropdown(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('ZERO-PADDING WIDTH', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<int>(
+          initialValue: (_settings['memberIdPadding'] as num?)?.toInt() ?? 4,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+          items: const [
+            DropdownMenuItem(value: 3, child: Text('3 Digits (001)', style: TextStyle(fontSize: 12.5))),
+            DropdownMenuItem(value: 4, child: Text('4 Digits (0001)', style: TextStyle(fontSize: 12.5))),
+            DropdownMenuItem(value: 5, child: Text('5 Digits (00001)', style: TextStyle(fontSize: 12.5))),
+            DropdownMenuItem(value: 6, child: Text('6 Digits (000001)', style: TextStyle(fontSize: 12.5))),
+          ],
+          onChanged: (val) {
+            if (val != null) {
+              _settings['memberIdPadding'] = val;
+              _updatePreviews();
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDelimiterDropdown(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('DELIMITER SEPARATOR', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          initialValue: _settings['memberIdDelimiter'] as String? ?? '-',
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+          items: const [
+            DropdownMenuItem(value: '-', child: Text('Hyphen (-)', style: TextStyle(fontSize: 12.5))),
+            DropdownMenuItem(value: '/', child: Text('Forward Slash (/)', style: TextStyle(fontSize: 12.5))),
+            DropdownMenuItem(value: '_', child: Text('Underscore (_)', style: TextStyle(fontSize: 12.5))),
+            DropdownMenuItem(value: '.', child: Text('Dot (.)', style: TextStyle(fontSize: 12.5))),
+          ],
+          onChanged: (val) {
+            if (val != null) {
+              _settings['memberIdDelimiter'] = val;
+              _updatePreviews();
+            }
+          },
+        ),
+      ],
     );
   }
 
