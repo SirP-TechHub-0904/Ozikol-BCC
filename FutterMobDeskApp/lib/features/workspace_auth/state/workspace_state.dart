@@ -823,6 +823,17 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     );
   }
 
+  /// <summary>
+  /// Signs out of the current active workspace session if one is currently active.
+  /// </summary>
+  /// <returns>A future that completes when the session has been terminated.</returns>
+  Future<void> signOut() async {
+    final activeKey = state.activeWorkspace?.tenantKey;
+    if (activeKey != null && activeKey.isNotEmpty) {
+      await signOutSession(activeKey);
+    }
+  }
+
   /// Signs out of the specified workspace, purges its partitioned cache, and removes session
   Future<void> logoutWorkspace(String tenantKey) async {
     await _storageService.removeWorkspace(tenantKey);
