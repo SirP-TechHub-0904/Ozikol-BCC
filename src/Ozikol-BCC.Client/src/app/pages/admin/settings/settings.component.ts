@@ -64,19 +64,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         <button
           type="button"
           class="studio-nav-btn"
-          [class.active]="activeTab === 'member-id'"
-          (click)="setTab('member-id')"
-        >
-          <span class="material-symbols-outlined nav-tab-icon">badge</span>
-          <div class="nav-tab-text">
-            <span class="tab-title">Member ID & Security</span>
-            <span class="tab-sub">10 Formats & Auth Rules</span>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          class="studio-nav-btn"
           [class.active]="activeTab === 'templates'"
           (click)="setTab('templates')"
         >
@@ -616,156 +603,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
 
 
-      <!-- =================================================================== -->
-      <!-- TAB 4: MEMBER ID CODING RULES & 10 FORMAT SELECTOR                  -->
-      <!-- =================================================================== -->
-      <div *ngIf="activeTab === 'member-id'" class="tab-content-pane">
-        <section class="console-widget member-id-widget">
-          <div class="widget-head">
-            <div class="widget-title-wrap">
-              <span class="material-symbols-outlined header-widget-icon text-blue">badge</span>
-              <div>
-                <h2 class="widget-title">Member ID Auto-Generation & Security Rules</h2>
-                <p class="widget-subtitle">Select from 10 standard institutional coding formats and configure authentication policies.</p>
-              </div>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveMemberIdConfig()" [disabled]="savingIdConfig">
-              <span class="material-symbols-outlined" *ngIf="!savingIdConfig">save</span>
-              <span>{{ savingIdConfig ? 'Applying...' : 'Save Format Rule' }}</span>
-            </button>
-          </div>
 
-          <div class="widget-body">
-            <!-- Top Row: Dropdown Selector & Dynamic Live Preview -->
-            <div class="format-selection-grid">
-              <div class="form-group format-dropdown-group">
-                <label class="form-label">
-                  <span>Select Member ID Format (10 Standard Formats)</span>
-                  <span class="badge-pill-soft">Immediate Effect</span>
-                </label>
-                <select [(ngModel)]="idConfig.activeFormat" (ngModelChange)="onFormatParamChange()" class="form-control format-select">
-                  <option *ngFor="let f of idConfig.previews; let i = index" [value]="f.key">
-                    Format {{ i + 1 }}: {{ f.name }} (e.g. {{ f.previewExample }})
-                  </option>
-                </select>
-                <span class="field-hint">{{ getActiveFormatDescription() }}</span>
-              </div>
-
-              <!-- Dynamic Live Preview Box -->
-              <div class="live-preview-box">
-                <div class="preview-header">
-                  <span class="material-symbols-outlined preview-icon">visibility</span>
-                  <span class="preview-label">NEXT GENERATED MEMBER ID PREVIEW</span>
-                </div>
-                <div class="preview-badge-display">
-                  <span class="preview-id-text">{{ getActivePreviewSample() }}</span>
-                </div>
-                <div class="preview-footer-note">
-                  <span class="material-symbols-outlined" style="font-size:14px; color:#10b981;">check_circle</span>
-                  <span>{{ isCurrentFormatSequential() ? 'Strict Serial Auto-Incrementing Sequence (1, 2, 3...)' : 'Cryptographic Random Secure Format' }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Configuration Controls: Prefix, Starting Counter, Padding, Delimiter -->
-            <div class="format-params-grid">
-              <div class="form-group">
-                <label class="form-label">Custom Prefix Code</label>
-                <input type="text" [(ngModel)]="idConfig.prefix" (ngModelChange)="onFormatParamChange()" class="form-control" placeholder="e.g. CC, BCC, MEM, ORG" />
-                <span class="field-hint">Organization code prepended to ID</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Next Serial Counter Number</label>
-                <input type="number" [(ngModel)]="idConfig.nextNumber" (ngModelChange)="onFormatParamChange()" class="form-control" placeholder="1" min="1" />
-                <span class="field-hint">Current sequential auto-increment value</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Zero Padding Length</label>
-                <select [(ngModel)]="idConfig.padding" (ngModelChange)="onFormatParamChange()" class="form-control">
-                  <option [ngValue]="3">3 Digits (e.g. 001)</option>
-                  <option [ngValue]="4">4 Digits (e.g. 0001)</option>
-                  <option [ngValue]="5">5 Digits (e.g. 00001)</option>
-                  <option [ngValue]="6">6 Digits (e.g. 000001)</option>
-                </select>
-                <span class="field-hint">Leading zeros for serial numbers</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Delimiter Separator</label>
-                <select [(ngModel)]="idConfig.delimiter" (ngModelChange)="onFormatParamChange()" class="form-control">
-                  <option value="-">- Dash (e.g. CC-2026-0001)</option>
-                  <option value="/">/ Slash (e.g. CC/2026/0001)</option>
-                  <option value=".">. Dot (e.g. CC.2026.0001)</option>
-                </select>
-                <span class="field-hint">Separator between tokens</span>
-              </div>
-            </div>
-
-            <!-- Security & Access Policy 1: Email Confirmation -->
-            <div class="security-policy-box" style="margin-top: 16px; padding: 14px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-              <div style="display: flex; align-items: flex-start; gap: 12px;">
-                <span class="material-symbols-outlined" style="font-size: 22px; color: #0050e5; margin-top: 2px;">verified_user</span>
-                <div>
-                  <strong style="font-size: 13px; color: #0f172a; display: block;">Enforce Email Verification Before Login</strong>
-                  <p style="margin: 2px 0 0; font-size: 12px; color: #64748b;">
-                    When enabled, members cannot sign into the workspace until their email address is confirmed via the 6-digit OTP code.
-                  </p>
-                </div>
-              </div>
-              <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;">
-                <input type="checkbox" [(ngModel)]="idConfig.requireConfirmedEmailToLogin" style="opacity: 0; width: 0; height: 0;" />
-                <span class="toggle-slider" [class.toggle-on]="idConfig.requireConfirmedEmailToLogin" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .2s; border-radius: 24px;"></span>
-              </label>
-            </div>
-
-            <!-- Security & Access Policy 2: Allow User Account Deletion -->
-            <div class="security-policy-box" style="margin-top: 12px; padding: 14px 18px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-              <div style="display: flex; align-items: flex-start; gap: 12px;">
-                <span class="material-symbols-outlined" style="font-size: 22px; color: #e53e3e; margin-top: 2px;">person_remove</span>
-                <div>
-                  <strong style="font-size: 13px; color: #9b2c2c; display: block;">Allow Administrator User Account Deletion</strong>
-                  <p style="margin: 2px 0 0; font-size: 12px; color: #742a2a;">
-                    When enabled, administrators are permitted to permanently delete user accounts from the portal.
-                  </p>
-                </div>
-              </div>
-              <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;">
-                <input type="checkbox" [(ngModel)]="idConfig.enableUserDeletion" style="opacity: 0; width: 0; height: 0;" />
-                <span class="toggle-slider" [class.toggle-on]="idConfig.enableUserDeletion" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .2s; border-radius: 24px;"></span>
-              </label>
-            </div>
-
-            <!-- All 10 Formats Overview Grid -->
-            <div class="formats-matrix-section">
-              <div class="matrix-header">
-                <span class="matrix-title">All 10 Available Format Patterns Quick Reference</span>
-                <span class="matrix-hint">Click any card below to instantly select that format</span>
-              </div>
-
-              <div class="formats-cards-grid">
-                <div
-                  class="format-card-mini"
-                  *ngFor="let f of idConfig.previews; let idx = index"
-                  [class.selected]="idConfig.activeFormat === f.key"
-                  (click)="selectFormat(f.key)"
-                >
-                  <div class="card-mini-top">
-                    <span class="format-number">Format {{ idx + 1 }}</span>
-                    <span class="format-type-tag" [class.type-serial]="f.isSequential" [class.type-random]="!f.isSequential">
-                      {{ f.isSequential ? 'Serial (1,2,3..)' : 'Random' }}
-                    </span>
-                  </div>
-                  <h4 class="format-card-title">{{ f.name }}</h4>
-                  <div class="format-preview-chip">{{ f.previewExample }}</div>
-                  <p class="format-card-desc">{{ f.description }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
 
       <!-- =================================================================== -->
       <!-- TAB 5: MULTI-CHANNEL MESSAGE TEMPLATES (Email, SMS & In-App)        -->
@@ -3717,12 +3555,11 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
   `]
 })
 export class SettingsComponent implements OnInit {
-  activeTab: 'brand' | 'aliases' | 'colors' | 'member-id' | 'templates' | 'ecommerce' | 'storage' | 'domain' | 'widgets' = 'brand';
+  activeTab: 'brand' | 'aliases' | 'colors' | 'templates' | 'ecommerce' | 'storage' | 'domain' | 'widgets' = 'brand';
 
   savingBrand = false;
   savingAliases = false;
   savingColors = false;
-  savingIdConfig = false;
   savingStore = false;
   connectingStorage = false;
   successMessage = '';
@@ -3876,26 +3713,6 @@ export class SettingsComponent implements OnInit {
     secondaryColor: '#1f6bff'
   };
 
-  // Tab 4: Member ID & Security
-  idConfig: {
-    activeFormat: string;
-    prefix: string;
-    nextNumber: number;
-    padding: number;
-    delimiter: string;
-    requireConfirmedEmailToLogin: boolean;
-    enableUserDeletion: boolean;
-    previews: any[];
-  } = {
-    activeFormat: 'PrefixYearMonthRandom',
-    prefix: 'CC',
-    nextNumber: 1,
-    padding: 4,
-    delimiter: '-',
-    requireConfirmedEmailToLogin: false,
-    enableUserDeletion: false,
-    previews: []
-  };
 
   // Tab 5: Message Templates
   activeChannel: number = 0; // 0: Email, 1: SMS, 2: In-App
@@ -3979,7 +3796,6 @@ export class SettingsComponent implements OnInit {
     this.loadBrandSettings();
     this.loadAliases();
     this.loadAppearance();
-    this.loadMemberIdConfig();
     this.loadTemplates();
     this.loadStoreSettings();
     this.loadStorageSettings();
@@ -3994,7 +3810,7 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  setTab(tab: 'brand' | 'aliases' | 'colors' | 'member-id' | 'templates' | 'ecommerce' | 'storage' | 'domain' | 'widgets'): void {
+  setTab(tab: 'brand' | 'aliases' | 'colors' | 'templates' | 'ecommerce' | 'storage' | 'domain' | 'widgets'): void {
     this.activeTab = tab;
     this.updateHeaderButtonText();
   }
@@ -4003,7 +3819,6 @@ export class SettingsComponent implements OnInit {
     let btnText = 'Save Brand Settings';
     if (this.activeTab === 'aliases') btnText = 'Save Terminology';
     else if (this.activeTab === 'colors') btnText = 'Save Colors';
-    else if (this.activeTab === 'member-id') btnText = 'Save Format Rule';
     else if (this.activeTab === 'templates') btnText = 'Save Template';
     else if (this.activeTab === 'ecommerce') btnText = 'Save Store Settings';
     else if (this.activeTab === 'storage') btnText = 'Test & Connect Storage';
@@ -4024,7 +3839,6 @@ export class SettingsComponent implements OnInit {
     if (this.activeTab === 'brand') this.onSaveBrandSettings();
     else if (this.activeTab === 'aliases') this.onSaveAliases();
     else if (this.activeTab === 'colors') this.onSaveAppearance();
-    else if (this.activeTab === 'member-id') this.onSaveMemberIdConfig();
     else if (this.activeTab === 'templates') this.saveCurrentTemplate();
     else if (this.activeTab === 'ecommerce') this.onSaveStoreSettings();
     else if (this.activeTab === 'storage') this.onConnectCustomStorage();
@@ -4524,87 +4338,6 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  loadMemberIdConfig(): void {
-    this.api.get<any>('UsersApi/member-id-config').subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.idConfig = {
-            activeFormat: res.data.activeFormat || 'PrefixYearMonthRandom',
-            prefix: res.data.prefix || 'CC',
-            nextNumber: res.data.nextNumber || 1,
-            padding: res.data.padding || 4,
-            delimiter: res.data.delimiter || '-',
-            requireConfirmedEmailToLogin: res.data.requireConfirmedEmailToLogin === true,
-            enableUserDeletion: res.data.enableUserDeletion === true,
-            previews: res.data.previews || []
-          };
-        }
-      },
-      error: () => {
-        this.toast.error('Failed to load Member ID configuration.');
-      }
-    });
-  }
-
-  onFormatParamChange(): void {
-    const params = `prefix=${encodeURIComponent(this.idConfig.prefix || 'CC')}&startNumber=${this.idConfig.nextNumber || 1}&padding=${this.idConfig.padding || 4}&delimiter=${encodeURIComponent(this.idConfig.delimiter || '-')}`;
-    this.api.get<any>(`UsersApi/member-id-config/preview?${params}`).subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.idConfig.previews = res.data;
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  selectFormat(formatKey: string): void {
-    this.idConfig.activeFormat = formatKey;
-  }
-
-  getActivePreviewSample(): string {
-    const active = this.idConfig.previews.find(p => p.key === this.idConfig.activeFormat);
-    return active ? active.previewExample : `${this.idConfig.prefix}${this.idConfig.delimiter}0001`;
-  }
-
-  getActiveFormatDescription(): string {
-    const active = this.idConfig.previews.find(p => p.key === this.idConfig.activeFormat);
-    return active ? active.description : 'Standard organizational member coding format.';
-  }
-
-  isCurrentFormatSequential(): boolean {
-    const active = this.idConfig.previews.find(p => p.key === this.idConfig.activeFormat);
-    return active ? active.isSequential : true;
-  }
-
-  onSaveMemberIdConfig(): void {
-    this.savingIdConfig = true;
-    const payload = {
-      activeFormat: this.idConfig.activeFormat,
-      prefix: this.idConfig.prefix,
-      nextNumber: this.idConfig.nextNumber,
-      padding: this.idConfig.padding,
-      delimiter: this.idConfig.delimiter,
-      requireConfirmedEmailToLogin: this.idConfig.requireConfirmedEmailToLogin,
-      enableUserDeletion: this.idConfig.enableUserDeletion
-    };
-
-    this.api.put<any>('UsersApi/member-id-config', payload).subscribe({
-      next: (res) => {
-        this.savingIdConfig = false;
-        if (res?.data?.previews) {
-          this.idConfig.previews = res.data.previews;
-        }
-        this.toast.success('Member ID & verification policies applied successfully!');
-        this.successMessage = 'Member ID format and verification policies updated.';
-        setTimeout(() => this.successMessage = '', 4000);
-      },
-      error: (err) => {
-        this.savingIdConfig = false;
-        this.toast.error(err?.error?.message || 'Failed to save configuration.');
-      }
-    });
-  }
 
   loadTemplates(): void {
     this.loadingTemplates = true;
