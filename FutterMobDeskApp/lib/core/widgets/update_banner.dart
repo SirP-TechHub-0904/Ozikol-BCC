@@ -190,7 +190,7 @@ class _UpdateModalDialogState extends ConsumerState<_UpdateModalDialog> {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Mandatory update required for platform security and database sync.',
+                          'Mandatory update required for platform security and data synchronization.',
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
                         ),
                       ),

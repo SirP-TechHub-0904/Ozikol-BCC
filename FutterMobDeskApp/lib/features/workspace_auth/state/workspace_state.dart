@@ -577,14 +577,14 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     }
   }
 
-  /// Sanitizes any raw system, network, or database error messages into friendly, user-facing notices.
-  /// Guarantees that internal database terminology and vendor branding are never exposed.
+  /// Sanitizes any raw system, network, server, or database error messages into friendly, user-facing notices.
+  /// Guarantees that internal database terminology, server jargon, and product branding (Ozikol) are never exposed.
   static String sanitizeError(dynamic e) {
-    if (e == null) return 'Something went wrong. Please try again.';
+    if (e == null) return 'Something went wrong. Please try again in a few moments.';
     var raw = e.toString().replaceFirst('Exception: ', '').trim();
     final lower = raw.toLowerCase();
 
-    // Check for connection / network issues
+    // Check for connection / network / server reachability issues
     if (lower.contains('unable to connect') ||
         lower.contains('connection timeout') ||
         lower.contains('connection error') ||
@@ -601,23 +601,44 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
         lower.contains('offline') ||
         lower.contains('timed out') ||
         lower.contains('ozikol server') ||
-        lower.contains('authentication server')) {
+        lower.contains('authentication server') ||
+        lower.contains('server timeout') ||
+        lower.contains('server unreachable') ||
+        lower.contains('could not connect to server')) {
       return 'Unable to connect. Please check your network connection.';
     }
 
+    // Check for workspace / tenant resolution issues
     if (lower.contains('master catalog') ||
         lower.contains('masterdb') ||
         lower.contains('master db') ||
         lower.contains('master database') ||
         lower.contains('[tenantresolution]') ||
-        lower.contains('sqlexception') ||
-        lower.contains('invalidoperationexception') ||
         lower.contains('could not be found') ||
+        lower.contains('workspace not found') ||
+        lower.contains('tenant not found') ||
         lower.contains('not found')) {
       return 'Workspace could not be found. Please check your access code or web address.';
     }
 
-    // Strict guarantee: Ozikol must never appear in user-facing error text
+    // Check for internal server, database, or SQL errors
+    if (lower.contains('sql') ||
+        lower.contains('database') ||
+        lower.contains('db query') ||
+        lower.contains('internal server error') ||
+        lower.contains('server error') ||
+        lower.contains('server rejected') ||
+        lower.contains('exception') ||
+        lower.contains('stack trace') ||
+        lower.contains('nullreference') ||
+        lower.contains('http 500') ||
+        lower.contains('status code of 500') ||
+        lower.contains('status code of 502') ||
+        lower.contains('status code of 503')) {
+      return 'Something went wrong. Please try again in a few moments.';
+    }
+
+    // Strict guarantee: Ozikol brand name must NEVER appear in user-facing error text
     if (lower.contains('ozikol')) {
       if (lower.contains('connect') || lower.contains('network') || lower.contains('server')) {
         return 'Unable to connect. Please check your network connection.';
@@ -626,11 +647,18 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     }
 
     // Clean any low-level Dio/HTTP error prefixes
-    if (raw.startsWith('DioException [') || raw.contains('HttpException:')) {
+    if (raw.startsWith('DioException [') || raw.contains('HttpException:') || raw.contains('ClientException:')) {
       return 'Unable to connect. Please check your network connection.';
     }
 
-    return raw;
+    // Strip any stray internal words or brand mentions if somehow still present
+    raw = raw.replaceAll(RegExp(r'\bozikol\b\s*', caseSensitive: false), '')
+             .replaceAll(RegExp(r'\bserver\b', caseSensitive: false), 'service')
+             .replaceAll(RegExp(r'\bsql\b', caseSensitive: false), 'data')
+             .replaceAll(RegExp(r'\bdatabase\b', caseSensitive: false), 'workspace')
+             .trim();
+
+    return raw.isNotEmpty ? raw : 'Something went wrong. Please try again.';
   }
 
   /// Instance delegation for backward compatibility

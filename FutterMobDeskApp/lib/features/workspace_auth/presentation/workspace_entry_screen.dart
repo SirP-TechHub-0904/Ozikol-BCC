@@ -146,7 +146,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
         TourStep(
           title: 'Direct Multi-Tenant Security',
           description:
-              'Each workspace connects to an isolated database partition with custom security policies and branding.',
+              'Each workspace connects to an isolated secure partition with custom security policies and branding.',
           icon: Icons.security_rounded,
         ),
         TourStep(
@@ -955,7 +955,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                     const SizedBox(width: 8),
                                     const ContextualInfoButton(
                                       title: 'Workspace Resolution',
-                                      purpose: 'Connects this client application to your isolated tenant database and permissions layer.',
+                                      purpose: 'Connects this client application to your isolated organization workspace and permissions layer.',
                                       expectedInputs: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).',
                                       impact: 'Loads your organization security policies, tenant branding, and routes notifications appropriately.',
                                       bestPractices: 'Contact your organization administrator if you are unsure of your access code.',
@@ -1337,7 +1337,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                               const SizedBox(width: 8),
                               const ContextualInfoButton(
                                 title: 'Workspace Resolution',
-                                purpose: 'Connects your device to your isolated tenant database.',
+                                purpose: 'Connects your device to your isolated organization workspace.',
                                 expectedInputs: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).',
                               ),
                             ],

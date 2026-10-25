@@ -296,7 +296,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
       _loadCategories();
     } else {
       setState(() {
-        _deleteError = 'Could not delete category "$targetName". Active members may still be assigned, or server rejected the request.';
+        _deleteError = 'Could not delete category "$targetName". Active members may still be assigned, or the request could not be completed.';
       });
     }
   }

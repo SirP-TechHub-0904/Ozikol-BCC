@@ -2800,7 +2800,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 isDark,
                 icon: Icons.domain_rounded,
                 title: 'Multi-Tenant Workspace & Domains',
-                description: 'Manage custom domains, database partitioning, and tenant vaults.',
+                description: 'Manage custom domains, workspace partitions, and tenant vaults.',
               ),
               const SizedBox(height: 20),
               Row(

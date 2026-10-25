@@ -307,6 +307,27 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **Zero Direct Third-Party Client Coupling**:
   * Domain services and controllers must NEVER directly call external Postmark/Twilio/Meta HTTP endpoints. All events must be enqueued into the tenant database queues to ensure retry resilience, idempotency, and complete telemetry logging.
 
+---
+
+## 20. Clean, User-Friendly Error Messaging & Strict Sanitization (Mandatory)
+* **Strict Prohibition of Brand & Internal Infrastructure in Errors**:
+  * User-facing error messages, alerts, banners, dialogs, form feedback, and toasts across ALL platforms (Web Client, Flutter Desktop/Mobile, API responses) MUST NEVER expose:
+    * **Brand Names in Errors**: NEVER include `"Ozikol"` in error messages, failure notices, or alert descriptions. System failures must never associate negative user experiences with the brand name.
+    * **Internal Architecture & Infrastructure Jargon**: NEVER expose internal terms such as `"server"`, `"server error"`, `"sql"`, `"sql error"`, `"database"`, `"db"`, `"master catalog"`, `"catalog db"`, `"exception"`, `"stack trace"`, `"null reference"`, `"endpoint"`, `"http 500"`, or table/column schema details.
+* **Friendly, Human, Actionable Error Standards**:
+  * Error messages must be clean, simple, empathetic, and actionable so users immediately know what to do without being confused or alarmed by technical jargon.
+  * **Canonical Examples**:
+    * Instead of `"Ozikol Server error: SQL connection failed"` or `"Cannot connect to Ozikol server"` -> `"Unable to connect. Please check your network connection and try again."`
+    * Instead of `"Tenant not found in Ozikol Master Catalog DB"` or `"Resolution failed for Ozikol"` -> `"Workspace could not be found. Please check your access code or web address."`
+    * Instead of `"Internal server error 500: SQL query timeout"` -> `"Something went wrong. Please try again in a few moments."`
+    * Instead of `"Invalid credentials in user database"` -> `"Invalid email or password. Please verify your details."`
+    * Instead of `"Request timed out by server"` -> `"Unable to connect. Please check your connection and try again."`
+    * Instead of `"Active members still assigned, or server rejected request"` -> `"Could not delete category. Active members may still be assigned, or the request could not be completed."`
+* **Automated Sanitization Pipeline**:
+  * Network interceptors and repositories MUST pass all raw exceptions and error payloads through a central sanitizer (`sanitizeError`) before setting UI state or presenting snackbars, banners, or toast alerts.
+  * The sanitizer must strip or replace any raw technical or branded terms with canonical, user-friendly language.
+
+
 
 
 

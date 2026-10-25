@@ -157,6 +157,26 @@ void main() {
         Exception('DioException [connection timeout]: The request connection took longer than 15000ms'),
       );
       expect(sanitizedTimeout, 'Unable to connect. Please check your network connection.');
+
+      // 4. Check SQL, Database, and Server jargon sanitization
+      final sanitizedSql = WorkspaceNotifier.sanitizeError(
+        Exception('SqlException: Cannot open database "Ozikol_Tenant_Db" requested by login.'),
+      );
+      expect(sanitizedSql, 'Something went wrong. Please try again in a few moments.');
+      expect(sanitizedSql.toLowerCase(), isNot(contains('ozikol')));
+      expect(sanitizedSql.toLowerCase(), isNot(contains('sql')));
+      expect(sanitizedSql.toLowerCase(), isNot(contains('database')));
+
+      final sanitizedServer = WorkspaceNotifier.sanitizeError(
+        Exception('Internal server error 500: Server rejected the request.'),
+      );
+      expect(sanitizedServer, 'Something went wrong. Please try again in a few moments.');
+      expect(sanitizedServer.toLowerCase(), isNot(contains('server')));
+
+      final sanitizedBrandedCustom = WorkspaceNotifier.sanitizeError(
+        Exception('Ozikol operational limit reached.'),
+      );
+      expect(sanitizedBrandedCustom.toLowerCase(), isNot(contains('ozikol')));
     });
   });
 }
