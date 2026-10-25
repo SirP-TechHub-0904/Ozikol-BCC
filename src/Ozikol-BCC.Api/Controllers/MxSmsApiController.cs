@@ -111,9 +111,9 @@ namespace Ozikol_BCC.Api.Controllers
                         q.Retries,
                         q.MaxRetries,
                         q.LastError,
-                        q.ScheduledAt,
-                        q.SentAt,
-                        q.CreatedAt
+                        ScheduledAt = q.ScheduledAt.HasValue ? DateTime.SpecifyKind(q.ScheduledAt.Value, DateTimeKind.Utc) : (DateTime?)null,
+                        SentAt = q.SentAt.HasValue ? DateTime.SpecifyKind(q.SentAt.Value, DateTimeKind.Utc) : (DateTime?)null,
+                        CreatedAt = DateTime.SpecifyKind(q.CreatedAt, DateTimeKind.Utc)
                     })
                     .ToListAsync();
 

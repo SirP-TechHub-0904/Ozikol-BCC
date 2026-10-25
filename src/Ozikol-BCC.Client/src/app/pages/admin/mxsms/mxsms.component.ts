@@ -212,8 +212,8 @@ export interface SmsQueueStats {
                 </td>
                 <td>
                   <div class="timeline-meta">
-                    <span class="date-created">Queued: {{ item.createdAt | date:'short' }}</span>
-                    <span *ngIf="item.sentAt" class="date-sent">Sent: {{ item.sentAt | date:'short' }}</span>
+                    <span class="date-created">Queued: {{ formatExactTime(item.createdAt) }}</span>
+                    <span *ngIf="item.sentAt" class="date-sent">Sent: {{ formatExactTime(item.sentAt) }}</span>
                   </div>
                 </td>
                 <td style="text-align: right;">
@@ -313,7 +313,7 @@ export interface SmsQueueStats {
               </div>
               <div class="detail-item">
                 <span class="label">Created At</span>
-                <span class="value">{{ selectedSms.createdAt | date:'medium' }}</span>
+                <span class="value">{{ formatExactTime(selectedSms.createdAt) }}</span>
               </div>
             </div>
 
@@ -1148,6 +1148,29 @@ export class MxSmsComponent implements OnInit, OnDestroy {
   pageSize = 25;
   totalCount = 0;
   totalPages = 1;
+
+  /**
+   * Formats a UTC ISO timestamp into the user's exact local browser date and time.
+   * Guarantees timezone normalization across all international system clocks.
+   * @param dateStr ISO date string.
+   */
+  formatExactTime(dateStr: string | null | undefined): string {
+    if (!dateStr) return '—';
+    try {
+      const utcStr = (dateStr.endsWith('Z') || dateStr.includes('+')) ? dateStr : `${dateStr}Z`;
+      const d = new Date(utcStr);
+      return d.toLocaleString(undefined, {
+        month: 'numeric',
+        day: 'numeric',
+        year: '2-digit',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch {
+      return dateStr;
+    }
+  }
 
   selectedSms: SmsLogItem | null = null;
   showTestModal = false;
