@@ -8,14 +8,36 @@ class ApiConstants {
   /// Production cloud API URL
   static const String productionBaseUrl = 'https://api.ozikol.cloud';
 
+  /// Dynamically active host for local Android development (127.0.0.1 for physical device via adb reverse, or 10.0.2.2 for emulator)
+  static String _activeAndroidHost = '10.0.2.2';
+
+  /// Sets the active host for Android local development.
+  static void setActiveAndroidHost(String host) {
+    _activeAndroidHost = host;
+  }
+
+  /// Auto-resolves whether the Android device is a physical phone connecting via
+  /// 'adb reverse' (127.0.0.1) or an emulator using virtual NAT loopback (10.0.2.2).
+  static Future<void> resolveAndroidHost() async {
+    try {
+      // 1. Try 127.0.0.1 with short timeout (physical device connected via adb reverse tcp:51025 tcp:51025)
+      final socket = await Socket.connect('127.0.0.1', 51025, timeout: const Duration(milliseconds: 350));
+      socket.destroy();
+      _activeAndroidHost = '127.0.0.1';
+      return;
+    } catch (_) {}
+
+    // 2. Default to standard Android emulator loopback
+    _activeAndroidHost = '10.0.2.2';
+  }
+
   /// Default API base URL dynamically resolved based on current runtime platform for local development.
   static String get defaultBaseUrl {
     if (kIsWeb) {
       return 'http://localhost:51025';
     }
     if (Platform.isAndroid) {
-      // Android emulator maps 10.0.2.2 to host Windows machine's localhost
-      return 'http://10.0.2.2:51025';
+      return 'http://$_activeAndroidHost:51025';
     }
     // Windows, macOS, Linux desktop and iOS simulator connect directly via localhost
     return 'http://localhost:51025';

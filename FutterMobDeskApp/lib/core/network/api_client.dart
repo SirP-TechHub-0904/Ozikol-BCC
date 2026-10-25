@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../constants/api_constants.dart';
@@ -23,24 +24,65 @@ class ApiClient {
     // Attach multi-tenant injector interceptor
     dio.interceptors.add(TenantInterceptor(storageService));
 
-    // Attach clean, lightweight logging in debug builds (avoids freezing ADB logcat with huge JSON payloads)
-    if (kDebugMode) {
-      dio.interceptors.add(
-        InterceptorsWrapper(
-          onRequest: (options, handler) {
+    // Attach clean, lightweight logging and Android dev host failover
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (kDebugMode) {
             debugPrint('🌐 [DIO REQ] ${options.method} ${options.uri.path}');
-            handler.next(options);
-          },
-          onResponse: (response, handler) {
+          }
+          handler.next(options);
+        },
+        onResponse: (response, handler) {
+          if (kDebugMode) {
             debugPrint('✅ [DIO RES] ${response.statusCode} ${response.requestOptions.uri.path}');
-            handler.next(response);
-          },
-          onError: (DioException err, handler) {
+          }
+          handler.next(response);
+        },
+        onError: (DioException err, handler) async {
+          // On Android local development, automatically failover between 10.0.2.2 and 127.0.0.1
+          if (!kIsWeb && Platform.isAndroid) {
+            final uri = err.requestOptions.uri;
+            final isConnectionIssue = err.type == DioExceptionType.connectionTimeout ||
+                err.type == DioExceptionType.connectionError;
+
+            if (isConnectionIssue && (uri.host == '10.0.2.2' || uri.host == '127.0.0.1')) {
+              final fallbackHost = uri.host == '10.0.2.2' ? '127.0.0.1' : '10.0.2.2';
+              final fallbackBaseUrl = 'http://$fallbackHost:51025/';
+              dio.options.baseUrl = fallbackBaseUrl;
+              ApiConstants.setActiveAndroidHost(fallbackHost);
+
+              if (kDebugMode) {
+                debugPrint('🔄 [DIO HOST FAILOVER] Switched local host to $fallbackHost, retrying ${uri.path}...');
+              }
+
+              try {
+                final response = await dio.request(
+                  uri.path,
+                  data: err.requestOptions.data,
+                  queryParameters: err.requestOptions.queryParameters,
+                  options: Options(
+                    method: err.requestOptions.method,
+                    headers: err.requestOptions.headers,
+                    responseType: err.requestOptions.responseType,
+                    contentType: err.requestOptions.contentType,
+                  ),
+                );
+                return handler.resolve(response);
+              } catch (retryErr) {
+                if (retryErr is DioException) {
+                  return handler.next(retryErr);
+                }
+              }
+            }
+          }
+
+          if (kDebugMode) {
             debugPrint('❌ [DIO ERR] ${err.response?.statusCode} ${err.requestOptions.uri.path}: ${err.message}');
-            handler.next(err);
-          },
-        ),
-      );
-    }
+          }
+          handler.next(err);
+        },
+      ),
+    );
   }
 }

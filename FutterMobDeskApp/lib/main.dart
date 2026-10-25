@@ -67,6 +67,11 @@ void main(List<String> args) async {
     }
   }
 
+  // Dynamically resolve local Android dev host (127.0.0.1 for adb reverse on physical device, 10.0.2.2 for emulator)
+  if (!kIsWeb && Platform.isAndroid) {
+    await ApiConstants.resolveAndroidHost();
+  }
+
   // Initialize secure storage service and multi-tenant cache
   final storageService = await SecureStorageService.create();
   final cacheService = await TenantCacheService.create(storageService);
