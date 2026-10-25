@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -139,27 +138,18 @@ void main(List<String> args) async {
     return true;
   };
 
-  runZonedGuarded(() {
-    runApp(
-      ProviderScope(
-        overrides: [
-          storageServiceProvider.overrideWithValue(storageService),
-          tenantCacheServiceProvider.overrideWithValue(cacheService),
-          apiClientProvider.overrideWithValue(apiClient),
-          crashReporterServiceProvider.overrideWithValue(crashReporter),
-        ],
-        child: const OzikolApp(),
-      ),
-    );
-  }, (error, stack) {
-    debugPrint('\n======================================================');
-    debugPrint('🚨 [UNHANDLED ASYNC EXCEPTION CAUGHT BY ZONE]');
-    debugPrint('Error: $error');
-    debugPrint('StackTrace:\n$stack');
-    debugPrint('======================================================\n');
-    AppLogger.error('CrashZone', 'Unhandled async exception: $error', error, stack);
-    crashReporter.reportCrash(error, stack);
-  });
+  // Launch application in the root zone matching WidgetsFlutterBinding.ensureInitialized
+  runApp(
+    ProviderScope(
+      overrides: [
+        storageServiceProvider.overrideWithValue(storageService),
+        tenantCacheServiceProvider.overrideWithValue(cacheService),
+        apiClientProvider.overrideWithValue(apiClient),
+        crashReporterServiceProvider.overrideWithValue(crashReporter),
+      ],
+      child: const OzikolApp(),
+    ),
+  );
 }
 
 class OzikolApp extends ConsumerWidget {
