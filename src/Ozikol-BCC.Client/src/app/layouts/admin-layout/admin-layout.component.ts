@@ -3914,13 +3914,20 @@ export class AdminLayoutComponent implements OnInit {
             localStorage.setItem('user_email', freshData.email);
           }
 
-          // If user was demoted and is no longer an administrator
+          // If user is an administrator, load administrative feature expirations
           if (freshData.isAdmin) {
             this.loadFeatureExpirations();
           } else {
-            console.warn('[AdminLayout] User is no longer an Administrator. Evicting from admin dashboard...');
-            this.toast.error('Your administrator permissions have been updated. Redirecting...', 'Access Revoked');
-            this.router.navigate(['/portal']);
+            // Standard members belong in their personal workspace.
+            // Only warn and evict if the user is currently attempting to access an admin console route.
+            const isOnAdminRoute = this.currentRoute.startsWith('/dashboard/console') ||
+                                   this.currentRoute.includes('/console') ||
+                                   this.currentRoute.startsWith('/admin');
+            if (isOnAdminRoute) {
+              console.warn('[AdminLayout] User does not have Administrator permissions. Redirecting to personal workspace...');
+              this.toast.error('Your administrator permissions have been updated. Redirecting to workspace...', 'Access Revoked');
+              this.router.navigate(['/dashboard/workspace']);
+            }
           }
         }
       },
