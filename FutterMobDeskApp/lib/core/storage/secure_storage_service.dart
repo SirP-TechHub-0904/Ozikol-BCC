@@ -287,6 +287,79 @@ class SecureStorageService {
     await saveRememberedWorkspace(null);
   }
 
+  static const String _rememberUserLoginPrefix = 'ozikol_remember_login_';
+  static const String _rememberedEmailPrefix = 'ozikol_remembered_email_';
+
+  /// <summary>
+  /// Checks whether "Remember me in future login" is enabled for a given tenant workspace or globally.
+  /// </summary>
+  /// <param name="tenantKey">Optional tenant partition identifier.</param>
+  /// <returns>True if remember me is enabled (defaults to true).</returns>
+  bool isRememberLoginEnabled([String? tenantKey]) {
+    final key = tenantKey != null && tenantKey.isNotEmpty
+        ? '$_rememberUserLoginPrefix$tenantKey'
+        : 'ozikol_remember_login_global';
+    if (_prefs != null) {
+      return _prefs.getBool(key) ?? true;
+    }
+    return _memoryStore[key] != 'false';
+  }
+
+  /// <summary>
+  /// Persists whether "Remember me in future login" is enabled.
+  /// </summary>
+  /// <param name="enabled">True to enable, false to disable.</param>
+  /// <param name="tenantKey">Optional tenant partition identifier.</param>
+  Future<void> setRememberLoginEnabled(bool enabled, [String? tenantKey]) async {
+    final key = tenantKey != null && tenantKey.isNotEmpty
+        ? '$_rememberUserLoginPrefix$tenantKey'
+        : 'ozikol_remember_login_global';
+    if (_prefs != null) {
+      await _prefs.setBool(key, enabled);
+    } else {
+      _memoryStore[key] = enabled.toString();
+    }
+  }
+
+  /// <summary>
+  /// Retrieves the saved email address for future login.
+  /// </summary>
+  /// <param name="tenantKey">Optional tenant partition identifier.</param>
+  /// <returns>Remembered work email string or null if not saved.</returns>
+  String? getRememberedEmail([String? tenantKey]) {
+    final key = tenantKey != null && tenantKey.isNotEmpty
+        ? '$_rememberedEmailPrefix$tenantKey'
+        : 'ozikol_remembered_email_global';
+    if (_prefs != null) {
+      return _prefs.getString(key);
+    }
+    return _memoryStore[key];
+  }
+
+  /// <summary>
+  /// Persists or clears the remembered email address for future login.
+  /// </summary>
+  /// <param name="email">Email address to remember, or null to clear.</param>
+  /// <param name="tenantKey">Optional tenant partition identifier.</param>
+  Future<void> setRememberedEmail(String? email, [String? tenantKey]) async {
+    final key = tenantKey != null && tenantKey.isNotEmpty
+        ? '$_rememberedEmailPrefix$tenantKey'
+        : 'ozikol_remembered_email_global';
+    if (_prefs != null) {
+      if (email == null || email.trim().isEmpty) {
+        await _prefs.remove(key);
+      } else {
+        await _prefs.setString(key, email.trim());
+      }
+    } else {
+      if (email == null || email.trim().isEmpty) {
+        _memoryStore.remove(key);
+      } else {
+        _memoryStore[key] = email.trim();
+      }
+    }
+  }
+
   static const String _clientConfigKey = 'ozikol_cached_client_config_json';
 
   /// Saves the dynamically fetched client application configuration

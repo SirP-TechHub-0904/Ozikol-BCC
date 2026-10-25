@@ -31,6 +31,32 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  bool _rememberMe = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberedEmail();
+  }
+
+  /// <summary>
+  /// Loads saved email and Remember Me preference from persistent secure storage.
+  /// </summary>
+  Future<void> _loadRememberedEmail() async {
+    try {
+      final storage = ref.read(storageServiceProvider);
+      final isRemembered = storage.isRememberLoginEnabled(widget.workspace.tenantKey);
+      final rememberedEmail = storage.getRememberedEmail(widget.workspace.tenantKey);
+      if (mounted) {
+        setState(() {
+          _rememberMe = isRemembered;
+          if (isRemembered && rememberedEmail != null && rememberedEmail.isNotEmpty) {
+            _emailController.text = rememberedEmail;
+          }
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -85,6 +111,15 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
 
     // 3. Normal Successful Login
     if (outcome.isSuccess) {
+      final storage = ref.read(storageServiceProvider);
+      await storage.setRememberLoginEnabled(_rememberMe, widget.workspace.tenantKey);
+      if (_rememberMe) {
+        await storage.setRememberedEmail(email, widget.workspace.tenantKey);
+      } else {
+        await storage.setRememberedEmail(null, widget.workspace.tenantKey);
+      }
+
+      if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const DashboardShellScreen()),
         (route) => false,
@@ -206,35 +241,86 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                                 return null;
                               },
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 8),
 
-                            // Forgot Password Action Link
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => ForgotPasswordScreen(workspace: widget.workspace),
+                            // Remember Me & Forgot Password Row
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Remember Me in future login
+                                Flexible(
+                                  child: InkWell(
+                                    onTap: () => setState(() => _rememberMe = !_rememberMe),
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 4),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: Checkbox(
+                                              value: _rememberMe,
+                                              activeColor: AppColors.primary,
+                                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                              side: BorderSide(
+                                                color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                                width: 1.5,
+                                              ),
+                                              onChanged: (val) {
+                                                setState(() => _rememberMe = val ?? true);
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Flexible(
+                                            child: Text(
+                                              'Remember me',
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                                color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF334155),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  );
-                                },
-                                child: Text(
-                                  'Forgot Password?',
-                                  style: TextStyle(
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? const Color(0xFF60A5FA) : AppColors.primary,
                                   ),
                                 ),
-                              ),
+
+                                const SizedBox(width: 4),
+
+                                // Forgot Password Action Link
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => ForgotPasswordScreen(workspace: widget.workspace),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(
+                                    'Forgot Password?',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? const Color(0xFF60A5FA) : AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 18),
 
                             // Sign In Action Button
                             PrimaryButton(
