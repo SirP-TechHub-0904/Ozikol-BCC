@@ -241,7 +241,7 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
       state = state.copyWith(
         isInitializing: false,
         isLoading: false,
-        errorMessage: e.toString(),
+        errorMessage: sanitizeError(e),
       );
     }
   }
@@ -577,20 +577,64 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     }
   }
 
-  /// Sanitizes any raw system or database error messages into clean, custom user-facing notices
-  String _sanitizeError(dynamic e) {
-    final raw = e.toString().replaceFirst('Exception: ', '').trim();
-    if (raw.toLowerCase().contains('master catalog') ||
-        raw.toLowerCase().contains('masterdb') ||
-        raw.toLowerCase().contains('master db') ||
-        raw.toLowerCase().contains('master database') ||
-        raw.toLowerCase().contains('[tenantresolution]') ||
-        raw.toLowerCase().contains('sqlexception') ||
-        raw.toLowerCase().contains('invalidoperationexception')) {
+  /// Sanitizes any raw system, network, or database error messages into friendly, user-facing notices.
+  /// Guarantees that internal database terminology and vendor branding are never exposed.
+  static String sanitizeError(dynamic e) {
+    if (e == null) return 'Something went wrong. Please try again.';
+    var raw = e.toString().replaceFirst('Exception: ', '').trim();
+    final lower = raw.toLowerCase();
+
+    // Check for connection / network issues
+    if (lower.contains('unable to connect') ||
+        lower.contains('connection timeout') ||
+        lower.contains('connection error') ||
+        lower.contains('connection refused') ||
+        lower.contains('connection reset') ||
+        lower.contains('connection closed') ||
+        lower.contains('connection aborted') ||
+        lower.contains('network error') ||
+        lower.contains('network is unreachable') ||
+        lower.contains('socketexception') ||
+        lower.contains('handshakeexception') ||
+        lower.contains('clientexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('offline') ||
+        lower.contains('timed out') ||
+        lower.contains('ozikol server') ||
+        lower.contains('authentication server')) {
+      return 'Unable to connect. Please check your network connection.';
+    }
+
+    if (lower.contains('master catalog') ||
+        lower.contains('masterdb') ||
+        lower.contains('master db') ||
+        lower.contains('master database') ||
+        lower.contains('[tenantresolution]') ||
+        lower.contains('sqlexception') ||
+        lower.contains('invalidoperationexception') ||
+        lower.contains('could not be found') ||
+        lower.contains('not found')) {
       return 'Workspace could not be found. Please check your access code or web address.';
     }
+
+    // Strict guarantee: Ozikol must never appear in user-facing error text
+    if (lower.contains('ozikol')) {
+      if (lower.contains('connect') || lower.contains('network') || lower.contains('server')) {
+        return 'Unable to connect. Please check your network connection.';
+      }
+      return 'Workspace could not be found. Please check your access code or web address.';
+    }
+
+    // Clean any low-level Dio/HTTP error prefixes
+    if (raw.startsWith('DioException [') || raw.contains('HttpException:')) {
+      return 'Unable to connect. Please check your network connection.';
+    }
+
     return raw;
   }
+
+  /// Instance delegation for backward compatibility
+  String _sanitizeError(dynamic e) => sanitizeError(e);
 
   /// Sets an authenticated workspace as active, updates disk storage, syncs enrolled list,
   /// and updates the in-memory state so the dashboard immediately switches to this workspace.

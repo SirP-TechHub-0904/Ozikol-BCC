@@ -7,6 +7,7 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../workspace_auth/data/auth_service.dart';
+import '../../../../workspace_auth/state/workspace_state.dart';
 import 'widgets/account_security_header.dart';
 
 /// Screen enabling users to configure, enroll, and manage Two-Factor Authentication (2FA).
@@ -82,7 +83,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
     } catch (e) {
       setState(() {
         _isConfiguring = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
+        _errorMessage = WorkspaceNotifier.sanitizeError(e);
       });
     }
   }
@@ -118,7 +119,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
     } catch (e) {
       setState(() {
         _isEnabling = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
+        _errorMessage = WorkspaceNotifier.sanitizeError(e);
       });
     }
   }

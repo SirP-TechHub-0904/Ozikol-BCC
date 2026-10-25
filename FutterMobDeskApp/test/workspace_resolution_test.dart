@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ozikol_app/core/network/api_client.dart';
 import 'package:ozikol_app/core/storage/secure_storage_service.dart';
 import 'package:ozikol_app/features/workspace_auth/data/workspace_repository.dart';
+import 'package:ozikol_app/features/workspace_auth/state/workspace_state.dart';
 
 class MockHttpClientAdapter implements HttpClientAdapter {
   final Map<String, dynamic> Function(RequestOptions options) handler;
@@ -129,6 +130,33 @@ void main() {
         throwsA(predicate((e) =>
             e.toString().contains('Please enter a valid organization access code or web domain'))),
       );
+    });
+
+    test('WorkspaceNotifier.sanitizeError guarantees Ozikol is never in error text and outputs friendly messages', () {
+      // 1. Check vendor branding removal from connection error
+      final sanitizedOzikolServer = WorkspaceNotifier.sanitizeError(
+        Exception('Unable to connect to the Ozikol server. Please check your network connection.'),
+      );
+      expect(sanitizedOzikolServer, 'Unable to connect. Please check your network connection.');
+      expect(sanitizedOzikolServer.toLowerCase(), isNot(contains('ozikol')));
+
+      // 2. Check vendor branding removal from generic error
+      final sanitizedGeneralOzikol = WorkspaceNotifier.sanitizeError(
+        Exception('Ozikol tenant resolution failure [MasterDB]'),
+      );
+      expect(sanitizedGeneralOzikol, 'Workspace could not be found. Please check your access code or web address.');
+      expect(sanitizedGeneralOzikol.toLowerCase(), isNot(contains('ozikol')));
+
+      // 3. Check low-level socket and timeout exceptions
+      final sanitizedSocket = WorkspaceNotifier.sanitizeError(
+        Exception('SocketException: OS Error: Connection refused, errno = 111'),
+      );
+      expect(sanitizedSocket, 'Unable to connect. Please check your network connection.');
+
+      final sanitizedTimeout = WorkspaceNotifier.sanitizeError(
+        Exception('DioException [connection timeout]: The request connection took longer than 15000ms'),
+      );
+      expect(sanitizedTimeout, 'Unable to connect. Please check your network connection.');
     });
   });
 }

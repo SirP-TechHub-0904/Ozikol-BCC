@@ -116,7 +116,7 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
     } catch (e) {
       setState(() {
         _isSubmitting = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
+        _errorMessage = WorkspaceNotifier.sanitizeError(e);
       });
     }
   }

@@ -118,15 +118,16 @@ class WorkspaceRepository {
       if (dioErr.type == DioExceptionType.connectionTimeout ||
           dioErr.type == DioExceptionType.receiveTimeout ||
           dioErr.type == DioExceptionType.sendTimeout ||
-          dioErr.type == DioExceptionType.connectionError) {
-        throw Exception('Unable to connect to the Ozikol server. Please check your network connection.');
+          dioErr.type == DioExceptionType.connectionError ||
+          dioErr.response == null) {
+        throw Exception('Unable to connect. Please check your network connection.');
       }
 
       if (dioErr.response?.statusCode == 404) {
         throw Exception('Workspace "$rawInput" could not be found. Please check your access code or web address.');
       }
 
-      throw Exception('Unable to verify workspace at this time. Please try again.');
+      throw Exception('Unable to connect. Please check your network connection.');
     } catch (e) {
       final msg = e.toString().replaceFirst('Exception: ', '').trim();
       throw Exception(msg);
@@ -185,7 +186,7 @@ class WorkspaceRepository {
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.connectionError) {
-        throw Exception('Unable to connect to the authentication server. Please check your network connection.');
+        throw Exception('Unable to connect. Please check your network connection.');
       }
 
       final msg = e.response?.data is Map && e.response?.data['message'] != null

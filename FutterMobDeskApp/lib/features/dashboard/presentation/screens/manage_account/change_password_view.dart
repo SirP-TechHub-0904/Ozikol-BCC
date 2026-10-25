@@ -6,6 +6,7 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../workspace_auth/data/auth_service.dart';
+import '../../../../workspace_auth/state/workspace_state.dart';
 import 'widgets/account_security_header.dart';
 
 /// Screen enabling authenticated members to update their account password.
@@ -115,7 +116,7 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
     } catch (e) {
       setState(() {
         _isSubmitting = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
+        _errorMessage = WorkspaceNotifier.sanitizeError(e);
       });
     }
   }

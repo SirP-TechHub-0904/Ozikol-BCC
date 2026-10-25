@@ -158,7 +158,7 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
     } catch (e) {
       setState(() {
         _isSubmitting = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
+        _errorMessage = WorkspaceNotifier.sanitizeError(e);
       });
     }
   }
@@ -195,7 +195,7 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
         );
       }
     } catch (e) {
-      setState(() => _errorMessage = e.toString().replaceFirst('Exception: ', '').trim());
+      setState(() => _errorMessage = WorkspaceNotifier.sanitizeError(e));
     } finally {
       if (mounted) setState(() => _isResending = false);
     }

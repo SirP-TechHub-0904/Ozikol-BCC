@@ -6,6 +6,7 @@ import '../../../core/widgets/desktop_auth_layout.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../data/auth_service.dart';
+import '../state/workspace_state.dart';
 
 /// Screen guiding users through password recovery via email verification token / OTP.
 /// Includes dynamic password strength criteria validation and clean two-step progression.
@@ -92,7 +93,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     } catch (e) {
       setState(() {
         _isSubmitting = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
+        _errorMessage = WorkspaceNotifier.sanitizeError(e);
       });
     }
   }
@@ -138,7 +139,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     } catch (e) {
       setState(() {
         _isSubmitting = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
+        _errorMessage = WorkspaceNotifier.sanitizeError(e);
       });
     }
   }
