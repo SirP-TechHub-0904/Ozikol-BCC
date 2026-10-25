@@ -1191,71 +1191,74 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Member Performance Leaderboard',
-                      style: TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Rankings derived from genuine evaluation scorecards',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11.5,
-                        color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Row(
-                mainAxisSize: MainAxisSize.min,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 560;
+
+              final titleSection = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    height: 32,
-                    constraints: const BoxConstraints(minWidth: 95),
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
-                      ),
+                  Text(
+                    'Member Performance Leaderboard',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
                     ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _periods.any((p) => p['title'] == _selectedPeriod)
-                            ? _selectedPeriod
-                            : (_periods.isNotEmpty ? _periods.first['title'] as String? : null),
-                        isDense: true,
-                        items: _periods.map((p) {
-                          final title = p['title'] as String? ?? 'Period';
-                          return DropdownMenuItem(
-                            value: title,
-                            child: Text(
-                              title,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() => _selectedPeriod = val);
-                            _loadLeaderboard();
-                          }
-                        },
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Rankings derived from genuine evaluation scorecards',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              );
+
+              final controlsSection = Row(
+                mainAxisSize: isCompact ? MainAxisSize.max : MainAxisSize.min,
+                children: [
+                  Expanded(
+                    flex: isCompact ? 1 : 0,
+                    child: Container(
+                      height: 32,
+                      constraints: BoxConstraints(minWidth: isCompact ? 0 : 95),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: isCompact,
+                          value: _periods.any((p) => p['title'] == _selectedPeriod)
+                              ? _selectedPeriod
+                              : (_periods.isNotEmpty ? _periods.first['title'] as String? : null),
+                          isDense: true,
+                          items: _periods.map((p) {
+                            final title = p['title'] as String? ?? 'Period';
+                            return DropdownMenuItem(
+                              value: title,
+                              child: Text(
+                                title,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedPeriod = val);
+                              _loadLeaderboard();
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -1302,8 +1305,28 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                     },
                   ),
                 ],
-              ),
-            ],
+              );
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    titleSection,
+                    const SizedBox(height: 10),
+                    controlsSection,
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: titleSection),
+                  const SizedBox(width: 8),
+                  controlsSection,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
 
