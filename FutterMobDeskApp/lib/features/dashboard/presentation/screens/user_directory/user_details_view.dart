@@ -632,33 +632,36 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.admin_panel_settings_outlined, size: 18, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Role & Workspace Permissions',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                        ),
+              const Icon(Icons.admin_panel_settings_outlined, size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Role & Workspace Permissions',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
                       ),
-                      Text(
-                        'Platform access tier & security scope',
-                        style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                    Text(
+                      'Platform access tier & security scope',
+                      style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               TextButton(
                 onPressed: () => setState(() => _isEditingRole = !_isEditingRole),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 child: Text(_isEditingRole ? 'Cancel' : 'Update Permission', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
               ),
             ],
@@ -681,10 +684,14 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                     currentRole,
                     style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF0050E5)),
                   ),
-                  const Spacer(),
-                  Text(
-                    'Standard Membership Access',
-                    style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Standard Membership Access',
+                      textAlign: TextAlign.end,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    ),
                   ),
                 ],
               ),
@@ -1362,22 +1369,24 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             children: [
               const Icon(Icons.vpn_key_rounded, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '6-Digit OTP Security & Credentials',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '6-Digit OTP Security & Credentials',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Generate one-time passcodes or reset passwords directly',
-                    style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                  ),
-                ],
+                    Text(
+                      'Generate one-time passcodes or reset passwords directly',
+                      style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1394,27 +1403,63 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      '6-Digit One-Time Activation Passcode (OTP)',
-                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: _isGeneratingOtp ? null : _handleGenerateOtp,
-                      icon: const Icon(Icons.pin_rounded, size: 14, color: Colors.white),
-                      label: Text(
-                        _isGeneratingOtp ? 'Generating...' : 'Generate 6-Digit Reset OTP',
-                        style: const TextStyle(fontSize: 11.5, color: Colors.white, fontWeight: FontWeight.w700),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0050E5),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                      ),
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 480;
+                    if (isCompact) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '6-Digit One-Time Activation Passcode (OTP)',
+                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _isGeneratingOtp ? null : _handleGenerateOtp,
+                              icon: const Icon(Icons.pin_rounded, size: 14, color: Colors.white),
+                              label: Text(
+                                _isGeneratingOtp ? 'Generating...' : 'Generate 6-Digit Reset OTP',
+                                style: const TextStyle(fontSize: 11.5, color: Colors.white, fontWeight: FontWeight.w700),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0050E5),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            '6-Digit One-Time Activation Passcode (OTP)',
+                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: _isGeneratingOtp ? null : _handleGenerateOtp,
+                          icon: const Icon(Icons.pin_rounded, size: 14, color: Colors.white),
+                          label: Text(
+                            _isGeneratingOtp ? 'Generating...' : 'Generate 6-Digit Reset OTP',
+                            style: const TextStyle(fontSize: 11.5, color: Colors.white, fontWeight: FontWeight.w700),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0050E5),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -1473,40 +1518,94 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             ),
           ),
           const SizedBox(height: 6),
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 40,
-                  child: TextField(
-                    controller: _passwordController,
-                    style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. TempPass@2026',
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 450;
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      height: 40,
+                      child: TextField(
+                        controller: _passwordController,
+                        style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. TempPass@2026',
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _generateStrongPassword,
+                            icon: const Icon(Icons.auto_fix_high_rounded, size: 14),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            label: const Text('Generate', style: TextStyle(fontSize: 12)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _isResettingPassword ? null : _handleApplyPassword,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: Text(
+                              _isResettingPassword ? 'Applying...' : 'Apply Password',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 40,
+                      child: TextField(
+                        controller: _passwordController,
+                        style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+                        decoration: const InputDecoration(
+                          hintText: 'e.g. TempPass@2026',
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              OutlinedButton(
-                onPressed: _generateStrongPassword,
-                style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
-                child: const Text('Generate', style: TextStyle(fontSize: 12)),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _isResettingPassword ? null : _handleApplyPassword,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                ),
-                child: Text(
-                  _isResettingPassword ? 'Applying...' : 'Apply',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
-            ],
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: _generateStrongPassword,
+                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
+                    child: const Text('Generate', style: TextStyle(fontSize: 12)),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _isResettingPassword ? null : _handleApplyPassword,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    ),
+                    child: Text(
+                      _isResettingPassword ? 'Applying...' : 'Apply',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 6),
           Row(
@@ -1516,9 +1615,11 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                 activeColor: AppColors.primary,
                 onChanged: (val) => setState(() => _sendEmailOnReset = val ?? true),
               ),
-              Text(
-                'Email temporary password & first-time sign-in instructions',
-                style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+              Expanded(
+                child: Text(
+                  'Email temporary password & first-time sign-in instructions',
+                  style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                ),
               ),
             ],
           ),
