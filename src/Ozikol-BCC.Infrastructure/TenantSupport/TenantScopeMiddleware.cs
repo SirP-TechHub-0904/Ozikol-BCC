@@ -81,7 +81,7 @@ public class TenantScopeMiddleware
             {
                 statusCode = 404,
                 error = "WorkspaceNotFound",
-                message = "Workspace could not be found. Please check your access code or web address.",
+                message = "Workspace could not be found.",
                 timestamp = DateTime.UtcNow
             }));
             return;

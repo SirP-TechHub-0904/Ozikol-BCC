@@ -96,7 +96,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (match == null)
             {
-                return NotFound(ApiResponse<object>.FailureResponse($"Workspace \"{identifier}\" could not be found. Please check your access code or web address."));
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));
             }
 
             return Ok(ApiResponse<TenantCatalogDto>.SuccessResponse(match, "Workspace resolved successfully."));

@@ -318,7 +318,7 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * Error messages must be clean, simple, empathetic, and actionable so users immediately know what to do without being confused or alarmed by technical jargon.
   * **Canonical Examples**:
     * Instead of `"Ozikol Server error: SQL connection failed"` or `"Cannot connect to Ozikol server"` -> `"Unable to connect. Please check your network connection and try again."`
-    * Instead of `"Tenant not found in Ozikol Master Catalog DB"` or `"Resolution failed for Ozikol"` -> `"Workspace could not be found. Please check your access code or web address."`
+    * Instead of `"Tenant not found in Ozikol Master Catalog DB"` or `"Resolution failed for Ozikol"` -> `"Workspace could not be found."`
     * Instead of `"Internal server error 500: SQL query timeout"` -> `"Something went wrong. Please try again in a few moments."`
     * Instead of `"Invalid credentials in user database"` -> `"Invalid email or password. Please verify your details."`
     * Instead of `"Request timed out by server"` -> `"Unable to connect. Please check your connection and try again."`

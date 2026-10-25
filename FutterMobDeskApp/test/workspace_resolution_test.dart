@@ -110,8 +110,7 @@ void main() {
       } catch (e) {
         final msg = e.toString();
         // Verify custom error message
-        expect(msg, contains('Workspace "nonexistent-company" could not be found'));
-        expect(msg, contains('Please check your access code or web address'));
+        expect(msg, contains('Workspace could not be found.'));
         // Verify absence of internal database terminology
         expect(msg.toLowerCase(), isNot(contains('master catalog')));
         expect(msg.toLowerCase(), isNot(contains('masterdb')));
@@ -144,7 +143,7 @@ void main() {
       final sanitizedGeneralOzikol = WorkspaceNotifier.sanitizeError(
         Exception('Ozikol tenant resolution failure [MasterDB]'),
       );
-      expect(sanitizedGeneralOzikol, 'Workspace could not be found. Please check your access code or web address.');
+      expect(sanitizedGeneralOzikol, 'Workspace could not be found.');
       expect(sanitizedGeneralOzikol.toLowerCase(), isNot(contains('ozikol')));
 
       // 3. Check low-level socket and timeout exceptions

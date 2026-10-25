@@ -618,7 +618,7 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
         lower.contains('workspace not found') ||
         lower.contains('tenant not found') ||
         lower.contains('not found')) {
-      return 'Workspace could not be found. Please check your access code or web address.';
+      return 'Workspace could not be found.';
     }
 
     // Check for internal server, database, or SQL errors
@@ -643,7 +643,7 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
       if (lower.contains('connect') || lower.contains('network') || lower.contains('server')) {
         return 'Unable to connect. Please check your network connection.';
       }
-      return 'Workspace could not be found. Please check your access code or web address.';
+      return 'Workspace could not be found.';
     }
 
     // Clean any low-level Dio/HTTP error prefixes

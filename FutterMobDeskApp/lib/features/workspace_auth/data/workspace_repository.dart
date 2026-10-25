@@ -113,7 +113,7 @@ class WorkspaceRepository {
       }
 
       // If search yields no match
-      throw Exception('Workspace "$rawInput" could not be found. Please check your access code or web address.');
+      throw Exception('Workspace could not be found.');
     } on DioException catch (dioErr) {
       if (dioErr.type == DioExceptionType.connectionTimeout ||
           dioErr.type == DioExceptionType.receiveTimeout ||
@@ -124,7 +124,7 @@ class WorkspaceRepository {
       }
 
       if (dioErr.response?.statusCode == 404) {
-        throw Exception('Workspace "$rawInput" could not be found. Please check your access code or web address.');
+        throw Exception('Workspace could not be found.');
       }
 
       throw Exception('Unable to connect. Please check your network connection.');
