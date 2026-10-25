@@ -125,6 +125,7 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
                 'superadmin',
                 'admin',
                 'administrator',
+                'usermanager',
                 'identitymanager',
                 'cmsmanager',
                 'editor',

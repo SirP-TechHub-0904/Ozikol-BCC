@@ -127,10 +127,12 @@ class Workspace {
       (effectivePermissions['features'] is Map &&
           (effectivePermissions['features'] as Map).isNotEmpty) ||
       userRoles.any((r) => [
+            'usermanager',
             'identitymanager',
             'cmsmanager',
             'editor',
-            'featureedit'
+            'featureedit',
+            'systemadministrator'
           ].contains(r.toLowerCase()));
 
   /// Verifies if a modular capability is active and licensed for this tenant organization
