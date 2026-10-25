@@ -937,9 +937,10 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                           constraints: const BoxConstraints(maxWidth: 440),
                           child: Form(
                             key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
+                            child: AutofillGroup(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
                                 // Header with Title & Contextual Info Icon
                                 Row(
                                   children: [
@@ -1009,6 +1010,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                   placeholder: 'e.g. access code or url',
                                   prefixIcon: const Icon(Icons.apartment_rounded, size: 20, color: AppColors.primary),
                                   showPasteButton: true,
+                                  autofillHints: const [AutofillHints.organizationName, AutofillHints.url],
                                   textInputAction: TextInputAction.done,
                                   onSubmitted: (_) => _handleContinue(),
                                   validator: (val) {
@@ -1109,8 +1111,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
             ),
           ),
         ),
-      ],
-    );
+      ),
+    ],
+  );
   }
 
   // =========================================================================
@@ -1318,9 +1321,10 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                     ),
                     child: Form(
                       key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
+                      child: AutofillGroup(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
                           Row(
                             children: [
                               Text(
@@ -1372,6 +1376,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                             placeholder: 'auth.org_code_placeholder'.tr(ref, fallback: 'e.g. access code or url'),
                             prefixIcon: const Icon(Icons.apartment_rounded, size: 20, color: AppColors.primary),
                             showPasteButton: true,
+                            autofillHints: const [AutofillHints.organizationName, AutofillHints.url],
                             textInputAction: TextInputAction.done,
                             onSubmitted: (_) => _handleContinue(),
                             validator: (val) {
@@ -1415,6 +1420,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                       ),
                     ),
                   ),
+                ),
 
                   const SizedBox(height: 20),
                   Text(

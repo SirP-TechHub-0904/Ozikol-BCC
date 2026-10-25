@@ -181,9 +181,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               ? 'Enter the security code sent to ${_emailController.text.trim()} along with your new password.'
               : 'Your password has been successfully reset. You can now sign in.'),
       onBackTap: () => Navigator.of(context).pop(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
                         // Error Banner
                         if (_errorMessage != null) ...[
                           Container(
@@ -217,6 +218,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                             placeholder: 'name@company.com',
                             prefixIcon: const Icon(Icons.email_outlined, size: 20, color: AppColors.primary),
                             keyboardType: TextInputType.emailAddress,
+                            showPasteButton: true,
+                            autofillHints: const [AutofillHints.email, AutofillHints.username],
                             onSubmitted: (_) => _handleRequestOtp(),
                           ),
                           const SizedBox(height: 24),
@@ -257,6 +260,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                             label: 'Reset Code',
                             placeholder: 'e.g. 6-digit code or reset token',
                             prefixIcon: const Icon(Icons.pin_outlined, size: 20, color: AppColors.primary),
+                            keyboardType: TextInputType.number,
+                            showPasteButton: true,
+                            autofillHints: const [AutofillHints.oneTimeCode],
                           ),
                           const SizedBox(height: 16),
                           CustomTextField(
@@ -265,6 +271,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                             placeholder: 'Create a strong password',
                             prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                             isPassword: true,
+                            showPasteButton: true,
+                            autofillHints: const [AutofillHints.newPassword],
                           ),
                           const SizedBox(height: 12),
                           // Complexity rules strip
@@ -300,6 +308,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                             placeholder: 'Re-enter your new password',
                             prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                             isPassword: true,
+                            showPasteButton: true,
+                            autofillHints: const [AutofillHints.newPassword],
                             onSubmitted: (_) => _handleResetPassword(),
                           ),
                           const SizedBox(height: 24),
@@ -368,6 +378,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         ],
                       ],
                     ),
+      ),
     );
   }
 }

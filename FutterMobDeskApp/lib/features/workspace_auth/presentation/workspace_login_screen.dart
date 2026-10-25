@@ -172,82 +172,86 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
         onBackTap: _handleChangeOrganization,
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
+          child: AutofillGroup(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
 
-                            // Error Banner
-                            if (state.errorMessage != null) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: AppColors.error.withAlpha(isDark ? 40 : 20),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: AppColors.error.withAlpha(80)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 18),
-                                    const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        state.errorMessage!,
-                                        style: const TextStyle(
-                                          color: AppColors.error,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
+                              // Error Banner
+                              if (state.errorMessage != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withAlpha(isDark ? 40 : 20),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: AppColors.error.withAlpha(80)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 18),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          state.errorMessage!,
+                                          style: const TextStyle(
+                                            color: AppColors.error,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(height: 18),
+                              ],
+
+                              // Work Email Input Field
+                              CustomTextField(
+                                controller: _emailController,
+                                label: 'auth.work_email'.tr(ref, fallback: 'Work Email'),
+                                placeholder: 'name@company.com',
+                                keyboardType: TextInputType.emailAddress,
+                                prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20, color: AppColors.primary),
+                                showPasteButton: true,
+                                autofillHints: const [AutofillHints.email, AutofillHints.username],
+                                textInputAction: TextInputAction.next,
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) {
+                                    return 'auth.work_email_required'.tr(ref, fallback: 'Please enter your work email.');
+                                  }
+                                  if (!val.contains('@') || !val.contains('.')) {
+                                    return 'auth.work_email_invalid'.tr(ref, fallback: 'Please enter a valid email address.');
+                                  }
+                                  return null;
+                                },
                               ),
-                              const SizedBox(height: 18),
-                            ],
+                              const SizedBox(height: 16),
 
-                            // Work Email Input Field
-                            CustomTextField(
-                              controller: _emailController,
-                              label: 'auth.work_email'.tr(ref, fallback: 'Work Email'),
-                              placeholder: 'name@company.com',
-                              keyboardType: TextInputType.emailAddress,
-                              prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20, color: AppColors.primary),
-                              showPasteButton: true,
-                              textInputAction: TextInputAction.next,
-                              validator: (val) {
-                                if (val == null || val.trim().isEmpty) {
-                                  return 'auth.work_email_required'.tr(ref, fallback: 'Please enter your work email.');
-                                }
-                                if (!val.contains('@') || !val.contains('.')) {
-                                  return 'auth.work_email_invalid'.tr(ref, fallback: 'Please enter a valid email address.');
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
+                              // Password Input Field
+                              CustomTextField(
+                                controller: _passwordController,
+                                label: 'auth.password'.tr(ref, fallback: 'Password'),
+                                placeholder: '••••••••',
+                                isPassword: true,
+                                showPasteButton: true,
+                                autofillHints: const [AutofillHints.password],
+                                prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _handleSignIn(),
+                                validator: (val) {
+                                  if (val == null || val.isEmpty) {
+                                    return 'auth.password_required'.tr(ref, fallback: 'Please enter your password.');
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 8),
 
-                            // Password Input Field
-                            CustomTextField(
-                              controller: _passwordController,
-                              label: 'auth.password'.tr(ref, fallback: 'Password'),
-                              placeholder: '••••••••',
-                              isPassword: true,
-                              prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
-                              textInputAction: TextInputAction.done,
-                              onSubmitted: (_) => _handleSignIn(),
-                              validator: (val) {
-                                if (val == null || val.isEmpty) {
-                                  return 'auth.password_required'.tr(ref, fallback: 'Please enter your password.');
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 8),
-
-                            // Remember Me & Forgot Password Row
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              // Remember Me & Forgot Password Row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 // Remember Me in future login
@@ -352,6 +356,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                           ],
                         ),
                       ),
+                    ),
       ),
     );
   }

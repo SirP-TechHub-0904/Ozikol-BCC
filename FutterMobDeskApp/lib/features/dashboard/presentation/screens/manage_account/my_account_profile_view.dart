@@ -330,107 +330,118 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth >= 950;
+        final isMobile = constraints.maxWidth < 650;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Standalone Page Header matching Web
-              PageHeader(
-                icon: Icons.person_pin_rounded,
-                eyebrow: 'PERSONAL WORKSPACE DOSSIER',
-                title: 'nav.my_profile'.tr(ref, fallback: 'My Profile & Dossier'),
-                description: 'profile.desc'.tr(
-                  ref,
-                  fallback: 'View and manage your personal membership dossier, contact information, and workspace attributes.',
+        return RefreshIndicator(
+          onRefresh: _loadProfile,
+          color: AppColors.primary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
+            padding: EdgeInsets.symmetric(
+              horizontal: isDesktop ? 24 : 16,
+              vertical: isDesktop ? 20 : 16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Standalone Page Header matching Web
+                PageHeader(
+                  icon: Icons.person_pin_rounded,
+                  eyebrow: 'PERSONAL WORKSPACE DOSSIER',
+                  title: 'nav.my_profile'.tr(ref, fallback: 'My Profile & Dossier'),
+                  description: 'profile.desc'.tr(
+                    ref,
+                    fallback: 'View and manage your personal membership dossier, contact information, and workspace attributes.',
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
+                SizedBox(height: isDesktop ? 20 : 16),
 
-              // Header action strip matching Web
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                // Header action strip only on Desktop - omitted on Mobile to eliminate duplicate title and refresh button
+                if (isDesktop) ...[
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.badge_rounded, size: 20, color: AppColors.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        'nav.my_profile'.tr(ref, fallback: 'Profile Information & Dossier'),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                      Row(
+                        children: [
+                          const Icon(Icons.badge_rounded, size: 20, color: AppColors.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'nav.my_profile'.tr(ref, fallback: 'Profile Information & Dossier'),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                            ),
+                          ),
+                        ],
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _loadProfile,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
+                        icon: const Icon(Icons.refresh_rounded, size: 16),
+                        label: Text('account.refresh_profile'.tr(ref, fallback: 'Refresh Profile'), style: const TextStyle(fontSize: 12.5)),
                       ),
                     ],
                   ),
-                  OutlinedButton.icon(
-                    onPressed: _loadProfile,
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    icon: const Icon(Icons.refresh_rounded, size: 16),
-                    label: Text('account.refresh_profile'.tr(ref, fallback: 'Refresh Profile'), style: const TextStyle(fontSize: 12.5)),
-                  ),
+                  const SizedBox(height: 16),
                 ],
-              ),
-              const SizedBox(height: 16),
 
-              // Success / Error Banner
-              if (_successMessage != null) ...[
-                _buildAlertBanner(Icons.check_circle_outline_rounded, _successMessage!, AppColors.success),
-                const SizedBox(height: 16),
-              ],
+                // Success / Error Banner
+                if (_successMessage != null) ...[
+                  _buildAlertBanner(Icons.check_circle_outline_rounded, _successMessage!, AppColors.success),
+                  const SizedBox(height: 16),
+                ],
 
-              if (_errorMessage != null) ...[
-                _buildAlertBanner(Icons.error_outline_rounded, _errorMessage!, AppColors.error),
-                const SizedBox(height: 16),
-              ],
+                if (_errorMessage != null) ...[
+                  _buildAlertBanner(Icons.error_outline_rounded, _errorMessage!, AppColors.error),
+                  const SizedBox(height: 16),
+                ],
 
-              // Main Layout: 2-Column on Desktop (>=950px), Stacked on Mobile
-              if (isDesktop)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left Column: Sticky-Style Organization Dossier Card (330px width)
-                    SizedBox(
-                      width: 330,
-                      child: _buildLeftDossierCard(isDark),
-                    ),
-                    const SizedBox(width: 24),
-
-                    // Right Column: Modular Cards (Identity, Primary Email, Mobile Phone)
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildIdentityCard(isDark),
-                          const SizedBox(height: 24),
-                          _buildEmailCard(isDark),
-                          const SizedBox(height: 24),
-                          _buildPhoneCard(isDark),
-                        ],
+                // Main Layout: 2-Column on Desktop (>=950px), Stacked on Mobile
+                if (isDesktop)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left Column: Sticky-Style Organization Dossier Card (330px width)
+                      SizedBox(
+                        width: 330,
+                        child: _buildLeftDossierCard(isDark, isMobile),
                       ),
-                    ),
-                  ],
-                )
-              else
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildLeftDossierCard(isDark),
-                    const SizedBox(height: 24),
-                    _buildIdentityCard(isDark),
-                    const SizedBox(height: 24),
-                    _buildEmailCard(isDark),
-                    const SizedBox(height: 24),
-                    _buildPhoneCard(isDark),
-                  ],
-                ),
-            ],
+                      const SizedBox(width: 24),
+
+                      // Right Column: Modular Cards (Identity, Primary Email, Mobile Phone)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildIdentityCard(isDark, isMobile),
+                            const SizedBox(height: 24),
+                            _buildEmailCard(isDark, isMobile),
+                            const SizedBox(height: 24),
+                            _buildPhoneCard(isDark, isMobile),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildLeftDossierCard(isDark, isMobile),
+                      const SizedBox(height: 16),
+                      _buildIdentityCard(isDark, isMobile),
+                      const SizedBox(height: 16),
+                      _buildEmailCard(isDark, isMobile),
+                      const SizedBox(height: 16),
+                      _buildPhoneCard(isDark, isMobile),
+                    ],
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -438,9 +449,9 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
   }
 
   // --- Left Column: Organization Dossier Card ---
-  Widget _buildLeftDossierCard(bool isDark) {
+  Widget _buildLeftDossierCard(bool isDark, bool isMobile) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(16),
@@ -461,13 +472,13 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
             child: Stack(
               children: [
                 CircleAvatar(
-                  radius: 46,
+                  radius: isMobile ? 42 : 46,
                   backgroundColor: AppColors.primary,
                   backgroundImage: _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
                   child: _avatarUrl == null
                       ? Text(
                           _initials,
-                          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(fontSize: isMobile ? 24 : 26, fontWeight: FontWeight.bold, color: Colors.white),
                         )
                       : null,
                 ),
@@ -494,7 +505,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
             '${_selectedTitle != null ? '$_selectedTitle ' : ''}${_firstNameController.text} ${_lastNameController.text}'.trim(),
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: isMobile ? 17 : 18,
               fontWeight: FontWeight.bold,
               color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
             ),
@@ -640,9 +651,9 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
   }
 
   // --- Right Column Card 1: Personal Identity & Bio ---
-  Widget _buildIdentityCard(bool isDark) {
+  Widget _buildIdentityCard(bool isDark, bool isMobile) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(16),
@@ -667,44 +678,66 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
           ),
           const SizedBox(height: 20),
 
-          // Row: Title + First Name
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(width: 145, child: _buildTitleDropdown(isDark)),
-              const SizedBox(width: 14),
-              Expanded(
-                child: CustomTextField(
-                  controller: _firstNameController,
-                  label: 'First Name *',
-                  placeholder: 'e.g. First Name',
+          // Title + First Name
+          if (isMobile) ...[
+            _buildTitleDropdown(isDark),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _firstNameController,
+              label: 'First Name *',
+              placeholder: 'e.g. First Name',
+            ),
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(width: 145, child: _buildTitleDropdown(isDark)),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: CustomTextField(
+                    controller: _firstNameController,
+                    label: 'First Name *',
+                    placeholder: 'e.g. First Name',
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           const SizedBox(height: 16),
 
-          // Row: Middle Name + Last Name
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: CustomTextField(
-                  controller: _middleNameController,
-                  label: 'Middle Name (Optional)',
-                  placeholder: 'Optional',
+          // Middle Name + Last Name
+          if (isMobile) ...[
+            CustomTextField(
+              controller: _middleNameController,
+              label: 'Middle Name (Optional)',
+              placeholder: 'Optional',
+            ),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _lastNameController,
+              label: 'Last Name *',
+              placeholder: 'e.g. Last Name',
+            ),
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: CustomTextField(
+                    controller: _middleNameController,
+                    label: 'Middle Name (Optional)',
+                    placeholder: 'Optional',
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: CustomTextField(
-                  controller: _lastNameController,
-                  label: 'Last Name *',
-                  placeholder: 'e.g. Last Name',
+                const SizedBox(width: 14),
+                Expanded(
+                  child: CustomTextField(
+                    controller: _lastNameController,
+                    label: 'Last Name *',
+                    placeholder: 'e.g. Last Name',
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           const SizedBox(height: 16),
 
           // Professional Designation / Role
@@ -715,116 +748,148 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
           ),
           const SizedBox(height: 16),
 
-          // Row: Gender (Dropdown) + Date of Birth
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: CustomDropdownField<String>(
-                  label: 'Gender',
-                  value: _selectedGender,
-                  items: const [
-                    DropdownMenuItem(value: 'Male', child: Text('Male')),
-                    DropdownMenuItem(value: 'Female', child: Text('Female')),
-                    DropdownMenuItem(value: 'Other', child: Text('Other')),
-                    DropdownMenuItem(value: 'Prefer not to say', child: Text('Prefer not to say')),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) setState(() => _selectedGender = val);
-                  },
+          // Gender + Date of Birth
+          if (isMobile) ...[
+            CustomDropdownField<String>(
+              label: 'Gender',
+              value: _selectedGender,
+              items: const [
+                DropdownMenuItem(value: 'Male', child: Text('Male')),
+                DropdownMenuItem(value: 'Female', child: Text('Female')),
+                DropdownMenuItem(value: 'Other', child: Text('Other')),
+                DropdownMenuItem(value: 'Prefer not to say', child: Text('Prefer not to say')),
+              ],
+              onChanged: (val) {
+                if (val != null) setState(() => _selectedGender = val);
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildDobPicker(isDark),
+          ] else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: CustomDropdownField<String>(
+                    label: 'Gender',
+                    value: _selectedGender,
+                    items: const [
+                      DropdownMenuItem(value: 'Male', child: Text('Male')),
+                      DropdownMenuItem(value: 'Female', child: Text('Female')),
+                      DropdownMenuItem(value: 'Other', child: Text('Other')),
+                      DropdownMenuItem(value: 'Prefer not to say', child: Text('Prefer not to say')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedGender = val);
+                    },
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Date of Birth',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _selectedDob ?? DateTime(1995, 1, 1),
-                          firstDate: DateTime(1930),
-                          lastDate: DateTime.now(),
-                        );
-                        if (picked != null) {
-                          setState(() => _selectedDob = picked);
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        height: 48,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF151F30) : AppColors.surfaceLight,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              size: 16,
-                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                _selectedDob != null
-                                    ? '${_selectedDob!.year}-${_selectedDob!.month.toString().padLeft(2, '0')}-${_selectedDob!.day.toString().padLeft(2, '0')}'
-                                    : 'Select Date',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: _selectedDob != null
-                                      ? (isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight)
-                                      : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 14),
+                Expanded(
+                  child: _buildDobPicker(isDark),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           const SizedBox(height: 24),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              PrimaryButton(
+          if (isMobile)
+            SizedBox(
+              width: double.infinity,
+              child: PrimaryButton(
                 text: _isSaving ? 'Saving...' : 'btn.save_changes'.tr(ref, fallback: 'Save Personal Details'),
                 icon: const Icon(Icons.save_outlined, size: 16),
                 onPressed: _isSaving ? null : _handleSave,
               ),
-            ],
-          ),
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                PrimaryButton(
+                  text: _isSaving ? 'Saving...' : 'btn.save_changes'.tr(ref, fallback: 'Save Personal Details'),
+                  icon: const Icon(Icons.save_outlined, size: 16),
+                  onPressed: _isSaving ? null : _handleSave,
+                ),
+              ],
+            ),
         ],
       ),
     );
   }
 
+  /// Extracted Date of Birth Picker Widget
+  Widget _buildDobPicker(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Date of Birth',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+            letterSpacing: 0.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: _selectedDob ?? DateTime(1995, 1, 1),
+              firstDate: DateTime(1930),
+              lastDate: DateTime.now(),
+            );
+            if (picked != null) {
+              setState(() => _selectedDob = picked);
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF151F30) : AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 16,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _selectedDob != null
+                        ? '${_selectedDob!.year}-${_selectedDob!.month.toString().padLeft(2, '0')}-${_selectedDob!.day.toString().padLeft(2, '0')}'
+                        : 'Select Date',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: _selectedDob != null
+                          ? (isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight)
+                          : (isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // --- Right Column Card 2: Primary Email Address ---
-  Widget _buildEmailCard(bool isDark) {
+  Widget _buildEmailCard(bool isDark, bool isMobile) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(16),
@@ -836,20 +901,26 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.mail_outline_rounded, color: AppColors.primary, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Primary Email Address',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.mail_outline_rounded, color: AppColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Primary Email Address',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               _buildVerificationBadge(_emailConfirmed, 'Email'),
             ],
           ),
@@ -863,51 +934,108 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
             ),
-            child: Row(
-              children: [
-                Icon(Icons.alternate_email_rounded, size: 18, color: isDark ? AppColors.gray400 : AppColors.gray600),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _emailController.text.isNotEmpty ? _emailController.text : 'name@company.com',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
+            child: isMobile
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.alternate_email_rounded, size: 18, color: isDark ? AppColors.gray400 : AppColors.gray600),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _emailController.text.isNotEmpty ? _emailController.text : 'name@company.com',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (!_emailConfirmed && !_showEmailOtpBox)
+                            ElevatedButton.icon(
+                              onPressed: _isRequestingEmailOtp ? null : _requestEmailVerification,
+                              icon: _isRequestingEmailOtp
+                                  ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.mark_email_read_outlined, size: 14),
+                              label: Text(_isRequestingEmailOtp ? 'Sending...' : 'Verify Email Now', style: const TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD97706),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Email change requested. Use verified credentials.')),
+                              );
+                            },
+                            icon: const Icon(Icons.edit_outlined, size: 14),
+                            label: const Text('Change Email', style: TextStyle(fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Icon(Icons.alternate_email_rounded, size: 18, color: isDark ? AppColors.gray400 : AppColors.gray600),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _emailController.text.isNotEmpty ? _emailController.text : 'name@company.com',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                          ),
+                        ),
+                      ),
+                      if (!_emailConfirmed && !_showEmailOtpBox) ...[
+                        ElevatedButton.icon(
+                          onPressed: _isRequestingEmailOtp ? null : _requestEmailVerification,
+                          icon: _isRequestingEmailOtp
+                              ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.mark_email_read_outlined, size: 14),
+                          label: Text(_isRequestingEmailOtp ? 'Sending...' : 'Verify Email Now', style: const TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD97706),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Email change requested. Use verified credentials.')),
+                          );
+                        },
+                        icon: const Icon(Icons.edit_outlined, size: 14),
+                        label: const Text('Change Email', style: TextStyle(fontSize: 12)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                if (!_emailConfirmed && !_showEmailOtpBox) ...[
-                  ElevatedButton.icon(
-                    onPressed: _isRequestingEmailOtp ? null : _requestEmailVerification,
-                    icon: _isRequestingEmailOtp
-                        ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.mark_email_read_outlined, size: 14),
-                    label: Text(_isRequestingEmailOtp ? 'Sending...' : 'Verify Email Now', style: const TextStyle(fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD97706),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Email change requested. Use verified credentials.')),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_outlined, size: 14),
-                  label: const Text('Change Email', style: TextStyle(fontSize: 12)),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 14),
 
@@ -941,32 +1069,71 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Icon(Icons.warning_amber_rounded, size: 20, color: Color(0xFFD97706)),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Verification Required: Your primary email address is unverified. Confirm your email to receive security alerts and enable self-service password recovery.',
-                      style: TextStyle(fontSize: 12.5, color: Color(0xFF92400E), fontWeight: FontWeight.w500),
+              child: isMobile
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(Icons.warning_amber_rounded, size: 20, color: Color(0xFFD97706)),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Verification Required',
+                                style: TextStyle(fontSize: 13, color: Color(0xFF92400E), fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Your primary email address is unverified. Confirm your email to receive security alerts and enable self-service password recovery.',
+                          style: TextStyle(fontSize: 12.5, color: Color(0xFF92400E)),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isRequestingEmailOtp ? null : _requestEmailVerification,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: _isRequestingEmailOtp
+                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Text('Verify Email', style: TextStyle(fontSize: 12.5)),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 20, color: Color(0xFFD97706)),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Verification Required: Your primary email address is unverified. Confirm your email to receive security alerts and enable self-service password recovery.',
+                            style: TextStyle(fontSize: 12.5, color: Color(0xFF92400E), fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: _isRequestingEmailOtp ? null : _requestEmailVerification,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: _isRequestingEmailOtp
+                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Verify Email', style: TextStyle(fontSize: 12.5)),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: _isRequestingEmailOtp ? null : _requestEmailVerification,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: _isRequestingEmailOtp
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Verify Email', style: TextStyle(fontSize: 12.5)),
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 14),
 
@@ -1003,47 +1170,141 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 180,
-                          child: TextField(
-                            controller: _emailOtpController,
-                            keyboardType: TextInputType.number,
-                            maxLength: 6,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            decoration: const InputDecoration(
-                              counterText: '',
-                              hintText: '000000',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    AutofillGroup(
+                      child: isMobile
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextField(
+                                    controller: _emailOtpController,
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 6,
+                                    autofillHints: const [AutofillHints.oneTimeCode],
+                                    enableInteractiveSelection: true,
+                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                    decoration: InputDecoration(
+                                      counterText: '',
+                                      hintText: '000000',
+                                      border: const OutlineInputBorder(),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      suffixIcon: IconButton(
+                                        icon: const Icon(Icons.content_paste_rounded, size: 18),
+                                        tooltip: 'Paste from clipboard',
+                                        onPressed: () async {
+                                          final data = await Clipboard.getData(Clipboard.kTextPlain);
+                                          var text = data?.text?.trim();
+                                          if (text != null && text.isNotEmpty) {
+                                            final match = RegExp(r'\b\d{6}\b').firstMatch(text);
+                                            if (match != null) {
+                                              text = match.group(0)!;
+                                            } else {
+                                              final digits = text.replaceAll(RegExp(r'\D'), '');
+                                              if (digits.length >= 4 && digits.length <= 8) text = digits;
+                                            }
+                                            if (text.length > 6) text = text.substring(0, 6);
+                                            _emailOtpController.text = text;
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    style: const TextStyle(fontSize: 16, letterSpacing: 4, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        onPressed: _isConfirmingEmailOtp ? null : _confirmEmailVerification,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.primary,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                        child: _isConfirmingEmailOtp
+                                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                            : const Text('Confirm Code'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    TextButton(
+                                      onPressed: _isRequestingEmailOtp ? null : _requestEmailVerification,
+                                      child: const Text('Resend', style: TextStyle(fontSize: 12.5)),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => setState(() => _showEmailOtpBox = false),
+                                      child: const Text('Cancel', style: TextStyle(fontSize: 12.5, color: AppColors.gray500)),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                SizedBox(
+                                  width: 190,
+                                  child: TextField(
+                                    controller: _emailOtpController,
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 6,
+                                    autofillHints: const [AutofillHints.oneTimeCode],
+                                    enableInteractiveSelection: true,
+                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                    decoration: InputDecoration(
+                                      counterText: '',
+                                      hintText: '000000',
+                                      border: const OutlineInputBorder(),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      suffixIcon: IconButton(
+                                        icon: const Icon(Icons.content_paste_rounded, size: 18),
+                                        tooltip: 'Paste from clipboard',
+                                        onPressed: () async {
+                                          final data = await Clipboard.getData(Clipboard.kTextPlain);
+                                          var text = data?.text?.trim();
+                                          if (text != null && text.isNotEmpty) {
+                                            final match = RegExp(r'\b\d{6}\b').firstMatch(text);
+                                            if (match != null) {
+                                              text = match.group(0)!;
+                                            } else {
+                                              final digits = text.replaceAll(RegExp(r'\D'), '');
+                                              if (digits.length >= 4 && digits.length <= 8) text = digits;
+                                            }
+                                            if (text.length > 6) text = text.substring(0, 6);
+                                            _emailOtpController.text = text;
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    style: const TextStyle(fontSize: 16, letterSpacing: 4, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                ElevatedButton(
+                                  onPressed: _isConfirmingEmailOtp ? null : _confirmEmailVerification,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  child: _isConfirmingEmailOtp
+                                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                      : const Text('Confirm Code'),
+                                ),
+                                const SizedBox(width: 8),
+                                TextButton(
+                                  onPressed: _isRequestingEmailOtp ? null : _requestEmailVerification,
+                                  child: const Text('Resend', style: TextStyle(fontSize: 12.5)),
+                                ),
+                                TextButton(
+                                  onPressed: () => setState(() => _showEmailOtpBox = false),
+                                  child: const Text('Cancel', style: TextStyle(fontSize: 12.5, color: AppColors.gray500)),
+                                ),
+                              ],
                             ),
-                            style: const TextStyle(fontSize: 16, letterSpacing: 4, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: _isConfirmingEmailOtp ? null : _confirmEmailVerification,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          child: _isConfirmingEmailOtp
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Text('Confirm Code'),
-                        ),
-                        const SizedBox(width: 8),
-                        TextButton(
-                          onPressed: _isRequestingEmailOtp ? null : _requestEmailVerification,
-                          child: const Text('Resend', style: TextStyle(fontSize: 12.5)),
-                        ),
-                        TextButton(
-                          onPressed: () => setState(() => _showEmailOtpBox = false),
-                          child: const Text('Cancel', style: TextStyle(fontSize: 12.5, color: AppColors.gray500)),
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -1056,9 +1317,9 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
   }
 
   // --- Right Column Card 3: Mobile Phone Number ---
-  Widget _buildPhoneCard(bool isDark) {
+  Widget _buildPhoneCard(bool isDark, bool isMobile) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(16),
@@ -1070,20 +1331,26 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.phone_android_rounded, color: AppColors.primary, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Mobile Phone Number',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.phone_android_rounded, color: AppColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Mobile Phone Number',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               _buildVerificationBadge(_phoneConfirmed, 'Phone'),
             ],
           ),
@@ -1097,53 +1364,112 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
             ),
-            child: Row(
-              children: [
-                Icon(Icons.phone_outlined, size: 18, color: isDark ? AppColors.gray400 : AppColors.gray600),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    _phoneController.text.isNotEmpty ? _phoneController.text : 'No phone number configured',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: _phoneController.text.isNotEmpty
-                          ? (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight)
-                          : AppColors.gray500,
-                    ),
+            child: isMobile
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.phone_outlined, size: 18, color: isDark ? AppColors.gray400 : AppColors.gray600),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _phoneController.text.isNotEmpty ? _phoneController.text : 'No phone number configured',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: _phoneController.text.isNotEmpty
+                                    ? (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight)
+                                    : AppColors.gray500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (!_phoneConfirmed && !_showPhoneOtpBox)
+                            ElevatedButton.icon(
+                              onPressed: _phoneController.text.trim().isEmpty || _isRequestingPhoneOtp ? null : _requestPhoneVerification,
+                              icon: _isRequestingPhoneOtp
+                                  ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.sms_outlined, size: 14),
+                              label: Text(_isRequestingPhoneOtp ? 'Sending...' : 'Verify Phone via SMS', style: const TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD97706),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Edit phone number in Personal Identity details above.')),
+                              );
+                            },
+                            icon: const Icon(Icons.edit_outlined, size: 14),
+                            label: const Text('Update Phone', style: TextStyle(fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Icon(Icons.phone_outlined, size: 18, color: isDark ? AppColors.gray400 : AppColors.gray600),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _phoneController.text.isNotEmpty ? _phoneController.text : 'No phone number configured',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _phoneController.text.isNotEmpty
+                                ? (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight)
+                                : AppColors.gray500,
+                          ),
+                        ),
+                      ),
+                      if (!_phoneConfirmed && !_showPhoneOtpBox) ...[
+                        ElevatedButton.icon(
+                          onPressed: _phoneController.text.trim().isEmpty || _isRequestingPhoneOtp ? null : _requestPhoneVerification,
+                          icon: _isRequestingPhoneOtp
+                              ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Icon(Icons.sms_outlined, size: 14),
+                          label: Text(_isRequestingPhoneOtp ? 'Sending...' : 'Verify Phone via SMS', style: const TextStyle(fontSize: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD97706),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Edit phone number in Personal Identity details above.')),
+                          );
+                        },
+                        icon: const Icon(Icons.edit_outlined, size: 14),
+                        label: const Text('Update Phone', style: TextStyle(fontSize: 12)),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                if (!_phoneConfirmed && !_showPhoneOtpBox) ...[
-                  ElevatedButton.icon(
-                    onPressed: _phoneController.text.trim().isEmpty || _isRequestingPhoneOtp ? null : _requestPhoneVerification,
-                    icon: _isRequestingPhoneOtp
-                        ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.sms_outlined, size: 14),
-                    label: Text(_isRequestingPhoneOtp ? 'Sending...' : 'Verify Phone via SMS', style: const TextStyle(fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD97706),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Edit phone number in Personal Identity details above.')),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_outlined, size: 14),
-                  label: const Text('Update Phone', style: TextStyle(fontSize: 12)),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 14),
 
@@ -1177,32 +1503,71 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Icon(Icons.warning_amber_rounded, size: 20, color: Color(0xFFD97706)),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Verification Required: Your mobile phone number is unverified. Complete verification to receive urgent SMS security alerts and enable SMS OTP authentication.',
-                      style: TextStyle(fontSize: 12.5, color: Color(0xFF92400E), fontWeight: FontWeight.w500),
+              child: isMobile
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(Icons.warning_amber_rounded, size: 20, color: Color(0xFFD97706)),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Verification Required',
+                                style: TextStyle(fontSize: 13, color: Color(0xFF92400E), fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Verification Required: Your mobile phone number is unverified. Complete verification to receive urgent SMS security alerts and enable SMS OTP authentication.',
+                          style: TextStyle(fontSize: 12.5, color: Color(0xFF92400E)),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _phoneController.text.trim().isEmpty || _isRequestingPhoneOtp ? null : _requestPhoneVerification,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: _isRequestingPhoneOtp
+                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Text('Verify Phone', style: TextStyle(fontSize: 12.5)),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 20, color: Color(0xFFD97706)),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Verification Required: Your mobile phone number is unverified. Complete verification to receive urgent SMS security alerts and enable SMS OTP authentication.',
+                            style: TextStyle(fontSize: 12.5, color: Color(0xFF92400E), fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton(
+                          onPressed: _phoneController.text.trim().isEmpty || _isRequestingPhoneOtp ? null : _requestPhoneVerification,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: _isRequestingPhoneOtp
+                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Verify Phone', style: TextStyle(fontSize: 12.5)),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: _phoneController.text.trim().isEmpty || _isRequestingPhoneOtp ? null : _requestPhoneVerification,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: _isRequestingPhoneOtp
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('Verify Phone', style: TextStyle(fontSize: 12.5)),
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 14),
 
@@ -1239,47 +1604,229 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        SizedBox(
-                          width: 180,
-                          child: TextField(
-                            controller: _phoneOtpController,
-                            keyboardType: TextInputType.number,
-                            maxLength: 6,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            decoration: const InputDecoration(
-                              counterText: '',
-                              hintText: '000000',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    AutofillGroup(
+                      child: isMobile
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: TextField(
+                                    controller: _phoneOtpController,
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 6,
+                                    autofillHints: const [AutofillHints.oneTimeCode],
+                                    enableInteractiveSelection: true,
+                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                    decoration: InputDecoration(
+                                      counterText: '',
+                                      hintText: '000000',
+                                      border: const OutlineInputBorder(),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      suffixIcon: IconButton(
+                                        icon: const Icon(Icons.content_paste_rounded, size: 18),
+                                        tooltip: 'Paste from clipboard',
+                                        onPressed: () async {
+                                          final data = await Clipboard.getData(Clipboard.kTextPlain);
+                                          var text = data?.text?.trim();
+                                          if (text != null && text.isNotEmpty) {
+                                            final match = RegExp(r'\b\d{6}\b').firstMatch(text);
+                                            if (match != null) {
+                                              text = match.group(0)!;
+                                            } else {
+                                              final digits = text.replaceAll(RegExp(r'\D'), '');
+                                              if (digits.length >= 4 && digits.length <= 8) text = digits;
+                                            }
+                                            if (text.length > 6) text = text.substring(0, 6);
+                                            _phoneOtpController.text = text;
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    style: const TextStyle(fontSize: 16, letterSpacing: 4, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        onPressed: _isConfirmingPhoneOtp ? null : _confirmPhoneVerification,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.primary,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        ),
+                                        child: _isConfirmingPhoneOtp
+                                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                            : const Text('Confirm SMS Code'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    TextButton(
+                                      onPressed: _isRequestingPhoneOtp ? null : _requestPhoneVerification,
+                                      child: const Text('Resend SMS', style: TextStyle(fontSize: 12.5)),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => setState(() => _showPhoneOtpBox = false),
+                                      child: const Text('Cancel', style: TextStyle(fontSize: 12.5, color: AppColors.gray500)),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            )
+                          : Row(
+                              children: [
+                                SizedBox(
+                                  width: 190,
+                                  child: TextField(
+                                    controller: _phoneOtpController,
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 6,
+                                    autofillHints: const [AutofillHints.oneTimeCode],
+                                    enableInteractiveSelection: true,
+                                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                    decoration: InputDecoration(
+                                      counterText: '',
+                                      hintText: '000000',
+                                      border: const OutlineInputBorder(),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                      suffixIcon: IconButton(
+                                        icon: const Icon(Icons.content_paste_rounded, size: 18),
+                                        tooltip: 'Paste from clipboard',
+                                        onPressed: () async {
+                                          final data = await Clipboard.getData(Clipboard.kTextPlain);
+                                          var text = data?.text?.trim();
+                                          if (text != null && text.isNotEmpty) {
+                                            final match = RegExp(r'\b\d{6}\b').firstMatch(text);
+                                            if (match != null) {
+                                              text = match.group(0)!;
+                                            } else {
+                                              final digits = text.replaceAll(RegExp(r'\D'), '');
+                                              if (digits.length >= 4 && digits.length <= 8) text = digits;
+                                            }
+                                            if (text.length > 6) text = text.substring(0, 6);
+                                            _phoneOtpController.text = text;
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                    style: const TextStyle(fontSize: 16, letterSpacing: 4, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                ElevatedButton(
+                                  onPressed: _isConfirmingPhoneOtp ? null : _confirmPhoneVerification,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  child: _isConfirmingPhoneOtp
+                                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                      : const Text('Confirm SMS Code'),
+                                ),
+                                const SizedBox(width: 8),
+                                TextButton(
+                                  onPressed: _isRequestingPhoneOtp ? null : _requestPhoneVerification,
+                                  child: const Text('Resend SMS', style: TextStyle(fontSize: 12.5)),
+                                ),
+                                TextButton(
+                                  onPressed: () => setState(() => _showPhoneOtpBox = false),
+                                  child: const Text('Cancel', style: TextStyle(fontSize: 12.5, color: AppColors.gray500)),
+                                ),
+                              ],
                             ),
-                            style: const TextStyle(fontSize: 16, letterSpacing: 4, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.backgroundDark : AppColors.gray50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.35)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Enter the 6-digit SMS verification code sent to your phone:',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 10),
+                    AutofillGroup(
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 190,
+                            child: TextField(
+                              controller: _phoneOtpController,
+                              keyboardType: TextInputType.number,
+                              maxLength: 6,
+                              autofillHints: const [AutofillHints.oneTimeCode],
+                              enableInteractiveSelection: true,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              decoration: InputDecoration(
+                                counterText: '',
+                                hintText: '000000',
+                                border: const OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                suffixIcon: IconButton(
+                                  icon: const Icon(Icons.content_paste_rounded, size: 18),
+                                  tooltip: 'Paste from clipboard',
+                                  onPressed: () async {
+                                    final data = await Clipboard.getData(Clipboard.kTextPlain);
+                                    var text = data?.text?.trim();
+                                    if (text != null && text.isNotEmpty) {
+                                      final match = RegExp(r'\b\d{6}\b').firstMatch(text);
+                                      if (match != null) {
+                                        text = match.group(0)!;
+                                      } else {
+                                        final digits = text.replaceAll(RegExp(r'\D'), '');
+                                        if (digits.length >= 4 && digits.length <= 8) text = digits;
+                                      }
+                                      if (text.length > 6) text = text.substring(0, 6);
+                                      _phoneOtpController.text = text;
+                                    }
+                                  },
+                                ),
+                              ),
+                              style: const TextStyle(fontSize: 16, letterSpacing: 4, fontWeight: FontWeight.bold),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton(
-                          onPressed: _isConfirmingPhoneOtp ? null : _confirmPhoneVerification,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          const SizedBox(width: 12),
+                          ElevatedButton(
+                            onPressed: _isConfirmingPhoneOtp ? null : _confirmPhoneVerification,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: _isConfirmingPhoneOtp
+                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Text('Confirm SMS Code'),
                           ),
-                          child: _isConfirmingPhoneOtp
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Text('Confirm SMS Code'),
-                        ),
-                        const SizedBox(width: 8),
-                        TextButton(
-                          onPressed: _isRequestingPhoneOtp ? null : _requestPhoneVerification,
-                          child: const Text('Resend SMS', style: TextStyle(fontSize: 12.5)),
-                        ),
-                        TextButton(
-                          onPressed: () => setState(() => _showPhoneOtpBox = false),
-                          child: const Text('Cancel', style: TextStyle(fontSize: 12.5, color: AppColors.gray500)),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: _isRequestingPhoneOtp ? null : _requestPhoneVerification,
+                            child: const Text('Resend SMS', style: TextStyle(fontSize: 12.5)),
+                          ),
+                          TextButton(
+                            onPressed: () => setState(() => _showPhoneOtpBox = false),
+                            child: const Text('Cancel', style: TextStyle(fontSize: 12.5, color: AppColors.gray500)),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

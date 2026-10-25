@@ -228,9 +228,10 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
           ),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
 
                         // Error Banner
                         if (_errorMessage != null) ...[
@@ -257,13 +258,15 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
                           const SizedBox(height: 16),
                         ],
 
-                        // 6-Digit Code Field
+                        // 6-Digit Code Field with 1-tap paste & SMS text message autofill
                         CustomTextField(
                           controller: _codeController,
                           label: 'Verification Code',
                           placeholder: '123456',
                           prefixIcon: const Icon(Icons.lock_clock_outlined, size: 20, color: AppColors.primary),
                           keyboardType: TextInputType.number,
+                          showPasteButton: true,
+                          autofillHints: const [AutofillHints.oneTimeCode],
                           onSubmitted: (_) => _handleVerify(),
                         ),
                         const SizedBox(height: 12),
@@ -336,6 +339,7 @@ class _TwoFactorChallengeScreenState extends ConsumerState<TwoFactorChallengeScr
                         ),
                       ],
                     ),
+      ),
     );
   }
 }

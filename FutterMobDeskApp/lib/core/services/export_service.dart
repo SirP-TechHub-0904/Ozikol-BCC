@@ -437,6 +437,43 @@ class ExportService {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final cleanFileName = 'Member_Register_$today.pdf';
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
+    if (isMobile) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (ctx) => Scaffold(
+            appBar: AppBar(
+              title: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              backgroundColor: const Color(0xFF0050E5),
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            body: PdfPreview(
+              build: (format) => buildPdfDocument(
+                title: title,
+                organizationName: organizationName,
+                columns: columns,
+                data: data,
+                filterSummary: filterSummary,
+              ),
+              allowPrinting: true,
+              allowSharing: true,
+              canChangeOrientation: false,
+              canChangePageFormat: false,
+              canDebug: false,
+              initialPageFormat: PdfPageFormat.a4.landscape,
+              pdfFileName: cleanFileName,
+              previewPageMargin: const EdgeInsets.all(8),
+              loadingWidget: const Center(
+                child: CircularProgressIndicator(color: Color(0xFF0050E5)),
+              ),
+            ),
+          ),
+        ),
+      );
+      return;
+    }
 
     await showDialog(
       context: context,

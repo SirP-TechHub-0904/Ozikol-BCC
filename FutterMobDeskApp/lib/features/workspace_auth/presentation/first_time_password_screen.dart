@@ -169,9 +169,10 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
           ),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: AutofillGroup(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
 
                         // Error Banner
                         if (_errorMessage != null) ...[
@@ -205,6 +206,8 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
                           placeholder: 'Enter new password',
                           prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                           isPassword: true,
+                          showPasteButton: true,
+                          autofillHints: const [AutofillHints.newPassword],
                         ),
                         const SizedBox(height: 12),
 
@@ -243,6 +246,8 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
                           placeholder: 'Re-enter your new password',
                           prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                           isPassword: true,
+                          showPasteButton: true,
+                          autofillHints: const [AutofillHints.newPassword],
                           onSubmitted: (_) => _handleForceChange(),
                         ),
                         const SizedBox(height: 24),
@@ -255,6 +260,7 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
                         ),
                       ],
                     ),
+      ),
     );
   }
 }

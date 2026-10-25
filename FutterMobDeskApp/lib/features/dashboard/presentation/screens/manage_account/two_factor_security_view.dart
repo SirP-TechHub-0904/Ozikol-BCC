@@ -348,9 +348,10 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: AutofillGroup(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Row(
                     children: [
                       Container(
@@ -417,13 +418,16 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                     const SizedBox(height: 18),
                   ],
 
-                  // 6-digit verification code input
+                  // 6-digit verification code input with 1-tap paste & SMS OTP autofill
                   CustomTextField(
                     controller: _codeController,
                     label: 'account.confirmation_code'.tr(ref, fallback: 'Confirmation Code'),
                     placeholder: '123456',
                     prefixIcon: const Icon(Icons.lock_clock_outlined, size: 20, color: AppColors.primary),
                     keyboardType: TextInputType.number,
+                    showPasteButton: true,
+                    autofillHints: const [AutofillHints.oneTimeCode],
+                    onSubmitted: (_) => _handleVerifyActivation(),
                   ),
                   const SizedBox(height: 20),
 
@@ -448,6 +452,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                 ],
               ),
             ),
+          ),
           ],
         ],
       ),

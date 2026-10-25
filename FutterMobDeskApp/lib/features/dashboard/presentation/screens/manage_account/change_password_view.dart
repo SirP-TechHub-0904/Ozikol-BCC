@@ -227,76 +227,84 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
                 child: const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.primary),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CustomTextField(
-                  controller: _oldPasswordController,
-                  label: 'account.current_password'.tr(ref, fallback: 'Current Password'),
-                  placeholder: '••••••••',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
-                  isPassword: true,
-                ),
-                const SizedBox(height: 16),
-                CustomTextField(
-                  controller: _newPasswordController,
-                  label: 'account.new_password'.tr(ref, fallback: 'New Password'),
-                  placeholder: 'Create a strong password',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
-                  isPassword: true,
-                ),
-                const SizedBox(height: 12),
-
-                // Complexity Checklist
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
+            child: AutofillGroup(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CustomTextField(
+                    controller: _oldPasswordController,
+                    label: 'account.current_password'.tr(ref, fallback: 'Current Password'),
+                    placeholder: '••••••••',
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
+                    isPassword: true,
+                    showPasteButton: true,
+                    autofillHints: const [AutofillHints.password],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${'account.password_requirements'.tr(ref, fallback: 'Password Requirements')}:',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
+                  const SizedBox(height: 16),
+                  CustomTextField(
+                    controller: _newPasswordController,
+                    label: 'account.new_password'.tr(ref, fallback: 'New Password'),
+                    placeholder: 'Create a strong password',
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
+                    isPassword: true,
+                    showPasteButton: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Complexity Checklist
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${'account.password_requirements'.tr(ref, fallback: 'Password Requirements')}:',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AppColors.gray400 : AppColors.gray600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      _buildComplexityRow('account.req_length'.tr(ref, fallback: 'At least 8 characters'), _hasMinLength),
-                      _buildComplexityRow('account.req_uppercase'.tr(ref, fallback: 'At least one uppercase letter (A-Z)'), _hasUppercase),
-                      _buildComplexityRow('account.req_number'.tr(ref, fallback: 'At least one numeric digit (0-9)'), _hasNumber),
-                      _buildComplexityRow('account.req_special'.tr(ref, fallback: 'At least one special symbol (!@#\$%)'), _hasSpecialChar),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                CustomTextField(
-                  controller: _confirmPasswordController,
-                  label: 'account.confirm_password'.tr(ref, fallback: 'Confirm New Password'),
-                  placeholder: 'Re-enter your new password',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
-                  isPassword: true,
-                  onSubmitted: (_) => _handleChangePassword(),
-                ),
-                const SizedBox(height: 24),
-
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: SizedBox(
-                    width: 170,
-                    child: PrimaryButton(
-                      text: 'account.update_password'.tr(ref, fallback: 'Update Password'),
-                      isLoading: _isSubmitting,
-                      onPressed: _handleChangePassword,
+                        const SizedBox(height: 6),
+                        _buildComplexityRow('account.req_length'.tr(ref, fallback: 'At least 8 characters'), _hasMinLength),
+                        _buildComplexityRow('account.req_uppercase'.tr(ref, fallback: 'At least one uppercase letter (A-Z)'), _hasUppercase),
+                        _buildComplexityRow('account.req_number'.tr(ref, fallback: 'At least one numeric digit (0-9)'), _hasNumber),
+                        _buildComplexityRow('account.req_special'.tr(ref, fallback: 'At least one special symbol (!@#\$%)'), _hasSpecialChar),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+
+                  CustomTextField(
+                    controller: _confirmPasswordController,
+                    label: 'account.confirm_password'.tr(ref, fallback: 'Confirm New Password'),
+                    placeholder: 'Re-enter your new password',
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
+                    isPassword: true,
+                    showPasteButton: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    onSubmitted: (_) => _handleChangePassword(),
+                  ),
+                  const SizedBox(height: 24),
+
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: SizedBox(
+                      width: 170,
+                      child: PrimaryButton(
+                        text: 'account.update_password'.tr(ref, fallback: 'Update Password'),
+                        isLoading: _isSubmitting,
+                        onPressed: _handleChangePassword,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
