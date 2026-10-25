@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'core/services/app_logger.dart';
 import 'core/storage/secure_storage_service.dart';
 import 'core/storage/tenant_cache_service.dart';
 import 'core/network/api_client.dart';
@@ -99,28 +101,65 @@ void main(List<String> args) async {
   // Initialize startup stability monitor
   await crashReporter.initStartupCrashMonitor();
 
-  // Wire global crash telemetry
+  // Print startup environment diagnostics to developer console
+  if (kDebugMode) {
+    final platformName = kIsWeb ? 'Web' : Platform.operatingSystem;
+    final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    debugPrint('\n======================================================');
+    debugPrint('🚀 [OZIKOL BCC STARTUP] Platform: $platformName (${isMobile ? "Mobile" : "Desktop"})');
+    debugPrint('🔗 API Base URL: ${apiClient.dio.options.baseUrl}');
+    debugPrint('🏢 Active Tenant Key: ${storageService.getActiveTenantKey() ?? "None"}');
+    debugPrint('======================================================\n');
+  }
+
+  // Wire global crash telemetry & console logging
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
+    debugPrint('\n======================================================');
+    debugPrint('🚨 [FLUTTER FRAMEWORK ERROR]');
+    debugPrint('Exception: ${details.exception}');
+    debugPrint('Library: ${details.library ?? "unknown"}');
+    debugPrint('Context: ${details.context?.toDescription() ?? "none"}');
+    if (details.stack != null) {
+      debugPrint('StackTrace:\n${details.stack}');
+    }
+    debugPrint('======================================================\n');
+    AppLogger.error('FlutterError', 'Framework error: ${details.exception}', details.exception, details.stack);
     crashReporter.reportCrash(details.exception, details.stack);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('\n======================================================');
+    debugPrint('🚨 [PLATFORM DISPATCHER EXCEPTION]');
+    debugPrint('Error: $error');
+    debugPrint('StackTrace:\n$stack');
+    debugPrint('======================================================\n');
+    AppLogger.error('PlatformDispatcher', 'Platform exception: $error', error, stack);
     crashReporter.reportCrash(error, stack);
     return true;
   };
 
-  runApp(
-    ProviderScope(
-      overrides: [
-        storageServiceProvider.overrideWithValue(storageService),
-        tenantCacheServiceProvider.overrideWithValue(cacheService),
-        apiClientProvider.overrideWithValue(apiClient),
-        crashReporterServiceProvider.overrideWithValue(crashReporter),
-      ],
-      child: const OzikolApp(),
-    ),
-  );
+  runZonedGuarded(() {
+    runApp(
+      ProviderScope(
+        overrides: [
+          storageServiceProvider.overrideWithValue(storageService),
+          tenantCacheServiceProvider.overrideWithValue(cacheService),
+          apiClientProvider.overrideWithValue(apiClient),
+          crashReporterServiceProvider.overrideWithValue(crashReporter),
+        ],
+        child: const OzikolApp(),
+      ),
+    );
+  }, (error, stack) {
+    debugPrint('\n======================================================');
+    debugPrint('🚨 [UNHANDLED ASYNC EXCEPTION CAUGHT BY ZONE]');
+    debugPrint('Error: $error');
+    debugPrint('StackTrace:\n$stack');
+    debugPrint('======================================================\n');
+    AppLogger.error('CrashZone', 'Unhandled async exception: $error', error, stack);
+    crashReporter.reportCrash(error, stack);
+  });
 }
 
 class OzikolApp extends ConsumerWidget {

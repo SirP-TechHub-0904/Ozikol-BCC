@@ -87,8 +87,9 @@ class CrashReporterService {
           'diagnosticMetadata': breadcrumbs.isNotEmpty ? breadcrumbs : null,
         },
       );
-    } catch (_) {
-      // Telemetry failures must never disrupt client execution
+      debugPrint('📡 [CrashReporterService] Dispatched crash report telemetry to Central API');
+    } catch (e) {
+      debugPrint('⚠️ [CrashReporterService] Failed to dispatch crash report: $e');
     }
   }
 
