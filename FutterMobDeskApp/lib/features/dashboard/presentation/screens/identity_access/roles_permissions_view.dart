@@ -688,10 +688,9 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
           LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth >= 1150;
-              final isMedium = constraints.maxWidth >= 600;
               final cardWidth = isWide
                   ? (constraints.maxWidth - 36) / 4
-                  : (isMedium ? (constraints.maxWidth - 12) / 2 : constraints.maxWidth);
+                  : (constraints.maxWidth - 12) / 2;
 
               return Wrap(
                 spacing: 12,
@@ -832,7 +831,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
         borderRadius: BorderRadius.circular(14),
         child: Container(
           width: width,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: EdgeInsets.symmetric(horizontal: width < 180 ? 10 : 16, vertical: 14),
           decoration: BoxDecoration(
             color: isDark ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(14),

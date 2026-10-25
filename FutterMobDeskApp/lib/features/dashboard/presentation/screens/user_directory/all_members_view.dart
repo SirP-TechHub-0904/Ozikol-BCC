@@ -497,6 +497,168 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 900;
+              final isCompact = constraints.maxWidth < 750;
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. Search Box
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFilterLabel('directory.search_members'.tr(ref, fallback: 'SEARCH MEMBERS')),
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          height: 40,
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (val) {
+                              _searchQuery = val.trim();
+                              _applyFilters();
+                            },
+                            style: const TextStyle(fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'directory.search_placeholder'.tr(ref, fallback: 'Search by name, email, ID, or category...'),
+                              hintStyle: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray500),
+                              prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                              suffixIcon: _searchController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.close_rounded, size: 16),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        _searchQuery = '';
+                                        _applyFilters();
+                                      },
+                                    )
+                                  : null,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight, width: 1),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight, width: 1),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 2. Category Tier & Assigned Role
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFilterLabel('directory.category_tier'.tr(ref, fallback: 'CATEGORY TIER')),
+                              const SizedBox(height: 6),
+                              _buildDropdownField<String>(
+                                value: _categories.any((c) => (c['id']?.toString() ?? '') == _selectedCategoryFilter)
+                                    ? _selectedCategoryFilter
+                                    : '',
+                                items: [
+                                  DropdownMenuItem(value: '', child: Text('directory.all_categories'.tr(ref, fallback: 'All Categories'))),
+                                  ..._categories.map((c) => DropdownMenuItem(
+                                        value: c['id']?.toString() ?? '',
+                                        child: Text(c['name']?.toString() ?? 'Category'),
+                                      )),
+                                ],
+                                onChanged: (val) {
+                                  setState(() => _selectedCategoryFilter = val ?? '');
+                                  _applyFilters();
+                                },
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFilterLabel('directory.assigned_role'.tr(ref, fallback: 'ASSIGNED ROLE')),
+                              const SizedBox(height: 6),
+                              _buildDropdownField<String>(
+                                value: _selectedRoleFilter,
+                                items: [
+                                  DropdownMenuItem(value: 'All', child: Text('directory.all_roles'.tr(ref, fallback: 'All Roles'))),
+                                  DropdownMenuItem(value: 'Admin', child: Text('rbac.role_admin'.tr(ref, fallback: 'Admin'))),
+                                  DropdownMenuItem(value: 'Global Editor', child: Text('rbac.role_global_editor'.tr(ref, fallback: 'Global Editor'))),
+                                  DropdownMenuItem(value: 'Feature Editor', child: Text('rbac.role_feature_editor'.tr(ref, fallback: 'Feature Editor'))),
+                                  DropdownMenuItem(value: 'Read Only', child: Text('rbac.role_read_only'.tr(ref, fallback: 'Read Only'))),
+                                  DropdownMenuItem(value: 'Member', child: Text('rbac.role_member'.tr(ref, fallback: 'Member'))),
+                                ],
+                                onChanged: (val) {
+                                  setState(() => _selectedRoleFilter = val ?? 'All');
+                                  _applyFilters();
+                                },
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 3. Status & Reset
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFilterLabel('directory.account_status'.tr(ref, fallback: 'ACCOUNT STATUS')),
+                              const SizedBox(height: 6),
+                              _buildDropdownField<String>(
+                                value: _selectedStatusFilter,
+                                items: [
+                                  DropdownMenuItem(value: 'All', child: Text('directory.all_statuses'.tr(ref, fallback: 'All Statuses'))),
+                                  DropdownMenuItem(value: 'Active', child: Text('status.active'.tr(ref, fallback: 'Active'))),
+                                  DropdownMenuItem(value: 'Suspended', child: Text('status.suspended'.tr(ref, fallback: 'Suspended'))),
+                                  DropdownMenuItem(value: 'Suspicious', child: Text('status.suspicious'.tr(ref, fallback: 'Suspicious / Flagged'))),
+                                ],
+                                onChanged: (val) {
+                                  setState(() => _selectedStatusFilter = val ?? 'All');
+                                  _applyFilters();
+                                },
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          height: 40,
+                          child: OutlinedButton.icon(
+                            onPressed: _resetFilters,
+                            icon: const Icon(Icons.restart_alt_rounded, size: 16),
+                            label: Text('btn.reset'.tr(ref, fallback: 'Reset')),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                              foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }
+
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -667,11 +829,11 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           const SizedBox(height: 14),
 
           // Export Row & Counter
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Count Summary
-              RichText(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 550;
+
+              final counterWidget = RichText(
                 text: TextSpan(
                   style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : AppColors.gray600),
                   children: [
@@ -693,16 +855,35 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     const TextSpan(text: ')'),
                   ],
                 ),
-              ),
+              );
 
-              // Export Action (PDF Only)
-              _buildExportButton(
+              final exportBtn = _buildExportButton(
                 icon: Icons.picture_as_pdf_outlined,
                 label: 'directory.export_pdf'.tr(ref, fallback: 'Export PDF'),
                 onTap: _exportPdf,
                 isDark: isDark,
-              ),
-            ],
+              );
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    counterWidget,
+                    const SizedBox(height: 10),
+                    exportBtn,
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: counterWidget),
+                  const SizedBox(width: 12),
+                  exportBtn,
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -890,8 +1071,563 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   Widget _buildDataTable(bool isDark) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        if (constraints.maxWidth < 650) {
+          return _buildMobileMemberList(isDark);
+        }
         final layout = _MemberTableLayout.forWidth(constraints.maxWidth);
         return _buildDataTableForLayout(isDark, layout);
+      },
+    );
+  }
+
+  /// <summary>
+  /// Renders responsive member cards on mobile viewports (< 650px).
+  /// </summary>
+  Widget _buildMobileMemberList(bool isDark) {
+    if (_paginatedUsers.isEmpty && !_isLoading) {
+      return Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+        ),
+        child: _buildEmptyState(isDark),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _paginatedUsers.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, idx) {
+            final u = _paginatedUsers[idx];
+            return _buildMobileMemberCard(u, isDark);
+          },
+        ),
+        if (_filteredUsers.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+              ),
+              child: _buildPaginationToolbar(isDark),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// <summary>
+  /// Renders a single responsive member card with avatar, designation, roles, contact info, and status pill.
+  /// </summary>
+  Widget _buildMobileMemberCard(Map<String, dynamic> u, bool isDark) {
+    final fullName = (u['fullName'] ?? u['userName'] ?? 'Member').toString();
+    final designation = u['designation']?.toString();
+    final email = (u['email'] ?? '').toString();
+    final emailConfirmed = u['emailConfirmed'] == true;
+    final phoneNumber = u['phoneNumber']?.toString();
+    final memberId = _sanitizeId(u['memberId']?.toString());
+    final categoryName = u['categoryName']?.toString();
+    final categoryColorStr = u['categoryColor']?.toString() ?? '#0050e5';
+    final categoryIconStr = u['categoryIcon']?.toString();
+    final roles = (u['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    final userStatus = (u['userStatus'] ?? u['status'] ?? 'Active').toString();
+    final isSuspended = userStatus.toLowerCase() == 'suspended' || userStatus.toLowerCase() == 'locked';
+    final isSuspiciousAccount = (u['isSuspicious'] == true) ||
+        (u['isLockedOut'] == true) ||
+        (((u['accessFailedCount'] as num?)?.toInt() ?? 0) > 0);
+
+    final categoryColor = Color(int.tryParse(categoryColorStr.replaceAll('#', '0xFF')) ?? 0xFF0050E5);
+
+    final Color badgeColor;
+    final String displayStatus;
+    if (isSuspended) {
+      badgeColor = const Color(0xFFEF4444);
+      displayStatus = 'status.suspended'.tr(ref, fallback: 'Suspended');
+    } else if (isSuspiciousAccount) {
+      badgeColor = const Color(0xFFE11D48);
+      displayStatus = 'status.flagged'.tr(ref, fallback: 'Flagged');
+    } else {
+      badgeColor = const Color(0xFF10B981);
+      displayStatus = userStatus.toLowerCase() == 'active'
+          ? 'status.active'.tr(ref, fallback: 'Active')
+          : userStatus;
+    }
+
+    return Material(
+      color: isDark ? AppColors.surfaceDark : Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => _navigateToMemberDetails(u),
+        onLongPress: () => _showMemberActionSheet(u),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSuspended
+                  ? const Color(0xFFEF4444).withValues(alpha: 0.3)
+                  : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.02),
+                blurRadius: 3,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: Avatar, Name + Designation, 3-dots popup
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      gradient: _getGradient(fullName),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      _getInitials(fullName),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fullName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                          ),
+                        ),
+                        if (designation != null && designation.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            designation,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                        if (memberId.isNotEmpty && memberId != '-') ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+                            ),
+                            child: Text(
+                              memberId,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  // Quick Actions Menu (3 dots)
+                  PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert_rounded,
+                      size: 18,
+                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onSelected: (val) {
+                      if (val == 'details') {
+                        _navigateToMemberDetails(u);
+                      } else if (val == 'edit') {
+                        _navigateToMemberEdit(u);
+                      } else if (val == 'actions') {
+                        _showMemberActionSheet(u);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'details',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.visibility_outlined, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Text('btn.details'.tr(ref, fallback: 'Details')),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.edit_outlined, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Text('btn.edit'.tr(ref, fallback: 'Edit')),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuDivider(),
+                      PopupMenuItem(
+                        value: 'actions',
+                        child: const Row(
+                          children: [
+                            Icon(Icons.touch_app_outlined, size: 16, color: Color(0xFF64748B)),
+                            SizedBox(width: 8),
+                            Text('All Actions...'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Contact Info (Email & Phone)
+              if (email.isNotEmpty)
+                Row(
+                  children: [
+                    Icon(Icons.email_outlined, size: 13, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                    if (emailConfirmed)
+                      const Icon(Icons.verified_rounded, size: 13, color: Color(0xFF10B981)),
+                  ],
+                ),
+              if (phoneNumber != null && phoneNumber.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.phone_outlined, size: 13, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        phoneNumber,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 10),
+
+              // Bottom Metadata Badges: Category, Role, Status
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  // Category Pill
+                  if (categoryName != null && categoryName.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: categoryColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: categoryColor.withValues(alpha: 0.35)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            categoryIconStr != null ? Icons.folder_shared_outlined : Icons.category_outlined,
+                            size: 12,
+                            color: categoryColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            categoryName,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: categoryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'directory.unassigned'.tr(ref, fallback: 'Unassigned'),
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                      ),
+                    ),
+
+                  // Role Pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: roles.contains('Admin')
+                          ? const Color(0xFFEFF6FF)
+                          : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC)),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: roles.contains('Admin')
+                            ? AppColors.primary.withValues(alpha: 0.3)
+                            : (isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
+                      ),
+                    ),
+                    child: Text(
+                      roles.isNotEmpty ? roles.join(', ') : 'Member',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: roles.contains('Admin')
+                            ? AppColors.primary
+                            : (isDark ? AppColors.onSurfaceDark : const Color(0xFF475569)),
+                      ),
+                    ),
+                  ),
+
+                  // Status Pill with Live Dot
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: badgeColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: badgeColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          displayStatus,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: badgeColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// <summary>
+  /// Displays the interactive on-hold/long-press action sheet for a member on mobile.
+  /// </summary>
+  void _showMemberActionSheet(Map<String, dynamic> u) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fullName = (u['fullName'] ?? u['userName'] ?? 'Member').toString();
+    final email = (u['email'] ?? '').toString();
+    final memberId = _sanitizeId(u['memberId']?.toString());
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Member Summary Header
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: _getGradient(fullName),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _getInitials(fullName),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            fullName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                            ),
+                          ),
+                          if (email.isNotEmpty)
+                            Text(
+                              email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                              ),
+                            ),
+                          if (memberId.isNotEmpty && memberId != '-')
+                            Text(
+                              'ID: $memberId',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Divider(height: 1, color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                const SizedBox(height: 8),
+
+                // Action List
+                ListTile(
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.visibility_outlined, color: AppColors.primary, size: 20),
+                  ),
+                  title: Text(
+                    'directory.view_dossier'.tr(ref, fallback: 'View Full Dossier'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'directory.dossier_subtitle'.tr(ref, fallback: 'Open 360° member command center'),
+                    style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded, size: 18),
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    _navigateToMemberDetails(u);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.edit_outlined, color: Color(0xFF10B981), size: 20),
+                  ),
+                  title: Text(
+                    'directory.edit_profile'.tr(ref, fallback: 'Edit Member Profile'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'directory.edit_subtitle'.tr(ref, fallback: 'Modify member details, roles, and category'),
+                    style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded, size: 18),
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    _navigateToMemberEdit(u);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
@@ -1389,100 +2125,117 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   // =========================================================================
 
   Widget _buildPaginationToolbar(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Entries per page selector
-          Row(
-            children: [
-              Text('${'directory.show'.tr(ref, fallback: 'Show')} ', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
-              Container(
-                height: 32,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    value: _pageSize,
-                    items: const [
-                      DropdownMenuItem(value: 10, child: Text('10')),
-                      DropdownMenuItem(value: 25, child: Text('25')),
-                      DropdownMenuItem(value: 50, child: Text('50')),
-                      DropdownMenuItem(value: 100, child: Text('100')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _pageSize = val;
-                          _currentPage = 1;
-                          _updatePagination();
-                        });
-                      }
-                    },
-                    style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
-                  ),
-                ),
-              ),
-              Text(' ${'directory.entries_per_page'.tr(ref, fallback: 'entries per page')}', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
-            ],
-          ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 550;
 
-          // Page navigation controls (< [1] [2] >)
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left_rounded, size: 20),
-                onPressed: _currentPage > 1 ? () => _setPage(_currentPage - 1) : null,
+        final perPageWidget = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${'directory.show'.tr(ref, fallback: 'Show')} ', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+            Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
               ),
-              for (int p = 1; p <= _totalPages; p++)
-                if (p == 1 || p == _totalPages || (p >= _currentPage - 1 && p <= _currentPage + 1))
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: InkWell(
-                      onTap: () => _setPage(p),
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: p == _currentPage ? AppColors.primary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: p == _currentPage
-                                ? AppColors.primary
-                                : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                          ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: _pageSize,
+                  items: const [
+                    DropdownMenuItem(value: 10, child: Text('10')),
+                    DropdownMenuItem(value: 25, child: Text('25')),
+                    DropdownMenuItem(value: 50, child: Text('50')),
+                    DropdownMenuItem(value: 100, child: Text('100')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _pageSize = val;
+                        _currentPage = 1;
+                        _updatePagination();
+                      });
+                    }
+                  },
+                  style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
+                ),
+              ),
+            ),
+            Text(' ${'directory.entries_per_page'.tr(ref, fallback: 'entries per page')}', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+          ],
+        );
+
+        final pageControlsWidget = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left_rounded, size: 20),
+              onPressed: _currentPage > 1 ? () => _setPage(_currentPage - 1) : null,
+            ),
+            for (int p = 1; p <= _totalPages; p++)
+              if (p == 1 || p == _totalPages || (p >= _currentPage - 1 && p <= _currentPage + 1))
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: InkWell(
+                    onTap: () => _setPage(p),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: p == _currentPage ? AppColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: p == _currentPage
+                              ? AppColors.primary
+                              : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
                         ),
-                        child: Text(
-                          '$p',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: p == _currentPage
-                                ? Colors.white
-                                : (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
-                          ),
+                      ),
+                      child: Text(
+                        '$p',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: p == _currentPage
+                              ? Colors.white
+                              : (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
                         ),
                       ),
                     ),
                   ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right_rounded, size: 20),
-                onPressed: _currentPage < _totalPages ? () => _setPage(_currentPage + 1) : null,
-              ),
-            ],
+                ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right_rounded, size: 20),
+              onPressed: _currentPage < _totalPages ? () => _setPage(_currentPage + 1) : null,
+            ),
+          ],
+        );
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
           ),
-        ],
-      ),
+          child: isCompact
+              ? Column(
+                  children: [
+                    perPageWidget,
+                    const SizedBox(height: 10),
+                    pageControlsWidget,
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    perPageWidget,
+                    pageControlsWidget,
+                  ],
+                ),
+        );
+      },
     );
   }
 

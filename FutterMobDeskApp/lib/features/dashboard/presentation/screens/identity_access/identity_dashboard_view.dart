@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
@@ -311,27 +312,32 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.history_rounded, size: 20, color: AppColors.primary),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Recent Security Events',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Icon(Icons.history_rounded, size: 20, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                'Recent Security Events',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       TextButton.icon(
                         icon: const Icon(Icons.arrow_forward, size: 14),
-                        label: const Text('View All Logs'),
+                        label: const Text('View All Logs', style: TextStyle(fontSize: 12)),
                         onPressed: () => widget.onNavigateToTab?.call(15),
                       ),
                     ],
@@ -365,54 +371,240 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                       final status = (item['status'] ?? (item['isSuccessful'] == false ? 'Failed' : 'Success')).toString();
                       final isSuccess = !status.toLowerCase().contains('fail');
 
-                      return ListTile(
-                        leading: CircleAvatar(
-                          radius: 16,
-                          backgroundColor: isSuccess
-                              ? AppColors.success.withValues(alpha: 0.1)
-                              : AppColors.error.withValues(alpha: 0.1),
-                          child: Icon(
-                            isSuccess ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
-                            size: 18,
-                            color: isSuccess ? AppColors.success : AppColors.error,
-                          ),
-                        ),
-                        title: Text(
-                          device.toString(),
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'IP: $ip • $time',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? AppColors.gray400 : AppColors.gray600,
-                          ),
-                        ),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: isSuccess
-                                ? AppColors.success.withValues(alpha: 0.12)
-                                : AppColors.error.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(100),
-                          ),
-                          child: Text(
-                            isSuccess ? 'Success' : 'Failed',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isSuccess ? AppColors.success : AppColors.error,
-                            ),
+                      return InkWell(
+                        onTap: () => _showSecurityEventDetailsModal(context, item, isDark),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 13,
+                                backgroundColor: isSuccess
+                                    ? AppColors.success.withValues(alpha: 0.1)
+                                    : AppColors.error.withValues(alpha: 0.1),
+                                child: Icon(
+                                  isSuccess ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
+                                  size: 14,
+                                  color: isSuccess ? AppColors.success : AppColors.error,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _formatDeviceSummary(device.toString()),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      'IP: $ip • $time',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 10.5,
+                                        color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isSuccess
+                                      ? AppColors.success.withValues(alpha: 0.12)
+                                      : AppColors.error.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(100),
+                                ),
+                                child: Text(
+                                  isSuccess ? 'Success' : 'Failed',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: isSuccess ? AppColors.success : AppColors.error,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(Icons.chevron_right_rounded, size: 16, color: isDark ? AppColors.gray500 : AppColors.gray400),
+                            ],
                           ),
                         ),
                       );
                     },
                   ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDeviceSummary(String raw) {
+    if (raw.isEmpty) return 'Desktop / Mobile App';
+    if (raw.contains('Windows')) return 'Windows Workstation';
+    if (raw.contains('iPhone') || raw.contains('iPad')) return 'Apple iOS Device';
+    if (raw.contains('Android')) return 'Android Mobile';
+    if (raw.contains('Macintosh') || raw.contains('Mac OS')) return 'macOS Computer';
+    if (raw.contains('Linux')) return 'Linux Station';
+    if (raw.length > 32) return '${raw.substring(0, 32)}...';
+    return raw;
+  }
+
+  void _showSecurityEventDetailsModal(BuildContext context, Map<String, dynamic> item, bool isDark) {
+    final ip = item['ipAddress'] ?? '127.0.0.1';
+    final rawDevice = item['deviceSummary'] ?? item['userAgent'] ?? 'Desktop App';
+    final time = item['timestamp'] ?? item['loginTime'] ?? item['createdAt'] ?? 'Recently';
+    final status = (item['status'] ?? (item['isSuccessful'] == false ? 'Failed' : 'Success')).toString();
+    final isSuccess = !status.toLowerCase().contains('fail');
+    final eventType = item['eventType'] ?? item['action'] ?? item['activity'] ?? 'User Authentication';
+    final location = item['location'] ?? item['country'] ?? 'Secure Network';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 16,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.gray700 : AppColors.gray300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: isSuccess
+                      ? AppColors.success.withValues(alpha: 0.12)
+                      : AppColors.error.withValues(alpha: 0.12),
+                  child: Icon(
+                    isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
+                    size: 20,
+                    color: isSuccess ? AppColors.success : AppColors.error,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Security Event Audit Record',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                        ),
+                      ),
+                      Text(
+                        '$time • $status',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isSuccess ? AppColors.success : AppColors.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _buildAuditDetailRow('Event Activity', eventType.toString(), isDark),
+            const SizedBox(height: 10),
+            _buildAuditDetailRow('IP Address', ip.toString(), isDark, canCopy: true),
+            const SizedBox(height: 10),
+            _buildAuditDetailRow('Location / Origin', location.toString(), isDark),
+            const SizedBox(height: 10),
+            _buildAuditDetailRow('Full User Agent / Client Details', rawDevice.toString(), isDark, canCopy: true),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Close'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAuditDetailRow(String label, String value, bool isDark, {bool canCopy = false}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
+              ),
+              if (canCopy)
+                InkWell(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: value));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Copied $label to clipboard'), duration: const Duration(seconds: 1)),
+                    );
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Icon(Icons.copy_rounded, size: 14, color: AppColors.primary),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          SelectableText(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
             ),
           ),
         ],

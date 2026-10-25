@@ -556,7 +556,21 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
           // 4 Token Controls
           LayoutBuilder(
             builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 650;
+              final isPhone = constraints.maxWidth < 500;
+              final isNarrow = constraints.maxWidth < 750;
+              if (isPhone) {
+                return Column(
+                  children: [
+                    _buildPrefixField(isDark),
+                    const SizedBox(height: 12),
+                    _buildNextNumberField(isDark),
+                    const SizedBox(height: 12),
+                    _buildPaddingDropdown(isDark),
+                    const SizedBox(height: 12),
+                    _buildDelimiterDropdown(isDark),
+                  ],
+                );
+              }
               if (isNarrow) {
                 return Column(
                   children: [
@@ -725,6 +739,7 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
         Text('ZERO-PADDING WIDTH', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
         const SizedBox(height: 6),
         DropdownButtonFormField<int>(
+          isExpanded: true,
           initialValue: (_settings['memberIdPadding'] as num?)?.toInt() ?? 4,
           decoration: InputDecoration(
             filled: true,
@@ -733,10 +748,10 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
           items: const [
-            DropdownMenuItem(value: 3, child: Text('3 Digits (001)', style: TextStyle(fontSize: 12.5))),
-            DropdownMenuItem(value: 4, child: Text('4 Digits (0001)', style: TextStyle(fontSize: 12.5))),
-            DropdownMenuItem(value: 5, child: Text('5 Digits (00001)', style: TextStyle(fontSize: 12.5))),
-            DropdownMenuItem(value: 6, child: Text('6 Digits (000001)', style: TextStyle(fontSize: 12.5))),
+            DropdownMenuItem(value: 3, child: Text('3 Digits (001)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
+            DropdownMenuItem(value: 4, child: Text('4 Digits (0001)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
+            DropdownMenuItem(value: 5, child: Text('5 Digits (00001)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
+            DropdownMenuItem(value: 6, child: Text('6 Digits (000001)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
           ],
           onChanged: (val) {
             if (val != null) {
@@ -756,6 +771,7 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
         Text('DELIMITER SEPARATOR', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
+          isExpanded: true,
           initialValue: _settings['memberIdDelimiter'] as String? ?? '-',
           decoration: InputDecoration(
             filled: true,
@@ -764,10 +780,10 @@ class _UserSettingsViewState extends ConsumerState<UserSettingsView> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
           items: const [
-            DropdownMenuItem(value: '-', child: Text('Hyphen (-)', style: TextStyle(fontSize: 12.5))),
-            DropdownMenuItem(value: '/', child: Text('Forward Slash (/)', style: TextStyle(fontSize: 12.5))),
-            DropdownMenuItem(value: '_', child: Text('Underscore (_)', style: TextStyle(fontSize: 12.5))),
-            DropdownMenuItem(value: '.', child: Text('Dot (.)', style: TextStyle(fontSize: 12.5))),
+            DropdownMenuItem(value: '-', child: Text('Hyphen (-)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
+            DropdownMenuItem(value: '/', child: Text('Forward Slash (/)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
+            DropdownMenuItem(value: '_', child: Text('Underscore (_)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
+            DropdownMenuItem(value: '.', child: Text('Dot (.)', style: TextStyle(fontSize: 12.5), overflow: TextOverflow.ellipsis)),
           ],
           onChanged: (val) {
             if (val != null) {

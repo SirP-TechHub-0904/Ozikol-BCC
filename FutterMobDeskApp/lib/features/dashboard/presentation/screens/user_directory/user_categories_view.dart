@@ -362,20 +362,6 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
       isDark: isDark,
       onBack: widget.onNavigateBack,
       actions: [
-        if (widget.onNavigateBack != null) ...[
-          OutlinedButton.icon(
-            onPressed: widget.onNavigateBack,
-            icon: const Icon(Icons.arrow_back_rounded, size: 16),
-            label: const Text('Back'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
-              side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
         OutlinedButton.icon(
           onPressed: () => widget.onNavigateToTab?.call(1),
           icon: const Icon(Icons.groups_rounded, size: 16),
@@ -853,6 +839,10 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
           ],
         );
 
+        if (constraints.maxWidth < 650) {
+          return _buildMobileCategoryList(isDark);
+        }
+
         return Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
@@ -876,6 +866,179 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                     child: SizedBox(width: 920, child: tableContent),
                   )
                 : tableContent,
+          ),
+        );
+      },
+    );
+  }
+
+  /// <summary>
+  /// Renders responsive category cards on mobile viewports (< 650px).
+  /// </summary>
+  Widget _buildMobileCategoryList(bool isDark) {
+    if (_filteredCategories.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(32),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.folder_off_outlined, size: 36, color: Color(0xFF94A3B8)),
+            const SizedBox(height: 8),
+            Text(
+              'No categories match your search criteria.',
+              style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _filteredCategories.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, idx) {
+        final cat = _filteredCategories[idx];
+        final name = cat['name'] as String? ?? 'Category';
+        final desc = cat['description'] as String? ?? '';
+        final count = (cat['memberCount'] ?? cat['count'] ?? 0) as int;
+        final sortOrder = (cat['sortOrder'] ?? 0) as int;
+        final isActive = cat['isActive'] != false;
+
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.02),
+                blurRadius: 3,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.folder_rounded, color: AppColors.primary, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                          ),
+                        ),
+                        if (desc.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            desc,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isActive ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Text(
+                      isActive ? 'Active' : 'Inactive',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                        color: isActive ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  InkWell(
+                    onTap: () => widget.onNavigateToTab?.call(1, categoryFilter: name),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.groups_rounded, size: 13, color: Color(0xFF0050E5)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$count Member${count == 1 ? '' : 's'}',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0050E5)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      'Sort: #$sortOrder',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? AppColors.gray300 : const Color(0xFF475569)),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    color: AppColors.primary,
+                    tooltip: 'Edit Category',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _startEdit(cat),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                    color: AppColors.error,
+                    tooltip: 'Delete Category',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _startDelete(cat),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
@@ -969,20 +1132,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
           'Configure organizational department or user category tier, description, sort order, and publication status.',
       isDark: isDark,
       onBack: _backToList,
-      actions: [
-        OutlinedButton.icon(
-          onPressed: _backToList,
-          icon: const Icon(Icons.arrow_back_rounded, size: 16),
-          label: const Text('Back to Categories'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
-            side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
+      actions: const [],
     );
   }
 
@@ -1375,20 +1525,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
           'Review organizational impact and verify identity before permanently destroying this classification category.',
       isDark: isDark,
       onBack: _backToList,
-      actions: [
-        OutlinedButton.icon(
-          onPressed: _backToList,
-          icon: const Icon(Icons.arrow_back_rounded, size: 16),
-          label: const Text('Cancel & Go Back'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
-            side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ],
+      actions: const [],
     );
   }
 

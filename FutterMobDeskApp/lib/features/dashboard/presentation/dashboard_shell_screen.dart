@@ -1689,15 +1689,6 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 },
               ),
               AppDrawerSubItem(
-                icon: Icons.palette_outlined,
-                title: 'nav.auth_page_setup'.tr(ref, fallback: 'Auth Page Setup'),
-                isSelected: _selectedNavIndex == 4,
-                onTap: () {
-                  _navigateToTab(4, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
                 icon: Icons.leaderboard_outlined,
                 title: 'nav.kpis_leaderboard'.tr(ref, fallback: 'KPIs & Leaderboard'),
                 isSelected: _selectedNavIndex == 5,
@@ -1739,15 +1730,6 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 isSelected: _selectedNavIndex == 8,
                 onTap: () {
                   _navigateToTab(8, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.mail_outline,
-                title: 'nav.user_invitations'.tr(ref, fallback: 'Member Invitations'),
-                isSelected: _selectedNavIndex == 9,
-                onTap: () {
-                  _navigateToTab(9, clearHistory: true);
                   _closeMobileDrawer();
                 },
               ),
