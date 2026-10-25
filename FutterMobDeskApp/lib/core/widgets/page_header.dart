@@ -256,7 +256,7 @@ class PageHeader extends StatelessWidget {
     );
   }
 
-  /// Compact: title row on top (back + text), actions row underneath.
+  /// Compact: title row on top (text only, back button handled by mobile shell top bar), actions row underneath.
   Widget _buildCompact(BuildContext context, bool isDark) {
     final hasActions = primaryAction != null || secondaryActions.isNotEmpty || trailing.isNotEmpty || onReplayTour != null;
     return Column(
@@ -265,27 +265,29 @@ class PageHeader extends StatelessWidget {
       children: [
         Row(
           children: [
-            if (back.isVisible) ...[
-              _buildBackControl(isDark, showLabel: false),
-              const SizedBox(width: 12),
-            ],
-            // Decorative icon tile hidden on compact to give the title room
+            // Decorative icon tile and back button omitted on mobile/compact:
+            // The mobile app shell top bar already provides the back arrow.
             Expanded(child: _buildTextBlock(isDark, showDescription: false)),
           ],
         ),
         if (hasActions) ...[
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ...trailing,
-              if (onReplayTour != null) _buildTourButton(isDark),
-              if (secondaryActions.isNotEmpty) _buildOverflowMenu(isDark),
-              if (primaryAction != null) _buildActionButton(primaryAction!, isDark, iconOnly: false, compactLabel: false),
-            ],
-          ),
+          // When a custom single widget is provided for mobile actions (e.g. balanced 2-button row),
+          // render it directly so it can span the full container width.
+          if (trailing.length == 1 && secondaryActions.isEmpty && primaryAction == null && onReplayTour == null)
+            trailing.first
+          else
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                ...trailing,
+                if (onReplayTour != null) _buildTourButton(isDark),
+                if (secondaryActions.isNotEmpty) _buildOverflowMenu(isDark),
+                if (primaryAction != null) _buildActionButton(primaryAction!, isDark, iconOnly: false, compactLabel: false),
+              ],
+            ),
         ],
       ],
     );

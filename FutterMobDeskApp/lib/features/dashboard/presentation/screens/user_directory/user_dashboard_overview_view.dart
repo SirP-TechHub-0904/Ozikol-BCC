@@ -39,8 +39,10 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
     _loadStats();
   }
 
-  Future<void> _loadStats() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadStats({bool isPullToRefresh = false}) async {
+    if (!isPullToRefresh) {
+      setState(() => _isLoading = true);
+    }
     try {
       final repo = ref.read(accountRepositoryProvider);
       final res = await repo.getDashboardStats();
@@ -113,6 +115,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
     final recentLogs = List<Map<String, dynamic>>.from(_stats['recentLogs'] ?? []);
 
     return CentralAdjuster.pageShell(
+      onRefresh: () => _loadStats(isPullToRefresh: true),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -217,6 +220,89 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   // PAGE HEADER (1-to-1 with Angular AppPageHeader)
   // ===========================================================================
   Widget _buildPageHeader(bool isDark) {
+    final isMobile = CentralAdjuster.isMobile(context);
+
+    final actions = isMobile
+        ? <Widget>[
+            // Mobile full-width balanced button row (50% width each, no refresh button)
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 42,
+                    child: OutlinedButton.icon(
+                      onPressed: () => widget.onNavigateToTab?.call(1),
+                      icon: const Icon(Icons.table_view_rounded, size: 16),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('dashboard.directory_register'.tr(ref, fallback: 'Directory Register')),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                        side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 42,
+                    child: FilledButton.icon(
+                      onPressed: () => widget.onNavigateToTab?.call(16),
+                      icon: const Icon(Icons.person_add_rounded, size: 16),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('dashboard.add_member'.tr(ref, fallback: 'Add Member')),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ]
+        : <Widget>[
+            OutlinedButton.icon(
+              onPressed: () => widget.onNavigateToTab?.call(1),
+              icon: const Icon(Icons.table_view_rounded, size: 16),
+              label: Text('dashboard.directory_register'.tr(ref, fallback: 'Directory Register')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+              ),
+            ),
+            FilledButton.icon(
+              onPressed: () => widget.onNavigateToTab?.call(16),
+              icon: const Icon(Icons.person_add_rounded, size: 16),
+              label: Text('dashboard.add_member'.tr(ref, fallback: 'Add Member')),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              tooltip: 'dashboard.refresh_intel'.tr(ref, fallback: 'Refresh Intelligence'),
+              onPressed: () => _loadStats(isPullToRefresh: true),
+            ),
+          ];
+
     return CentralAdjuster.pageHeader(
       icon: Icons.groups_rounded,
       eyebrow: 'dashboard.eyebrow'.tr(ref, fallback: 'User Management & Directory'),
@@ -227,37 +313,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
             'Executive real-time intelligence, demographic distributions, category tiers, KPI scorecards, and forensic audit logs.',
       ),
       isDark: isDark,
-      actions: [
-        OutlinedButton.icon(
-          onPressed: () => widget.onNavigateToTab?.call(1),
-          icon: const Icon(Icons.table_view_rounded, size: 16),
-          label: Text('dashboard.directory_register'.tr(ref, fallback: 'Directory Register')),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-            side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-          ),
-        ),
-        FilledButton.icon(
-          onPressed: () => widget.onNavigateToTab?.call(16),
-          icon: const Icon(Icons.person_add_rounded, size: 16),
-          label: Text('dashboard.add_member'.tr(ref, fallback: 'Add Member')),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.refresh_rounded, size: 18),
-          tooltip: 'dashboard.refresh_intel'.tr(ref, fallback: 'Refresh Intelligence'),
-          onPressed: _loadStats,
-        ),
-      ],
+      actions: actions,
     );
   }
 

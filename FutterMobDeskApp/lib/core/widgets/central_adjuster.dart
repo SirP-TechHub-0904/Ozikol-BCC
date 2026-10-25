@@ -222,11 +222,13 @@ class CentralAdjuster {
     double spacing = defaultSpacing,
     double runSpacing = defaultSpacing,
     int maxColumns = 4,
+    int? minColumns,
   }) {
     return AdaptiveMetricGrid(
       spacing: spacing,
       runSpacing: runSpacing,
       maxColumns: maxColumns,
+      minColumns: minColumns,
       children: cards,
     );
   }
@@ -259,17 +261,21 @@ class CentralAdjuster {
   }
 
   /// Standardized responsive page shell that dynamically adjusts horizontal and
-  /// vertical padding based on screen size, ensuring zero edge clipping.
+  /// vertical padding based on screen size, ensuring zero edge clipping and
+  /// supporting mobile pull-down-to-refresh.
   ///
   /// <param name="child">The main page scrollable or column content.</param>
   /// <param name="padding">Optional custom padding override.</param>
+  /// <param name="onRefresh">Optional pull-down to refresh callback.</param>
   /// <returns>An [AdaptivePageShell] widget.</returns>
   static Widget pageShell({
     required Widget child,
     EdgeInsetsGeometry? padding,
+    Future<void> Function()? onRefresh,
   }) {
     return AdaptivePageShell(
       padding: padding,
+      onRefresh: onRefresh,
       child: child,
     );
   }
@@ -635,6 +641,9 @@ class AdaptiveMetricGrid extends StatelessWidget {
   /// Minimum width required per card before wrapping.
   final double minItemWidth;
 
+  /// Minimum allowed columns.
+  final int? minColumns;
+
   /// Creates an [AdaptiveMetricGrid].
   const AdaptiveMetricGrid({
     super.key,
@@ -643,15 +652,18 @@ class AdaptiveMetricGrid extends StatelessWidget {
     this.runSpacing = CentralAdjuster.defaultSpacing,
     this.maxColumns = 4,
     this.minItemWidth = 220.0,
+    this.minColumns,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = CentralAdjuster.isMobile(context);
     return AdaptiveResponsiveGrid(
-      spacing: spacing,
-      runSpacing: runSpacing,
+      spacing: isMobile ? 10.0 : spacing,
+      runSpacing: isMobile ? 10.0 : runSpacing,
       maxColumns: maxColumns,
-      minItemWidth: minItemWidth,
+      minColumns: isMobile ? 2 : (minColumns ?? 1),
+      minItemWidth: isMobile ? 140.0 : minItemWidth,
       equalizeRowHeights: false,
       children: children,
     );
@@ -799,7 +811,7 @@ class AdaptiveCard extends StatelessWidget {
   }
 }
 
-/// Standardized page shell with responsive padding and overflow immunity.
+/// Standardized page shell with responsive padding, overflow immunity, and pull-to-refresh support.
 class AdaptivePageShell extends StatelessWidget {
   /// The page content.
   final Widget child;
@@ -807,11 +819,15 @@ class AdaptivePageShell extends StatelessWidget {
   /// Optional padding override.
   final EdgeInsetsGeometry? padding;
 
+  /// Optional pull-down to refresh callback.
+  final Future<void> Function()? onRefresh;
+
   /// Creates an [AdaptivePageShell].
   const AdaptivePageShell({
     super.key,
     required this.child,
     this.padding,
+    this.onRefresh,
   });
 
   @override
@@ -823,10 +839,21 @@ class AdaptivePageShell extends StatelessWidget {
           vertical: isDesktop ? 20.0 : 14.0,
         );
 
-    return SingleChildScrollView(
+    final scrollView = SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: effectivePadding,
       child: child,
     );
+
+    if (onRefresh != null) {
+      return RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: onRefresh!,
+        child: scrollView,
+      );
+    }
+
+    return scrollView;
   }
 }
 
