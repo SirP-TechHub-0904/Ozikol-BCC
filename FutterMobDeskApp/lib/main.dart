@@ -190,10 +190,10 @@ class OzikolApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
+        overscroll: false,
         physics: const ClampingScrollPhysics(),
         dragDevices: {
           PointerDeviceKind.touch,
-          PointerDeviceKind.mouse,
           PointerDeviceKind.trackpad,
           PointerDeviceKind.stylus,
         },
