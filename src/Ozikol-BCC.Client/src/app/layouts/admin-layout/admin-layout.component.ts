@@ -10,6 +10,7 @@ import { AiAssistantContextService } from '../../core/services/ai-assistant-cont
 import { FirstRunSetupModalComponent } from '../../shared/components/first-run-setup-modal/first-run-setup-modal.component';
 import { TranslationService, SupportedLanguage, LanguageOption, SUPPORTED_LANGUAGES } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../core/pipes/translate.pipe';
+import { MultiWorkspaceService, EnrolledWorkspaceSession } from '../../core/services/multi-workspace.service';
 import { 
   getStoredUserRoles, 
   canAccessConsole, 
@@ -1479,6 +1480,53 @@ export interface SuiteInfoDetail {
         </div>
 
         <div class="topbar-right">
+          <!-- Multi-Workspace Switcher Dropdown Trigger -->
+          <div class="workspace-switcher-wrapper" *ngIf="enrolledWorkspaces.length > 0">
+            <button type="button" class="topbar-action-btn workspace-badge-btn" (click)="toggleDropdown('workspaces', $event)" [title]="'Current: ' + (brandName || tenantKey) + ' (Switch Organization)'">
+              <span class="material-symbols-outlined">domain</span>
+              <span class="workspace-short-pill" *ngIf="enrolledWorkspaces.length > 1">{{ enrolledWorkspaces.length }}</span>
+            </button>
+            <div class="workspace-switch-dropdown" *ngIf="activeDropdown === 'workspaces'">
+              <div class="dropdown-header">
+                <span>Switch Organization</span>
+                <span class="badge-pill" style="background: #10b981;">{{ activeWorkspacesCount }} Active</span>
+              </div>
+              <div class="workspace-list">
+                <div 
+                  *ngFor="let ws of enrolledWorkspaces" 
+                  class="workspace-item" 
+                  [class.current]="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()"
+                  (click)="onSelectWorkspace(ws)"
+                >
+                  <div class="ws-item-avatar">
+                    <img *ngIf="ws.brandIconUrl || ws.brandLogoUrl" [src]="ws.brandIconUrl || ws.brandLogoUrl" class="ws-avatar-img" />
+                    <span *ngIf="!ws.brandIconUrl && !ws.brandLogoUrl" class="material-symbols-outlined">domain</span>
+                  </div>
+                  <div class="ws-item-info">
+                    <div class="ws-item-name">{{ ws.organizationName || ws.tenantKey }}</div>
+                    <div class="ws-item-sub">
+                      <span *ngIf="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()" class="ws-current-tag">Current</span>
+                      <span *ngIf="ws.tenantKey.toLowerCase() !== (tenantKey || '').toLowerCase() && ws.authToken" class="ws-active-tag">● Logged In</span>
+                      <span *ngIf="!ws.authToken" class="ws-signed-out-tag">Signed Out</span>
+                      <span class="ws-item-email" *ngIf="ws.userEmail">&bull; {{ ws.userEmail }}</span>
+                    </div>
+                  </div>
+                  <div class="ws-item-action">
+                    <span class="material-symbols-outlined" *ngIf="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()">check</span>
+                    <span class="material-symbols-outlined" *ngIf="ws.tenantKey.toLowerCase() !== (tenantKey || '').toLowerCase() && ws.authToken">swap_horiz</span>
+                    <span class="material-symbols-outlined" *ngIf="!ws.authToken">login</span>
+                  </div>
+                </div>
+              </div>
+              <div class="dropdown-footer" style="padding: 8px 12px; border-top: 1px solid var(--md-sys-color-outline); display: flex; justify-content: space-between; align-items: center;">
+                <a routerLink="/auth/login" (click)="closeDropdowns()" class="view-all-link" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #0050e5; text-decoration: none; font-weight: 600;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">add_business</span>
+                  Connect Another Workspace
+                </a>
+              </div>
+            </div>
+          </div>
+
           <!-- Central Pattern Multi-Language Switcher Component -->
           <div class="oz-lang-switcher" id="ozLangSwitcher" (click)="$event.stopPropagation()">
             <button type="button" class="oz-lang-btn" (click)="toggleDropdown('language', $event)" [attr.aria-expanded]="activeDropdown === 'language'" aria-label="Select Language" [title]="'Select Language (' + currentLangOption.name + ')'">
@@ -1682,6 +1730,30 @@ export interface SuiteInfoDetail {
                 <span class="material-symbols-outlined">sync_alt</span>
                 <span>Queue Monitor</span>
               </a>
+              <!-- Multi-Workspace Quick Switch in Profile Dropdown -->
+              <ng-container *ngIf="otherActiveWorkspaces.length > 0">
+                <div class="dropdown-divider"></div>
+                <div class="profile-dropdown-section-title" style="padding: 6px 16px 4px; font-size: 10px; font-weight: 700; color: var(--sidebar-header-color); letter-spacing: 0.5px; text-transform: uppercase;">
+                  Switch Workspace
+                </div>
+                <button 
+                  type="button" 
+                  *ngFor="let other of otherActiveWorkspaces" 
+                  (click)="onSelectWorkspace(other)"
+                  class="dropdown-item"
+                  style="display: flex; align-items: center; justify-content: space-between;"
+                >
+                  <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                    <span class="material-symbols-outlined" style="color: #0050e5; font-size: 18px;">domain</span>
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600;">
+                      {{ other.organizationName || other.tenantKey }}
+                    </span>
+                  </div>
+                  <span style="font-size: 9px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 1px 5px; border-radius: 9999px;">
+                    Active
+                  </span>
+                </button>
+              </ng-container>
               <div class="dropdown-divider"></div>
               <button type="button" (click)="onLogout()" class="dropdown-item text-danger">
                 <span class="material-symbols-outlined">logout</span>
@@ -2000,8 +2072,123 @@ export interface SuiteInfoDetail {
     }
     .tab-close-btn:hover { color: var(--md-sys-color-error); }
 
-    .apps-grid-wrapper, .calendar-wrapper, .notifications-wrapper, .user-profile-wrapper {
+    .apps-grid-wrapper, .calendar-wrapper, .notifications-wrapper, .user-profile-wrapper, .workspace-switcher-wrapper {
       position: relative;
+    }
+    .workspace-badge-btn {
+      position: relative;
+    }
+    .workspace-short-pill {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: #0050e5;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      min-width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+      line-height: 1;
+    }
+    .workspace-switch-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 320px;
+      background: var(--md-sys-color-surface);
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      z-index: 1000;
+      overflow: hidden;
+    }
+    .workspace-list {
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 6px;
+    }
+    .workspace-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .workspace-item:hover {
+      background: var(--sidebar-hover-bg);
+    }
+    .workspace-item.current {
+      background: rgba(0, 80, 229, 0.08);
+    }
+    .ws-item-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid var(--md-sys-color-outline);
+    }
+    .ws-avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .ws-item-avatar span {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .ws-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .ws-item-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ws-item-sub {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      margin-top: 2px;
+    }
+    .ws-current-tag {
+      font-weight: 700;
+      color: #0050e5;
+    }
+    .ws-active-tag {
+      font-weight: 700;
+      color: #10b981;
+    }
+    .ws-signed-out-tag {
+      font-weight: 600;
+      color: #94a3b8;
+    }
+    .ws-item-email {
+      color: var(--sidebar-header-color);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 130px;
+    }
+    .ws-item-action span {
+      font-size: 18px;
+      color: var(--sidebar-header-color);
     }
     .apps-grid-dropdown {
       position: absolute;
@@ -3712,8 +3899,31 @@ export class AdminLayoutComponent implements OnInit {
     private toast: ToastService,
     private signalR: SignalRService,
     private aiAssistantService: AiAssistantContextService,
-    public translation: TranslationService
+    public translation: TranslationService,
+    private multiWorkspace: MultiWorkspaceService
   ) {}
+
+  /// <summary>
+  /// Gets all enrolled workspace sessions stored in the browser's persistent storage.
+  /// </summary>
+  public get enrolledWorkspaces(): EnrolledWorkspaceSession[] {
+    return this.multiWorkspace.getEnrolledWorkspaces();
+  }
+
+  /// <summary>
+  /// Gets other enrolled workspace sessions with active tokens excluding the currently active workspace.
+  /// </summary>
+  public get otherActiveWorkspaces(): EnrolledWorkspaceSession[] {
+    const cur = (this.tenantKey || localStorage.getItem('tenant_key') || '').toLowerCase();
+    return this.enrolledWorkspaces.filter(w => w.tenantKey.toLowerCase() !== cur && !!w.authToken);
+  }
+
+  /// <summary>
+  /// Gets total count of active authenticated workspaces.
+  /// </summary>
+  public get activeWorkspacesCount(): number {
+    return this.enrolledWorkspaces.filter(w => !!w.authToken).length;
+  }
 
   public get currentLang(): SupportedLanguage {
     return this.translation.currentLanguage;
@@ -3913,6 +4123,18 @@ export class AdminLayoutComponent implements OnInit {
             this.userEmail = freshData.email;
             localStorage.setItem('user_email', freshData.email);
           }
+
+          // Persist and keep active workspace session in sync for seamless multi-workspace switching
+          this.multiWorkspace.saveSession({
+            tenantKey: this.tenantKey || localStorage.getItem('tenant_key') || '',
+            token: freshData.token || token,
+            fullName: freshData.fullName || this.userFullName,
+            email: freshData.email || this.userEmail,
+            roles: freshData.roles,
+            organizationName: this.brandName,
+            brandLogoUrl: this.brandLogoUrl,
+            brandIconUrl: this.brandIconUrl
+          });
 
           // If user is an administrator, load administrative feature expirations
           if (freshData.isAdmin) {
@@ -4392,9 +4614,34 @@ export class AdminLayoutComponent implements OnInit {
     return `${day}/${month}`;
   }
 
+  /// <summary>
+  /// Signs out of the current active workspace while preserving its enrollment configuration.
+  /// </summary>
   onLogout(): void {
-    localStorage.removeItem('access_token');
-    this.router.navigate(['/auth/login']);
+    const current = this.tenantKey || localStorage.getItem('tenant_key') || '';
+    if (current) {
+      this.multiWorkspace.signOutWorkspace(current);
+    } else {
+      localStorage.removeItem('access_token');
+      this.router.navigate(['/auth/login']);
+    }
+  }
+
+  /// <summary>
+  /// Switches active workspace context to target enrolled session without asking for credentials if already authenticated.
+  /// </summary>
+  /// <param name="session">Target enrolled workspace session</param>
+  onSelectWorkspace(session: EnrolledWorkspaceSession): void {
+    this.closeDropdowns();
+    const current = (this.tenantKey || localStorage.getItem('tenant_key') || '').toLowerCase();
+    if (session.tenantKey.toLowerCase() === current) {
+      return;
+    }
+    if (session.authToken) {
+      this.multiWorkspace.switchWorkspace(session.tenantKey);
+    } else {
+      this.router.navigate(['/auth/login'], { queryParams: { tenant: session.tenantKey } });
+    }
   }
 
   /**

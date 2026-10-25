@@ -549,7 +549,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                             ),
                             const SizedBox(width: 10),
                             Text(
-                              'Sign In',
+                              'Continue',
                               style: TextStyle(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { TenantStateService } from '../../../core/services/tenant-state.service';
+import { MultiWorkspaceService, EnrolledWorkspaceSession } from '../../../core/services/multi-workspace.service';
 import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../../core/utils/user-role.utils';
 
 @Component({
@@ -108,6 +109,22 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
             <span *ngIf="!loading" class="material-symbols-outlined">login</span>
             <span>{{ loading ? 'Authenticating...' : (loginButtonText || 'Sign In') }}</span>
           </button>
+
+          <!-- Quick Switch to Other Active Workspace Sessions -->
+          <div class="active-workspaces-box" *ngIf="otherActiveWorkspaces.length > 0" style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed #cbd5e1; text-align: center;">
+            <span style="font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">Or switch to active workspace</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px;">
+              <button 
+                type="button" 
+                *ngFor="let other of otherActiveWorkspaces" 
+                (click)="onSwitchToWorkspace(other.tenantKey)"
+                style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f8fafc; border: 1px solid #10b981; border-radius: 9999px; font-size: 12px; font-weight: 600; color: #0f172a; cursor: pointer; transition: all 0.2s;"
+              >
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                <span>{{ other.organizationName || other.tenantKey }}</span>
+              </button>
+            </div>
+          </div>
         </form>
 
         <div class="card-footer">
@@ -935,8 +952,20 @@ export class LoginComponent implements OnInit {
     private api: ApiService, 
     private router: Router,
     private route: ActivatedRoute,
-    private tenantState: TenantStateService
+    private tenantState: TenantStateService,
+    private multiWorkspace: MultiWorkspaceService
   ) {}
+
+  get otherActiveWorkspaces(): EnrolledWorkspaceSession[] {
+    const currentKey = localStorage.getItem('tenant_key') || '';
+    return this.multiWorkspace.getEnrolledWorkspaces().filter(w => 
+      w.tenantKey.toLowerCase() !== currentKey.toLowerCase() && !!w.authToken
+    );
+  }
+
+  onSwitchToWorkspace(targetTenantKey: string): void {
+    this.multiWorkspace.switchWorkspace(targetTenantKey);
+  }
 
   ngOnInit(): void {
     // If already authenticated with valid token, navigate to dashboard immediately
@@ -1205,6 +1234,15 @@ export class LoginComponent implements OnInit {
     if (data.roles && Array.isArray(data.roles)) {
       localStorage.setItem('user_roles', JSON.stringify(data.roles));
     }
+    this.multiWorkspace.saveSession({
+      tenantKey: data.tenantKey || localStorage.getItem('tenant_key') || '',
+      token: data.token,
+      fullName: data.fullName,
+      email: data.email,
+      roles: data.roles,
+      organizationName: this.brandCompanyName,
+      brandLogoUrl: this.brandLogoUrl
+    });
     this.promptBrowserSavePassword();
   }
 
