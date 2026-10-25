@@ -1092,22 +1092,22 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                       ),
                     ),
                   ),
+                ),
 
-                  // Bottom Brand Footer (Clean, no internal server route exposed)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'Powered by Ozikol',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? AppColors.gray500 : AppColors.gray400,
-                        letterSpacing: 0.3,
-                      ),
+                // Bottom Brand Footer (Clean, no internal server route exposed)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Powered by Ozikol',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? AppColors.gray500 : AppColors.gray400,
+                      letterSpacing: 0.3,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
