@@ -327,7 +327,18 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * Network interceptors and repositories MUST pass all raw exceptions and error payloads through a central sanitizer (`sanitizeError`) before setting UI state or presenting snackbars, banners, or toast alerts.
   * The sanitizer must strip or replace any raw technical or branded terms with canonical, user-friendly language.
 
+---
 
-
-
-
+## 21. Mobile Infinite Scroll vs. Desktop Pagination Standard (Mandatory)
+* **Adaptive Viewport Data Loading Pattern**:
+  * Feeds, timelines, audit logs, and data lists across all applications MUST dynamically adapt their loading pattern based on the client viewport / device form factor:
+    * **Mobile Screens (`isMobile` / viewport width < 600px)**:
+      * **Infinite Scroll (Scroll Down to Load More)**: As the user scrolls down towards the bottom of the viewport (`pixels >= maxScrollExtent - 250`), automatically fetch the subsequent page of records and append them (`items.addAll(newItems)`) without interrupting the user's scroll position or requiring manual taps.
+      * **No Pagination Buttons on Mobile**: Do NOT render `Previous` / `Page X of Y` / `Next` pagination button strips on mobile screens. Pagination buttons consume valuable vertical screen estate and disrupt natural touch gesture navigation.
+      * **Loading Indicator & End of Feed**: When fetching older records on scroll, display an unobtrusive inline loading spinner (`"Loading older activity..."` or `"Loading more..."`). Once the final page is reached, show a subtle end-of-feed label (e.g. `"Showing all X records from the last 30 days"`).
+    * **Desktop & Large Tablets (`!isMobile` / viewport width >= 600px)**:
+      * **Structured Server-Side Pagination**: Maintain full server-side pagination bars with record counters (`"Showing X of Y records"`), page indicators (`"Page X of Y"`), and `Previous` / `Next` buttons for rapid jumping and precise operational data navigation.
+* **Debounce & Guard Against Duplicate Network Queries**:
+  * Infinite scroll listeners MUST guard with `!isLoading && !isLoadingMore && currentPage < totalPages` to guarantee zero duplicate network round-trips when reaching the bottom of the list.
+* **Refresh / Filter Reset Guarantee**:
+  * Pull-to-refresh, filter chips, or search queries must reset `currentPage = 1` and replace the collection with fresh page-1 results, resetting the infinite scroll state cleanly.

@@ -45,7 +45,9 @@ class MyActivityView extends ConsumerStatefulWidget {
 typedef LoginActivityView = MyActivityView;
 
 class _MyActivityViewState extends ConsumerState<MyActivityView> {
+  late final ScrollController _scrollController;
   bool _isLoading = true;
+  bool _isLoadingMore = false;
   int _currentPage = 1;
   final int _pageSize = 10;
   int _totalCount = 0;
@@ -61,13 +63,40 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController()..addListener(_onScroll);
     _loadActivity();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// <summary>
+  /// Listens to scroll events on the parent scrollable and triggers infinite loading
+  /// when the user approaches the bottom of the feed on mobile viewports.
+  /// </summary>
+  void _onScroll() {
+    if (!mounted) return;
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    if (!isMobile) return;
+
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 250) {
+      _loadMoreActivity();
+    }
   }
 
   /// <summary>
   /// Fetches paginated activity timeline records from the backend with 30-day retention guard.
   /// </summary>
-  Future<void> _loadActivity() async {
+  /// <param name="resetPage">Whether to reset the current page counter back to 1.</param>
+  Future<void> _loadActivity({bool resetPage = false}) async {
+    if (resetPage) {
+      _currentPage = 1;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -93,6 +122,41 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
         setState(() {
           _isLoading = false;
           _errorMessage = 'Unable to load activity records. Please check your connection.';
+        });
+      }
+    }
+  }
+
+  /// <summary>
+  /// Fetches the next page of audit log entries and appends them to the current list for continuous scrolling on mobile devices.
+  /// </summary>
+  Future<void> _loadMoreActivity() async {
+    if (_isLoading || _isLoadingMore || _currentPage >= _totalPages) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      final repo = ref.read(accountRepositoryProvider);
+      final nextPage = _currentPage + 1;
+      final res = await repo.getMyActivity(page: nextPage, pageSize: _pageSize);
+      final rawList = (res['items'] as List<dynamic>?) ?? [];
+      final newItems = rawList.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+      if (mounted) {
+        setState(() {
+          _currentPage = nextPage;
+          _items.addAll(newItems);
+          _totalCount = (res['totalCount'] as num?)?.toInt() ?? _totalCount;
+          _totalPages = (res['totalPages'] as num?)?.toInt() ?? _totalPages;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
         });
       }
     }
@@ -702,6 +766,7 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
     final filtered = _getFilteredItems();
 
     return SingleChildScrollView(
+      controller: _scrollController,
       padding: EdgeInsets.symmetric(
         horizontal: isMobile ? 16 : 24,
         vertical: 20,
@@ -738,7 +803,7 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
                   label: Text('account.export_csv'.tr(ref, fallback: 'Export CSV'), style: const TextStyle(fontSize: 12.5)),
                 ),
                 OutlinedButton.icon(
-                  onPressed: _loadActivity,
+                  onPressed: () => _loadActivity(resetPage: true),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1082,43 +1147,91 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Server-Side Pagination Controls
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${'account.showing_records'.tr(ref, fallback: 'Showing')} ${filtered.length} ${'account.of'.tr(ref, fallback: 'of')} $_totalCount ${'account.records'.tr(ref, fallback: 'records')}',
-                        style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
-                      ),
-                      Row(
-                        children: [
-                          OutlinedButton(
-                            onPressed: _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
-                            style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
-                            child: Text('btn.previous'.tr(ref, fallback: 'Previous')),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
+                  // Server-Side Pagination Controls (Desktop) vs Infinite Scroll Indicator (Mobile)
+                  if (!isMobile) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${'account.showing_records'.tr(ref, fallback: 'Showing')} ${filtered.length} ${'account.of'.tr(ref, fallback: 'of')} $_totalCount ${'account.records'.tr(ref, fallback: 'records')}',
+                          style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
+                        ),
+                        Row(
+                          children: [
+                            OutlinedButton(
+                              onPressed: _currentPage > 1 ? () => _goToPage(_currentPage - 1) : null,
+                              style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
+                              child: Text('btn.previous'.tr(ref, fallback: 'Previous')),
                             ),
-                            child: Text(
-                              '${'account.page'.tr(ref, fallback: 'Page')} $_currentPage ${'account.of'.tr(ref, fallback: 'of')} $_totalPages',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${'account.page'.tr(ref, fallback: 'Page')} $_currentPage ${'account.of'.tr(ref, fallback: 'of')} $_totalPages',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton(
+                              onPressed: _currentPage < _totalPages ? () => _goToPage(_currentPage + 1) : null,
+                              style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
+                              child: Text('btn.next'.tr(ref, fallback: 'Next')),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ] else ...[
+                    // Mobile Infinite Scroll Loading Indicator & End-of-Feed Status
+                    if (_isLoadingMore)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                'account.loading_more'.tr(ref, fallback: 'Loading older activity...'),
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (_currentPage >= _totalPages && _items.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Center(
+                          child: Text(
+                            'account.all_records_loaded'.tr(
+                              ref,
+                              fallback: 'Showing all ${_items.length} records from the last 30 days',
+                            ),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? AppColors.gray400 : AppColors.gray500,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          OutlinedButton(
-                            onPressed: _currentPage < _totalPages ? () => _goToPage(_currentPage + 1) : null,
-                            style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
-                            child: Text('btn.next'.tr(ref, fallback: 'Next')),
-                          ),
-                        ],
+                        ),
                       ),
-                    ],
-                  ),
+                  ],
                 ],
               ],
             ),
