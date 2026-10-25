@@ -77,29 +77,31 @@ class NotificationItem {
   });
 
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
-    final rawSeverity = json['severity']?.toString();
-    final rawSeverityCode = json['severityCode'] as int?;
+    final rawSeverity = (json['severity'] ?? json['Severity'])?.toString();
+    final rawSeverityCode = (json['severityCode'] ?? json['SeverityCode']) as int?;
 
     final severity = rawSeverityCode != null
         ? NotificationSeverity.fromCode(rawSeverityCode)
         : NotificationSeverity.fromString(rawSeverity);
 
     return NotificationItem(
-      id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      message: json['message']?.toString() ?? '',
-      actionUrl: json['actionUrl']?.toString(),
-      isRead: json['isRead'] == true,
-      module: json['module']?.toString() ?? 'General',
-      icon: json['icon']?.toString(),
-      category: json['category']?.toString() ?? 'General',
-      priority: json['priority']?.toString() ?? 'Normal',
+      id: (json['id'] ?? json['Id'])?.toString() ?? '',
+      title: (json['title'] ?? json['Title'])?.toString() ?? '',
+      message: (json['message'] ?? json['Message'])?.toString() ?? '',
+      actionUrl: (json['actionUrl'] ?? json['ActionUrl'])?.toString(),
+      isRead: json['isRead'] == true || json['IsRead'] == true,
+      module: (json['module'] ?? json['Module'])?.toString() ?? 'General',
+      icon: (json['icon'] ?? json['Icon'])?.toString(),
+      category: (json['category'] ?? json['Category'])?.toString() ?? 'General',
+      priority: (json['priority'] ?? json['Priority'])?.toString() ?? 'Normal',
       severity: severity,
-      metadataJson: json['metadataJson']?.toString(),
-      isBroadcast: json['isBroadcast'] == true,
-      createdAt: json['createdAt'] != null
+      metadataJson: (json['metadataJson'] ?? json['MetadataJson'])?.toString(),
+      isBroadcast: json['isBroadcast'] == true || json['IsBroadcast'] == true,
+      createdAt: (json['createdAt'] ?? json['CreatedAt']) != null
           ? () {
-              final str = json['createdAt'].toString().trim();
+              final raw = (json['createdAt'] ?? json['CreatedAt']);
+              if (raw is DateTime) return raw.toLocal();
+              final str = raw.toString().trim();
               if (str.isEmpty) return DateTime.now();
               final normalized = (str.endsWith('Z') || str.contains('+')) ? str : '${str}Z';
               return (DateTime.tryParse(normalized) ?? DateTime.now()).toLocal();

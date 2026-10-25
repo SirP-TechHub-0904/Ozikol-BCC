@@ -7,6 +7,7 @@ import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
+import '../../../../notifications/data/notification_service.dart';
 import '../../../../workspace_auth/data/auth_service.dart';
 import '../../../../workspace_auth/state/workspace_state.dart';
 import 'widgets/account_security_header.dart';
@@ -126,6 +127,9 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
         _currentProvider = 'GoogleAuthenticator';
         _successMessage = 'Two-Factor Authentication activated successfully.';
       });
+
+      // Synchronize in-app notification center feed immediately
+      ref.read(notificationProvider.notifier).loadFeed();
     } catch (e) {
       setState(() {
         _isEnabling = false;
@@ -170,6 +174,9 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
         _successMessage = 'Two-Factor Authentication disabled successfully.';
         _errorMessage = null;
       });
+
+      // Synchronize in-app notification center feed immediately
+      ref.read(notificationProvider.notifier).loadFeed();
 
       if (mounted) {
         messenger.showSnackBar(

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:ozikol_app/core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../notifications/data/notification_service.dart';
 import '../../../data/account_repository.dart';
 import 'widgets/account_security_header.dart';
 
@@ -114,6 +115,7 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
     final success = await repo.revokeSession(sessionId);
     if (success) {
       _loadSessions();
+      ref.read(notificationProvider.notifier).loadFeed();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Device session revoked successfully.')),
@@ -148,6 +150,7 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
 
     if (success) {
       _loadSessions();
+      ref.read(notificationProvider.notifier).loadFeed();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('All other remote device sessions terminated.')),
