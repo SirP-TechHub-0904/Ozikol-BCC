@@ -352,6 +352,7 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                     ],
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Device Form Factor Avatar
                       Container(
@@ -380,22 +381,20 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 5,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
-                                Flexible(
-                                  child: Text(
-                                    deviceTitle,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                                    ),
+                                Text(
+                                  deviceTitle,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
                                   ),
                                 ),
-                                if (isCurrent) ...[
-                                  const SizedBox(width: 8),
+                                if (isCurrent)
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                                     decoration: BoxDecoration(
@@ -411,8 +410,6 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                                       ),
                                     ),
                                   ),
-                                ],
-                                const SizedBox(width: 6),
                                 // Device Activity Status: Active Now vs Idle
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
@@ -454,8 +451,7 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                                     ],
                                   ),
                                 ),
-                                if (isTrusted) ...[
-                                  const SizedBox(width: 6),
+                                if (isTrusted)
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
                                     decoration: BoxDecoration(
@@ -479,7 +475,6 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                                       ],
                                     ),
                                   ),
-                                ],
                               ],
                             ),
                             const SizedBox(height: 6),

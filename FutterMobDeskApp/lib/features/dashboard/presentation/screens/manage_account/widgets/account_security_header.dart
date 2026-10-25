@@ -410,47 +410,82 @@ class AccountSectionCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section Card Head (.section-card-head)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: BoxDecoration(
-              color: headBg,
-              border: Border(
-                bottom: BorderSide(color: borderColor),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, size: 22, color: AppColors.primary),
-                const SizedBox(width: 12),
-                Expanded(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 600;
+
+              final titleContent = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                    ),
+                  ),
+                ],
+              );
+
+              if (isNarrow) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: headBg,
+                    border: Border(
+                      bottom: BorderSide(color: borderColor),
+                    ),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(icon, size: 22, color: AppColors.primary),
+                          const SizedBox(width: 12),
+                          Expanded(child: titleContent),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        description,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
-                        ),
-                      ),
+                      if (action != null) ...[
+                        const SizedBox(height: 12),
+                        action!,
+                      ],
                     ],
                   ),
+                );
+              }
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  color: headBg,
+                  border: Border(
+                    bottom: BorderSide(color: borderColor),
+                  ),
                 ),
-                if (action != null) ...[
-                  const SizedBox(width: 16),
-                  action!,
-                ],
-              ],
-            ),
+                child: Row(
+                  children: [
+                    Icon(icon, size: 22, color: AppColors.primary),
+                    const SizedBox(width: 12),
+                    Expanded(child: titleContent),
+                    if (action != null) ...[
+                      const SizedBox(width: 16),
+                      action!,
+                    ],
+                  ],
+                ),
+              );
+            },
           ),
 
           // Section Card Body (.card-body)
