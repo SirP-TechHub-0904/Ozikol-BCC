@@ -314,7 +314,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
         }
       },
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 80),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -902,7 +902,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _filteredCategories.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
       itemBuilder: (context, idx) {
         final cat = _filteredCategories[idx];
         final name = cat['name'] as String? ?? 'Category';
@@ -1389,25 +1389,32 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 8,
+                              runSpacing: 6,
                               children: [
-                                Icon(
-                                  _isActive ? Icons.check_circle_rounded : Icons.pause_circle_rounded,
-                                  size: 20,
-                                  color: _isActive ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _isActive ? Icons.check_circle_rounded : Icons.pause_circle_rounded,
+                                      size: 18,
+                                      color: _isActive ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Publication Status',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Publication Status',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: _isActive ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
                                     borderRadius: BorderRadius.circular(999),

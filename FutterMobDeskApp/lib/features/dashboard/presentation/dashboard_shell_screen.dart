@@ -471,7 +471,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           Positioned(
             bottom: 24,
             right: 24,
-            child: _buildOziAiFloatingButton(isDark),
+            child: _buildOziAiFloatingButton(isDark, isMobile: false),
           ),
 
           // Full Workspace Refresh Loading Overlay
@@ -706,9 +706,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ],
           ),
           Positioned(
-            bottom: 16,
-            right: 16,
-            child: _buildOziAiFloatingButton(isDark),
+            bottom: 12,
+            right: 12,
+            child: _buildOziAiFloatingButton(isDark, isMobile: true),
           ),
 
           // Full Workspace Refresh Loading Overlay
@@ -3614,9 +3614,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     }
   }
 
-  Widget _buildOziAiFloatingButton(bool isDark) {
-    return FloatingActionButton.extended(
-      onPressed: () {
+  Widget _buildOziAiFloatingButton(bool isDark, {bool isMobile = false}) {
+    return _OziAiAnimatedFab(
+      isMobile: isMobile,
+      isDark: isDark,
+      label: 'btn.ai_assistant'.tr(ref, fallback: 'AI Assistant'),
+      onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('AI Assistant is available in the workspace studio.'),
@@ -3624,11 +3627,129 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
         );
       },
-      backgroundColor: AppColors.primary,
-      icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-      label: Text(
-        'btn.ai_assistant'.tr(ref, fallback: 'AI Assistant'),
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+    );
+  }
+}
+
+/// <summary>
+/// Minimized floating AI Assistant launcher.
+/// On desktop: Displays the standard extended pill button with text.
+/// On mobile: Minimized to a sleek 38x38 circular icon button with a subtle,
+/// continuous pulsing circle ring animation to prevent blocking page actions.
+/// </summary>
+class _OziAiAnimatedFab extends StatefulWidget {
+  final bool isMobile;
+  final bool isDark;
+  final String label;
+  final VoidCallback onTap;
+
+  const _OziAiAnimatedFab({
+    required this.isMobile,
+    required this.isDark,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  State<_OziAiAnimatedFab> createState() => _OziAiAnimatedFabState();
+}
+
+class _OziAiAnimatedFabState extends State<_OziAiAnimatedFab>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseScale;
+  late Animation<double> _pulseOpacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat();
+
+    _pulseScale = Tween<double>(begin: 1.0, end: 1.45).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeOutCubic),
+    );
+
+    _pulseOpacity = Tween<double>(begin: 0.65, end: 0.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isMobile) {
+      return FloatingActionButton.extended(
+        onPressed: widget.onTap,
+        backgroundColor: AppColors.primary,
+        elevation: 4,
+        icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+        label: Text(
+          widget.label,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      );
+    }
+
+    // Minimized Mobile Mode: 38x38 circular button with gentle pulsing animated circle ring
+    return Tooltip(
+      message: widget.label,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: SizedBox(
+          width: 52,
+          height: 52,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Subtle pulsing animated circle ring
+              AnimatedBuilder(
+                animation: _pulseController,
+                builder: (context, child) {
+                  return Container(
+                    width: 38 * _pulseScale.value,
+                    height: 38 * _pulseScale.value,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF0050E5).withValues(alpha: _pulseOpacity.value),
+                        width: 1.5,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              // Inner solid Royal Blue circular action button
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0050E5).withValues(alpha: 0.35),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
