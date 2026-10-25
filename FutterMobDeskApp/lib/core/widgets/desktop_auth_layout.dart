@@ -444,8 +444,14 @@ class DesktopAuthLayout extends ConsumerWidget {
     return Column(
       children: [
         if (showLogo) ...[
-          _buildBrandLogo(logoUrl: logoUrl, size: 52),
-          const SizedBox(height: 14),
+          _buildBrandLogo(
+            logoUrl: logoUrl,
+            isCardHero: true,
+            maxHeight: 58,
+            maxWidth: 240,
+            fallbackSize: 56,
+          ),
+          const SizedBox(height: 18),
         ] else if (cardAvatar != null) ...[
           cardAvatar!,
           const SizedBox(height: 14),
@@ -477,8 +483,37 @@ class DesktopAuthLayout extends ConsumerWidget {
     );
   }
 
-  Widget _buildBrandLogo({required String? logoUrl, double size = 44}) {
+  /// <summary>
+  /// Renders the tenant organization brand logo with dynamic aspect ratio preservation.
+  /// When <paramref name="isCardHero"/> is true, allows wide corporate wordmarks and badges
+  /// to scale gracefully up to <paramref name="maxWidth"/> and <paramref name="maxHeight"/>
+  /// without forcing them into a tiny square constraint.
+  /// </summary>
+  Widget _buildBrandLogo({
+    required String? logoUrl,
+    double size = 44,
+    bool isCardHero = false,
+    double maxHeight = 58,
+    double maxWidth = 240,
+    double fallbackSize = 44,
+  }) {
     if (logoUrl != null && logoUrl.trim().isNotEmpty) {
+      if (isCardHero) {
+        return ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: maxHeight,
+            maxWidth: maxWidth,
+            minHeight: 36,
+          ),
+          child: CachedNetworkImage(
+            imageUrl: logoUrl,
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            errorWidget: (context, url, error) => _buildFallbackAvatar(fallbackSize),
+          ),
+        );
+      }
+
       return ClipRRect(
         borderRadius: BorderRadius.circular(size * 0.25),
         child: CachedNetworkImage(
@@ -490,7 +525,7 @@ class DesktopAuthLayout extends ConsumerWidget {
         ),
       );
     }
-    return _buildFallbackAvatar(size);
+    return _buildFallbackAvatar(isCardHero ? fallbackSize : size);
   }
 
   Widget _buildFallbackAvatar(double size) {
