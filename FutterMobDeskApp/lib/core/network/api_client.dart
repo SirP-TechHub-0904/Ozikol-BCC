@@ -23,15 +23,22 @@ class ApiClient {
     // Attach multi-tenant injector interceptor
     dio.interceptors.add(TenantInterceptor(storageService));
 
-    // Attach developer log interceptor in debug builds
+    // Attach clean, lightweight logging in debug builds (avoids freezing ADB logcat with huge JSON payloads)
     if (kDebugMode) {
       dio.interceptors.add(
-        LogInterceptor(
-          requestHeader: true,
-          requestBody: true,
-          responseHeader: false,
-          responseBody: true,
-          error: true,
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            debugPrint('🌐 [DIO REQ] ${options.method} ${options.uri.path}');
+            handler.next(options);
+          },
+          onResponse: (response, handler) {
+            debugPrint('✅ [DIO RES] ${response.statusCode} ${response.requestOptions.uri.path}');
+            handler.next(response);
+          },
+          onError: (DioException err, handler) {
+            debugPrint('❌ [DIO ERR] ${err.response?.statusCode} ${err.requestOptions.uri.path}: ${err.message}');
+            handler.next(err);
+          },
         ),
       );
     }
