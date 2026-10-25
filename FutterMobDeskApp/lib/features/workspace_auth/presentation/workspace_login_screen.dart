@@ -10,7 +10,6 @@ import '../state/workspace_state.dart';
 import 'first_time_password_screen.dart';
 import 'forgot_password_screen.dart';
 import 'two_factor_challenge_screen.dart';
-import 'widgets/workspace_switch_dialog.dart';
 import 'workspace_entry_screen.dart';
 
 /// Clean, branded authentication screen for the resolved organization workspace.
@@ -260,70 +259,6 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                                 onPressed: _handleChangeOrganization,
                               ),
                             ),
-
-                            // Quick-switch to other active signed-in workspaces
-                            () {
-                              final otherActive = state.enrolledWorkspaces
-                                  .where((w) => w.tenantKey.toLowerCase() != widget.workspace.tenantKey.toLowerCase() && w.isAuthenticated)
-                                  .toList();
-                              if (otherActive.isEmpty) return const SizedBox.shrink();
-
-                              return Column(
-                                children: [
-                                  const SizedBox(height: 14),
-                                  Row(
-                                    children: [
-                                      Expanded(child: Divider(color: isDark ? AppColors.outlineDark : AppColors.outlineLight)),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                                        child: Text(
-                                          'OR SWITCH TO ACTIVE SESSION',
-                                          style: TextStyle(
-                                            fontSize: 9.5,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: 0.5,
-                                            color: isDark ? AppColors.gray500 : AppColors.gray400,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(child: Divider(color: isDark ? AppColors.outlineDark : AppColors.outlineLight)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    alignment: WrapAlignment.center,
-                                    children: otherActive.map((otherWs) {
-                                      return ActionChip(
-                                        avatar: Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xFF10B981),
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        label: Text(
-                                          otherWs.displayName,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: isDark ? Colors.white : AppColors.gray900,
-                                          ),
-                                        ),
-                                        backgroundColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF1F5F9),
-                                        side: BorderSide(
-                                          color: const Color(0xFF10B981).withAlpha(isDark ? 80 : 60),
-                                        ),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                        onPressed: () => showWorkspaceSwitchDialog(context, otherWs),
-                                      );
-                                    }).toList(),
-                                  ),
-                                ],
-                              );
-                            }(),
                           ],
                         ),
                       ),
