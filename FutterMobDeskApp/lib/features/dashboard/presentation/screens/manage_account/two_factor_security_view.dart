@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,6 +38,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
   String _currentProvider = 'None';
 
   String? _secretKey;
+  String? _qrCodeUrl;
   final _codeController = TextEditingController();
 
   String? _errorMessage;
@@ -77,8 +79,16 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
         tenantKey: widget.workspace?.tenantKey ?? '',
       );
 
+      final key = res['secretKey']?.toString() ?? res['sharedKey']?.toString() ?? 'ABCDEF123456';
+      final qrUrl = res['qrCodeUrl']?.toString() ?? res['qrCodeUri']?.toString() ?? res['QrCodeUrl']?.toString();
+
+      final brand = Uri.encodeComponent(widget.workspace?.organizationName ?? 'Workspace');
+      final email = Uri.encodeComponent(widget.workspace?.userEmail ?? 'user');
+      final fallbackOtpAuth = 'otpauth://totp/$brand:$email?secret=$key&issuer=$brand';
+
       setState(() {
-        _secretKey = res['secretKey']?.toString() ?? res['sharedKey']?.toString() ?? 'ABCDEF123456';
+        _secretKey = key;
+        _qrCodeUrl = (qrUrl != null && qrUrl.isNotEmpty) ? qrUrl : fallbackOtpAuth;
       });
     } catch (e) {
       setState(() {
@@ -454,6 +464,91 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                     ),
                   ),
                   const SizedBox(height: 16),
+
+                  // QR Code Display for Scanning with Authenticator Apps
+                  if (_qrCodeUrl != null) ...[
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: CachedNetworkImage(
+                                imageUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${Uri.encodeComponent(_qrCodeUrl!)}',
+                                width: 165,
+                                height: 165,
+                                fit: BoxFit.contain,
+                                placeholder: (context, url) => Container(
+                                  width: 165,
+                                  height: 165,
+                                  color: const Color(0xFFF8FAFC),
+                                  child: const Center(
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Container(
+                                  width: 165,
+                                  height: 165,
+                                  color: const Color(0xFFF8FAFC),
+                                  child: const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.qr_code_2_rounded, size: 48, color: AppColors.gray400),
+                                      SizedBox(height: 6),
+                                      Text('Scan QR Code', style: TextStyle(fontSize: 11, color: AppColors.gray500)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Scan with your authenticator camera',
+                              style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            'OR ENTER KEY MANUALLY',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: isDark ? AppColors.gray400 : AppColors.gray600,
+                            ),
+                          ),
+                        ),
+                        const Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                  ],
 
                   // Secret Key Display
                   if (_secretKey != null) ...[

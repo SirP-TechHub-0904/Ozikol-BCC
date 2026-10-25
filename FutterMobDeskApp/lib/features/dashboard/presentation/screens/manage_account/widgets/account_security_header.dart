@@ -54,16 +54,20 @@ class AccountSecurityHeader extends ConsumerStatefulWidget {
 class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
   int? _loadedDevicesCount;
   bool? _loaded2faEnabled;
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
+    _scrollController = ScrollController();
     _loadedDevicesCount = widget.activeDevicesCount;
     _loaded2faEnabled = widget.is2faEnabled;
 
     if (_loadedDevicesCount == null || _loaded2faEnabled == null) {
       _loadTelemetry();
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToActiveTab());
   }
 
   @override
@@ -75,6 +79,46 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
     if (widget.is2faEnabled != null && widget.is2faEnabled != _loaded2faEnabled) {
       _loaded2faEnabled = widget.is2faEnabled;
     }
+    if (widget.activeTab != oldWidget.activeTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToActiveTab());
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// <summary>
+  /// Scrolls the tab bar to ensure the active tab is properly in view.
+  /// </summary>
+  void _scrollToActiveTab() {
+    if (!_scrollController.hasClients) return;
+    double targetOffset = 0;
+    switch (widget.activeTab) {
+      case 'devices':
+        targetOffset = 110;
+        break;
+      case 'activity':
+        targetOffset = 210;
+        break;
+      case 'roles':
+        targetOffset = 320;
+        break;
+      case 'password':
+      case '2fa':
+      default:
+        targetOffset = 0;
+        break;
+    }
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final clamped = targetOffset.clamp(0.0, maxScroll);
+    _scrollController.animateTo(
+      clamped,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
   }
 
   /// <summary>
@@ -143,7 +187,9 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
               ),
             ),
             SingleChildScrollView(
+              controller: _scrollController,
               scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
               child: Row(
                 children: [
                   _buildTab(
@@ -193,7 +239,7 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
   }
 
   /// <summary>
-  /// Builds an individual tab button matching the web .tab-btn styling.
+  /// Builds an individual tab button matching the web .tab-btn styling with prominent active state.
   /// </summary>
   Widget _buildTab({
     required String key,
@@ -209,17 +255,18 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
     return InkWell(
       onTap: () => widget.onSelectTab?.call(key),
       hoverColor: activeColor.withValues(alpha: 0.04),
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(8),
-        topRight: Radius.circular(8),
-      ),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
         decoration: BoxDecoration(
+          color: isActive
+              ? (isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.35) : const Color(0xFFEFF6FF))
+              : Colors.transparent,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
           border: Border(
             bottom: BorderSide(
               color: isActive ? activeColor : Colors.transparent,
-              width: 3,
+              width: 3.5,
             ),
           ),
         ),
@@ -228,21 +275,21 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
           children: [
             Icon(
               icon,
-              size: 19,
+              size: 16.5,
               color: isActive ? activeColor : inactiveColor,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-                color: isActive ? activeColor : inactiveColor,
+                fontSize: 12.5,
+                fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                color: isActive ? (isDark ? const Color(0xFF93C5FD) : activeColor) : inactiveColor,
                 letterSpacing: 0.1,
               ),
             ),
             if (badge != null) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               badge,
             ],
           ],
@@ -264,7 +311,7 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
         : 'account.status_disabled'.tr(ref, fallback: 'DISABLED');
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(9999),
@@ -272,7 +319,7 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
       child: Text(
         label.toUpperCase(),
         style: TextStyle(
-          fontSize: 10,
+          fontSize: 9.5,
           fontWeight: FontWeight.w700,
           color: fgColor,
           letterSpacing: 0.3,
@@ -286,7 +333,7 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
   /// </summary>
   Widget _buildCounterBadge(int count, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+      padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 1.5),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
         borderRadius: BorderRadius.circular(9999),
@@ -294,7 +341,7 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
       child: Text(
         '$count',
         style: TextStyle(
-          fontSize: 10.5,
+          fontSize: 9.5,
           fontWeight: FontWeight.w700,
           color: isDark ? Colors.white : const Color(0xFF334155),
         ),
