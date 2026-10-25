@@ -3919,13 +3919,17 @@ export class AdminLayoutComponent implements OnInit {
             this.loadFeatureExpirations();
           } else {
             // Standard members belong in their personal workspace.
-            // Only warn and evict if the user is currently attempting to access an admin console route.
-            const isOnAdminRoute = this.currentRoute.startsWith('/dashboard/console') ||
-                                   this.currentRoute.includes('/console') ||
-                                   this.currentRoute.startsWith('/admin');
+            // Only redirect if a non-admin is actively on an administrator console route.
+            const activeUrl = this.router.url || this.currentRoute || '';
+            const isWorkspaceRoute = activeUrl.includes('/workspace');
+            const isOnAdminRoute = !isWorkspaceRoute && (
+              activeUrl.startsWith('/dashboard/console') ||
+              activeUrl.includes('/console') ||
+              activeUrl.startsWith('/admin')
+            );
+
             if (isOnAdminRoute) {
-              console.warn('[AdminLayout] User does not have Administrator permissions. Redirecting to personal workspace...');
-              this.toast.error('Your administrator permissions have been updated. Redirecting to workspace...', 'Access Revoked');
+              console.warn('[AdminLayout] Non-administrator on console route -> Redirecting to workspace:', activeUrl);
               this.router.navigate(['/dashboard/workspace']);
             }
           }
