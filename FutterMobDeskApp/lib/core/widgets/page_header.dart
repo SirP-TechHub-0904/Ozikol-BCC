@@ -285,7 +285,7 @@ class PageHeader extends StatelessWidget {
                 ...trailing,
                 if (onReplayTour != null) _buildTourButton(isDark),
                 if (secondaryActions.isNotEmpty) _buildOverflowMenu(isDark),
-                if (primaryAction != null) _buildActionButton(primaryAction!, isDark, iconOnly: false, compactLabel: false),
+                if (primaryAction != null) _buildActionButton(primaryAction!, isDark, iconOnly: false, compactLabel: false, isMobile: true),
               ],
             ),
         ],
@@ -448,20 +448,21 @@ class PageHeader extends StatelessWidget {
     bool isDark, {
     required bool iconOnly,
     required bool compactLabel,
+    bool isMobile = false,
   }) {
     final label = compactLabel ? (a.compactLabel ?? a.label) : a.label;
     final onPressed = a.isLoading ? null : a.onPressed;
     final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(8));
     final Widget leading = a.isLoading
         ? SizedBox(
-            width: 14,
-            height: 14,
+            width: isMobile ? 12 : 14,
+            height: isMobile ? 12 : 14,
             child: CircularProgressIndicator(
               strokeWidth: 2,
               color: a.style == PageHeaderActionStyle.primary ? Colors.white : AppColors.primary,
             ),
           )
-        : Icon(a.icon, size: 16);
+        : Icon(a.icon, size: isMobile ? 14 : 16);
 
     // Destructive red is reserved for destructive actions only (brand rule)
     final fg = switch (a.style) {
@@ -479,8 +480,8 @@ class PageHeader extends StatelessWidget {
       return Tooltip(
         message: a.label,
         child: SizedBox(
-          width: 40,
-          height: 40,
+          width: isMobile ? 34 : 40,
+          height: isMobile ? 34 : 40,
           child: OutlinedButton(
             onPressed: onPressed,
             style: OutlinedButton.styleFrom(
@@ -495,16 +496,21 @@ class PageHeader extends StatelessWidget {
       );
     }
 
+    final hPad = isMobile ? 12.0 : 18.0;
+    final vPad = isMobile ? 7.0 : 12.0;
+    final fontSize = isMobile ? 12.0 : 13.0;
+
     if (a.style == PageHeaderActionStyle.primary) {
       return ElevatedButton.icon(
         onPressed: onPressed,
         icon: leading,
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        label: Text(label, style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w700)),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          minimumSize: isMobile ? const Size(0, 35) : null,
+          padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
           shape: shape,
         ),
       );
@@ -513,9 +519,10 @@ class PageHeader extends StatelessWidget {
     return OutlinedButton.icon(
       onPressed: onPressed,
       icon: leading,
-      label: Text(label),
+      label: Text(label, style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600)),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        minimumSize: isMobile ? const Size(0, 35) : null,
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 12.0 : 16.0, vertical: vPad),
         shape: shape,
         side: side,
         foregroundColor: fg,

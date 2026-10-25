@@ -229,10 +229,10 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
               children: [
                 Expanded(
                   child: SizedBox(
-                    height: 42,
+                    height: 35,
                     child: OutlinedButton.icon(
                       onPressed: () => widget.onNavigateToTab?.call(1),
-                      icon: const Icon(Icons.table_view_rounded, size: 16),
+                      icon: const Icon(Icons.table_view_rounded, size: 14),
                       label: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text('dashboard.directory_register'.tr(ref, fallback: 'Directory Register')),
@@ -240,20 +240,20 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                       style: OutlinedButton.styleFrom(
                         foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
                         side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: SizedBox(
-                    height: 42,
+                    height: 35,
                     child: FilledButton.icon(
                       onPressed: () => widget.onNavigateToTab?.call(16),
-                      icon: const Icon(Icons.person_add_rounded, size: 16),
+                      icon: const Icon(Icons.person_add_rounded, size: 14),
                       label: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text('dashboard.add_member'.tr(ref, fallback: 'Add Member')),
@@ -261,9 +261,9 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),

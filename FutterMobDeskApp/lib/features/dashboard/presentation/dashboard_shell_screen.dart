@@ -653,10 +653,37 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         onSwitchWorkspace: () => _showMobileWorkspaceSheet(context),
         onSignOut: () => _handleSignOut(activeWs),
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
+      body: Theme(
+        data: Theme.of(context).copyWith(
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+          filledButtonTheme: FilledButtonThemeData(
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+          outlinedButtonTheme: OutlinedButtonThemeData(
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ),
+        child: Stack(
+          children: [
+            Column(
+              children: [
               updateAsync.maybeWhen(
                 data: (res) => res.hasUpdate && res.updateInfo != null
                     ? UpdateBanner(updateInfo: res.updateInfo!)
@@ -690,6 +717,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               child: _buildRefreshingOverlay(isDark),
             ),
         ],
+        ),
       ),
       bottomNavigationBar: _buildMobileBottomBar(isDark, activeWs),
     );
