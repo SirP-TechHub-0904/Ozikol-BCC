@@ -251,91 +251,160 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
           ],
 
           // Status Card
-          Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _is2faEnabled ? Icons.verified_user_rounded : Icons.gpp_maybe_rounded,
-                  size: 36,
-                  color: _is2faEnabled ? AppColors.success : AppColors.warning,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 560;
+
+              final badgeWidget = Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                decoration: BoxDecoration(
+                  color: (_is2faEnabled ? AppColors.success : AppColors.warning).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(100),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
+                child: Text(
+                  _is2faEnabled ? 'badge.active'.tr(ref, fallback: 'Active') : 'account.mfa_unprotected'.tr(ref, fallback: 'Unprotected'),
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold,
+                    color: _is2faEnabled ? AppColors.success : AppColors.warning,
+                  ),
+                ),
+              );
+
+              final titleText = Text(
+                _is2faEnabled ? 'account.mfa_active'.tr(ref, fallback: '2FA Protection Active') : 'account.mfa_disabled'.tr(ref, fallback: '2FA Protection Disabled'),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                ),
+              );
+
+              final descText = Text(
+                _is2faEnabled
+                    ? 'Your account is secured via $_currentProvider verification.'
+                    : 'account.mfa_desc'.tr(ref, fallback: 'Enable two-factor authentication to safeguard your organization workspace from unauthorized access.'),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: isDark ? AppColors.gray400 : AppColors.gray600,
+                ),
+              );
+
+              final actionButton = (!_is2faEnabled && !_isConfiguring)
+                  ? SizedBox(
+                      width: isNarrow ? double.infinity : 130,
+                      child: PrimaryButton(
+                        text: 'account.enable_2fa'.tr(ref, fallback: 'Enable 2FA'),
+                        height: 42,
+                        onPressed: () => _startConfiguration('GoogleAuthenticator'),
+                      ),
+                    )
+                  : (_is2faEnabled && !_isConfiguring)
+                      ? SizedBox(
+                          width: isNarrow ? double.infinity : null,
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.lock_open_rounded, size: 16, color: AppColors.error),
+                            label: Text('account.disable_2fa'.tr(ref, fallback: 'Disable 2FA'), style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 12)),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            onPressed: _handleDisable2FA,
+                          ),
+                        )
+                      : null;
+
+              if (isNarrow) {
+                return Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            _is2faEnabled ? 'account.mfa_active'.tr(ref, fallback: '2FA Protection Active') : 'account.mfa_disabled'.tr(ref, fallback: '2FA Protection Disabled'),
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                            ),
+                          Icon(
+                            _is2faEnabled ? Icons.verified_user_rounded : Icons.gpp_maybe_rounded,
+                            size: 32,
+                            color: _is2faEnabled ? AppColors.success : AppColors.warning,
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              color: (_is2faEnabled ? AppColors.success : AppColors.warning).withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(100),
-                            ),
-                            child: Text(
-                              _is2faEnabled ? 'badge.active'.tr(ref, fallback: 'Active') : 'account.mfa_unprotected'.tr(ref, fallback: 'Unprotected'),
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                                color: _is2faEnabled ? AppColors.success : AppColors.warning,
-                              ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    titleText,
+                                    badgeWidget,
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                descText,
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _is2faEnabled
-                            ? 'Your account is secured via $_currentProvider verification.'
-                            : 'account.mfa_desc'.tr(ref, fallback: 'Enable two-factor authentication to safeguard your organization workspace from unauthorized access.'),
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
-                        ),
-                      ),
+                      if (actionButton != null) ...[
+                        const SizedBox(height: 14),
+                        actionButton,
+                      ],
                     ],
                   ),
+                );
+              }
+
+              return Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
                 ),
-                if (!_is2faEnabled && !_isConfiguring) ...[
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 130,
-                    child: PrimaryButton(
-                      text: 'account.enable_2fa'.tr(ref, fallback: 'Enable 2FA'),
-                      height: 42,
-                      onPressed: () => _startConfiguration('GoogleAuthenticator'),
+                child: Row(
+                  children: [
+                    Icon(
+                      _is2faEnabled ? Icons.verified_user_rounded : Icons.gpp_maybe_rounded,
+                      size: 36,
+                      color: _is2faEnabled ? AppColors.success : AppColors.warning,
                     ),
-                  ),
-                ] else if (_is2faEnabled && !_isConfiguring) ...[
-                  const SizedBox(width: 12),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.lock_open_rounded, size: 16, color: AppColors.error),
-                    label: Text('account.disable_2fa'.tr(ref, fallback: 'Disable 2FA'), style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 12)),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              titleText,
+                              badgeWidget,
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          descText,
+                        ],
+                      ),
                     ),
-                    onPressed: _handleDisable2FA,
-                  ),
-                ],
-              ],
-            ),
+                    if (actionButton != null) ...[
+                      const SizedBox(width: 14),
+                      actionButton,
+                    ],
+                  ],
+                ),
+              );
+            },
           ),
           const SizedBox(height: 20),
 
@@ -431,14 +500,16 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                   ),
                   const SizedBox(height: 20),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 12,
+                    runSpacing: 10,
                     children: [
                       TextButton(
                         onPressed: () => setState(() => _isConfiguring = false),
                         child: Text('btn.cancel'.tr(ref, fallback: 'Cancel')),
                       ),
-                      const SizedBox(width: 12),
                       SizedBox(
                         width: 160,
                         child: PrimaryButton(
