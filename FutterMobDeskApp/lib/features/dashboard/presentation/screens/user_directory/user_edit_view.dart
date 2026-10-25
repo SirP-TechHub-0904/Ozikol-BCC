@@ -54,6 +54,7 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
   String? _selectedCategoryId;
   String _selectedRole = 'Member';
 
+  List<String> _titleOptions = ['Mr.', 'Mrs.', 'Ms.', 'Dr.', 'Prof.', 'Engr.', 'Chief', 'Rev.', 'Pastor'];
   List<Map<String, dynamic>> _categories = [];
   bool _isLoading = false;
   bool _isSaving = false;
@@ -76,7 +77,27 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
     _phoneController = TextEditingController(text: m['phoneNumber']?.toString() ?? '');
     _designationController = TextEditingController(text: m['designation']?.toString() ?? 'Member');
 
-    _selectedTitle = m['title']?.toString();
+    final rawTitle = m['title']?.toString().trim();
+    if (rawTitle != null && rawTitle.isNotEmpty) {
+      final clean = rawTitle.replaceAll('.', '').toLowerCase();
+      if (clean == 'mr') {
+        _selectedTitle = 'Mr.';
+      } else if (clean == 'mrs') {
+        _selectedTitle = 'Mrs.';
+      } else if (clean == 'ms') {
+        _selectedTitle = 'Ms.';
+      } else if (clean == 'dr') {
+        _selectedTitle = 'Dr.';
+      } else if (clean == 'prof') {
+        _selectedTitle = 'Prof.';
+      } else if (clean == 'engr') {
+        _selectedTitle = 'Engr.';
+      } else {
+        _selectedTitle = rawTitle;
+      }
+    } else {
+      _selectedTitle = null;
+    }
     _selectedGender = (m['gender'] is int) ? m['gender'] as int : 0;
     _selectedCategoryId = m['bcpUserCategoryId']?.toString();
 
@@ -107,17 +128,33 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
   }
 
   /// <summary>
-  /// Loads available categories from UsersApi.
+  /// Loads available categories and title settings from UsersApi.
   /// </summary>
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
     final repo = ref.read(accountRepositoryProvider);
 
     try {
-      final cats = await repo.getCategories();
+      final results = await Future.wait([
+        repo.getUserSettings(),
+        repo.getCategories(),
+      ]);
+      final settings = results[0] as Map<String, dynamic>?;
+      final cats = results[1] as List<Map<String, dynamic>>?;
+
       if (mounted) {
         setState(() {
-          _categories = cats;
+          if (settings != null) {
+            final rawTitles = settings['preFilledTitles'];
+            if (rawTitles is List) {
+              _titleOptions = rawTitles.map((e) => e.toString()).toList();
+            } else if (rawTitles is String && rawTitles.isNotEmpty) {
+              _titleOptions = rawTitles.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+            }
+          }
+          if (cats != null) {
+            _categories = cats;
+          }
           _isLoading = false;
         });
       }
@@ -334,18 +371,15 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: 86,
+                width: 96,
                 child: CustomDropdownField<String?>(
                   label: 'Title',
                   value: _selectedTitle,
-                  items: const [
-                    DropdownMenuItem(value: null, child: Text('None')),
-                    DropdownMenuItem(value: 'Mr.', child: Text('Mr.')),
-                    DropdownMenuItem(value: 'Mrs.', child: Text('Mrs.')),
-                    DropdownMenuItem(value: 'Ms.', child: Text('Ms.')),
-                    DropdownMenuItem(value: 'Dr.', child: Text('Dr.')),
-                    DropdownMenuItem(value: 'Prof.', child: Text('Prof.')),
-                    DropdownMenuItem(value: 'Engr.', child: Text('Engr.')),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('None')),
+                    ..._titleOptions.map(
+                      (t) => DropdownMenuItem(value: t, child: Text(t)),
+                    ),
                   ],
                   onChanged: (val) => setState(() => _selectedTitle = val),
                 ),

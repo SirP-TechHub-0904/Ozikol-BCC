@@ -81,6 +81,30 @@ class CustomDropdownField<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Resilience Guard: Deduplicate items and ensure non-null value exists in items
+    // to strictly prevent Flutter's DropdownButton assertion crash:
+    // 'items == null || items.isEmpty || (initialValue == null && ...)'
+    final List<DropdownMenuItem<T>> safeItems = [];
+    final Set<T?> seenValues = {};
+
+    for (final item in items) {
+      if (seenValues.add(item.value)) {
+        safeItems.add(item);
+      }
+    }
+
+    if (value != null && !seenValues.contains(value)) {
+      safeItems.add(
+        DropdownMenuItem<T>(
+          value: value as T,
+          child: Text(
+            value.toString(),
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -100,7 +124,7 @@ class CustomDropdownField<T> extends StatelessWidget {
         // Standardized Dropdown Input Decorator
         DropdownButtonFormField<T>(
           initialValue: value,
-          items: items,
+          items: safeItems,
           onChanged: enabled ? onChanged : null,
           validator: validator,
           isExpanded: isExpanded,
