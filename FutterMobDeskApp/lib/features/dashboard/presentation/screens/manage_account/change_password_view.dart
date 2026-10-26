@@ -67,28 +67,76 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
     super.dispose();
   }
 
+  /// Displays a floating bottom SnackBar notification for user action feedback.
+  ///
+  /// <param name="message">The status message to present.</param>
+  /// <param name="isSuccess">True if operation succeeded, false if error.</param>
+  void _showBottomAlert(String message, {required bool isSuccess}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isSuccess ? AppColors.success : AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  /// Validates and submits the password change request to the API, displaying
+  /// immediate dual-level feedback (inline card alert and bottom floating notification).
   Future<void> _handleChangePassword() async {
     final oldPassword = _oldPasswordController.text;
     final newPassword = _newPasswordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
     if (oldPassword.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your current active password.');
+      final msg = 'account.enter_current_password'.tr(ref, fallback: 'Please enter your current active password.');
+      setState(() => _errorMessage = msg);
+      _showBottomAlert(msg, isSuccess: false);
       return;
     }
 
     if (!_hasMinLength || !_hasUppercase || !_hasNumber || !_hasSpecialChar) {
-      setState(() => _errorMessage = 'New password does not satisfy all complexity requirements.');
+      final msg = 'account.complexity_unmet'.tr(ref, fallback: 'New password does not satisfy all complexity requirements.');
+      setState(() => _errorMessage = msg);
+      _showBottomAlert(msg, isSuccess: false);
       return;
     }
 
     if (newPassword != confirmPassword) {
-      setState(() => _errorMessage = 'New password and confirmation do not match.');
+      final msg = 'account.passwords_do_not_match'.tr(ref, fallback: 'New password and confirmation do not match.');
+      setState(() => _errorMessage = msg);
+      _showBottomAlert(msg, isSuccess: false);
       return;
     }
 
     if (newPassword == oldPassword) {
-      setState(() => _errorMessage = 'New password cannot be identical to your current password.');
+      final msg = 'account.passwords_identical'.tr(ref, fallback: 'New password cannot be identical to your current password.');
+      setState(() => _errorMessage = msg);
+      _showBottomAlert(msg, isSuccess: false);
       return;
     }
 
@@ -110,18 +158,24 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
       _newPasswordController.clear();
       _confirmPasswordController.clear();
 
+      final successMsg = 'account.password_update_success'.tr(ref, fallback: 'Your password was successfully updated.');
       setState(() {
         _isSubmitting = false;
-        _successMessage = 'Your password was successfully updated.';
+        _successMessage = successMsg;
       });
+
+      // Show bottom alert banner so user doesn't need to scroll to top
+      _showBottomAlert(successMsg, isSuccess: true);
 
       // Synchronize in-app notification center feed immediately
       ref.read(notificationProvider.notifier).loadFeed();
     } catch (e) {
+      final errorMsg = WorkspaceNotifier.sanitizeError(e);
       setState(() {
         _isSubmitting = false;
-        _errorMessage = WorkspaceNotifier.sanitizeError(e);
+        _errorMessage = errorMsg;
       });
+      _showBottomAlert(errorMsg, isSuccess: false);
     }
   }
 
@@ -294,18 +348,58 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
                     autofillHints: const [AutofillHints.newPassword],
                     onSubmitted: (_) => _handleChangePassword(),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: SizedBox(
-                      width: 170,
-                      child: PrimaryButton(
-                        text: 'account.update_password'.tr(ref, fallback: 'Update Password'),
-                        isLoading: _isSubmitting,
-                        onPressed: _handleChangePassword,
+                  // Bottom inline alert directly above the action button so user sees immediate feedback without scrolling
+                  if (_successMessage != null || _errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      decoration: BoxDecoration(
+                        color: (_successMessage != null ? AppColors.success : AppColors.error).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: (_successMessage != null ? AppColors.success : AppColors.error).withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _successMessage != null ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
+                            size: 18,
+                            color: _successMessage != null ? AppColors.success : AppColors.error,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _successMessage ?? _errorMessage!,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: _successMessage != null ? AppColors.success : AppColors.error,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile = constraints.maxWidth < 450;
+                      return Align(
+                        alignment: isMobile ? Alignment.center : Alignment.centerRight,
+                        child: SizedBox(
+                          width: isMobile ? double.infinity : 170,
+                          child: PrimaryButton(
+                            text: 'account.update_password'.tr(ref, fallback: 'Update Password'),
+                            isLoading: _isSubmitting,
+                            onPressed: _handleChangePassword,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
