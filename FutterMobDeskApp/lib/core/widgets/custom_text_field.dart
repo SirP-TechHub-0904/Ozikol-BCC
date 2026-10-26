@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../localization/language_provider.dart';
 import '../theme/app_colors.dart';
 import 'app_snackbar.dart';
 
@@ -131,12 +132,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
         widget.onChanged?.call(pastedText);
       } else {
         if (mounted) {
-          AppSnackBar.showWarning(context, 'Clipboard is empty or does not contain text.');
+          AppSnackBar.showWarning(context, context.trc('ui.clipboard_empty', fallback: 'Clipboard is empty or does not contain text.'));
         }
       }
     } catch (_) {
       if (mounted) {
-        AppSnackBar.showError(context, 'Unable to read from clipboard.');
+        AppSnackBar.showError(context, context.trc('ui.clipboard_error', fallback: 'Unable to read from clipboard.'));
       }
     }
   }
@@ -148,7 +149,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Tooltip(
-              message: 'Paste from clipboard',
+              message: context.trc('ui.paste_clipboard', fallback: 'Paste from clipboard'),
               child: IconButton(
                 icon: const Icon(Icons.content_paste_rounded, size: 18),
                 color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
@@ -186,7 +187,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
       if (!hasText) {
         return Tooltip(
-          message: 'Paste from clipboard',
+          message: context.trc('ui.paste_clipboard', fallback: 'Paste from clipboard'),
           child: IconButton(
             icon: const Icon(Icons.content_paste_rounded, size: 20),
             color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
@@ -200,7 +201,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Tooltip(
-            message: 'Clear input',
+            message: context.trc('ui.clear_input', fallback: 'Clear input'),
             child: IconButton(
               icon: const Icon(Icons.close_rounded, size: 18),
               color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
@@ -212,7 +213,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
           ),
           Tooltip(
-            message: 'Paste to replace',
+            message: context.trc('ui.paste_replace', fallback: 'Paste to replace'),
             child: IconButton(
               icon: const Icon(Icons.content_paste_rounded, size: 18),
               color: AppColors.primary,

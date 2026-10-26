@@ -96,14 +96,14 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Revoke Device Session?'),
-        content: Text('Are you sure you want to log out "$deviceName"? The device will need to re-authenticate.'),
+        title: Text('ui.revoke_session_title'.tr(ref, fallback: 'Revoke Device Session?')),
+        content: Text('ui.revoke_session_desc'.tr(ref, fallback: 'Are you sure you want to log out "{device}"? The device will need to re-authenticate.').replaceAll('{device}', deviceName)),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text('ui.cancel'.tr(ref, fallback: 'Cancel'))),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Revoke Session'),
+            child: Text('ui.revoke_session'.tr(ref, fallback: 'Revoke Session')),
           ),
         ],
       ),
@@ -118,7 +118,7 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
       ref.read(notificationProvider.notifier).loadFeed();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Device session revoked successfully.')),
+          SnackBar(content: Text('ui.session_revoked'.tr(ref, fallback: 'Device session revoked successfully.'))),
         );
       }
     }
@@ -128,14 +128,14 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Terminate All Other Sessions?'),
-        content: const Text('This will immediately log out all connected devices except this current session.'),
+        title: Text('ui.terminate_title'.tr(ref, fallback: 'Terminate All Other Sessions?')),
+        content: Text('ui.terminate_desc'.tr(ref, fallback: 'This will immediately log out all connected devices except this current session.')),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text('ui.cancel'.tr(ref, fallback: 'Cancel'))),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Terminate Others'),
+            child: Text('ui.terminate_others'.tr(ref, fallback: 'Terminate Others')),
           ),
         ],
       ),
@@ -153,7 +153,7 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
       ref.read(notificationProvider.notifier).loadFeed();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All other remote device sessions terminated.')),
+          SnackBar(content: Text('ui.others_terminated'.tr(ref, fallback: 'All other remote device sessions terminated.'))),
         );
       }
     }
@@ -695,11 +695,11 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                       isDark: isDark,
                       trailing: IconButton(
                         icon: const Icon(Icons.copy_rounded, size: 16),
-                        tooltip: 'Copy IP',
+                        tooltip: 'ui.copy_ip'.tr(ref, fallback: 'Copy IP'),
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: ip));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('IP address copied to clipboard')),
+                            SnackBar(content: Text('ui.ip_copied'.tr(ref, fallback: 'IP address copied to clipboard'))),
                           );
                         },
                       ),
@@ -724,11 +724,11 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                         isDark: isDark,
                         trailing: IconButton(
                           icon: const Icon(Icons.copy_rounded, size: 16),
-                          tooltip: 'Copy Session ID',
+                          tooltip: 'ui.copy_session_id'.tr(ref, fallback: 'Copy Session ID'),
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: sessionId));
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Session ID copied to clipboard')),
+                              SnackBar(content: Text('ui.session_id_copied'.tr(ref, fallback: 'Session ID copied to clipboard'))),
                             );
                           },
                         ),
@@ -771,7 +771,7 @@ class _ManageDevicesViewState extends ConsumerState<ManageDevicesView> {
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
-                            child: const Text('Close', style: TextStyle(fontWeight: FontWeight.w600)),
+                            child: Text('ui.close'.tr(ref, fallback: 'Close'), style: const TextStyle(fontWeight: FontWeight.w600)),
                           ),
                         ),
                       ],

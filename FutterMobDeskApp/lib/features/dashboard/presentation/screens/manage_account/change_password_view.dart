@@ -302,7 +302,7 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
                   CustomTextField(
                     controller: _newPasswordController,
                     label: 'account.new_password'.tr(ref, fallback: 'New Password'),
-                    placeholder: 'Create a strong password',
+                    placeholder: 'ui.create_strong_password'.tr(ref, fallback: 'Create a strong password'),
                     prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                     isPassword: true,
                     showPasteButton: true,
@@ -341,7 +341,7 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
                   CustomTextField(
                     controller: _confirmPasswordController,
                     label: 'account.confirm_password'.tr(ref, fallback: 'Confirm New Password'),
-                    placeholder: 'Re-enter your new password',
+                    placeholder: 'auth.reenter_new_password'.tr(ref, fallback: 'Re-enter your new password'),
                     prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                     isPassword: true,
                     showPasteButton: true,

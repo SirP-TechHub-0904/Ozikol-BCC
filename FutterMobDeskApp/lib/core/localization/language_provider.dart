@@ -4,6 +4,7 @@
 /// Persists the user preference to SecureStorageService and triggers real-time UI updates.
 /// </summary>
 library;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../storage/secure_storage_service.dart';
 import 'app_translations.dart';
@@ -77,5 +78,29 @@ extension TranslationStringExtension on String {
   String trRead(WidgetRef ref, {String? fallback}) {
     final lang = ref.read(languageProvider);
     return AppTranslations.get(this, lang, fallback: fallback ?? this);
+  }
+}
+
+/// <summary>
+/// Translation helper for widgets that have a [BuildContext] but no Riverpod [WidgetRef]
+/// (plain Stateless/Stateful widgets such as tooltips and shared form controls).
+/// </summary>
+extension ContextTranslationExtension on BuildContext {
+  /// <summary>
+  /// Resolves a localized string using the active language from the enclosing [ProviderScope].
+  /// Falls back to <paramref name="fallback"/> when no scope exists (e.g. isolated widget tests).
+  /// </summary>
+  /// <param name="token">The dot-notated translation token key.</param>
+  /// <param name="fallback">English fallback text if the token or scope is unavailable.</param>
+  /// <returns>Localized string.</returns>
+  String trc(String token, {String? fallback}) {
+    try {
+      final container = ProviderScope.containerOf(this, listen: false);
+      final lang = container.read(languageProvider);
+      return AppTranslations.get(token, lang, fallback: fallback ?? token);
+    } catch (_) {
+      // No ProviderScope in the tree: degrade gracefully to the English fallback.
+      return fallback ?? token;
+    }
   }
 }

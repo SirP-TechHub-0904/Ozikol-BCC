@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/language_provider.dart';
 import '../theme/app_colors.dart';
 
 /// <summary>
@@ -283,8 +284,8 @@ class PageHeader extends StatelessWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 ...trailing,
-                if (onReplayTour != null) _buildTourButton(isDark),
-                if (secondaryActions.isNotEmpty) _buildOverflowMenu(isDark),
+                if (onReplayTour != null) _buildTourButton(context, isDark),
+                if (secondaryActions.isNotEmpty) _buildOverflowMenu(context, isDark),
                 if (primaryAction != null) _buildActionButton(primaryAction!, isDark, iconOnly: false, compactLabel: false, isMobile: true),
               ],
             ),
@@ -417,7 +418,7 @@ class PageHeader extends StatelessWidget {
   }) {
     final children = <Widget>[
       ...trailing,
-      if (onReplayTour != null) _buildTourButton(isDark),
+      if (onReplayTour != null) _buildTourButton(context, isDark),
       for (final a in secondaryActions)
         _buildActionButton(a, isDark, iconOnly: iconOnlySecondary, compactLabel: useCompactLabels),
       if (primaryAction != null)
@@ -433,9 +434,9 @@ class PageHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildTourButton(bool isDark) {
+  Widget _buildTourButton(BuildContext context, bool isDark) {
     return IconButton(
-      tooltip: 'Replay tour',
+      tooltip: context.trc('ui.replay_tour', fallback: 'Replay tour'),
       onPressed: onReplayTour,
       splashRadius: 18,
       icon: Icon(Icons.help_outline_rounded, size: 20, color: isDark ? AppColors.gray400 : AppColors.gray600),
@@ -531,9 +532,9 @@ class PageHeader extends StatelessWidget {
   }
 
   /// Compact-tier overflow (⋯) menu holding all secondary actions.
-  Widget _buildOverflowMenu(bool isDark) {
+  Widget _buildOverflowMenu(BuildContext context, bool isDark) {
     return PopupMenuButton<int>(
-      tooltip: 'More actions',
+      tooltip: context.trc('shell.more_actions', fallback: 'More actions'),
       icon: Icon(Icons.more_horiz_rounded, color: isDark ? AppColors.gray300 : AppColors.gray600),
       onSelected: (i) => secondaryActions[i].onPressed?.call(),
       itemBuilder: (context) => [

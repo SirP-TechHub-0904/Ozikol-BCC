@@ -180,7 +180,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
 
       if (mounted) {
         messenger.showSnackBar(
-          const SnackBar(content: Text('Two-Factor Authentication disabled.')),
+          SnackBar(content: Text('ui.twofa_disabled'.tr(ref, fallback: 'Two-Factor Authentication disabled.'))),
         );
       }
     } catch (e) {
@@ -515,12 +515,12 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                                   width: 165,
                                   height: 165,
                                   color: const Color(0xFFF8FAFC),
-                                  child: const Column(
+                                  child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.qr_code_2_rounded, size: 48, color: AppColors.gray400),
-                                      SizedBox(height: 6),
-                                      Text('Scan QR Code', style: TextStyle(fontSize: 11, color: AppColors.gray500)),
+                                      const Icon(Icons.qr_code_2_rounded, size: 48, color: AppColors.gray400),
+                                      const SizedBox(height: 6),
+                                      Text('ui.scan_qr'.tr(ref, fallback: 'Scan QR Code'), style: const TextStyle(fontSize: 11, color: AppColors.gray500)),
                                     ],
                                   ),
                                 ),
@@ -579,7 +579,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                             onPressed: () {
                               Clipboard.setData(ClipboardData(text: _secretKey!));
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Secret key copied to clipboard.')),
+                                SnackBar(content: Text('ui.secret_copied'.tr(ref, fallback: 'Secret key copied to clipboard.'))),
                               );
                             },
                           ),

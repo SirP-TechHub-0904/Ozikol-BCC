@@ -192,12 +192,12 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Row(
           children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
-            SizedBox(width: 8),
-            Text('Activity records exported to CSV in your Downloads folder.'),
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Text('ui.export_done'.tr(ref, fallback: 'Activity records exported to CSV in your Downloads folder.')),
           ],
         ),
       ),
@@ -287,7 +287,7 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+            child: Text('ui.close'.tr(ref, fallback: 'Close')),
           ),
         ],
       ),
@@ -528,35 +528,35 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
                     // Key Telemetry Tiles
                     _buildModalTile(
                       icon: Icons.schedule_rounded,
-                      label: 'Timestamp & Execution Time',
+                      label: 'ui.col_timestamp'.tr(ref, fallback: 'Timestamp & Execution Time'),
                       value: exactTime,
                       isDark: isDark,
                     ),
                     _buildModalTile(
                       icon: Icons.devices_rounded,
-                      label: 'Client Device & Platform',
+                      label: 'ui.col_client'.tr(ref, fallback: 'Client Device & Platform'),
                       value: browserDetails != null && browserDetails.isNotEmpty ? '$deviceTitle • $browserDetails' : deviceTitle,
                       isDark: isDark,
                     ),
                     _buildModalTile(
                       icon: Icons.language_rounded,
-                      label: 'IP Address',
+                      label: 'ui.col_ip'.tr(ref, fallback: 'IP Address'),
                       value: ip,
                       isDark: isDark,
                       trailing: IconButton(
                         icon: const Icon(Icons.copy_rounded, size: 16),
-                        tooltip: 'Copy IP',
+                        tooltip: 'ui.copy_ip'.tr(ref, fallback: 'Copy IP'),
                         onPressed: () {
                           Clipboard.setData(ClipboardData(text: ip));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('IP address copied to clipboard')),
+                            SnackBar(content: Text('ui.ip_copied'.tr(ref, fallback: 'IP address copied to clipboard'))),
                           );
                         },
                       ),
                     ),
                     _buildModalTile(
                       icon: Icons.category_rounded,
-                      label: 'System Module',
+                      label: 'ui.col_module'.tr(ref, fallback: 'System Module'),
                       value: module,
                       isDark: isDark,
                     ),
@@ -575,7 +575,7 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        child: const Text('Close', style: TextStyle(fontWeight: FontWeight.w600)),
+                        child: Text('ui.close'.tr(ref, fallback: 'Close'), style: const TextStyle(fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ],

@@ -44,15 +44,15 @@ class UserProfileEndDrawer extends ConsumerWidget {
     return name.substring(0, name.length >= 2 ? 2 : name.length).toUpperCase();
   }
 
-  String _getUserRoleBadge(Workspace? ws) {
-    if (ws == null) return 'Member';
+  String _getUserRoleBadge(Workspace? ws, WidgetRef ref) {
+    if (ws == null) return 'ui.role_member'.tr(ref, fallback: 'Member');
     if (ws.isSuperAdmin) return 'SuperAdmin';
     if (ws.isAdmin) return 'Admin';
     if (ws.userRoles.isNotEmpty) {
       final role = ws.userRoles.first;
       return role[0].toUpperCase() + role.substring(1);
     }
-    return 'Member';
+    return 'ui.role_member'.tr(ref, fallback: 'Member');
   }
 
   @override
@@ -72,7 +72,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
     final isAdministration = ws?.activeConsoleMode != 'workspace';
     final userName = (ws?.userFullName != null && ws!.userFullName!.trim().isNotEmpty)
         ? ws.userFullName!
-        : 'Workspace Member';
+        : 'ui.workspace_member'.tr(ref, fallback: 'Workspace Member');
     final userEmail = ws?.userEmail ?? '';
 
     return Drawer(
@@ -101,7 +101,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Close',
+                    tooltip: 'ui.close'.tr(ref, fallback: 'Close'),
                     icon: Icon(Icons.close_rounded, size: 22, color: subColor),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
@@ -199,7 +199,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
-                                    _getUserRoleBadge(ws),
+                                    _getUserRoleBadge(ws, ref),
                                     style: const TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w800,
@@ -301,7 +301,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
-                                        'Member',
+                                        'ui.role_member'.tr(ref, fallback: 'Member'),
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
@@ -391,7 +391,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
                                 const Icon(Icons.swap_horiz_rounded, size: 16, color: AppColors.primary),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Switch',
+                                  'ui.switch'.tr(ref, fallback: 'Switch'),
                                   style: const TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
@@ -424,10 +424,10 @@ class UserProfileEndDrawer extends ConsumerWidget {
                       isDark: isDark,
                       icon: Icons.person_outline_rounded,
                       title: 'profile.manage_account'.tr(ref, fallback: 'Manage Account & Profile'),
-                      subtitle: 'Edit name, photo, password',
+                      subtitle: 'ui.manage_account_desc'.tr(ref, fallback: 'Edit name, photo, password'),
                       onTap: () {
                         Navigator.of(context).pop();
-                        _showManageAccountDialog(context, isDark, ws);
+                        _showManageAccountDialog(context, isDark, ws, ref);
                       },
                     ),
 
@@ -440,7 +440,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
                       iconColor: const Color(0xFF16A34A),
                       iconBg: const Color(0xFF22C55E).withValues(alpha: 0.12),
                       title: 'profile.two_factor_auth'.tr(ref, fallback: 'Two-Factor Authentication (2FA)'),
-                      subtitle: 'Email, SMS, App OTP, WhatsApp',
+                      subtitle: 'ui.two_factor_desc'.tr(ref, fallback: 'Email, SMS, App OTP, WhatsApp'),
                       trailing: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
@@ -458,7 +458,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
                       ),
                       onTap: () {
                         Navigator.of(context).pop();
-                        _show2FaDialog(context, isDark, ws);
+                        _show2FaDialog(context, isDark, ws, ref);
                       },
                     ),
 
@@ -469,10 +469,10 @@ class UserProfileEndDrawer extends ConsumerWidget {
                       isDark: isDark,
                       icon: Icons.devices_rounded,
                       title: 'profile.linked_devices'.tr(ref, fallback: 'Linked Devices & Sessions'),
-                      subtitle: 'Active app, desktop & web logins',
+                      subtitle: 'ui.linked_devices_desc'.tr(ref, fallback: 'Active app, desktop & web logins'),
                       onTap: () {
                         Navigator.of(context).pop();
-                        _showLinkedDevicesDialog(context, isDark, ws);
+                        _showLinkedDevicesDialog(context, isDark, ws, ref);
                       },
                     ),
 
@@ -483,10 +483,10 @@ class UserProfileEndDrawer extends ConsumerWidget {
                       isDark: isDark,
                       icon: Icons.history_rounded,
                       title: 'profile.activity_logs'.tr(ref, fallback: 'User Activity Logs'),
-                      subtitle: 'Recent sign-ins & security audit',
+                      subtitle: 'ui.activity_logs_desc'.tr(ref, fallback: 'Recent sign-ins & security audit'),
                       onTap: () {
                         Navigator.of(context).pop();
-                        _showActivityLogsDialog(context, isDark, ws);
+                        _showActivityLogsDialog(context, isDark, ws, ref);
                       },
                     ),
 
@@ -510,7 +510,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: borderColor),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Row(
@@ -518,12 +518,12 @@ class UserProfileEndDrawer extends ConsumerWidget {
                               Icon(Icons.language_rounded, size: 18, color: AppColors.primary),
                               SizedBox(width: 10),
                               Text(
-                                'Display Language',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                                'ui.display_language'.tr(ref, fallback: 'Display Language'),
+                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
-                          OzLangSwitcher(),
+                          const OzLangSwitcher(),
                         ],
                       ),
                     ),
@@ -647,28 +647,28 @@ class UserProfileEndDrawer extends ConsumerWidget {
     );
   }
 
-  void _showManageAccountDialog(BuildContext context, bool isDark, Workspace? ws) {
+  void _showManageAccountDialog(BuildContext context, bool isDark, Workspace? ws, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.person_outline_rounded, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('Manage Profile & Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const Icon(Icons.person_outline_rounded, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text('ui.manage_profile_account'.tr(ref, fallback: 'Manage Profile & Account'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Full Name: ${ws?.userFullName ?? 'Workspace Member'}'),
+            Text('${'ui.full_name'.tr(ref, fallback: 'Full Name')}: ${ws?.userFullName ?? 'ui.workspace_member'.tr(ref, fallback: 'Workspace Member')}'),
             const SizedBox(height: 6),
-            Text('Email: ${ws?.userEmail ?? 'Not specified'}'),
+            Text('${'ui.email'.tr(ref, fallback: 'Email')}: ${ws?.userEmail ?? 'ui.not_specified'.tr(ref, fallback: 'Not specified')}'),
             const SizedBox(height: 6),
-            Text('Organization: ${ws?.displayName ?? 'Business Command Center'}'),
+            Text('${'ui.organization'.tr(ref, fallback: 'Organization')}: ${ws?.displayName ?? 'Business Command Center'}'),
             const SizedBox(height: 12),
             const Text(
               'Profile credentials, authentication methods, and notification preferences can be customized in the security center.',
@@ -679,24 +679,24 @@ class UserProfileEndDrawer extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+            child: Text('ui.close'.tr(ref, fallback: 'Close')),
           ),
         ],
       ),
     );
   }
 
-  void _show2FaDialog(BuildContext context, bool isDark, Workspace? ws) {
+  void _show2FaDialog(BuildContext context, bool isDark, Workspace? ws, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.shield_rounded, color: Color(0xFF16A34A)),
-            SizedBox(width: 8),
-            Text('Two-Factor Authentication', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const Icon(Icons.shield_rounded, color: Color(0xFF16A34A)),
+            const SizedBox(width: 8),
+            Text('profile.two_factor_auth'.tr(ref, fallback: 'Two-Factor Authentication'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ],
         ),
         content: Column(
@@ -720,7 +720,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Done'),
+            child: Text('ui.done'.tr(ref, fallback: 'Done')),
           ),
         ],
       ),
@@ -753,17 +753,17 @@ class UserProfileEndDrawer extends ConsumerWidget {
     );
   }
 
-  void _showLinkedDevicesDialog(BuildContext context, bool isDark, Workspace? ws) {
+  void _showLinkedDevicesDialog(BuildContext context, bool isDark, Workspace? ws, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.devices_rounded, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('Linked Devices & Sessions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const Icon(Icons.devices_rounded, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text('profile.linked_devices'.tr(ref, fallback: 'Linked Devices & Sessions'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ],
         ),
         content: Column(
@@ -780,7 +780,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+            child: Text('ui.close'.tr(ref, fallback: 'Close')),
           ),
         ],
       ),
@@ -822,17 +822,17 @@ class UserProfileEndDrawer extends ConsumerWidget {
     );
   }
 
-  void _showActivityLogsDialog(BuildContext context, bool isDark, Workspace? ws) {
+  void _showActivityLogsDialog(BuildContext context, bool isDark, Workspace? ws, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.history_rounded, color: AppColors.primary),
-            SizedBox(width: 8),
-            Text('User Activity Logs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const Icon(Icons.history_rounded, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text('profile.activity_logs'.tr(ref, fallback: 'User Activity Logs'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ],
         ),
         content: Column(
@@ -849,7 +849,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+            child: Text('ui.close'.tr(ref, fallback: 'Close')),
           ),
         ],
       ),

@@ -32,42 +32,48 @@ class PrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveBg = backgroundColor ?? AppColors.primary;
     final effectiveText = textColor ?? Colors.white;
-
-    final buttonContent = Row(
-      mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (isLoading) ...[
-          SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.2,
-              valueColor: AlwaysStoppedAnimation<Color>(effectiveText),
-            ),
-          ),
-          const SizedBox(width: 12),
-        ] else if (icon != null) ...[
-          icon!,
-          const SizedBox(width: 8),
-        ],
-        // Flexible + ellipsis prevents right overflow when the spinner and a long (or translated) label share the row.
-        Flexible(
-          child: Text(
-            text,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: effectiveText,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ),
-      ],
+    final labelStyle = TextStyle(
+      color: effectiveText,
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.3,
     );
+
+    // Builds the row content. The label is only made Flexible (with ellipsis) when the width is
+    // bounded, because flex children assert inside unbounded parents such as a plain Row.
+    // This prevents right-overflow when the spinner and a long (or translated) label share the row.
+    Widget buildContent(bool bounded) => Row(
+          mainAxisSize: isFullWidth ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isLoading) ...[
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation<Color>(effectiveText),
+                ),
+              ),
+              const SizedBox(width: 12),
+            ] else if (icon != null) ...[
+              icon!,
+              const SizedBox(width: 8),
+            ],
+            if (bounded)
+              Flexible(
+                child: Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: labelStyle,
+                ),
+              )
+            else
+              Text(text, style: labelStyle),
+          ],
+        );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -90,7 +96,7 @@ class PrimaryButton extends StatelessWidget {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24),
             ),
-            child: buttonContent,
+            child: buildContent(constraints.hasBoundedWidth || width != null),
           ),
         );
       },

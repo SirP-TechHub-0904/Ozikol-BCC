@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/central_adjuster.dart';
@@ -24,7 +25,7 @@ class WorkspaceHomeView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final ws = workspace;
-    final fullName = ws?.userFullName ?? 'Member';
+    final fullName = ws?.userFullName ?? 'ui.role_member'.tr(ref, fallback: 'Member');
 
     return CentralAdjuster.pageShell(
       child: Column(
@@ -62,7 +63,7 @@ class WorkspaceHomeView extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(
-                          ws?.organizationName ?? 'Workspace Member Portal',
+                          ws?.organizationName ?? 'ui.member_portal'.tr(ref, fallback: 'Workspace Member Portal'),
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -73,7 +74,7 @@ class WorkspaceHomeView extends ConsumerWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Welcome back, $fullName!',
+                        'ui.welcome_back'.tr(ref, fallback: 'Welcome back, {name}!').replaceAll('{name}', fullName),
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
@@ -82,7 +83,7 @@ class WorkspaceHomeView extends ConsumerWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Here is your personal workspace overview. Access your account credentials, security settings, and notifications.',
+                        'ui.home_overview_desc'.tr(ref, fallback: 'Here is your personal workspace overview. Access your account credentials, security settings, and notifications.'),
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.white.withValues(alpha: 0.85),
@@ -104,7 +105,7 @@ class WorkspaceHomeView extends ConsumerWidget {
 
           // 2. Quick Action Shortcuts Section
           Text(
-            'Quick Shortcuts',
+            'ui.quick_shortcuts'.tr(ref, fallback: 'Quick Shortcuts'),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -122,8 +123,8 @@ class WorkspaceHomeView extends ConsumerWidget {
               _buildShortcutCard(
                 context,
                 isDark: isDark,
-                title: 'My Profile',
-                subtitle: 'Personal details & contact info',
+                title: 'ui.my_profile'.tr(ref, fallback: 'My Profile'),
+                subtitle: 'ui.my_profile_desc'.tr(ref, fallback: 'Personal details & contact info'),
                 icon: Icons.account_circle_outlined,
                 color: const Color(0xFF0050E5),
                 onTap: () => onNavigate?.call(101), // My Account
@@ -131,8 +132,8 @@ class WorkspaceHomeView extends ConsumerWidget {
               _buildShortcutCard(
                 context,
                 isDark: isDark,
-                title: 'Change Password',
-                subtitle: 'Update your security credentials',
+                title: 'ui.change_password'.tr(ref, fallback: 'Change Password'),
+                subtitle: 'ui.change_password_desc'.tr(ref, fallback: 'Update your security credentials'),
                 icon: Icons.key_outlined,
                 color: const Color(0xFF0AB39C),
                 onTap: () => onNavigate?.call(102), // Change Password
@@ -140,8 +141,8 @@ class WorkspaceHomeView extends ConsumerWidget {
               _buildShortcutCard(
                 context,
                 isDark: isDark,
-                title: '2FA Security',
-                subtitle: 'Two-factor authenticator setup',
+                title: 'ui.twofa_security'.tr(ref, fallback: '2FA Security'),
+                subtitle: 'ui.twofa_security_desc'.tr(ref, fallback: 'Two-factor authenticator setup'),
                 icon: Icons.shield_outlined,
                 color: const Color(0xFFF7B84B),
                 onTap: () => onNavigate?.call(103), // 2FA Security
@@ -149,8 +150,8 @@ class WorkspaceHomeView extends ConsumerWidget {
               _buildShortcutCard(
                 context,
                 isDark: isDark,
-                title: 'Manage Devices',
-                subtitle: 'Review active connected sessions',
+                title: 'ui.manage_devices'.tr(ref, fallback: 'Manage Devices'),
+                subtitle: 'ui.manage_devices_desc'.tr(ref, fallback: 'Review active connected sessions'),
                 icon: Icons.devices_outlined,
                 color: const Color(0xFF38BDF8),
                 onTap: () => onNavigate?.call(104), // Manage Devices
@@ -175,7 +176,7 @@ class WorkspaceHomeView extends ConsumerWidget {
                     const Icon(Icons.security_rounded, size: 20, color: AppColors.primary),
                     const SizedBox(width: 8),
                     Text(
-                      'Account Security Status',
+                      'ui.security_status'.tr(ref, fallback: 'Account Security Status'),
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -185,13 +186,13 @@ class WorkspaceHomeView extends ConsumerWidget {
                     const Spacer(),
                     TextButton(
                       onPressed: () => onNavigate?.call(105), // Login Activity
-                      child: const Text('View Login History'),
+                      child: Text('ui.view_login_history'.tr(ref, fallback: 'View Login History')),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Your account was last accessed from your current device session. Review your connected devices regularly to maintain optimal workspace safety.',
+                  'ui.security_status_desc'.tr(ref, fallback: 'Your account was last accessed from your current device session. Review your connected devices regularly to maintain optimal workspace safety.'),
                   style: TextStyle(
                     fontSize: 13,
                     color: isDark ? AppColors.gray400 : AppColors.gray600,

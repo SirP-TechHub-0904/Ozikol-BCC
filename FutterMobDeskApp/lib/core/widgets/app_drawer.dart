@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/language_provider.dart';
 import '../theme/app_colors.dart';
 
 /// Standardized badge pills matching the Ozikol Central / Web Admin design system.
@@ -240,7 +241,7 @@ class AppDrawer extends StatelessWidget {
                     Expanded(child: header!),
                   if (!isPermanentSidebar)
                     IconButton(
-                      tooltip: 'Close Menu',
+                      tooltip: context.trc('shell.close_menu', fallback: 'Close Menu'),
                       onPressed: onClose ??
                           () {
                             if (Scaffold.maybeOf(context)?.isDrawerOpen ?? false) {

@@ -594,7 +594,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
           AppTopBarAction(
             icon: Icons.notifications_none_rounded,
-            tooltip: 'Notifications',
+            tooltip: 'shell.notifications'.tr(ref, fallback: 'Notifications'),
             badge: notifCount > 0
                 ? AppBadge(text: '$notifCount', backgroundColor: AppColors.error)
                 : null,
@@ -2123,48 +2123,48 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
 
     final items = isAdministration
-        ? const [
+        ? [
             BottomNavigationBarItem(
               icon: Icon(Icons.dashboard_outlined),
               activeIcon: Icon(Icons.dashboard_rounded),
-              label: 'Overview',
+              label: 'ui.tab_overview'.tr(ref, fallback: 'Overview'),
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.people_outline),
               activeIcon: Icon(Icons.people_rounded),
-              label: 'Members',
+              label: 'ui.tab_members'.tr(ref, fallback: 'Members'),
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.shield_outlined),
               activeIcon: Icon(Icons.shield_rounded),
-              label: 'Identity',
+              label: 'ui.tab_identity'.tr(ref, fallback: 'Identity'),
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.manage_accounts_outlined),
               activeIcon: Icon(Icons.manage_accounts_rounded),
-              label: 'Account',
+              label: 'ui.tab_account'.tr(ref, fallback: 'Account'),
             ),
           ]
-        : const [
+        : [
             BottomNavigationBarItem(
               icon: Icon(Icons.space_dashboard_outlined),
               activeIcon: Icon(Icons.space_dashboard_rounded),
-              label: 'Home',
+              label: 'ui.tab_home'.tr(ref, fallback: 'Home'),
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person_rounded),
-              label: 'Account',
+              label: 'ui.tab_account'.tr(ref, fallback: 'Account'),
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.security_outlined),
               activeIcon: Icon(Icons.security_rounded),
-              label: 'Security',
+              label: 'ui.tab_security'.tr(ref, fallback: 'Security'),
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.devices_outlined),
               activeIcon: Icon(Icons.devices_rounded),
-              label: 'Devices',
+              label: 'ui.tab_devices'.tr(ref, fallback: 'Devices'),
             ),
           ];
 
