@@ -801,8 +801,8 @@ class UserProfileEndDrawer extends ConsumerWidget {
               '${'ui.organization'.tr(ref, fallback: 'Organization')}: ${ws?.displayName ?? 'Business Command Center'}',
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Profile credentials, authentication methods, and notification preferences can be customized in the security center.',
+            Text(
+              'pr.sec_center'.tr(ref, fallback: 'Profile credentials, authentication methods, and notification preferences can be customized in the security center.'),
               style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
             ),
           ],
@@ -845,36 +845,36 @@ class UserProfileEndDrawer extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Secure your account with multi-channel one-time passcode verification.',
+            Text(
+              'pr.otp_desc'.tr(ref, fallback: 'Secure your account with multi-channel one-time passcode verification.'),
               style: TextStyle(fontSize: 12.5),
             ),
             const SizedBox(height: 14),
             _build2FaMethodRow(
               Icons.mail_outline_rounded,
-              'Email OTP Verification',
+              'pr.otp_email'.tr(ref, fallback: 'Email OTP Verification'),
               'Active • Primary',
               true,
             ),
             const SizedBox(height: 8),
             _build2FaMethodRow(
               Icons.sms_outlined,
-              'SMS Text Verification',
-              'Active',
+              'pr.otp_sms'.tr(ref, fallback: 'SMS Text Verification'),
+              'pr.active'.tr(ref, fallback: 'Active'),
               true,
             ),
             const SizedBox(height: 8),
             _build2FaMethodRow(
               Icons.app_registration_rounded,
               'Google / Microsoft Authenticator',
-              'Supported',
+              'pr.supported'.tr(ref, fallback: 'Supported'),
               true,
             ),
             const SizedBox(height: 8),
             _build2FaMethodRow(
               Icons.chat_bubble_outline_rounded,
-              'WhatsApp OTP Verification',
-              'Available',
+              'pr.otp_whatsapp'.tr(ref, fallback: 'WhatsApp OTP Verification'),
+              'pr.available'.tr(ref, fallback: 'Available'),
               true,
             ),
           ],
@@ -953,13 +953,15 @@ class UserProfileEndDrawer extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildDeviceRow(
+              ref,
               Icons.laptop_chromebook_rounded,
-              'Current Application Session',
+              'pr.current_session'.tr(ref, fallback: 'Current Application Session'),
               'Windows / Desktop • Active now',
               true,
             ),
             const SizedBox(height: 8),
             _buildDeviceRow(
+              ref,
               Icons.phone_android_rounded,
               'Mobile BCC App',
               'Android / iOS • Last seen today',
@@ -967,6 +969,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             _buildDeviceRow(
+              ref,
               Icons.public_rounded,
               'BCC Web Console',
               'Chrome on Windows • Active session',
@@ -985,6 +988,7 @@ class UserProfileEndDrawer extends ConsumerWidget {
   }
 
   Widget _buildDeviceRow(
+    WidgetRef ref,
     IconData icon,
     String title,
     String subtitle,
@@ -1039,8 +1043,8 @@ class UserProfileEndDrawer extends ConsumerWidget {
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text(
-                'Current',
+              child: Text(
+                'pr.current'.tr(ref, fallback: 'Current'),
                 style: TextStyle(
                   fontSize: 9,
                   color: Colors.white,
@@ -1079,21 +1083,21 @@ class UserProfileEndDrawer extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLogItem(
-              'Session Authenticated',
-              'Successful sign-in to workspace',
-              'Just now',
+              'pr.act_session'.tr(ref, fallback: 'Session Authenticated'),
+              'pr.act_session_desc'.tr(ref, fallback: 'Successful sign-in to workspace'),
+              'pr.just_now'.tr(ref, fallback: 'Just now'),
             ),
             const SizedBox(height: 6),
             _buildLogItem(
-              'Organization Verified',
-              'Resolved tenant catalog credentials',
+              'pr.act_org'.tr(ref, fallback: 'Organization Verified'),
+              'pr.act_org_desc'.tr(ref, fallback: 'Resolved tenant catalog credentials'),
               '1 hour ago',
             ),
             const SizedBox(height: 6),
             _buildLogItem(
               '2FA Token Validated',
-              'Email OTP confirmation completed',
-              'Today',
+              'pr.act_otp'.tr(ref, fallback: 'Email OTP confirmation completed'),
+              'pr.today'.tr(ref, fallback: 'Today'),
             ),
           ],
         ),

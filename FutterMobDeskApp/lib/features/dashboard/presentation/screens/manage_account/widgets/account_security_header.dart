@@ -183,7 +183,7 @@ class _AccountSecurityHeaderState extends ConsumerState<AccountSecurityHeader> {
         // 1. Top Page Header
         PageHeader(
           icon: Icons.manage_accounts_rounded,
-          eyebrow: 'IDENTITY & ACCESS GOVERNANCE',
+          eyebrow: context.trc('pr.eyebrow', fallback: 'IDENTITY & ACCESS GOVERNANCE'),
           title: 'account.title'.tr(ref, fallback: 'Account & Security Management'),
           description: 'account.subtitle'.tr(
             ref,

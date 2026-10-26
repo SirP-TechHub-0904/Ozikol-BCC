@@ -125,7 +125,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
         _isConfiguring = false;
         _is2faEnabled = true;
         _currentProvider = 'GoogleAuthenticator';
-        _successMessage = 'Two-Factor Authentication activated successfully.';
+        _successMessage = 'mfa.activated'.tr(ref, fallback: 'Two-Factor Authentication activated successfully.');
       });
 
       // Synchronize in-app notification center feed immediately
@@ -171,7 +171,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
         _is2faEnabled = false;
         _currentProvider = 'None';
         _isConfiguring = false;
-        _successMessage = 'Two-Factor Authentication disabled successfully.';
+        _successMessage = 'mfa.disabled'.tr(ref, fallback: 'Two-Factor Authentication disabled successfully.');
         _errorMessage = null;
       });
 
@@ -464,9 +464,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '1. Open Google Authenticator, Microsoft Authenticator, or 1Password on your mobile device.\n'
-                    '2. Scan the QR code or manually enter the secret setup key below.\n'
-                    '3. Enter the 6-digit confirmation code to complete activation.',
+                    'mfa.setup_steps'.tr(ref, fallback: '1. Open Google Authenticator, Microsoft Authenticator, or 1Password on your mobile device.\n2. Scan the QR code or manually enter the secret setup key below.\n3. Enter the 6-digit confirmation code to complete activation.'),
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.6,
@@ -530,8 +528,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                               ),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'Scan with your authenticator camera',
+                            Text('mfa.scan_caption'.tr(ref, fallback: 'Scan with your authenticator camera'),
                               style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
                             ),
                           ],
@@ -545,7 +542,7 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
-                            'OR ENTER KEY MANUALLY',
+                            'mfa.manual_key'.tr(ref, fallback: 'OR ENTER KEY MANUALLY'),
                             style: TextStyle(
                               fontSize: 10.5,
                               fontWeight: FontWeight.bold,

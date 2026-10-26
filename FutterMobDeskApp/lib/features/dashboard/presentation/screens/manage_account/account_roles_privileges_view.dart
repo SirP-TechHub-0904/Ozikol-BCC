@@ -110,7 +110,7 @@ class _AccountRolesPrivilegesViewState extends ConsumerState<AccountRolesPrivile
           AccountSectionCard(
             icon: Icons.verified_user_rounded,
             title: 'account.tab_roles'.tr(ref, fallback: 'Roles & Privileges'),
-            description: 'Overview of your assigned role privileges and authorization scope within this tenant.',
+            description: context.trc('pr.roles_desc', fallback: 'Overview of your assigned role privileges and authorization scope within this tenant.'),
             action: OutlinedButton.icon(
               onPressed: _loadRoles,
               style: OutlinedButton.styleFrom(
@@ -194,8 +194,8 @@ class _AccountRolesPrivilegesViewState extends ConsumerState<AccountRolesPrivile
                                           const SizedBox(height: 2),
                                           Text(
                                             isSuper
-                                                ? 'Full workspace administrative governance'
-                                                : 'Assigned administrative security credential',
+                                                ? context.trc('pr.role_super', fallback: 'Full workspace administrative governance')
+                                                : context.trc('pr.role_admin', fallback: 'Assigned administrative security credential'),
                                             style: TextStyle(
                                               fontSize: 11.5,
                                               color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -227,7 +227,7 @@ class _AccountRolesPrivilegesViewState extends ConsumerState<AccountRolesPrivile
                                     const Icon(Icons.domain_rounded, size: 18, color: AppColors.primary),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Tenant Authorization Scope',
+                                      context.trc('pr.scope_title', fallback: 'Tenant Authorization Scope'),
                                       style: TextStyle(
                                         fontSize: 13.5,
                                         fontWeight: FontWeight.w700,
@@ -241,10 +241,10 @@ class _AccountRolesPrivilegesViewState extends ConsumerState<AccountRolesPrivile
                                   spacing: 24,
                                   runSpacing: 10,
                                   children: [
-                                    _buildScopeItem('Tenant Name', ws?.organizationName ?? 'Default Organization', isDark),
-                                    _buildScopeItem('Tenant Key', ws?.tenantKey ?? 'default', isDark),
-                                    _buildScopeItem('Active Mode', ws?.activeConsoleMode ?? 'Administration', isDark),
-                                    _buildScopeItem('Authenticated As', _summary?['email'] ?? ws?.userEmail ?? 'account@domain.com', isDark),
+                                    _buildScopeItem(context.trc('pr.scope_name', fallback: 'Tenant Name'), ws?.organizationName ?? 'Default Organization', isDark),
+                                    _buildScopeItem(context.trc('pr.scope_key', fallback: 'Tenant Key'), ws?.tenantKey ?? 'default', isDark),
+                                    _buildScopeItem(context.trc('pr.scope_mode', fallback: 'Active Mode'), ws?.activeConsoleMode ?? 'Administration', isDark),
+                                    _buildScopeItem(context.trc('pr.scope_auth', fallback: 'Authenticated As'), _summary?['email'] ?? ws?.userEmail ?? 'account@domain.com', isDark),
                                   ],
                                 ),
                               ],
@@ -266,7 +266,7 @@ class _AccountRolesPrivilegesViewState extends ConsumerState<AccountRolesPrivile
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    'Need elevated privileges or additional feature roles? Contact your workspace Super Administrator to request permission adjustments.',
+                                    context.trc('pr.elevate', fallback: 'Need elevated privileges or additional feature roles? Contact your workspace Super Administrator to request permission adjustments.'),
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       color: isDark ? AppColors.gray300 : const Color(0xFF1E293B),
