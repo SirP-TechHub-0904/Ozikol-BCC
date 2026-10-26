@@ -261,6 +261,15 @@ namespace Ozikol_BCC.Api.Controllers
             user.EmailConfirmed = true;
             await _dbContext.SaveChangesAsync();
 
+            await NotifyUserAsync(
+                user.Id,
+                "Email Address Updated",
+                $"Your account email address was updated to '{cleanEmail}' successfully.",
+                "/identity/console/account?tab=overview",
+                NotificationSeverity.Success,
+                "mark_email_read"
+            );
+
             return Ok(ApiResponse<object>.SuccessResponse(new { newEmail = cleanEmail }, "Email address verified and updated successfully."));
         }
 

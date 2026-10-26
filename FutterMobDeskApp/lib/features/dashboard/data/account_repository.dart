@@ -768,6 +768,114 @@ class AccountRepository {
     }
   }
 
+  /// <summary>
+  /// Requests a 6-digit confirmation code sent to the new email address for updating account email.
+  /// </summary>
+  /// <param name="newEmail">The prospective new email address.</param>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> requestEmailChangeOtp(String newEmail) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/request-email-change-otp',
+        data: {'newEmail': newEmail.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Verification code sent to your new email address.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to send email change verification code'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Confirms email change with the 6-digit OTP code and updates the account email.
+  /// </summary>
+  /// <param name="newEmail">The new verified email address.</param>
+  /// <param name="otp">6-digit confirmation code.</param>
+  /// <returns>A map containing success flag, updated email, and server response message.</returns>
+  Future<Map<String, dynamic>> confirmEmailChange(String newEmail, String otp) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/confirm-email-change',
+        data: {'newEmail': newEmail.trim(), 'otp': otp.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Email address verified and updated successfully.',
+        'newEmail': newEmail.trim(),
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to confirm email change'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Requests a 6-digit SMS confirmation code sent to the new mobile phone for updating phone number.
+  /// </summary>
+  /// <param name="newPhoneNumber">The prospective new phone number.</param>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> requestPhoneChangeOtp(String newPhoneNumber) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/request-phone-change-otp',
+        data: {'newPhoneNumber': newPhoneNumber.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'SMS verification code sent to your new mobile phone.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to send SMS verification code'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Confirms mobile phone change with the 6-digit SMS OTP code and updates the account phone number.
+  /// </summary>
+  /// <param name="newPhoneNumber">The new verified phone number.</param>
+  /// <param name="otp">6-digit SMS confirmation code.</param>
+  /// <returns>A map containing success flag, updated phone number, and server response message.</returns>
+  Future<Map<String, dynamic>> confirmPhoneChange(String newPhoneNumber, String otp) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/confirm-phone-change',
+        data: {'newPhoneNumber': newPhoneNumber.trim(), 'otp': otp.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Mobile phone verified and updated successfully.',
+        'newPhoneNumber': newPhoneNumber.trim(),
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to confirm mobile phone change'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
 
   /// <summary>
   /// Fetches personal security and workspace activity audit log history.

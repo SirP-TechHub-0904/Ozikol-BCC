@@ -361,6 +361,638 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
     }
   }
 
+  /// <summary>
+  /// Displays the interactive modal dialog/sheet for changing the account primary email address.
+  /// Handles new email entry, OTP dispatch, 6-digit confirmation, and real-time state updates.
+  /// </summary>
+  void _showChangeEmailModal() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final newEmailController = TextEditingController();
+    final otpController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        int step = 1;
+        bool isBusy = false;
+        String? modalError;
+        String targetEmail = '';
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 520),
+                margin: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 20,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Drag Handle
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Header with Icon
+                        Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.mark_email_read_outlined,
+                                color: AppColors.primary,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    step == 1 ? 'Change Email Address' : 'Verify New Email',
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    step == 1
+                                        ? 'Enter your new email address to receive a verification code.'
+                                        : 'Enter the 6-digit confirmation code sent to your new email.',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 20),
+                              onPressed: () => Navigator.pop(modalContext),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Current email info chip
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline_rounded,
+                                size: 16,
+                                color: isDark ? AppColors.gray400 : AppColors.gray600,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Current Email: ',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  _emailController.text,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Error Banner inside modal
+                        if (modalError != null) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    modalError!,
+                                    style: const TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        if (step == 1) ...[
+                          // Step 1: Input New Email
+                          CustomTextField(
+                            label: 'New Email Address',
+                            placeholder: 'name@company.com',
+                            controller: newEmailController,
+                            keyboardType: TextInputType.emailAddress,
+                            prefixIcon: const Icon(Icons.alternate_email_rounded, size: 18),
+                          ),
+                          const SizedBox(height: 24),
+
+                          SizedBox(
+                            width: double.infinity,
+                            child: PrimaryButton(
+                              text: isBusy ? 'Sending Code...' : 'Send Verification Code',
+                              icon: isBusy
+                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.send_rounded, size: 16),
+                              onPressed: isBusy
+                                  ? null
+                                  : () async {
+                                      final rawEmail = newEmailController.text.trim();
+                                      if (rawEmail.isEmpty || !rawEmail.contains('@') || !rawEmail.contains('.')) {
+                                        setModalState(() => modalError = 'Please enter a valid email address.');
+                                        return;
+                                      }
+                                      if (rawEmail.toLowerCase() == _emailController.text.trim().toLowerCase()) {
+                                        setModalState(() => modalError = 'New email must be different from current email.');
+                                        return;
+                                      }
+
+                                      setModalState(() {
+                                        isBusy = true;
+                                        modalError = null;
+                                      });
+
+                                      final repo = ref.read(accountRepositoryProvider);
+                                      final res = await repo.requestEmailChangeOtp(rawEmail);
+
+                                      if (!context.mounted) return;
+                                      setModalState(() {
+                                        isBusy = false;
+                                        if (res['success'] == true) {
+                                          targetEmail = rawEmail;
+                                          step = 2;
+                                          modalError = null;
+                                        } else {
+                                          modalError = res['message']?.toString() ?? 'Failed to send verification code.';
+                                        }
+                                      });
+                                    },
+                            ),
+                          ),
+                        ] else ...[
+                          // Step 2: Input 6-Digit OTP
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.email_outlined, color: AppColors.primary, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Code sent to $targetEmail',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: isBusy ? null : () => setModalState(() { step = 1; modalError = null; }),
+                                  child: const Text('Change', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary, decoration: TextDecoration.underline)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          CustomTextField(
+                            label: '6-Digit Verification Code',
+                            placeholder: '000000',
+                            controller: otpController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(6),
+                            ],
+                            prefixIcon: const Icon(Icons.pin_outlined, size: 18),
+                          ),
+                          const SizedBox(height: 24),
+
+                          SizedBox(
+                            width: double.infinity,
+                            child: PrimaryButton(
+                              text: isBusy ? 'Verifying...' : 'Verify & Update Email',
+                              icon: isBusy
+                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.check_circle_outline_rounded, size: 16),
+                              onPressed: isBusy
+                                  ? null
+                                  : () async {
+                                      final code = otpController.text.trim();
+                                      if (code.length != 6) {
+                                        setModalState(() => modalError = 'Please enter a valid 6-digit confirmation code.');
+                                        return;
+                                      }
+
+                                      setModalState(() {
+                                        isBusy = true;
+                                        modalError = null;
+                                      });
+
+                                      final repo = ref.read(accountRepositoryProvider);
+                                      final res = await repo.confirmEmailChange(targetEmail, code);
+
+                                      if (!context.mounted) return;
+                                      if (res['success'] == true) {
+                                        Navigator.pop(modalContext);
+                                        setState(() {
+                                          _emailController.text = targetEmail;
+                                          _emailConfirmed = true;
+                                        });
+                                        ref.read(notificationProvider.notifier).loadFeed();
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: const [
+                                                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                                                SizedBox(width: 10),
+                                                Expanded(child: Text('Primary email address updated and verified successfully!')),
+                                              ],
+                                            ),
+                                            backgroundColor: AppColors.success,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          ),
+                                        );
+                                      } else {
+                                        setModalState(() {
+                                          isBusy = false;
+                                          modalError = res['message']?.toString() ?? 'Invalid or expired confirmation code.';
+                                        });
+                                      }
+                                    },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// <summary>
+  /// Displays the interactive modal dialog/sheet for updating and verifying the member mobile phone.
+  /// Handles new phone number entry, SMS OTP dispatch, 6-digit confirmation, and real-time state updates.
+  /// </summary>
+  void _showUpdatePhoneModal() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final newPhoneController = TextEditingController(text: _phoneController.text.trim());
+    final otpController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        int step = 1;
+        bool isBusy = false;
+        String? modalError;
+        String targetPhone = '';
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 520),
+                margin: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 20,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Drag Handle
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Header with Icon
+                        Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.phone_android_rounded,
+                                color: AppColors.primary,
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    step == 1 ? 'Update Mobile Phone' : 'Verify Mobile Phone',
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    step == 1
+                                        ? 'Enter your mobile phone number to receive an SMS verification code.'
+                                        : 'Enter the 6-digit SMS verification code sent to your phone.',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 20),
+                              onPressed: () => Navigator.pop(modalContext),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Error Banner inside modal
+                        if (modalError != null) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    modalError!,
+                                    style: const TextStyle(fontSize: 12, color: AppColors.error, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        if (step == 1) ...[
+                          // Step 1: Input New Phone
+                          CustomTextField(
+                            label: 'Mobile Phone Number',
+                            placeholder: 'e.g. +0 (000) 000-0000',
+                            controller: newPhoneController,
+                            keyboardType: TextInputType.phone,
+                            prefixIcon: const Icon(Icons.phone_outlined, size: 18),
+                          ),
+                          const SizedBox(height: 24),
+
+                          SizedBox(
+                            width: double.infinity,
+                            child: PrimaryButton(
+                              text: isBusy ? 'Sending SMS...' : 'Send SMS Verification Code',
+                              icon: isBusy
+                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.sms_outlined, size: 16),
+                              onPressed: isBusy
+                                  ? null
+                                  : () async {
+                                      final rawPhone = newPhoneController.text.trim();
+                                      if (rawPhone.isEmpty || rawPhone.length < 7) {
+                                        setModalState(() => modalError = 'Please enter a valid mobile phone number.');
+                                        return;
+                                      }
+
+                                      setModalState(() {
+                                        isBusy = true;
+                                        modalError = null;
+                                      });
+
+                                      final repo = ref.read(accountRepositoryProvider);
+                                      final res = await repo.requestPhoneChangeOtp(rawPhone);
+
+                                      if (!context.mounted) return;
+                                      setModalState(() {
+                                        isBusy = false;
+                                        if (res['success'] == true) {
+                                          targetPhone = rawPhone;
+                                          step = 2;
+                                          modalError = null;
+                                        } else {
+                                          modalError = res['message']?.toString() ?? 'Failed to send SMS verification code.';
+                                        }
+                                      });
+                                    },
+                            ),
+                          ),
+                        ] else ...[
+                          // Step 2: Input 6-Digit SMS OTP
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.sms_outlined, color: AppColors.primary, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'SMS code sent to $targetPhone',
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: isBusy ? null : () => setModalState(() { step = 1; modalError = null; }),
+                                  child: const Text('Change', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary, decoration: TextDecoration.underline)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          CustomTextField(
+                            label: '6-Digit SMS Code',
+                            placeholder: '000000',
+                            controller: otpController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(6),
+                            ],
+                            prefixIcon: const Icon(Icons.pin_outlined, size: 18),
+                          ),
+                          const SizedBox(height: 24),
+
+                          SizedBox(
+                            width: double.infinity,
+                            child: PrimaryButton(
+                              text: isBusy ? 'Verifying...' : 'Verify & Update Phone',
+                              icon: isBusy
+                                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                  : const Icon(Icons.check_circle_outline_rounded, size: 16),
+                              onPressed: isBusy
+                                  ? null
+                                  : () async {
+                                      final code = otpController.text.trim();
+                                      if (code.length != 6) {
+                                        setModalState(() => modalError = 'Please enter a valid 6-digit SMS verification code.');
+                                        return;
+                                      }
+
+                                      setModalState(() {
+                                        isBusy = true;
+                                        modalError = null;
+                                      });
+
+                                      final repo = ref.read(accountRepositoryProvider);
+                                      final res = await repo.confirmPhoneChange(targetPhone, code);
+
+                                      if (!context.mounted) return;
+                                      if (res['success'] == true) {
+                                        Navigator.pop(modalContext);
+                                        setState(() {
+                                          _phoneController.text = targetPhone;
+                                          _phoneConfirmed = true;
+                                        });
+                                        ref.read(notificationProvider.notifier).loadFeed();
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Row(
+                                              children: const [
+                                                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                                                SizedBox(width: 10),
+                                                Expanded(child: Text('Mobile phone number updated and verified successfully!')),
+                                              ],
+                                            ),
+                                            backgroundColor: AppColors.success,
+                                            behavior: SnackBarBehavior.floating,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          ),
+                                        );
+                                      } else {
+                                        setModalState(() {
+                                          isBusy = false;
+                                          modalError = res['message']?.toString() ?? 'Invalid or expired SMS verification code.';
+                                        });
+                                      }
+                                    },
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   String get _initials {
     final f = _firstNameController.text.isNotEmpty ? _firstNameController.text[0] : '';
     final l = _lastNameController.text.isNotEmpty ? _lastNameController.text[0] : '';
@@ -1064,11 +1696,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                               ),
                             ),
                           OutlinedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Email change requested. Use verified credentials.')),
-                              );
-                            },
+                            onPressed: _showChangeEmailModal,
                             icon: const Icon(Icons.edit_outlined, size: 14),
                             label: const Text('Change Email', style: TextStyle(fontSize: 12)),
                             style: OutlinedButton.styleFrom(
@@ -1111,11 +1739,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                         const SizedBox(width: 8),
                       ],
                       OutlinedButton.icon(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Email change requested. Use verified credentials.')),
-                          );
-                        },
+                        onPressed: _showChangeEmailModal,
                         icon: const Icon(Icons.edit_outlined, size: 14),
                         label: const Text('Change Email', style: TextStyle(fontSize: 12)),
                         style: OutlinedButton.styleFrom(
@@ -1496,11 +2120,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                               ),
                             ),
                           OutlinedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Edit phone number in Personal Identity details above.')),
-                              );
-                            },
+                            onPressed: _showUpdatePhoneModal,
                             icon: const Icon(Icons.edit_outlined, size: 14),
                             label: const Text('Update Phone', style: TextStyle(fontSize: 12)),
                             style: OutlinedButton.styleFrom(
@@ -1545,11 +2165,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
                         const SizedBox(width: 8),
                       ],
                       OutlinedButton.icon(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Edit phone number in Personal Identity details above.')),
-                          );
-                        },
+                        onPressed: _showUpdatePhoneModal,
                         icon: const Icon(Icons.edit_outlined, size: 14),
                         label: const Text('Update Phone', style: TextStyle(fontSize: 12)),
                         style: OutlinedButton.styleFrom(
