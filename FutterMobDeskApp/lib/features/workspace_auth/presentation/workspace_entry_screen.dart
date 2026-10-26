@@ -135,24 +135,24 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     AppTourDialog.show(
       context,
       screenKey: 'workspace_landing',
-      screenTitle: 'Workspace Access & Landing Tour',
-      steps: const [
+      screenTitle: 'entry.tour_title'.tr(ref, fallback: 'Workspace Access & Landing Tour'),
+      steps: [
         TourStep(
-          title: 'Enter Organization Access Code or URL',
+          title: 'entry.tour1_title'.tr(ref, fallback: 'Enter Organization Access Code or URL'),
           description:
-              'Type your organization access code or custom URL (e.g. access code or domain.com) to securely connect to your workspace.',
+              'entry.tour1_desc'.tr(ref, fallback: 'Type your organization access code or custom URL (e.g. access code or domain.com) to securely connect to your workspace.'),
           icon: Icons.apartment_rounded,
         ),
         TourStep(
-          title: 'Direct Multi-Tenant Security',
+          title: 'entry.tour2_title'.tr(ref, fallback: 'Direct Multi-Tenant Security'),
           description:
-              'Each workspace connects to an isolated secure partition with custom security policies and branding.',
+              'entry.tour2_desc'.tr(ref, fallback: 'Each workspace connects to an isolated secure partition with custom security policies and branding.'),
           icon: Icons.security_rounded,
         ),
         TourStep(
-          title: 'Instant Multi-Workspace Switching',
+          title: 'entry.tour3_title'.tr(ref, fallback: 'Instant Multi-Workspace Switching'),
           description:
-              'Seamlessly jump between multiple enrolled organizations without re-entering credentials.',
+              'entry.tour3_desc'.tr(ref, fallback: 'Seamlessly jump between multiple enrolled organizations without re-entering credentials.'),
           icon: Icons.swap_horiz_rounded,
         ),
       ],
@@ -843,11 +843,11 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                         // 3 Bottom Cards (Plain, Natural English)
                         Row(
                           children: [
-                            _buildFeatureCard('Fast & Secure', 'Encrypted workspace', Icons.shield_outlined),
+                            _buildFeatureCard('entry.feat1_title'.tr(ref, fallback: 'Fast & Secure'), 'entry.feat1_sub'.tr(ref, fallback: 'Encrypted workspace'), Icons.shield_outlined),
                             const SizedBox(width: 14),
-                            _buildFeatureCard('Always Synced', 'Across all devices', Icons.sync_rounded),
+                            _buildFeatureCard('entry.feat2_title'.tr(ref, fallback: 'Always Synced'), 'entry.feat2_sub'.tr(ref, fallback: 'Across all devices'), Icons.sync_rounded),
                             const SizedBox(width: 14),
-                            _buildFeatureCard('24/7 Available', 'Work anytime', Icons.access_time_rounded),
+                            _buildFeatureCard('entry.feat3_title'.tr(ref, fallback: '24/7 Available'), 'entry.feat3_sub'.tr(ref, fallback: 'Work anytime'), Icons.access_time_rounded),
                           ],
                         ),
                       ],
@@ -896,7 +896,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _isOnline ? 'Online' : 'Offline',
+                                _isOnline ? 'entry.online'.tr(ref, fallback: 'Online') : 'entry.offline'.tr(ref, fallback: 'Offline'),
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -914,7 +914,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                         const ThemeModeSwitcher(compact: true),
                         const SizedBox(width: 8),
                         Tooltip(
-                          message: 'Replay Tour Guide',
+                          message: 'entry.replay_tour'.tr(ref, fallback: 'Replay Tour Guide'),
                           child: IconButton(
                             icon: Icon(
                               Icons.help_outline_rounded,
@@ -945,7 +945,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                 Row(
                                   children: [
                                     Text(
-                                      'Enter Workspace',
+                                      'auth.enter_workspace'.tr(ref, fallback: 'Enter Workspace'),
                                       style: TextStyle(
                                         fontSize: 26,
                                         fontWeight: FontWeight.w800,
@@ -954,18 +954,18 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    const ContextualInfoButton(
-                                      title: 'Workspace Resolution',
-                                      purpose: 'Connects this client application to your isolated organization workspace and permissions layer.',
-                                      expectedInputs: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).',
-                                      impact: 'Loads your organization security policies, tenant branding, and routes notifications appropriately.',
-                                      bestPractices: 'Contact your organization administrator if you are unsure of your access code.',
+                                    ContextualInfoButton(
+                                      title: 'entry.ctx_title'.tr(ref, fallback: 'Workspace Resolution'),
+                                      purpose: 'entry.ctx_purpose'.tr(ref, fallback: 'Connects this client application to your isolated organization workspace and permissions layer.'),
+                                      expectedInputs: 'entry.ctx_inputs'.tr(ref, fallback: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).'),
+                                      impact: 'entry.ctx_impact'.tr(ref, fallback: 'Loads your organization security policies, tenant branding, and routes notifications appropriately.'),
+                                      bestPractices: 'entry.ctx_best'.tr(ref, fallback: 'Contact your organization administrator if you are unsure of your access code.'),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Sign in using your organization access code or custom URL.',
+                                  'entry.subtitle'.tr(ref, fallback: 'Sign in using your organization access code or custom URL.'),
                                   style: TextStyle(
                                     fontSize: 14,
                                     height: 1.4,
@@ -1006,7 +1006,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                 // Input Field with requested placeholder and label
                                 CustomTextField(
                                   controller: _controller,
-                                  label: 'Organization Code',
+                                  label: 'auth.org_code_label'.tr(ref, fallback: 'Organization Code'),
                                   placeholder: 'e.g. access code or url',
                                   prefixIcon: const Icon(Icons.apartment_rounded, size: 20, color: AppColors.primary),
                                   showPasteButton: true,
@@ -1015,7 +1015,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                   onSubmitted: (_) => _handleContinue(),
                                   validator: (val) {
                                     if (val == null || val.trim().isEmpty) {
-                                      return 'Please enter your organization code.';
+                                      return 'entry.code_required'.tr(ref, fallback: 'Please enter your organization code.');
                                     }
                                     return null;
                                   },
@@ -1034,7 +1034,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
-                                        'Enter your organization access code or custom URL.',
+                                        'auth.enter_workspace_desc'.tr(ref, fallback: 'Enter your organization access code or custom URL.'),
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: isDark ? AppColors.gray400 : AppColors.gray500,
@@ -1051,7 +1051,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
                                 // Continue Action Button
                                 PrimaryButton(
-                                  text: 'Continue',
+                                  text: 'auth.continue'.tr(ref, fallback: 'Continue'),
                                   height: 52,
                                   borderRadius: 14,
                                   isLoading: state.isLoading,
@@ -1068,7 +1068,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                       Padding(
                                         padding: const EdgeInsets.symmetric(horizontal: 12),
                                         child: Text(
-                                          'PREVIOUSLY CONNECTED',
+                                          'entry.previous'.tr(ref, fallback: 'PREVIOUSLY CONNECTED'),
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w700,
@@ -1098,7 +1098,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Powered by Ozikol',
+                    'auth.powered_by'.tr(ref, fallback: 'Powered by Ozikol'),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -1162,8 +1162,8 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                       const SizedBox(width: 5),
                       Text(
                         _isOnline
-                            ? 'auth.online'.tr(ref, fallback: 'Online')
-                            : 'auth.offline'.tr(ref, fallback: 'Offline'),
+                            ? 'auth.online'.tr(ref, fallback: 'entry.online'.tr(ref, fallback: 'Online'))
+                            : 'auth.offline'.tr(ref, fallback: 'entry.offline'.tr(ref, fallback: 'Offline')),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -1328,7 +1328,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                           Row(
                             children: [
                               Text(
-                                'auth.enter_workspace'.tr(ref, fallback: 'Enter Workspace'),
+                                'auth.enter_workspace'.tr(ref, fallback: 'auth.enter_workspace'.tr(ref, fallback: 'Enter Workspace')),
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w800,
@@ -1336,16 +1336,16 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              const ContextualInfoButton(
-                                title: 'Workspace Resolution',
-                                purpose: 'Connects your device to your isolated organization workspace.',
-                                expectedInputs: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).',
+                              ContextualInfoButton(
+                                title: 'entry.ctx_title'.tr(ref, fallback: 'Workspace Resolution'),
+                                purpose: 'entry.ctx_purpose_short'.tr(ref, fallback: 'Connects your device to your isolated organization workspace.'),
+                                expectedInputs: 'entry.ctx_inputs'.tr(ref, fallback: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).'),
                               ),
                             ],
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'auth.enter_workspace_desc'.tr(ref, fallback: 'Enter your organization access code or custom URL.'),
+                            'auth.enter_workspace_desc'.tr(ref, fallback: 'auth.enter_workspace_desc'.tr(ref, fallback: 'Enter your organization access code or custom URL.')),
                             style: TextStyle(
                               fontSize: 13,
                               color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -1381,7 +1381,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                             onSubmitted: (_) => _handleContinue(),
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) {
-                                return 'auth.org_code_required'.tr(ref, fallback: 'Please enter your organization code.');
+                                return 'auth.org_code_required'.tr(ref, fallback: 'entry.code_required'.tr(ref, fallback: 'Please enter your organization code.'));
                               }
                               return null;
                             },
@@ -1424,7 +1424,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
                   const SizedBox(height: 20),
                   Text(
-                    'auth.powered_by'.tr(ref, fallback: 'Powered by Ozikol'),
+                    'auth.powered_by'.tr(ref, fallback: 'auth.powered_by'.tr(ref, fallback: 'Powered by Ozikol')),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
