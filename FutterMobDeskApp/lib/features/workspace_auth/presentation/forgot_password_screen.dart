@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/workspace.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/desktop_auth_layout.dart';
 import '../../../core/widgets/custom_text_field.dart';
@@ -69,7 +70,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Future<void> _handleRequestOtp() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      setState(() => _errorMessage = 'Please enter a valid work email address.');
+      setState(() => _errorMessage = 'auth.work_email_invalid'.tr(ref, fallback: 'Please enter a valid work email address.'));
       return;
     }
 
@@ -104,17 +105,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final confirmPassword = _confirmPasswordController.text;
 
     if (token.isEmpty) {
-      setState(() => _errorMessage = 'Please enter the reset code sent to your email.');
+      setState(() => _errorMessage = 'pwr.err_code'.tr(ref, fallback: 'Please enter the reset code sent to your email.'));
       return;
     }
 
     if (!_hasMinLength || !_hasUppercase || !_hasNumber || !_hasSpecialChar) {
-      setState(() => _errorMessage = 'Password does not satisfy all complexity requirements.');
+      setState(() => _errorMessage = 'pwr.err_complexity'.tr(ref, fallback: 'Password does not satisfy all complexity requirements.'));
       return;
     }
 
     if (newPassword != confirmPassword) {
-      setState(() => _errorMessage = 'New password and confirmation do not match.');
+      setState(() => _errorMessage = 'pwr.err_mismatch'.tr(ref, fallback: 'New password and confirmation do not match.'));
       return;
     }
 
@@ -174,12 +175,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
     return DesktopAuthLayout(
       workspace: widget.workspace,
-      title: _currentStep == 3 ? 'Password Reset Complete' : 'Reset Password',
+      title: _currentStep == 3 ? 'auth.reset_password_complete'.tr(ref, fallback: 'Password Reset Complete') : 'auth.reset_password_title'.tr(ref, fallback: 'Reset Password'),
       subtitle: _currentStep == 1
-          ? 'Enter your registered work email to receive password reset instructions.'
+          ? 'auth.reset_password_desc_step1'.tr(ref, fallback: 'Enter your registered work email to receive password reset instructions.')
           : (_currentStep == 2
-              ? 'Enter the security code sent to ${_emailController.text.trim()} along with your new password.'
-              : 'Your password has been successfully reset. You can now sign in.'),
+              ? 'pwr.step2_desc'.tr(ref, fallback: 'Enter the security code sent to {email} along with your new password.').replaceAll('{email}', _emailController.text.trim())
+              : 'auth.reset_password_desc_step3'.tr(ref, fallback: 'Your password has been successfully reset. You can now sign in.')),
       onBackTap: () => Navigator.of(context).pop(),
       child: AutofillGroup(
         child: Column(
@@ -214,7 +215,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         if (_currentStep == 1) ...[
                           CustomTextField(
                             controller: _emailController,
-                            label: 'Work Email Address',
+                            label: 'auth.work_email'.tr(ref, fallback: 'Work Email Address'),
                             placeholder: 'name@company.com',
                             prefixIcon: const Icon(Icons.email_outlined, size: 20, color: AppColors.primary),
                             keyboardType: TextInputType.emailAddress,
@@ -224,7 +225,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           ),
                           const SizedBox(height: 24),
                           PrimaryButton(
-                            text: 'Send Reset Instructions',
+                            text: 'auth.send_instructions'.tr(ref, fallback: 'Send Reset Instructions'),
                             isLoading: _isSubmitting,
                             onPressed: _handleRequestOtp,
                           ),
@@ -257,8 +258,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           ],
                           CustomTextField(
                             controller: _tokenController,
-                            label: 'Reset Code',
-                            placeholder: 'e.g. 6-digit code or reset token',
+                            label: 'pwr.code_label'.tr(ref, fallback: 'Reset Code'),
+                            placeholder: 'pwr.code_placeholder'.tr(ref, fallback: 'e.g. 6-digit code or reset token'),
                             prefixIcon: const Icon(Icons.pin_outlined, size: 20, color: AppColors.primary),
                             keyboardType: TextInputType.number,
                             showPasteButton: true,
@@ -267,8 +268,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           const SizedBox(height: 16),
                           CustomTextField(
                             controller: _newPasswordController,
-                            label: 'New Password',
-                            placeholder: 'Create a strong password',
+                            label: 'account.new_password'.tr(ref, fallback: 'New Password'),
+                            placeholder: 'pwr.create_placeholder'.tr(ref, fallback: 'Create a strong password'),
                             prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                             isPassword: true,
                             showPasteButton: true,
@@ -286,7 +287,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Password Requirements:',
+                                  '${'account.password_requirements'.tr(ref, fallback: 'Password Requirements')}:',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.bold,
@@ -294,18 +295,18 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 6),
-                                _buildComplexityRow('At least 8 characters', _hasMinLength),
-                                _buildComplexityRow('At least one uppercase letter (A-Z)', _hasUppercase),
-                                _buildComplexityRow('At least one numeric digit (0-9)', _hasNumber),
-                                _buildComplexityRow('At least one special symbol (!@#\$%)', _hasSpecialChar),
+                                _buildComplexityRow('pwr.req_min'.tr(ref, fallback: 'At least 8 characters'), _hasMinLength),
+                                _buildComplexityRow('account.req_uppercase'.tr(ref, fallback: 'At least one uppercase letter (A-Z)'), _hasUppercase),
+                                _buildComplexityRow('pwr.req_number'.tr(ref, fallback: 'At least one numeric digit (0-9)'), _hasNumber),
+                                _buildComplexityRow('pwr.req_special'.tr(ref, fallback: 'At least one special symbol (!@#\$%)'), _hasSpecialChar),
                               ],
                             ),
                           ),
                           const SizedBox(height: 16),
                           CustomTextField(
                             controller: _confirmPasswordController,
-                            label: 'Confirm New Password',
-                            placeholder: 'Re-enter your new password',
+                            label: 'pwr.confirm_label'.tr(ref, fallback: 'Confirm New Password'),
+                            placeholder: 'auth.reenter_new_password'.tr(ref, fallback: 'Re-enter your new password'),
                             prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                             isPassword: true,
                             showPasteButton: true,
@@ -314,7 +315,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           ),
                           const SizedBox(height: 24),
                           PrimaryButton(
-                            text: 'Update Password',
+                            text: 'account.update_password'.tr(ref, fallback: 'Update Password'),
                             isLoading: _isSubmitting,
                             onPressed: _handleResetPassword,
                           ),
@@ -338,16 +339,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          const Center(
+                          Center(
                             child: Text(
-                              'Password Updated Successfully!',
+                              'pwr.success_title'.tr(ref, fallback: 'Password Updated Successfully!'),
                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                           ),
                           const SizedBox(height: 8),
                           Center(
                             child: Text(
-                              'Your credentials have been securely updated. You can now sign into your organization workspace.',
+                              'pwr.success_desc'.tr(ref, fallback: 'Your credentials have been securely updated. You can now sign into your organization workspace.'),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,
@@ -357,7 +358,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           ),
                           const SizedBox(height: 24),
                           PrimaryButton(
-                            text: 'Back to Sign In',
+                            text: 'pwr.back_to_signin'.tr(ref, fallback: 'Back to Sign In'),
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                         ],
@@ -367,7 +368,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
                             child: Text(
-                              'Back to Sign In',
+                              'pwr.back_to_signin'.tr(ref, fallback: 'Back to Sign In'),
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
