@@ -816,64 +816,143 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 30-Day Retention Notice Banner
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.schedule_rounded, color: AppColors.primary, size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
+                // 30-Day Retention Notice Banner (Responsive Layout)
+                LayoutBuilder(
+                  builder: (context, bannerConstraints) {
+                    final isTightBanner = bannerConstraints.maxWidth < 620;
+                    if (isTightBanner) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _retentionNotice.isNotEmpty
-                                  ? _retentionNotice
-                                  : 'account.activity_retention_notice'.tr(
-                                      ref,
-                                      fallback: 'Showing activity from the last 30 days. To request archival records older than 1 month, please contact your workspace Administrator.',
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Padding(
+                                  padding: EdgeInsets.only(top: 2),
+                                  child: Icon(Icons.schedule_rounded, color: AppColors.primary, size: 18),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _retentionNotice.isNotEmpty
+                                        ? _retentionNotice
+                                        : 'account.activity_retention_notice'.tr(
+                                            ref,
+                                            fallback: 'Showing activity from the last 30 days. For archival records older than 1 month, please contact your workspace Administrator.',
+                                          ),
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.4,
+                                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF1E293B),
                                     ),
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? AppColors.onSurfaceDark : const Color(0xFF1E293B),
-                              ),
+                                  ),
+                                ),
+                              ],
                             ),
                             if (_hasOlderRecords) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                'Archival records older than 30 days exist in deep retention.',
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  color: isDark ? AppColors.gray400 : AppColors.gray600,
+                              const SizedBox(height: 4),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 28),
+                                child: Text(
+                                  'Archival records older than 30 days exist in deep retention.',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                  ),
                                 ),
                               ),
                             ],
+                            const SizedBox(height: 10),
+                            Padding(
+                              padding: const EdgeInsets.only(left: 28),
+                              child: TextButton.icon(
+                                onPressed: _showContactAdminDialog,
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                icon: const Icon(Icons.support_agent_rounded, size: 15, color: AppColors.primary),
+                                label: Text(
+                                  'account.contact_admin'.tr(ref, fallback: 'Contact Administrator'),
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
+                      );
+                    }
+
+                    // Desktop / Wide Viewport Row
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                       ),
-                      const SizedBox(width: 12),
-                      TextButton.icon(
-                        onPressed: _showContactAdminDialog,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.08),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        icon: const Icon(Icons.support_agent_rounded, size: 16, color: AppColors.primary),
-                        label: Text(
-                          'account.contact_admin'.tr(ref, fallback: 'Contact Admin'),
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
-                        ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.schedule_rounded, color: AppColors.primary, size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _retentionNotice.isNotEmpty
+                                      ? _retentionNotice
+                                      : 'account.activity_retention_notice'.tr(
+                                          ref,
+                                          fallback: 'Showing activity from the last 30 days. To request archival records older than 1 month, please contact your workspace Administrator.',
+                                        ),
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.35,
+                                    color: isDark ? AppColors.onSurfaceDark : const Color(0xFF1E293B),
+                                  ),
+                                ),
+                                if (_hasOlderRecords) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Archival records older than 30 days exist in deep retention.',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          TextButton.icon(
+                            onPressed: _showContactAdminDialog,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            icon: const Icon(Icons.support_agent_rounded, size: 16, color: AppColors.primary),
+                            label: Text(
+                              'account.contact_admin'.tr(ref, fallback: 'Contact Administrator'),
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 18),
 
