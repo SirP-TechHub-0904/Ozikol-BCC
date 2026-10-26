@@ -391,8 +391,9 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
                       return Align(
                         alignment: isMobile ? Alignment.center : Alignment.centerRight,
                         child: SizedBox(
-                          width: isMobile ? double.infinity : 170,
+                          width: isMobile ? double.infinity : null,
                           child: PrimaryButton(
+                            isFullWidth: isMobile,
                             text: 'account.update_password'.tr(ref, fallback: 'Update Password'),
                             isLoading: _isSubmitting,
                             onPressed: _handleChangePassword,
