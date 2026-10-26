@@ -136,7 +136,9 @@ class WorkspaceHomeView extends ConsumerWidget {
           const SizedBox(height: 12),
 
           CentralAdjuster.grid(
-            minItemWidth: 200,
+            minItemWidth: 140,
+            minColumns: 2,
+            equalizeRowHeights: true,
             spacing: 16,
             runSpacing: 16,
             maxColumns: 4,
@@ -318,7 +320,7 @@ class WorkspaceHomeView extends ConsumerWidget {
             const SizedBox(height: 2),
             Text(
               subtitle,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 11.5,
