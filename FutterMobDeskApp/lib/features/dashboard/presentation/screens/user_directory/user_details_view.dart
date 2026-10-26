@@ -488,14 +488,16 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
           const SizedBox(height: 4),
 
           // Email & Verified Badge
-          Row(
-            mainAxisSize: MainAxisSize.min,
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 6,
+            runSpacing: 4,
             children: [
               Text(
                 email,
                 style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
               ),
-              const SizedBox(width: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
@@ -738,22 +740,24 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             children: [
               const Icon(Icons.sticky_note_2_outlined, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Confidential Admin Notes',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Confidential Admin Notes',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Private administrative records & logs',
-                    style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                  ),
-                ],
+                    Text(
+                      'Private administrative records & logs',
+                      style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -855,18 +859,20 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             children: [
               const Icon(Icons.warning_amber_rounded, size: 20, color: Color(0xFFEF4444)),
               const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Account Access & Danger Zone',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
-                  ),
-                  Text(
-                    'Restrict or permanently remove member account',
-                    style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Account Access & Danger Zone',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
+                    ),
+                    Text(
+                      'Restrict or permanently remove member account',
+                      style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -945,33 +951,36 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 450;
+              final titleSection = Row(
                 children: [
                   Icon(Icons.show_chart_rounded, size: 20, color: AppColors.primary),
                   const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Performance Scorecards & KPI History',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Performance Scorecards & KPI History',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                          ),
                         ),
-                      ),
-                      Text(
-                        'Evaluation records, period metrics, and feedback',
-                        style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                      ),
-                    ],
+                        Text(
+                          'Evaluation records, period metrics, and feedback',
+                          style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              ),
-              ElevatedButton.icon(
+              );
+
+              final actionButton = ElevatedButton.icon(
                 onPressed: _openGradeMemberDialog,
                 icon: const Icon(Icons.assignment_turned_in_rounded, size: 14, color: Colors.white),
                 label: const Text('Grade Member', style: TextStyle(color: Colors.white, fontSize: 12)),
@@ -980,8 +989,31 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                 ),
-              ),
-            ],
+              );
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    titleSection,
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: actionButton,
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: titleSection),
+                  const SizedBox(width: 12),
+                  actionButton,
+                ],
+              );
+            },
           ),
           const SizedBox(height: 14),
 
@@ -1294,22 +1326,24 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             children: [
               const Icon(Icons.security_rounded, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Forensic Audit Trail & Security Logs',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Forensic Audit Trail & Security Logs',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Immutable log of authentication, password changes, and admin updates',
-                    style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
-                  ),
-                ],
+                    Text(
+                      'Immutable log of authentication, password changes, and admin updates',
+                      style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
