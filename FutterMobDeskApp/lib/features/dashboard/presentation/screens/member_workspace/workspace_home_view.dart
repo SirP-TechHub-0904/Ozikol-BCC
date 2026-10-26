@@ -219,21 +219,29 @@ class WorkspaceHomeView extends ConsumerWidget {
                       color: AppColors.primary,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'ui.security_status'.tr(
-                        ref,
-                        fallback: 'Account Security Status',
-                      ),
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: isDark
-                            ? AppColors.onSurfaceDark
-                            : AppColors.onSurfaceLight,
+                    Expanded(
+                      child: Text(
+                        'ui.security_status'.tr(
+                          ref,
+                          fallback: 'Account Security Status',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isDark
+                              ? AppColors.onSurfaceDark
+                              : AppColors.onSurfaceLight,
+                        ),
                       ),
                     ),
-                    const Spacer(),
                     TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: const Size(0, 36),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       onPressed: () => onNavigate?.call(105), // Login Activity
                       child: Text(
                         'ui.view_login_history'.tr(
