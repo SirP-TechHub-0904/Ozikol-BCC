@@ -6,6 +6,7 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../data/account_repository.dart';
 import '../../../../../core/widgets/page_header.dart';
+import '../../../../../core/localization/language_provider.dart';
 
 /// <summary>
 /// Screen presenting System Roles & Authority Matrix under Identity & Access Control.
@@ -394,8 +395,8 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                               children: [
                                 TextField(
                                   decoration: InputDecoration(
-                                    labelText: 'Search & Select Member *',
-                                    hintText: 'Search by name or email...',
+                                    labelText: context.trc('roles.search_select_member', fallback: 'Search & Select Member *'),
+                                    hintText: context.trc('roles.search_users', fallback: 'Search users by name or email...'),
                                     prefixIcon: const Icon(Icons.search, size: 18),
                                     isDense: true,
                                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -462,7 +463,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                                 Align(
                                   alignment: Alignment.centerRight,
                                   child: PrimaryButton(
-                                    text: isAssigning ? 'Assigning...' : 'Assign Role',
+                                    text: isAssigning ? '${context.trc('roles.assigning', fallback: 'Assigning')}...' : context.trc('roles.assign_role', fallback: 'Assign Role'),
                                     icon: const Icon(Icons.person_add_alt_1, size: 16),
                                     onPressed: selectedUserId == null || isAssigning
                                         ? null
@@ -499,7 +500,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
 
                           // Currently Assigned Members Roster
                           Text(
-                            'CURRENTLY ASSIGNED PERSONNEL (${membersList.length})',
+                            '${context.trc('roles.currently_assigned', fallback: 'CURRENTLY ASSIGNED PERSONNEL')} (${membersList.length})',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -522,7 +523,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                                   Icon(Icons.group_off_outlined, size: 28, color: AppColors.gray400),
                                   const SizedBox(height: 6),
                                   Text(
-                                    'No personnel currently hold the $roleName role.',
+                                    '${context.trc('roles.no_personnel_holding', fallback: 'No personnel currently hold the')} $roleName ${context.trc('roles.role_suffix', fallback: 'role.')}',
                                     style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
                                   ),
                                 ],
@@ -586,7 +587,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                                       ),
                                       OutlinedButton.icon(
                                         icon: const Icon(Icons.person_remove_outlined, size: 14, color: AppColors.error),
-                                        label: const Text('Remove', style: TextStyle(fontSize: 11.5, color: AppColors.error, fontWeight: FontWeight.w600)),
+                                        label: Text(context.trc('roles.remove', fallback: 'Remove'), style: const TextStyle(fontSize: 11.5, color: AppColors.error, fontWeight: FontWeight.w600)),
                                         style: OutlinedButton.styleFrom(
                                           side: const BorderSide(color: Color(0xFFFECACA)),
                                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -631,7 +632,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                     ),
                     alignment: Alignment.centerRight,
                     child: OutlinedButton(
-                      child: const Text('Close'),
+                      child: Text(context.trc('roles.close', fallback: 'Close')),
                       onPressed: () => Navigator.of(dialogCtx).pop(),
                     ),
                   ),
@@ -862,7 +863,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Role & Authority Specifications',
+                                    context.trc('roles.role_specs', fallback: 'Role & Authority Specifications'),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -907,7 +908,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                                   const Icon(Icons.verified_outlined, size: 16, color: Color(0xFF0050E5)),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'GOVERNANCE SCOPE BOUNDARY',
+                                    context.trc('roles.governance_boundary_header', fallback: 'GOVERNANCE SCOPE BOUNDARY'),
                                     style: TextStyle(
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.bold,
@@ -936,7 +937,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Full Authority Description',
+                                context.trc('roles.full_authority_desc', fallback: 'Full Authority Description'),
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -959,7 +960,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
 
                         // Key Capabilities & Scoped Rights
                         Text(
-                          'KEY CAPABILITIES & PRIVILEGE BOUNDARIES',
+                          context.trc('roles.key_capabilities', fallback: 'KEY CAPABILITIES & PRIVILEGE BOUNDARIES'),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -1012,7 +1013,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'ASSIGNED PERSONNEL',
+                              context.trc('roles.col_personnel', fallback: 'ASSIGNED PERSONNEL'),
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
@@ -1027,7 +1028,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                                 borderRadius: BorderRadius.circular(100),
                               ),
                               child: Text(
-                                '$count ${count == 1 ? 'Member' : 'Members'}',
+                                '$count ${count == 1 ? context.trc('roles.member_singular', fallback: 'Member') : context.trc('roles.members_suffix', fallback: 'Members')}',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -1049,7 +1050,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                             ),
                             child: Center(
                               child: Text(
-                                'No members currently assigned to this role.',
+                                context.trc('roles.no_members_role', fallback: 'No members currently assigned to this role.'),
                                 style: TextStyle(
                                   fontSize: 12.5,
                                   fontStyle: FontStyle.italic,
@@ -1137,7 +1138,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                       if (canAssign)
                         ElevatedButton.icon(
                           icon: const Icon(Icons.person_add_alt_1, size: 15),
-                          label: const Text('Manage Personnel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          label: Text(context.trc('roles.manage_personnel', fallback: 'Manage Personnel'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF0050E5),
                             foregroundColor: Colors.white,
@@ -1200,23 +1201,23 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
           // Page Header with 1-to-1 Web Action Buttons
           PageHeader(
             icon: Icons.shield_outlined,
-            eyebrow: 'Access Control & Governance',
-            title: 'System Roles & Authority Matrix',
-            description: 'Manage the ${_catalog.length} enterprise roles organized into System & Feature Authority and Operational Access Levels.',
+            eyebrow: context.trc('roles.eyebrow', fallback: 'Access Control & Governance'),
+            title: context.trc('roles.title', fallback: 'System Roles & Authority Matrix'),
+            description: '${context.trc('roles.description', fallback: 'Manage the enterprise roles organized into System & Feature Authority and Operational Access Levels.')} (${_catalog.length})',
             secondaryActions: [
               PageHeaderAction(
-                label: 'User Directory',
+                label: context.trc('roles.user_directory', fallback: 'User Directory'),
                 icon: Icons.groups_outlined,
                 onPressed: () => widget.onNavigateToTab?.call(1),
               ),
               PageHeaderAction(
-                label: 'Identity Dashboard',
+                label: context.trc('roles.identity_dashboard', fallback: 'Identity Dashboard'),
                 icon: Icons.shield_outlined,
                 onPressed: () => widget.onNavigateToTab?.call(7),
               ),
               PageHeaderAction(
-                label: 'Refresh Roles',
-                compactLabel: 'Refresh',
+                label: context.trc('roles.refresh_roles', fallback: 'Refresh Roles'),
+                compactLabel: context.trc('roles.refresh', fallback: 'Refresh'),
                 icon: Icons.refresh_rounded,
                 onPressed: _loadRolesData,
               ),
@@ -1237,42 +1238,42 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                 runSpacing: 12,
                 children: [
                   _buildStatFilterCard(
-                    title: 'Enterprise Roles',
+                    title: context.trc('roles.stat_enterprise_roles', fallback: 'Enterprise Roles'),
                     count: '${_catalog.length}',
                     icon: Icons.security_rounded,
                     iconColor: AppColors.primary,
                     filterKey: 'all',
-                    activeBadgeLabel: 'All',
+                    activeBadgeLabel: context.trc('roles.all', fallback: 'All'),
                     width: cardWidth,
                     isDark: isDark,
                   ),
                   _buildStatFilterCard(
-                    title: 'Authority & Feature Roles',
+                    title: context.trc('roles.stat_authority_feature', fallback: 'Authority & Feature Roles'),
                     count: '${_systemFeatureRoles.length}',
                     icon: Icons.admin_panel_settings_rounded,
                     iconColor: const Color(0xFF4338CA),
                     filterKey: 'system_feature',
-                    activeBadgeLabel: 'Filtered',
+                    activeBadgeLabel: context.trc('roles.filtered', fallback: 'Filtered'),
                     width: cardWidth,
                     isDark: isDark,
                   ),
                   _buildStatFilterCard(
-                    title: 'Operational Action Levels',
+                    title: context.trc('roles.stat_operational_levels', fallback: 'Operational Action Levels'),
                     count: '${_operationalLevelRoles.length}',
                     icon: Icons.tune_rounded,
                     iconColor: const Color(0xFF10B981),
                     filterKey: 'operational_level',
-                    activeBadgeLabel: 'Filtered',
+                    activeBadgeLabel: context.trc('roles.filtered', fallback: 'Filtered'),
                     width: cardWidth,
                     isDark: isDark,
                   ),
                   _buildStatFilterCard(
-                    title: 'Assigned Personnel',
+                    title: context.trc('roles.stat_assigned_personnel', fallback: 'Assigned Personnel'),
                     count: '$_totalAssignedPersonnel',
                     icon: Icons.groups_rounded,
                     iconColor: const Color(0xFF475569),
                     filterKey: 'assigned',
-                    activeBadgeLabel: 'Roster',
+                    activeBadgeLabel: context.trc('roles.roster', fallback: 'Roster'),
                     width: cardWidth,
                     isDark: isDark,
                   ),
@@ -1287,13 +1288,13 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildTabButton('All Roles (${_catalog.length})', Icons.dataset_outlined, 'all', isDark),
+                _buildTabButton('${context.trc('roles.tab_all', fallback: 'All Roles')} (${_catalog.length})', Icons.dataset_outlined, 'all', isDark),
                 const SizedBox(width: 8),
-                _buildTabButton('System & Feature Authority (${_systemFeatureRoles.length})', Icons.shield_outlined, 'system_feature', isDark),
+                _buildTabButton('${context.trc('roles.tab_system_feature', fallback: 'System & Feature Authority')} (${_systemFeatureRoles.length})', Icons.shield_outlined, 'system_feature', isDark),
                 const SizedBox(width: 8),
-                _buildTabButton('Operational Access Levels (${_operationalLevelRoles.length})', Icons.tune_rounded, 'operational_level', isDark),
+                _buildTabButton('${context.trc('roles.tab_operational', fallback: 'Operational Access Levels')} (${_operationalLevelRoles.length})', Icons.tune_rounded, 'operational_level', isDark),
                 const SizedBox(width: 8),
-                _buildTabButton('Assigned Personnel ($_totalAssignedPersonnel)', Icons.groups_outlined, 'assigned', isDark),
+                _buildTabButton('${context.trc('roles.tab_assigned', fallback: 'Assigned Personnel')} ($_totalAssignedPersonnel)', Icons.groups_outlined, 'assigned', isDark),
               ],
             ),
           ),
@@ -1302,18 +1303,18 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
           // Group 1: System & Feature Authority Roles Card
           if (_activeFilter == 'all' || _activeFilter == 'system_feature') ...[
             _buildRoleTableCard(
-              title: 'System & Feature Authority Roles',
-              badgeText: '${_systemFeatureRoles.length} ROLES',
-              description: 'Sovereign platform, identity governance, and feature domain authority roles that govern workspace administration.',
+              title: context.trc('roles.table_system_title', fallback: 'System & Feature Authority Roles'),
+              badgeText: '${_systemFeatureRoles.length} ${context.trc('roles.badge_roles', fallback: 'ROLES')}',
+              description: context.trc('roles.table_system_desc', fallback: 'Sovereign platform, identity governance, and feature domain authority roles that govern workspace administration.'),
               icon: Icons.shield_outlined,
               iconColor: AppColors.primary,
               iconBgColor: AppColors.primary.withValues(alpha: 0.08),
               badgeBg: const Color(0xFFEFF6FF),
               badgeColor: AppColors.primary,
               roles: _systemFeatureRoles,
-              roleColumnHeader: 'ROLE & AUTHORITY TIER',
-              scopeColumnHeader: 'SCOPE & GOVERNANCE BOUNDARIES',
-              tierLabel: 'SYSTEM AUTHORITY',
+              roleColumnHeader: context.trc('roles.col_role_authority', fallback: 'ROLE & AUTHORITY TIER'),
+              scopeColumnHeader: context.trc('roles.col_scope_governance', fallback: 'SCOPE & GOVERNANCE BOUNDARIES'),
+              tierLabel: context.trc('roles.tier_system_authority', fallback: 'SYSTEM AUTHORITY'),
               showRefresh: true,
               isDark: isDark,
             ),
@@ -1323,18 +1324,18 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
           // Group 2: Operational Access Levels Card
           if (_activeFilter == 'all' || _activeFilter == 'operational_level') ...[
             _buildRoleTableCard(
-              title: 'Operational Access Levels',
-              badgeText: '${_operationalLevelRoles.length} LEVELS',
-              description: 'Granular operational scopes governing content creation, data records, and read-only observation across features.',
+              title: context.trc('roles.table_operational_title', fallback: 'Operational Access Levels'),
+              badgeText: '${_operationalLevelRoles.length} ${context.trc('roles.badge_levels', fallback: 'LEVELS')}',
+              description: context.trc('roles.table_operational_desc', fallback: 'Granular operational scopes governing content creation, data records, and read-only observation across features.'),
               icon: Icons.tune_rounded,
               iconColor: const Color(0xFF10B981),
               iconBgColor: const Color(0xFF10B981).withValues(alpha: 0.08),
               badgeBg: const Color(0xFFECFDF5),
               badgeColor: const Color(0xFF059669),
               roles: _operationalLevelRoles,
-              roleColumnHeader: 'OPERATIONAL LEVEL',
-              scopeColumnHeader: 'SCOPE & OPERATIONAL ACTION BOUNDARIES',
-              tierLabel: 'OPERATIONAL LEVEL',
+              roleColumnHeader: context.trc('roles.col_operational_level', fallback: 'OPERATIONAL LEVEL'),
+              scopeColumnHeader: context.trc('roles.col_scope_action', fallback: 'SCOPE & OPERATIONAL ACTION BOUNDARIES'),
+              tierLabel: context.trc('roles.tier_operational_level', fallback: 'OPERATIONAL LEVEL'),
               showRefresh: _activeFilter == 'operational_level',
               isDark: isDark,
             ),
@@ -1629,7 +1630,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                   const SizedBox(width: 12),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.refresh, size: 14),
-                    label: const Text('Refresh', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    label: Text(context.trc('roles.refresh', fallback: 'Refresh'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       visualDensity: VisualDensity.compact,
@@ -1682,7 +1683,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                   DataColumn(
                     label: Center(
                       child: Text(
-                        'PERSONNEL',
+                        context.trc('roles.col_personnel', fallback: 'PERSONNEL'),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
@@ -1694,7 +1695,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                   ),
                   DataColumn(
                     label: Text(
-                      'ASSIGNED MEMBERS PREVIEW',
+                      context.trc('roles.col_assigned_preview', fallback: 'ASSIGNED MEMBERS PREVIEW'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -1706,7 +1707,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                   DataColumn(
                     numeric: true,
                     label: Text(
-                      'ACTION',
+                      context.trc('roles.col_action', fallback: 'ACTION'),
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
@@ -1812,9 +1813,9 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                                         ),
                                       ),
                                       const SizedBox(width: 6),
-                                      const Tooltip(
-                                        message: 'Tap to view full unabridged boundaries',
-                                        child: Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF0050E5)),
+                                      Tooltip(
+                                        message: context.trc('roles.tap_boundaries', fallback: 'Tap to view full unabridged boundaries'),
+                                        child: const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFF0050E5)),
                                       ),
                                     ],
                                   ),
@@ -1857,7 +1858,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                                     ),
                                   ),
                                   TextSpan(
-                                    text: count == 1 ? 'user' : 'users',
+                                    text: count == 1 ? context.trc('roles.user_singular', fallback: 'user') : context.trc('roles.user_plural', fallback: 'users'),
                                     style: TextStyle(
                                       fontSize: 11,
                                       color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -1874,7 +1875,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                       DataCell(
                         count == 0
                             ? Text(
-                                'No members assigned',
+                                context.trc('roles.no_members_assigned', fallback: 'No members assigned'),
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontStyle: FontStyle.italic,
@@ -1909,7 +1910,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                           children: [
                             OutlinedButton.icon(
                               icon: const Icon(Icons.info_outline_rounded, size: 14),
-                              label: const Text('Details', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              label: Text(context.trc('roles.details', fallback: 'Details'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: const Color(0xFF0050E5),
                                 side: const BorderSide(color: Color(0xFFBFDBFE)),
@@ -1937,7 +1938,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                                   )
                                 : OutlinedButton.icon(
                                     icon: const Icon(Icons.person_add_alt_1, size: 15),
-                                    label: const Text('Manage Members', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                    label: Text(context.trc('roles.manage_members', fallback: 'Manage Members'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                                     style: OutlinedButton.styleFrom(
                                       foregroundColor: AppColors.primary,
                                       side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
@@ -2009,7 +2010,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                               runSpacing: 4,
                               children: [
                                 Text(
-                                  'Assigned Personnel Roster',
+                                  context.trc('roles.assigned_roster_title', fallback: 'Assigned Personnel Roster'),
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
@@ -2023,7 +2024,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                                     borderRadius: BorderRadius.circular(100),
                                   ),
                                   child: Text(
-                                    '${allAssigned.length} Members',
+                                    '${allAssigned.length} ${context.trc('roles.members_suffix', fallback: 'Members')}',
                                     style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
                                   ),
                                 ),
@@ -2031,7 +2032,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Complete directory of all workspace personnel currently holding active system or operational roles.',
+                              context.trc('roles.assigned_roster_desc', fallback: 'Complete directory of all workspace personnel currently holding active system or operational roles.'),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(fontSize: 12, color: isDark ? AppColors.gray400 : AppColors.gray600),
@@ -2058,7 +2059,7 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
               padding: const EdgeInsets.all(40),
               child: Center(
                 child: Text(
-                  'No personnel assigned to roles yet.',
+                  context.trc('roles.no_personnel_assigned', fallback: 'No personnel assigned to roles yet.'),
                   style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : AppColors.gray600),
                 ),
               ),
@@ -2075,11 +2076,11 @@ class _RolesPermissionsViewState extends ConsumerState<RolesPermissionsView> {
                   horizontalMargin: 22,
                   columnSpacing: 24,
                   showCheckboxColumn: false,
-                  columns: const [
-                    DataColumn(label: Text('PERSONNEL', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5))),
-                    DataColumn(label: Text('ASSIGNED ROLE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5))),
-                    DataColumn(label: Text('SCOPE & MODULE BOUNDARIES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5))),
-                    DataColumn(numeric: true, label: Text('ACTIONS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5))),
+                  columns: [
+                    DataColumn(label: Text(context.trc('roles.col_personnel', fallback: 'PERSONNEL'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5))),
+                    DataColumn(label: Text(context.trc('roles.col_assigned_role', fallback: 'ASSIGNED ROLE'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5))),
+                    DataColumn(label: Text(context.trc('roles.col_scope_module', fallback: 'SCOPE & MODULE BOUNDARIES'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5))),
+                    DataColumn(numeric: true, label: Text(context.trc('roles.col_actions', fallback: 'ACTIONS'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5))),
                   ],
                   rows: allAssigned.map((item) {
                     final role = item['role'] as Map<String, dynamic>;

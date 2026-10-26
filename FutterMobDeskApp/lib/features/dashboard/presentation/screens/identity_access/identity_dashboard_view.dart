@@ -6,6 +6,7 @@ import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../data/account_repository.dart';
 import '../../../../../core/widgets/page_header.dart';
+import '../../../../../core/localization/language_provider.dart';
 
 /// <summary>
 /// Screen presenting the Identity & Access Control Security Console Overview.
@@ -124,13 +125,13 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
           // Shared PageHeader mold: top-level sidebar destination, so no back control.
           PageHeader(
             icon: Icons.shield_outlined,
-            eyebrow: 'Identity Security Control',
-            title: 'Security Console Overview',
-            description: 'Real-time telemetry, 2FA adoption metrics, brute-force retry flags, and remote session controls.',
+            eyebrow: context.trc('identity.eyebrow', fallback: 'Identity Security Control'),
+            title: context.trc('identity.title', fallback: 'Security Console Overview'),
+            description: context.trc('identity.desc', fallback: 'Real-time telemetry, 2FA adoption metrics, brute-force retry flags, and remote session controls.'),
             secondaryActions: [
             PageHeaderAction(
-              label: 'Refresh Telemetry',
-              compactLabel: 'Refresh',
+              label: context.trc('identity.refresh_telemetry', fallback: 'Refresh Telemetry'),
+              compactLabel: context.trc('identity.refresh', fallback: 'Refresh'),
               icon: Icons.refresh_rounded,
               onPressed: _loadIdentityData,
             ),
@@ -150,56 +151,60 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                 children: [
                   // Card 1: Total Users -> User Directory (tab 1)
                   _buildInteractiveCard(
-                    title: 'TOTAL USERS',
+                    title: context.trc('identity.total_users', fallback: 'TOTAL USERS'),
                     value: '$_totalUsers',
-                    subtitle: 'Registered Members',
+                    subtitle: context.trc('identity.registered_members', fallback: 'Registered Members'),
                     subtitleColor: AppColors.primary,
                     icon: Icons.people_alt_outlined,
                     width: cardWidth,
                     isDark: isDark,
-                    tooltip: 'Click to view all registered members in User Directory',
+                    tooltip: context.trc('identity.click_users', fallback: 'Click to view all registered members in User Directory'),
                     onTap: () => widget.onNavigateToTab?.call(1),
                   ),
 
                   // Card 2: Locked Accounts -> Filtered User Directory (tab 1)
                   _buildInteractiveCard(
-                    title: 'LOCKED ACCOUNTS',
+                    title: context.trc('identity.locked_accounts', fallback: 'LOCKED ACCOUNTS'),
                     value: '$_lockedOutCount',
-                    subtitle: _lockedOutCount > 0 ? 'Requires Attention' : 'Active Safeguard',
+                    subtitle: _lockedOutCount > 0
+                        ? context.trc('identity.requires_attention', fallback: 'Requires Attention')
+                        : context.trc('identity.active_safeguard', fallback: 'Active Safeguard'),
                     subtitleColor: _lockedOutCount > 0 ? AppColors.error : AppColors.success,
                     valueColor: _lockedOutCount > 0 ? AppColors.error : null,
                     icon: Icons.lock_outline_rounded,
                     width: cardWidth,
                     isDark: isDark,
-                    tooltip: 'Click to inspect locked user accounts in User Directory',
+                    tooltip: context.trc('identity.click_locked', fallback: 'Click to inspect locked user accounts in User Directory'),
                     onTap: () => widget.onNavigateToTab?.call(1),
                   ),
 
                   // Card 3: Brute-Force Retries -> Security Logs (tab 15)
                   _buildInteractiveCard(
-                    title: 'BRUTE-FORCE RETRIES',
+                    title: context.trc('identity.brute_force_retries', fallback: 'BRUTE-FORCE RETRIES'),
                     value: '$_retryAlertsCount',
-                    subtitle: _retryAlertsCount > 0 ? 'Suspicious Retries' : 'Clean Audit Stream',
+                    subtitle: _retryAlertsCount > 0
+                        ? context.trc('identity.suspicious_retries', fallback: 'Suspicious Retries')
+                        : context.trc('identity.clean_audit_stream', fallback: 'Clean Audit Stream'),
                     subtitleColor: _retryAlertsCount > 0 ? AppColors.warning : AppColors.success,
                     valueColor: _retryAlertsCount > 0 ? AppColors.warning : null,
                     icon: Icons.shield_outlined,
                     width: cardWidth,
                     isDark: isDark,
-                    tooltip: 'Click to inspect authentication events in Security Logs',
+                    tooltip: context.trc('identity.click_brute_force', fallback: 'Click to inspect authentication events in Security Logs'),
                     onTap: () => widget.onNavigateToTab?.call(15),
                   ),
 
                   // Card 4: MFA Enrolled -> Global Policies (tab 10)
                   _buildInteractiveCard(
-                    title: 'MFA ENROLLED',
+                    title: context.trc('identity.mfa_enrolled', fallback: 'MFA ENROLLED'),
                     value: '$_mfaPercentage%',
-                    subtitle: 'Preferred Authentication',
+                    subtitle: context.trc('identity.preferred_auth', fallback: 'Preferred Authentication'),
                     subtitleColor: AppColors.success,
                     valueColor: AppColors.success,
                     icon: Icons.phonelink_lock_outlined,
                     width: cardWidth,
                     isDark: isDark,
-                    tooltip: 'Click to configure two-factor authentication and security policies',
+                    tooltip: context.trc('identity.click_mfa', fallback: 'Click to configure two-factor authentication and security policies'),
                     onTap: () => widget.onNavigateToTab?.call(10),
                   ),
                 ],
@@ -240,7 +245,7 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
 
           // Identity Control Panels (Quick Shortcuts matching web)
           Text(
-            'Identity Control Panels',
+            context.trc('identity.control_panels', fallback: 'Identity Control Panels'),
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
@@ -258,8 +263,8 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                 runSpacing: 12,
                 children: [
                   _buildConsoleShortcut(
-                    title: 'Roles & Scopes',
-                    description: 'Assign fine-grained feature editing permissions.',
+                    title: context.trc('identity.shortcut_roles', fallback: 'Roles & Scopes'),
+                    description: context.trc('identity.shortcut_roles_desc', fallback: 'Assign fine-grained feature editing permissions.'),
                     icon: Icons.shield_outlined,
                     iconBg: AppColors.primary,
                     width: cardWidth,
@@ -267,8 +272,8 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                     onTap: () => widget.onNavigateToTab?.call(8),
                   ),
                   _buildConsoleShortcut(
-                    title: 'User Invitations',
-                    description: 'Issue secure registration tokens to admins & members.',
+                    title: context.trc('identity.shortcut_invitations', fallback: 'User Invitations'),
+                    description: context.trc('identity.shortcut_invitations_desc', fallback: 'Issue secure registration tokens to admins & members.'),
                     icon: Icons.mail_outline_rounded,
                     iconBg: const Color(0xFFA855F7),
                     width: cardWidth,
@@ -276,8 +281,8 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                     onTap: () => widget.onNavigateToTab?.call(9),
                   ),
                   _buildConsoleShortcut(
-                    title: 'Security Logs',
-                    description: 'Analyze login audit stream and tracking events.',
+                    title: context.trc('identity.shortcut_logs', fallback: 'Security Logs'),
+                    description: context.trc('identity.shortcut_logs_desc', fallback: 'Analyze login audit stream and tracking events.'),
                     icon: Icons.history_rounded,
                     iconBg: const Color(0xFF22C55E),
                     width: cardWidth,
@@ -285,8 +290,8 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                     onTap: () => widget.onNavigateToTab?.call(15),
                   ),
                   _buildConsoleShortcut(
-                    title: 'Global Policies',
-                    description: 'Set global password complexity and MFA triggers.',
+                    title: context.trc('identity.shortcut_policies', fallback: 'Global Policies'),
+                    description: context.trc('identity.shortcut_policies_desc', fallback: 'Set global password complexity and MFA triggers.'),
                     icon: Icons.password_outlined,
                     iconBg: const Color(0xFFF59E0B),
                     width: cardWidth,
@@ -323,7 +328,7 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                             const SizedBox(width: 8),
                             Flexible(
                               child: Text(
-                                'Recent Security Events',
+                                context.trc('identity.recent_events', fallback: 'Recent Security Events'),
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
@@ -337,7 +342,7 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                       ),
                       TextButton.icon(
                         icon: const Icon(Icons.arrow_forward, size: 14),
-                        label: const Text('View All Logs', style: TextStyle(fontSize: 12)),
+                        label: Text(context.trc('identity.view_all_logs', fallback: 'View All Logs'), style: const TextStyle(fontSize: 12)),
                         onPressed: () => widget.onNavigateToTab?.call(15),
                       ),
                     ],
@@ -349,7 +354,7 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                     padding: const EdgeInsets.all(32),
                     child: Center(
                       child: Text(
-                        'No recent security events recorded in workspace audit stream.',
+                        context.trc('identity.no_recent_events', fallback: 'No recent security events recorded in workspace audit stream.'),
                         style: TextStyle(
                           color: isDark ? AppColors.gray400 : AppColors.gray600,
                           fontSize: 13,
@@ -426,7 +431,9 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                                   borderRadius: BorderRadius.circular(100),
                                 ),
                                 child: Text(
-                                  isSuccess ? 'Success' : 'Failed',
+                                  isSuccess
+                                      ? context.trc('identity.success', fallback: 'Success')
+                                      : context.trc('identity.failed', fallback: 'Failed'),
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
@@ -518,7 +525,7 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Security Event Audit Record',
+                        context.trc('identity.event_audit_record', fallback: 'Security Event Audit Record'),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -539,13 +546,13 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
               ],
             ),
             const SizedBox(height: 20),
-            _buildAuditDetailRow('Event Activity', eventType.toString(), isDark),
+            _buildAuditDetailRow(context.trc('identity.event_activity', fallback: 'Event Activity'), eventType.toString(), isDark),
             const SizedBox(height: 10),
-            _buildAuditDetailRow('IP Address', ip.toString(), isDark, canCopy: true),
+            _buildAuditDetailRow(context.trc('identity.ip_address', fallback: 'IP Address'), ip.toString(), isDark, canCopy: true),
             const SizedBox(height: 10),
-            _buildAuditDetailRow('Location / Origin', location.toString(), isDark),
+            _buildAuditDetailRow(context.trc('identity.location_origin', fallback: 'Location / Origin'), location.toString(), isDark),
             const SizedBox(height: 10),
-            _buildAuditDetailRow('Full User Agent / Client Details', rawDevice.toString(), isDark, canCopy: true),
+            _buildAuditDetailRow(context.trc('identity.client_details', fallback: 'Full User Agent / Client Details'), rawDevice.toString(), isDark, canCopy: true),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -555,7 +562,7 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
-                child: const Text('Close'),
+                child: Text(context.trc('identity.close', fallback: 'Close')),
               ),
             ),
           ],
@@ -588,7 +595,7 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
                   onTap: () {
                     Clipboard.setData(ClipboardData(text: value));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Copied $label to clipboard'), duration: const Duration(seconds: 1)),
+                      SnackBar(content: Text('${context.trc('identity.copied_clipboard', fallback: 'Copied to clipboard')}: $label'), duration: const Duration(seconds: 1)),
                     );
                   },
                   child: const Padding(
@@ -731,7 +738,7 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
               const Icon(Icons.phonelink_lock_outlined, size: 20, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
-                'MFA Verification Method Distribution',
+                context.trc('identity.mfa_distribution', fallback: 'MFA Verification Method Distribution'),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -788,7 +795,7 @@ class _IdentityDashboardViewState extends ConsumerState<IdentityDashboardView> {
               const Icon(Icons.gpp_maybe_outlined, size: 20, color: Color(0xFF8B5CF6)),
               const SizedBox(width: 8),
               Text(
-                'Identity Operational Overview',
+                context.trc('identity.operational_overview', fallback: 'Identity Operational Overview'),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
@@ -969,31 +976,31 @@ class _MfaDonutChartState extends State<_MfaDonutChart> with SingleTickerProvide
 
     final slices = [
       _MfaSliceData(
-        label: 'Google Authenticator',
+        label: context.trc('mfa.google_authenticator', fallback: 'Google Authenticator'),
         count: widget.mfaGoogle,
         percent: ((widget.mfaGoogle / effectiveTotal) * 100).round(),
         color: const Color(0xFF0050E5), // Royal blue matching web Chart.js
       ),
       _MfaSliceData(
-        label: 'Microsoft Authenticator',
+        label: context.trc('mfa.microsoft_authenticator', fallback: 'Microsoft Authenticator'),
         count: widget.mfaMicrosoft,
         percent: ((widget.mfaMicrosoft / effectiveTotal) * 100).round(),
         color: const Color(0xFF3B82F6), // Light blue matching web Chart.js
       ),
       _MfaSliceData(
-        label: 'Email OTP',
+        label: context.trc('mfa.email_otp', fallback: 'Email OTP'),
         count: widget.mfaEmail,
         percent: ((widget.mfaEmail / effectiveTotal) * 100).round(),
         color: const Color(0xFF10B981), // Emerald green matching web Chart.js
       ),
       _MfaSliceData(
-        label: 'SMS OTP',
+        label: context.trc('mfa.sms_otp', fallback: 'SMS OTP'),
         count: widget.mfaSms,
         percent: ((widget.mfaSms / effectiveTotal) * 100).round(),
         color: const Color(0xFFF59E0B), // Amber matching web Chart.js
       ),
       _MfaSliceData(
-        label: 'Disabled',
+        label: context.trc('mfa.disabled_label', fallback: 'Disabled'),
         count: widget.mfaNone,
         percent: ((widget.mfaNone / effectiveTotal) * 100).round(),
         color: widget.isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1), // Gray matching web Chart.js
@@ -1230,7 +1237,11 @@ class _OperationalBarChartState extends State<_OperationalBarChart> with SingleT
   @override
   Widget build(BuildContext context) {
     final values = [widget.activeGuards, widget.lockedOut, widget.retries];
-    final labels = ['Active Guards', 'Locked Out', 'Brute Force Attempts'];
+    final labels = [
+      context.trc('identity.chart_active_guards', fallback: 'Active Guards'),
+      context.trc('identity.chart_locked_out', fallback: 'Locked Out'),
+      context.trc('identity.chart_brute_force', fallback: 'Brute Force Attempts'),
+    ];
     final colors = [
       const Color(0xFF10B981), // Emerald green matching web Chart.js
       const Color(0xFFEF4444), // Crimson red matching web Chart.js

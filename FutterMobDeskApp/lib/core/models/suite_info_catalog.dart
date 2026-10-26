@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../localization/language_provider.dart';
 
 /// Represents structured domain knowledge and capabilities for an enterprise suite.
 class SuiteInfoItem {
@@ -519,7 +520,7 @@ class SuiteInfoCatalog {
                         const SizedBox(height: 14),
                         _buildSectionCard(
                           icon: Icons.checklist_rounded,
-                          label: 'Key Capabilities',
+                          label: context.trc('suite.core_capabilities', fallback: 'Key Capabilities'),
                           content: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: item.capabilities.map((c) => Padding(
@@ -549,7 +550,7 @@ class SuiteInfoCatalog {
                         const SizedBox(height: 12),
                         _buildSectionCard(
                           icon: Icons.bolt_rounded,
-                          label: 'Business Impact',
+                          label: context.trc('suite.business_impact', fallback: 'Business Impact'),
                           content: Text(
                             item.impact,
                             style: TextStyle(
@@ -574,7 +575,7 @@ class SuiteInfoCatalog {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Dismiss', style: TextStyle(fontWeight: FontWeight.w600)),
+                    child: Text(context.trc('common.dismiss', fallback: 'Dismiss'), style: const TextStyle(fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
