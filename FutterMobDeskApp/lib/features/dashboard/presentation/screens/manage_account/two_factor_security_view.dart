@@ -450,12 +450,14 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                         child: const Icon(Icons.qr_code_scanner_rounded, size: 20, color: AppColors.primary),
                       ),
                       const SizedBox(width: 12),
-                      Text(
-                        'account.setup_authenticator'.tr(ref, fallback: 'Set Up Authenticator App'),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                      Expanded(
+                        child: Text(
+                          'account.setup_authenticator'.tr(ref, fallback: 'Set Up Authenticator App'),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                          ),
                         ),
                       ),
                     ],
