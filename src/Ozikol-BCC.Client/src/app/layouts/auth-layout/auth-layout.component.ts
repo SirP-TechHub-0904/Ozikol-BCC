@@ -26,15 +26,15 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
       <div class="auth-backdrop-overlay"></div>
 
       <!-- Floating Return to Home Button in Centered Mode -->
-      <a routerLink="/" class="centered-return-home" *ngIf="isCentered" title="Return to Home">
+      <a routerLink="/" class="centered-return-home" *ngIf="isCentered" [title]="'adm.return_to_home' | translate:'Return to Home'">
         <span class="material-symbols-outlined">arrow_back</span>
-        <span>Return to Home</span>
+        <span>{{ 'adm.return_to_home' | translate:'Return to Home' }}</span>
       </a>
 
       <!-- Floating Auth Top Utility Bar (Language Selector) -->
       <div class="auth-top-floating-bar" (click)="$event.stopPropagation()">
         <div class="oz-lang-switcher" id="authLangSwitcher">
-          <button type="button" class="oz-lang-btn" (click)="toggleLangDropdown($event)" [attr.aria-expanded]="showLangDropdown" aria-label="Select Language">
+          <button type="button" class="oz-lang-btn" (click)="toggleLangDropdown($event)" [attr.aria-expanded]="showLangDropdown" [attr.aria-label]="'adm.select_language' | translate:'Select Language'">
             <span class="oz-lang-flag">{{ currentLangOption.shortLabel }}</span>
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 1L5 5L9 1"/>
@@ -58,7 +58,7 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
           <div class="showcase-content">
             <!-- Brand Identity Header -->
             <div class="showcase-header">
-              <a routerLink="/" class="brand-link" title="Return to Home">
+              <a routerLink="/" class="brand-link" [title]="'adm.return_to_home' | translate:'Return to Home'">
                 <img 
                   *ngIf="displayLogo && !logoLoadFailed" 
                   [src]="displayLogo" 
@@ -84,13 +84,13 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
 
             <!-- Showcase Footer -->
             <div class="showcase-footer">
-              <a routerLink="/" class="btn-return-home" title="Return to Home">
+              <a routerLink="/" class="btn-return-home" [title]="'adm.return_to_home' | translate:'Return to Home'">
                 <span class="material-symbols-outlined">arrow_back</span>
-                <span>Return to Home</span>
+                <span>{{ 'adm.return_to_home' | translate:'Return to Home' }}</span>
               </a>
               <div class="footer-meta">
                 <span class="powered-by-tag">
-                  Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a>
+                  {{ 'adm.powered_by' | translate:'Powered by' }} <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a>
                 </span>
               </div>
             </div>
@@ -110,7 +110,7 @@ import { TranslatePipe } from '../../core/pipes/translate.pipe';
               <div class="form-footer-meta">
                 <p class="auth-terms-note" *ngIf="displayFooterNote">{{ displayFooterNote }}</p>
                 <div class="powered-by-row" [class.desktop-hidden-in-split]="!isCentered">
-                  <span>Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a></span>
+                  <span>{{ 'adm.powered_by' | translate:'Powered by' }} <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer">Ozikol</a></span>
                 </div>
               </div>
             </div>

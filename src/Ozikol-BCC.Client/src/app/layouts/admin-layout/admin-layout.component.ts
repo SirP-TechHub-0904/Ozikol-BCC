@@ -61,7 +61,7 @@ export interface SuiteInfoDetail {
         <!-- Section: PIN NAVIGATION -->
         <div id="pinned-sidebar-section" *ngIf="pinnedItems.length > 0">
           <div class="menu-title" style="display:flex; justify-content:space-between; align-items:center;">
-            <span>Pin Navigation</span>
+            <span>{{ 'adm.pin_navigation' | translate:'Pin Navigation' }}</span>
             <span class="badge-pill" style="background:#0050e5;">{{ pinnedItems.length }}</span>
           </div>
           <div class="nav-item" *ngFor="let item of pinnedItems">
@@ -70,7 +70,7 @@ export interface SuiteInfoDetail {
                 <span class="material-symbols-outlined">{{ item.icon }}</span>
                 <span>{{ item.title }}</span>
               </div>
-              <button type="button" class="pin-btn pinned" (click)="togglePin(item.title, item.url, item.icon); $event.preventDefault(); $event.stopPropagation();" title="Unpin Task">
+              <button type="button" class="pin-btn pinned" (click)="togglePin(item.title, item.url, item.icon); $event.preventDefault(); $event.stopPropagation();" [title]="'adm.unpin_task' | translate:'Unpin Task'">
                 <span class="material-symbols-outlined">keep_off</span>
               </button>
             </a>
@@ -84,7 +84,7 @@ export interface SuiteInfoDetail {
           <!-- 1. Executive Command -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.core_command' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('core_command', $event)" title="Executive Command Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('core_command', $event)" [title]="'adm.executive_command_overview' | translate:'Executive Command Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -103,8 +103,8 @@ export interface SuiteInfoDetail {
             <a routerLink="/dashboard/console/analytics" [class.active]="isCurrentRoute('/dashboard/console/analytics')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">analytics</span>
-                <span>Analytics & Telemetry</span>
-                <span class="badge-pill badge-hot">Live</span>
+                <span>{{ 'adm.analytics_telemetry' | translate:'Analytics & Telemetry' }}</span>
+                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/dashboard/console/analytics')" (click)="togglePin('Analytics', '/dashboard/console/analytics', 'analytics'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/dashboard/console/analytics') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/dashboard/console/analytics') ? 'keep_off' : 'push_pin' }}</span>
@@ -116,7 +116,7 @@ export interface SuiteInfoDetail {
           <ng-container *ngIf="canAccessSuite('cms')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.website_cms' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('website_cms', $event)" title="Website & CMS Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('website_cms', $event)" [title]="'adm.website_cms_overview' | translate:'Website & CMS Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -126,7 +126,7 @@ export interface SuiteInfoDetail {
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">dynamic_feed</span>
                 <span>{{ 'nav.cms_studio' | translate }}</span>
-                <span class="badge-pill badge-new">Live</span>
+                <span class="badge-pill badge-new">{{ 'adm.live' | translate:'Live' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
@@ -182,7 +182,7 @@ export interface SuiteInfoDetail {
                 </div>
               </li>
               <li class="sub-nav-divider">
-                <span class="sub-divider-text">Form Inquiries & Leads</span>
+                <span class="sub-divider-text">{{ 'adm.form_inquiries_leads' | translate:'Form Inquiries & Leads' }}</span>
               </li>
               <li *ngFor="let formItem of sidebarForms">
                 <div class="sub-nav-wrapper">
@@ -211,7 +211,7 @@ export interface SuiteInfoDetail {
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">palette</span>
                 <span>{{ 'nav.brand_settings' | translate }}</span>
-                <span class="badge-pill badge-hot">Hot</span>
+                <span class="badge-pill badge-hot">{{ 'adm.hot' | translate:'Hot' }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console')" (click)="togglePin('Brand Settings', '/settings/console', 'palette'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/settings/console') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/settings/console') ? 'keep_off' : 'push_pin' }}</span>
@@ -268,7 +268,7 @@ export interface SuiteInfoDetail {
             <a [href]="liveWebsiteUrl" target="_blank" class="nav-link" [title]="hasCustomDomain ? 'Visit ' + customDomain + ' in new tab' : 'Visit live public website in new tab'">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">open_in_browser</span>
-                <span>Live Public Site</span>
+                <span>{{ 'adm.live_public_site' | translate:'Live Public Site' }}</span>
               </div>
               <span class="material-symbols-outlined nav-external-hint">open_in_new</span>
             </a>
@@ -278,7 +278,7 @@ export interface SuiteInfoDetail {
           <ng-container *ngIf="canAccessSuite('user_management')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.user_management' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('user_management', $event)" title="User Management Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('user_management', $event)" [title]="'adm.user_management_overview' | translate:'User Management Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -294,7 +294,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/dashboard" [class.active]="isCurrentRoute('/users/console/dashboard')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Dashboard Overview</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>{{ 'adm.dashboard_overview' | translate:'Dashboard Overview' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/dashboard')" (click)="togglePin('User Dashboard', '/users/console/dashboard', 'analytics')" [title]="isPinned('/users/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/console/dashboard') ? 'keep_off' : 'push_pin' }}</span>
@@ -334,7 +334,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/auth-setup" [class.active]="isCurrentRoute('/users/console/auth-setup')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">branding_watermark</span>Auth Page Setup</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">branding_watermark</span>{{ 'adm.auth_page_setup' | translate:'Auth Page Setup' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/auth-setup')" (click)="togglePin('Auth Page Setup', '/users/console/auth-setup', 'branding_watermark')" [title]="isPinned('/users/console/auth-setup') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/console/auth-setup') ? 'keep_off' : 'push_pin' }}</span>
@@ -354,7 +354,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/settings" [class.active]="isCurrentRoute('/users/console/settings')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>User Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>{{ 'adm.user_settings' | translate:'User Settings' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/settings')" (click)="togglePin('User Settings', '/users/console/settings', 'tune')" [title]="isPinned('/users/console/settings') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/console/settings') ? 'keep_off' : 'push_pin' }}</span>
@@ -485,7 +485,7 @@ export interface SuiteInfoDetail {
           <ng-container *ngIf="canAccessSuite('people_community')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.people_community' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('people_community', $event)" title="People & Community Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('people_community', $event)" [title]="'adm.people_community_overview' | translate:'People & Community Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -501,7 +501,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/groups/console" [class.active]="isParentActive('/groups/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Groups Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.groups_dashboard' | translate:'Groups Dashboard' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/groups/console')" (click)="togglePin('Groups Dashboard', '/groups/console', 'space_dashboard')" [title]="isPinned('/groups/console') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/groups/console') ? 'keep_off' : 'push_pin' }}</span>
@@ -511,14 +511,14 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/groups/console" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">diversity_3</span>Manage Groups</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">diversity_3</span>{{ 'adm.manage_groups' | translate:'Manage Groups' }}</span>
                   </a>
                 </div>
               </li>
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Groups Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.groups_settings' | translate:'Groups Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -537,7 +537,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/admin/alumni" [class.active]="isCurrentRoute('/admin/alumni')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Alumni Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.alumni_dashboard' | translate:'Alumni Dashboard' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni')" (click)="togglePin('Alumni Dashboard', '/admin/alumni', 'space_dashboard')" [title]="isPinned('/admin/alumni') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/admin/alumni') ? 'keep_off' : 'push_pin' }}</span>
@@ -547,7 +547,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/admin/alumni/cohorts" [class.active]="isCurrentRoute('/admin/alumni/cohorts')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Manage Alumni & Cohorts</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>{{ 'adm.manage_alumni_cohorts' | translate:'Manage Alumni & Cohorts' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni/cohorts')" (click)="togglePin('Alumni Cohorts', '/admin/alumni/cohorts', 'calendar_month')" [title]="isPinned('/admin/alumni/cohorts') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/admin/alumni/cohorts') ? 'keep_off' : 'push_pin' }}</span>
@@ -557,7 +557,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Alumni Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.alumni_settings' | translate:'Alumni Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -569,7 +569,7 @@ export interface SuiteInfoDetail {
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">chat</span>
                 <span>{{ 'nav.chat_messenger' | translate }}</span>
-                <span class="badge-pill badge-hot">Live</span>
+                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/admin/messenger') ? 'keep_off' : 'push_pin' }}</span>
@@ -585,7 +585,7 @@ export interface SuiteInfoDetail {
           <!-- Suite 4: Workforce & Shifts -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.workforce_shifts' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('workforce_shifts', $event)" title="Workforce & Shifts Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('workforce_shifts', $event)" [title]="'adm.workforce_shifts_overview' | translate:'Workforce & Shifts Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -593,7 +593,7 @@ export interface SuiteInfoDetail {
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('workforce')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">calendar_month</span>
-                <span>Workforce & Shifts</span>
+                <span>{{ 'adm.workforce_shifts' | translate:'Workforce & Shifts' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
@@ -601,7 +601,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Workforce Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.workforce_dashboard' | translate:'Workforce Dashboard' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -609,7 +609,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event_note</span>Staff & Volunteer Rota</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event_note</span>{{ 'adm.staff_volunteer_rota' | translate:'Staff & Volunteer Rota' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -617,7 +617,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">swap_horiz</span>Shift Swaps & Leave</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">swap_horiz</span>{{ 'adm.shift_swaps_leave' | translate:'Shift Swaps & Leave' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -625,7 +625,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">timer</span>Attendance & Clock-In</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">timer</span>{{ 'adm.attendance_clock_in' | translate:'Attendance & Clock-In' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -633,7 +633,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Workforce Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.workforce_settings' | translate:'Workforce Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -648,7 +648,7 @@ export interface SuiteInfoDetail {
           <!-- Suite 5: Events & Ticketing -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.events_ticketing' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('events_ticketing', $event)" title="Events & Ticketing Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('events_ticketing', $event)" [title]="'adm.events_ticketing_overview' | translate:'Events & Ticketing Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -656,7 +656,7 @@ export interface SuiteInfoDetail {
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('events')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">confirmation_number</span>
-                <span>Events & Ticketing</span>
+                <span>{{ 'adm.events_ticketing' | translate:'Events & Ticketing' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
@@ -664,7 +664,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Events Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.events_dashboard' | translate:'Events Dashboard' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -672,7 +672,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event</span>Manage Events & Passes</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event</span>{{ 'adm.manage_events_passes' | translate:'Manage Events & Passes' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -680,7 +680,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mic</span>Speaker & Session Tracks</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mic</span>{{ 'adm.speaker_session_tracks' | translate:'Speaker & Session Tracks' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -688,7 +688,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">how_to_reg</span>Attendee Management & Check-In</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">how_to_reg</span>{{ 'adm.attendee_management_check_in' | translate:'Attendee Management & Check-In' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -696,7 +696,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Events Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.events_settings' | translate:'Events Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -707,7 +707,7 @@ export interface SuiteInfoDetail {
           <!-- Suite 6: Commerce & Store -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.commerce_store' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('commerce_store', $event)" title="Commerce & Store Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('commerce_store', $event)" [title]="'adm.commerce_store_overview' | translate:'Commerce & Store Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -716,7 +716,7 @@ export interface SuiteInfoDetail {
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">storefront</span>
                 <span>{{ 'nav.commerce_studio' | translate }}</span>
-                <span class="badge-pill badge-new">New</span>
+                <span class="badge-pill badge-new">{{ 'adm.new' | translate:'New' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
@@ -724,7 +724,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console" [class.active]="isCurrentRoute('/products/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Store Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.store_dashboard' | translate:'Store Dashboard' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console')" (click)="togglePin('Store Dashboard', '/products/console', 'space_dashboard')" [title]="isPinned('/products/console') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/products/console') ? 'keep_off' : 'push_pin' }}</span>
@@ -741,7 +741,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console/categories" [class.active]="isParentActive('/products/console/categories')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">category</span>Product Categories</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">category</span>{{ 'adm.product_categories' | translate:'Product Categories' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/categories')" (click)="togglePin('Product Categories', '/products/console/categories', 'category')" [title]="isPinned('/products/console/categories') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/products/console/categories') ? 'keep_off' : 'push_pin' }}</span>
@@ -751,7 +751,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console/orders" [class.active]="isCurrentRoute('/products/console/orders')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">local_shipping</span>Customer Orders & Fulfillment</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">local_shipping</span>{{ 'adm.customer_orders_fulfillment' | translate:'Customer Orders & Fulfillment' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/orders')" (click)="togglePin('Customer Orders', '/products/console/orders', 'local_shipping')" [title]="isPinned('/products/console/orders') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/products/console/orders') ? 'keep_off' : 'push_pin' }}</span>
@@ -761,7 +761,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console/transactions" [class.active]="isCurrentRoute('/products/console/transactions')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">receipt_long</span>Financial Settlement Ledger</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">receipt_long</span>{{ 'adm.financial_settlement_ledger' | translate:'Financial Settlement Ledger' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/transactions')" (click)="togglePin('Financial Ledger', '/products/console/transactions', 'receipt_long')" [title]="isPinned('/products/console/transactions') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/products/console/transactions') ? 'keep_off' : 'push_pin' }}</span>
@@ -771,7 +771,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Store Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.store_settings' | translate:'Store Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -789,7 +789,7 @@ export interface SuiteInfoDetail {
           <!-- Suite 7: Finance & Banking -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.finance_banking' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('finance_banking', $event)" title="Finance & Banking Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('finance_banking', $event)" [title]="'adm.finance_banking_overview' | translate:'Finance & Banking Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -805,7 +805,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Invoicing Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.invoicing_dashboard' | translate:'Invoicing Dashboard' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -813,7 +813,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">receipt</span>Manage Invoices & Dues</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">receipt</span>{{ 'adm.manage_invoices_dues' | translate:'Manage Invoices & Dues' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -821,7 +821,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Invoicing Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.invoicing_settings' | translate:'Invoicing Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -840,7 +840,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">hub</span>Connected Gateways & Payouts</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">hub</span>{{ 'adm.connected_gateways_payouts' | translate:'Connected Gateways & Payouts' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -848,7 +848,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Payment Rail Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.payment_rail_settings' | translate:'Payment Rail Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -863,7 +863,7 @@ export interface SuiteInfoDetail {
             <a routerLink="/products/console/transactions" [class.active]="isCurrentRoute('/products/console/transactions')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">receipt_long</span>
-                <span>Financial Ledger</span>
+                <span>{{ 'adm.financial_ledger' | translate:'Financial Ledger' }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/transactions')" (click)="togglePin('Financial Ledger', '/products/console/transactions', 'receipt_long')" [title]="isPinned('/products/console/transactions') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/products/console/transactions') ? 'keep_off' : 'push_pin' }}</span>
@@ -874,7 +874,7 @@ export interface SuiteInfoDetail {
           <!-- Suite 8: Communication & Support -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.communication_support' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('communication_support', $event)" title="Communication & Support Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('communication_support', $event)" [title]="'adm.communication_support_overview' | translate:'Communication & Support Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -890,7 +890,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/notifications" [class.active]="isCurrentRoute('/users/console/notifications')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Broadcasts Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>{{ 'adm.broadcasts_dashboard' | translate:'Broadcasts Dashboard' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/notifications')" (click)="togglePin('Notification Studio', '/users/console/notifications', 'campaign')" [title]="isPinned('/users/console/notifications') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/console/notifications') ? 'keep_off' : 'push_pin' }}</span>
@@ -900,14 +900,14 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/notifications" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">send</span>Compose Broadcast</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">send</span>{{ 'adm.compose_broadcast' | translate:'Compose Broadcast' }}</span>
                   </a>
                 </div>
               </li>
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">security</span>Anti-Spam Scanner</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">security</span>{{ 'adm.anti_spam_scanner' | translate:'Anti-Spam Scanner' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -915,7 +915,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Delivery Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.delivery_settings' | translate:'Delivery Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -934,7 +934,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Support Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.support_dashboard' | translate:'Support Dashboard' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -942,7 +942,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">confirmation_number</span>Manage Tickets</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">confirmation_number</span>{{ 'adm.manage_tickets' | translate:'Manage Tickets' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -950,7 +950,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">chat_bubble</span>Live Chat Widget Control</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">chat_bubble</span>{{ 'adm.live_chat_widget_control' | translate:'Live Chat Widget Control' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -958,7 +958,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Helpdesk & SLA Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.helpdesk_sla_settings' | translate:'Helpdesk & SLA Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -966,14 +966,14 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">link</span><span>Bio Link-Tree Builder</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">link</span><span>{{ 'adm.bio_link_tree_builder' | translate:'Bio Link-Tree Builder' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
           <!-- Suite 9: Forms & Intelligence -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.forms_intelligence' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('forms_intelligence', $event)" title="Forms & Intelligence Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('forms_intelligence', $event)" [title]="'adm.forms_intelligence_overview' | translate:'Forms & Intelligence Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -989,7 +989,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/content/console/forms" [class.active]="isCurrentRoute('/content/console/forms')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Forms Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.forms_dashboard' | translate:'Forms Dashboard' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/forms')" (click)="togglePin('Forms Dashboard', '/content/console/forms', 'dynamic_form')" [title]="isPinned('/content/console/forms') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/content/console/forms') ? 'keep_off' : 'push_pin' }}</span>
@@ -999,14 +999,14 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/content/console/forms" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">edit_note</span>Form Builder & Responses</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">edit_note</span>{{ 'adm.form_builder_responses' | translate:'Form Builder & Responses' }}</span>
                   </a>
                 </div>
               </li>
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">schema</span>Custom Field Schemas</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">schema</span>{{ 'adm.custom_field_schemas' | translate:'Custom Field Schemas' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1014,7 +1014,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Form Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.form_settings' | translate:'Form Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1022,14 +1022,14 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>Survey Analytics & Reports</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>{{ 'adm.survey_analytics_reports' | translate:'Survey Analytics & Reports' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
           <!-- Suite 10: Academy & Training -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.academy_training' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('academy_training', $event)" title="Academy & Training Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('academy_training', $event)" [title]="'adm.academy_training_overview' | translate:'Academy & Training Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -1045,7 +1045,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>LMS Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.lms_dashboard' | translate:'LMS Dashboard' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1053,7 +1053,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">menu_book</span>Manage Courses & Lessons</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">menu_book</span>{{ 'adm.manage_courses_lessons' | translate:'Manage Courses & Lessons' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1061,7 +1061,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">quiz</span>Quizzes & Assessment</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">quiz</span>{{ 'adm.quizzes_assessment' | translate:'Quizzes & Assessment' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1069,7 +1069,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Course Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.course_settings' | translate:'Course Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1088,7 +1088,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">design_services</span>Certificate Designer</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">design_services</span>{{ 'adm.certificate_designer' | translate:'Certificate Designer' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1096,7 +1096,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history_edu</span>Issued Certificates</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history_edu</span>{{ 'adm.issued_certificates' | translate:'Issued Certificates' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1104,7 +1104,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">qr_code</span>Public QR Verification</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">qr_code</span>{{ 'adm.public_qr_verification' | translate:'Public QR Verification' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1112,7 +1112,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Credential Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.credential_settings' | translate:'Credential Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1123,7 +1123,7 @@ export interface SuiteInfoDetail {
           <!-- Suite 11: Compliance & Governance -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.compliance_governance' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('compliance_governance', $event)" title="Compliance & Governance Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('compliance_governance', $event)" [title]="'adm.compliance_governance_overview' | translate:'Compliance & Governance Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -1139,7 +1139,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Vault Overview</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.vault_overview' | translate:'Vault Overview' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1147,7 +1147,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">lock</span>Secure Documents & Folders</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">lock</span>{{ 'adm.secure_documents_folders' | translate:'Secure Documents & Folders' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1155,7 +1155,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Permissions & Retention</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.permissions_retention' | translate:'Permissions & Retention' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1174,7 +1174,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pending_actions</span>Verification Queue</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pending_actions</span>{{ 'adm.verification_queue' | translate:'Verification Queue' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1182,7 +1182,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Verification Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.verification_settings' | translate:'Verification Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1193,7 +1193,7 @@ export interface SuiteInfoDetail {
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('visitor')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">door_front</span>
-                <span>Visitor & Gate Passes</span>
+                <span>{{ 'adm.visitor_gate_passes' | translate:'Visitor & Gate Passes' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
@@ -1201,7 +1201,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pin</span>Active Passes & Check-In</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pin</span>{{ 'adm.active_passes_check_in' | translate:'Active Passes & Check-In' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1209,7 +1209,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Gate Pass Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.gate_pass_settings' | translate:'Gate Pass Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1220,7 +1220,7 @@ export interface SuiteInfoDetail {
           <!-- Suite 12: Demographics & Census -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.demographics_census' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('demographics_census', $event)" title="Demographics & Census Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('demographics_census', $event)" [title]="'adm.demographics_census_overview' | translate:'Demographics & Census Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -1236,7 +1236,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pin_drop</span>Census Map & Heatmap</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pin_drop</span>{{ 'adm.census_map_heatmap' | translate:'Census Map & Heatmap' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1244,7 +1244,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">home</span>Household Units</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">home</span>{{ 'adm.household_units' | translate:'Household Units' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1252,7 +1252,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Census Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.census_settings' | translate:'Census Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1263,7 +1263,7 @@ export interface SuiteInfoDetail {
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('resident_id')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">badge</span>
-                <span>Digital Resident IDs</span>
+                <span>{{ 'adm.digital_resident_ids' | translate:'Digital Resident IDs' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
@@ -1271,7 +1271,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">contact_emergency</span>Manage Issued ID Cards</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">contact_emergency</span>{{ 'adm.manage_issued_id_cards' | translate:'Manage Issued ID Cards' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1279,7 +1279,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">design_services</span>Card Template Designer</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">design_services</span>{{ 'adm.card_template_designer' | translate:'Card Template Designer' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1287,7 +1287,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>ID Card Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>{{ 'adm.id_card_settings' | translate:'ID Card Settings' }}</span>
                     <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
                   </span>
                 </div>
@@ -1295,27 +1295,27 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>Demographic Analytics</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>{{ 'adm.demographic_analytics' | translate:'Demographic Analytics' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
 
           <!-- Suite 13: Billing & Subscriptions (Platform Governance) -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.billing_subscriptions' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('billing_subscriptions', $event)" title="Billing & Subscriptions Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('billing_subscriptions', $event)" [title]="'adm.billing_subscriptions_overview' | translate:'Billing & Subscriptions Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">credit_card</span><span>Subscription Plans</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">credit_card</span><span>{{ 'adm.subscription_plans' | translate:'Subscription Plans' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>Payment Methods & Contacts</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>{{ 'adm.payment_methods_contacts' | translate:'Payment Methods & Contacts' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">calculate</span><span>Usage Bill Calculator</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">calculate</span><span>{{ 'adm.usage_bill_calculator' | translate:'Usage Bill Calculator' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
@@ -1326,7 +1326,7 @@ export interface SuiteInfoDetail {
           <!-- Suite 14: Security & Audit (Platform Protection) -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.security_audit' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" title="Security & Audit Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" [title]="'adm.security_audit_overview' | translate:'Security & Audit Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -1335,7 +1335,7 @@ export interface SuiteInfoDetail {
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">security</span>
                 <span>{{ 'nav.security_audit' | translate }}</span>
-                <span class="badge-pill badge-hot">Live</span>
+                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/audit-logs')" (click)="togglePin('Security Logs', '/identity/console/audit-logs', 'security'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/audit-logs') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/identity/console/audit-logs') ? 'keep_off' : 'push_pin' }}</span>
@@ -1343,11 +1343,11 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">manage_accounts</span><span>Login & Access History</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">manage_accounts</span><span>{{ 'adm.login_access_history' | translate:'Login & Access History' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">devices</span><span>Active Sessions & Remote Kill</span></span>
+            <span class="nav-link-content"><span class="material-symbols-outlined">devices</span><span>{{ 'adm.active_sessions_remote_kill' | translate:'Active Sessions & Remote Kill' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           <div class="nav-item">
@@ -1454,9 +1454,9 @@ export interface SuiteInfoDetail {
           </div>
         </div>
         <div class="sidebar-footer-actions">
-          <a href="javascript:void(0)" (click)="showHelpModal = true" title="Help & Support">
+          <a href="javascript:void(0)" (click)="showHelpModal = true" [title]="'adm.help_support' | translate:'Help & Support'">
             <span class="material-symbols-outlined">help_outline</span>
-            <span>Help & Support</span>
+            <span>{{ 'adm.help_support' | translate:'Help & Support' }}</span>
           </a>
         </div>
       </div>
@@ -1470,12 +1470,12 @@ export interface SuiteInfoDetail {
           <a routerLink="/admin/dashboard" class="topbar-brand-logo" [title]="brandName" *ngIf="brandIconUrl">
             <img [src]="brandIconUrl" [alt]="brandName" class="topbar-brand-img">
           </a>
-          <button type="button" class="topbar-action-btn" id="toggle-sidebar" (click)="toggleSidebar()" title="Toggle Navigation">
+          <button type="button" class="topbar-action-btn" id="toggle-sidebar" (click)="toggleSidebar()" [title]="'adm.toggle_navigation' | translate:'Toggle Navigation'">
             <span class="material-symbols-outlined">menu</span>
           </button>
           <div class="topbar-search-box">
             <span class="material-symbols-outlined search-icon">search</span>
-            <input type="text" [placeholder]="'shell.search_placeholder' | translate" aria-label="Search">
+            <input type="text" [placeholder]="'shell.search_placeholder' | translate" [attr.aria-label]="'adm.search' | translate:'Search'">
           </div>
         </div>
 
@@ -1488,7 +1488,7 @@ export interface SuiteInfoDetail {
             </button>
             <div class="workspace-switch-dropdown" *ngIf="activeDropdown === 'workspaces'">
               <div class="dropdown-header">
-                <span>Switch Organization</span>
+                <span>{{ 'adm.switch_organization' | translate:'Switch Organization' }}</span>
                 <span class="badge-pill" style="background: #10b981;">{{ activeWorkspacesCount }} Active</span>
               </div>
               <div class="workspace-list">
@@ -1505,9 +1505,9 @@ export interface SuiteInfoDetail {
                   <div class="ws-item-info">
                     <div class="ws-item-name">{{ ws.organizationName || ws.tenantKey }}</div>
                     <div class="ws-item-sub">
-                      <span *ngIf="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()" class="ws-current-tag">Current</span>
+                      <span *ngIf="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()" class="ws-current-tag">{{ 'adm.current' | translate:'Current' }}</span>
                       <span *ngIf="ws.tenantKey.toLowerCase() !== (tenantKey || '').toLowerCase() && ws.authToken" class="ws-active-tag">● Logged In</span>
-                      <span *ngIf="!ws.authToken" class="ws-signed-out-tag">Signed Out</span>
+                      <span *ngIf="!ws.authToken" class="ws-signed-out-tag">{{ 'adm.signed_out' | translate:'Signed Out' }}</span>
                       <span class="ws-item-email" *ngIf="ws.userEmail">&bull; {{ ws.userEmail }}</span>
                     </div>
                   </div>
@@ -1529,7 +1529,7 @@ export interface SuiteInfoDetail {
 
           <!-- Central Pattern Multi-Language Switcher Component -->
           <div class="oz-lang-switcher" id="ozLangSwitcher" (click)="$event.stopPropagation()">
-            <button type="button" class="oz-lang-btn" (click)="toggleDropdown('language', $event)" [attr.aria-expanded]="activeDropdown === 'language'" aria-label="Select Language" [title]="'Select Language (' + currentLangOption.name + ')'">
+            <button type="button" class="oz-lang-btn" (click)="toggleDropdown('language', $event)" [attr.aria-expanded]="activeDropdown === 'language'" [attr.aria-label]="'adm.select_language' | translate:'Select Language'" [title]="'Select Language (' + currentLangOption.name + ')'">
               <span class="oz-lang-flag">{{ currentLangOption.shortLabel }}</span>
               <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 1L5 5L9 1"/>
@@ -1546,55 +1546,55 @@ export interface SuiteInfoDetail {
 
           <!-- 12-App Grid Launcher -->
           <div class="apps-grid-wrapper">
-            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('apps', $event)" title="Apps Launcher">
+            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('apps', $event)" [title]="'adm.apps_launcher' | translate:'Apps Launcher'">
               <span class="material-symbols-outlined">grid_view</span>
             </button>
             <div class="apps-grid-dropdown" *ngIf="activeDropdown === 'apps'">
-              <div class="apps-grid-header">Workspace Apps & Features</div>
+              <div class="apps-grid-header">{{ 'adm.workspace_apps_features' | translate:'Workspace Apps & Features' }}</div>
               <div class="apps-grid-container">
                 <a routerLink="/admin/dashboard" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#0050e5"><span class="material-symbols-outlined">space_dashboard</span></div>
-                  <span>Console</span>
+                  <span>{{ 'adm.console' | translate:'Console' }}</span>
                 </a>
                 <a routerLink="/admin/content" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#1f6bff"><span class="material-symbols-outlined">dynamic_feed</span></div>
-                  <span>CMS Studio</span>
+                  <span>{{ 'adm.cms_studio' | translate:'CMS Studio' }}</span>
                 </a>
                 <a routerLink="/admin/users" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#22c55e"><span class="material-symbols-outlined">groups</span></div>
-                  <span>Users</span>
+                  <span>{{ 'adm.users' | translate:'Users' }}</span>
                 </a>
                 <a routerLink="/admin/identity" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#ef4444"><span class="material-symbols-outlined">admin_panel_settings</span></div>
-                  <span>Identity</span>
+                  <span>{{ 'adm.identity' | translate:'Identity' }}</span>
                 </a>
                 <a routerLink="/admin/groups" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#a855f7"><span class="material-symbols-outlined">forum</span></div>
-                  <span>Channels</span>
+                  <span>{{ 'adm.channels' | translate:'Channels' }}</span>
                 </a>
                 <a routerLink="/admin/settings" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#f59e0b"><span class="material-symbols-outlined">palette</span></div>
-                  <span>Brand</span>
+                  <span>{{ 'adm.brand' | translate:'Brand' }}</span>
                 </a>
                 <a routerLink="/" target="_blank" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#14b8a6"><span class="material-symbols-outlined">language</span></div>
-                  <span>Public Site</span>
+                  <span>{{ 'adm.public_site' | translate:'Public Site' }}</span>
                 </a>
                 <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#64748b"><span class="material-symbols-outlined">summarize</span></div>
-                  <span>Reports</span>
+                  <span>{{ 'adm.reports' | translate:'Reports' }}</span>
                 </a>
                 <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#3b82f6"><span class="material-symbols-outlined">edit_document</span></div>
-                  <span>Forms</span>
+                  <span>{{ 'adm.forms' | translate:'Forms' }}</span>
                 </a>
                 <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#ca8a04"><span class="material-symbols-outlined">payments</span></div>
-                  <span>Financials</span>
+                  <span>{{ 'adm.financials' | translate:'Financials' }}</span>
                 </a>
                 <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#8b5cf6"><span class="material-symbols-outlined">calendar_month</span></div>
-                  <span>Events</span>
+                  <span>{{ 'adm.events' | translate:'Events' }}</span>
                 </a>
                 <a routerLink="/admin/settings" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#0f172a"><span class="material-symbols-outlined">settings</span></div>
@@ -1606,7 +1606,7 @@ export interface SuiteInfoDetail {
 
           <!-- Calendar Popover -->
           <div class="calendar-wrapper">
-            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('calendar', $event)" title="Calendar">
+            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('calendar', $event)" [title]="'adm.calendar' | translate:'Calendar'">
               <span class="material-symbols-outlined">calendar_today</span>
             </button>
             <div class="calendar-dropdown-menu" *ngIf="activeDropdown === 'calendar'">
@@ -1632,12 +1632,12 @@ export interface SuiteInfoDetail {
           </div>
 
           <!-- Help Trigger -->
-          <button type="button" class="topbar-action-btn" (click)="showHelpModal = true" title="Contextual Help">
+          <button type="button" class="topbar-action-btn" (click)="showHelpModal = true" [title]="'adm.contextual_help' | translate:'Contextual Help'">
             <span class="material-symbols-outlined">help_outline</span>
           </button>
 
           <!-- Fullscreen Toggle -->
-          <button type="button" class="topbar-action-btn" (click)="toggleFullscreen()" title="Toggle Fullscreen">
+          <button type="button" class="topbar-action-btn" (click)="toggleFullscreen()" [title]="'adm.toggle_fullscreen' | translate:'Toggle Fullscreen'">
             <span class="material-symbols-outlined">fullscreen</span>
           </button>
 
@@ -1648,18 +1648,18 @@ export interface SuiteInfoDetail {
 
           <!-- Notifications Bell -->
           <div class="notifications-wrapper">
-            <button type="button" class="topbar-action-btn notification-circle-btn" (click)="toggleDropdown('notifications', $event)" title="Notifications">
+            <button type="button" class="topbar-action-btn notification-circle-btn" (click)="toggleDropdown('notifications', $event)" [title]="'adm.notifications' | translate:'Notifications'">
               <span class="material-symbols-outlined">notifications</span>
               <sup class="notif-badge-sup" *ngIf="unreadNotifCount > 0">{{ unreadNotifCount > 9 ? '9+' : unreadNotifCount }}</sup>
             </button>
             <div class="notifications-dropdown" *ngIf="activeDropdown === 'notifications'">
               <div class="dropdown-header">
-                <span>System Notifications</span>
+                <span>{{ 'adm.system_notifications' | translate:'System Notifications' }}</span>
                 <div class="dropdown-hdr-actions">
-                  <button type="button" class="hdr-mini-btn" (click)="markAllNotificationsRead(); $event.stopPropagation();" title="Mark all as read" *ngIf="unreadNotifCount > 0">
+                  <button type="button" class="hdr-mini-btn" (click)="markAllNotificationsRead(); $event.stopPropagation();" [title]="'adm.mark_all_as_read' | translate:'Mark all as read'" *ngIf="unreadNotifCount > 0">
                     <span class="material-symbols-outlined">done_all</span>
                   </button>
-                  <button type="button" class="hdr-mini-btn danger" (click)="clearAllNotifications(); $event.stopPropagation();" title="Clear all">
+                  <button type="button" class="hdr-mini-btn danger" (click)="clearAllNotifications(); $event.stopPropagation();" [title]="'adm.clear_all' | translate:'Clear all'">
                     <span class="material-symbols-outlined">delete_sweep</span>
                   </button>
                 </div>
@@ -1678,7 +1678,7 @@ export interface SuiteInfoDetail {
                 </div>
                 <div class="notification-empty" *ngIf="!notificationFeed?.length">
                   <span class="material-symbols-outlined empty-icon">notifications_off</span>
-                  <p>No notifications</p>
+                  <p>{{ 'adm.no_notifications' | translate:'No notifications' }}</p>
                 </div>
               </div>
               <div class="dropdown-footer">
@@ -1724,11 +1724,11 @@ export interface SuiteInfoDetail {
               </a>
               <a routerLink="/admin/settings" (click)="closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
                 <span class="material-symbols-outlined">settings</span>
-                <span>Workspace Settings</span>
+                <span>{{ 'adm.workspace_settings' | translate:'Workspace Settings' }}</span>
               </a>
               <a routerLink="/products/console/queues" (click)="closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
                 <span class="material-symbols-outlined">sync_alt</span>
-                <span>Queue Monitor</span>
+                <span>{{ 'adm.queue_monitor' | translate:'Queue Monitor' }}</span>
               </a>
               <!-- Multi-Workspace Quick Switch in Profile Dropdown -->
               <ng-container *ngIf="otherActiveWorkspaces.length > 0">
@@ -1795,17 +1795,17 @@ export interface SuiteInfoDetail {
         <div class="modal-header">
           <div class="modal-title-group">
             <span class="material-symbols-outlined text-blue">help_outline</span>
-            <h3>BCP Contextual Help & Guide</h3>
+            <h3>{{ 'adm.bcp_contextual_help_guide' | translate:'BCP Contextual Help & Guide' }}</h3>
           </div>
           <button (click)="showHelpModal = false" class="btn-close">&times;</button>
         </div>
         <div class="modal-body">
-          <h4>Welcome to Ozikol BCP Multi-Tenant Workspace</h4>
-          <p>This system allows you to manage members, collaborative chat channels, dynamic database-driven website pages, and brand customizations.</p>
+          <h4>{{ 'adm.welcome_to_ozikol_bcp_multi_tenant_workspace' | translate:'Welcome to Ozikol BCP Multi-Tenant Workspace' }}</h4>
+          <p>{{ 'adm.this_system_allows_you_to_manage_members_col' | translate:'This system allows you to manage members, collaborative chat channels, dynamic database-driven website pages, and brand customizations.' }}</p>
           <ul>
-            <li><strong>Taskbar Tabs:</strong> As you navigate, pages stay open as browser-like tabs in the header for quick multitasking.</li>
-            <li><strong>Pin Navigation:</strong> Click the push-pin icon on any sidebar item to pin it to your personal favorites bar.</li>
-            <li><strong>Theme Engine:</strong> Toggle between the crisp Light Theme and Dark Mode at any time using the moon/sun icon in the topbar.</li>
+            <li><strong>{{ 'adm.taskbar_tabs' | translate:'Taskbar Tabs:' }}</strong> {{ 'adm.as_you_navigate_pages_stay_open_as_browser_l' | translate:'As you navigate, pages stay open as browser-like tabs in the header for quick multitasking.' }}</li>
+            <li><strong>{{ 'adm.pin_navigation' | translate:'Pin Navigation:' }}</strong> {{ 'adm.click_the_push_pin_icon_on_any_sidebar_item' | translate:'Click the push-pin icon on any sidebar item to pin it to your personal favorites bar.' }}</li>
+            <li><strong>{{ 'adm.theme_engine' | translate:'Theme Engine:' }}</strong> {{ 'adm.toggle_between_the_crisp_light_theme_and_dar' | translate:'Toggle between the crisp Light Theme and Dark Mode at any time using the moon/sun icon in the topbar.' }}</li>
           </ul>
         </div>
       </div>
@@ -1867,7 +1867,7 @@ export interface SuiteInfoDetail {
           </div>
         </div>
         <div class="modal-footer privileges-footer">
-          <button type="button" class="btn-primary" (click)="closePrivilegesModal()">Done</button>
+          <button type="button" class="btn-primary" (click)="closePrivilegesModal()">{{ 'adm.done' | translate:'Done' }}</button>
         </div>
       </div>
     </div>
@@ -1883,7 +1883,7 @@ export interface SuiteInfoDetail {
             <div class="suite-info-kicker">{{ activeSuiteInfo.badge }}</div>
             <h3 class="suite-info-title">{{ activeSuiteInfo.title }}</h3>
           </div>
-          <button (click)="closeSuiteInfoModal()" class="btn-close" aria-label="Close">&times;</button>
+          <button (click)="closeSuiteInfoModal()" class="btn-close" [attr.aria-label]="'adm.close' | translate:'Close'">&times;</button>
         </div>
 
         <div class="modal-body suite-info-modal-body" *ngIf="activeSuiteInfo">
@@ -1892,7 +1892,7 @@ export interface SuiteInfoDetail {
           <div class="suite-info-section">
             <div class="suite-info-section-title">
               <span class="material-symbols-outlined">group</span>
-              <span>Target Organizations & Users</span>
+              <span>{{ 'adm.target_organizations_users' | translate:'Target Organizations & Users' }}</span>
             </div>
             <div class="suite-info-target-box">
               {{ activeSuiteInfo.whoUsesIt }}
@@ -1902,7 +1902,7 @@ export interface SuiteInfoDetail {
           <div class="suite-info-section">
             <div class="suite-info-section-title">
               <span class="material-symbols-outlined">verified</span>
-              <span>Key Capabilities & Features Unlocked</span>
+              <span>{{ 'adm.key_capabilities_features_unlocked' | translate:'Key Capabilities & Features Unlocked' }}</span>
             </div>
             <ul class="suite-capabilities-list">
               <li *ngFor="let cap of activeSuiteInfo.capabilities">
@@ -1915,7 +1915,7 @@ export interface SuiteInfoDetail {
           <div class="suite-info-section" *ngIf="activeSuiteInfo.impact">
             <div class="suite-info-section-title">
               <span class="material-symbols-outlined">trending_up</span>
-              <span>Operational & Business Impact</span>
+              <span>{{ 'adm.operational_business_impact' | translate:'Operational & Business Impact' }}</span>
             </div>
             <div class="suite-info-impact-box">
               <span class="material-symbols-outlined impact-icon">lightbulb</span>
@@ -1925,7 +1925,7 @@ export interface SuiteInfoDetail {
         </div>
 
         <div class="modal-footer suite-info-modal-footer">
-          <button type="button" class="btn-secondary" (click)="closeSuiteInfoModal()">Dismiss</button>
+          <button type="button" class="btn-secondary" (click)="closeSuiteInfoModal()">{{ 'adm.dismiss' | translate:'Dismiss' }}</button>
         </div>
       </div>
     </div>
