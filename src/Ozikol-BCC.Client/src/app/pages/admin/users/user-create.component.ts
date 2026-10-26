@@ -5,19 +5,21 @@ import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { TranslationService } from '../../../core/services/translation.service';
 
 @Component({
   selector: 'app-user-create',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="user-form-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="NEW MEMBER REGISTRATION"
+        [eyebrow]="'user_create.header_eyebrow' | translate:'MEMBERSHIP DIRECTORY'"
         icon="person_add"
-        title="Create New Member Account"
-        subtitle="Create a new member profile, assign category tier, select roles, and configure temporary password credentials."
+        [title]="'user_create.header_title' | translate:'Create New Workspace Member'"
+        [subtitle]="'user_create.header_desc' | translate:'Directly provision a new member profile with credentials, department category, and assigned system role.'"
         [buttons]="headerButtons"
         [loading]="isSaving"
       ></app-page-header>
@@ -30,51 +32,51 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="card-header">
               <span class="material-symbols-outlined header-icon">badge</span>
               <div>
-                <h3>Personal & Contact Information</h3>
-                <p>Basic identity, gender, and direct contact details</p>
+                <h3>{{ 'user_create.card1_title' | translate:'Personal Information & Contact' }}</h3>
+                <p>{{ 'user_create.card1_subtitle' | translate:'Member legal identity, salutation, gender, and contact line' }}</p>
               </div>
             </div>
 
             <div class="card-body">
               <div class="name-row-flex">
                 <div class="form-group title-col" *ngIf="userSettings.enableTitle">
-                  <label>Title</label>
+                  <label>{{ 'user_create.field_title' | translate:'Title' }}</label>
                   <select [(ngModel)]="model.title" name="title">
-                    <option value="">None</option>
+                    <option value="">{{ 'user_create.title_none' | translate:'None' }}</option>
                     <option *ngFor="let t of titleOptions" [value]="t">{{ t }}</option>
                   </select>
                 </div>
                 <div class="form-group first-name-col">
-                  <label>First Name *</label>
-                  <input type="text" [(ngModel)]="model.firstName" name="firstName" placeholder="e.g. First Name" required />
+                  <label>{{ 'user_create.field_first_name' | translate:'First Name *' }}</label>
+                  <input type="text" [(ngModel)]="model.firstName" name="firstName" [placeholder]="'user_create.field_first_name_ph' | translate:'e.g. First Name'" required />
                 </div>
                 <div class="form-group last-name-col">
-                  <label>Last Name *</label>
-                  <input type="text" [(ngModel)]="model.lastName" name="lastName" placeholder="e.g. Last Name" required />
+                  <label>{{ 'user_create.field_last_name' | translate:'Last Name *' }}</label>
+                  <input type="text" [(ngModel)]="model.lastName" name="lastName" [placeholder]="'user_create.field_last_name_ph' | translate:'e.g. Last Name'" required />
                 </div>
                 <div class="form-group suffix-col" *ngIf="userSettings.enableSuffix">
-                  <label>Suffix</label>
-                  <input type="text" [(ngModel)]="model.suffix" name="suffix" placeholder="e.g. mni, PhD, Esq" />
+                  <label>{{ 'user_create.field_suffix' | translate:'Suffix' }}</label>
+                  <input type="text" [(ngModel)]="model.suffix" name="suffix" [placeholder]="'user_create.field_suffix_ph' | translate:'e.g. mni'" />
                 </div>
               </div>
 
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Gender *</label>
+                  <label>{{ 'user_create.field_gender' | translate:'Gender *' }}</label>
                   <select [(ngModel)]="model.gender" name="gender">
-                    <option [ngValue]="0">Male</option>
-                    <option [ngValue]="1">Female</option>
+                    <option [ngValue]="0">{{ 'user_create.gender_male' | translate:'Male' }}</option>
+                    <option [ngValue]="1">{{ 'user_create.gender_female' | translate:'Female' }}</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Email Address *</label>
-                  <input type="email" [(ngModel)]="model.email" name="email" placeholder="name@company.com" required />
+                  <label>{{ 'user_create.field_email' | translate:'Work Email Address *' }}</label>
+                  <input type="email" [(ngModel)]="model.email" name="email" [placeholder]="'user_create.field_email_ph' | translate:'name@company.com'" required />
                 </div>
               </div>
 
               <div class="form-group">
-                <label>Phone Number</label>
-                <input type="text" [(ngModel)]="model.phoneNumber" name="phoneNumber" placeholder="e.g. +0 (000) 000-0000" />
+                <label>{{ 'user_create.field_phone' | translate:'Phone Number' }}</label>
+                <input type="text" [(ngModel)]="model.phoneNumber" name="phoneNumber" [placeholder]="'user_create.field_phone_ph' | translate:'e.g. +0 (000) 000-0000'" />
               </div>
             </div>
           </div>
@@ -84,51 +86,51 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="card-header">
               <span class="material-symbols-outlined header-icon">corporate_fare</span>
               <div>
-                <h3>Organizational Hierarchy & Access</h3>
-                <p>Category tier assignment and system permissions</p>
+                <h3>{{ 'user_create.card2_title' | translate:'Organizational Hierarchy & System Role' }}</h3>
+                <p>{{ 'user_create.card2_subtitle' | translate:'Category tier, designation, and member ID assignment' }}</p>
               </div>
             </div>
 
             <div class="card-body">
               <div class="form-group">
-                <label>Category Tier</label>
+                <label>{{ 'user_create.field_category' | translate:'Category Tier' }}</label>
                 <select [(ngModel)]="model.bcpUserCategoryId" name="bcpUserCategoryId">
-                  <option [ngValue]="null">Select Category (Optional)</option>
+                  <option [ngValue]="null">{{ 'user_create.category_unassigned' | translate:'Select Category Tier (Unassigned)' }}</option>
                   <option *ngFor="let cat of categories" [value]="cat.id">{{ cat.name }}</option>
                 </select>
-                <div class="field-hint">Assign to an organizational unit or department tier.</div>
+                <div class="field-hint">{{ 'user_create.category_hint' | translate:'Assign to an organizational unit or department tier.' }}</div>
               </div>
 
               <div class="form-grid-2">
                 <div class="form-group">
-                  <label>Designation / Job Title</label>
-                  <input type="text" [(ngModel)]="model.designation" name="designation" placeholder="e.g. Senior Analyst" />
+                  <label>{{ 'user_create.field_designation' | translate:'Designation / Job Title' }}</label>
+                  <input type="text" [(ngModel)]="model.designation" name="designation" [placeholder]="'user_create.field_designation_ph' | translate:'e.g. Senior Analyst'" />
                 </div>
                 <div class="form-group">
-                  <label>System Role</label>
+                  <label>{{ 'user_create.field_role' | translate:'System Role' }}</label>
                   <select [(ngModel)]="model.role" name="role">
-                    <option value="Member">Member</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Global Editor">Global Editor</option>
-                    <option value="Feature Editor">Feature Editor</option>
-                    <option value="Read Only">Read Only</option>
+                    <option value="Member">{{ 'user_create.role_member' | translate:'Member' }}</option>
+                    <option value="Admin">{{ 'user_create.role_admin' | translate:'Admin' }}</option>
+                    <option value="Global Editor">{{ 'user_create.role_global_editor' | translate:'Global Editor' }}</option>
+                    <option value="Feature Editor">{{ 'user_create.role_feature_editor' | translate:'Feature Editor' }}</option>
+                    <option value="Read Only">{{ 'user_create.role_read_only' | translate:'Read Only' }}</option>
                   </select>
                 </div>
               </div>
 
               <div class="form-group">
                 <label style="display:flex; justify-content:space-between; align-items:center;">
-                  <span>Member ID / Code</span>
+                  <span>{{ 'user_create.field_member_id' | translate:'Custom Member ID / Code (Optional)' }}</span>
                   <span class="locked-indicator">
                     <span class="material-symbols-outlined" style="font-size:13px;">auto_awesome</span>
-                    <span>System Auto-Generated</span>
+                    <span>{{ 'user_create.auto_generated' | translate:'System Auto-Generated' }}</span>
                   </span>
                 </label>
                 <div class="locked-input-wrapper">
-                  <input type="text" [value]="(activeIdPreview || '').replace('--', '-') || 'Auto-generated on creation (e.g. ' + (activeFormatName || 'Active Format') + ')'" disabled readonly class="locked-input" />
+                  <input type="text" [value]="(activeIdPreview || '').replace('--', '-') || ('user_create.auto_generated' | translate:'System Auto-Generated')" disabled readonly class="locked-input" />
                   <span class="material-symbols-outlined locked-icon">tag</span>
                 </div>
-                <span class="input-hint-locked">Member ID will be uniquely generated and permanently assigned using your workspace's configured coding rules.</span>
+                <span class="input-hint-locked">{{ 'user_create.auto_generated_desc' | translate:'Member ID will be uniquely generated and permanently assigned using your workspace\'s configured coding rules.' }}</span>
               </div>
             </div>
           </div>
@@ -139,8 +141,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           <div class="card-header">
             <span class="material-symbols-outlined header-icon">lock_open</span>
             <div>
-              <h3>Security & Password Setup</h3>
-              <p>Setup temporary access credentials for initial member sign-in</p>
+              <h3>{{ 'user_create.card3_title' | translate:'Security Setup & Credentials' }}</h3>
+              <p>{{ 'user_create.card3_subtitle' | translate:'Authentication password, invitation email dispatch, and email verification' }}</p>
             </div>
           </div>
 
@@ -148,13 +150,13 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <div class="form-grid-2">
               <div class="form-group">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                  <label style="margin:0;">Initial Temporary Password *</label>
+                  <label style="margin:0;">{{ 'user_create.field_password' | translate:'Initial Password *' }}</label>
                   <button type="button" class="btn-generate-link" (click)="generatePassword()">
                     <span class="material-symbols-outlined">autorenew</span>
-                    <span>Generate Strong Password</span>
+                    <span>{{ 'user_create.generate_password' | translate:'Generate Strong Password' }}</span>
                   </button>
                 </div>
-                <input type="text" [(ngModel)]="model.password" name="password" placeholder="e.g. Pass@9382" required />
+                <input type="text" [(ngModel)]="model.password" name="password" [placeholder]="'user_create.field_password_ph' | translate:'Enter strong initial password'" required />
               </div>
 
               <div class="form-group" style="justify-content:center;">
@@ -162,8 +164,8 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <input type="checkbox" [(ngModel)]="model.mustChangePassword" name="mustChangePassword" />
                   <span class="checkbox-custom"></span>
                   <div class="checkbox-text">
-                    <strong>Require password change on first login</strong>
-                    <p>Forces the member to set their own permanent password immediately upon signing in.</p>
+                    <strong>{{ 'user_create.require_pwd_change' | translate:'Require Password Change on First Sign-in' }}</strong>
+                    <p>{{ 'user_create.require_pwd_change_desc' | translate:'Forces the member to set their own permanent password immediately upon signing in.' }}</p>
                   </div>
                 </label>
               </div>
@@ -171,10 +173,10 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
 
           <div class="card-footer">
-            <a routerLink="/users/console/list" class="btn btn-outline">Cancel</a>
+            <a routerLink="/users/console/list" class="btn btn-outline">{{ 'user_create.btn_cancel' | translate:'Cancel' }}</a>
             <button type="submit" class="btn btn-primary" [disabled]="isSaving || !model.email || !model.firstName || !model.lastName">
               <span *ngIf="!isSaving" class="material-symbols-outlined">person_add</span>
-              <span>{{ isSaving ? 'Creating Member...' : 'Create Member' }}</span>
+              <span>{{ isSaving ? ('user_create.btn_creating' | translate:'Creating Member Account...') : ('user_create.btn_create' | translate:'Create Member Account') }}</span>
             </button>
           </div>
         </div>
@@ -266,19 +268,22 @@ export class UserCreateComponent implements OnInit {
   activeIdPreview = '';
   activeFormatName = '';
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'Back to Directory',
-      icon: 'arrow_back',
-      isPrimary: false,
-      routerLink: '/users/console/list'
-    }
-  ];
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('user_details.btn_back', 'Back to Directory'),
+        icon: 'arrow_back',
+        isPrimary: false,
+        routerLink: '/users/console/list'
+      }
+    ];
+  }
 
   constructor(
     private api: ApiService,
     private toast: ToastService,
-    private router: Router
+    private router: Router,
+    private translationService: TranslationService
   ) {}
 
   ngOnInit(): void {

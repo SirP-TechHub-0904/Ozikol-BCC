@@ -5,6 +5,8 @@ import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { TranslationService } from '../../../core/services/translation.service';
 
 /**
  * Enterprise List Table component for managing tenant organizational categories and departments.
@@ -13,15 +15,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 @Component({
   selector: 'app-user-categories',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="categories-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="ORGANIZATIONAL HIERARCHY"
+        [eyebrow]="'user_cat.header_eyebrow' | translate:'ORGANIZATIONAL STRUCTURE'"
         icon="corporate_fare"
-        title="User Categories & Departments"
-        subtitle="Manage organizational departments, business units, and member classification tiers in an enterprise table."
+        [title]="'user_cat.header_title' | translate:'User Categories & Departments'"
+        [subtitle]="'user_cat.header_desc' | translate:'Manage organizational departments, business units, and member classification tiers in an enterprise table.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -34,7 +36,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             type="text"
             [(ngModel)]="searchQuery"
             (ngModelChange)="applyFilter()"
-            placeholder="Search categories or departments..."
+            [placeholder]="'user_cat.search_ph' | translate:'Search categories or departments...'"
           />
           <button *ngIf="searchQuery" (click)="searchQuery=''; applyFilter()" class="clear-btn">
             <span class="material-symbols-outlined">close</span>
@@ -42,7 +44,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         </div>
 
         <div class="toolbar-meta">
-          <span>Showing <strong>{{ filteredCategories.length }}</strong> of <strong>{{ categories.length }}</strong> categories</span>
+          <span>{{ 'directory.showing' | translate:'Showing' }} <strong>{{ filteredCategories.length }}</strong> {{ 'directory.of' | translate:'of' }} <strong>{{ categories.length }}</strong> {{ 'directory.members_count' | translate:'categories' }}</span>
         </div>
       </div>
 
@@ -51,11 +53,11 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         <table class="data-table">
           <thead>
             <tr>
-              <th style="min-width: 240px;">Category / Department</th>
-              <th style="width: 140px; text-align: center;">Members</th>
-              <th style="width: 120px; text-align: center;">Sort Order</th>
-              <th style="width: 150px; text-align: center;">Status</th>
-              <th style="width: 160px; text-align: right;">Actions</th>
+              <th style="min-width: 240px;">{{ 'user_cat.col_name' | translate:'Category / Department' }}</th>
+              <th style="width: 140px; text-align: center;">{{ 'user_cat.col_member_count' | translate:'Members' }}</th>
+              <th style="width: 120px; text-align: center;">{{ 'user_cat.col_code' | translate:'Sort Order' }}</th>
+              <th style="width: 150px; text-align: center;">{{ 'user_cat.col_status' | translate:'Status' }}</th>
+              <th style="width: 160px; text-align: right;">{{ 'user_cat.col_actions' | translate:'Actions' }}</th>
             </tr>
           </thead>
           <tbody>
@@ -79,10 +81,10 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 
               <!-- Member Headcount -->
               <td style="text-align: center;">
-                <a routerLink="/users/console/list" [queryParams]="{ category: cat.id }" class="headcount-badge" title="View all members in this category">
+                <a routerLink="/users/console/list" [queryParams]="{ category: cat.id }" class="headcount-badge" [title]="'user_cat.view_all_members' | translate:'View all members in this category'">
                   <span class="material-symbols-outlined" style="font-size: 15px;">groups</span>
                   <strong>{{ cat.memberCount || 0 }}</strong>
-                  <span>{{ (cat.memberCount === 1) ? 'member' : 'members' }}</span>
+                  <span>{{ (cat.memberCount === 1) ? ('user_cat.single_member' | translate:'member') : ('directory.members_count' | translate:'members') }}</span>
                 </a>
               </td>
 
@@ -95,22 +97,22 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <td style="text-align: center;">
                 <span class="status-badge" [class.active-status]="cat.isActive !== false" [class.draft-status]="cat.isActive === false">
                   <span class="status-dot"></span>
-                  <span>{{ (cat.isActive !== false) ? 'Published' : 'Unpublished' }}</span>
+                  <span>{{ (cat.isActive !== false) ? ('user_cat.badge_active' | translate:'Published') : ('user_cat.badge_inactive' | translate:'Unpublished') }}</span>
                 </span>
               </td>
 
               <!-- Action Buttons -->
               <td style="text-align: right;">
                 <div class="row-actions-group">
-                  <a routerLink="/users/console/list" [queryParams]="{ category: cat.id }" class="btn-action btn-members" title="View Category Members">
+                  <a routerLink="/users/console/list" [queryParams]="{ category: cat.id }" class="btn-action btn-members" [title]="'user_cat.view_members' | translate:'View Category Members'">
                     <span class="material-symbols-outlined">group</span>
-                    <span>Members</span>
+                    <span>{{ 'directory.members_count' | translate:'Members' }}</span>
                   </a>
-                  <a [routerLink]="['/users/console/categories/edit', cat.id]" class="btn-action btn-edit" title="Edit Category">
+                  <a [routerLink]="['/users/console/categories/edit', cat.id]" class="btn-action btn-edit" [title]="'user_cat.btn_edit' | translate:'Edit Category'">
                     <span class="material-symbols-outlined">edit</span>
-                    <span>Edit</span>
+                    <span>{{ 'user_cat.btn_edit' | translate:'Edit' }}</span>
                   </a>
-                  <a [routerLink]="['/users/console/categories/delete', cat.id]" class="btn-action btn-delete" title="Delete Category">
+                  <a [routerLink]="['/users/console/categories/delete', cat.id]" class="btn-action btn-delete" [title]="'user_cat.btn_delete' | translate:'Delete Category'">
                     <span class="material-symbols-outlined">delete</span>
                   </a>
                 </div>
@@ -121,13 +123,13 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             <tr *ngIf="filteredCategories.length === 0">
               <td colspan="5" class="empty-table-cell">
                 <span class="material-symbols-outlined empty-icon">corporate_fare</span>
-                <p *ngIf="categories.length === 0">No user categories or departments have been configured yet.</p>
-                <p *ngIf="categories.length > 0">No categories matching "{{ searchQuery }}".</p>
+                <p *ngIf="categories.length === 0">{{ 'user_cat.no_categories' | translate:'No user categories or departments have been configured yet.' }}</p>
+                <p *ngIf="categories.length > 0">{{ 'user_cat.no_matching' | translate:'No categories matching' }} "{{ searchQuery }}".</p>
                 <a *ngIf="categories.length === 0" routerLink="/users/console/categories/create" class="btn btn-primary btn-sm" style="margin-top: 8px;">
-                  <span class="material-symbols-outlined">add</span> Create First Category
+                  <span class="material-symbols-outlined">add</span> {{ 'user_cat.btn_add_category' | translate:'Create First Category' }}
                 </a>
                 <button *ngIf="categories.length > 0" (click)="searchQuery=''; applyFilter()" class="btn btn-outline btn-sm" style="margin-top: 8px;">
-                  Clear Search
+                  {{ 'directory.clear_filters' | translate:'Clear Search' }}
                 </button>
               </td>
             </tr>
@@ -414,24 +416,27 @@ export class UserCategoriesComponent implements OnInit {
   filteredCategories: any[] = [];
   searchQuery = '';
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'User Directory',
-      icon: 'groups',
-      isPrimary: false,
-      routerLink: '/users/console/list'
-    },
-    {
-      text: 'Create Category',
-      icon: 'add',
-      isPrimary: true,
-      routerLink: '/users/console/categories/create'
-    }
-  ];
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('directory.title', 'User Directory'),
+        icon: 'groups',
+        isPrimary: false,
+        routerLink: '/users/console/list'
+      },
+      {
+        text: this.translationService.translate('user_cat.btn_add_category', 'Create Category'),
+        icon: 'add',
+        isPrimary: true,
+        routerLink: '/users/console/categories/create'
+      }
+    ];
+  }
 
   constructor(
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private translationService: TranslationService
   ) {}
 
   ngOnInit(): void {

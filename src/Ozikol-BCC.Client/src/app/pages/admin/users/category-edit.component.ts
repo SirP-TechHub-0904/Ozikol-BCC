@@ -5,6 +5,8 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { TranslationService } from '../../../core/services/translation.service';
 
 /**
  * Component for creating and editing organizational user categories or departments.
@@ -14,15 +16,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
 @Component({
   selector: 'app-category-edit',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="category-form-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="ORGANIZATIONAL HIERARCHY"
+        [eyebrow]="'user_cat.header_eyebrow' | translate:'ORGANIZATIONAL HIERARCHY'"
         icon="corporate_fare"
-        [title]="isEditMode ? 'Edit Category: ' + (model.name || 'Department') : 'Create User Category'"
-        subtitle="Configure organizational department or user category tier, description, sort order, and publication status."
+        [title]="isEditMode ? (('user_cat.form_edit_title' | translate:'Edit User Category') + ': ' + (model.name || ('dashboard.unnamed' | translate:'Department'))) : ('user_cat.form_new_title' | translate:'Create New User Category')"
+        [subtitle]="'user_cat.header_desc' | translate:'Configure organizational department or user category tier, description, sort order, and publication status.'"
         [buttons]="headerButtons"
         [loading]="isLoading || isSaving"
       ></app-page-header>
@@ -35,25 +37,25 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <span class="material-symbols-outlined">corporate_fare</span>
             </div>
             <div>
-              <h3>Category Details</h3>
-              <p>Organizational department name, description, priority order, and publication visibility</p>
+              <h3>{{ 'user_cat.category_details' | translate:'Category Details' }}</h3>
+              <p>{{ 'user_cat.category_details_desc' | translate:'Organizational department name, description, priority order, and publication visibility' }}</p>
             </div>
           </div>
 
           <div class="card-body">
             <div class="form-grid-2">
               <div class="form-group">
-                <label>Category / Department Name *</label>
+                <label>{{ 'user_cat.field_name' | translate:'Category Name *' }}</label>
                 <input
                   type="text"
                   [(ngModel)]="model.name"
                   name="name"
-                  placeholder="e.g. Engineering Team, Software Team, Operations"
+                  [placeholder]="'user_cat.field_name_ph' | translate:'e.g. Engineering Team, Software Team, Operations'"
                   required
                 />
               </div>
               <div class="form-group">
-                <label>Sort Order / Display Priority</label>
+                <label>{{ 'user_cat.sort_order' | translate:'Sort Order / Display Priority' }}</label>
                 <input
                   type="number"
                   [(ngModel)]="model.sortOrder"
@@ -64,12 +66,12 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
             </div>
 
             <div class="form-group">
-              <label>Description (Optional)</label>
+              <label>{{ 'user_cat.field_desc' | translate:'Description' }}</label>
               <textarea
                 rows="3"
                 [(ngModel)]="model.description"
                 name="description"
-                placeholder="Briefly describe the responsibilities, members, or purpose of this category..."
+                [placeholder]="'user_cat.field_desc_ph' | translate:'Describe the role and scope of this category...'"
               ></textarea>
             </div>
 
@@ -80,15 +82,15 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                   <span class="material-symbols-outlined pub-icon">
                     {{ model.isActive ? 'check_circle' : 'pause_circle' }}
                   </span>
-                  <span class="pub-title">Publication Status</span>
+                  <span class="pub-title">{{ 'user_cat.field_status' | translate:'Category Active Status' }}</span>
                   <span class="status-pill" [class.status-pill-active]="model.isActive" [class.status-pill-draft]="!model.isActive">
-                    {{ model.isActive ? 'Published' : 'Unpublished' }}
+                    {{ model.isActive ? ('user_cat.badge_active' | translate:'Active') : ('user_cat.badge_inactive' | translate:'Inactive') }}
                   </span>
                 </div>
                 <p class="pub-desc">
                   {{ model.isActive
-                    ? 'Active & Published: Visible to administrators, member registration forms, and departmental directories.'
-                    : 'Unpublished / Draft: Temporarily hidden from registration forms and disabled for new member assignments.' }}
+                    ? ('user_cat.pub_active_desc' | translate:'Active & Published: Visible to administrators, member registration forms, and departmental directories.')
+                    : ('user_cat.pub_draft_desc' | translate:'Unpublished / Draft: Temporarily hidden from registration forms and disabled for new member assignments.') }}
                 </p>
               </div>
 
@@ -100,10 +102,10 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
           </div>
 
           <div class="card-footer">
-            <a routerLink="/admin/users/categories" class="btn btn-outline">Cancel</a>
+            <a routerLink="/users/console/categories" class="btn btn-outline">{{ 'user_cat.btn_cancel' | translate:'Cancel' }}</a>
             <button type="submit" class="btn btn-primary" [disabled]="isSaving || !model.name.trim()">
               <span *ngIf="!isSaving" class="material-symbols-outlined">save</span>
-              <span>{{ isSaving ? 'Saving Category...' : (isEditMode ? 'Save Changes' : 'Create Category') }}</span>
+              <span>{{ isSaving ? ('user_cat.btn_saving' | translate:'Saving Category...') : (isEditMode ? ('user_cat.btn_save' | translate:'Save Category') : ('user_cat.btn_save' | translate:'Create Category')) }}</span>
             </button>
           </div>
         </div>
@@ -218,27 +220,28 @@ export class CategoryEditComponent implements OnInit {
     isActive: true
   };
 
-  headerButtons: PageHeaderButton[] = [];
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('user_cat.header_title', 'Back to Categories'),
+        icon: 'arrow_back',
+        isPrimary: false,
+        routerLink: '/users/console/categories'
+      }
+    ];
+  }
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private translationService: TranslationService
   ) {}
 
   ngOnInit(): void {
     this.categoryId = this.route.snapshot.paramMap.get('id');
     this.isEditMode = !!this.categoryId;
-
-    this.headerButtons = [
-      {
-        text: 'Back to Categories',
-        icon: 'arrow_back',
-        isPrimary: false,
-        routerLink: '/admin/users/categories'
-      }
-    ];
 
     if (this.isEditMode && this.categoryId) {
       this.loadCategory(this.categoryId);

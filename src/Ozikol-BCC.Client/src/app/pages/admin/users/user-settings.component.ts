@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 interface MemberIdFormatPreview {
@@ -35,15 +37,15 @@ interface UserSettingsModel {
 @Component({
   selector: 'app-user-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="user-settings-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="USER MANAGEMENT PREFERENCES"
+        [eyebrow]="'user_settings.header_eyebrow' | translate:'USER MANAGEMENT PREFERENCES'"
         icon="tune"
-        title="User Management Settings"
-        subtitle="Configure name salutations, professional suffixes, member ID generation rules, and directory governance policies."
+        [title]="'user_settings.header_title' | translate:'User Management Settings'"
+        [subtitle]="'user_settings.header_subtitle' | translate:'Configure name salutations, professional suffixes, member ID generation rules, and directory governance policies.'"
         [buttons]="headerButtons"
         [loading]="isLoading || isSaving"
       ></app-page-header>
@@ -59,8 +61,8 @@ interface UserSettingsModel {
                 <span class="material-symbols-outlined">badge</span>
               </div>
               <div class="header-text">
-                <h3>Name Titles & Professional Suffixes</h3>
-                <p>Control whether salutation titles and honorary suffixes appear on registration and member profiles.</p>
+                <h3>{{ 'user_settings.sec1_title' | translate:'Name Titles & Professional Suffixes' }}</h3>
+                <p>{{ 'user_settings.sec1_subtitle' | translate:'Control whether salutation titles and honorary suffixes appear on registration and member profiles.' }}</p>
               </div>
             </div>
 
@@ -69,12 +71,12 @@ interface UserSettingsModel {
               <div class="preference-row">
                 <div class="pref-info">
                   <div class="pref-title-row">
-                    <span class="pref-title">Enable Name Title / Salutation</span>
+                    <span class="pref-title">{{ 'user_settings.title_enable_label' | translate:'Enable Name Title / Salutation' }}</span>
                     <span class="status-badge" [class.badge-active]="settings.enableTitle" [class.badge-inactive]="!settings.enableTitle">
-                      {{ settings.enableTitle ? 'ENABLED' : 'DISABLED' }}
+                      {{ settings.enableTitle ? ('user_settings.badge_enabled' | translate:'ENABLED') : ('user_settings.badge_disabled' | translate:'DISABLED') }}
                     </span>
                   </div>
-                  <p class="pref-desc">When enabled, members and staff select their formal title (e.g. Dr., Prof., Engr.) during onboarding and profile setup.</p>
+                  <p class="pref-desc">{{ 'user_settings.title_enable_desc' | translate:'When enabled, members and staff select their formal title (e.g. Dr., Prof., Engr.) during onboarding and profile setup.' }}</p>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="settings.enableTitle" name="enableTitle" />
@@ -86,22 +88,22 @@ interface UserSettingsModel {
               <div class="sub-config-block" *ngIf="settings.enableTitle">
                 <div class="form-group">
                   <label>
-                    <span>Configured Pre-Filled Titles</span>
-                    <span class="hint-text">(Comma-separated list of prefilled title options)</span>
+                    <span>{{ 'user_settings.prefilled_titles_label' | translate:'Configured Pre-Filled Titles' }}</span>
+                    <span class="hint-text">({{ 'user_settings.prefilled_titles_hint' | translate:'Comma-separated list of prefilled title options' }})</span>
                   </label>
                   <textarea
                     rows="2"
                     [(ngModel)]="settings.preFilledTitles"
                     name="preFilledTitles"
                     (ngModelChange)="updateTitleChips()"
-                    placeholder="e.g. Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor"
+                    [placeholder]="'user_settings.prefilled_titles_ph' | translate:'e.g. Mr., Mrs., Ms., Dr., Prof., Engr., Chief, Rev., Pastor'"
                     class="form-control"
                   ></textarea>
                 </div>
 
                 <!-- Live Title Chips Preview -->
                 <div class="chips-container" *ngIf="titleChips.length > 0">
-                  <span class="chip-label">Active Dropdown Options ({{ titleChips.length }}):</span>
+                  <span class="chip-label">{{ 'user_settings.active_dropdown_options' | translate:'Active Dropdown Options' }} ({{ titleChips.length }}):</span>
                   <div class="chips-wrap">
                     <span class="title-chip" *ngFor="let chip of titleChips">
                       <span class="chip-text">{{ chip }}</span>
@@ -119,14 +121,14 @@ interface UserSettingsModel {
               <div class="preference-row">
                 <div class="pref-info">
                   <div class="pref-title-row">
-                    <span class="pref-title">Enable Name Suffix (e.g. mni, PhD, Esq, OON)</span>
+                    <span class="pref-title">{{ 'user_settings.suffix_enable_label' | translate:'Enable Name Suffix (e.g. mni, PhD, Esq, OON)' }}</span>
                     <span class="status-badge" [class.badge-active]="settings.enableSuffix" [class.badge-inactive]="!settings.enableSuffix">
-                      {{ settings.enableSuffix ? 'ENABLED' : 'DISABLED' }}
+                      {{ settings.enableSuffix ? ('user_settings.badge_enabled' | translate:'ENABLED') : ('user_settings.badge_disabled' | translate:'DISABLED') }}
                     </span>
                   </div>
                   <p class="pref-desc">
-                    When enabled, an open text space is made available on the registration page and member creation forms for professional or honorary post-nominal suffixes.
-                    <strong>Suffix is freeform text and not pre-filled.</strong>
+                    {{ 'user_settings.suffix_enable_desc' | translate:'When enabled, an open text space is made available on the registration page and member creation forms for professional or honorary post-nominal suffixes.' }}
+                    <strong>{{ 'user_settings.suffix_freeform_note' | translate:'Suffix is freeform text and not pre-filled.' }}</strong>
                   </p>
                 </div>
                 <label class="toggle-switch">
@@ -138,8 +140,7 @@ interface UserSettingsModel {
               <div class="suffix-demo-box" *ngIf="settings.enableSuffix">
                 <span class="material-symbols-outlined demo-icon">info</span>
                 <div class="demo-content">
-                  <strong>Suffix Input Active:</strong> The registration page and user directory forms will render an empty text box: 
-                  <code class="demo-code">Suffix: [ e.g. mni, PhD, Esq ]</code>. Members can enter their recognized honorific titles.
+                  <strong>{{ 'user_settings.suffix_demo_title' | translate:'Suffix Input Active:' }}</strong> {{ 'user_settings.suffix_demo_body' | translate:'The registration page and user directory forms will render an empty text box: Suffix: [ e.g. mni, PhD, Esq ]. Members can enter their recognized honorific titles.' }}
                 </div>
               </div>
             </div>
@@ -152,8 +153,8 @@ interface UserSettingsModel {
                 <span class="material-symbols-outlined">badge</span>
               </div>
               <div class="header-text">
-                <h3>Member ID Auto-Generation & Security Rules</h3>
-                <p>Select from 10 standard institutional coding formats, customize tokens, and configure member authentication policies.</p>
+                <h3>{{ 'user_settings.sec2_title' | translate:'Member ID Auto-Generation & Security Rules' }}</h3>
+                <p>{{ 'user_settings.sec2_subtitle' | translate:'Select from 10 standard institutional coding formats, customize tokens, and configure member authentication policies.' }}</p>
               </div>
             </div>
 
@@ -162,12 +163,12 @@ interface UserSettingsModel {
               <div class="format-selection-grid">
                 <div class="form-group format-dropdown-group">
                   <label class="form-label" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                    <span style="font-weight: 700; font-size: 13px; color: #0f172a;">Select Member ID Format (10 Standard Formats)</span>
-                    <span class="badge-pill-soft">Immediate Effect</span>
+                    <span style="font-weight: 700; font-size: 13px; color: #0f172a;">{{ 'user_settings.select_format_label' | translate:'Select Member ID Format (10 Standard Formats)' }}</span>
+                    <span class="badge-pill-soft">{{ 'user_settings.badge_immediate' | translate:'Immediate Effect' }}</span>
                   </label>
                   <select [(ngModel)]="settings.memberIdFormat" name="memberIdFormat" (ngModelChange)="onFormatParamChange()" class="form-control format-select">
                     <option *ngFor="let f of previews; let i = index" [value]="f.key">
-                      Format {{ i + 1 }}: {{ f.name }} (e.g. {{ f.previewExample }})
+                      {{ 'user_settings.format_label' | translate:'Format' }} {{ i + 1 }}: {{ f.name }} (e.g. {{ f.previewExample }})
                     </option>
                   </select>
                   <span class="field-hint" style="display: block; margin-top: 6px;">{{ getActiveFormatDescription() }}</span>
@@ -177,14 +178,14 @@ interface UserSettingsModel {
                 <div class="live-preview-box">
                   <div class="preview-header">
                     <span class="material-symbols-outlined preview-icon">visibility</span>
-                    <span class="preview-label">NEXT GENERATED MEMBER ID PREVIEW</span>
+                    <span class="preview-label">{{ 'user_settings.preview_header' | translate:'NEXT GENERATED MEMBER ID PREVIEW' }}</span>
                   </div>
                   <div class="preview-badge-display">
                     <span class="preview-id-text">{{ getActivePreviewSample() }}</span>
                   </div>
                   <div class="preview-footer-note">
                     <span class="material-symbols-outlined" style="font-size:14px; color:#10b981;">check_circle</span>
-                    <span>{{ isCurrentFormatSequential() ? 'Strict Serial Auto-Incrementing Sequence (1, 2, 3...)' : 'Cryptographic Random Secure Format' }}</span>
+                    <span>{{ isCurrentFormatSequential() ? ('user_settings.seq_strict' | translate:'Strict Serial Auto-Incrementing Sequence (1, 2, 3...)') : ('user_settings.seq_crypto' | translate:'Cryptographic Random Secure Format') }}</span>
                   </div>
                 </div>
               </div>
@@ -192,21 +193,21 @@ interface UserSettingsModel {
               <!-- Configuration Controls: Prefix, Starting Counter, Padding, Delimiter -->
               <div class="format-params-grid">
                 <div class="form-group">
-                  <label class="form-label" style="font-weight: 600; font-size: 12.5px; color: #334155;">Custom Prefix Code</label>
+                  <label class="form-label" style="font-weight: 600; font-size: 12.5px; color: #334155;">{{ 'user_settings.field_prefix' | translate:'Custom Prefix Code' }}</label>
                   <input
                     type="text"
                     [(ngModel)]="settings.memberIdPrefix"
                     name="memberIdPrefix"
                     (input)="onPrefixInput()"
                     class="form-control"
-                    placeholder="e.g. CC, BCC, MEM, ORG"
+                    [placeholder]="'user_settings.field_prefix_ph' | translate:'e.g. CC, BCC, MEM, ORG'"
                     maxlength="15"
                   />
-                  <span class="field-hint">Organization code prepended to ID</span>
+                  <span class="field-hint">{{ 'user_settings.field_prefix_hint' | translate:'Organization code prepended to ID' }}</span>
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label" style="font-weight: 600; font-size: 12.5px; color: #334155;">Next Serial Counter Number</label>
+                  <label class="form-label" style="font-weight: 600; font-size: 12.5px; color: #334155;">{{ 'user_settings.field_next_num' | translate:'Next Serial Counter Number' }}</label>
                   <input
                     type="number"
                     [(ngModel)]="settings.memberIdNextNumber"
@@ -216,29 +217,29 @@ interface UserSettingsModel {
                     placeholder="1"
                     min="1"
                   />
-                  <span class="field-hint">Current sequential auto-increment value</span>
+                  <span class="field-hint">{{ 'user_settings.field_next_num_hint' | translate:'Current sequential auto-increment value' }}</span>
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label" style="font-weight: 600; font-size: 12.5px; color: #334155;">Zero Padding Length</label>
+                  <label class="form-label" style="font-weight: 600; font-size: 12.5px; color: #334155;">{{ 'user_settings.field_padding' | translate:'Zero Padding Length' }}</label>
                   <select [(ngModel)]="settings.memberIdPadding" name="memberIdPadding" (change)="refreshPreviews()" class="form-control">
-                    <option [ngValue]="3">3 Digits (e.g. 001)</option>
-                    <option [ngValue]="4">4 Digits (e.g. 0001)</option>
-                    <option [ngValue]="5">5 Digits (e.g. 00001)</option>
-                    <option [ngValue]="6">6 Digits (e.g. 000001)</option>
+                    <option [ngValue]="3">{{ 'user_settings.pad_3' | translate:'3 Digits (e.g. 001)' }}</option>
+                    <option [ngValue]="4">{{ 'user_settings.pad_4' | translate:'4 Digits (e.g. 0001)' }}</option>
+                    <option [ngValue]="5">{{ 'user_settings.pad_5' | translate:'5 Digits (e.g. 00001)' }}</option>
+                    <option [ngValue]="6">{{ 'user_settings.pad_6' | translate:'6 Digits (e.g. 000001)' }}</option>
                   </select>
-                  <span class="field-hint">Leading zeros for serial numbers</span>
+                  <span class="field-hint">{{ 'user_settings.field_padding_hint' | translate:'Leading zeros for serial numbers' }}</span>
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label" style="font-weight: 600; font-size: 12.5px; color: #334155;">Delimiter Separator</label>
+                  <label class="form-label" style="font-weight: 600; font-size: 12.5px; color: #334155;">{{ 'user_settings.field_delim' | translate:'Delimiter Separator' }}</label>
                   <select [(ngModel)]="settings.memberIdDelimiter" name="memberIdDelimiter" (change)="refreshPreviews()" class="form-control">
-                    <option value="-">- Dash (e.g. CC-2026-0001)</option>
-                    <option value="/">/ Slash (e.g. CC/2026/0001)</option>
-                    <option value=".">. Dot (e.g. CC.2026.0001)</option>
-                    <option value="_">_ Underscore (e.g. CC_2026_0001)</option>
+                    <option value="-">{{ 'user_settings.delim_hyphen' | translate:'- Dash (e.g. CC-2026-0001)' }}</option>
+                    <option value="/">{{ 'user_settings.delim_slash' | translate:'/ Slash (e.g. CC/2026/0001)' }}</option>
+                    <option value=".">{{ 'user_settings.delim_dot' | translate:'. Dot (e.g. CC.2026.0001)' }}</option>
+                    <option value="_">{{ 'user_settings.delim_underscore' | translate:'_ Underscore (e.g. CC_2026_0001)' }}</option>
                   </select>
-                  <span class="field-hint">Separator between tokens</span>
+                  <span class="field-hint">{{ 'user_settings.field_delim_hint' | translate:'Separator between tokens' }}</span>
                 </div>
               </div>
 
@@ -247,9 +248,9 @@ interface UserSettingsModel {
                 <div style="display: flex; align-items: flex-start; gap: 12px;">
                   <span class="material-symbols-outlined" style="font-size: 22px; color: #0050e5; margin-top: 2px;">verified_user</span>
                   <div>
-                    <strong style="font-size: 13px; color: #0f172a; display: block;">Enforce Email Verification Before Login</strong>
+                    <strong style="font-size: 13px; color: #0f172a; display: block;">{{ 'user_settings.gov_email_confirm_label' | translate:'Enforce Email Verification Before Login' }}</strong>
                     <p style="margin: 2px 0 0; font-size: 12px; color: #64748b;">
-                      When enabled, members cannot sign into the workspace until their email address is confirmed via the 6-digit OTP code.
+                      {{ 'user_settings.gov_email_confirm_desc' | translate:'When enabled, members cannot sign into the workspace until their email address is confirmed via the 6-digit OTP code.' }}
                     </p>
                   </div>
                 </div>
@@ -264,9 +265,9 @@ interface UserSettingsModel {
                 <div style="display: flex; align-items: flex-start; gap: 12px;">
                   <span class="material-symbols-outlined" style="font-size: 22px; color: #e53e3e; margin-top: 2px;">person_remove</span>
                   <div>
-                    <strong style="font-size: 13px; color: #9b2c2c; display: block;">Allow Administrator User Account Deletion</strong>
+                    <strong style="font-size: 13px; color: #9b2c2c; display: block;">{{ 'user_settings.gov_delete_label' | translate:'Allow Administrator User Account Deletion' }}</strong>
                     <p style="margin: 2px 0 0; font-size: 12px; color: #742a2a;">
-                      When enabled, administrators are permitted to permanently delete user accounts from the portal.
+                      {{ 'user_settings.gov_delete_desc' | translate:'When enabled, administrators are permitted to permanently delete user accounts from the portal.' }}
                     </p>
                   </div>
                 </div>
@@ -279,8 +280,8 @@ interface UserSettingsModel {
               <!-- All 10 Formats Overview Grid -->
               <div class="formats-matrix-section">
                 <div class="matrix-header">
-                  <span class="matrix-title">All 10 Available Format Patterns Quick Reference</span>
-                  <span class="matrix-hint">Click any card below to instantly select that format</span>
+                  <span class="matrix-title">{{ 'user_settings.all_formats_title' | translate:'All 10 Available Format Patterns Quick Reference' }}</span>
+                  <span class="matrix-hint">{{ 'user_settings.all_formats_hint' | translate:'Click any card below to instantly select that format' }}</span>
                 </div>
 
                 <div class="formats-cards-grid">
@@ -291,9 +292,9 @@ interface UserSettingsModel {
                     (click)="selectFormat(f.key)"
                   >
                     <div class="card-mini-top">
-                      <span class="format-number">Format {{ idx + 1 }}</span>
+                      <span class="format-number">{{ 'user_settings.format_label' | translate:'Format' }} {{ idx + 1 }}</span>
                       <span class="format-type-tag" [class.type-serial]="f.isSequential" [class.type-random]="!f.isSequential">
-                        {{ f.isSequential ? 'Serial (1,2,3..)' : 'Random' }}
+                        {{ f.isSequential ? ('user_settings.type_serial' | translate:'Serial (1,2,3..)') : ('user_settings.type_random' | translate:'Random') }}
                       </span>
                     </div>
                     <h4 class="format-card-title">{{ f.name }}</h4>
@@ -312,8 +313,8 @@ interface UserSettingsModel {
                 <span class="material-symbols-outlined">monitoring</span>
               </div>
               <div class="header-text">
-                <h3>Performance Evaluations & KPI Settings</h3>
-                <p>Configure scorecard evaluation cycles, passing benchmarks, and public member leaderboard visibility.</p>
+                <h3>{{ 'user_settings.sec3_title' | translate:'Performance Evaluations & KPI Settings' }}</h3>
+                <p>{{ 'user_settings.sec3_subtitle' | translate:'Configure scorecard evaluation cycles, passing benchmarks, and public member leaderboard visibility.' }}</p>
               </div>
             </div>
 
@@ -322,12 +323,12 @@ interface UserSettingsModel {
               <div class="preference-row">
                 <div class="pref-info">
                   <div class="pref-title-row">
-                    <span class="pref-title">Enable Member KPI Evaluations</span>
+                    <span class="pref-title">{{ 'user_settings.kpi_enable_label' | translate:'Enable Member KPI Evaluations' }}</span>
                     <span class="status-badge" [class.badge-active]="settings.enableKpiEvaluations" [class.badge-inactive]="!settings.enableKpiEvaluations">
-                      {{ settings.enableKpiEvaluations ? 'ENABLED' : 'DISABLED' }}
+                      {{ settings.enableKpiEvaluations ? ('user_settings.badge_enabled' | translate:'ENABLED') : ('user_settings.badge_disabled' | translate:'DISABLED') }}
                     </span>
                   </div>
-                  <p class="pref-desc">Activate performance scorecards and multi-factor evaluation rubrics for members and staff across the tenant.</p>
+                  <p class="pref-desc">{{ 'user_settings.kpi_enable_desc' | translate:'Activate performance scorecards and multi-factor evaluation rubrics for members and staff across the tenant.' }}</p>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="settings.enableKpiEvaluations" name="enableKpiEvaluations" />
@@ -341,12 +342,12 @@ interface UserSettingsModel {
               <div class="preference-row">
                 <div class="pref-info">
                   <div class="pref-title-row">
-                    <span class="pref-title">Publish Member Performance Leaderboard</span>
+                    <span class="pref-title">{{ 'user_settings.kpi_board_label' | translate:'Publish Member Performance Leaderboard' }}</span>
                     <span class="status-badge" [class.badge-active]="settings.enablePublicLeaderboard" [class.badge-inactive]="!settings.enablePublicLeaderboard">
-                      {{ settings.enablePublicLeaderboard ? 'PUBLIC' : 'ADMIN ONLY' }}
+                      {{ settings.enablePublicLeaderboard ? ('user_settings.badge_visible' | translate:'PUBLIC') : ('user_settings.badge_hidden' | translate:'ADMIN ONLY') }}
                     </span>
                   </div>
-                  <p class="pref-desc">Allow members to view competitive performance rankings and podium positions in their personal member workspace.</p>
+                  <p class="pref-desc">{{ 'user_settings.kpi_board_desc' | translate:'Allow members to view competitive performance rankings and podium positions in their personal member workspace.' }}</p>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="settings.enablePublicLeaderboard" name="enablePublicLeaderboard" />
@@ -359,20 +360,20 @@ interface UserSettingsModel {
                 <div class="kpi-config-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                   <div class="form-group">
                     <label>
-                      <span>Default Evaluation Cycle / Period</span>
+                      <span>{{ 'user_settings.kpi_cycle_label' | translate:'Default Evaluation Cycle / Period' }}</span>
                     </label>
                     <select [(ngModel)]="settings.defaultKpiPeriodCycle" name="defaultKpiPeriodCycle" class="form-control" style="height: 42px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; font-weight: 600; color: #0f172a; background: #ffffff;">
-                      <option value="Quarterly">Quarterly (e.g. 2026 Q1, 2026 Q2...)</option>
-                      <option value="Monthly">Monthly (e.g. October 2026, November 2026...)</option>
-                      <option value="Bi-Annual">Bi-Annual (H1 / H2)</option>
-                      <option value="Annual">Annual Review Cycle</option>
+                      <option value="Quarterly">{{ 'user_settings.cycle_quarterly' | translate:'Quarterly (e.g. 2026 Q1, 2026 Q2...)' }}</option>
+                      <option value="Monthly">{{ 'user_settings.cycle_monthly' | translate:'Monthly (e.g. October 2026, November 2026...)' }}</option>
+                      <option value="Bi-Annual">{{ 'user_settings.cycle_semiannual' | translate:'Bi-Annual (H1 / H2)' }}</option>
+                      <option value="Annual">{{ 'user_settings.cycle_annual' | translate:'Annual Review Cycle' }}</option>
                     </select>
-                    <span class="hint-text">Pre-selected cycle duration when generating periodic grading sheets.</span>
+                    <span class="hint-text">{{ 'user_settings.kpi_cycle_hint' | translate:'Pre-selected cycle duration when generating periodic grading sheets.' }}</span>
                   </div>
 
                   <div class="form-group">
                     <label>
-                      <span>Benchmark Passing Score (%)</span>
+                      <span>{{ 'user_settings.kpi_benchmark_label' | translate:'Benchmark Passing Score (%)' }}</span>
                     </label>
                     <input
                       type="number"
@@ -383,33 +384,33 @@ interface UserSettingsModel {
                       class="form-control"
                       placeholder="70"
                     />
-                    <span class="hint-text">Minimum threshold percentage required for satisfactory performance rating.</span>
+                    <span class="hint-text">{{ 'user_settings.kpi_benchmark_hint' | translate:'Minimum threshold percentage required for satisfactory performance rating.' }}</span>
                   </div>
                 </div>
 
                 <div style="margin-top: 14px; display: flex; align-items: center; justify-content: space-between; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; flex-wrap: wrap; gap: 10px;">
                   <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #166534; font-weight: 600;">
                     <span class="material-symbols-outlined" style="font-size: 20px;">verified</span>
-                    <span>Ready to evaluate scorecards or configure rubric indicators?</span>
+                    <span>{{ 'user_settings.kpi_ready_msg' | translate:'Ready to evaluate scorecards or configure rubric indicators?' }}</span>
                   </div>
                   <a routerLink="/users/console/kpi" class="btn btn-outline btn-sm" style="background:#fff;">
                     <span class="material-symbols-outlined">launch</span>
-                    <span>Open KPI & Leaderboard Hub</span>
+                    <span>{{ 'user_settings.kpi_hub_cta' | translate:'Open KPI & Leaderboard Hub' }}</span>
                   </a>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Section 3: Directory Governance & Policies -->
+          <!-- Section 4: Directory Governance & Policies -->
           <div class="settings-card">
             <div class="card-header">
               <div class="header-icon-box">
                 <span class="material-symbols-outlined">security</span>
               </div>
               <div class="header-text">
-                <h3>Directory Access & Deletion Policies</h3>
-                <p>Configure security verification requirements and account deletion safety locks.</p>
+                <h3>{{ 'user_settings.sec4_title' | translate:'Directory Access & Deletion Policies' }}</h3>
+                <p>{{ 'user_settings.sec4_subtitle' | translate:'Configure security verification requirements and account deletion safety locks.' }}</p>
               </div>
             </div>
 
@@ -417,12 +418,12 @@ interface UserSettingsModel {
               <div class="preference-row">
                 <div class="pref-info">
                   <div class="pref-title-row">
-                    <span class="pref-title">Require Confirmed Email to Login</span>
+                    <span class="pref-title">{{ 'user_settings.gov_email_confirm_label' | translate:'Require Confirmed Email to Login' }}</span>
                     <span class="status-badge" [class.badge-active]="settings.requireConfirmedEmailToLogin" [class.badge-inactive]="!settings.requireConfirmedEmailToLogin">
-                      {{ settings.requireConfirmedEmailToLogin ? 'ENFORCED' : 'OFF' }}
+                      {{ settings.requireConfirmedEmailToLogin ? ('user_settings.badge_enforced' | translate:'ENFORCED') : ('user_settings.badge_off' | translate:'OFF') }}
                     </span>
                   </div>
-                  <p class="pref-desc">When enabled, members cannot access the workspace until verifying their email address via OTP or confirmation link.</p>
+                  <p class="pref-desc">{{ 'user_settings.gov_email_confirm_desc' | translate:'When enabled, members cannot access the workspace until verifying their email address via OTP or confirmation link.' }}</p>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="settings.requireConfirmedEmailToLogin" name="requireConfirmedEmailToLogin" />
@@ -435,12 +436,12 @@ interface UserSettingsModel {
               <div class="preference-row">
                 <div class="pref-info">
                   <div class="pref-title-row">
-                    <span class="pref-title">Allow Permanent User Deletion</span>
+                    <span class="pref-title">{{ 'user_settings.gov_delete_label' | translate:'Allow Permanent User Deletion' }}</span>
                     <span class="status-badge" [class.badge-danger]="settings.enableUserDeletion" [class.badge-safe]="!settings.enableUserDeletion">
-                      {{ settings.enableUserDeletion ? 'PERMITTED' : 'PROTECTED' }}
+                      {{ settings.enableUserDeletion ? ('user_settings.badge_allowed' | translate:'PERMITTED') : ('user_settings.badge_prohibited' | translate:'PROTECTED') }}
                     </span>
                   </div>
-                  <p class="pref-desc">When enabled, administrators can permanently delete member records. When disabled, accounts can only be deactivated or suspended.</p>
+                  <p class="pref-desc">{{ 'user_settings.gov_delete_desc' | translate:'When enabled, administrators can permanently delete member records. When disabled, accounts can only be deactivated or suspended.' }}</p>
                 </div>
                 <label class="toggle-switch">
                   <input type="checkbox" [(ngModel)]="settings.enableUserDeletion" name="enableUserDeletion" />
@@ -452,10 +453,10 @@ interface UserSettingsModel {
 
           <!-- Form Actions Footer -->
           <div class="settings-footer">
-            <a routerLink="/users/console/list" class="btn btn-outline">Cancel</a>
+            <a routerLink="/users/console/list" class="btn btn-outline">{{ 'user_cat.btn_cancel' | translate:'Cancel' }}</a>
             <button type="submit" class="btn btn-primary" [disabled]="isSaving">
               <span class="material-symbols-outlined" *ngIf="!isSaving">save</span>
-              <span>{{ isSaving ? 'Saving Preferences...' : 'Save Settings' }}</span>
+              <span>{{ isSaving ? ('user_settings.btn_saving' | translate:'Saving Preferences...') : ('user_settings.btn_save' | translate:'Save Settings') }}</span>
             </button>
           </div>
 
@@ -781,18 +782,21 @@ export class UserSettingsComponent implements OnInit {
   titleChips: string[] = [];
   previews: MemberIdFormatPreview[] = [];
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'Member Directory',
-      icon: 'groups',
-      isPrimary: false,
-      routerLink: '/users/console/list'
-    }
-  ];
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('directory.title', 'Member Directory'),
+        icon: 'groups',
+        isPrimary: false,
+        routerLink: '/users/console/list'
+      }
+    ];
+  }
 
   constructor(
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private translationService: TranslationService
   ) {}
 
   ngOnInit(): void {
@@ -827,7 +831,7 @@ export class UserSettingsComponent implements OnInit {
       },
       error: () => {
         this.isLoading = false;
-        this.toast.error('Failed to load user management settings.');
+        this.toast.error(this.translationService.translate('user_settings.err_saved_failed', 'Failed to load user management settings.'));
       }
     });
   }
@@ -935,14 +939,14 @@ export class UserSettingsComponent implements OnInit {
     this.api.put<any>('UsersApi/settings', payload).subscribe({
       next: (res) => {
         this.isSaving = false;
-        this.toast.success('User management preferences saved successfully.');
+        this.toast.success(this.translationService.translate('user_settings.msg_saved_success', 'User management preferences saved successfully.'));
         if (res.data?.previews) {
           this.previews = res.data.previews;
         }
       },
       error: (err) => {
         this.isSaving = false;
-        this.toast.error(err?.error?.message || 'Failed to save settings.');
+        this.toast.error(err?.error?.message || this.translationService.translate('user_settings.err_saved_failed', 'Failed to save settings.'));
       }
     });
   }
