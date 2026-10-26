@@ -1410,7 +1410,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
   Widget _buildLiveEmailPreviewCard(bool isDark) {
     final email = _emailCtrl.text.trim();
     final customMsg = _customMsgCtrl.text.trim();
-    final brand = widget.workspace?.displayName ?? 'Ozikol Workspace';
+    final brand = widget.workspace?.displayName ?? 'Workspace';
 
     return _buildCardWrapper(
       isDark: isDark,

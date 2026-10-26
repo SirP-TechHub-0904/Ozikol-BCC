@@ -59,7 +59,7 @@ void main(List<String> args) async {
         backgroundColor: Colors.white,
         skipTaskbar: false,
         titleBarStyle: TitleBarStyle.hidden,
-        title: 'Ozikol',
+        title: 'Business Command Center',
       );
       await windowManager.waitUntilReadyToShow(windowOptions, () async {
         await windowManager.show();
@@ -183,7 +183,7 @@ class OzikolApp extends ConsumerWidget {
     });
 
     return MaterialApp(
-      title: 'Ozikol BCC',
+      title: 'Business Command Center',
       locale: Locale(currentLang),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
@@ -208,7 +208,7 @@ class OzikolApp extends ConsumerWidget {
             ? Column(
                 children: [
                   DesktopTitleBar(
-                    title: activeWs != null ? '${activeWs.displayName} - Ozikol BCC' : 'Ozikol BCC',
+                    title: activeWs != null ? '${activeWs.displayName} - Command Center' : 'Business Command Center',
                     iconUrl: activeWs?.iconUrl,
                     logoUrl: activeWs?.logoUrl,
                   ),

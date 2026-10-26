@@ -25,7 +25,7 @@ class DesktopTitleBar extends StatefulWidget {
 
   const DesktopTitleBar({
     super.key,
-    this.title = 'Ozikol BCC',
+    this.title = 'Business Command Center',
     this.iconUrl,
     this.logoUrl,
     this.backgroundColor,
@@ -191,7 +191,9 @@ class _DesktopTitleBarState extends State<DesktopTitleBar> with WindowListener {
                             decoration: TextDecoration.none,
                           ),
                         ),
-                        if (widget.title.contains(' - Ozikol BCC')) ...[
+                        if (widget.title.contains(' - Command Center') ||
+                            widget.title.contains(' - Ozikol BCC') ||
+                            widget.title.contains(' - Business Command Center')) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),

@@ -129,13 +129,6 @@ class _CustomTextFieldState extends State<CustomTextField> {
         ctrl.text = pastedText;
         ctrl.selection = TextSelection.collapsed(offset: pastedText.length);
         widget.onChanged?.call(pastedText);
-
-        if (mounted) {
-          AppSnackBar.showInfo(
-            context,
-            'Pasted: ${pastedText.length > 35 ? "${pastedText.substring(0, 35)}..." : pastedText}',
-          );
-        }
       } else {
         if (mounted) {
           AppSnackBar.showWarning(context, 'Clipboard is empty or does not contain text.');

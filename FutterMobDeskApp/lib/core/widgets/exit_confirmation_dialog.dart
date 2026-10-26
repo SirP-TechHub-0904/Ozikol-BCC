@@ -90,7 +90,7 @@ class ExitConfirmationDialog extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Ozikol Business Command Center',
+                          'Business Command Center',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
