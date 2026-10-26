@@ -1,3 +1,4 @@
+import '../localization/language_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_colors.dart';
@@ -136,7 +137,7 @@ class _AppTourDialogState extends State<AppTourDialog> {
                   IconButton(
                     icon: const Icon(Icons.close_rounded, size: 20),
                     onPressed: _finishTour,
-                    tooltip: 'Skip Tour',
+                    tooltip: context.trc('sh.skip_tour', fallback: 'Skip Tour'),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                   ),
@@ -213,7 +214,7 @@ class _AppTourDialogState extends State<AppTourDialog> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
-                        child: const Text('Back'),
+                        child: Text(context.trc('sh.back', fallback: 'Back')),
                       ),
                     ),
                   if (_currentIndex > 0) const SizedBox(width: 12),
@@ -227,7 +228,7 @@ class _AppTourDialogState extends State<AppTourDialog> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 13),
                       ),
-                      child: Text(_isLastStep ? 'Got It' : 'Next Step'),
+                      child: Text(_isLastStep ? context.trc('sh.got_it_final', fallback: 'Got It') : context.trc('sh.next_step', fallback: 'Next Step')),
                     ),
                   ),
                 ],

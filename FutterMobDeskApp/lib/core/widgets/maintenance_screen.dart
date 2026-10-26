@@ -1,3 +1,4 @@
+import '../localization/language_provider.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -61,7 +62,7 @@ class MaintenanceScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Scheduled Maintenance',
+                    context.trc('sh.maint_title', fallback: 'Scheduled Maintenance'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 22,
@@ -73,7 +74,7 @@ class MaintenanceScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text(
                     message ??
-                        'The platform is currently undergoing scheduled infrastructure upgrades. Workspaces will be back online shortly.',
+                        context.trc('sh.maint_body', fallback: 'The platform is currently undergoing scheduled infrastructure upgrades. Workspaces will be back online shortly.'),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
@@ -84,7 +85,7 @@ class MaintenanceScreen extends StatelessWidget {
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
                     icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: const Text('Check Status'),
+                    label: Text(context.trc('sh.check_status', fallback: 'Check Status')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,

@@ -1,3 +1,4 @@
+import '../localization/language_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/connectivity_service.dart';
@@ -54,7 +55,7 @@ class OfflineStatusBar extends ConsumerWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'You are offline. Showing cached workspace data.',
+                context.trc('sh.offline_msg', fallback: 'You are offline. Showing cached workspace data.'),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -89,7 +90,7 @@ class OfflineStatusBar extends ConsumerWidget {
                     Icon(Icons.refresh_rounded, size: 12, color: textColor),
                     const SizedBox(width: 4),
                     Text(
-                      'Retry',
+                      context.trc('sh.retry', fallback: 'Retry'),
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textColor),
                     ),
                   ],

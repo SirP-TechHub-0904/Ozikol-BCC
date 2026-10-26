@@ -1,3 +1,4 @@
+import '../localization/language_provider.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -218,7 +219,7 @@ class _DesktopTitleBarState extends State<DesktopTitleBar> with WindowListener {
                                 ),
                                 SizedBox(width: 4),
                                 Text(
-                                  'ACTIVE',
+                                  context.trc('sh.active', fallback: 'ACTIVE'),
                                   style: TextStyle(
                                     fontSize: 8.5,
                                     fontWeight: FontWeight.w800,
@@ -243,20 +244,20 @@ class _DesktopTitleBarState extends State<DesktopTitleBar> with WindowListener {
               children: [
                 _CaptionButton(
                   icon: Icons.remove_rounded,
-                  tooltip: 'Minimize',
+                  tooltip: context.trc('sh.minimize', fallback: 'Minimize'),
                   iconColor: iconColor,
                   onPressed: () => windowManager.minimize(),
                 ),
                 _CaptionButton(
                   icon: _isMaximized ? Icons.filter_none_rounded : Icons.crop_square_rounded,
                   size: _isMaximized ? 13 : 15,
-                  tooltip: _isMaximized ? 'Restore' : 'Maximize',
+                  tooltip: _isMaximized ? context.trc('sh.restore', fallback: 'Restore') : context.trc('sh.maximize', fallback: 'Maximize'),
                   iconColor: iconColor,
                   onPressed: _toggleMaximize,
                 ),
                 _CaptionButton(
                   icon: Icons.close_rounded,
-                  tooltip: 'Close',
+                  tooltip: context.trc('sh.close', fallback: 'Close'),
                   isClose: true,
                   iconColor: iconColor,
                   onPressed: _handleCloseRequest,
