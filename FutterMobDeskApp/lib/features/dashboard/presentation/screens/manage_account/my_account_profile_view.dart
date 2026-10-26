@@ -8,6 +8,7 @@ import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/custom_dropdown_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../../../core/widgets/page_header.dart';
+import '../../../../notifications/data/notification_service.dart';
 import '../../../data/account_repository.dart';
 
 /// Screen presenting the comprehensive personal member account profile details,
@@ -154,7 +155,24 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
     final lastName = _lastNameController.text.trim();
 
     if (firstName.isEmpty || lastName.isEmpty) {
-      setState(() => _errorMessage = 'First name and last name are required.');
+      const msg = 'First name and last name are required.';
+      setState(() => _errorMessage = msg);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Expanded(child: Text(msg)),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
       return;
     }
 
@@ -188,6 +206,41 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
           _errorMessage = 'Failed to update profile details. Please try again.';
         }
       });
+
+      if (success) {
+        // Synchronize in-app notification center feed immediately
+        ref.read(notificationProvider.notifier).loadFeed();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Expanded(child: Text('Personal identity details saved successfully!')),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                SizedBox(width: 10),
+                Expanded(child: Text('Failed to update profile details. Please try again.')),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
     }
   }
 
@@ -239,6 +292,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
           _showEmailOtpBox = false;
           _emailOtpController.clear();
           _emailVerifySuccess = res['message']?.toString() ?? 'Email verified successfully!';
+          ref.read(notificationProvider.notifier).loadFeed();
         } else {
           _emailVerifyError = res['message']?.toString() ?? 'Invalid or expired verification code.';
         }
@@ -299,6 +353,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
           _showPhoneOtpBox = false;
           _phoneOtpController.clear();
           _phoneVerifySuccess = res['message']?.toString() ?? 'Mobile phone verified successfully!';
+          ref.read(notificationProvider.notifier).loadFeed();
         } else {
           _phoneVerifyError = res['message']?.toString() ?? 'Invalid or expired SMS verification code.';
         }
@@ -792,11 +847,45 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
             ),
           const SizedBox(height: 24),
 
+          if (_successMessage != null || _errorMessage != null) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: (_successMessage != null ? AppColors.success : AppColors.error).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: (_successMessage != null ? AppColors.success : AppColors.error).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _successMessage != null ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
+                    color: _successMessage != null ? AppColors.success : AppColors.error,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _successMessage ?? _errorMessage!,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: _successMessage != null ? AppColors.success : AppColors.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           if (isMobile)
             SizedBox(
               width: double.infinity,
               child: PrimaryButton(
-                text: _isSaving ? 'Saving...' : 'btn.save_changes'.tr(ref, fallback: 'Save Personal Details'),
+                text: _isSaving ? 'Saving...' : 'btn.save_changes'.tr(ref, fallback: 'Save Changes'),
                 icon: const Icon(Icons.save_outlined, size: 16),
                 onPressed: _isSaving ? null : _handleSave,
               ),
@@ -806,7 +895,7 @@ class _MyAccountProfileViewState extends ConsumerState<MyAccountProfileView> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 PrimaryButton(
-                  text: _isSaving ? 'Saving...' : 'btn.save_changes'.tr(ref, fallback: 'Save Personal Details'),
+                  text: _isSaving ? 'Saving...' : 'btn.save_changes'.tr(ref, fallback: 'Save Changes'),
                   icon: const Icon(Icons.save_outlined, size: 16),
                   onPressed: _isSaving ? null : _handleSave,
                 ),

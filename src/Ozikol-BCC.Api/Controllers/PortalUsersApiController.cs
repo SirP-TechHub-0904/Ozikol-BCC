@@ -139,6 +139,16 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             await _dbContext.SaveChangesAsync();
+
+            await NotifyUserAsync(
+                user.Id,
+                "Profile Details Updated",
+                "Your personal identity details and workspace profile information have been updated successfully.",
+                "/identity/console/account?tab=overview",
+                NotificationSeverity.Success,
+                "badge"
+            );
+
             return Ok(ApiResponse<object>.SuccessResponse(null, "Your profile has been updated successfully."));
         }
 
@@ -167,6 +177,15 @@ namespace Ozikol_BCC.Api.Controllers
                 var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(file, "member-avatars");
                 user.AvatarUrl = secureUrl;
                 await _dbContext.SaveChangesAsync();
+
+                await NotifyUserAsync(
+                    user.Id,
+                    "Avatar Image Updated",
+                    "Your profile avatar photo has been uploaded and updated successfully.",
+                    "/identity/console/account?tab=overview",
+                    NotificationSeverity.Success,
+                    "account_circle"
+                );
 
                 return Ok(ApiResponse<object>.SuccessResponse(new { avatarUrl = secureUrl }, "Avatar uploaded and updated successfully."));
             }
@@ -665,7 +684,7 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(new { phoneNumber = user.PhoneNumber, phoneNumberConfirmed = true }, "Mobile phone number verified successfully."));
         }
 
-        private async Task NotifyUserAsync(string userId, string title, string message, string actionUrl = "/users/workspace/profile", NotificationSeverity severity = NotificationSeverity.Success, string icon = "verified")
+        private async Task NotifyUserAsync(string userId, string title, string message, string actionUrl = "/identity/console/account?tab=overview", NotificationSeverity severity = NotificationSeverity.Success, string icon = "verified")
         {
             try
             {
@@ -678,9 +697,9 @@ namespace Ozikol_BCC.Api.Controllers
                         Title = title,
                         Message = message,
                         ActionUrl = actionUrl,
-                        Module = "Security",
+                        Module = "Account",
                         Icon = icon,
-                        Category = BcpMessageCategory.Security,
+                        Category = BcpMessageCategory.Account,
                         Priority = BcpMessagePriority.Normal,
                         Severity = severity,
                         Channels = NotificationChannels.InApp
@@ -695,9 +714,9 @@ namespace Ozikol_BCC.Api.Controllers
                         Title = title,
                         Message = message,
                         ActionUrl = actionUrl,
-                        Module = "Security",
+                        Module = "Account",
                         Icon = icon,
-                        Category = BcpMessageCategory.Security,
+                        Category = BcpMessageCategory.Account,
                         Priority = BcpMessagePriority.Normal,
                         Severity = severity,
                         CreatedAt = DateTime.UtcNow,
