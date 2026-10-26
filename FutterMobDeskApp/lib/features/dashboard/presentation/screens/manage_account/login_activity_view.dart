@@ -770,13 +770,21 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
                       : (ua.contains('Android') ? 'Android' : 'iOS')));
       return isMobile ? 'Mobile App on $os' : 'Desktop App on $os';
     }
-    if (ua.contains('Edge') || ua.contains('Edg/') || ua.contains('Edg'))
+    if (ua.contains('Edge') || ua.contains('Edg/') || ua.contains('Edg')) {
       return 'Microsoft Edge on Windows';
-    if (ua.contains('Chrome')) return 'Google Chrome on Windows';
-    if (ua.contains('Firefox')) return 'Mozilla Firefox on Windows';
-    if (ua.contains('Safari') && !ua.contains('Chrome'))
+    }
+    if (ua.contains('Chrome')) {
+      return 'Google Chrome on Windows';
+    }
+    if (ua.contains('Firefox')) {
+      return 'Mozilla Firefox on Windows';
+    }
+    if (ua.contains('Safari') && !ua.contains('Chrome')) {
       return 'Apple Safari on macOS';
-    if (ua.contains(' on ')) return ua;
+    }
+    if (ua.contains(' on ')) {
+      return ua;
+    }
     return 'Web Browser Session';
   }
 
@@ -798,34 +806,47 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
     final lower = rawAction.toLowerCase();
     if (lower.contains('mfa') ||
         lower.contains('2fa') ||
-        lower.contains('authenticator'))
+        lower.contains('authenticator')) {
       return 'MFA / 2FA';
-    if (lower.contains('password')) return 'Password';
+    }
+    if (lower.contains('password')) {
+      return 'Password';
+    }
     if (lower.contains('session') ||
         lower.contains('revoke') ||
-        lower.contains('terminate'))
+        lower.contains('terminate')) {
       return 'Session';
+    }
     if (lower.contains('sign-in') ||
         lower.contains('signed in') ||
         lower.contains('login') ||
-        lower.contains('auth'))
+        lower.contains('auth')) {
       return 'Sign-in';
+    }
     if (lower.contains('kpi') ||
         lower.contains('evaluation') ||
-        lower.contains('score'))
+        lower.contains('score')) {
       return 'KPI / Eval';
+    }
     if (lower.contains('create') ||
         lower.contains('add') ||
-        lower.contains('register'))
+        lower.contains('register')) {
       return 'Create';
+    }
     if (lower.contains('update') ||
         lower.contains('edit') ||
-        lower.contains('modify'))
+        lower.contains('modify')) {
       return 'Update';
-    if (lower.contains('delete') || lower.contains('remove')) return 'Delete';
-    if (rawAction.length <= 14) return rawAction;
-    if (module.isNotEmpty && module != 'System' && module.length <= 15)
+    }
+    if (lower.contains('delete') || lower.contains('remove')) {
+      return 'Delete';
+    }
+    if (rawAction.length <= 14) {
+      return rawAction;
+    }
+    if (module.isNotEmpty && module != 'System' && module.length <= 15) {
       return module;
+    }
     return 'Operation';
   }
 
@@ -1290,10 +1311,7 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
                                                 : AppColors.gray600),
                                     ),
                                     onSelected: (val) {
-                                      if (val)
-                                        setState(
-                                          () => _selectedCategory = st['key']!,
-                                        );
+                                      if (val) { setState(() => _selectedCategory = st['key']!); }
                                     },
                                   );
                                 }).toList(),
@@ -1382,10 +1400,7 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
                                               : AppColors.gray600),
                                   ),
                                   onSelected: (val) {
-                                    if (val)
-                                      setState(
-                                        () => _selectedCategory = st['key']!,
-                                      );
+                                    if (val) { setState(() => _selectedCategory = st['key']!); }
                                   },
                                 );
                               }).toList(),
@@ -1773,3 +1788,4 @@ class _MyActivityViewState extends ConsumerState<MyActivityView> {
     );
   }
 }
+
