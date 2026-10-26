@@ -51,7 +51,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// Tenant identifier from query string.
         /// </summary>
         [BindProperty(SupportsGet = true)]
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         /// <summary>
         /// The loaded tenant catalog entity.

@@ -14,7 +14,7 @@ namespace Ozikol.MasterDomain.Models;
 public class MasterTenantCatalog
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     /// <summary>
     /// Unique tenant key / subdomain prefix (e.g. "acme", "bcp-main").

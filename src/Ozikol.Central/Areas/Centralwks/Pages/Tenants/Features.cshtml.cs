@@ -30,13 +30,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// Tenant ID whose subscriptions are being managed.
         /// </summary>
         [BindProperty(SupportsGet = true)]
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         /// <summary>
         /// Alias tenant ID parameter for navigation links.
         /// </summary>
         [BindProperty(SupportsGet = true)]
-        public int? TenantId { get; set; }
+        public Guid? TenantId { get; set; }
 
         /// <summary>
         /// The loaded tenant entity.
@@ -53,7 +53,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// </summary>
         public async Task<IActionResult> OnGetAsync()
         {
-            var targetId = Id != 0 ? Id : (TenantId ?? 0);
+            var targetId = Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty);
             var tenant = await _dbContext.MasterTenantCatalogs
                 .Include(t => t.FeatureSubscriptions)
                 .FirstOrDefaultAsync(t => t.Id == targetId);

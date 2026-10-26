@@ -31,7 +31,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
         /// Tenant organization identifier.
         /// </summary>
         [BindProperty(SupportsGet = true)]
-        public int? TenantId { get; set; }
+        public Guid? TenantId { get; set; }
 
         /// <summary>
         /// Optional specific subscription identifier (for backwards-compatibility).
@@ -108,8 +108,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
             var now = DateTime.UtcNow;
 
             // Resolve target tenant ID either from TenantId or from specific subscription Id
-            int resolvedTenantId = 0;
-            if (TenantId.HasValue && TenantId.Value > 0)
+            Guid resolvedTenantId = Guid.Empty;
+            if (TenantId.HasValue && TenantId.Value != Guid.Empty)
             {
                 resolvedTenantId = TenantId.Value;
             }
@@ -121,13 +121,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                     .Select(s => s.MasterTenantCatalogId)
                     .FirstOrDefaultAsync();
 
-                if (subLookup > 0)
+                if (subLookup != Guid.Empty)
                 {
                     resolvedTenantId = subLookup;
                 }
             }
 
-            if (resolvedTenantId <= 0)
+            if (resolvedTenantId == Guid.Empty)
             {
                 TempData["Error"] = "Please specify a valid tenant organization to view subscription details.";
                 return RedirectToPage("/Subscriptions/Index");
@@ -316,7 +316,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
         /// <summary>
         /// Handles HTTP POST requests to toggle feature subscription status (Active / Suspended).
         /// </summary>
-        public async Task<IActionResult> OnPostToggleFeatureStatusAsync(Guid subscriptionId, int tenantId)
+        public async Task<IActionResult> OnPostToggleFeatureStatusAsync(Guid subscriptionId, Guid tenantId)
         {
             var sub = await _dbContext.MasterTenantFeatureSubscriptions
                 .Include(s => s.MasterTenantCatalog)
@@ -354,7 +354,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
         /// <summary>
         /// Handles HTTP POST requests to toggle auto-renewal for a specific feature subscription.
         /// </summary>
-        public async Task<IActionResult> OnPostToggleAutoRenewAsync(Guid subscriptionId, int tenantId)
+        public async Task<IActionResult> OnPostToggleAutoRenewAsync(Guid subscriptionId, Guid tenantId)
         {
             var sub = await _dbContext.MasterTenantFeatureSubscriptions
                 .Include(s => s.MasterFeatureCatalog)
@@ -376,7 +376,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
         /// <summary>
         /// Handles HTTP POST requests to dispatch a renewal notice email to this tenant.
         /// </summary>
-        public async Task<IActionResult> OnPostSendRenewalNoticeAsync(int tenantId)
+        public async Task<IActionResult> OnPostSendRenewalNoticeAsync(Guid tenantId)
         {
             var tenant = await _dbContext.MasterTenantCatalogs
                 .Include(t => t.FeatureSubscriptions)

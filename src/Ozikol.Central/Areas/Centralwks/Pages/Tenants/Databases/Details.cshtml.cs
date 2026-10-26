@@ -45,7 +45,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
         /// Tenant Catalog ID passed via query string as alternative.
         /// </summary>
         [BindProperty(SupportsGet = true)]
-        public int? Id { get; set; }
+        public Guid? Id { get; set; }
 
         /// <summary>
         /// Master Catalog tenant entity.
@@ -74,7 +74,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants.Databases
         {
             MasterTenantCatalog? tenant = null;
 
-            if (Id.HasValue && Id.Value > 0)
+            if (Id.HasValue && Id.Value != Guid.Empty)
             {
                 tenant = await _dbContext.MasterTenantCatalogs.FindAsync(Id.Value);
             }

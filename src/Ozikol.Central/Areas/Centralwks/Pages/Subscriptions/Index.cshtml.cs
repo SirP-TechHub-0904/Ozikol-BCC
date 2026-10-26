@@ -358,7 +358,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
         /// </summary>
         /// <param name="tenantId">Identifier of the target tenant organization.</param>
         /// <returns>Redirects back with a status message toast.</returns>
-        public async Task<IActionResult> OnPostSendRenewalNoticeAsync(int tenantId)
+        public async Task<IActionResult> OnPostSendRenewalNoticeAsync(Guid tenantId)
         {
             var tenant = await _dbContext.MasterTenantCatalogs
                 .Include(t => t.FeatureSubscriptions)
@@ -428,7 +428,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
         /// </summary>
         public class TenantSubscriptionSummaryViewModel
         {
-            public int TenantId { get; set; }
+            public Guid TenantId { get; set; }
             public string OrganizationName { get; set; } = string.Empty;
             public string TenantKey { get; set; } = string.Empty;
             public string PrimaryDomain { get; set; } = string.Empty;

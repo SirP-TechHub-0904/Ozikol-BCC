@@ -57,11 +57,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Billing
         /// <param name="tenantId">Optional pre-selected tenant identifier.</param>
         /// <param name="subscriptionId">Optional pre-selected subscription identifier.</param>
         /// <returns>Page result rendering the form.</returns>
-        public async Task<IActionResult> OnGetAsync(int? tenantId = null, Guid? subscriptionId = null)
+        public async Task<IActionResult> OnGetAsync(Guid? tenantId = null, Guid? subscriptionId = null)
         {
             await PopulateDropdownsAsync();
 
-            if (tenantId.HasValue)
+            if (tenantId.HasValue && tenantId.Value != Guid.Empty)
             {
                 Input.TenantId = tenantId.Value;
             }
@@ -164,7 +164,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Billing
             /// </summary>
             [Required(ErrorMessage = "Please select a tenant organization.")]
             [Display(Name = "Tenant Organization")]
-            public int TenantId { get; set; }
+            public Guid TenantId { get; set; }
 
             /// <summary>
             /// Optional linked feature subscription ID.

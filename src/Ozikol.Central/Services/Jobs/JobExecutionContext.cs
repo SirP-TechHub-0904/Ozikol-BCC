@@ -27,7 +27,7 @@ namespace Ozikol.Central.Services.Jobs
         /// <summary>
         /// Optional specific target tenant catalog ID if this run targets a single tenant organization.
         /// </summary>
-        public int? TargetTenantCatalogId { get; set; }
+        public Guid? TargetTenantCatalogId { get; set; }
 
         /// <summary>
         /// Optional target tenant key.

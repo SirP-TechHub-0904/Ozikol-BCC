@@ -92,7 +92,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// Selected tenant organization ID for granular deep-dive inspection.
         /// </summary>
         [BindProperty(SupportsGet = true)]
-        public int? SelectedTenantId { get; set; }
+        public Guid? SelectedTenantId { get; set; }
 
         /// <summary>
         /// Selectable list of tenant organizations across the platform.
@@ -637,7 +637,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// </summary>
         public class TenantFeatureUsageSummaryDto
         {
-            public int TenantId { get; set; }
+            public Guid TenantId { get; set; }
             public string OrganizationName { get; set; } = string.Empty;
             public string TenantKey { get; set; } = string.Empty;
             public string PrimaryDomain { get; set; } = string.Empty;

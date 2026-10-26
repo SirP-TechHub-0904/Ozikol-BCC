@@ -22,7 +22,7 @@ namespace Ozikol.MasterDomain.Models
         public Guid Id { get; set; } = Guid.NewGuid();
 
         [ForeignKey("MasterTenantCatalog")]
-        public int MasterTenantCatalogId { get; set; }
+        public Guid MasterTenantCatalogId { get; set; }
         public MasterTenantCatalog MasterTenantCatalog { get; set; } = null!;
 
         [ForeignKey("MasterFeatureCatalog")]

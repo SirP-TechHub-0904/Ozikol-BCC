@@ -17,7 +17,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -616,8 +616,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<int?>("TargetTenantCatalogId")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("TargetTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("UpdatedUtc")
                         .HasColumnType("datetime2");
@@ -674,8 +674,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int?>("TargetTenantCatalogId")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("TargetTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("TenantKey")
                         .HasMaxLength(100)
@@ -718,8 +718,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<int>("MasterTenantCatalogId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("MasterTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("MasterTenantFeatureSubscriptionId")
                         .HasColumnType("uniqueidentifier");
@@ -1221,8 +1221,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<Guid?>("MasterFeatureCatalogId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("MasterTenantCatalogId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("MasterTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("OriginalPrice")
                         .HasColumnType("decimal(18,2)");
@@ -3251,11 +3251,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterTenantCatalog", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AdminEmail")
                         .HasMaxLength(256)
@@ -3399,8 +3397,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<Guid>("MasterFeatureCatalogId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("MasterTenantCatalogId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("MasterTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("RecurringPrice")
                         .HasPrecision(18, 2)
