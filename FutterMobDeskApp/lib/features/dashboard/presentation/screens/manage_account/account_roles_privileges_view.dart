@@ -107,238 +107,180 @@ class _AccountRolesPrivilegesViewState extends ConsumerState<AccountRolesPrivile
           const SizedBox(height: 20),
 
           // 2. Roles & Privileges Section Card (matching Web .card-section)
-          Container(
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+          AccountSectionCard(
+            icon: Icons.verified_user_rounded,
+            title: 'account.tab_roles'.tr(ref, fallback: 'Roles & Privileges'),
+            description: 'Overview of your assigned role privileges and authorization scope within this tenant.',
+            action: OutlinedButton.icon(
+              onPressed: _loadRoles,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: Text('btn.refresh'.tr(ref, fallback: 'Refresh'), style: const TextStyle(fontSize: 12.5)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Section Card Head
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
+            bodyPadding: const EdgeInsets.all(20),
+            child: _isLoading
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 600;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.verified_user_rounded, color: AppColors.primary, size: 20),
+                          // Roles Cards Grid
+                          Wrap(
+                            spacing: 16,
+                            runSpacing: 16,
+                            children: _roles.map((role) {
+                              final isSuper = role.toLowerCase().contains('super');
+                              final isAdmin = role.toLowerCase().contains('admin');
+
+                              return Container(
+                                width: isNarrow ? double.infinity : 280,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: isSuper
+                                        ? AppColors.primary.withValues(alpha: 0.4)
+                                        : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                                    width: isSuper ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        color: isSuper
+                                            ? AppColors.primary.withValues(alpha: 0.12)
+                                            : (isAdmin
+                                                ? const Color(0xFF0284C7).withValues(alpha: 0.12)
+                                                : Colors.grey.withValues(alpha: 0.12)),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(
+                                        isSuper
+                                            ? Icons.security_rounded
+                                            : (isAdmin ? Icons.admin_panel_settings_rounded : Icons.shield_outlined),
+                                        color: isSuper
+                                            ? AppColors.primary
+                                            : (isAdmin ? const Color(0xFF0284C7) : AppColors.gray500),
+                                        size: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            role,
+                                            style: TextStyle(
+                                              fontSize: 14.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            isSuper
+                                                ? 'Full workspace administrative governance'
+                                                : 'Assigned administrative security credential',
+                                            style: TextStyle(
+                                              fontSize: 11.5,
+                                              color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
                           ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'account.tab_roles'.tr(ref, fallback: 'Roles & Privileges'),
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                          const SizedBox(height: 24),
+
+                          // Workspace Scope Details
+                          Container(
+                            padding: const EdgeInsets.all(18),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.domain_rounded, size: 18, color: AppColors.primary),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Tenant Authorization Scope',
+                                      style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Overview of your assigned role privileges and authorization scope within this tenant.',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  color: isDark ? AppColors.gray400 : AppColors.gray600,
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 24,
+                                  runSpacing: 10,
+                                  children: [
+                                    _buildScopeItem('Tenant Name', ws?.organizationName ?? 'Default Organization', isDark),
+                                    _buildScopeItem('Tenant Key', ws?.tenantKey ?? 'default', isDark),
+                                    _buildScopeItem('Active Mode', ws?.activeConsoleMode ?? 'Administration', isDark),
+                                    _buildScopeItem('Authenticated As', _summary?['email'] ?? ws?.userEmail ?? 'account@domain.com', isDark),
+                                  ],
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Privileges Note
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 20),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Need elevated privileges or additional feature roles? Contact your workspace Super Administrator to request permission adjustments.',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      color: isDark ? AppColors.gray300 : const Color(0xFF1E293B),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _loadRoles,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        icon: const Icon(Icons.refresh_rounded, size: 16),
-                        label: Text('btn.refresh'.tr(ref, fallback: 'Refresh'), style: const TextStyle(fontSize: 12.5)),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                ),
-                Divider(height: 1, color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-
-                // Card Body
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: _isLoading
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Roles Cards Grid
-                            Wrap(
-                              spacing: 16,
-                              runSpacing: 16,
-                              children: _roles.map((role) {
-                                final isSuper = role.toLowerCase().contains('super');
-                                final isAdmin = role.toLowerCase().contains('admin');
-
-                                return Container(
-                                  width: 280,
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isSuper
-                                          ? AppColors.primary.withValues(alpha: 0.4)
-                                          : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-                                      width: isSuper ? 1.5 : 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 42,
-                                        height: 42,
-                                        decoration: BoxDecoration(
-                                          color: isSuper
-                                              ? AppColors.primary.withValues(alpha: 0.12)
-                                              : (isAdmin
-                                                  ? const Color(0xFF0284C7).withValues(alpha: 0.12)
-                                                  : Colors.grey.withValues(alpha: 0.12)),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        child: Icon(
-                                          isSuper
-                                              ? Icons.security_rounded
-                                              : (isAdmin ? Icons.admin_panel_settings_rounded : Icons.shield_outlined),
-                                          color: isSuper
-                                              ? AppColors.primary
-                                              : (isAdmin ? const Color(0xFF0284C7) : AppColors.gray500),
-                                          size: 22,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 14),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              role,
-                                              style: TextStyle(
-                                                fontSize: 14.5,
-                                                fontWeight: FontWeight.w700,
-                                                color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              isSuper
-                                                  ? 'Full workspace administrative governance'
-                                                  : 'Assigned administrative security credential',
-                                              style: TextStyle(
-                                                fontSize: 11.5,
-                                                color: isDark ? AppColors.gray400 : AppColors.gray600,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Workspace Scope Details
-                            Container(
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.domain_rounded, size: 18, color: AppColors.primary),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Tenant Authorization Scope',
-                                        style: TextStyle(
-                                          fontSize: 13.5,
-                                          fontWeight: FontWeight.w700,
-                                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Wrap(
-                                    spacing: 24,
-                                    runSpacing: 10,
-                                    children: [
-                                      _buildScopeItem('Tenant Name', ws?.organizationName ?? 'Default Organization', isDark),
-                                      _buildScopeItem('Tenant Key', ws?.tenantKey ?? 'default', isDark),
-                                      _buildScopeItem('Active Mode', ws?.activeConsoleMode ?? 'Administration', isDark),
-                                      _buildScopeItem('Authenticated As', _summary?['email'] ?? ws?.userEmail ?? 'account@domain.com', isDark),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-
-                            // Privileges Note
-                            Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 20),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      'Need elevated privileges or additional feature roles? Contact your workspace Super Administrator to request permission adjustments.',
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        color: isDark ? AppColors.gray300 : const Color(0xFF1E293B),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
