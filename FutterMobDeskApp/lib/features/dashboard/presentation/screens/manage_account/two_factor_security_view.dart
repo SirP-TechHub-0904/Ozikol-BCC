@@ -309,8 +309,9 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
 
               final actionButton = (!_is2faEnabled && !_isConfiguring)
                   ? SizedBox(
-                      width: isNarrow ? double.infinity : 130,
+                      width: isNarrow ? double.infinity : null,
                       child: PrimaryButton(
+                        isFullWidth: isNarrow,
                         text: 'account.enable_2fa'.tr(ref, fallback: 'Enable 2FA'),
                         height: 42,
                         onPressed: () => _startConfiguration('GoogleAuthenticator'),
@@ -613,8 +614,8 @@ class _TwoFactorSecurityViewState extends ConsumerState<TwoFactorSecurityView> {
                         child: Text('btn.cancel'.tr(ref, fallback: 'Cancel')),
                       ),
                       SizedBox(
-                        width: 160,
                         child: PrimaryButton(
+                          isFullWidth: false,
                           text: 'account.verify_activate'.tr(ref, fallback: 'Verify & Activate'),
                           isLoading: _isEnabling,
                           onPressed: _handleVerifyActivation,
