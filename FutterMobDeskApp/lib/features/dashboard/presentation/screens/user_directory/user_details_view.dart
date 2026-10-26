@@ -260,12 +260,25 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
 
   void _showToast(String message) {
     if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.primary,
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: const Color(0xFF0F172A),
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
@@ -487,16 +500,42 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
           ),
           const SizedBox(height: 4),
 
-          // Email & Verified Badge
+          // Email & Copy Action & Verified Badge
           Wrap(
             alignment: WrapAlignment.center,
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 6,
             runSpacing: 4,
             children: [
-              Text(
-                email,
-                style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+              Tooltip(
+                message: 'Copy email address',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(4),
+                  onTap: email.isEmpty ? null : () {
+                    Clipboard.setData(ClipboardData(text: email));
+                    _showToast('Email address copied to clipboard.');
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          email,
+                          style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                        ),
+                        if (email.isNotEmpty) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.copy_rounded,
+                            size: 13,
+                            color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
