@@ -2,6 +2,9 @@
 
 This document serves as the permanent memory bank and behavioral guidelines for all AI coding agents working in this repository. These rules apply to every prompt and session.
 
+> [!IMPORTANT]
+> **Active Rule Set**: This master memory bank is also modularized into `.agents/rules/` (`01-architecture-database-ai.md`, `02-translation-localization.md`, `03-ui-ux-design-standards.md`, `04-git-workflow-code-quality.md`, `05-notifications-communications.md`) to guarantee 100% prompt injection with zero byte truncation across all AI agent sessions. Always adhere strictly to all rules in this document and in `.agents/rules/`.
+
 ---
 
 ## 1. Code Documentation & Comments (Mandatory)
