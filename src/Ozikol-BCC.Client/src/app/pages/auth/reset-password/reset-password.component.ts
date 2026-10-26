@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 /**
  * Premium Self-Service Password Recovery & Account Activation Suite.
@@ -14,7 +15,7 @@ import { ToastService } from '../../../core/services/toast.service';
 @Component({
   selector: 'app-reset-password',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="reset-container">
       <div class="reset-card">
@@ -34,11 +35,11 @@ import { ToastService } from '../../../core/services/toast.service';
             </span>
           </div>
 
-          <h2 class="title">{{ activeStep === 1 ? 'Forgot Password?' : 'Reset Account Password' }}</h2>
+          <h2 class="title">{{ activeStep === 1 ? ('auth.forgot_password_q' | translate:'Forgot Password?') : ('auth.reset_account_password' | translate:'Reset Account Password') }}</h2>
           <p class="subtitle">
             {{ activeStep === 1 
-              ? 'Enter your registered email address and we will dispatch a secure 6-digit verification code.' 
-              : 'Enter the 6-digit code sent to your email and choose a strong permanent password.' }}
+              ? ('auth.enter_email_dispatch_otp' | translate:'Enter your registered email address and we will dispatch a secure 6-digit verification code.') 
+              : ('auth.enter_code_choose_pwd' | translate:'Enter the 6-digit code sent to your email and choose a strong permanent password.') }}
           </p>
         </div>
 
@@ -52,7 +53,7 @@ import { ToastService } from '../../../core/services/toast.service';
             (click)="activeStep = 1"
           >
             <span class="step-badge">1</span>
-            <span class="step-label">Request Code</span>
+            <span class="step-label">{{ 'auth.request_code_step' | translate:'Request Code' }}</span>
           </button>
           <div class="step-line" [class.active]="activeStep === 2"></div>
           <button 
@@ -62,7 +63,7 @@ import { ToastService } from '../../../core/services/toast.service';
             (click)="onStepTwoClick()"
           >
             <span class="step-badge">2</span>
-            <span class="step-label">Set New Password</span>
+            <span class="step-label">{{ 'auth.set_new_password_step' | translate:'Set New Password' }}</span>
           </button>
         </div>
 
@@ -78,9 +79,9 @@ import { ToastService } from '../../../core/services/toast.service';
             <span class="material-symbols-outlined">check_circle</span>
           </div>
           <div class="success-content">
-            <strong class="success-title">Account Verified & Updated!</strong>
+            <strong class="success-title">{{ 'auth.account_verified_updated' | translate:'Account Verified & Updated!' }}</strong>
             <p class="success-text">{{ successMessage }}</p>
-            <span class="redirect-hint">Redirecting to sign-in portal...</span>
+            <span class="redirect-hint">{{ 'auth.redirecting_to_signin' | translate:'Redirecting to sign-in portal...' }}</span>
           </div>
         </div>
 
@@ -89,7 +90,7 @@ import { ToastService } from '../../../core/services/toast.service';
         <!-- ============================================== -->
         <form (ngSubmit)="onRequestOtpSubmit()" class="reset-form" *ngIf="activeStep === 1 && !successMessage">
           <div class="form-group">
-            <label for="email" class="form-label">Registered Account Email *</label>
+            <label for="email" class="form-label">{{ 'auth.registered_account_email' | translate:'Registered Account Email *' }}</label>
             <div class="input-wrapper">
               <span class="material-symbols-outlined input-icon">mail</span>
               <input 
@@ -103,7 +104,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 class="form-control"
               />
             </div>
-            <span class="field-hint">We'll send your single-use recovery code to this email.</span>
+            <span class="field-hint">{{ 'auth.single_use_otp_hint' | translate:"We'll send your single-use recovery code to this email." }}</span>
           </div>
 
           <button 
@@ -113,14 +114,14 @@ import { ToastService } from '../../../core/services/toast.service';
           >
             <span *ngIf="isRequestingOtp" class="spinner"></span>
             <span *ngIf="!isRequestingOtp" class="material-symbols-outlined">send</span>
-            <span>{{ isRequestingOtp ? 'Dispatching Verification Code...' : 'Send 6-Digit Code' }}</span>
+            <span>{{ isRequestingOtp ? ('auth.dispatching_code' | translate:'Dispatching Verification Code...') : ('auth.send_six_digit_code' | translate:'Send 6-Digit Code') }}</span>
           </button>
 
           <div class="step-switch-prompt">
-            <span class="switch-label">Already have a verification code?</span>
+            <span class="switch-label">{{ 'auth.already_have_code' | translate:'Already have a verification code?' }}</span>
             <button type="button" class="btn btn-secondary-code" (click)="activeStep = 2">
               <span class="material-symbols-outlined btn-icon">pin</span>
-              <span>Enter Code</span>
+              <span>{{ 'auth.enter_code' | translate:'Enter Code' }}</span>
               <span class="material-symbols-outlined prompt-arrow">arrow_forward</span>
             </button>
           </div>
@@ -134,22 +135,22 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="account-email-chip">
             <div class="chip-info">
               <span class="material-symbols-outlined chip-icon">account_circle</span>
-              <span class="chip-email">{{ email || 'No email specified' }}</span>
+              <span class="chip-email">{{ email || ('auth.no_email_specified' | translate:'No email specified') }}</span>
             </div>
             <button 
               type="button" 
               class="btn-change-email" 
               (click)="activeStep = 1" 
-              title="Change target email"
+              [title]="'auth.change_target_email' | translate:'Change target email'"
             >
-              Change
+              {{ 'auth.change' | translate:'Change' }}
             </button>
           </div>
 
           <!-- 6-Digit Verification OTP -->
           <div class="form-group">
             <div class="label-with-action">
-              <label for="otp" class="form-label">6-Digit Verification Code (OTP) *</label>
+              <label for="otp" class="form-label">{{ 'auth.six_digit_otp_label' | translate:'6-Digit Verification Code (OTP) *' }}</label>
               <button 
                 type="button" 
                 class="btn-resend-inline" 
@@ -157,8 +158,8 @@ import { ToastService } from '../../../core/services/toast.service';
                 [disabled]="isRequestingOtp || otpCountdown > 0 || !email"
               >
                 <span *ngIf="isRequestingOtp" class="spinner-sm"></span>
-                <span *ngIf="!isRequestingOtp && otpCountdown > 0">Resend in {{ otpCountdown }}s</span>
-                <span *ngIf="!isRequestingOtp && otpCountdown === 0">Resend Code</span>
+                <span *ngIf="!isRequestingOtp && otpCountdown > 0">{{ 'auth.resend_in' | translate:'Resend in' }} {{ otpCountdown }}s</span>
+                <span *ngIf="!isRequestingOtp && otpCountdown === 0">{{ 'auth.resend_code' | translate:'Resend Code' }}</span>
               </button>
             </div>
             <div class="input-wrapper">
@@ -175,12 +176,12 @@ import { ToastService } from '../../../core/services/toast.service';
                 autocomplete="one-time-code"
               />
             </div>
-            <span class="field-hint">Check your email inbox or spam folder for your 6-digit code.</span>
+            <span class="field-hint">{{ 'auth.check_inbox_spam_hint' | translate:'Check your email inbox or spam folder for your 6-digit code.' }}</span>
           </div>
 
           <!-- New Permanent Password -->
           <div class="form-group">
-            <label for="newPassword" class="form-label">New Permanent Password *</label>
+            <label for="newPassword" class="form-label">{{ 'auth.new_permanent_password' | translate:'New Permanent Password *' }}</label>
             <div class="input-wrapper">
               <span class="material-symbols-outlined input-icon">key</span>
               <input
@@ -198,7 +199,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 class="toggle-pwd-btn" 
                 (click)="showPassword = !showPassword" 
                 tabindex="-1"
-                [title]="showPassword ? 'Hide password' : 'Show password'"
+                [title]="showPassword ? ('auth.hide_password' | translate:'Hide password') : ('auth.show_password' | translate:'Show password')"
               >
                 <span class="material-symbols-outlined">
                   {{ showPassword ? 'visibility_off' : 'visibility' }}
@@ -211,35 +212,35 @@ import { ToastService } from '../../../core/services/toast.service';
           <div class="password-rules-box">
             <div class="rules-header">
               <span class="material-symbols-outlined rules-header-icon">shield</span>
-              <span class="rules-box-title">Password Security Requirements</span>
+              <span class="rules-box-title">{{ 'auth.password_security_reqs' | translate:'Password Security Requirements' }}</span>
             </div>
             <div class="rules-list">
               <div class="rule-chip" [class.rule-passed]="newPassword.length >= 8">
                 <span class="material-symbols-outlined rule-icon">{{ newPassword.length >= 8 ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                <span>8+ Chars</span>
+                <span>{{ 'auth.eight_plus_chars' | translate:'8+ Chars' }}</span>
               </div>
               <div class="rule-chip" [class.rule-passed]="hasUpperCase()">
                 <span class="material-symbols-outlined rule-icon">{{ hasUpperCase() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                <span>Uppercase (A-Z)</span>
+                <span>{{ 'auth.uppercase' | translate:'Uppercase (A-Z)' }}</span>
               </div>
               <div class="rule-chip" [class.rule-passed]="hasLowerCase()">
                 <span class="material-symbols-outlined rule-icon">{{ hasLowerCase() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                <span>Lowercase (a-z)</span>
+                <span>{{ 'auth.lowercase' | translate:'Lowercase (a-z)' }}</span>
               </div>
               <div class="rule-chip" [class.rule-passed]="hasNumber()">
                 <span class="material-symbols-outlined rule-icon">{{ hasNumber() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                <span>Number (0-9)</span>
+                <span>{{ 'auth.number' | translate:'Number (0-9)' }}</span>
               </div>
               <div class="rule-chip" [class.rule-passed]="hasSpecial()">
                 <span class="material-symbols-outlined rule-icon">{{ hasSpecial() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                <span>Special (!&#64;#$...)</span>
+                <span>{{ 'auth.special_char' | translate:'Special (!@#$...)' }}</span>
               </div>
             </div>
           </div>
 
           <!-- Confirm Password -->
           <div class="form-group">
-            <label for="confirmPassword" class="form-label">Confirm Permanent Password *</label>
+            <label for="confirmPassword" class="form-label">{{ 'auth.confirm_permanent_password' | translate:'Confirm Permanent Password *' }}</label>
             <div class="input-wrapper">
               <span class="material-symbols-outlined input-icon">verified</span>
               <input
@@ -255,7 +256,7 @@ import { ToastService } from '../../../core/services/toast.service';
             </div>
             <div *ngIf="confirmPassword && newPassword !== confirmPassword" class="password-mismatch-hint">
               <span class="material-symbols-outlined">warning</span>
-              <span>Passwords do not match</span>
+              <span>{{ 'auth.passwords_do_not_match' | translate:'Passwords do not match' }}</span>
             </div>
           </div>
 
@@ -266,7 +267,7 @@ import { ToastService } from '../../../core/services/toast.service';
           >
             <span *ngIf="loading" class="spinner"></span>
             <span *ngIf="!loading" class="material-symbols-outlined">verified_user</span>
-            <span>{{ loading ? 'Verifying & Saving Password...' : 'Verify OTP & Activate Account' }}</span>
+            <span>{{ loading ? ('auth.verifying_saving_pwd' | translate:'Verifying & Saving Password...') : ('auth.verify_otp_activate' | translate:'Verify OTP & Activate Account') }}</span>
           </button>
         </form>
 
@@ -274,7 +275,7 @@ import { ToastService } from '../../../core/services/toast.service';
         <div class="card-footer">
           <a routerLink="/auth/login" class="back-link">
             <span class="material-symbols-outlined">arrow_back</span>
-            <span>Return to Sign In</span>
+            <span>{{ 'auth.return_to_signin' | translate:'Return to Sign In' }}</span>
           </a>
         </div>
       </div>
