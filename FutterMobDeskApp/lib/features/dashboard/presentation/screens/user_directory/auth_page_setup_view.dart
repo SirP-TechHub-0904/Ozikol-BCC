@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/central_adjuster.dart';
@@ -407,10 +408,10 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
   Widget _buildPageHeader(bool isDark) {
     return CentralAdjuster.pageHeader(
       icon: Icons.branding_watermark_rounded,
-      eyebrow: 'USER MANAGEMENT & ACCESS SUITE',
-      title: 'Auth Page Setup',
-      subtitle:
-          'Customize authentication screen layouts (Split Showcase vs Centered Card), background wallpapers, hero narrative copy, and member registration links.',
+      eyebrow: 'auth_setup.eyebrow'.tr(ref, fallback: 'USER MANAGEMENT & ACCESS SUITE'),
+      title: 'auth_setup.title'.tr(ref, fallback: 'Auth Page Setup'),
+      subtitle: 'auth_setup.subtitle'.tr(ref, fallback:
+          'Customize authentication screen layouts (Split Showcase vs Centered Card), background wallpapers, hero narrative copy, and member registration links.'),
       isDark: isDark,
       onBack: widget.onBackTap,
       actions: [
@@ -418,7 +419,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
           OutlinedButton.icon(
             onPressed: widget.onBackTap,
             icon: const Icon(Icons.arrow_back_rounded, size: 16),
-            label: const Text('Back'),
+            label: Text('common.back'.tr(ref, fallback: 'Back')),
             style: OutlinedButton.styleFrom(
               foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
               side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
@@ -439,7 +440,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
             }
           },
           icon: const Icon(Icons.open_in_new_rounded, size: 16),
-          label: const Text('Preview Live Page ↗'),
+          label: Text('auth_setup.preview_live'.tr(ref, fallback: 'Preview Live Page ↗')),
           style: OutlinedButton.styleFrom(
             foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
             side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
@@ -457,7 +458,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                 )
               : const Icon(Icons.save_rounded, size: 16),
-          label: Text(_isSaving ? 'Saving...' : 'Save Configuration'),
+          label: Text(_isSaving ? 'common.saving'.tr(ref, fallback: 'Saving...') : 'auth_setup.save_config'.tr(ref, fallback: 'Save Configuration')),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
@@ -479,24 +480,24 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
         _buildSectionCard(
           isDark: isDark,
           icon: Icons.dashboard_customize_rounded,
-          title: 'Screen Layout Architecture',
-          subtitle: 'Choose between a dual-pane showcase layout or a focused single centered card. Switching auto-saves instantly.',
+          title: 'auth_setup.s1_title'.tr(ref, fallback: 'Screen Layout Architecture'),
+          subtitle: 'auth_setup.s1_subtitle'.tr(ref, fallback: 'Choose between a dual-pane showcase layout or a focused single centered card. Switching auto-saves instantly.'),
           trailingBadge: _isSavingLayout
-              ? const Row(
+              ? Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xFF0050E5))),
-                    SizedBox(width: 6),
-                    Text('Saving...', style: TextStyle(fontSize: 11, color: Color(0xFF0050E5), fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xFF0050E5))),
+                    const SizedBox(width: 6),
+                    Text('common.saving'.tr(ref, fallback: 'Saving...'), style: const TextStyle(fontSize: 11, color: Color(0xFF0050E5), fontWeight: FontWeight.w600)),
                   ],
                 )
               : (_lastSavedLayout
-                  ? const Row(
+                  ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_rounded, size: 14, color: Color(0xFF10B981)),
-                        SizedBox(width: 4),
-                        Text('Auto-saved', style: TextStyle(fontSize: 11, color: Color(0xFF10B981), fontWeight: FontWeight.w600)),
+                        const Icon(Icons.check_rounded, size: 14, color: Color(0xFF10B981)),
+                        const SizedBox(width: 4),
+                        Text('common.auto_saved'.tr(ref, fallback: 'Auto-saved'), style: const TextStyle(fontSize: 11, color: Color(0xFF10B981), fontWeight: FontWeight.w600)),
                       ],
                     )
                   : null),
@@ -579,7 +580,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Split Screen Showcase',
+                                'auth_setup.split_title'.tr(ref, fallback: 'Split Screen Showcase'),
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -598,9 +599,9 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Dual-panel experience featuring brand narrative showcase on the left and bright auth form card on the right.',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.3),
+                        Text(
+                          'auth_setup.split_desc'.tr(ref, fallback: 'Dual-panel experience featuring brand narrative showcase on the left and bright auth form card on the right.'),
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.3),
                         ),
                       ],
                     ),
@@ -668,7 +669,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                           children: [
                             Expanded(
                               child: Text(
-                                'Centered Card (Don\'t Split)',
+                                'auth_setup.centered_title'.tr(ref, fallback: 'Centered Card (Don\'t Split)'),
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -687,9 +688,9 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Single glass card centered on full-bleed background wallpaper with ambient backdrop blur.',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.3),
+                        Text(
+                          'auth_setup.centered_desc'.tr(ref, fallback: 'Single glass card centered on full-bleed background wallpaper with ambient backdrop blur.'),
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), height: 1.3),
                         ),
                       ],
                     ),
@@ -704,16 +705,19 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
         // =====================================================================
         // SECTION 2: BACKGROUND WALLPAPER & VISUALS
         // =====================================================================
+        // =====================================================================
+        // SECTION 2: BACKGROUND WALLPAPER & VISUALS
+        // =====================================================================
         _buildSectionCard(
           isDark: isDark,
           icon: Icons.wallpaper_rounded,
-          title: 'Background Wallpaper & Visuals',
-          subtitle: 'Select a curated royalty-free enterprise wallpaper, provide a custom image URL, or upload your own.',
+          title: 'auth_setup.s2_title'.tr(ref, fallback: 'Background Wallpaper & Visuals'),
+          subtitle: 'auth_setup.s2_subtitle'.tr(ref, fallback: 'Select a curated royalty-free enterprise wallpaper, provide a custom image URL, or upload your own.'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'CURATED ENTERPRISE PRESETS',
+                'auth_setup.curated_presets'.tr(ref, fallback: 'CURATED ENTERPRISE PRESETS'),
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
@@ -818,7 +822,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
 
               // Desktop Direct Image Upload Dropzone
               Text(
-                'UPLOAD CUSTOM WALLPAPER FROM DESKTOP',
+                'auth_setup.upload_title'.tr(ref, fallback: 'UPLOAD CUSTOM WALLPAPER FROM DESKTOP'),
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: FontWeight.w700,
@@ -851,9 +855,9 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                           child: CircularProgressIndicator(strokeWidth: 3, color: Color(0xFF0050E5)),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
-                          'Uploading image to cloud storage...',
-                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF0050E5)),
+                        Text(
+                          'auth_setup.uploading'.tr(ref, fallback: 'Uploading image to cloud storage...'),
+                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF0050E5)),
                         ),
                       ] else ...[
                         Container(
@@ -866,14 +870,14 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                           child: const Icon(Icons.cloud_upload_rounded, color: Color(0xFF0050E5), size: 26),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
-                          'Click to browse and upload image from desktop',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                        Text(
+                          'auth_setup.browse_desktop'.tr(ref, fallback: 'Click to browse and upload image from desktop'),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Supports PNG, JPG, JPEG, and WebP (up to 10MB). Image previews immediately in the simulator.',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                        Text(
+                          'auth_setup.upload_formats'.tr(ref, fallback: 'Supports PNG, JPG, JPEG, and WebP (up to 10MB). Image previews immediately in the simulator.'),
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                         ),
                       ],
                     ],
@@ -887,7 +891,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'OR PROVIDE CUSTOM IMAGE URL',
+                    'auth_setup.custom_url_header'.tr(ref, fallback: 'OR PROVIDE CUSTOM IMAGE URL'),
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
@@ -897,9 +901,9 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                   ),
                   InkWell(
                     onTap: _clearWallpaper,
-                    child: const Text(
-                      'Revert to Default Wallpaper',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF0050E5)),
+                    child: Text(
+                      'auth_setup.revert_default'.tr(ref, fallback: 'Revert to Default Wallpaper'),
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF0050E5)),
                     ),
                   ),
                 ],
@@ -928,8 +932,8 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
         _buildSectionCard(
           isDark: isDark,
           icon: Icons.edit_note_rounded,
-          title: 'Brand Hero Write-Ups & Narrative',
-          subtitle: 'Customize headlines, security badges, greeting copy, and compliance footers.',
+          title: 'auth_setup.s3_title'.tr(ref, fallback: 'Brand Hero Write-Ups & Narrative'),
+          subtitle: 'auth_setup.s3_subtitle'.tr(ref, fallback: 'Customize headlines, security badges, greeting copy, and compliance footers.'),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -939,13 +943,13 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('HERO BADGE / SECURITY CHIP', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                        Text('auth_setup.hero_badge_label'.tr(ref, fallback: 'HERO BADGE / SECURITY CHIP'), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _noteTitleCtrl,
                           onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
-                            hintText: 'e.g. Enterprise Security Portal',
+                            hintText: 'auth_setup.hero_badge_hint'.tr(ref, fallback: 'e.g. Enterprise Security Portal'),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -959,13 +963,13 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('GREETING HEADLINE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                        Text('auth_setup.greeting_label'.tr(ref, fallback: 'GREETING HEADLINE'), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _titleCtrl,
                           onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
-                            hintText: 'e.g. Welcome to your Workspace',
+                            hintText: 'auth_setup.greeting_hint'.tr(ref, fallback: 'e.g. Welcome to your Workspace'),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -978,14 +982,14 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
               ),
               const SizedBox(height: 14),
 
-              Text('SUBTITLE NARRATIVE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+              Text('auth_setup.subtitle_label'.tr(ref, fallback: 'SUBTITLE NARRATIVE'), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
               const SizedBox(height: 6),
               TextField(
                 controller: _subtitleCtrl,
                 onChanged: (_) => setState(() {}),
                 maxLines: 2,
                 decoration: InputDecoration(
-                  hintText: 'Enter your authorized credentials...',
+                  hintText: 'auth_setup.subtitle_hint'.tr(ref, fallback: 'Enter your authorized credentials...'),
                   filled: true,
                   fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -999,13 +1003,13 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('SUBMIT BUTTON TEXT', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                        Text('auth_setup.submit_btn_label'.tr(ref, fallback: 'SUBMIT BUTTON TEXT'), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _btnTextCtrl,
                           onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
-                            hintText: 'e.g. Sign In',
+                            hintText: 'auth_setup.submit_btn_hint'.tr(ref, fallback: 'e.g. Sign In'),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -1019,13 +1023,13 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('COMPLIANCE DISCLAIMER', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                        Text('auth_setup.compliance_label'.tr(ref, fallback: 'COMPLIANCE DISCLAIMER'), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
                         const SizedBox(height: 6),
                         TextField(
                           controller: _complianceCtrl,
                           onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
-                            hintText: 'Authorized personnel only...',
+                            hintText: 'auth_setup.compliance_hint'.tr(ref, fallback: 'Authorized personnel only...'),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -1047,8 +1051,8 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
         _buildSectionCard(
           isDark: isDark,
           icon: Icons.how_to_reg_rounded,
-          title: 'Member Registration & Brand Toggles',
-          subtitle: 'Govern public onboarding access and brand contrast variants on authentication screens.',
+          title: 'auth_setup.s4_title'.tr(ref, fallback: 'Member Registration & Brand Toggles'),
+          subtitle: 'auth_setup.s4_subtitle'.tr(ref, fallback: 'Govern public onboarding access and brand contrast variants on authentication screens.'),
           child: Column(
             children: [
               // Public Self-Registration Toggle
@@ -1060,7 +1064,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Allow Public Member Self-Registration',
+                          'auth_setup.self_reg_title'.tr(ref, fallback: 'Allow Public Member Self-Registration'),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -1068,9 +1072,9 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'When enabled, the "Need a new account? Register here" link appears on the login card. When disabled, the link is hidden.',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                        Text(
+                          'auth_setup.self_reg_desc'.tr(ref, fallback: 'When enabled, the "Need a new account? Register here" link appears on the login card. When disabled, the link is hidden.'),
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                         ),
                       ],
                     ),
@@ -1099,7 +1103,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Use White Contrast Logo in Auth Pages',
+                          'auth_setup.white_logo_title'.tr(ref, fallback: 'Use White Contrast Logo in Auth Pages'),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -1107,9 +1111,9 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        const Text(
-                          'Displays the white contrast version of your company logo on authentication screens (recommended for dark wallpapers).',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                        Text(
+                          'auth_setup.white_logo_desc'.tr(ref, fallback: 'Displays the white contrast version of your company logo on authentication screens (recommended for dark wallpapers).'),
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                         ),
                       ],
                     ),
@@ -1132,11 +1136,11 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
   }
 
   Widget _buildLiveSimulatorCard(bool isDark, bool isSplitLayout, String currentBg) {
-    final noteTitle = _noteTitleCtrl.text.isNotEmpty ? _noteTitleCtrl.text : 'Enterprise Security Portal';
-    final title = _titleCtrl.text.isNotEmpty ? _titleCtrl.text : 'Greeting Headline';
-    final subtitle = _subtitleCtrl.text.isNotEmpty ? _subtitleCtrl.text : 'Hero Subtitle & Portal Instructions';
-    final btnText = _btnTextCtrl.text.isNotEmpty ? _btnTextCtrl.text : 'Sign In';
-    final footerNote = _complianceCtrl.text.isNotEmpty ? _complianceCtrl.text : 'Compliance Disclaimer / Footer Note';
+    final noteTitle = _noteTitleCtrl.text.isNotEmpty ? _noteTitleCtrl.text : 'auth_setup.fallback_security_portal'.tr(ref, fallback: 'Enterprise Security Portal');
+    final title = _titleCtrl.text.isNotEmpty ? _titleCtrl.text : 'auth_setup.fallback_greeting'.tr(ref, fallback: 'Greeting Headline');
+    final subtitle = _subtitleCtrl.text.isNotEmpty ? _subtitleCtrl.text : 'auth_setup.fallback_subtitle'.tr(ref, fallback: 'Hero Subtitle & Portal Instructions');
+    final btnText = _btnTextCtrl.text.isNotEmpty ? _btnTextCtrl.text : 'auth_setup.fallback_signin'.tr(ref, fallback: 'Sign In');
+    final footerNote = _complianceCtrl.text.isNotEmpty ? _complianceCtrl.text : 'auth_setup.fallback_disclaimer'.tr(ref, fallback: 'Compliance Disclaimer / Footer Note');
     final showReg = _brand['allowPublicRegistration'] != false && _brand['showRegisterLinkOnLogin'] != false;
     final workspaceName = widget.workspace?.displayName ?? 'testspace';
 
@@ -1160,7 +1164,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                   const Icon(Icons.visibility_rounded, size: 16, color: Color(0xFF0050E5)),
                   const SizedBox(width: 6),
                   Text(
-                    'Live Interactive Preview',
+                    'auth_setup.live_preview'.tr(ref, fallback: 'Live Interactive Preview'),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -1176,7 +1180,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  isSplitLayout ? 'Split Showcase' : 'Centered Card',
+                  isSplitLayout ? 'auth_setup.badge_split'.tr(ref, fallback: 'Split Showcase') : 'auth_setup.badge_centered'.tr(ref, fallback: 'Centered Card'),
                   style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF0050E5)),
                 ),
               ),
@@ -1307,12 +1311,12 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                                           color: Colors.black.withValues(alpha: 0.4),
                                           borderRadius: BorderRadius.circular(999),
                                         ),
-                                        child: const Row(
+                                        child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(Icons.arrow_back_rounded, size: 10, color: Colors.white),
-                                            SizedBox(width: 4),
-                                            Text('Return to Home', style: TextStyle(fontSize: 8.5, color: Colors.white)),
+                                            const Icon(Icons.arrow_back_rounded, size: 10, color: Colors.white),
+                                            const SizedBox(width: 4),
+                                            Text('auth_setup.return_home'.tr(ref, fallback: 'Return to Home'), style: const TextStyle(fontSize: 8.5, color: Colors.white)),
                                           ],
                                         ),
                                       ),
@@ -1364,7 +1368,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
               }
             },
             icon: const Icon(Icons.open_in_new_rounded, size: 15),
-            label: const Text('Open Live Sign In Page'),
+            label: Text('auth_setup.open_signin'.tr(ref, fallback: 'Open Live Sign In Page')),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(38),
               side: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -1383,7 +1387,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
               }
             },
             icon: const Icon(Icons.lock_reset_rounded, size: 15),
-            label: const Text('Open Live Reset Password Page'),
+            label: Text('auth_setup.open_reset'.tr(ref, fallback: 'Open Live Reset Password Page')),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(38),
               side: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -1439,7 +1443,7 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
         ),
         if (showReg) ...[
           const SizedBox(height: 8),
-          const Text('Need an account? Register', style: TextStyle(fontSize: 8.5, color: Color(0xFF0050E5), fontWeight: FontWeight.w600)),
+          Text('auth_setup.register_link'.tr(ref, fallback: 'Need an account? Register'), style: const TextStyle(fontSize: 8.5, color: Color(0xFF0050E5), fontWeight: FontWeight.w600)),
         ],
       ],
     );

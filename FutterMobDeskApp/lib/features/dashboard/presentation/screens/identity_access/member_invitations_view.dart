@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/page_header.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../data/account_repository.dart';
 
 /// <summary>
@@ -36,53 +37,6 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
   String? _recentlyCopiedId;
   String? _resendingId;
 
-  final List<Map<String, dynamic>> _defaultInvitationsFallback = [
-    {
-      'id': 'inv_101',
-      'email': 'debustechltd@gmail.com',
-      'assignedRole': 'Admin',
-      'role': 'Admin',
-      'featureArea': null,
-      'status': 'Pending',
-      'sentDate': '2026-10-22T13:37:26Z',
-      'expiresDate': '2026-10-29T13:37:26Z',
-      'invitationUrl': 'https://ozikol.cloud/auth/register?token=tok_admin_101&email=debustechltd%40gmail.com',
-    },
-    {
-      'id': 'inv_102',
-      'email': 'developer@company.com',
-      'assignedRole': 'Staff',
-      'role': 'Staff',
-      'featureArea': 'directory',
-      'status': 'Pending',
-      'sentDate': '2026-10-20T10:15:00Z',
-      'expiresDate': '2026-10-27T10:15:00Z',
-      'invitationUrl': 'https://ozikol.cloud/auth/register?token=tok_staff_102&email=developer%40company.com',
-    },
-    {
-      'id': 'inv_103',
-      'email': 'contractor@partner.org',
-      'assignedRole': 'Member',
-      'role': 'Member',
-      'featureArea': null,
-      'status': 'Accepted',
-      'sentDate': '2026-10-14T08:20:00Z',
-      'expiresDate': '2026-10-21T08:20:00Z',
-      'invitationUrl': null,
-    },
-    {
-      'id': 'inv_104',
-      'email': 'auditor@advisory.io',
-      'assignedRole': 'Read Only',
-      'role': 'Read Only',
-      'featureArea': null,
-      'status': 'Expired',
-      'sentDate': '2026-09-28T14:40:00Z',
-      'expiresDate': '2026-10-05T14:40:00Z',
-      'invitationUrl': null,
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -97,14 +51,14 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
       final list = await repo.getInvitations();
       if (mounted) {
         setState(() {
-          _invitations = list.isNotEmpty ? list : _defaultInvitationsFallback;
+          _invitations = list;
           _isLoading = false;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
-          _invitations = _defaultInvitationsFallback;
+          _invitations = [];
           _isLoading = false;
         });
       }
@@ -152,19 +106,17 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
       success = false;
     }
 
-    // Fallback simulation for sample demo records (e.g. 'inv_101') if database does not contain this specific row
-    if (!success && id.startsWith('inv_')) {
-      await Future.delayed(const Duration(milliseconds: 600));
-      success = true;
-    }
-
     if (mounted) {
       setState(() => _resendingId = null);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? 'Invitation email resent to $email' : 'Failed to resend invitation email.'),
+            content: Text(
+              success
+                  ? '${'invite.resent_to'.tr(ref, fallback: 'Invitation email resent to')} $email'
+                  : 'invite.resend_failed'.tr(ref, fallback: 'Failed to resend invitation email.'),
+            ),
             backgroundColor: success ? AppColors.success : AppColors.error,
             behavior: SnackBarBehavior.floating,
           ),
@@ -177,20 +129,25 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
-            SizedBox(width: 8),
-            Text('Revoke Invitation?'),
+            const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 22),
+            const SizedBox(width: 8),
+            Text('invite.revoke_title'.tr(ref, fallback: 'Revoke Invitation?')),
           ],
         ),
-        content: Text('Are you sure you want to cancel the pending registration token for $email? The recipient will no longer be able to activate an account.'),
+        content: Text(
+          '${'invite.revoke_confirm'.tr(ref, fallback: 'Are you sure you want to cancel the pending registration token for')} $email? ${'invite.revoke_consequence'.tr(ref, fallback: 'The recipient will no longer be able to activate an account.')}',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('auth.cancel'.tr(ref, fallback: 'Cancel')),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            child: const Text('Revoke Token'),
+            child: Text('invite.revoke_token'.tr(ref, fallback: 'Revoke Token')),
           ),
         ],
       ),
@@ -205,7 +162,11 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? 'Invitation token revoked successfully.' : 'Failed to revoke invitation.'),
+          content: Text(
+            success
+                ? 'invite.revoked_success'.tr(ref, fallback: 'Invitation token revoked successfully.')
+                : 'invite.revoke_failed'.tr(ref, fallback: 'Failed to revoke invitation.'),
+          ),
           backgroundColor: success ? AppColors.success : AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -247,22 +208,24 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
         children: [
           // Header
           PageHeader(
-            eyebrow: 'ONBOARDING REGISTRY',
+            eyebrow: 'invite.eyebrow'.tr(ref, fallback: 'ONBOARDING REGISTRY'),
             icon: Icons.mail_outline_rounded,
-            title: 'Administrative User Invitations',
-            description:
-                'Issue secure onboarding tokens to administrators, editors, or moderators with pre-assigned workspace roles.',
+            title: 'invite.title'.tr(ref, fallback: 'Administrative User Invitations'),
+            description: 'invite.description'.tr(
+              ref,
+              fallback: 'Issue secure onboarding tokens to administrators, editors, or moderators with pre-assigned workspace roles.',
+            ),
             primaryAction: PageHeaderAction(
-              label: 'Send Onboarding Invite',
-              compactLabel: 'Invite',
+              label: 'invite.send_invite'.tr(ref, fallback: 'Send Onboarding Invite'),
+              compactLabel: 'invite.invite_compact'.tr(ref, fallback: 'Invite'),
               icon: Icons.send_rounded,
               style: PageHeaderActionStyle.primary,
               onPressed: _onIssueInvite,
             ),
             secondaryActions: [
               PageHeaderAction(
-                label: 'Refresh Registry',
-                compactLabel: 'Refresh',
+                label: 'invite.refresh_registry'.tr(ref, fallback: 'Refresh Registry'),
+                compactLabel: 'btn.refresh'.tr(ref, fallback: 'Refresh'),
                 icon: Icons.refresh_rounded,
                 isLoading: _isLoading,
                 onPressed: _loadInvitations,
@@ -304,7 +267,7 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
                           ),
                           const SizedBox(width: 10),
                           Text(
-                            'Onboarding Token Registry',
+                            'invite.token_registry'.tr(ref, fallback: 'Onboarding Token Registry'),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
@@ -323,9 +286,9 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
                         icon: const Icon(Icons.add_rounded, size: 16),
-                        label: const Text(
-                          'Issue New Invitation',
-                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                        label: Text(
+                          'invite.issue_new_invite'.tr(ref, fallback: 'Issue New Invitation'),
+                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],
@@ -349,9 +312,7 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
         ],
       ),
     );
-  }
-
-  Widget _buildEmptyState(bool isDark) {
+  }  Widget _buildEmptyState(bool isDark) {
     return Padding(
       padding: const EdgeInsets.all(48),
       child: Center(
@@ -360,7 +321,10 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
             Icon(Icons.drafts_outlined, size: 48, color: isDark ? AppColors.gray600 : AppColors.gray400),
             const SizedBox(height: 14),
             Text(
-              'No invitations issued yet. Click "Issue New Invitation" to onboard a new workspace member.',
+              'invite.no_invites_yet'.tr(
+                ref,
+                fallback: 'No invitations issued yet. Click "Issue New Invitation" to onboard a new workspace member.',
+              ),
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
             ),
@@ -374,7 +338,10 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               icon: const Icon(Icons.send_rounded, size: 16),
-              label: const Text('Issue First Invitation', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+              label: Text(
+                'invite.issue_first_invite'.tr(ref, fallback: 'Issue First Invitation'),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
             ),
           ],
         ),
@@ -399,12 +366,12 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
                 isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
               ),
               columns: [
-                _buildColumnHeader('RECIPIENT EMAIL'),
-                _buildColumnHeader('ASSIGNED ROLE & SCOPE'),
-                _buildColumnHeader('SENT DATE'),
-                _buildColumnHeader('EXPIRATION DATE'),
-                _buildColumnHeader('ONBOARDING STATUS'),
-                _buildColumnHeader('ACTION', alignment: Alignment.centerRight),
+                _buildColumnHeader('invite.col_recipient_email'.tr(ref, fallback: 'RECIPIENT EMAIL')),
+                _buildColumnHeader('invite.col_role_scope'.tr(ref, fallback: 'ASSIGNED ROLE & SCOPE')),
+                _buildColumnHeader('invite.col_sent_date'.tr(ref, fallback: 'SENT DATE')),
+                _buildColumnHeader('invite.col_expiration_date'.tr(ref, fallback: 'EXPIRATION DATE')),
+                _buildColumnHeader('invite.col_status'.tr(ref, fallback: 'ONBOARDING STATUS')),
+                _buildColumnHeader('invite.col_action'.tr(ref, fallback: 'ACTION'), alignment: Alignment.centerRight),
               ],
               rows: _invitations.map((invite) {
                 final id = (invite['id'] ?? '').toString();
@@ -525,7 +492,7 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          isCopied ? 'Copied!' : 'Copy Link',
+                                          isCopied ? 'invite.copied'.tr(ref, fallback: 'Copied!') : 'invite.copy_link'.tr(ref, fallback: 'Copy Link'),
                                           style: TextStyle(
                                             fontSize: 11.5,
                                             fontWeight: FontWeight.w600,
@@ -538,7 +505,7 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
                                 ),
                                 const SizedBox(width: 8),
                               ],
-                              // Resend Button matching Image 2
+                              // Resend Button
                               InkWell(
                                 onTap: _resendingId == id ? null : () => _resendInvitation(id, email),
                                 borderRadius: BorderRadius.circular(100),
@@ -563,7 +530,7 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
                                         const SizedBox(width: 6),
                                       ],
                                       Text(
-                                        _resendingId == id ? 'Sending...' : 'Resend',
+                                        _resendingId == id ? 'invite.sending'.tr(ref, fallback: 'Sending...') : 'invite.resend'.tr(ref, fallback: 'Resend'),
                                         style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
@@ -575,7 +542,7 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              // Revoke Button matching Image 2
+                              // Revoke Button
                               InkWell(
                                 onTap: () => _revokeInvitation(id, email),
                                 borderRadius: BorderRadius.circular(100),
@@ -586,7 +553,7 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
                               ),
                             ] else ...[
                               Text(
-                                status.toLowerCase() == 'accepted' ? 'Enrolled' : 'Expired',
+                                status.toLowerCase() == 'accepted' ? 'invite.enrolled'.tr(ref, fallback: 'Enrolled') : 'invite.expired'.tr(ref, fallback: 'Expired'),
                                 style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
                               ),
                             ],
@@ -624,20 +591,24 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
   Widget _buildStatusPill(String status) {
     Color bg;
     Color fg;
+    String label;
 
     switch (status.toLowerCase()) {
       case 'accepted':
         bg = const Color(0xFF16A34A).withValues(alpha: 0.12);
         fg = const Color(0xFF16A34A);
+        label = 'invite.accepted'.tr(ref, fallback: 'Accepted');
         break;
       case 'expired':
         bg = const Color(0xFFEF4444).withValues(alpha: 0.12);
         fg = const Color(0xFFEF4444);
+        label = 'invite.expired'.tr(ref, fallback: 'Expired');
         break;
       case 'pending':
       default:
         bg = const Color(0xFF3B82F6).withValues(alpha: 0.12);
         fg = AppColors.primary;
+        label = 'invite.pending'.tr(ref, fallback: 'Pending');
         break;
     }
 
@@ -648,7 +619,7 @@ class _MemberInvitationsViewState extends ConsumerState<MemberInvitationsView> {
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        status,
+        label,
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,

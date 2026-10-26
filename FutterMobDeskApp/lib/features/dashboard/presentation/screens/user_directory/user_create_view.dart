@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/central_adjuster.dart';
@@ -44,7 +45,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
   final _suffixController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _designationController = TextEditingController(text: 'Senior Analyst');
+  final _designationController = TextEditingController();
   final _passwordController = TextEditingController();
 
   String? _selectedTitle = 'Mr.';
@@ -169,8 +170,8 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
 
     if (firstName.isEmpty || lastName.isEmpty || email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('First name, last name, work email, and temporary password are required.'),
+        SnackBar(
+          content: Text('user_create.val_required'.tr(ref, fallback: 'First name, last name, work email, and temporary password are required.')),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -179,8 +180,8 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
 
     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid work email address (name@company.com).'),
+        SnackBar(
+          content: Text('user_create.val_email'.tr(ref, fallback: 'Please enter a valid work email address (name@company.com).')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -224,7 +225,9 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
               const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Account for $firstName $lastName ($assignedMemberId) created successfully!'),
+                child: Text('user_create.toast_success'.tr(ref, fallback: 'Account for {name} ({id}) created successfully!')
+                    .replaceAll('{name}', '$firstName $lastName')
+                    .replaceAll('{id}', assignedMemberId)),
               ),
             ],
           ),
@@ -248,11 +251,11 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
       );
     } else {
       setState(() {
-        _errorMessage = 'Failed to create member account. Please verify the email is unique in this workspace.';
+        _errorMessage = 'user_create.err_unique'.tr(ref, fallback: 'Failed to create member account. Please verify the email is unique in this workspace.');
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to create member account. Please check your network and ensure email is unique.'),
+        SnackBar(
+          content: Text('user_create.toast_failed'.tr(ref, fallback: 'Failed to create member account. Please check your network and ensure email is unique.')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -339,7 +342,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                               Row(
                                 children: [
                                   Text(
-                                    'Member Account Created',
+                                    'user_create.dialog_title'.tr(ref, fallback: 'Member Account Created'),
                                     style: TextStyle(
                                       fontSize: 17.5,
                                       fontWeight: FontWeight.w800,
@@ -355,14 +358,14 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                                       borderRadius: BorderRadius.circular(9999),
                                       border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.25)),
                                     ),
-                                    child: const Row(
+                                    child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.circle, size: 6, color: Color(0xFF10B981)),
-                                        SizedBox(width: 4),
+                                        const Icon(Icons.circle, size: 6, color: Color(0xFF10B981)),
+                                        const SizedBox(width: 4),
                                         Text(
-                                          'Active',
-                                          style: TextStyle(
+                                          'user_create.dialog_active'.tr(ref, fallback: 'Active'),
+                                          style: const TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w700,
                                             color: Color(0xFF059669),
@@ -375,7 +378,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                'Member profile registered & workspace access granted.',
+                                'user_create.dialog_subtitle'.tr(ref, fallback: 'Member profile registered & workspace access granted.'),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
@@ -503,7 +506,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                           Icon(Icons.badge_outlined, size: 16, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
                           const SizedBox(width: 8),
                           Text(
-                            'Member ID',
+                            'user_create.dialog_member_id'.tr(ref, fallback: 'Member ID'),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -584,7 +587,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                                   const Icon(Icons.vpn_key_rounded, size: 15, color: Color(0xFF059669)),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'TEMPORARY LOGIN PASSWORD',
+                                    'user_create.dialog_temp_password'.tr(ref, fallback: 'TEMPORARY LOGIN PASSWORD'),
                                     style: TextStyle(
                                       fontSize: 10.5,
                                       fontWeight: FontWeight.w800,
@@ -600,9 +603,9 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                                   color: const Color(0xFFFEF3C7),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
-                                child: const Text(
-                                  'One-time setup',
-                                  style: TextStyle(
+                                child: Text(
+                                  'user_create.dialog_one_time'.tr(ref, fallback: 'One-time setup'),
+                                  style: const TextStyle(
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w700,
                                     color: Color(0xFF92400E),
@@ -661,7 +664,9 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                                     color: isPasswordCopied ? const Color(0xFF059669) : Colors.white,
                                   ),
                                   label: Text(
-                                    isPasswordCopied ? 'Copied!' : 'Copy',
+                                    isPasswordCopied
+                                        ? 'user_create.dialog_copied'.tr(ref, fallback: 'Copied!')
+                                        : 'user_create.dialog_copy'.tr(ref, fallback: 'Copy'),
                                     style: TextStyle(
                                       fontSize: 11.5,
                                       fontWeight: FontWeight.w700,
@@ -710,7 +715,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Welcome Email Dispatched',
+                                  'user_create.dialog_email_title'.tr(ref, fallback: 'Welcome Email Dispatched'),
                                   style: TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w700,
@@ -719,7 +724,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                                 ),
                                 const SizedBox(height: 1),
                                 Text(
-                                  'Login credentials & sign-in instructions queued for delivery.',
+                                  'user_create.dialog_email_desc'.tr(ref, fallback: 'Login credentials & sign-in instructions queued for delivery.'),
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: isDark ? AppColors.gray400 : const Color(0xFF475569),
@@ -743,9 +748,9 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                               _resetForm();
                             },
                             icon: const Icon(Icons.person_add_rounded, size: 16),
-                            label: const Text(
-                              'Add Another Member',
-                              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                            label: Text(
+                              'user_create.btn_add_another'.tr(ref, fallback: 'Add Another Member'),
+                              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
                             ),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 11),
@@ -766,9 +771,9 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                               _redirectToDirectory();
                             },
                             icon: const Icon(Icons.groups_rounded, size: 16, color: Colors.white),
-                            label: const Text(
-                              'Go to Directory',
-                              style: TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
+                            label: Text(
+                              'user_create.btn_go_directory'.tr(ref, fallback: 'Go to Directory'),
+                              style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700),
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
@@ -890,10 +895,13 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
   Widget _buildPageHeader(bool isDark) {
     return PageHeader(
       icon: Icons.person_add_rounded,
-      eyebrow: 'New Member Registration',
-      title: 'Create New Member Account',
-      description:
-          'Create a new member profile, assign category tier, select roles, and configure temporary password credentials.',
+      eyebrow: 'user_create.eyebrow'.tr(ref, fallback: 'New Member Registration'),
+      title: 'user_create.header_title'.tr(ref, fallback: 'Create New Member Account'),
+      description: 'user_create.header_desc'.tr(
+        ref,
+        fallback:
+            'Create a new member profile, assign category tier, select roles, and configure temporary password credentials.',
+      ),
       back: PageHeaderBack.to(
         () {
           // Prefer the shell callback (returns to the directory); otherwise pop the route.
@@ -903,7 +911,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
             Navigator.of(context).maybePop();
           }
         },
-        label: 'Back to Directory',
+        label: 'user_create.back_label'.tr(ref, fallback: 'Back to Directory'),
       ),
     );
   }
@@ -915,8 +923,8 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
     return _buildFormCard(
       isDark: isDark,
       icon: Icons.badge_outlined,
-      title: 'Personal & Contact Information',
-      subtitle: 'Basic identity, gender, and direct contact details',
+      title: 'user_create.card_personal_title'.tr(ref, fallback: 'Personal & Contact Information'),
+      subtitle: 'user_create.card_personal_subtitle'.tr(ref, fallback: 'Basic identity, gender, and direct contact details'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -928,10 +936,10 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                 SizedBox(
                   width: 120,
                   child: CustomDropdownField<String?>(
-                    label: 'Title',
+                    label: 'user_create.field_title'.tr(ref, fallback: 'Title'),
                     value: _selectedTitle,
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('None', style: TextStyle(fontSize: 14))),
+                      DropdownMenuItem(value: null, child: Text('user_create.title_none'.tr(ref, fallback: 'None'), style: const TextStyle(fontSize: 14))),
                       ..._titleOptions.map(
                         (t) => DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(fontSize: 14))),
                       ),
@@ -945,8 +953,8 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                 flex: 2,
                 child: CustomTextField(
                   controller: _firstNameController,
-                  label: 'First Name *',
-                  placeholder: 'e.g. First Name',
+                  label: 'user_create.field_first_name'.tr(ref, fallback: 'First Name *'),
+                  placeholder: 'user_create.field_first_name_hint'.tr(ref, fallback: 'e.g. First Name'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -954,8 +962,8 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                 flex: 2,
                 child: CustomTextField(
                   controller: _lastNameController,
-                  label: 'Last Name *',
-                  placeholder: 'e.g. Last Name',
+                  label: 'user_create.field_last_name'.tr(ref, fallback: 'Last Name *'),
+                  placeholder: 'user_create.field_last_name_hint'.tr(ref, fallback: 'e.g. Last Name'),
                 ),
               ),
               if (_enableSuffix) ...[
@@ -964,8 +972,8 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                   width: 100,
                   child: CustomTextField(
                     controller: _suffixController,
-                    label: 'Suffix',
-                    placeholder: 'e.g. mni, PhD',
+                    label: 'user_create.field_suffix'.tr(ref, fallback: 'Suffix'),
+                    placeholder: 'user_create.field_suffix_hint'.tr(ref, fallback: 'e.g. mni, PhD'),
                   ),
                 ),
               ],
@@ -980,11 +988,11 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
               SizedBox(
                 width: 120,
                 child: CustomDropdownField<int>(
-                  label: 'Gender *',
+                  label: 'user_create.field_gender'.tr(ref, fallback: 'Gender *'),
                   value: _selectedGender,
-                  items: const [
-                    DropdownMenuItem(value: 0, child: Text('Male', style: TextStyle(fontSize: 14))),
-                    DropdownMenuItem(value: 1, child: Text('Female', style: TextStyle(fontSize: 14))),
+                  items: [
+                    DropdownMenuItem(value: 0, child: Text('user_create.gender_male'.tr(ref, fallback: 'Male'), style: const TextStyle(fontSize: 14))),
+                    DropdownMenuItem(value: 1, child: Text('user_create.gender_female'.tr(ref, fallback: 'Female'), style: const TextStyle(fontSize: 14))),
                   ],
                   onChanged: (val) => setState(() => _selectedGender = val ?? 0),
                 ),
@@ -993,7 +1001,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
               Expanded(
                 child: CustomTextField(
                   controller: _emailController,
-                  label: 'Email Address *',
+                  label: 'user_create.field_email'.tr(ref, fallback: 'Email Address *'),
                   keyboardType: TextInputType.emailAddress,
                   placeholder: 'name@company.com',
                 ),
@@ -1005,9 +1013,9 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
           // Phone Number Field
           CustomTextField(
             controller: _phoneController,
-            label: 'Phone Number',
+            label: 'user_create.field_phone'.tr(ref, fallback: 'Phone Number'),
             keyboardType: TextInputType.phone,
-            placeholder: 'e.g. +0 (000) 000-0000',
+            placeholder: 'user_create.field_phone_hint'.tr(ref, fallback: 'e.g. +0 (000) 000-0000'),
           ),
         ],
       ),
@@ -1021,19 +1029,19 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
     return _buildFormCard(
       isDark: isDark,
       icon: Icons.apartment_rounded,
-      title: 'Organizational Hierarchy & Access',
-      subtitle: 'Category tier assignment and system permissions',
+      title: 'user_create.card_org_title'.tr(ref, fallback: 'Organizational Hierarchy & Access'),
+      subtitle: 'user_create.card_org_subtitle'.tr(ref, fallback: 'Category tier assignment and system permissions'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Category Tier Dropdown
           CustomDropdownField<String?>(
-            label: 'Category Tier',
+            label: 'user_create.field_category'.tr(ref, fallback: 'Category Tier'),
             value: _selectedCategoryId,
-            placeholder: 'Select Category (Optional)',
-            helperText: 'Assign to an organizational unit or department tier.',
+            placeholder: 'user_create.category_placeholder'.tr(ref, fallback: 'Select Category (Optional)'),
+            helperText: 'user_create.category_helper'.tr(ref, fallback: 'Assign to an organizational unit or department tier.'),
             items: [
-              const DropdownMenuItem(value: null, child: Text('Select Category (Optional)', style: TextStyle(fontSize: 14))),
+              DropdownMenuItem(value: null, child: Text('user_create.category_placeholder'.tr(ref, fallback: 'Select Category (Optional)'), style: const TextStyle(fontSize: 14))),
               ..._categories.map((c) => DropdownMenuItem(
                     value: c['id']?.toString(),
                     child: Text(c['name']?.toString() ?? 'Category', style: const TextStyle(fontSize: 14)),
@@ -1051,15 +1059,15 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                 flex: 3,
                 child: CustomTextField(
                   controller: _designationController,
-                  label: 'Designation / Job Title',
-                  placeholder: 'e.g. Senior Analyst',
+                  label: 'user_create.field_designation'.tr(ref, fallback: 'Designation / Job Title'),
+                  placeholder: 'user_create.field_designation_hint'.tr(ref, fallback: 'e.g. Senior Analyst'),
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 flex: 2,
                 child: CustomDropdownField<String>(
-                  label: 'System Role',
+                  label: 'user_create.field_role'.tr(ref, fallback: 'System Role'),
                   value: _selectedRole,
                   items: const [
                     DropdownMenuItem(value: 'Member', child: Text('Member', style: TextStyle(fontSize: 14))),
@@ -1082,21 +1090,21 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildFieldLabel('Member ID / Code'),
+                  _buildFieldLabel('user_create.member_id_label'.tr(ref, fallback: 'Member ID / Code')),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.auto_awesome, size: 12, color: AppColors.primary),
-                        SizedBox(width: 4),
+                        const Icon(Icons.auto_awesome, size: 12, color: AppColors.primary),
+                        const SizedBox(width: 4),
                         Text(
-                          'System Auto-Generated',
-                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.primary),
+                          'user_create.auto_generated_badge'.tr(ref, fallback: 'System Auto-Generated'),
+                          style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.primary),
                         ),
                       ],
                     ),
@@ -1128,9 +1136,9 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Member ID will be uniquely generated and permanently assigned using your workspace\'s configured coding rules.',
-                style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+              Text(
+                'user_create.auto_generated_note'.tr(ref, fallback: 'Member ID will be uniquely generated and permanently assigned using your workspace\'s configured coding rules.'),
+                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
               ),
             ],
           ),
@@ -1146,8 +1154,8 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
     return _buildFormCard(
       isDark: isDark,
       icon: Icons.lock_open_rounded,
-      title: 'Security & Password Setup',
-      subtitle: 'Setup temporary access credentials for initial member sign-in',
+      title: 'user_create.card_sec_title'.tr(ref, fallback: 'Security & Password Setup'),
+      subtitle: 'user_create.card_sec_subtitle'.tr(ref, fallback: 'Setup temporary access credentials for initial member sign-in'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1160,8 +1168,8 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                   children: [
                     CustomTextField(
                       controller: _passwordController,
-                      label: 'Initial Temporary Password *',
-                      placeholder: 'e.g. Pass@9382',
+                      label: 'user_create.field_temp_password'.tr(ref, fallback: 'Initial Temporary Password *'),
+                      placeholder: 'user_create.field_temp_password_hint'.tr(ref, fallback: 'e.g. Pass@9382'),
                     ),
                     const SizedBox(height: 4),
                     Align(
@@ -1169,9 +1177,9 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                       child: TextButton.icon(
                         onPressed: _generatePassword,
                         icon: const Icon(Icons.autorenew_rounded, size: 14, color: AppColors.primary),
-                        label: const Text(
-                          'Generate Strong Password',
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary),
+                        label: Text(
+                          'user_create.btn_generate_password'.tr(ref, fallback: 'Generate Strong Password'),
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary),
                         ),
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
@@ -1206,7 +1214,7 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Require password change on first login',
+                              'user_create.chk_must_change'.tr(ref, fallback: 'Require password change on first login'),
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -1214,9 +1222,9 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                               ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
-                              'Forces the member to set their own permanent password immediately upon signing in.',
-                              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            Text(
+                              'user_create.chk_must_change_desc'.tr(ref, fallback: 'Forces the member to set their own permanent password immediately upon signing in.'),
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                             ),
                           ],
                         ),
@@ -1249,11 +1257,13 @@ class _UserCreateViewState extends ConsumerState<UserCreateView> {
                   side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
                   foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
                 ),
-                child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                child: Text('user_create.btn_cancel'.tr(ref, fallback: 'Cancel'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
               ),
               const SizedBox(width: 12),
               PrimaryButton(
-                text: _isSaving ? 'Creating Member...' : 'Create Member',
+                text: _isSaving
+                    ? 'user_create.btn_saving'.tr(ref, fallback: 'Creating Member...')
+                    : 'user_create.btn_submit'.tr(ref, fallback: 'Create Member'),
                 icon: const Icon(Icons.person_add_rounded, size: 16),
                 isLoading: _isSaving,
                 isFullWidth: false,

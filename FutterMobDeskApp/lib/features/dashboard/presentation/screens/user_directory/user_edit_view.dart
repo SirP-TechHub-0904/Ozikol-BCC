@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/central_adjuster.dart';
@@ -172,8 +173,8 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
 
     if (firstName.isEmpty || lastName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('First name and last name are required.'),
+        SnackBar(
+          content: Text('user_edit.err_required_names'.tr(ref, fallback: 'First name and last name are required.')),
           backgroundColor: AppColors.warning,
         ),
       );
@@ -210,7 +211,10 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Profile for $firstName $lastName updated successfully!'),
+          content: Text(
+            'user_edit.msg_profile_updated'.tr(ref, fallback: 'Profile for {name} updated successfully!')
+                .replaceAll('{name}', '$firstName $lastName'),
+          ),
           backgroundColor: AppColors.success,
         ),
       );
@@ -223,11 +227,11 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
       }
     } else {
       setState(() {
-        _errorMessage = 'Failed to update member profile. Please verify your network connection.';
+        _errorMessage = 'user_edit.err_update_failed'.tr(ref, fallback: 'Failed to update member profile. Please verify your network connection.');
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to update member profile.'),
+        SnackBar(
+          content: Text('user_edit.err_update_failed_short'.tr(ref, fallback: 'Failed to update member profile.')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -235,7 +239,7 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
   }
 
   String _sanitizeId(String? id) {
-    if (id == null || id.isEmpty) return 'Pending Assignment';
+    if (id == null || id.isEmpty) return 'user_edit.id_pending'.tr(ref, fallback: 'Pending Assignment');
     return id.startsWith('ID-') ? id : 'ID-$id';
   }
 
@@ -332,10 +336,12 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
   Widget _buildPageHeader(bool isDark, String fullName) {
     return PageHeader(
       icon: Icons.manage_accounts_rounded,
-      eyebrow: 'Profile Management',
-      title: 'Edit Profile: $fullName',
-      description:
-          'Update member identity, change organizational category tier, and reassign system security roles.',
+      eyebrow: 'user_edit.header_eyebrow'.tr(ref, fallback: 'Profile Management'),
+      title: 'user_edit.header_title'.tr(ref, fallback: 'Edit Profile: {name}').replaceAll('{name}', fullName),
+      description: 'user_edit.header_desc'.tr(
+        ref,
+        fallback: 'Update member identity, change organizational category tier, and reassign system security roles.',
+      ),
       back: PageHeaderBack.to(
         () {
           // Discard edits and return via the shell callback; otherwise pop the route.
@@ -345,7 +351,7 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
             Navigator.of(context).maybePop();
           }
         },
-        label: 'Cancel & Back',
+        label: 'user_edit.btn_cancel_back'.tr(ref, fallback: 'Cancel & Back'),
       ),
     );
   }
@@ -361,8 +367,8 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
     return _buildFormCard(
       isDark: isDark,
       icon: Icons.badge_outlined,
-      title: 'Personal & Contact Details',
-      subtitle: 'Member name, gender, salutation, and direct contact line',
+      title: 'user_edit.card_identity_title'.tr(ref, fallback: 'Personal & Contact Details'),
+      subtitle: 'user_edit.card_identity_subtitle'.tr(ref, fallback: 'Member name, gender, salutation, and direct contact line'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -373,10 +379,10 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
               SizedBox(
                 width: 96,
                 child: CustomDropdownField<String?>(
-                  label: 'Title',
+                  label: 'user_edit.field_title'.tr(ref, fallback: 'Title'),
                   value: _selectedTitle,
                   items: [
-                    const DropdownMenuItem(value: null, child: Text('None')),
+                    DropdownMenuItem(value: null, child: Text('user_edit.title_none'.tr(ref, fallback: 'None'))),
                     ..._titleOptions.map(
                       (t) => DropdownMenuItem(value: t, child: Text(t)),
                     ),
@@ -389,8 +395,8 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
                 flex: 4,
                 child: CustomTextField(
                   controller: _firstNameController,
-                  label: 'First Name *',
-                  placeholder: 'e.g. First Name',
+                  label: 'user_edit.field_first_name'.tr(ref, fallback: 'First Name *'),
+                  placeholder: 'user_edit.field_first_name_ph'.tr(ref, fallback: 'e.g. First Name'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -398,8 +404,8 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
                 flex: 4,
                 child: CustomTextField(
                   controller: _lastNameController,
-                  label: 'Last Name *',
-                  placeholder: 'e.g. Last Name',
+                  label: 'user_edit.field_last_name'.tr(ref, fallback: 'Last Name *'),
+                  placeholder: 'user_edit.field_last_name_ph'.tr(ref, fallback: 'e.g. Last Name'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -407,8 +413,8 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
                 flex: 2,
                 child: CustomTextField(
                   controller: _suffixController,
-                  label: 'Suffix',
-                  placeholder: 'e.g. mni',
+                  label: 'user_edit.field_suffix'.tr(ref, fallback: 'Suffix'),
+                  placeholder: 'user_edit.field_suffix_ph'.tr(ref, fallback: 'e.g. mni'),
                 ),
               ),
             ],
@@ -421,11 +427,11 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
             children: [
               Expanded(
                 child: CustomDropdownField<int>(
-                  label: 'Gender *',
+                  label: 'user_edit.field_gender'.tr(ref, fallback: 'Gender *'),
                   value: _selectedGender,
-                  items: const [
-                    DropdownMenuItem(value: 0, child: Text('Male')),
-                    DropdownMenuItem(value: 1, child: Text('Female')),
+                  items: [
+                    DropdownMenuItem(value: 0, child: Text('user_edit.gender_male'.tr(ref, fallback: 'Male'))),
+                    DropdownMenuItem(value: 1, child: Text('user_edit.gender_female'.tr(ref, fallback: 'Female'))),
                   ],
                   onChanged: (val) => setState(() => _selectedGender = val ?? 0),
                 ),
@@ -436,7 +442,7 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Work Email Address',
+                      'user_edit.field_work_email'.tr(ref, fallback: 'Work Email Address'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -466,9 +472,9 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Email address is permanently bound to the identity record.',
-                      style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+                    Text(
+                      'user_edit.work_email_hint'.tr(ref, fallback: 'Email address is permanently bound to the identity record.'),
+                      style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
                     ),
                   ],
                 ),
@@ -480,8 +486,8 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
           // Phone Number
           CustomTextField(
             controller: _phoneController,
-            label: 'Phone Number',
-            placeholder: 'e.g. +0 (000) 000-0000',
+            label: 'user_edit.field_phone'.tr(ref, fallback: 'Phone Number'),
+            placeholder: 'user_edit.field_phone_ph'.tr(ref, fallback: 'e.g. +0 (000) 000-0000'),
           ),
         ],
       ),
@@ -495,17 +501,17 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
     return _buildFormCard(
       isDark: isDark,
       icon: Icons.corporate_fare_rounded,
-      title: 'Organizational Hierarchy & System Role',
-      subtitle: 'Category tier, designation, and member ID',
+      title: 'user_edit.card_org_title'.tr(ref, fallback: 'Organizational Hierarchy & System Role'),
+      subtitle: 'user_edit.card_org_subtitle'.tr(ref, fallback: 'Category tier, designation, and member ID'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Category Tier
           CustomDropdownField<String?>(
-            label: 'Category Tier',
+            label: 'user_edit.field_category'.tr(ref, fallback: 'Category Tier'),
             value: _selectedCategoryId,
             items: [
-              const DropdownMenuItem(value: null, child: Text('Select Category (Unassigned)')),
+              DropdownMenuItem(value: null, child: Text('user_edit.category_unassigned'.tr(ref, fallback: 'Select Category (Unassigned)'))),
               ..._categories.map((c) => DropdownMenuItem(
                     value: c['id']?.toString(),
                     child: Text(c['name']?.toString() ?? 'Category'),
@@ -522,21 +528,21 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
               Expanded(
                 child: CustomTextField(
                   controller: _designationController,
-                  label: 'Designation / Job Title',
-                  placeholder: 'e.g. Senior Analyst',
+                  label: 'user_edit.field_designation'.tr(ref, fallback: 'Designation / Job Title'),
+                  placeholder: 'user_edit.field_designation_ph'.tr(ref, fallback: 'e.g. Senior Analyst'),
                 ),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: CustomDropdownField<String>(
-                  label: 'System Role',
+                  label: 'user_edit.field_role'.tr(ref, fallback: 'System Role'),
                   value: _selectedRole,
-                  items: const [
-                    DropdownMenuItem(value: 'Member', child: Text('Member')),
-                    DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                    DropdownMenuItem(value: 'Global Editor', child: Text('Global Editor')),
-                    DropdownMenuItem(value: 'Feature Editor', child: Text('Feature Editor')),
-                    DropdownMenuItem(value: 'Read Only', child: Text('Read Only')),
+                  items: [
+                    DropdownMenuItem(value: 'Member', child: Text('user_edit.role_member'.tr(ref, fallback: 'Member'))),
+                    DropdownMenuItem(value: 'Admin', child: Text('user_edit.role_admin'.tr(ref, fallback: 'Admin'))),
+                    DropdownMenuItem(value: 'Global Editor', child: Text('user_edit.role_global_editor'.tr(ref, fallback: 'Global Editor'))),
+                    DropdownMenuItem(value: 'Feature Editor', child: Text('user_edit.role_feature_editor'.tr(ref, fallback: 'Feature Editor'))),
+                    DropdownMenuItem(value: 'Read Only', child: Text('user_edit.role_read_only'.tr(ref, fallback: 'Read Only'))),
                   ],
                   onChanged: (val) => setState(() => _selectedRole = val ?? 'Member'),
                 ),
@@ -553,7 +559,7 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Member ID / Code',
+                    'user_edit.field_member_id'.tr(ref, fallback: 'Member ID / Code'),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -566,14 +572,14 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
                       color: const Color(0xFF0050E5).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.lock_rounded, size: 11, color: Color(0xFF0050E5)),
-                        SizedBox(width: 3),
+                        const Icon(Icons.lock_rounded, size: 11, color: Color(0xFF0050E5)),
+                        const SizedBox(width: 3),
                         Text(
-                          'Permanent / Immutable',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF0050E5)),
+                          'user_edit.badge_permanent'.tr(ref, fallback: 'Permanent / Immutable'),
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF0050E5)),
                         ),
                       ],
                     ),
@@ -607,9 +613,9 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Member ID is permanently bound to this profile upon creation and cannot be modified.',
-                style: TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
+              Text(
+                'user_edit.member_id_hint'.tr(ref, fallback: 'Member ID is permanently bound to this profile upon creation and cannot be modified.'),
+                style: const TextStyle(fontSize: 10.5, color: Color(0xFF94A3B8)),
               ),
             ],
           ),
@@ -654,10 +660,12 @@ class _UserEditViewState extends ConsumerState<UserEditView> {
               side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
               foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
             ),
-            child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            child: Text('user_edit.btn_cancel'.tr(ref, fallback: 'Cancel'), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
           ),
           PrimaryButton(
-            text: _isSaving ? 'Saving Changes...' : 'Save Profile Changes',
+            text: _isSaving
+                ? 'user_edit.btn_saving'.tr(ref, fallback: 'Saving Changes...')
+                : 'user_edit.btn_save'.tr(ref, fallback: 'Save Profile Changes'),
             icon: const Icon(Icons.save_outlined, size: 16),
             isLoading: _isSaving,
             isFullWidth: false,

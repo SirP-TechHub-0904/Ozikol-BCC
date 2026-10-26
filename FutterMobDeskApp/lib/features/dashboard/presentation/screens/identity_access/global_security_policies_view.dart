@@ -5,6 +5,7 @@ import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/primary_button.dart';
 import '../../../data/account_repository.dart';
 import '../../../../../core/widgets/page_header.dart';
+import '../../../../../core/localization/language_provider.dart';
 
 /// <summary>
 /// Screen presenting Global Security Policies under Identity & Access Control.
@@ -111,7 +112,9 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            success ? 'Password complexity policies updated successfully' : 'Failed to save password policy',
+            success
+                ? 'policy.password_updated_success'.tr(ref, fallback: 'Password complexity policies updated successfully')
+                : 'policy.password_updated_fail'.tr(ref, fallback: 'Failed to save password policy'),
           ),
           backgroundColor: success ? AppColors.success : AppColors.error,
         ),
@@ -134,7 +137,9 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            success ? 'Multi-factor authentication policy updated successfully' : 'Failed to save MFA policy',
+            success
+                ? 'policy.mfa_updated_success'.tr(ref, fallback: 'Multi-factor authentication policy updated successfully')
+                : 'policy.mfa_updated_fail'.tr(ref, fallback: 'Failed to save MFA policy'),
           ),
           backgroundColor: success ? AppColors.success : AppColors.error,
         ),
@@ -167,17 +172,24 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
           // Shared PageHeader mold: top-level sidebar destination, so no back control.
           PageHeader(
             icon: Icons.policy_outlined,
-            eyebrow: 'Security Standards',
-            title: 'Global Security Policies',
-            description: 'Configure system-wide password complexity thresholds, account brute-force lockouts, and multi-factor enforcement options.',
-            primaryAction: PageHeaderAction(label: isSavingAny ? 'Saving...' : 'Save All Policies', compactLabel: 'Save', icon: Icons.save_outlined, style: PageHeaderActionStyle.primary, isLoading: isSavingAny, onPressed: _saveAllPolicies),
-            secondaryActions: [
-            PageHeaderAction(
-              label: 'Refresh Policies',
-              compactLabel: 'Refresh',
-              icon: Icons.refresh_rounded,
-              onPressed: _loadPolicies,
+            eyebrow: 'policy.eyebrow'.tr(ref, fallback: 'Security Standards'),
+            title: 'policy.title'.tr(ref, fallback: 'Global Security Policies'),
+            description: 'policy.description'.tr(ref, fallback: 'Configure system-wide password complexity thresholds, account brute-force lockouts, and multi-factor enforcement options.'),
+            primaryAction: PageHeaderAction(
+              label: isSavingAny ? 'policy.saving'.tr(ref, fallback: 'Saving...') : 'policy.save_all'.tr(ref, fallback: 'Save All Policies'),
+              compactLabel: 'policy.save'.tr(ref, fallback: 'Save'),
+              icon: Icons.save_outlined,
+              style: PageHeaderActionStyle.primary,
+              isLoading: isSavingAny,
+              onPressed: _saveAllPolicies,
             ),
+            secondaryActions: [
+              PageHeaderAction(
+                label: 'policy.refresh_policies'.tr(ref, fallback: 'Refresh Policies'),
+                compactLabel: 'policy.refresh'.tr(ref, fallback: 'Refresh'),
+                icon: Icons.refresh_rounded,
+                onPressed: _loadPolicies,
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -231,7 +243,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
               const Icon(Icons.password_rounded, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Password Complexity Controls',
+                'policy.password_controls'.tr(ref, fallback: 'Password Complexity Controls'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -247,7 +259,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Minimum Character Length',
+                'policy.min_length'.tr(ref, fallback: 'Minimum Character Length'),
                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
               ),
               Container(
@@ -257,7 +269,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${_minPasswordLength.toInt()} characters',
+                  '${_minPasswordLength.toInt()} ${'policy.characters'.tr(ref, fallback: 'characters')}',
                   style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 13),
                 ),
               ),
@@ -275,8 +287,8 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
 
           // Switches
           _buildSwitchRow(
-            title: 'Require Uppercase Letter',
-            description: 'At least one uppercase character (A-Z) in the password.',
+            title: 'policy.require_uppercase'.tr(ref, fallback: 'Require Uppercase Letter'),
+            description: 'policy.require_uppercase_desc'.tr(ref, fallback: 'At least one uppercase character (A-Z) in the password.'),
             value: _requireUppercase,
             onChanged: (val) => setState(() => _requireUppercase = val),
             isDark: isDark,
@@ -284,8 +296,8 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
           const Divider(height: 20),
 
           _buildSwitchRow(
-            title: 'Require Lowercase Letter',
-            description: 'At least one lowercase character (a-z) in the password.',
+            title: 'policy.require_lowercase'.tr(ref, fallback: 'Require Lowercase Letter'),
+            description: 'policy.require_lowercase_desc'.tr(ref, fallback: 'At least one lowercase character (a-z) in the password.'),
             value: _requireLowercase,
             onChanged: (val) => setState(() => _requireLowercase = val),
             isDark: isDark,
@@ -293,8 +305,8 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
           const Divider(height: 20),
 
           _buildSwitchRow(
-            title: 'Require Numeric Digit',
-            description: 'At least one number (0-9) in the password.',
+            title: 'policy.require_numbers'.tr(ref, fallback: 'Require Numeric Digit'),
+            description: 'policy.require_numbers_desc'.tr(ref, fallback: 'At least one number (0-9) in the password.'),
             value: _requireNumbers,
             onChanged: (val) => setState(() => _requireNumbers = val),
             isDark: isDark,
@@ -302,8 +314,8 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
           const Divider(height: 20),
 
           _buildSwitchRow(
-            title: 'Require Non-Alphanumeric Symbol',
-            description: 'At least one special character (e.g. @, #, \$, %) in the password.',
+            title: 'policy.require_special'.tr(ref, fallback: 'Require Non-Alphanumeric Symbol'),
+            description: 'policy.require_special_desc'.tr(ref, fallback: 'At least one special character (e.g. @, #, \$, %) in the password.'),
             value: _requireSpecialCharacters,
             onChanged: (val) => setState(() => _requireSpecialCharacters = val),
             isDark: isDark,
@@ -318,7 +330,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Max Failed Attempts',
+                      'policy.max_failed_attempts'.tr(ref, fallback: 'Max Failed Attempts'),
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? AppColors.gray300 : AppColors.gray700),
                     ),
                     const SizedBox(height: 6),
@@ -326,7 +338,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
                       initialValue: _maxFailedAccessAttempts,
                       decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
                       items: [3, 5, 8, 10, 15]
-                          .map((n) => DropdownMenuItem(value: n, child: Text('$n attempts')))
+                          .map((n) => DropdownMenuItem(value: n, child: Text('$n ${'policy.attempts'.tr(ref, fallback: 'attempts')}')))
                           .toList(),
                       onChanged: (val) {
                         if (val != null) setState(() => _maxFailedAccessAttempts = val);
@@ -341,7 +353,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Lockout Duration',
+                      'policy.lockout_duration'.tr(ref, fallback: 'Lockout Duration'),
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? AppColors.gray300 : AppColors.gray700),
                     ),
                     const SizedBox(height: 6),
@@ -349,7 +361,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
                       initialValue: _defaultLockoutTimeSpanMinutes,
                       decoration: const InputDecoration(border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8)),
                       items: [5, 15, 30, 60, 120]
-                          .map((m) => DropdownMenuItem(value: m, child: Text('$m minutes')))
+                          .map((m) => DropdownMenuItem(value: m, child: Text('$m ${'policy.minutes'.tr(ref, fallback: 'minutes')}')))
                           .toList(),
                       onChanged: (val) {
                         if (val != null) setState(() => _defaultLockoutTimeSpanMinutes = val);
@@ -366,7 +378,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               PrimaryButton(
-                text: _isSavingPassword ? 'Saving...' : 'Save Password Policy',
+                text: _isSavingPassword ? 'policy.saving'.tr(ref, fallback: 'Saving...') : 'policy.save_password'.tr(ref, fallback: 'Save Password Policy'),
                 icon: const Icon(Icons.save_outlined, size: 16),
                 onPressed: _isSavingPassword ? null : _savePasswordPolicy,
               ),
@@ -393,7 +405,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
               const Icon(Icons.phonelink_lock_rounded, color: Color(0xFFA855F7), size: 20),
               const SizedBox(width: 8),
               Text(
-                'Multi-Factor Authentication (MFA)',
+                'policy.mfa_title'.tr(ref, fallback: 'Multi-Factor Authentication (MFA)'),
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -405,8 +417,8 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
           const SizedBox(height: 18),
 
           _buildSwitchRow(
-            title: 'Enforce MFA Globally',
-            description: 'Every platform user is required to set up and verify through MFA before accessing workspaces.',
+            title: 'policy.enforce_mfa_global'.tr(ref, fallback: 'Enforce MFA Globally'),
+            description: 'policy.enforce_mfa_global_desc'.tr(ref, fallback: 'Every platform user is required to set up and verify through MFA before accessing workspaces.'),
             value: _enforceMfaForAllUsers,
             onChanged: (val) => setState(() => _enforceMfaForAllUsers = val),
             isDark: isDark,
@@ -414,8 +426,8 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
           const Divider(height: 20),
 
           _buildSwitchRow(
-            title: 'Enforce MFA for Administrators',
-            description: 'Requires users in Admin, SuperAdmin, or Identity Manager groups to complete secondary challenges.',
+            title: 'policy.enforce_mfa_admin'.tr(ref, fallback: 'Enforce MFA for Administrators'),
+            description: 'policy.enforce_mfa_admin_desc'.tr(ref, fallback: 'Requires users in Admin, SuperAdmin, or Identity Manager groups to complete secondary challenges.'),
             value: _enforceMfaForAdmins,
             onChanged: (val) => setState(() => _enforceMfaForAdmins = val),
             isDark: isDark,
@@ -423,7 +435,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
           const Divider(height: 20),
 
           Text(
-            'Allowed Methods Matrix',
+            'policy.allowed_methods'.tr(ref, fallback: 'Allowed Methods Matrix'),
             style: TextStyle(
               fontSize: 13.5,
               fontWeight: FontWeight.bold,
@@ -466,7 +478,7 @@ class _GlobalSecurityPoliciesViewState extends ConsumerState<GlobalSecurityPolic
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               PrimaryButton(
-                text: _isSavingMfa ? 'Saving...' : 'Save MFA Policy',
+                text: _isSavingMfa ? 'policy.saving'.tr(ref, fallback: 'Saving...') : 'policy.save_mfa'.tr(ref, fallback: 'Save MFA Policy'),
                 icon: const Icon(Icons.save_outlined, size: 16),
                 onPressed: _isSavingMfa ? null : _saveMfaPolicy,
               ),

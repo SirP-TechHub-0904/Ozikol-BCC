@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/central_adjuster.dart';
@@ -231,8 +232,8 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
         SnackBar(
           content: Text(
             isEditing
-                ? 'Category updated successfully.'
-                : 'User category created successfully.',
+                ? 'user_cat.toast_updated'.tr(ref, fallback: 'Category updated successfully.')
+                : 'user_cat.toast_created'.tr(ref, fallback: 'User category created successfully.'),
           ),
           backgroundColor: const Color(0xFF16A34A),
           behavior: SnackBarBehavior.floating,
@@ -245,8 +246,8 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
         SnackBar(
           content: Text(
             isEditing
-                ? 'Failed to update category. Please verify your connection.'
-                : 'Failed to create category. Please verify your connection.',
+                ? 'user_cat.toast_update_failed'.tr(ref, fallback: 'Failed to update category. Please verify your connection.')
+                : 'user_cat.toast_create_failed'.tr(ref, fallback: 'Failed to create category. Please verify your connection.'),
           ),
           backgroundColor: const Color(0xFFDC2626),
           behavior: SnackBarBehavior.floating,
@@ -268,7 +269,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
 
     if (memberCount > 0) {
       setState(() {
-        _deleteError = 'Cannot delete category "$targetName" because it currently has $memberCount member(s) assigned. Please reassign them in the User Directory first.';
+        _deleteError = 'user_cat.delete_blocked_members'.tr(ref, fallback: 'Cannot delete category "{name}" because it currently has {count} member(s) assigned. Please reassign them in the User Directory first.')
+            .replaceAll('{name}', targetName)
+            .replaceAll('{count}', '$memberCount');
       });
       return;
     }
@@ -287,7 +290,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Category "$targetName" has been deleted.'),
+          content: Text('user_cat.toast_deleted'.tr(ref, fallback: 'Category "{name}" has been deleted.').replaceAll('{name}', targetName)),
           backgroundColor: const Color(0xFF16A34A),
           behavior: SnackBarBehavior.floating,
         ),
@@ -296,7 +299,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
       _loadCategories();
     } else {
       setState(() {
-        _deleteError = 'Could not delete category "$targetName". Active members may still be assigned, or the request could not be completed.';
+        _deleteError = 'user_cat.delete_failed'.tr(ref, fallback: 'Could not delete category "{name}". Active members may still be assigned, or the request could not be completed.').replaceAll('{name}', targetName);
       });
     }
   }
@@ -355,17 +358,20 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
   Widget _buildListHeader(bool isDark) {
     return CentralAdjuster.pageHeader(
       icon: Icons.corporate_fare_rounded,
-      eyebrow: 'ORGANIZATIONAL HIERARCHY',
-      title: 'User Categories & Departments',
-      subtitle:
-          'Manage organizational departments, business units, and member classification tiers in an enterprise table.',
+      eyebrow: 'user_cat.eyebrow'.tr(ref, fallback: 'ORGANIZATIONAL HIERARCHY'),
+      title: 'user_cat.title'.tr(ref, fallback: 'User Categories & Departments'),
+      subtitle: 'user_cat.subtitle'.tr(
+        ref,
+        fallback:
+            'Manage organizational departments, business units, and member classification tiers in an enterprise table.',
+      ),
       isDark: isDark,
       onBack: widget.onNavigateBack,
       actions: [
         OutlinedButton.icon(
           onPressed: () => widget.onNavigateToTab?.call(1),
           icon: const Icon(Icons.groups_rounded, size: 16),
-          label: const Text('User Directory'),
+          label: Text('user_cat.user_directory'.tr(ref, fallback: 'User Directory')),
           style: OutlinedButton.styleFrom(
             foregroundColor: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
             side: BorderSide(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
@@ -377,7 +383,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
         FilledButton.icon(
           onPressed: _startCreate,
           icon: const Icon(Icons.add_rounded, size: 16),
-          label: const Text('Create Category'),
+          label: Text('user_cat.create_category'.tr(ref, fallback: 'Create Category')),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
@@ -388,7 +394,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
         ),
         IconButton(
           icon: const Icon(Icons.refresh_rounded, size: 18),
-          tooltip: 'Refresh Categories',
+          tooltip: 'user_cat.refresh_tooltip'.tr(ref, fallback: 'Refresh Categories'),
           onPressed: _loadCategories,
         ),
       ],
@@ -414,7 +420,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                 controller: _searchCtrl,
                 style: const TextStyle(fontSize: 13),
                 decoration: InputDecoration(
-                  hintText: 'Search categories or departments...',
+                  hintText: 'user_cat.search_hint'.tr(ref, fallback: 'Search categories or departments...'),
                   hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
                   prefixIcon: const Icon(Icons.search_rounded, size: 18, color: Color(0xFF94A3B8)),
                   suffixIcon: _searchCtrl.text.isNotEmpty
@@ -457,7 +463,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                 color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
               ),
               children: [
-                const TextSpan(text: 'Showing '),
+                TextSpan(text: 'user_cat.showing'.tr(ref, fallback: 'Showing ')),
                 TextSpan(
                   text: '${_filteredCategories.length}',
                   style: TextStyle(
@@ -465,7 +471,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                     color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
                   ),
                 ),
-                const TextSpan(text: ' of '),
+                TextSpan(text: 'user_cat.of'.tr(ref, fallback: ' of ')),
                 TextSpan(
                   text: '${_categories.length}',
                   style: TextStyle(
@@ -473,7 +479,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                     color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A),
                   ),
                 ),
-                const TextSpan(text: ' categories'),
+                TextSpan(text: 'user_cat.categories'.tr(ref, fallback: ' categories')),
               ],
             ),
           ),
@@ -508,8 +514,8 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
             const SizedBox(height: 10),
             Text(
               _categories.isEmpty
-                  ? 'No user categories or departments have been configured yet.'
-                  : 'No categories matching "${_searchCtrl.text}".',
+                  ? 'user_cat.empty_desc'.tr(ref, fallback: 'No user categories or departments have been configured yet.')
+                  : 'user_cat.empty_search'.tr(ref, fallback: 'No categories matching "{query}".').replaceAll('{query}', _searchCtrl.text),
               style: TextStyle(
                 fontSize: 13.5,
                 color: isDark ? AppColors.gray300 : const Color(0xFF64748B),
@@ -520,7 +526,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
               FilledButton.icon(
                 onPressed: _startCreate,
                 icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('Create First Category'),
+                label: Text('user_cat.create_first'.tr(ref, fallback: 'Create First Category')),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -532,7 +538,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                   _searchCtrl.clear();
                   _applyFilter();
                 },
-                child: const Text('Clear Search'),
+                child: Text('user_cat.clear_search'.tr(ref, fallback: 'Clear Search')),
               ),
           ],
         ),
@@ -547,13 +553,13 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               color: isDark ? AppColors.surfaceVariantDark : const Color(0xFFFAFBFC),
-              child: const Row(
+              child: Row(
                 children: [
                   Expanded(
                     flex: 4,
                     child: Text(
-                      'CATEGORY / DEPARTMENT',
-                      style: TextStyle(
+                      'user_cat.th_category'.tr(ref, fallback: 'CATEGORY / DEPARTMENT'),
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.05,
@@ -564,9 +570,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                   Expanded(
                     flex: 2,
                     child: Text(
-                      'MEMBERS',
+                      'user_cat.th_members'.tr(ref, fallback: 'MEMBERS'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.05,
@@ -577,9 +583,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                   Expanded(
                     flex: 1,
                     child: Text(
-                      'SORT ORDER',
+                      'user_cat.th_sort'.tr(ref, fallback: 'SORT ORDER'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.05,
@@ -590,9 +596,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                   Expanded(
                     flex: 2,
                     child: Text(
-                      'STATUS',
+                      'user_cat.th_status'.tr(ref, fallback: 'STATUS'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.05,
@@ -603,9 +609,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                   Expanded(
                     flex: 4,
                     child: Text(
-                      'ACTIONS',
+                      'user_cat.th_actions'.tr(ref, fallback: 'ACTIONS'),
                       textAlign: TextAlign.right,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.05,
@@ -722,7 +728,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                                   ),
                                   const SizedBox(width: 3),
                                   Text(
-                                    memberCount == 1 ? 'member' : 'members',
+                                    memberCount == 1
+                                        ? 'user_cat.member'.tr(ref, fallback: 'member')
+                                        : 'user_cat.members'.tr(ref, fallback: 'members'),
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: Color(0xFF475569),
@@ -784,7 +792,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  isActive ? 'Published' : 'Unpublished',
+                                  isActive
+                                      ? 'user_cat.published'.tr(ref, fallback: 'Published')
+                                      : 'user_cat.unpublished'.tr(ref, fallback: 'Unpublished'),
                                   style: TextStyle(
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w700,
@@ -806,16 +816,16 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                           children: [
                             _buildRowActionButton(
                               icon: Icons.groups_rounded,
-                              label: 'Members',
-                              tooltip: 'View Category Members',
+                              label: 'user_cat.action_members'.tr(ref, fallback: 'Members'),
+                              tooltip: 'user_cat.tooltip_members'.tr(ref, fallback: 'View Category Members'),
                               onTap: () => widget.onNavigateToTab?.call(1, categoryFilter: cat['id']?.toString() ?? name),
                               isDark: isDark,
                             ),
                             const SizedBox(width: 6),
                             _buildRowActionButton(
                               icon: Icons.edit_rounded,
-                              label: 'Edit',
-                              tooltip: 'Edit Category',
+                              label: 'user_cat.action_edit'.tr(ref, fallback: 'Edit'),
+                              tooltip: 'user_cat.tooltip_edit'.tr(ref, fallback: 'Edit Category'),
                               onTap: () => _startEdit(cat),
                               isDark: isDark,
                             ),
@@ -823,7 +833,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                             _buildRowActionButton(
                               icon: Icons.delete_outline_rounded,
                               label: null,
-                              tooltip: 'Delete Category',
+                              tooltip: 'user_cat.tooltip_delete'.tr(ref, fallback: 'Delete Category'),
                               onTap: () => _startDelete(cat),
                               isDark: isDark,
                               isDestructive: true,
@@ -890,7 +900,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
             const Icon(Icons.folder_off_outlined, size: 36, color: Color(0xFF94A3B8)),
             const SizedBox(height: 8),
             Text(
-              'No categories match your search criteria.',
+              'user_cat.no_matches'.tr(ref, fallback: 'No categories match your search criteria.'),
               style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
             ),
           ],
@@ -973,7 +983,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                       borderRadius: BorderRadius.circular(100),
                     ),
                     child: Text(
-                      isActive ? 'Active' : 'Inactive',
+                      isActive
+                          ? 'user_cat.active'.tr(ref, fallback: 'Active')
+                          : 'user_cat.inactive'.tr(ref, fallback: 'Inactive'),
                       style: TextStyle(
                         fontSize: 10.5,
                         fontWeight: FontWeight.bold,
@@ -1002,7 +1014,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                           const Icon(Icons.groups_rounded, size: 13, color: Color(0xFF0050E5)),
                           const SizedBox(width: 4),
                           Text(
-                            '$count Member${count == 1 ? '' : 's'}',
+                            count == 1
+                                ? 'user_cat.member_count_single'.tr(ref, fallback: '1 Member')
+                                : 'user_cat.member_count_plural'.tr(ref, fallback: '{count} Members').replaceAll('{count}', '$count'),
                             style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0050E5)),
                           ),
                         ],
@@ -1017,7 +1031,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      'Sort: #$sortOrder',
+                      '${'user_cat.sort_prefix'.tr(ref, fallback: 'Sort: #')}$sortOrder',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? AppColors.gray300 : const Color(0xFF475569)),
                     ),
                   ),
@@ -1025,14 +1039,14 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                   IconButton(
                     icon: const Icon(Icons.edit_outlined, size: 18),
                     color: AppColors.primary,
-                    tooltip: 'Edit Category',
+                    tooltip: 'user_cat.tooltip_edit'.tr(ref, fallback: 'Edit Category'),
                     visualDensity: VisualDensity.compact,
                     onPressed: () => _startEdit(cat),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline_rounded, size: 18),
                     color: AppColors.error,
-                    tooltip: 'Delete Category',
+                    tooltip: 'user_cat.tooltip_delete'.tr(ref, fallback: 'Delete Category'),
                     visualDensity: VisualDensity.compact,
                     onPressed: () => _startDelete(cat),
                   ),
@@ -1126,10 +1140,15 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
 
     return CentralAdjuster.pageHeader(
       icon: Icons.corporate_fare_rounded,
-      eyebrow: 'ORGANIZATIONAL HIERARCHY',
-      title: isEditing ? 'Edit Category: $catName' : 'Create User Category',
-      subtitle:
-          'Configure organizational department or user category tier, description, sort order, and publication status.',
+      eyebrow: 'user_cat.eyebrow'.tr(ref, fallback: 'ORGANIZATIONAL HIERARCHY'),
+      title: isEditing
+          ? 'user_cat.edit_title'.tr(ref, fallback: 'Edit Category: {name}').replaceAll('{name}', catName)
+          : 'user_cat.create_title'.tr(ref, fallback: 'Create User Category'),
+      subtitle: 'user_cat.form_subtitle'.tr(
+        ref,
+        fallback:
+            'Configure organizational department or user category tier, description, sort order, and publication status.',
+      ),
       isDark: isDark,
       onBack: _backToList,
       actions: const [],
@@ -1189,7 +1208,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Category Details',
+                        'user_cat.card_title'.tr(ref, fallback: 'Category Details'),
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -1198,7 +1217,11 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Organizational department name, description, priority order, and publication visibility',
+                        'user_cat.card_subtitle'.tr(
+                          ref,
+                          fallback:
+                              'Organizational department name, description, priority order, and publication visibility',
+                        ),
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
@@ -1225,7 +1248,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'CATEGORY / DEPARTMENT NAME *',
+                          'user_cat.field_name'.tr(ref, fallback: 'CATEGORY / DEPARTMENT NAME *'),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -1238,7 +1261,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                           controller: _nameCtrl,
                           onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
-                            hintText: 'e.g. Engineering Team, Software Team, Operations',
+                            hintText: 'user_cat.field_name_hint'.tr(ref, fallback: 'e.g. Engineering Team, Software Team, Operations'),
                             hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
@@ -1268,7 +1291,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'SORT ORDER / DISPLAY PRIORITY',
+                          'user_cat.field_sort'.tr(ref, fallback: 'SORT ORDER / DISPLAY PRIORITY'),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -1331,7 +1354,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
 
                 // Description Field
                 Text(
-                  'DESCRIPTION (OPTIONAL)',
+                  'user_cat.field_desc'.tr(ref, fallback: 'DESCRIPTION (OPTIONAL)'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -1344,7 +1367,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                   controller: _descCtrl,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: 'Briefly describe the responsibilities, members, or purpose of this category...',
+                    hintText: 'user_cat.field_desc_hint'.tr(ref, fallback: 'Briefly describe the responsibilities, members, or purpose of this category...'),
                     hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                     filled: true,
                     fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
@@ -1404,7 +1427,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Publication Status',
+                                      'user_cat.pub_status'.tr(ref, fallback: 'Publication Status'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w700,
@@ -1420,7 +1443,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: Text(
-                                    _isActive ? 'Published' : 'Unpublished',
+                                    _isActive
+                                        ? 'user_cat.published'.tr(ref, fallback: 'Published')
+                                        : 'user_cat.unpublished'.tr(ref, fallback: 'Unpublished'),
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
@@ -1434,8 +1459,8 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                             const SizedBox(height: 6),
                             Text(
                               _isActive
-                                  ? 'Active & Published: Visible to administrators, member registration forms, and departmental directories.'
-                                  : 'Unpublished / Draft: Temporarily hidden from registration forms and disabled for new member assignments.',
+                                  ? 'user_cat.pub_active_desc'.tr(ref, fallback: 'Active & Published: Visible to administrators, member registration forms, and departmental directories.')
+                                  : 'user_cat.pub_inactive_desc'.tr(ref, fallback: 'Unpublished / Draft: Temporarily hidden from registration forms and disabled for new member assignments.'),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: _isActive
@@ -1484,7 +1509,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
-                  child: const Text('Cancel'),
+                  child: Text('user_cat.btn_cancel'.tr(ref, fallback: 'Cancel')),
                 ),
                 const SizedBox(width: 12),
                 FilledButton.icon(
@@ -1497,8 +1522,10 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                         )
                       : const Icon(Icons.save_rounded, size: 16),
                   label: Text(_isSaving
-                      ? 'Saving Category...'
-                      : (isEditing ? 'Save Changes' : 'Create Category')),
+                      ? 'user_cat.btn_saving'.tr(ref, fallback: 'Saving Category...')
+                      : (isEditing
+                          ? 'user_cat.btn_save_changes'.tr(ref, fallback: 'Save Changes')
+                          : 'user_cat.btn_create'.tr(ref, fallback: 'Create Category'))),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -1526,10 +1553,13 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
       icon: Icons.warning_amber_rounded,
       iconColor: const Color(0xFFDC2626),
       iconBgColor: const Color(0xFFFEE2E2),
-      eyebrow: 'USERS SUITE / USER CATEGORIES / DELETE CATEGORY',
-      title: 'Confirm User Category Deletion',
-      subtitle:
-          'Review organizational impact and verify identity before permanently destroying this classification category.',
+      eyebrow: 'user_cat.delete_eyebrow'.tr(ref, fallback: 'USERS SUITE / USER CATEGORIES / DELETE CATEGORY'),
+      title: 'user_cat.delete_title'.tr(ref, fallback: 'Confirm User Category Deletion'),
+      subtitle: 'user_cat.delete_subtitle'.tr(
+        ref,
+        fallback:
+            'Review organizational impact and verify identity before permanently destroying this classification category.',
+      ),
       isDark: isDark,
       onBack: _backToList,
       actions: const [],
@@ -1611,7 +1641,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                     const Icon(Icons.category_rounded, size: 18, color: Color(0xFF0050E5)),
                     const SizedBox(width: 8),
                     Text(
-                      'Category to be Deleted',
+                      'user_cat.delete_target_header'.tr(ref, fallback: 'Category to be Deleted'),
                       style: TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
@@ -1654,7 +1684,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            desc.isNotEmpty ? desc : 'No description provided.',
+                            desc.isNotEmpty
+                                ? desc
+                                : 'user_cat.no_desc'.tr(ref, fallback: 'No description provided.'),
                             style: TextStyle(
                               fontSize: 12.5,
                               color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
@@ -1677,7 +1709,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                                     const Icon(Icons.groups_rounded, size: 14, color: Color(0xFF0050E5)),
                                     const SizedBox(width: 5),
                                     Text(
-                                      '$memberCount Active Members',
+                                      'user_cat.active_members_badge'
+                                          .tr(ref, fallback: '{count} Active Members')
+                                          .replaceAll('{count}', '$memberCount'),
                                       style: const TextStyle(
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w700,
@@ -1697,7 +1731,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                                   ),
                                 ),
                                 child: Text(
-                                  'Sort Order: #$sortOrder',
+                                  '${'user_cat.sort_order_prefix'.tr(ref, fallback: 'Sort Order: #')}$sortOrder',
                                   style: const TextStyle(
                                     fontSize: 11.5,
                                     fontWeight: FontWeight.w600,
@@ -1712,7 +1746,9 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                                   borderRadius: BorderRadius.circular(999),
                                 ),
                                 child: Text(
-                                  isActive ? 'Published' : 'Unpublished',
+                                  isActive
+                                      ? 'user_cat.published'.tr(ref, fallback: 'Published')
+                                      : 'user_cat.unpublished'.tr(ref, fallback: 'Unpublished'),
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
@@ -1746,13 +1782,13 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.dangerous_rounded, color: Color(0xFFDC2626), size: 22),
-                  SizedBox(width: 10),
+                  const Icon(Icons.dangerous_rounded, color: Color(0xFFDC2626), size: 22),
+                  const SizedBox(width: 10),
                   Text(
-                    'Consequences of Deleting this Category',
-                    style: TextStyle(
+                    'user_cat.delete_consequences_title'.tr(ref, fallback: 'Consequences of Deleting this Category'),
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFFDC2626),
@@ -1762,20 +1798,31 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
               ),
               const SizedBox(height: 14),
               _buildConsequenceBullet(
-                'Member Reassignment: ',
-                'All members currently grouped under this category will have their organizational category reset to Uncategorized.',
+                'user_cat.consequence_1_prefix'.tr(ref, fallback: 'Member Reassignment: '),
+                'user_cat.consequence_1_text'.tr(
+                  ref,
+                  fallback:
+                      'All members currently grouped under this category will have their organizational category reset to Uncategorized.',
+                ),
                 isDark,
               ),
               const SizedBox(height: 8),
               _buildConsequenceBullet(
-                'Portal Badges & Grouping: ',
-                'Any department badges, directory filters, or analytics grouped by this category will no longer reference it.',
+                'user_cat.consequence_2_prefix'.tr(ref, fallback: 'Portal Badges & Grouping: '),
+                'user_cat.consequence_2_text'.tr(
+                  ref,
+                  fallback:
+                      'Any department badges, directory filters, or analytics grouped by this category will no longer reference it.',
+                ),
                 isDark,
               ),
               const SizedBox(height: 8),
               _buildConsequenceBullet(
-                'Permanent Record Eradication: ',
-                'This category configuration cannot be recovered after deletion.',
+                'user_cat.consequence_3_prefix'.tr(ref, fallback: 'Permanent Record Eradication: '),
+                'user_cat.consequence_3_text'.tr(
+                  ref,
+                  fallback: 'This category configuration cannot be recovered after deletion.',
+                ),
                 isDark,
               ),
             ],
@@ -1804,7 +1851,11 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'To confirm that you understand these consequences and intend to permanently destroy this user category, please type the exact category name:',
+                'user_cat.delete_prompt'.tr(
+                  ref,
+                  fallback:
+                      'To confirm that you understand these consequences and intend to permanently destroy this user category, please type the exact category name:',
+                ),
                 style: TextStyle(
                   fontSize: 13,
                   color: isDark ? AppColors.gray300 : const Color(0xFF475569),
@@ -1833,7 +1884,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
               ),
               const SizedBox(height: 16),
               Text(
-                'TYPE CATEGORY NAME TO CONFIRM DELETION:',
+                'user_cat.delete_input_label'.tr(ref, fallback: 'TYPE CATEGORY NAME TO CONFIRM DELETION:'),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -1846,7 +1897,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                 controller: _confirmDeleteCtrl,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Type the exact category name here...',
+                  hintText: 'user_cat.delete_input_hint'.tr(ref, fallback: 'Type the exact category name here...'),
                   hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                   filled: true,
                   fillColor: isDark ? AppColors.surfaceVariantDark : Colors.white,
@@ -1886,8 +1937,8 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                     const SizedBox(width: 6),
                     Text(
                       isMatched
-                          ? 'Category name matched. Deletion unlocked.'
-                          : 'Category name does not match yet.',
+                          ? 'user_cat.delete_matched'.tr(ref, fallback: 'Category name matched. Deletion unlocked.')
+                          : 'user_cat.delete_not_matched'.tr(ref, fallback: 'Category name does not match yet.'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -1910,7 +1961,7 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
-                    child: const Text('Cancel'),
+                    child: Text('user_cat.btn_cancel'.tr(ref, fallback: 'Cancel')),
                   ),
                   const SizedBox(width: 12),
                   FilledButton.icon(
@@ -1923,8 +1974,8 @@ class _UserCategoriesViewState extends ConsumerState<UserCategoriesView> {
                           )
                         : const Icon(Icons.delete_forever_rounded, size: 16),
                     label: Text(_isDeleting
-                        ? 'Deleting Category...'
-                        : 'I understand the consequences, delete this category'),
+                        ? 'user_cat.btn_deleting'.tr(ref, fallback: 'Deleting Category...')
+                        : 'user_cat.btn_delete_confirm'.tr(ref, fallback: 'I understand the consequences, delete this category')),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFDC2626),
                       foregroundColor: Colors.white,

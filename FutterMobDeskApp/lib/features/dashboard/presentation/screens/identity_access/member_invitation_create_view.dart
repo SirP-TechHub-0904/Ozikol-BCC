@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
@@ -262,7 +263,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
   Future<void> _dispatchInvitation() async {
     final email = _emailCtrl.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      _showFeedback('Please provide a valid recipient email address.', isError: true);
+      _showFeedback('invite.create.err_email'.tr(ref, fallback: 'Please provide a valid recipient email address.'), isError: true);
       return;
     }
 
@@ -300,9 +301,9 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
           'expiresDays': _expirationDays,
         };
       });
-      _showFeedback('Onboarding invitation issued successfully.');
+      _showFeedback('invite.create.success_msg'.tr(ref, fallback: 'Onboarding invitation issued successfully.'));
     } else {
-      _showFeedback(result['message']?.toString() ?? 'Failed to issue invitation.', isError: true);
+      _showFeedback(result['message']?.toString() ?? 'invite.create.failed_msg'.tr(ref, fallback: 'Failed to issue invitation.'), isError: true);
     }
   }
 
@@ -310,7 +311,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
     if (url.isEmpty) return;
     Clipboard.setData(ClipboardData(text: url));
     setState(() => _hasCopiedLink = true);
-    _showFeedback('Direct onboarding link copied to clipboard.');
+    _showFeedback('invite.create.copied_msg'.tr(ref, fallback: 'Direct onboarding link copied to clipboard.'));
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) setState(() => _hasCopiedLink = false);
     });
@@ -355,17 +356,19 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
           // Header with Back Control
           PageHeader(
             icon: Icons.person_add_rounded,
-            eyebrow: 'IDENTITY ONBOARDING',
-            title: 'Issue Workspace Onboarding Invitation',
-            description:
-                'Dispatch secure cryptographic tokens to pre-provision enterprise system roles and modular capability scopes for new personnel.',
+            eyebrow: 'invite.create.eyebrow'.tr(ref, fallback: 'IDENTITY ONBOARDING'),
+            title: 'invite.create.title'.tr(ref, fallback: 'Issue Workspace Onboarding Invitation'),
+            description: 'invite.create.desc'.tr(ref, fallback:
+                'Dispatch secure cryptographic tokens to pre-provision enterprise system roles and modular capability scopes for new personnel.'),
             back: widget.onNavigateBack != null
-                ? PageHeaderBack.to(widget.onNavigateBack!, label: 'Back to Registry')
+                ? PageHeaderBack.to(widget.onNavigateBack!, label: 'invite.create.back'.tr(ref, fallback: 'Back to Registry'))
                 : PageHeaderBack.none,
             primaryAction: _dispatchedResult == null
                 ? PageHeaderAction(
-                    label: _isSending ? 'Dispatching...' : 'Dispatch Invitation',
-                    compactLabel: 'Send',
+                    label: _isSending
+                        ? 'invite.create.dispatching'.tr(ref, fallback: 'Dispatching...')
+                        : 'invite.create.dispatch_btn'.tr(ref, fallback: 'Dispatch Invitation'),
+                    compactLabel: 'invite.create.send'.tr(ref, fallback: 'Send'),
                     icon: Icons.send_rounded,
                     style: PageHeaderActionStyle.primary,
                     isLoading: _isSending,
@@ -374,8 +377,8 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                 : null,
             secondaryActions: [
               PageHeaderAction(
-                label: 'Cancel',
-                compactLabel: 'Cancel',
+                label: 'common.cancel'.tr(ref, fallback: 'Cancel'),
+                compactLabel: 'common.cancel'.tr(ref, fallback: 'Cancel'),
                 icon: Icons.close_rounded,
                 onPressed: widget.onNavigateBack,
               ),
@@ -486,7 +489,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Invitation Dispatched Successfully',
+                      'invite.create.success_title'.tr(ref, fallback: 'Invitation Dispatched Successfully'),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -495,7 +498,9 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'An onboarding email has been enqueued for $email with pre-assigned role $role.',
+                      'invite.create.success_desc'.tr(ref, fallback: 'An onboarding email has been enqueued for @email with pre-assigned role @role.')
+                          .replaceAll('@email', email)
+                          .replaceAll('@role', role),
                       style: TextStyle(
                         fontSize: 13.5,
                         color: isDark ? const Color(0xFFBBF7D0) : const Color(0xFF166534),
@@ -508,7 +513,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
           ),
           const SizedBox(height: 20),
           Text(
-            'Direct Registration Link (Share directly with recipient):',
+            'invite.create.direct_link_label'.tr(ref, fallback: 'Direct Registration Link (Share directly with recipient):'),
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
@@ -547,7 +552,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   icon: Icon(_hasCopiedLink ? Icons.check_rounded : Icons.content_copy_rounded, size: 16),
-                  label: Text(_hasCopiedLink ? 'Copied Link' : 'Copy Direct Link',
+                  label: Text(_hasCopiedLink ? 'invite.create.copied_link'.tr(ref, fallback: 'Copied Link') : 'invite.create.copy_link'.tr(ref, fallback: 'Copy Direct Link'),
                       style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
                 ),
               ],
@@ -563,8 +568,8 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
-                label: const Text('Invite Another Member',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                label: Text('invite.create.invite_another'.tr(ref, fallback: 'Invite Another Member'),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               ),
               const SizedBox(width: 14),
               ElevatedButton.icon(
@@ -586,8 +591,8 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                   ),
                 ),
                 icon: const Icon(Icons.format_list_bulleted_rounded, size: 18),
-                label: const Text('View Onboarding Registry',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                label: Text('invite.create.view_registry'.tr(ref, fallback: 'View Onboarding Registry'),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -604,13 +609,13 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
       isDark: isDark,
       icon: Icons.alternate_email_rounded,
       iconColor: AppColors.primary,
-      title: 'Recipient & Workspace Membership',
-      subtitle: 'Specify recipient identity details, organization categorization, and invitation duration.',
+      title: 'invite.create.recipient_title'.tr(ref, fallback: 'Recipient & Workspace Membership'),
+      subtitle: 'invite.create.recipient_subtitle'.tr(ref, fallback: 'Specify recipient identity details, organization categorization, and invitation duration.'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CustomTextField(
-            label: 'Recipient Email Address *',
+            label: 'invite.create.email_label'.tr(ref, fallback: 'Recipient Email Address *'),
             placeholder: 'name@company.com',
             prefixIcon: const Icon(Icons.mail_outline_rounded),
             controller: _emailCtrl,
@@ -619,14 +624,14 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
           ),
           const SizedBox(height: 6),
           Text(
-            'The invitation token and activation link will be dispatched to this mailbox.',
+            'invite.create.email_hint'.tr(ref, fallback: 'The invitation token and activation link will be dispatched to this mailbox.'),
             style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
           ),
           const SizedBox(height: 18),
 
           // Member Category Dropdown
           Text(
-            'Target Member Category',
+            'invite.create.category_label'.tr(ref, fallback: 'Target Member Category'),
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
@@ -648,9 +653,9 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                 isExpanded: true,
                 dropdownColor: isDark ? AppColors.surfaceDark : Colors.white,
                 items: [
-                  const DropdownMenuItem<String?>(
+                  DropdownMenuItem<String?>(
                     value: null,
-                    child: Text('Standard / General Member', style: TextStyle(fontSize: 13)),
+                    child: Text('invite.create.category_standard'.tr(ref, fallback: 'Standard / General Member'), style: const TextStyle(fontSize: 13)),
                   ),
                   ..._categories.map((c) {
                     final id = c['id']?.toString();
@@ -670,7 +675,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
 
           // Expiration Window
           Text(
-            'Invitation Expiration Window',
+            'invite.create.expiry_label'.tr(ref, fallback: 'Invitation Expiration Window'),
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
@@ -682,17 +687,17 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
             spacing: 10,
             runSpacing: 8,
             children: [
-              _buildExpiryPill(7, '7 Days (Recommended)', Icons.timelapse_rounded, isDark),
-              _buildExpiryPill(14, '14 Days', Icons.calendar_today_rounded, isDark),
-              _buildExpiryPill(30, '30 Days', Icons.date_range_rounded, isDark),
-              _buildExpiryPill(1, '24 Hours (Urgent)', Icons.bolt_rounded, isDark),
+              _buildExpiryPill(7, 'invite.create.expiry_7'.tr(ref, fallback: '7 Days (Recommended)'), Icons.timelapse_rounded, isDark),
+              _buildExpiryPill(14, 'invite.create.expiry_14'.tr(ref, fallback: '14 Days'), Icons.calendar_today_rounded, isDark),
+              _buildExpiryPill(30, 'invite.create.expiry_30'.tr(ref, fallback: '30 Days'), Icons.date_range_rounded, isDark),
+              _buildExpiryPill(1, 'invite.create.expiry_1'.tr(ref, fallback: '24 Hours (Urgent)'), Icons.bolt_rounded, isDark),
             ],
           ),
           const SizedBox(height: 18),
 
           // Custom Welcome Note
           Text(
-            'Welcome Note / Administrator Message (Optional)',
+            'invite.create.note_label'.tr(ref, fallback: 'Welcome Note / Administrator Message (Optional)'),
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
@@ -705,7 +710,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
             maxLines: 2,
             onChanged: (_) => setState(() {}),
             decoration: InputDecoration(
-              hintText: 'e.g. Welcome to our enterprise workspace! Please establish your credentials to access your designated modules.',
+              hintText: 'invite.create.note_placeholder'.tr(ref, fallback: 'e.g. Welcome to our enterprise workspace! Please establish your credentials to access your designated modules.'),
               hintStyle: TextStyle(color: isDark ? AppColors.gray600 : AppColors.gray400, fontSize: 13),
               filled: true,
               fillColor: isDark ? AppColors.surfaceDark : Colors.white,
@@ -726,7 +731,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
           ),
           const SizedBox(height: 6),
           Text(
-            'This personal message will be highlighted inside the onboarding invitation email.',
+            'invite.create.note_hint'.tr(ref, fallback: 'This personal message will be highlighted inside the onboarding invitation email.'),
             style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
           ),
         ],
@@ -784,12 +789,15 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
       isDark: isDark,
       icon: Icons.badge_outlined,
       iconColor: const Color(0xFF8B5CF6),
-      title: 'Card 1: Primary Authority Role',
-      subtitle: 'Choose the user\'s primary identity persona. Grouped into System Governance and Modular Feature Authorities.',
+      title: 'invite.create.card1_title'.tr(ref, fallback: 'Card 1: Primary Authority Role'),
+      subtitle: 'invite.create.card1_subtitle'.tr(ref, fallback: 'Choose the user\'s primary identity persona. Grouped into System Governance and Modular Feature Authorities.'),
       trailing: Wrap(
         spacing: 6,
         children: ['All', 'System', 'Feature'].map((filter) {
           final isSelected = _activeGroupFilter == filter;
+          final filterLabel = filter == 'All'
+              ? 'common.all'.tr(ref, fallback: 'All')
+              : (filter == 'System' ? 'invite.create.filter_system'.tr(ref, fallback: 'System') : 'invite.create.filter_feature'.tr(ref, fallback: 'Feature'));
           return InkWell(
             onTap: () => setState(() => _activeGroupFilter = filter),
             borderRadius: BorderRadius.circular(6),
@@ -800,7 +808,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
-                filter,
+                filterLabel,
                 style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
@@ -947,8 +955,8 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
         isDark: isDark,
         icon: Icons.tune_rounded,
         iconColor: const Color(0xFF10B981),
-        title: 'Card 2: Operational Edit Access Level',
-        subtitle: 'Standard members do not hold operational administrative edit roles.',
+        title: 'invite.create.card2_title'.tr(ref, fallback: 'Card 2: Operational Edit Access Level'),
+        subtitle: 'invite.create.card2_subtitle_member'.tr(ref, fallback: 'Standard members do not hold operational administrative edit roles.'),
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -966,7 +974,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Dedicated Member Workspace Portal',
+                      'invite.create.member_portal_title'.tr(ref, fallback: 'Dedicated Member Workspace Portal'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -975,7 +983,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'A Member is a standard workspace user with their own dedicated user dashboard and workspace applications. They do not hold administrative or operational editing roles within the BCC Administration Console.',
+                      'invite.create.member_portal_desc'.tr(ref, fallback: 'A Member is a standard workspace user with their own dedicated user dashboard and workspace applications. They do not hold administrative or operational editing roles within the BCC Administration Console.'),
                       style: TextStyle(
                         fontSize: 12.5,
                         height: 1.4,
@@ -987,9 +995,9 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                       spacing: 8,
                       runSpacing: 6,
                       children: [
-                        _buildFeaturePill('Authenticated Member Dashboard', isDark),
-                        _buildFeaturePill('Personal Profile & 2FA', isDark),
-                        _buildFeaturePill('Member Directory Presence', isDark),
+                        _buildFeaturePill('invite.create.pill_portal'.tr(ref, fallback: 'Authenticated Member Dashboard'), isDark),
+                        _buildFeaturePill('invite.create.pill_profile'.tr(ref, fallback: 'Personal Profile & 2FA'), isDark),
+                        _buildFeaturePill('invite.create.pill_presence'.tr(ref, fallback: 'Member Directory Presence'), isDark),
                       ],
                     ),
                   ],
@@ -1029,8 +1037,8 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
       isDark: isDark,
       icon: Icons.tune_rounded,
       iconColor: const Color(0xFF10B981),
-      title: 'Card 2: Operational Edit Access Level',
-      subtitle: 'Controls the user operational write power: tenant-wide global edit, targeted module edit, or view-only auditing.',
+      title: 'invite.create.card2_title'.tr(ref, fallback: 'Card 2: Operational Edit Access Level'),
+      subtitle: 'invite.create.card2_subtitle'.tr(ref, fallback: 'Controls the user operational write power: tenant-wide global edit, targeted module edit, or view-only auditing.'),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
@@ -1131,7 +1139,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            isSelected ? 'Active Scope' : 'Select Scope',
+                            isSelected ? 'invite.create.active_scope'.tr(ref, fallback: 'Active Scope') : 'invite.create.select_scope'.tr(ref, fallback: 'Select Scope'),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
@@ -1172,7 +1180,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Designated Capability Domain',
+                            'invite.create.domain_title'.tr(ref, fallback: 'Designated Capability Domain'),
                             style: TextStyle(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w700,
@@ -1181,7 +1189,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'This user will be granted full authoring, write, and publishing rights strictly within this selected module.',
+                            'invite.create.domain_desc'.tr(ref, fallback: 'This user will be granted full authoring, write, and publishing rights strictly within this selected module.'),
                             style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
                           ),
                         ],
@@ -1309,25 +1317,25 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
   // =========================================================================
   Widget _buildGovernanceSummaryCard(bool isDark) {
     final email = _emailCtrl.text.trim();
-    final actionLabel = _selectedRole == 'Member' ? 'Portal User' : _getActionRoleLabel(_selectedActionRole);
+    final actionLabel = _selectedRole == 'Member' ? 'invite.create.portal_user'.tr(ref, fallback: 'Portal User') : _getActionRoleLabel(_selectedActionRole);
 
     return _buildCardWrapper(
       isDark: isDark,
       icon: Icons.shield_outlined,
       iconColor: const Color(0xFF6366F1),
-      title: 'Governance & Access Summary',
-      subtitle: 'Real-time breakdown of assigned authorities upon onboarding.',
+      title: 'invite.create.gov_title'.tr(ref, fallback: 'Governance & Access Summary'),
+      subtitle: 'invite.create.gov_subtitle'.tr(ref, fallback: 'Real-time breakdown of assigned authorities upon onboarding.'),
       child: Column(
         children: [
           _buildSummaryRow(
-            label: 'Recipient Mailbox',
+            label: 'invite.create.gov_recipient'.tr(ref, fallback: 'Recipient Mailbox'),
             value: email.isNotEmpty ? email : 'name@company.com',
             icon: Icons.alternate_email_rounded,
             isDark: isDark,
           ),
           const Divider(height: 18),
           _buildSummaryRow(
-            label: 'Primary Role',
+            label: 'invite.create.gov_role'.tr(ref, fallback: 'Primary Role'),
             value: _selectedRole,
             icon: Icons.badge_outlined,
             isDark: isDark,
@@ -1335,7 +1343,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
           ),
           const Divider(height: 18),
           _buildSummaryRow(
-            label: 'Operational Access',
+            label: 'invite.create.gov_access'.tr(ref, fallback: 'Operational Access'),
             value: actionLabel,
             icon: Icons.tune_rounded,
             isDark: isDark,
@@ -1344,7 +1352,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
           if (_selectedRole != 'Member' && _selectedActionRole == ActionRoleType.featureEditor) ...[
             const Divider(height: 18),
             _buildSummaryRow(
-              label: 'Bound Capability',
+              label: 'invite.create.gov_bound'.tr(ref, fallback: 'Bound Capability'),
               value: _selectedFeatureArea.toUpperCase(),
               icon: Icons.link_rounded,
               isDark: isDark,
@@ -1352,8 +1360,8 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
           ],
           const Divider(height: 18),
           _buildSummaryRow(
-            label: 'Token Expiry',
-            value: '$_expirationDays Days',
+            label: 'invite.create.gov_expiry'.tr(ref, fallback: 'Token Expiry'),
+            value: '$_expirationDays ${'invite.create.days'.tr(ref, fallback: 'Days')}',
             icon: Icons.timelapse_rounded,
             isDark: isDark,
           ),
@@ -1416,8 +1424,8 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
       isDark: isDark,
       icon: Icons.mail_rounded,
       iconColor: AppColors.primary,
-      title: 'Email Dispatch Simulation',
-      subtitle: 'Preview the invitation as it will appear in the recipient\'s inbox.',
+      title: 'invite.create.sim_title'.tr(ref, fallback: 'Email Dispatch Simulation'),
+      subtitle: 'invite.create.sim_subtitle'.tr(ref, fallback: 'Preview the invitation as it will appear in the recipient\'s inbox.'),
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -1437,7 +1445,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                 const Icon(Icons.circle, size: 10, color: Color(0xFF10B981)),
                 const SizedBox(width: 12),
                 Text(
-                  'Subject: You are invited to join $brand',
+                  '${'invite.create.sim_subject'.tr(ref, fallback: 'Subject: You are invited to join')} $brand',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
@@ -1448,7 +1456,7 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
             ),
             const Divider(height: 20),
             Text(
-              'Hello ${email.isNotEmpty ? email.split('@').first : 'there'},',
+              '${'invite.create.sim_hello'.tr(ref, fallback: 'Hello')} ${email.isNotEmpty ? email.split('@').first : 'there'},',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
@@ -1457,7 +1465,9 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
             ),
             const SizedBox(height: 8),
             Text(
-              'You have been invited to join the $brand workspace as a $_selectedRole.',
+              'invite.create.sim_body'.tr(ref, fallback: 'You have been invited to join the @brand workspace as a @role.')
+                  .replaceAll('@brand', brand)
+                  .replaceAll('@role', _selectedRole),
               style: TextStyle(
                 fontSize: 12.5,
                 height: 1.4,
@@ -1497,15 +1507,16 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
                     BoxShadow(color: Color(0x330050E5), blurRadius: 8, offset: Offset(0, 3)),
                   ],
                 ),
-                child: const Text(
-                  'Accept Invitation & Register',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white),
+                child: Text(
+                  'invite.create.sim_accept_btn'.tr(ref, fallback: 'Accept Invitation & Register'),
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.white),
                 ),
               ),
             ),
             const SizedBox(height: 18),
             Text(
-              'This invitation is secure and will expire in $_expirationDays days. If you did not request this invitation, you can safely ignore this message.',
+              'invite.create.sim_disclaimer'.tr(ref, fallback: 'This invitation is secure and will expire in @days days. If you did not request this invitation, you can safely ignore this message.')
+                  .replaceAll('@days', '$_expirationDays'),
               style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray500 : const Color(0xFF94A3B8)),
             ),
           ],
@@ -1534,10 +1545,10 @@ class _MemberInvitationCreateViewState extends ConsumerState<MemberInvitationCre
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            child: const Text('Cancel & Return', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            child: Text('invite.create.cancel_return'.tr(ref, fallback: 'Cancel & Return'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
           ),
           PrimaryButton(
-            text: _isSending ? 'Dispatching...' : 'Dispatch Onboarding Invitation',
+            text: _isSending ? 'invite.create.dispatching'.tr(ref, fallback: 'Dispatching...') : 'invite.create.dispatch_long_btn'.tr(ref, fallback: 'Dispatch Onboarding Invitation'),
             icon: const Icon(Icons.send_rounded, size: 16),
             isLoading: _isSending,
             onPressed: _isSending ? null : _dispatchInvitation,

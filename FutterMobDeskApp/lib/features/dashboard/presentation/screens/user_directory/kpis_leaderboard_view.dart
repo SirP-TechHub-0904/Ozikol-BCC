@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/central_adjuster.dart';
@@ -73,41 +74,8 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
 
       if (mounted) {
         setState(() {
-          _metrics = metricsRes.isNotEmpty
-              ? metricsRes
-              : [
-                  {
-                    'id': 'm-1',
-                    'title': 'Operational Execution & Quality',
-                    'category': 'Operations',
-                    'description': 'Accuracy, velocity, and delivery adherence on workstreams.',
-                    'maxScore': 100,
-                    'weight': 1.5,
-                  },
-                  {
-                    'id': 'm-2',
-                    'title': 'Client Collaboration & Communication',
-                    'category': 'Leadership',
-                    'description': 'Professionalism, transparency, and stakeholder feedback scores.',
-                    'maxScore': 100,
-                    'weight': 1.0,
-                  },
-                  {
-                    'id': 'm-3',
-                    'title': 'Governance & Security Compliance',
-                    'category': 'Compliance',
-                    'description': 'Adherence to corporate data protection and authentication standards.',
-                    'maxScore': 100,
-                    'weight': 1.2,
-                  },
-                ];
-          _periods = periodsRes.isNotEmpty
-              ? periodsRes
-              : [
-                  {'id': 'p-1', 'title': '2026 Q4'},
-                  {'id': 'p-2', 'title': '2026 Q3'},
-                  {'id': 'p-3', 'title': 'Annual 2026'},
-                ];
+          _metrics = metricsRes;
+          _periods = periodsRes;
           _selectedPeriod = activePeriod;
           _leaderboard = leaderboardRes;
           _isLoading = false;
@@ -807,17 +775,17 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
   Widget _buildPageHeader(bool isDark) {
     return CentralAdjuster.pageHeader(
       icon: Icons.analytics_rounded,
-      eyebrow: 'USER MANAGEMENT',
-      title: 'KPI Indicators & Member Leaderboard',
-      subtitle:
-          'Configure organizational performance metrics, evaluate member scorecards, and track dynamic leaderboard rankings.',
+      eyebrow: 'kpi_board.eyebrow'.tr(ref, fallback: 'USER MANAGEMENT'),
+      title: 'kpi_board.title'.tr(ref, fallback: 'KPI Indicators & Member Leaderboard'),
+      subtitle: 'kpi_board.subtitle'.tr(ref, fallback:
+          'Configure organizational performance metrics, evaluate member scorecards, and track dynamic leaderboard rankings.'),
       isDark: isDark,
       onBack: widget.onNavigateBack,
       actions: [
         OutlinedButton.icon(
           onPressed: () => widget.onNavigateToTab?.call(1),
           icon: const Icon(Icons.groups_rounded, size: 16),
-          label: const Text('Member Directory'),
+          label: Text('kpi_board.btn_directory'.tr(ref, fallback: 'Member Directory')),
           style: OutlinedButton.styleFrom(
             foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
             side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
@@ -832,15 +800,15 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
             await _loadAllKpiData();
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('KPI workspace data refreshed.'),
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: Text('kpi_board.data_refreshed'.tr(ref, fallback: 'KPI workspace data refreshed.')),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             }
           },
           icon: const Icon(Icons.refresh_rounded, size: 16),
-          label: const Text('Refresh'),
+          label: Text('common.refresh'.tr(ref, fallback: 'Refresh')),
           style: OutlinedButton.styleFrom(
             foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
             side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
@@ -852,7 +820,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
         FilledButton.icon(
           onPressed: () => _openCreateOrEditMetricDialog(),
           icon: const Icon(Icons.add_rounded, size: 16),
-          label: const Text('Create Metric'),
+          label: Text('kpi_board.btn_create_metric'.tr(ref, fallback: 'Create Metric')),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
@@ -886,11 +854,11 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.calendar_month_rounded, color: Color(0xFF0050E5), size: 20),
-                      SizedBox(width: 8),
-                      Text('Create New Evaluation Period / Cycle', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                      const Icon(Icons.calendar_month_rounded, color: Color(0xFF0050E5), size: 20),
+                      const SizedBox(width: 8),
+                      Text('kpi_board.banner_create_period'.tr(ref, fallback: 'Create New Evaluation Period / Cycle'), style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
                     ],
                   ),
                   IconButton(
@@ -904,8 +872,8 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                 TextField(
                   controller: _newPeriodTitleCtrl,
                   decoration: InputDecoration(
-                    labelText: 'Period Title *',
-                    hintText: 'e.g. 2026 Q4, Annual 2026',
+                    labelText: 'kpi_board.period_title_label'.tr(ref, fallback: 'Period Title *'),
+                    hintText: 'kpi_board.period_title_hint'.tr(ref, fallback: 'e.g. 2026 Q4, Annual 2026'),
                     filled: true,
                     fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -915,8 +883,8 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                 TextField(
                   controller: _newPeriodDescCtrl,
                   decoration: InputDecoration(
-                    labelText: 'Description (Optional)',
-                    hintText: 'e.g. Fourth quarter review cycle',
+                    labelText: 'kpi_board.desc_optional'.tr(ref, fallback: 'Description (Optional)'),
+                    hintText: 'kpi_board.period_desc_hint'.tr(ref, fallback: 'e.g. Fourth quarter review cycle'),
                     filled: true,
                     fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -930,7 +898,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                     icon: _isCreatingPeriod
                         ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.save_rounded, size: 16),
-                    label: Text(_isCreatingPeriod ? 'Saving...' : 'Save Period'),
+                    label: Text(_isCreatingPeriod ? 'common.saving'.tr(ref, fallback: 'Saving...') : 'kpi_board.btn_save_period'.tr(ref, fallback: 'Save Period')),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -947,8 +915,8 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                       child: TextField(
                         controller: _newPeriodTitleCtrl,
                         decoration: InputDecoration(
-                          labelText: 'Period Title *',
-                          hintText: 'e.g. 2026 Q4, Annual 2026',
+                          labelText: 'kpi_board.period_title_label'.tr(ref, fallback: 'Period Title *'),
+                          hintText: 'kpi_board.period_title_hint'.tr(ref, fallback: 'e.g. 2026 Q4, Annual 2026'),
                           filled: true,
                           fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -961,8 +929,8 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                       child: TextField(
                         controller: _newPeriodDescCtrl,
                         decoration: InputDecoration(
-                          labelText: 'Description (Optional)',
-                          hintText: 'e.g. Fourth quarter review cycle',
+                          labelText: 'kpi_board.desc_optional'.tr(ref, fallback: 'Description (Optional)'),
+                          hintText: 'kpi_board.period_desc_hint'.tr(ref, fallback: 'e.g. Fourth quarter review cycle'),
                           filled: true,
                           fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -975,7 +943,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                       icon: _isCreatingPeriod
                           ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                           : const Icon(Icons.save_rounded, size: 16),
-                      label: Text(_isCreatingPeriod ? 'Saving...' : 'Save Period'),
+                      label: Text(_isCreatingPeriod ? 'common.saving'.tr(ref, fallback: 'Saving...') : 'kpi_board.btn_save_period'.tr(ref, fallback: 'Save Period')),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -1014,7 +982,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Performance Evaluation Metrics',
+                      'kpi_board.metrics_title'.tr(ref, fallback: 'Performance Evaluation Metrics'),
                       style: TextStyle(
                         fontSize: 14.5,
                         fontWeight: FontWeight.w700,
@@ -1023,7 +991,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Rubrics and numerical indicators used during member evaluations',
+                      'kpi_board.metrics_subtitle'.tr(ref, fallback: 'Rubrics and numerical indicators used during member evaluations'),
                       style: TextStyle(
                         fontSize: 11.5,
                         color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
@@ -1036,7 +1004,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
               FilledButton.icon(
                 onPressed: () => _openCreateOrEditMetricDialog(),
                 icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('Create Metric'),
+                label: Text('kpi_board.btn_create_metric'.tr(ref, fallback: 'Create Metric')),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -1057,12 +1025,12 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                 children: [
                   const Icon(Icons.assignment_rounded, size: 36, color: Color(0xFFCBD5E1)),
                   const SizedBox(height: 8),
-                  const Text('No KPI indicators defined yet.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
+                  Text('kpi_board.metrics_empty'.tr(ref, fallback: 'No KPI indicators defined yet.'), style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
                   const SizedBox(height: 10),
                   FilledButton.icon(
                     onPressed: () => _openCreateOrEditMetricDialog(),
                     icon: const Icon(Icons.add_rounded, size: 16),
-                    label: const Text('Create Custom Indicator'),
+                    label: Text('kpi_board.btn_create_custom_indicator'.tr(ref, fallback: 'Create Custom Indicator')),
                   ),
                 ],
               ),
@@ -1199,7 +1167,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Member Performance Leaderboard',
+                    'kpi_board.leaderboard_title'.tr(ref, fallback: 'Member Performance Leaderboard'),
                     style: TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w700,
@@ -1208,7 +1176,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Rankings derived from genuine evaluation scorecards',
+                    'kpi_board.leaderboard_subtitle'.tr(ref, fallback: 'Rankings derived from genuine evaluation scorecards'),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -1276,14 +1244,14 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                           color: isDark ? AppColors.outlineDark : const Color(0xFFBFDBFE),
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.add_rounded, size: 16, color: Color(0xFF0050E5)),
-                          SizedBox(width: 4),
+                          const Icon(Icons.add_rounded, size: 16, color: Color(0xFF0050E5)),
+                          const SizedBox(width: 4),
                           Text(
-                            'Add Period',
-                            style: TextStyle(
+                            'kpi_board.btn_add_period'.tr(ref, fallback: 'Add Period'),
+                            style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF0050E5),
@@ -1296,7 +1264,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                   const SizedBox(width: 4),
                   IconButton(
                     icon: const Icon(Icons.refresh_rounded, size: 16),
-                    tooltip: 'Refresh Leaderboard',
+                    tooltip: 'common.refresh'.tr(ref, fallback: 'Refresh'),
                     padding: const EdgeInsets.all(6),
                     constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                     color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
@@ -1338,13 +1306,13 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                 children: [
                   const Icon(Icons.leaderboard_rounded, size: 36, color: Color(0xFFCBD5E1)),
                   const SizedBox(height: 8),
-                  Text('No evaluation scores recorded for $_selectedPeriod.', style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
+                  Text('kpi_board.empty_scores'.tr(ref, fallback: 'No evaluation scores recorded for @period.').replaceAll('@period', _selectedPeriod), style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
                   const SizedBox(height: 4),
-                  const Text('Select a member from the directory to enter this period\'s evaluation.', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                  Text('kpi_board.empty_scores_hint'.tr(ref, fallback: 'Select a member from the directory to enter this period\'s evaluation.'), style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
                   const SizedBox(height: 12),
                   OutlinedButton(
                     onPressed: () => widget.onNavigateToTab?.call(1),
-                    child: const Text('Browse Directory to Grade', style: TextStyle(fontSize: 12)),
+                    child: Text('kpi_board.btn_browse_directory'.tr(ref, fallback: 'Browse Directory to Grade'), style: const TextStyle(fontSize: 12)),
                   ),
                 ],
               ),
@@ -1413,7 +1381,7 @@ class _KpisLeaderboardViewState extends ConsumerState<KpisLeaderboardView> {
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text('Grade', style: TextStyle(fontSize: 11)),
+                        child: Text('kpi_board.btn_grade'.tr(ref, fallback: 'Grade'), style: const TextStyle(fontSize: 11)),
                       ),
                     ],
                   ),

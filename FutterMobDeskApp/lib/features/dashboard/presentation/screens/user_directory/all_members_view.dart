@@ -1102,7 +1102,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: _paginatedUsers.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          separatorBuilder: (context, index) => const SizedBox(height: 10),
           itemBuilder: (context, idx) {
             final u = _paginatedUsers[idx];
             return _buildMobileMemberCard(u, isDark);

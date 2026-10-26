@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/central_adjuster.dart';
@@ -138,14 +139,15 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
     setState(() => _isGeneratingOtp = false);
 
     if (res != null) {
-      final code = res['code']?.toString() ?? res['otp']?.toString() ?? '839201';
-      setState(() => _generatedOtp = code);
-      _showToast('6-Digit OTP code generated and queued for delivery.');
+      final code = res['code']?.toString() ?? res['otp']?.toString() ?? '';
+      if (code.isNotEmpty) {
+        setState(() => _generatedOtp = code);
+        _showToast('user_details.toast_otp_generated'.tr(ref, fallback: '6-Digit OTP code generated and queued for delivery.'));
+      } else {
+        _showToast('user_details.toast_otp_failed'.tr(ref, fallback: 'Failed to generate OTP code. Please verify server connection.'));
+      }
     } else {
-      // Fallback client simulation if offline
-      final simulatedOtp = (100000 + Random().nextInt(900000)).toString();
-      setState(() => _generatedOtp = simulatedOtp);
-      _showToast('6-Digit OTP code generated: $simulatedOtp');
+      _showToast('user_details.toast_otp_failed'.tr(ref, fallback: 'Failed to generate OTP code. Please verify server connection.'));
     }
   }
 
@@ -155,7 +157,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
   Future<void> _handleApplyPassword() async {
     final newPass = _passwordController.text.trim();
     if (newPass.isEmpty) {
-      _showToast('Please enter or generate a temporary password.');
+      _showToast('user_details.toast_enter_password'.tr(ref, fallback: 'Please enter or generate a temporary password.'));
       return;
     }
 
@@ -175,13 +177,13 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
     setState(() => _isResettingPassword = false);
 
     if (success) {
-      _showToast('Temporary password applied and notification queued.');
+      _showToast('user_details.toast_pass_applied'.tr(ref, fallback: 'Temporary password applied and notification queued.'));
       _passwordController.clear();
       setState(() {
         _userData['mustChangePassword'] = true;
       });
     } else {
-      _showToast('Failed to apply password. Please try again.');
+      _showToast('user_details.toast_pass_failed'.tr(ref, fallback: 'Failed to apply password. Please try again.'));
     }
   }
 
@@ -206,9 +208,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
         _userData['userStatus'] = newStatus;
         _userData['status'] = newStatus;
       });
-      _showToast('Member account status updated to $newStatus.');
+      _showToast('user_details.toast_status_updated'.tr(ref, fallback: 'Member account status updated to {status}.').replaceAll('{status}', newStatus));
     } else {
-      _showToast('Failed to update account status.');
+      _showToast('user_details.toast_status_failed'.tr(ref, fallback: 'Failed to update account status.'));
     }
   }
 
@@ -234,9 +236,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
         _userData['roles'] = [_selectedRole];
         _isEditingRole = false;
       });
-      _showToast('System role updated to $_selectedRole.');
+      _showToast('user_details.toast_role_updated'.tr(ref, fallback: 'System role updated to {role}.').replaceAll('{role}', _selectedRole));
     } else {
-      _showToast('Failed to update system role.');
+      _showToast('user_details.toast_role_failed'.tr(ref, fallback: 'Failed to update system role.'));
     }
   }
 
@@ -255,7 +257,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
       });
       _noteController.clear();
     });
-    _showToast('Confidential note recorded.');
+    _showToast('user_details.toast_note_recorded'.tr(ref, fallback: 'Confidential note recorded.'));
   }
 
   void _showToast(String message) {
@@ -416,11 +418,17 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
     final designation = (_userData['designation'] ?? 'Member').toString();
     final categoryName = (_userData['categoryName'] ?? 'Unassigned Category').toString();
 
+    final desc = 'user_details.desc_format'
+        .tr(ref, fallback: 'Member ID: {id} • {designation} • {category}')
+        .replaceAll('{id}', memberId)
+        .replaceAll('{designation}', designation)
+        .replaceAll('{category}', categoryName);
+
     return PageHeader(
       icon: Icons.account_circle_outlined,
-      eyebrow: '360° Member Command Center',
+      eyebrow: 'user_details.eyebrow'.tr(ref, fallback: '360° Member Command Center'),
       title: fullName,
-      description: 'Member ID: $memberId • $designation • $categoryName',
+      description: desc,
       back: PageHeaderBack.to(
         () {
           // Prefer the shell callback (returns to the member list); otherwise pop the route.
@@ -430,10 +438,10 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             Navigator.of(context).maybePop();
           }
         },
-        label: 'Back to List',
+        label: 'user_details.back_label'.tr(ref, fallback: 'Back to List'),
       ),
       primaryAction: PageHeaderAction(
-        label: 'Edit Profile',
+        label: 'user_details.btn_edit_profile'.tr(ref, fallback: 'Edit Profile'),
         icon: Icons.edit_outlined,
         style: PageHeaderActionStyle.primary,
         onPressed: widget.onNavigateToEdit == null ? null : () => widget.onNavigateToEdit!(_userData),
@@ -508,12 +516,12 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             runSpacing: 4,
             children: [
               Tooltip(
-                message: 'Copy email address',
+                message: 'user_details.copy_email_tooltip'.tr(ref, fallback: 'Copy email address'),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(4),
                   onTap: email.isEmpty ? null : () {
                     Clipboard.setData(ClipboardData(text: email));
-                    _showToast('Email address copied to clipboard.');
+                    _showToast('user_details.toast_email_copied'.tr(ref, fallback: 'Email address copied to clipboard.'));
                   },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -553,7 +561,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                     ),
                     const SizedBox(width: 3),
                     Text(
-                      emailConfirmed ? 'Verified' : 'Unverified',
+                      emailConfirmed
+                          ? 'user_details.verified'.tr(ref, fallback: 'Verified')
+                          : 'user_details.unverified'.tr(ref, fallback: 'Unverified'),
                       style: TextStyle(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
@@ -626,13 +636,19 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
           const SizedBox(height: 14),
 
           // Detail specs list
-          _buildSpecRow('Phone Number', phone, isDark),
-          _buildSpecRow('Designation / Title', designation, isDark),
-          _buildSpecRow('Join Date', joinDate.isNotEmpty ? joinDate.split('T').first : 'N/A', isDark),
-          _buildSpecRow('Registration Source', regSource, isDark),
           _buildSpecRow(
-            'Must Change Password',
-            mustChangePass ? 'Yes (Temporary Active)' : 'No (Permanent Set)',
+            'user_details.spec_phone'.tr(ref, fallback: 'Phone Number'),
+            phone.isNotEmpty ? phone : 'user_details.spec_phone_none'.tr(ref, fallback: 'Not provided'),
+            isDark,
+          ),
+          _buildSpecRow('user_details.spec_designation'.tr(ref, fallback: 'Designation / Title'), designation, isDark),
+          _buildSpecRow('user_details.spec_join_date'.tr(ref, fallback: 'Join Date'), joinDate.isNotEmpty ? joinDate.split('T').first : 'N/A', isDark),
+          _buildSpecRow('user_details.spec_reg_source'.tr(ref, fallback: 'Registration Source'), regSource, isDark),
+          _buildSpecRow(
+            'user_details.spec_must_change_pass'.tr(ref, fallback: 'Must Change Password'),
+            mustChangePass
+                ? 'user_details.must_change_yes'.tr(ref, fallback: 'Yes (Temporary Active)')
+                : 'user_details.must_change_no'.tr(ref, fallback: 'No (Permanent Set)'),
             isDark,
             valueColor: mustChangePass ? const Color(0xFFF59E0B) : const Color(0xFF10B981),
           ),
@@ -648,7 +664,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                 }
               },
               icon: const Icon(Icons.edit_outlined, size: 15),
-              label: const Text('Edit Profile Information'),
+              label: Text('user_details.btn_edit_info'.tr(ref, fallback: 'Edit Profile Information')),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 11),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -681,7 +697,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Role & Workspace Permissions',
+                      'user_details.card_role_title'.tr(ref, fallback: 'Role & Workspace Permissions'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -689,7 +705,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       ),
                     ),
                     Text(
-                      'Platform access tier & security scope',
+                      'user_details.card_role_subtitle'.tr(ref, fallback: 'Platform access tier & security scope'),
                       style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
                     ),
                   ],
@@ -703,7 +719,12 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: Text(_isEditingRole ? 'Cancel' : 'Update Permission', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                child: Text(
+                  _isEditingRole
+                      ? 'user_details.btn_cancel'.tr(ref, fallback: 'Cancel')
+                      : 'user_details.btn_update_perm'.tr(ref, fallback: 'Update Permission'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                ),
               ),
             ],
           ),
@@ -728,7 +749,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Standard Membership Access',
+                      'user_details.std_access'.tr(ref, fallback: 'Standard Membership Access'),
                       textAlign: TextAlign.end,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
@@ -740,7 +761,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
           ] else ...[
             DropdownButtonFormField<String>(
               initialValue: _selectedRole,
-              decoration: const InputDecoration(labelText: 'System Access Role'),
+              decoration: InputDecoration(labelText: 'user_details.label_role'.tr(ref, fallback: 'System Access Role')),
               items: const [
                 DropdownMenuItem(value: 'Member', child: Text('Member (Standard Portal Access)')),
                 DropdownMenuItem(value: 'Admin', child: Text('Admin (Full Administrative Access)')),
@@ -757,7 +778,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                 onPressed: _isSavingRole ? null : _handleSaveRole,
                 style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                 child: Text(
-                  _isSavingRole ? 'Updating...' : 'Save Permission',
+                  _isSavingRole
+                      ? 'user_details.btn_updating'.tr(ref, fallback: 'Updating...')
+                      : 'user_details.btn_save_perm'.tr(ref, fallback: 'Save Permission'),
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                 ),
               ),
@@ -784,7 +807,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Confidential Admin Notes',
+                      'user_details.card_notes_title'.tr(ref, fallback: 'Confidential Admin Notes'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -792,7 +815,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       ),
                     ),
                     Text(
-                      'Private administrative records & logs',
+                      'user_details.card_notes_subtitle'.tr(ref, fallback: 'Private administrative records & logs'),
                       style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
                     ),
                   ],
@@ -807,9 +830,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             controller: _noteController,
             maxLines: 2,
             style: const TextStyle(fontSize: 12.5),
-            decoration: const InputDecoration(
-              hintText: 'Add a confidential administrative note...',
-              contentPadding: EdgeInsets.all(10),
+            decoration: InputDecoration(
+              hintText: 'user_details.note_hint'.tr(ref, fallback: 'Add a confidential administrative note...'),
+              contentPadding: const EdgeInsets.all(10),
             ),
           ),
           const SizedBox(height: 8),
@@ -818,7 +841,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             child: ElevatedButton.icon(
               onPressed: _handleAddNote,
               icon: const Icon(Icons.add_comment_rounded, size: 14, color: Colors.white),
-              label: const Text('Post Note', style: TextStyle(color: Colors.white, fontSize: 12)),
+              label: Text('user_details.btn_post_note'.tr(ref, fallback: 'Post Note'), style: const TextStyle(color: Colors.white, fontSize: 12)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -834,7 +857,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Text(
-                  'No administrative notes posted yet.',
+                  'user_details.no_notes'.tr(ref, fallback: 'No administrative notes posted yet.'),
                   style: TextStyle(fontSize: 12, color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8)),
                 ),
               ),
@@ -902,12 +925,12 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Account Access & Danger Zone',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
+                    Text(
+                      'user_details.danger_title'.tr(ref, fallback: 'Account Access & Danger Zone'),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
                     ),
                     Text(
-                      'Restrict or permanently remove member account',
+                      'user_details.danger_subtitle'.tr(ref, fallback: 'Restrict or permanently remove member account'),
                       style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
                     ),
                   ],
@@ -925,11 +948,15 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    isActive ? 'Suspend Account' : 'Reactivate Account',
+                    isActive
+                        ? 'user_details.suspend_title'.tr(ref, fallback: 'Suspend Account')
+                        : 'user_details.reactivate_title'.tr(ref, fallback: 'Reactivate Account'),
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? AppColors.onSurfaceDark : const Color(0xFF0F172A)),
                   ),
                   Text(
-                    isActive ? 'Temporarily revoke workspace access' : 'Restore full access to member portal',
+                    isActive
+                        ? 'user_details.suspend_desc'.tr(ref, fallback: 'Temporarily revoke workspace access')
+                        : 'user_details.reactivate_desc'.tr(ref, fallback: 'Restore full access to member portal'),
                     style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
                   ),
                 ],
@@ -940,7 +967,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   foregroundColor: isActive ? const Color(0xFFDC2626) : const Color(0xFF059669),
                   side: BorderSide(color: isActive ? const Color(0xFFFCA5A5) : const Color(0xFF86EFAC)),
                 ),
-                child: Text(isActive ? 'Suspend' : 'Reactivate'),
+                child: Text(isActive
+                    ? 'user_details.btn_suspend'.tr(ref, fallback: 'Suspend')
+                    : 'user_details.btn_reactivate'.tr(ref, fallback: 'Reactivate')),
               ),
             ],
           ),
@@ -953,12 +982,12 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Delete Member Account',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
+                  Text(
+                    'user_details.delete_title'.tr(ref, fallback: 'Delete Member Account'),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
                   ),
                   Text(
-                    'Permanently remove profile, roles, and records',
+                    'user_details.delete_desc'.tr(ref, fallback: 'Permanently remove profile, roles, and records'),
                     style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
                   ),
                 ],
@@ -968,7 +997,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   _showToast('Account deletion request initiated.');
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
-                child: const Text('Delete User', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                child: Text('user_details.btn_delete_user'.tr(ref, fallback: 'Delete User'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
@@ -1183,7 +1212,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Evaluate Member: $memberName',
+                    'user_details.eval_dialog_title'.tr(ref, fallback: 'Evaluate Member: {name}').replaceAll('{name}', memberName),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -1202,7 +1231,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('EVALUATION PERIOD *', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                    Text('user_details.eval_period_label'.tr(ref, fallback: 'EVALUATION PERIOD *'), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
                     const SizedBox(height: 6),
                     Container(
                       height: 40,
@@ -1229,7 +1258,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                     const SizedBox(height: 14),
 
                     if (indicators.isNotEmpty) ...[
-                      Text('KPI RUBRIC / INDICATOR *', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                      Text('user_details.eval_rubric_label'.tr(ref, fallback: 'KPI RUBRIC / INDICATOR *'), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
                       const SizedBox(height: 6),
                       Container(
                         height: 40,
@@ -1257,7 +1286,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       const SizedBox(height: 14),
                     ],
 
-                    Text('COMPOSITE SCORE (0 - 100%) *', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                    Text('user_details.eval_score_label'.tr(ref, fallback: 'COMPOSITE SCORE (0 - 100%) *'), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
                     const SizedBox(height: 6),
                     TextField(
                       controller: scoreCtrl,
@@ -1272,13 +1301,13 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                     ),
                     const SizedBox(height: 14),
 
-                    Text('EXECUTIVE FEEDBACK & NOTES', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+                    Text('user_details.eval_feedback_label'.tr(ref, fallback: 'EXECUTIVE FEEDBACK & NOTES'), style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600)),
                     const SizedBox(height: 6),
                     TextField(
                       controller: feedbackCtrl,
                       maxLines: 3,
                       decoration: InputDecoration(
-                        hintText: 'Comments, commendations, or areas for performance improvement...',
+                        hintText: 'user_details.eval_feedback_hint'.tr(ref, fallback: 'Comments, commendations, or areas for performance improvement...'),
                         filled: true,
                         fillColor: isDark ? AppColors.surfaceVariantDark : const Color(0xFFF8FAFC),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -1291,7 +1320,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
             actions: [
               TextButton(
                 onPressed: isSaving ? null : () => Navigator.of(ctx).pop(),
-                child: const Text('Cancel'),
+                child: Text('user_details.btn_cancel'.tr(ref, fallback: 'Cancel')),
               ),
               FilledButton.icon(
                 onPressed: isSaving
@@ -1340,7 +1369,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                 icon: isSaving
                     ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.check_rounded, size: 16),
-                label: Text(isSaving ? 'Saving...' : 'Submit Scorecard'),
+                label: Text(isSaving
+                    ? 'user_details.btn_saving_scorecard'.tr(ref, fallback: 'Saving...')
+                    : 'user_details.btn_submit_scorecard'.tr(ref, fallback: 'Submit Scorecard')),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -1370,7 +1401,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Forensic Audit Trail & Security Logs',
+                      'user_details.audit_title'.tr(ref, fallback: 'Forensic Audit Trail & Security Logs'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1378,7 +1409,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       ),
                     ),
                     Text(
-                      'Immutable log of authentication, password changes, and admin updates',
+                      'user_details.audit_subtitle'.tr(ref, fallback: 'Immutable log of authentication, password changes, and admin updates'),
                       style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
                     ),
                   ],
@@ -1408,7 +1439,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Create User', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0050E5))),
+                          Text('user_details.audit_create_action'.tr(ref, fallback: 'Create User'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF0050E5))),
                           Text(
                             DateTime.now().toLocal().toString().split('.').first,
                             style: TextStyle(fontSize: 10, color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8)),
@@ -1417,7 +1448,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Created member account with Member ID "${_sanitizeId(_userData['memberId']?.toString())}"',
+                        'user_details.audit_create_desc'.tr(ref, fallback: 'Created member account with Member ID "{id}"').replaceAll('{id}', _sanitizeId(_userData['memberId']?.toString())),
                         style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155)),
                       ),
                     ],
@@ -1447,7 +1478,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '6-Digit OTP Security & Credentials',
+                      'user_details.otp_card_title'.tr(ref, fallback: '6-Digit OTP Security & Credentials'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -1455,7 +1486,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       ),
                     ),
                     Text(
-                      'Generate one-time passcodes or reset passwords directly',
+                      'user_details.otp_card_subtitle'.tr(ref, fallback: 'Generate one-time passcodes or reset passwords directly'),
                       style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
                     ),
                   ],
@@ -1483,9 +1514,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '6-Digit One-Time Activation Passcode (OTP)',
-                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
+                          Text(
+                            'user_details.otp_section_title'.tr(ref, fallback: '6-Digit One-Time Activation Passcode (OTP)'),
+                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
                           ),
                           const SizedBox(height: 8),
                           SizedBox(
@@ -1494,7 +1525,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                               onPressed: _isGeneratingOtp ? null : _handleGenerateOtp,
                               icon: const Icon(Icons.pin_rounded, size: 14, color: Colors.white),
                               label: Text(
-                                _isGeneratingOtp ? 'Generating...' : 'Generate 6-Digit Reset OTP',
+                                _isGeneratingOtp
+                                    ? 'user_details.btn_generating_otp'.tr(ref, fallback: 'Generating...')
+                                    : 'user_details.btn_generate_otp'.tr(ref, fallback: 'Generate 6-Digit Reset OTP'),
                                 style: const TextStyle(fontSize: 11.5, color: Colors.white, fontWeight: FontWeight.w700),
                               ),
                               style: ElevatedButton.styleFrom(
@@ -1510,10 +1543,10 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
-                            '6-Digit One-Time Activation Passcode (OTP)',
-                            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
+                            'user_details.otp_section_title'.tr(ref, fallback: '6-Digit One-Time Activation Passcode (OTP)'),
+                            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF065F46)),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -1521,7 +1554,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                           onPressed: _isGeneratingOtp ? null : _handleGenerateOtp,
                           icon: const Icon(Icons.pin_rounded, size: 14, color: Colors.white),
                           label: Text(
-                            _isGeneratingOtp ? 'Generating...' : 'Generate 6-Digit Reset OTP',
+                            _isGeneratingOtp
+                                ? 'user_details.btn_generating_otp'.tr(ref, fallback: 'Generating...')
+                                : 'user_details.btn_generate_otp'.tr(ref, fallback: 'Generate 6-Digit Reset OTP'),
                             style: const TextStyle(fontSize: 11.5, color: Colors.white, fontWeight: FontWeight.w700),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -1536,7 +1571,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Generate a secure 6-digit code valid for 15 minutes. Automatically queues to the member\'s email & SMS, or share directly.',
+                  'user_details.otp_desc'.tr(ref, fallback: 'Generate a secure 6-digit code valid for 15 minutes. Automatically queues to the member\'s email & SMS, or share directly.'),
                   style: TextStyle(fontSize: 11, color: isDark ? AppColors.gray400 : const Color(0xFF475569)),
                 ),
 
@@ -1554,7 +1589,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'OTP Code: $_generatedOtp',
+                          'user_details.otp_code_display'.tr(ref, fallback: 'OTP Code: {code}').replaceAll('{code}', _generatedOtp!),
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
@@ -1564,12 +1599,12 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF059669)),
-                          tooltip: 'Copy OTP code',
+                          tooltip: 'user_details.otp_copy_tooltip'.tr(ref, fallback: 'Copy OTP code'),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: _generatedOtp!));
-                            _showToast('OTP copied to clipboard.');
+                            _showToast('user_details.toast_otp_copied'.tr(ref, fallback: 'OTP copied to clipboard.'));
                           },
                         ),
                       ],
@@ -1583,7 +1618,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
 
           // 2. Direct Password Override Sub-section
           Text(
-            'Set New Password Directly (Admin Override)',
+            'user_details.override_title'.tr(ref, fallback: 'Set New Password Directly (Admin Override)'),
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w700,
@@ -1603,9 +1638,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       child: TextField(
                         controller: _passwordController,
                         style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
-                        decoration: const InputDecoration(
-                          hintText: 'e.g. TempPass@2026',
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: InputDecoration(
+                          hintText: 'user_details.override_hint'.tr(ref, fallback: 'e.g. TempPass@2026'),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
                       ),
                     ),
@@ -1620,7 +1655,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            label: const Text('Generate', style: TextStyle(fontSize: 12)),
+                            label: Text('user_details.btn_generate_pass'.tr(ref, fallback: 'Generate'), style: const TextStyle(fontSize: 12)),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -1633,7 +1668,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                             child: Text(
-                              _isResettingPassword ? 'Applying...' : 'Apply Password',
+                              _isResettingPassword
+                                  ? 'user_details.btn_applying_pass'.tr(ref, fallback: 'Applying...')
+                                  : 'user_details.btn_apply_pass'.tr(ref, fallback: 'Apply Password'),
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                             ),
                           ),
@@ -1651,9 +1688,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       child: TextField(
                         controller: _passwordController,
                         style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
-                        decoration: const InputDecoration(
-                          hintText: 'e.g. TempPass@2026',
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: InputDecoration(
+                          hintText: 'user_details.override_hint'.tr(ref, fallback: 'e.g. TempPass@2026'),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         ),
                       ),
                     ),
@@ -1662,7 +1699,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                   OutlinedButton(
                     onPressed: _generateStrongPassword,
                     style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
-                    child: const Text('Generate', style: TextStyle(fontSize: 12)),
+                    child: Text('user_details.btn_generate_pass'.tr(ref, fallback: 'Generate'), style: const TextStyle(fontSize: 12)),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -1672,7 +1709,9 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
                     child: Text(
-                      _isResettingPassword ? 'Applying...' : 'Apply',
+                      _isResettingPassword
+                          ? 'user_details.btn_applying_pass'.tr(ref, fallback: 'Applying...')
+                          : 'user_details.btn_apply_pass'.tr(ref, fallback: 'Apply'),
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ),
@@ -1690,7 +1729,7 @@ class _UserDetailsViewState extends ConsumerState<UserDetailsView> {
               ),
               Expanded(
                 child: Text(
-                  'Email temporary password & first-time sign-in instructions',
+                  'user_details.chk_email_pass'.tr(ref, fallback: 'Email temporary password & first-time sign-in instructions'),
                   style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
                 ),
               ),
