@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../localization/language_provider.dart';
 import '../models/workspace.dart';
 import '../theme/app_colors.dart';
 import 'oz_lang_switcher.dart';
@@ -97,13 +98,13 @@ class DesktopAuthLayout extends ConsumerWidget {
         ? branding.companyWhiteLogoUrl
         : (branding.logoUrl ?? workspace.logoUrl);
 
-    final chipText = branding.loginNoteTitle ?? 'Enterprise Security Portal';
+    final chipText = branding.loginNoteTitle ?? 'auth.security_portal'.tr(ref, fallback: 'Enterprise Security Portal');
     final heroTitle = branding.loginTitle ?? 'Welcome to ${workspace.displayName}';
     final heroDesc = branding.loginNote ??
         branding.loginSubtitle ??
-        'Enter your authorized credentials to access member applications, identity services, and workspace records.';
+        'auth.default_auth_desc'.tr(ref, fallback: 'Enter your authorized credentials to access member applications, identity services, and workspace records.');
     final footerNote = branding.loginNoteFooter ??
-        'Authorized personnel only. All authentication attempts and access events are encrypted, logged, and audited.';
+        'auth.default_auth_footer'.tr(ref, fallback: 'Authorized personnel only. All authentication attempts and access events are encrypted, logged, and audited.');
 
     return Scaffold(
       backgroundColor: const Color(0xFF090D16),
@@ -287,9 +288,9 @@ class DesktopAuthLayout extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildChangeWorkspacePill(context, ref),
-                    const Text(
-                      'Powered by Ozikol BCC',
-                      style: TextStyle(
+                    Text(
+                      'auth.powered_by'.tr(ref, fallback: 'Powered by Business Command Center'),
+                      style: const TextStyle(
                         fontSize: 11.5,
                         color: Colors.white54,
                         fontWeight: FontWeight.w500,
@@ -419,9 +420,9 @@ class DesktopAuthLayout extends ConsumerWidget {
                     ),
                   ],
                   const SizedBox(height: 8),
-                  const Text(
-                    'Powered by Ozikol BCC',
-                    style: TextStyle(
+                  Text(
+                    'auth.powered_by'.tr(ref, fallback: 'Powered by Business Command Center'),
+                    style: const TextStyle(
                       fontSize: 11,
                       color: Colors.white38,
                       fontWeight: FontWeight.w500,
@@ -551,7 +552,7 @@ class DesktopAuthLayout extends ConsumerWidget {
 
   Widget _buildChangeWorkspacePill(BuildContext context, WidgetRef ref) {
     return Tooltip(
-      message: 'Back',
+      message: 'shell.back'.tr(ref, fallback: 'Back'),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -582,14 +583,14 @@ class DesktopAuthLayout extends ConsumerWidget {
               ),
             ],
           ),
-          child: const Row(
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.arrow_back_rounded, size: 14, color: Colors.white),
-              SizedBox(width: 6),
+              const Icon(Icons.arrow_back_rounded, size: 14, color: Colors.white),
+              const SizedBox(width: 6),
               Text(
-                'Change Organization',
-                style: TextStyle(
+                'auth.change_org'.tr(ref, fallback: 'Change Organization'),
+                style: const TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,

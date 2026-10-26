@@ -122,7 +122,7 @@ void main() {
 
       expect(find.text('ENTERPRISE SUITE'), findsOneWidget);
       expect(find.text('Welcome to Enterprise BCC'), findsOneWidget);
-      expect(find.text('Powered by Ozikol BCC'), findsOneWidget);
+      expect(find.text('Powered by Business Command Center'), findsOneWidget);
       expect(find.text('Credentials Content'), findsOneWidget);
       expect(find.byTooltip('Back'), findsOneWidget);
     });

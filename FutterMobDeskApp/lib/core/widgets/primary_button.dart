@@ -51,13 +51,19 @@ class PrimaryButton extends StatelessWidget {
           icon!,
           const SizedBox(width: 8),
         ],
-        Text(
-          text,
-          style: TextStyle(
-            color: effectiveText,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
+        // Flexible + ellipsis prevents right overflow when the spinner and a long (or translated) label share the row.
+        Flexible(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: effectiveText,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
           ),
         ),
       ],
