@@ -2,19 +2,21 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-identity-audit-logs',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="identity-page">
       <app-page-header
-        eyebrow="GOVERNANCE AUDITING"
+        [eyebrow]="'identity.audit.eyebrow' | translate:'GOVERNANCE AUDITING'"
         icon="history"
-        title="Security Login Audit Stream"
-        subtitle="Review account authentication events, suspicious logins, MFA challenge retries, and active session revocations."
+        [title]="'identity.audit.title' | translate:'Security Login Audit Stream'"
+        [subtitle]="'identity.audit.subtitle' | translate:'Review account authentication events, suspicious logins, MFA challenge retries, and active session revocations.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -24,24 +26,24 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         <div class="widget-head">
           <div class="widget-title-wrap">
             <span class="material-symbols-outlined text-purple">policy</span>
-            <h2 class="widget-title">Authentication Events Stream (Latest 250 records)</h2>
+            <h2 class="widget-title">{{ 'identity.audit.events_stream' | translate:'Authentication Events Stream (Latest 250 records)' }}</h2>
           </div>
         </div>
         <div class="widget-body" style="padding:0;">
           <div *ngIf="logs.length === 0 && !isLoading" class="empty-state">
             <span class="material-symbols-outlined">gpp_good</span>
-            <p>No login audit events recorded in the system.</p>
+            <p>{{ 'identity.audit.no_records' | translate:'No login audit events recorded in the system.' }}</p>
           </div>
 
           <div class="table-responsive" *ngIf="logs.length > 0">
             <table class="table-clean">
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Account Email</th>
-                  <th>Security Event Status</th>
-                  <th>Client IP Address</th>
-                  <th>User Agent Header</th>
+                  <th>{{ 'identity.audit.th_timestamp' | translate:'Timestamp' }}</th>
+                  <th>{{ 'identity.audit.th_email' | translate:'Account Email' }}</th>
+                  <th>{{ 'identity.audit.th_status' | translate:'Security Event Status' }}</th>
+                  <th>{{ 'identity.audit.th_ip' | translate:'Client IP Address' }}</th>
+                  <th>{{ 'identity.audit.th_ua' | translate:'User Agent Header' }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -149,15 +151,20 @@ export class IdentityAuditLogsComponent implements OnInit {
   logs: any[] = [];
   isSuperAdmin = false;
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'Refresh Logs',
-      icon: 'refresh',
-      action: () => { this.loadLogs(); }
-    }
-  ];
+  constructor(
+    private api: ApiService,
+    private translationService: TranslationService
+  ) {}
 
-  constructor(private api: ApiService) {}
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('identity.audit.btn_refresh', 'Refresh Logs'),
+        icon: 'refresh',
+        action: () => { this.loadLogs(); }
+      }
+    ];
+  }
 
   ngOnInit(): void {
     this.checkCurrentUserRole();

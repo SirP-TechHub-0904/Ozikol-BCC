@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 /**
@@ -72,17 +74,17 @@ export interface FeatureScopeOption {
 @Component({
   selector: 'app-identity-invitation-create',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="identity-create-page">
       <!-- Standard BCC Page Header with Back Navigation -->
       <app-page-header
-        eyebrow="IDENTITY ONBOARDING"
+        [eyebrow]="'identity.create.eyebrow' | translate:'IDENTITY ONBOARDING'"
         icon="person_add"
-        title="Issue Workspace Onboarding Invitation"
-        subtitle="Dispatch secure cryptographic tokens to pre-provision enterprise system roles and modular capability scopes for new personnel."
+        [title]="'identity.create.title' | translate:'Issue Workspace Onboarding Invitation'"
+        [subtitle]="'identity.create.subtitle' | translate:'Dispatch secure cryptographic tokens to pre-provision enterprise system roles and modular capability scopes for new personnel.'"
         backUrl="/identity/console/invitations"
-        backText="Back to Registry"
+        [backText]="'identity.create.back_text' | translate:'Back to Registry'"
         [buttons]="headerButtons"
         [loading]="isSending"
       ></app-page-header>
@@ -93,26 +95,26 @@ export interface FeatureScopeOption {
           <span class="material-symbols-outlined">mark_email_read</span>
         </div>
         <div class="success-content">
-          <h3>Invitation Dispatched Successfully</h3>
+          <h3>{{ 'identity.create.success_title' | translate:'Invitation Dispatched Successfully' }}</h3>
           <p>
-            An onboarding email has been enqueued for <strong>{{ dispatchedEmail }}</strong> with pre-assigned role <strong>{{ dispatchedRole }}</strong>.
-            You can also copy the direct registration link below to share directly via communication channels:
+            {{ 'identity.create.success_desc' | translate:'An onboarding email has been enqueued for' }} <strong>{{ dispatchedEmail }}</strong> {{ 'identity.create.with_role' | translate:'with pre-assigned role' }} <strong>{{ dispatchedRole }}</strong>.
+            {{ 'identity.create.copy_hint' | translate:'You can also copy the direct registration link below to share directly via communication channels:' }}
           </p>
           <div class="link-copy-box">
             <input type="text" readonly [value]="dispatchedLink" class="link-input" #linkInput />
             <button type="button" class="btn btn-primary btn-copy" (click)="copyLink(linkInput)">
               <span class="material-symbols-outlined">{{ hasCopied ? 'check' : 'content_copy' }}</span>
-              <span>{{ hasCopied ? 'Copied Link' : 'Copy Direct Link' }}</span>
+              <span>{{ hasCopied ? ('identity.create.btn_copied' | translate:'Copied Link') : ('identity.create.btn_copy_link' | translate:'Copy Direct Link') }}</span>
             </button>
           </div>
           <div class="success-actions">
             <button type="button" class="btn btn-outline" (click)="resetForm()">
               <span class="material-symbols-outlined">add_circle</span>
-              <span>Invite Another Member</span>
+              <span>{{ 'identity.create.btn_invite_another' | translate:'Invite Another Member' }}</span>
             </button>
             <a routerLink="/identity/console/invitations" class="btn btn-outline">
               <span class="material-symbols-outlined">format_list_bulleted</span>
-              <span>View Onboarding Registry</span>
+              <span>{{ 'identity.create.btn_view_registry' | translate:'View Onboarding Registry' }}</span>
             </a>
           </div>
         </div>
@@ -128,8 +130,8 @@ export interface FeatureScopeOption {
               <div class="card-head-title">
                 <span class="material-symbols-outlined text-blue">alternate_email</span>
                 <div>
-                  <h3 class="card-title">Recipient &amp; Workspace Membership</h3>
-                  <p class="card-subtitle">Specify recipient identity details, organization categorization, and invitation duration.</p>
+                  <h3 class="card-title">{{ 'identity.create.card0_title' | translate:'Recipient & Workspace Membership' }}</h3>
+                  <p class="card-subtitle">{{ 'identity.create.card0_subtitle' | translate:'Specify recipient identity details, organization categorization, and invitation duration.' }}</p>
                 </div>
               </div>
             </div>
@@ -137,7 +139,7 @@ export interface FeatureScopeOption {
             <div class="card-body">
               <div class="form-row">
                 <div class="form-group flex-1">
-                  <label class="form-label" for="inviteEmail">Recipient Email Address <span class="required">*</span></label>
+                  <label class="form-label" for="inviteEmail">{{ 'identity.create.lbl_email' | translate:'Recipient Email Address' }} <span class="required">*</span></label>
                   <div class="input-with-icon">
                     <span class="material-symbols-outlined input-icon">mail</span>
                     <input
@@ -150,27 +152,27 @@ export interface FeatureScopeOption {
                       required
                     />
                   </div>
-                  <span class="field-hint">The invitation token and activation link will be dispatched to this mailbox.</span>
+                  <span class="field-hint">{{ 'identity.create.hint_email' | translate:'The invitation token and activation link will be dispatched to this mailbox.' }}</span>
                 </div>
 
                 <div class="form-group flex-1">
-                  <label class="form-label" for="inviteCategory">Target Member Category</label>
+                  <label class="form-label" for="inviteCategory">{{ 'identity.create.lbl_category' | translate:'Target Member Category' }}</label>
                   <div class="input-with-icon">
                     <span class="material-symbols-outlined input-icon">category</span>
                     <select id="inviteCategory" class="form-control" [(ngModel)]="selectedCategoryId">
-                      <option [ngValue]="null">Standard / General Member</option>
+                      <option [ngValue]="null">{{ 'identity.create.opt_standard_member' | translate:'Standard / General Member' }}</option>
                       <option *ngFor="let cat of userCategories" [ngValue]="cat.id">
                         {{ cat.name }} {{ cat.code ? '(' + cat.code + ')' : '' }}
                       </option>
                     </select>
                   </div>
-                  <span class="field-hint">Pre-links the onboarded account to a directory group.</span>
+                  <span class="field-hint">{{ 'identity.create.hint_category' | translate:'Pre-links the onboarded account to a directory group.' }}</span>
                 </div>
               </div>
 
               <div class="form-row mt-3">
                 <div class="form-group flex-1">
-                  <label class="form-label">Invitation Expiration Window</label>
+                  <label class="form-label">{{ 'identity.create.lbl_expiration' | translate:'Invitation Expiration Window' }}</label>
                   <div class="pill-selector">
                     <button
                       type="button"
@@ -179,7 +181,7 @@ export interface FeatureScopeOption {
                       (click)="expirationDays = 7"
                     >
                       <span class="material-symbols-outlined">timelapse</span>
-                      <span>7 Days (Recommended)</span>
+                      <span>{{ 'identity.create.exp_7' | translate:'7 Days (Recommended)' }}</span>
                     </button>
                     <button
                       type="button"
@@ -187,7 +189,7 @@ export interface FeatureScopeOption {
                       [class.active]="expirationDays === 14"
                       (click)="expirationDays = 14"
                     >
-                      <span>14 Days</span>
+                      <span>{{ 'identity.create.exp_14' | translate:'14 Days' }}</span>
                     </button>
                     <button
                       type="button"
@@ -195,23 +197,23 @@ export interface FeatureScopeOption {
                       [class.active]="expirationDays === 30"
                       (click)="expirationDays = 30"
                     >
-                      <span>30 Days</span>
+                      <span>{{ 'identity.create.exp_30' | translate:'30 Days' }}</span>
                     </button>
                   </div>
                 </div>
               </div>
 
               <div class="form-group mt-3">
-                <label class="form-label" for="customMessage">Welcome Note / Administrator Message (Optional)</label>
+                <label class="form-label" for="customMessage">{{ 'identity.create.lbl_custom_message' | translate:'Welcome Note / Administrator Message (Optional)' }}</label>
                 <textarea
                   id="customMessage"
                   rows="2"
                   class="form-control textarea"
-                  placeholder="e.g. Welcome to our enterprise workspace! Please establish your credentials to access your designated modules."
+                  [placeholder]="'identity.create.placeholder_custom_message' | translate:'e.g. Welcome to our enterprise workspace! Please establish your credentials to access your designated modules.'"
                   [(ngModel)]="customMessage"
                   (ngModelChange)="onFormChange()"
                 ></textarea>
-                <span class="field-hint">This personal message will be highlighted inside the onboarding invitation email.</span>
+                <span class="field-hint">{{ 'identity.create.hint_custom_message' | translate:'This personal message will be highlighted inside the onboarding invitation email.' }}</span>
               </div>
             </div>
           </section>
@@ -222,8 +224,8 @@ export interface FeatureScopeOption {
               <div class="card-head-title">
                 <span class="material-symbols-outlined text-purple">badge</span>
                 <div>
-                  <h3 class="card-title">Card 1: Primary Authority Role</h3>
-                  <p class="card-subtitle">Choose the user's primary identity persona. Grouped into System Governance and Modular Feature Authorities.</p>
+                  <h3 class="card-title">{{ 'identity.create.card1_title' | translate:'Card 1: Primary Authority Role' }}</h3>
+                  <p class="card-subtitle">{{ 'identity.create.card1_subtitle' | translate:'Choose the user\'s primary identity persona. Grouped into System Governance and Modular Feature Authorities.' }}</p>
                 </div>
               </div>
 
@@ -235,7 +237,7 @@ export interface FeatureScopeOption {
                   [class.active]="activeGroupFilter === 'All'"
                   (click)="activeGroupFilter = 'All'"
                 >
-                  <span>All</span>
+                  <span>{{ 'lbl.all' | translate:'All' }}</span>
                   <span class="tab-count">{{ availableRoles.length }}</span>
                 </button>
                 <button
@@ -244,7 +246,7 @@ export interface FeatureScopeOption {
                   [class.active]="activeGroupFilter === RoleGroup.System"
                   (click)="activeGroupFilter = RoleGroup.System"
                 >
-                  <span>System</span>
+                  <span>{{ 'identity.roles.tab_authority' | translate:'System' }}</span>
                   <span class="tab-count">{{ systemRoles.length }}</span>
                 </button>
                 <button
@@ -253,7 +255,7 @@ export interface FeatureScopeOption {
                   [class.active]="activeGroupFilter === RoleGroup.Feature"
                   (click)="activeGroupFilter = RoleGroup.Feature"
                 >
-                  <span>Feature Authority</span>
+                  <span>{{ 'identity.roles.group1_badge' | translate:'Feature Authority' }}</span>
                   <span class="tab-count">{{ featureRoles.length }}</span>
                 </button>
               </div>
@@ -265,9 +267,9 @@ export interface FeatureScopeOption {
                 <div class="role-group-divider">
                   <div class="divider-left">
                     <span class="material-symbols-outlined text-purple">admin_panel_settings</span>
-                    <span class="group-header-text">System &amp; Workspace Governance</span>
+                    <span class="group-header-text">{{ 'identity.roles.group1_title' | translate:'System & Workspace Governance' }}</span>
                   </div>
-                  <span class="group-header-pill">Organization Tier</span>
+                  <span class="group-header-pill">{{ 'identity.create.tier_org' | translate:'Organization Tier' }}</span>
                 </div>
 
                 <div class="roles-selection-grid">
@@ -288,11 +290,11 @@ export interface FeatureScopeOption {
                     <div class="role-card-footer">
                       <span class="auto-link-hint" *ngIf="role.name === 'Admin'">
                         <span class="material-symbols-outlined">auto_mode</span>
-                        <span>Sets Global Edit</span>
+                        <span>{{ 'identity.create.sets_global_edit' | translate:'Sets Global Edit' }}</span>
                       </span>
                       <span class="auto-link-hint text-slate" *ngIf="role.name === 'Member'">
                         <span class="material-symbols-outlined">dashboard</span>
-                        <span>Member Portal Access</span>
+                        <span>{{ 'identity.create.member_portal_access' | translate:'Member Portal Access' }}</span>
                       </span>
                       <div class="role-radio-indicator">
                         <span class="material-symbols-outlined" *ngIf="selectedRole === role.name">check_circle</span>
@@ -308,9 +310,9 @@ export interface FeatureScopeOption {
                 <div class="role-group-divider">
                   <div class="divider-left">
                     <span class="material-symbols-outlined text-emerald">extension</span>
-                    <span class="group-header-text">Modular Capability Feature Authorities</span>
+                    <span class="group-header-text">{{ 'identity.create.modular_capability_title' | translate:'Modular Capability Feature Authorities' }}</span>
                   </div>
-                  <span class="group-header-pill emerald">Active Modules (2)</span>
+                  <span class="group-header-pill emerald">{{ 'identity.create.active_modules' | translate:'Active Modules' }} (2)</span>
                 </div>
 
                 <div class="roles-selection-grid">
@@ -331,7 +333,7 @@ export interface FeatureScopeOption {
                     <div class="role-card-footer">
                       <span class="auto-link-hint emerald">
                         <span class="material-symbols-outlined">tune</span>
-                        <span>Feature Edit</span>
+                        <span>{{ 'identity.roles.operational_level' | translate:'Feature Edit' }}</span>
                       </span>
                       <div class="role-radio-indicator">
                         <span class="material-symbols-outlined" *ngIf="selectedRole === role.name">check_circle</span>
@@ -350,11 +352,11 @@ export interface FeatureScopeOption {
               <div class="card-head-title">
                 <span class="material-symbols-outlined text-emerald">tune</span>
                 <div>
-                  <h3 class="card-title">Card 2: Operational Edit Access Level</h3>
+                  <h3 class="card-title">{{ 'identity.create.card2_title' | translate:'Card 2: Operational Edit Access Level' }}</h3>
                   <p class="card-subtitle">
                     {{ selectedRole === 'Member' 
-                       ? 'Standard members do not hold operational administrative edit roles.' 
-                       : 'Controls the user operational write power: tenant-wide global edit, targeted module edit, or view-only auditing.' }}
+                       ? ('identity.create.member_no_action_role' | translate:'Standard members do not hold operational administrative edit roles.') 
+                       : ('identity.create.card2_subtitle' | translate:'Controls the user operational write power: tenant-wide global edit, targeted module edit, or view-only auditing.') }}
                   </p>
                 </div>
               </div>
@@ -371,15 +373,14 @@ export interface FeatureScopeOption {
                   <span class="material-symbols-outlined">dashboard_customize</span>
                 </div>
                 <div class="member-info-text">
-                  <h4>Dedicated Member Workspace Portal</h4>
+                  <h4>{{ 'identity.create.dedicated_member_portal' | translate:'Dedicated Member Workspace Portal' }}</h4>
                   <p>
-                    A <strong>Member</strong> is a standard workspace user with their own dedicated user dashboard and workspace applications.
-                    They do not hold administrative or operational editing roles within the BCC Administration Console.
+                    {{ 'identity.create.member_portal_desc' | translate:'A Member is a standard workspace user with their own dedicated user dashboard and workspace applications. They do not hold administrative or operational editing roles within the BCC Administration Console.' }}
                   </p>
                   <div class="member-features-pills">
-                    <span class="pill-feat"><span class="material-symbols-outlined">check</span> Authenticated Member Dashboard</span>
-                    <span class="pill-feat"><span class="material-symbols-outlined">check</span> Personal Profile &amp; 2FA</span>
-                    <span class="pill-feat"><span class="material-symbols-outlined">check</span> Member Directory Presence</span>
+                    <span class="pill-feat"><span class="material-symbols-outlined">check</span> {{ 'identity.create.auth_member_dashboard' | translate:'Authenticated Member Dashboard' }}</span>
+                    <span class="pill-feat"><span class="material-symbols-outlined">check</span> {{ 'identity.create.personal_profile_2fa' | translate:'Personal Profile & 2FA' }}</span>
+                    <span class="pill-feat"><span class="material-symbols-outlined">check</span> {{ 'identity.create.member_directory_presence' | translate:'Member Directory Presence' }}</span>
                   </div>
                 </div>
               </div>
@@ -494,8 +495,8 @@ export interface FeatureScopeOption {
               <div class="card-head-title">
                 <span class="material-symbols-outlined text-indigo">shield</span>
                 <div>
-                  <h3 class="card-title">Governance &amp; Access Summary</h3>
-                  <p class="card-subtitle">Real-time breakdown of assigned authorities upon onboarding.</p>
+                  <h3 class="card-title">{{ 'identity.create.preview_title' | translate:'Governance & Access Summary' }}</h3>
+                  <p class="card-subtitle">{{ 'identity.create.preview_subtitle' | translate:'Real-time breakdown of assigned authorities upon onboarding.' }}</p>
                 </div>
               </div>
             </div>
@@ -510,7 +511,7 @@ export interface FeatureScopeOption {
                   <div class="live-role-name">{{ selectedRole }}</div>
                   <div class="live-role-tier">
                     {{ currentRoleObj?.tier || 'Standard Member' }} &bull;
-                    {{ currentRoleObj?.group === RoleGroup.System ? 'System Tier' : 'Feature Authority' }}
+                    {{ currentRoleObj?.group === RoleGroup.System ? ('identity.roles.system_authority' | translate:'System Authority') : ('identity.roles.operational_level' | translate:'Feature Authority') }}
                   </div>
                 </div>
               </div>
@@ -519,7 +520,7 @@ export interface FeatureScopeOption {
               <div class="live-scope-banner mt-3" [ngClass]="getActionBadgeClass()">
                 <span class="material-symbols-outlined">{{ getActionIcon() }}</span>
                 <div>
-                  <strong>{{ selectedRole === 'Member' ? 'Workspace Surface:' : 'Edit Access Level:' }}</strong>
+                  <strong>{{ selectedRole === 'Member' ? ('identity.create.workspace_surface' | translate:'Workspace Surface:') : ('identity.create.edit_access_level' | translate:'Edit Access Level:') }}</strong>
                   <span>{{ getSelectedActionRoleLabel() }}</span>
                   <span *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.FeatureEditor"> &mdash; {{ getSelectedScopeLabel() }}</span>
                 </div>
@@ -529,20 +530,20 @@ export interface FeatureScopeOption {
               <div class="permissions-list mt-3">
                 <div class="perm-title text-good">
                   <span class="material-symbols-outlined">check_circle</span>
-                  <span>Permitted Capabilities</span>
+                  <span>{{ 'identity.create.permitted_capabilities' | translate:'Permitted Capabilities' }}</span>
                 </div>
                 <ul class="perm-items">
                   <li *ngIf="selectedRole === 'Member'">
-                    Full access to authenticated personal workspace apps and member dashboard
+                    {{ 'identity.create.perm_member' | translate:'Full access to authenticated personal workspace apps and member dashboard' }}
                   </li>
                   <li *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.GlobalEditor">
-                    Full CRUD create, edit, and publish permissions across all workspace modules
+                    {{ 'identity.create.perm_global' | translate:'Full CRUD create, edit, and publish permissions across all workspace modules' }}
                   </li>
                   <li *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.FeatureEditor">
-                    Author, update, and publish records within {{ getSelectedScopeLabel() }}
+                    {{ 'identity.create.perm_feature' | translate:'Author, update, and publish records within designated capability module' }}
                   </li>
                   <li *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.Readonly">
-                    Inspect dashboards, member rosters, and activity logs without edit rights
+                    {{ 'identity.create.perm_readonly' | translate:'Inspect dashboards, member rosters, and activity logs without edit rights' }}
                   </li>
                   <li *ngFor="let act of currentRoleObj?.allowedActions">
                     {{ act }}
@@ -554,14 +555,14 @@ export interface FeatureScopeOption {
               <div class="permissions-list mt-3">
                 <div class="perm-title text-warn">
                   <span class="material-symbols-outlined">block</span>
-                  <span>Restricted Boundaries</span>
+                  <span>{{ 'identity.create.restricted_boundaries' | translate:'Restricted Boundaries' }}</span>
                 </div>
                 <ul class="perm-items restricted">
                   <li *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.Readonly">
-                    Strictly prohibited from modifying, saving, or deleting workspace records
+                    {{ 'identity.create.rest_readonly' | translate:'Strictly prohibited from modifying, saving, or deleting workspace records' }}
                   </li>
                   <li *ngIf="selectedRole !== 'Member' && selectedActionRole === ActionRoleType.FeatureEditor">
-                    Read-only access across other modules outside {{ getSelectedScopeLabel() }}
+                    {{ 'identity.create.rest_feature' | translate:'Read-only access across other modules outside assigned feature scope' }}
                   </li>
                   <li *ngFor="let rest of currentRoleObj?.restrictedActions">
                     {{ rest }}
@@ -571,11 +572,11 @@ export interface FeatureScopeOption {
 
               <div class="meta-stats-row mt-3">
                 <div class="meta-stat">
-                  <span class="meta-lbl">Token Lifetime</span>
-                  <span class="meta-val">{{ expirationDays }} Days</span>
+                  <span class="meta-lbl">{{ 'identity.create.token_lifetime' | translate:'Token Lifetime' }}</span>
+                  <span class="meta-val">{{ expirationDays }} {{ 'lbl.days' | translate:'Days' }}</span>
                 </div>
                 <div class="meta-stat">
-                  <span class="meta-lbl">Target Category</span>
+                  <span class="meta-lbl">{{ 'identity.create.target_category' | translate:'Target Category' }}</span>
                   <span class="meta-val">{{ getSelectedCategoryName() }}</span>
                 </div>
               </div>
@@ -588,8 +589,8 @@ export interface FeatureScopeOption {
               <div class="card-head-title">
                 <span class="material-symbols-outlined text-purple">mark_as_unread</span>
                 <div>
-                  <h3 class="card-title">Live Email Dispatch Preview</h3>
-                  <p class="card-subtitle">Real-time simulation of the invitation email dispatched to the recipient.</p>
+                  <h3 class="card-title">{{ 'identity.create.email_preview_title' | translate:'Live Email Dispatch Preview' }}</h3>
+                  <p class="card-subtitle">{{ 'identity.create.email_preview_sub' | translate:'Real-time simulation of the invitation email dispatched to the recipient.' }}</p>
                 </div>
               </div>
             </div>
@@ -599,26 +600,26 @@ export interface FeatureScopeOption {
                 <div class="email-mockup-header">
                   <div class="brand-pill">
                     <span class="material-symbols-outlined brand-icon">token</span>
-                    <span>Workspace Portal</span>
+                    <span>{{ 'identity.create.brand_portal' | translate:'Workspace Portal' }}</span>
                   </div>
                   <span class="email-date-mock">{{ today | date:'mediumDate' }}</span>
                 </div>
 
                 <div class="email-mockup-body">
-                  <h4 class="mock-heading">Workspace Onboarding Invitation</h4>
+                  <h4 class="mock-heading">{{ 'identity.create.email_heading' | translate:'Workspace Onboarding Invitation' }}</h4>
                   <p class="mock-intro">
-                    Hello, you have been invited to join the <strong>Workspace Portal</strong> as a
+                    {{ 'identity.create.email_greeting' | translate:'Hello, you have been invited to join the Workspace Portal as a' }}
                     <span class="mock-role-pill" [ngClass]="currentRoleObj?.badgeClass">
                       {{ selectedRole }}
                     </span>
                     <ng-container *ngIf="selectedRole !== 'Member'">
-                      with <strong>{{ getSelectedActionRoleLabel() }}</strong>
+                      {{ 'identity.create.with' | translate:'with' }} <strong>{{ getSelectedActionRoleLabel() }}</strong>
                       <span *ngIf="selectedActionRole === ActionRoleType.FeatureEditor">
-                        for <strong>{{ getSelectedScopeLabel() }}</strong>
+                        {{ 'identity.create.for' | translate:'for' }} <strong>{{ getSelectedScopeLabel() }}</strong>
                       </span>
                     </ng-container>
                     <ng-container *ngIf="selectedRole === 'Member'">
-                      with access to your personal workspace portal apps and dashboard.
+                      {{ 'identity.create.member_email_access' | translate:'with access to your personal workspace portal apps and dashboard.' }}
                     </ng-container>
                   </p>
 
@@ -628,12 +629,12 @@ export interface FeatureScopeOption {
 
                   <div class="mock-cta-wrap">
                     <div class="mock-btn-cta">
-                      <span>Accept Invitation &amp; Register</span>
+                      <span>{{ 'identity.create.btn_accept_register' | translate:'Accept Invitation & Register' }}</span>
                     </div>
                   </div>
 
                   <p class="mock-footer-note">
-                    This onboarding invitation link is cryptographic, private, and valid for {{ expirationDays }} days.
+                    {{ 'identity.create.crypto_validity_note' | translate:'This onboarding invitation link is cryptographic, private, and valid for' }} {{ expirationDays }} {{ 'lbl.days' | translate:'days' }}.
                   </p>
                 </div>
               </div>
@@ -646,7 +647,7 @@ export interface FeatureScopeOption {
                   routerLink="/identity/console/invitations"
                   [disabled]="isSending"
                 >
-                  Discard
+                  {{ 'btn.discard' | translate:'Discard' }}
                 </button>
                 <button
                   type="button"
@@ -656,7 +657,7 @@ export interface FeatureScopeOption {
                 >
                   <span class="material-symbols-outlined" *ngIf="!isSending">send</span>
                   <span class="material-symbols-outlined spin-icon" *ngIf="isSending">progress_activity</span>
-                  <span>{{ isSending ? 'Enqueuing Dispatch...' : 'Dispatch Invitation' }}</span>
+                  <span>{{ isSending ? ('identity.create.dispatching' | translate:'Enqueuing Dispatch...') : ('identity.create.btn_dispatch' | translate:'Dispatch Invitation') }}</span>
                 </button>
               </div>
             </div>
@@ -1786,18 +1787,21 @@ export class IdentityInvitationCreateComponent implements OnInit {
     }
   ];
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'View Registry',
-      icon: 'format_list_bulleted',
-      routerLink: '/identity/console/invitations'
-    }
-  ];
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('identity.create.btn_view_registry', 'View Registry'),
+        icon: 'format_list_bulleted',
+        routerLink: '/identity/console/invitations'
+      }
+    ];
+  }
 
   constructor(
     private api: ApiService,
     private toast: ToastService,
-    private router: Router
+    private router: Router,
+    private translationService: TranslationService
   ) {}
 
   ngOnInit(): void {
