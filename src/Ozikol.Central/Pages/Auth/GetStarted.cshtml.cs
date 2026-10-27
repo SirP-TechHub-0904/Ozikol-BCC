@@ -76,21 +76,6 @@ namespace Ozikol.Central.Pages
         [Display(Name = "Referral Code")]
         [MaxLength(100)]
         public string? ReferralCode { get; set; }
-
-        /// <summary>
-        /// Optional add-on features selected by the user during Step 2 of registration.
-        /// </summary>
-        public List<Guid> SelectedFeatureIds { get; set; } = new();
-
-        /// <summary>
-        /// JSON-serialized dictionary mapping selected feature IDs to their chosen billing frequency ("Monthly" or "Yearly").
-        /// </summary>
-        public string? FeatureCadencesJson { get; set; }
-
-        /// <summary>
-        /// Promotional discount voucher / coupon code entered in Step 2.
-        /// </summary>
-        public string? CouponCode { get; set; }
     }
 
     /// <summary>
@@ -150,14 +135,9 @@ namespace Ozikol.Central.Pages
         public GetStartedInputModel Input { get; set; } = new();
 
         /// <summary>
-        /// Core platform features automatically included in the base subscription plan.
+        /// All active platform features, shown display-only in Step 2 (no billing or selection).
         /// </summary>
-        public List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> CompulsoryFeatures { get; set; } = new();
-
-        /// <summary>
-        /// Optional add-on capabilities available for selection during Step 2.
-        /// </summary>
-        public List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> AddonFeatures { get; set; } = new();
+        public List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> AllFeatures { get; set; } = new();
 
         /// <summary>
         /// Gets the public Google reCAPTCHA site key for widget rendering.
@@ -178,16 +158,6 @@ namespace Ozikol.Central.Pages
         /// Gets or sets the visual currency symbol for the current user (e.g. $, ₦, £, €).
         /// </summary>
         public string ActiveCurrencySymbol { get; set; } = "$";
-
-        /// <summary>
-        /// Gets or sets the localized annual base plan price.
-        /// </summary>
-        public decimal BasePlanAnnualPrice { get; set; } = 199.00m;
-
-        /// <summary>
-        /// Gets or sets the formatted annual base plan price string (e.g. "$199.00/yr", "₦250,000/yr").
-        /// </summary>
-        public string FormattedBasePlanPrice { get; set; } = "$199.00/yr";
 
         /// <summary>
         /// User-friendly error message if onboarding or validation encounters an issue.
@@ -215,17 +185,12 @@ namespace Ozikol.Central.Pages
         /// <param name="refCode">Optional partner referral code.</param>
         /// <param name="email">Optional pre-filled email from social identity.</param>
         /// <param name="name">Optional pre-filled full name from social identity.</param>
-        /// <param name="coupon">Optional promotional voucher or coupon code.</param>
-        public async Task OnGetAsync(string? refCode = null, string? email = null, string? name = null, string? org = null, string? coupon = null)
+        /// <param name="org">Optional pre-filled organization name.</param>
+        public async Task OnGetAsync(string? refCode = null, string? email = null, string? name = null, string? org = null)
         {
             if (!string.IsNullOrWhiteSpace(refCode))
             {
                 Input.ReferralCode = refCode.Trim();
-            }
-
-            if (!string.IsNullOrWhiteSpace(coupon))
-            {
-                Input.CouponCode = coupon.Trim();
             }
 
             if (!string.IsNullOrWhiteSpace(email))
@@ -249,14 +214,9 @@ namespace Ozikol.Central.Pages
 
         private async Task LoadCatalogFeaturesAsync()
         {
-            // 1. Resolve user's localized currency via GeoLocation / Cookie / Request headers
+            // 1. Resolve user's localized currency (kept for downstream services; not shown on this page)
             ActiveCurrencyCode = _currencyService.ResolveCurrencyCodeFromRequest(HttpContext, null);
-            var currencyInfo = _currencyService.ResolveCurrency(ActiveCurrencyCode);
-            ActiveCurrencySymbol = currencyInfo.Symbol;
-
-            var priceBook = _currencyService.GetPriceBook(ActiveCurrencyCode);
-            BasePlanAnnualPrice = priceBook.AnnualPrice;
-            FormattedBasePlanPrice = _currencyService.Format(BasePlanAnnualPrice, ActiveCurrencyCode, compact: false) + "/yr";
+            ActiveCurrencySymbol = _currencyService.ResolveCurrency(ActiveCurrencyCode).Symbol;
 
             // 2. Resolve default trial days from MasterPlatformSettings table or fallback configuration
             try
@@ -283,25 +243,8 @@ namespace Ozikol.Central.Pages
                 .ThenBy(f => f.Name)
                 .ToListAsync();
 
-            CompulsoryFeatures = features.Where(f => f.IsCompulsory).ToList();
-            AddonFeatures = features.Where(f => !f.IsCompulsory).ToList();
-        }
-
-        /// <summary>
-        /// AJAX handler to validate promotional coupon codes in real time.
-        /// </summary>
-        /// <param name="code">Promo coupon code string (e.g. "LAUNCH100").</param>
-        /// <returns>JSON result with validity, discount percentage, and message.</returns>
-        public async Task<IActionResult> OnGetValidateCouponAsync(string code)
-        {
-            var result = await _onboardingService.ValidateCouponAsync(code);
-            return new JsonResult(new
-            {
-                valid = result.IsValid,
-                discountPercent = result.DiscountPercent,
-                isFree = result.DiscountPercent >= 100.00m,
-                message = result.Message
-            });
+            // Display-only list: every active feature, no compulsory/optional distinction shown to the visitor
+            AllFeatures = features;
         }
 
         /// <summary>
@@ -414,19 +357,6 @@ namespace Ozikol.Central.Pages
             string firstName = nameParts.Length > 0 ? nameParts[0] : "Administrator";
             string lastName = nameParts.Length > 1 ? string.Join(" ", nameParts.Skip(1)) : "Admin";
 
-            var cadencesDict = new Dictionary<Guid, string>();
-            if (!string.IsNullOrWhiteSpace(Input.FeatureCadencesJson))
-            {
-                try
-                {
-                    cadencesDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<Guid, string>>(Input.FeatureCadencesJson) ?? new();
-                }
-                catch
-                {
-                    // Fallback to empty dictionary if malformed
-                }
-            }
-
             var onboardingRequest = new TenantOnboardingRequest
             {
                 OrganizationName = Input.OrganizationName.Trim(),
@@ -438,10 +368,7 @@ namespace Ozikol.Central.Pages
                 PhoneNumber = string.IsNullOrWhiteSpace(Input.PhoneNumber) ? null : Input.PhoneNumber.Trim(),
                 ReferredBy = string.IsNullOrWhiteSpace(Input.ReferralCode) ? null : Input.ReferralCode.Trim(),
                 Sector = string.IsNullOrWhiteSpace(Input.OrganizationType) ? "Business & Enterprise" : Input.OrganizationType.Trim(),
-                SelectedFeatureIds = Input.SelectedFeatureIds ?? new List<Guid>(),
-                SelectedFeatureCadences = cadencesDict,
-                TrialDays = TrialDays > 0 ? TrialDays : 14,
-                CouponCode = string.IsNullOrWhiteSpace(Input.CouponCode) ? null : Input.CouponCode.Trim()
+                TrialDays = TrialDays > 0 ? TrialDays : 14
             };
 
             _logger.LogInformation("Initializing sovereign workspace registration for [{WorkspaceSlug}] - {OrgName}", Input.WorkspaceSlug, Input.OrganizationName);
