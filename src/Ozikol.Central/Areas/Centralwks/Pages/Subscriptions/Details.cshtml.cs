@@ -441,6 +441,113 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
         }
 
         /// <summary>
+        /// Handles HTTP POST requests to set expiration for a specific modular capability to a defined number of days from now.
+        /// Allows testing renewal triggers (e.g. 2 days for imminent warning, 30 days for monthly cycle, 365 days for annual, -1 day for overdue).
+        /// </summary>
+        /// <param name="subscriptionId">Feature subscription unique identifier.</param>
+        /// <param name="tenantId">Master tenant catalog identifier.</param>
+        /// <param name="days">Number of days from now.</param>
+        /// <returns>Redirect back to tenant subscription details.</returns>
+        public async Task<IActionResult> OnPostSetFeatureExpiryDaysAsync(Guid subscriptionId, Guid tenantId, int days)
+        {
+            var sub = await _dbContext.MasterTenantFeatureSubscriptions
+                .Include(s => s.MasterTenantCatalog)
+                .Include(s => s.MasterFeatureCatalog)
+                .FirstOrDefaultAsync(s => s.Id == subscriptionId);
+
+            if (sub == null)
+            {
+                TempData["Error"] = "Subscription not found.";
+                return RedirectToPage(new { tenantId });
+            }
+
+            var newExpiry = DateTime.UtcNow.AddDays(days);
+            sub.ExpiresAtUtc = newExpiry;
+            if (days < 0)
+            {
+                sub.Status = "Expired";
+            }
+            else if (sub.Status == "Expired")
+            {
+                sub.Status = "Active";
+                sub.IsActive = true;
+            }
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = "SetFeatureExpiryDays",
+                EntityType = "FeatureSubscription",
+                EntityId = sub.Id.ToString(),
+                Summary = $"Feature subscription '{sub.MasterFeatureCatalog?.Name}' expiration set to {days} days from now ({newExpiry:yyyy-MM-dd HH:mm:ss} UTC) for tenant '{sub.MasterTenantCatalog?.OrganizationName}'.",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["Success"] = $"Feature '{sub.MasterFeatureCatalog?.Name}' expiration set to {days} day(s) from now ({newExpiry:MMM dd, yyyy HH:mm} UTC).";
+            return RedirectToPage(new { tenantId });
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to bulk set expiration for all active modular features of this tenant to a defined number of days from now.
+        /// Useful for end-to-end testing of whole-workspace renewal notices, overdue banners, or reset to standard 30/365 day periods.
+        /// </summary>
+        /// <param name="tenantId">Master tenant catalog identifier.</param>
+        /// <param name="days">Number of days from now.</param>
+        /// <returns>Redirect back to tenant subscription details.</returns>
+        public async Task<IActionResult> OnPostSetAllFeaturesExpiryDaysAsync(Guid tenantId, int days)
+        {
+            var tenant = await _dbContext.MasterTenantCatalogs
+                .Include(t => t.FeatureSubscriptions)
+                .FirstOrDefaultAsync(t => t.Id == tenantId);
+
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant organization not found.";
+                return RedirectToPage(new { tenantId });
+            }
+
+            var newExpiry = DateTime.UtcNow.AddDays(days);
+            int count = 0;
+            foreach (var sub in tenant.FeatureSubscriptions)
+            {
+                sub.ExpiresAtUtc = newExpiry;
+                if (days < 0)
+                {
+                    sub.Status = "Expired";
+                }
+                else if (sub.Status == "Expired")
+                {
+                    sub.Status = "Active";
+                    sub.IsActive = true;
+                }
+                count++;
+            }
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = "BulkSetFeaturesExpiryDays",
+                EntityType = "TenantSubscriptions",
+                EntityId = tenant.Id.ToString(),
+                Summary = $"Bulk updated {count} feature subscription(s) expiration to {days} days from now ({newExpiry:yyyy-MM-dd HH:mm:ss} UTC) for tenant '{tenant.OrganizationName}'.",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["Success"] = $"Successfully updated all {count} feature subscription(s) to expire in {days} day(s) ({newExpiry:MMM dd, yyyy HH:mm} UTC).";
+            return RedirectToPage(new { tenantId });
+        }
+
+        /// <summary>
         /// Rich view model representing a single feature subscription for the tenant details breakdown.
         /// </summary>
         public class TenantFeatureDetailViewModel
