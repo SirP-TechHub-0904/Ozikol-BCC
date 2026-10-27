@@ -130,7 +130,9 @@
             <div id="step2Container" style="display: none;">
                 <div class="auth-header" style="text-align: left; margin-bottom: 20px;">
                     <h1 class="auth-title" style="font-size: 24px; color: #0f172a; margin: 0 0 6px;">Everything is included</h1>
-                    <p class="auth-subtitle" style="margin: 0; color: #64748b;">All features available for your organization.</p>
+                    <p class="auth-subtitle" style="margin: 0; color: #64748b;">
+                        All features available for <span id="displayOrgName" style="font-weight: 700; color: #0f172a;">@(string.IsNullOrWhiteSpace(Model.Input.OrganizationName) ? "your organization" : Model.Input.OrganizationName)</span>.
+                    </p>
                 </div>
 
                 @* Reassurance banner: no card, no pricing *@
@@ -142,25 +144,36 @@
                     </div>
                 </div>
 
-                @* All active features grouped by category: informational only, no checkboxes or prices *@
+                @* All active features grouped by suite: numbered, display-only, no checkboxes or prices *@
                 @{
-                    var featureGroups = Model.AllFeatures.GroupBy(f => f.Category).OrderBy(g => g.Key);
+                    int featureSerialNo = 0;
+                    var featureGroups = Model.AllFeatures
+                        .GroupBy(f => f.Category)
+                        .OrderBy(g => g.Key);
+
+                    var allCategories = featureGroups.Select(g => g.Key).ToList();
+                    var suiteLetterMap = new Dictionary<string, char>();
+                    for (int i = 0; i < allCategories.Count; i++)
+                    {
+                        suiteLetterMap[allCategories[i]] = (char)('A' + i);
+                    }
                 }
                 <div style="max-height: 460px; overflow-y: auto; padding: 16px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; margin-bottom: 24px; display: flex; flex-direction: column; gap: 22px;">
                     @foreach (var group in featureGroups)
                     {
                         <div>
                             <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px dashed #cbd5e1; color: #334155;">
-                                <span style="width: 6px; height: 16px; border-radius: 3px; background: var(--ozikol-primary);"></span>
+                                <span style="background: var(--ozikol-primary); color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.06em; white-space: nowrap;">Suite @(suiteLetterMap.TryGetValue(group.Key, out var letter) ? letter : '•')</span>
                                 <span>@group.Key</span>
                             </div>
                             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
-                                @foreach (var feat in group)
+                                @foreach (var feat in group.OrderBy(f => f.SortOrder).ThenBy(f => f.Name))
                                 {
+                                    featureSerialNo++;
                                     <div style="display: flex; align-items: flex-start; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; padding: 12px 14px; border-radius: 10px;">
                                         <span style="color: #10b981; font-weight: 800; margin-top: 1px;">✓</span>
                                         <div>
-                                            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">@feat.Name</div>
+                                            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">@featureSerialNo. @feat.Name</div>
                                             @if (!string.IsNullOrWhiteSpace(feat.Description))
                                             {
                                                 <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">@feat.Description</div>
@@ -301,6 +314,11 @@ function goToStep2() {
     document.getElementById('stepBadge2').style.color = 'var(--ozikol-primary)';
     document.getElementById('stepBadge2').style.background = 'rgba(59, 130, 246, 0.1)';
     document.getElementById('stepBadge2').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: var(--ozikol-primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span> Your Features';
+
+    const displayEl = document.getElementById('displayOrgName');
+    if (displayEl && orgName) {
+        displayEl.textContent = orgName.value.trim() || 'your organization';
+    }
 }
 
 function goToStep1() {
@@ -326,6 +344,10 @@ function handleOrgNameInput(val) {
             .replace(/-+/g, '-');
         slugInput.value = clean;
         checkSlugAvailability(clean);
+    }
+    const displayEl = document.getElementById('displayOrgName');
+    if (displayEl) {
+        displayEl.textContent = val.trim() || 'your organization';
     }
 }
 

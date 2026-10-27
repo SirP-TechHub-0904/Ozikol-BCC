@@ -235,11 +235,12 @@ namespace Ozikol.Central.Pages
                 TrialDays = 14;
             }
 
-            // 3. Query active catalog features
+            // 3. Query active catalog features ordered by Category, SortOrder, and Name
             var features = await _dbContext.MasterFeatureCatalogs
                 .AsNoTracking()
                 .Where(f => f.IsActive)
                 .OrderBy(f => f.Category)
+                .ThenBy(f => f.SortOrder)
                 .ThenBy(f => f.Name)
                 .ToListAsync();
 
