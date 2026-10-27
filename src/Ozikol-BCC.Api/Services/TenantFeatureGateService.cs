@@ -18,7 +18,11 @@ namespace Ozikol_BCC.Api.Services
     /// </summary>
     public class TenantFeatureGateService : ITenantFeatureGateService
     {
-        private const string CacheKeyPrefix = "tenant_feature_entitlements_";
+        /// <summary>
+        /// Memory cache key prefix for tenant entitlements. Public so billing services can invalidate
+        /// a tenant's cached entitlements immediately when subscriptions change.
+        /// </summary>
+        public const string CacheKeyPrefix = "tenant_feature_entitlements_";
         private readonly MasterCatalogDbContext _masterCatalogDbContext;
         private readonly IMemoryCache _memoryCache;
         private readonly ILogger<TenantFeatureGateService> _logger;
