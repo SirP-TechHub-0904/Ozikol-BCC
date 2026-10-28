@@ -345,3 +345,13 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * Infinite scroll listeners MUST guard with `!isLoading && !isLoadingMore && currentPage < totalPages` to guarantee zero duplicate network round-trips when reaching the bottom of the list.
 * **Refresh / Filter Reset Guarantee**:
   * Pull-to-refresh, filter chips, or search queries must reset `currentPage = 1` and replace the collection with fresh page-1 results, resetting the infinite scroll state cleanly.
+
+---
+
+## 22. Strict Prohibition of Emojis & Iconography Standard (Mandatory)
+* **Zero Raw Emojis in UI**: NEVER use raw Unicode emojis (e.g., 🚀, ⚡, 🎉, 💡, 🔥, 👍, ❌, 📅, ⚠️, etc.) in UI buttons, call-to-actions, headers, titles, placeholders, banners, alerts, badges, table columns, or menu navigation across all applications (Central Web Razor, Angular Client, Flutter Desktop/Mobile).
+* **Mandatory Vector / Font Icons**: Always use crisp, scalable, professional vector/font icons matching the platform design system:
+  * **Central Web (Razor Pages)**: Use Google Material Symbols (`<span class="material-symbols-outlined">icon_name</span>`).
+  * **Angular Client**: Use official Angular Material / Material Symbols / FontAwesome or custom SVG icons.
+  * **Flutter Desktop & Mobile**: Use Flutter `Icons.<icon_name>` (e.g. `Icons.rocket_launch`, `Icons.bolt`, `Icons.calendar_month`, `Icons.warning_amber`).
+* **Design Rationale**: Raw Unicode emojis render inconsistently across operating systems (Windows, macOS, iOS, Android, Linux), disrupt typography baselines, and convey an informal/unprofessional appearance incompatible with an enterprise Business Command Center. Vector icons ensure 100% theme color fidelity, responsive scaling, and unified cross-platform aesthetics.

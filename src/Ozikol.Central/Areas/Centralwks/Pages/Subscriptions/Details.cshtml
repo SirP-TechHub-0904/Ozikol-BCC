@@ -256,21 +256,21 @@
                         @Html.AntiForgeryToken()
                         <button type="submit" style="width: 100%; text-align: left; padding: 8px 14px; font-size: 12.5px; background: none; border: none; cursor: pointer; color: var(--admin-warning); font-weight: 700; display: flex; align-items: center; gap: 8px;" onclick="return confirm('Bulk set ALL feature subscriptions to expire in 2 days for renewal testing?');">
                             <span class="material-symbols-outlined" style="font-size: 16px;">bolt</span>
-                            ⚡ All Features to 2 Days
+                            <span>All Features to 2 Days</span>
                         </button>
                     </form>
                     <form method="post" asp-page-handler="SetAllFeaturesExpiryDays" asp-route-tenantId="@Model.Tenant.Id" asp-route-days="30" style="margin: 0;">
                         @Html.AntiForgeryToken()
                         <button type="submit" style="width: 100%; text-align: left; padding: 8px 14px; font-size: 12.5px; background: none; border: none; cursor: pointer; color: var(--admin-text); display: flex; align-items: center; gap: 8px;">
                             <span class="material-symbols-outlined" style="font-size: 16px;">calendar_month</span>
-                            📅 Reset All to 30 Days (Monthly)
+                            <span>Reset All to 30 Days (Monthly)</span>
                         </button>
                     </form>
                     <form method="post" asp-page-handler="SetAllFeaturesExpiryDays" asp-route-tenantId="@Model.Tenant.Id" asp-route-days="365" style="margin: 0;">
                         @Html.AntiForgeryToken()
                         <button type="submit" style="width: 100%; text-align: left; padding: 8px 14px; font-size: 12.5px; background: none; border: none; cursor: pointer; color: var(--admin-text); display: flex; align-items: center; gap: 8px;">
                             <span class="material-symbols-outlined" style="font-size: 16px;">event_repeat</span>
-                            📅 Reset All to 365 Days (Yearly)
+                            <span>Reset All to 365 Days (Yearly)</span>
                         </button>
                     </form>
                     <form method="post" asp-page-handler="SetAllFeaturesExpiryDays" asp-route-tenantId="@Model.Tenant.Id" asp-route-days="-1" style="margin: 0;">
@@ -513,8 +513,9 @@
                                 <div style="display: inline-flex; align-items: center; gap: 6px;">
                                     <form method="post" asp-page-handler="SetFeatureExpiryDays" asp-route-subscriptionId="@feat.SubscriptionId" asp-route-tenantId="@Model.Tenant.Id" asp-route-days="2" style="display: inline; margin: 0;">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" title="Quick Test: Set expiry to 2 days from now" onclick="return confirm('Set expiry to 2 days from now for @feat.FeatureName to test renewal?');" style="color: var(--admin-warning); font-weight: 700; padding: 3px 8px; border-color: rgba(245, 158, 11, 0.4);">
-                                            ⚡ 2d
+                                        <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" title="Quick Test: Set expiry to 2 days from now" onclick="return confirm('Set expiry to 2 days from now for @feat.FeatureName to test renewal?');" style="color: var(--admin-warning); font-weight: 700; padding: 3px 8px; border-color: rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 14px;">bolt</span>
+                                            <span>2d</span>
                                         </button>
                                     </form>
                                     <a href="/centralwks/subscriptions/edit?id=@feat.SubscriptionId" class="btn-admin btn-admin-secondary btn-admin-sm" title="Edit Subscription Terms & Pricing">

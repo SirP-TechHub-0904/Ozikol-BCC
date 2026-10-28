@@ -211,8 +211,9 @@
                     <button type="button" onclick="goToStep1()" class="btn-auth-outline" style="flex: 1; padding: 12px; font-weight: 700; border-radius: 8px; border: 1px solid #cbd5e1; color: #64748b; background: #fff; cursor: pointer;">
                         &larr; Back
                     </button>
-                    <button type="submit" id="btnSubmit" class="btn-auth-submit" style="flex: 2; padding: 14px; font-size: 15px; font-weight: 700; margin: 0;">
-                        <span id="submitBtnText">🚀 Start for free — No card needed</span>
+                    <button type="submit" id="btnSubmit" class="btn-auth-submit" style="flex: 2; padding: 14px; font-size: 15px; font-weight: 700; margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">rocket_launch</span>
+                        <span id="submitBtnText">Start for free — No card needed</span>
                     </button>
                 </div>
             </div>
@@ -265,7 +266,8 @@
 
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button type="button" id="btnSeedYes" onclick="submitSeedChoice(true)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; background: var(--ozikol-primary, #0050e5); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px var(--ozikol-primary-glow, rgba(0, 80, 229, 0.35)); transition: all 0.2s;">
-                    <span>🚀 Yes, Seed Default Website (Recommended)</span>
+                    <span class="material-symbols-outlined" style="font-size: 19px;">rocket_launch</span>
+                    <span>Yes, Seed Default Website (Recommended)</span>
                 </button>
                 <button type="button" id="btnSeedNo" onclick="submitSeedChoice(false)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
                     <span>No, Start with Blank Slate</span>
