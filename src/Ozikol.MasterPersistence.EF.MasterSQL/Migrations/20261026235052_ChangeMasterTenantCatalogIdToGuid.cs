@@ -30,17 +30,33 @@ IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_MasterBackgroundJobs_
 IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_MasterBackgroundJobLogs_MasterTenantCatalogs_TargetTenantCatalogId')
     ALTER TABLE [MasterBackgroundJobLogs] DROP CONSTRAINT [FK_MasterBackgroundJobLogs_MasterTenantCatalogs_TargetTenantCatalogId];
 
--- 2. Drop Primary Key constraint on MasterTenantCatalogs
+-- 2. Drop dependent non-clustered indexes on the referencing columns before dropping columns
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_MasterTenantFeatureSubscriptions_MasterTenantCatalogId' AND object_id = OBJECT_ID('MasterTenantFeatureSubscriptions'))
+    DROP INDEX [IX_MasterTenantFeatureSubscriptions_MasterTenantCatalogId] ON [MasterTenantFeatureSubscriptions];
+
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_MasterCouponRedemptions_MasterTenantCatalogId' AND object_id = OBJECT_ID('MasterCouponRedemptions'))
+    DROP INDEX [IX_MasterCouponRedemptions_MasterTenantCatalogId] ON [MasterCouponRedemptions];
+
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_MasterBillingTransactions_MasterTenantCatalogId' AND object_id = OBJECT_ID('MasterBillingTransactions'))
+    DROP INDEX [IX_MasterBillingTransactions_MasterTenantCatalogId] ON [MasterBillingTransactions];
+
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_MasterBackgroundJobs_TargetTenantCatalogId' AND object_id = OBJECT_ID('MasterBackgroundJobs'))
+    DROP INDEX [IX_MasterBackgroundJobs_TargetTenantCatalogId] ON [MasterBackgroundJobs];
+
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_MasterBackgroundJobLogs_TargetTenantCatalogId' AND object_id = OBJECT_ID('MasterBackgroundJobLogs'))
+    DROP INDEX [IX_MasterBackgroundJobLogs_TargetTenantCatalogId] ON [MasterBackgroundJobLogs];
+
+-- 3. Drop Primary Key constraint on MasterTenantCatalogs
 DECLARE @pkName NVARCHAR(200);
 SELECT @pkName = name FROM sys.key_constraints WHERE parent_object_id = OBJECT_ID('MasterTenantCatalogs') AND type = 'PK';
 IF @pkName IS NOT NULL
     EXEC('ALTER TABLE [MasterTenantCatalogs] DROP CONSTRAINT [' + @pkName + ']');
 
--- 3. In MasterTenantCatalogs: Add temporary Guid column and populate with NEWID()
+-- 4. In MasterTenantCatalogs: Add temporary Guid column and populate with NEWID()
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('MasterTenantCatalogs') AND name = 'TempGuidId')
     ALTER TABLE [MasterTenantCatalogs] ADD [TempGuidId] uniqueidentifier NOT NULL DEFAULT NEWID();
 
--- 4. In child tables: Add temporary Guid column and populate from parent's TempGuidId matching on old int Id
+-- 5. In child tables: Add temporary Guid column and populate from parent's TempGuidId matching on old int Id
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('MasterTenantFeatureSubscriptions') AND name = 'TempMasterTenantCatalogId')
 BEGIN
     ALTER TABLE [MasterTenantFeatureSubscriptions] ADD [TempMasterTenantCatalogId] uniqueidentifier NULL;
@@ -84,12 +100,19 @@ BEGIN
     EXEC sp_rename 'MasterBackgroundJobLogs.TempTargetTenantCatalogId', 'TargetTenantCatalogId', 'COLUMN';
 END
 
--- 5. Drop old int Id column in MasterTenantCatalogs, rename TempGuidId to Id, and add primary key constraint
+-- 6. Drop old int Id column in MasterTenantCatalogs, rename TempGuidId to Id, and add primary key constraint
 ALTER TABLE [MasterTenantCatalogs] DROP COLUMN [Id];
 EXEC sp_rename 'MasterTenantCatalogs.TempGuidId', 'Id', 'COLUMN';
 ALTER TABLE [MasterTenantCatalogs] ADD CONSTRAINT [PK_MasterTenantCatalogs] PRIMARY KEY CLUSTERED ([Id] ASC);
 
--- 6. Re-create foreign key constraints referencing the new uniqueidentifier PK
+-- 7. Recreate dependent non-clustered indexes on the referencing columns
+CREATE NONCLUSTERED INDEX [IX_MasterTenantFeatureSubscriptions_MasterTenantCatalogId] ON [MasterTenantFeatureSubscriptions]([MasterTenantCatalogId]);
+CREATE NONCLUSTERED INDEX [IX_MasterCouponRedemptions_MasterTenantCatalogId] ON [MasterCouponRedemptions]([MasterTenantCatalogId]);
+CREATE NONCLUSTERED INDEX [IX_MasterBillingTransactions_MasterTenantCatalogId] ON [MasterBillingTransactions]([MasterTenantCatalogId]);
+CREATE NONCLUSTERED INDEX [IX_MasterBackgroundJobs_TargetTenantCatalogId] ON [MasterBackgroundJobs]([TargetTenantCatalogId]);
+CREATE NONCLUSTERED INDEX [IX_MasterBackgroundJobLogs_TargetTenantCatalogId] ON [MasterBackgroundJobLogs]([TargetTenantCatalogId]);
+
+-- 8. Re-create foreign key constraints referencing the new uniqueidentifier PK
 ALTER TABLE [MasterTenantFeatureSubscriptions] WITH CHECK ADD CONSTRAINT [FK_MasterTenantFeatureSubscriptions_MasterTenantCatalogs_MasterTenantCatalogId]
     FOREIGN KEY ([MasterTenantCatalogId]) REFERENCES [MasterTenantCatalogs] ([Id]) ON DELETE CASCADE;
 
@@ -97,7 +120,7 @@ ALTER TABLE [MasterCouponRedemptions] WITH CHECK ADD CONSTRAINT [FK_MasterCoupon
     FOREIGN KEY ([MasterTenantCatalogId]) REFERENCES [MasterTenantCatalogs] ([Id]) ON DELETE CASCADE;
 
 ALTER TABLE [MasterBillingTransactions] WITH CHECK ADD CONSTRAINT [FK_MasterBillingTransactions_MasterTenantCatalogs_MasterTenantCatalogId]
-    FOREIGN KEY ([MasterTenantCatalogId]) REFERENCES [MasterTenantCatalogs] ([Id]) ON DELETE CASCADE;
+    FOREIGN KEY ([MasterTenantCatalogId]) REFERENCES [MasterTenantCatalogs] ([Id]) ON DELETE NO ACTION;
 
 ALTER TABLE [MasterBackgroundJobs] WITH CHECK ADD CONSTRAINT [FK_MasterBackgroundJobs_MasterTenantCatalogs_TargetTenantCatalogId]
     FOREIGN KEY ([TargetTenantCatalogId]) REFERENCES [MasterTenantCatalogs] ([Id]) ON DELETE SET NULL;
