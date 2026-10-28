@@ -603,13 +603,16 @@ public class TenantOnboardingService : ITenantOnboardingService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "🔥 Failed to onboard tenant [{TenantKey}]", cleanKey);
+            _logger.LogError(ex, "Failed to onboard tenant [{TenantKey}]", cleanKey);
+            var detailedMsg = ex.InnerException != null
+                ? $"{ex.Message} -> {ex.InnerException.Message}"
+                : ex.Message;
             return new TenantOnboardingResult
             {
                 Success = false,
                 TenantKey = cleanKey,
                 OrganizationName = request.OrganizationName,
-                Message = $"Onboarding failed: {ex.Message}",
+                Message = $"Onboarding failed: {detailedMsg}",
                 ErrorDetail = ex.ToString()
             };
         }
