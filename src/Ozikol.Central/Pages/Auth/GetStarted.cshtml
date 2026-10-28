@@ -170,7 +170,7 @@
                     int featureSerialNo = 0;
                     var featureGroups = Model.AllFeatures
                         .GroupBy(f => f.Category)
-                        .OrderBy(g => g.Key);
+                        .OrderBy(g => GetStartedModel.GetSuiteOrder(g.Key));
 
                     var allCategories = featureGroups.Select(g => g.Key).ToList();
                     var suiteLetterMap = new Dictionary<string, char>();

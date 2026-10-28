@@ -241,17 +241,31 @@ namespace Ozikol.Central.Pages
                 TrialDays = 14;
             }
 
-            // 3. Query active catalog features ordered by Category, SortOrder, and Name
-            var features = await _dbContext.MasterFeatureCatalogs
+            // 3. Query active catalog features ordered by canonical platform suite sequence, sort order, and name
+            var rawFeatures = await _dbContext.MasterFeatureCatalogs
                 .AsNoTracking()
                 .Where(f => f.IsActive)
-                .OrderBy(f => f.Category)
-                .ThenBy(f => f.SortOrder)
-                .ThenBy(f => f.Name)
                 .ToListAsync();
 
-            // Display-only list: every active feature, no compulsory/optional distinction shown to the visitor
-            AllFeatures = features;
+            // Display-only list aligned with CentralWorks canonical suite order
+            AllFeatures = rawFeatures
+                .OrderBy(f => GetSuiteOrder(f.Category))
+                .ThenBy(f => f.SortOrder)
+                .ThenBy(f => f.Name)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Resolves the canonical sequence index for a given suite name matching the CentralWorks catalog.
+        /// </summary>
+        /// <param name="category">The suite or category name.</param>
+        /// <returns>Zero-based canonical sequence index, or 500 if unrecognized.</returns>
+        public static int GetSuiteOrder(string? category)
+        {
+            if (string.IsNullOrWhiteSpace(category)) return 999;
+            var idx = Array.FindIndex(Ozikol.Central.Areas.Centralwks.Pages.Features.IndexModel.CanonicalSuites,
+                s => s.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase));
+            return idx >= 0 ? idx : 500;
         }
 
         /// <summary>
