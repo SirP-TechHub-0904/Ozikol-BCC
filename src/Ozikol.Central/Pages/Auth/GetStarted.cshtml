@@ -521,7 +521,8 @@ async function submitSeedChoice(seedDefaults) {
     const redirectUrl = pendingOnboardingResult?.redirectUrl || '/';
 
     const handler = seedDefaults ? 'SeedDefaults' : 'SkipDefaults';
-    const postUrl = `/Auth/GetStarted?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
+    const pageUrl = window.location.pathname.replace(/\/$/, '');
+    const postUrl = `${pageUrl}?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
 
     try {
         const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
@@ -534,7 +535,7 @@ async function submitSeedChoice(seedDefaults) {
             formData.append('__RequestVerificationToken', token);
         }
 
-        const resp = await fetch(postUrl, {
+        let resp = await fetch(postUrl, {
             method: 'POST',
             body: formData,
             headers: {
@@ -544,11 +545,24 @@ async function submitSeedChoice(seedDefaults) {
             }
         });
 
-        if (resp.ok) {
+        if (!resp.ok) {
+            const fallbackUrl = `/Auth/GetStarted?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
+            resp = await fetch(fallbackUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'RequestVerificationToken': token,
+                    'Accept': 'application/json'
+                }
+            });
+        }
+
+        if (resp && resp.ok) {
             const data = await resp.json();
             console.log('Seed choice outcome:', data);
         } else {
-            console.warn('Seed choice response status:', resp.status);
+            console.warn('Seed choice response status:', resp ? resp.status : 'No response');
         }
     } catch (e) {
         console.warn('Seeding request notice:', e);

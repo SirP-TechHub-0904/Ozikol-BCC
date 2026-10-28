@@ -9,7 +9,7 @@ namespace Ozikol_BCC.Infrastructure.TenantSupport;
 /// </summary>
 public class CachedTenantEntry
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string TenantKey { get; set; } = string.Empty;
     public string OrganizationName { get; set; } = string.Empty;
     public string PrimaryDomain { get; set; } = string.Empty;
@@ -242,9 +242,12 @@ public class TenantProvider : ITenantProvider
                         {
                             foreach (dynamic item in queryable)
                             {
+                                object? rawId = item.Id;
+                                Guid resolvedId = rawId is Guid gid ? gid : (rawId != null && Guid.TryParse(rawId.ToString(), out Guid parsedGid) ? parsedGid : Guid.Empty);
+
                                 result.Add(new CachedTenantEntry
                                 {
-                                    Id = (int)item.Id,
+                                    Id = resolvedId,
                                     TenantKey = (string)item.TenantKey,
                                     OrganizationName = (string)item.OrganizationName,
                                     PrimaryDomain = (string)item.PrimaryDomain,

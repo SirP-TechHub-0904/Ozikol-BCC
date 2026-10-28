@@ -503,15 +503,19 @@ namespace Ozikol.Central.Pages
             var effectiveKey = (!string.IsNullOrWhiteSpace(tenantKey) ? tenantKey : formTenantKey)?.Trim();
             var effectiveOrg = (!string.IsNullOrWhiteSpace(orgName) ? orgName : formOrgName)?.Trim();
 
+            _logger.LogInformation("==================================================================");
+            _logger.LogInformation("📥 [Central OnPostSeedDefaultsAsync] Request received. TenantKey: '{TenantKey}', OrgName: '{OrgName}'", effectiveKey, effectiveOrg);
+
             if (string.IsNullOrWhiteSpace(effectiveKey))
             {
-                _logger.LogWarning("OnPostSeedDefaultsAsync: Tenant key is missing from both query and form.");
+                _logger.LogWarning("❌ [Central OnPostSeedDefaultsAsync] Tenant key is missing from both query and form!");
                 return new JsonResult(new { success = false, message = "Missing tenant key." });
             }
 
-            _logger.LogInformation("🌱 Seeding turnkey website suite for tenant [{TenantKey}] - Org: {OrgName}", effectiveKey, effectiveOrg);
+            _logger.LogInformation("🌱 [Central Seeding] Dispatching SeedTenantDefaultWebsiteAsync for [{TenantKey}]...", effectiveKey);
             var success = await _onboardingService.SeedTenantDefaultWebsiteAsync(effectiveKey, effectiveOrg);
-            _logger.LogInformation("🌱 Seeding outcome for tenant [{TenantKey}]: {Success}", effectiveKey, success);
+            _logger.LogInformation("🎯 [Central Seeding] Finished for [{TenantKey}]. Result: {Success}", effectiveKey, success ? "SUCCESS (Turnkey suite active)" : "FAILED");
+            _logger.LogInformation("==================================================================");
 
             return new JsonResult(new { success = success, message = success ? "Default website seeded successfully!" : "Failed to seed default website." });
         }

@@ -862,15 +862,18 @@ public class TenantOnboardingService : ITenantOnboardingService
     {
         try
         {
+            _logger.LogInformation("🌱 [TenantOnboardingService] SeedTenantDefaultWebsiteAsync invoked for [{TenantKey}]. Finding master catalog entry...", tenantKey);
             var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
                 .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
             if (catalog == null)
             {
-                _logger.LogWarning("SeedTenantDefaultWebsiteAsync: Tenant key [{TenantKey}] not found in master catalog.", tenantKey);
+                _logger.LogWarning("❌ [TenantOnboardingService] SeedTenantDefaultWebsiteAsync: Tenant key [{TenantKey}] not found in master catalog!", tenantKey);
                 return false;
             }
 
             string tenantConnStr = catalog.ConnectionString;
+            _logger.LogInformation("🌱 [TenantOnboardingService] Target tenant database: [{DatabaseName}]. Executing SeedDefaultWebsiteSuiteAsync...", catalog.DatabaseName);
+
             var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
             optionsBuilder.UseSqlServer(tenantConnStr)
                 .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
@@ -886,12 +889,12 @@ public class TenantOnboardingService : ITenantOnboardingService
                     cancellationToken);
             }
 
-            _logger.LogInformation("✅ Turnkey default website suite successfully seeded for tenant [{TenantKey}].", tenantKey);
+            _logger.LogInformation("✅ [TenantOnboardingService] SUCCESS: Turnkey default website suite successfully seeded for tenant [{TenantKey}]!", tenantKey);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to seed default website suite for tenant [{TenantKey}]: {Message}", tenantKey, ex.Message);
+            _logger.LogError(ex, "❌ [TenantOnboardingService] FAILED: Exception seeding default website suite for tenant [{TenantKey}]: {Message}", tenantKey, ex.Message);
             return false;
         }
     }
