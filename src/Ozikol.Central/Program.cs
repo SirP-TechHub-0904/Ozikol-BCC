@@ -60,6 +60,12 @@ builder.Services.Configure<ErrorAlertSettings>(builder.Configuration.GetSection(
 // Register Dedicated Cloudinary Media Services
 Ozikol_BCC.CloudinaryServices.DependencyInjection.AddCloudinaryServices(builder.Services, builder.Configuration);
 
+// Configure Antiforgery Header to allow seamless AJAX submissions across Razor Pages
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "RequestVerificationToken";
+});
+
 builder.Services.AddRazorPages(options =>
 {
     // Register clean top-level and hyphenated route aliases for Auth pages

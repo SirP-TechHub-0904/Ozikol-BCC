@@ -207,6 +207,22 @@
                     }
                 </div>
 
+                <!-- Turnkey Website Suite Option -->
+                <div style="margin-bottom: 20px; padding: 14px 18px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 80, 229, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <span class="material-symbols-outlined" style="font-size: 20px; color: var(--ozikol-primary);">auto_awesome</span>
+                        </div>
+                        <div>
+                            <div style="font-weight: 700; font-size: 13.5px; color: #0f172a;">Seed Turnkey Website Suite (Recommended)</div>
+                            <div style="font-size: 12px; color: #64748b;">Installs professional theme templates, 10 interactive sections, contact forms, and sample blogs so your site is live immediately.</div>
+                        </div>
+                    </div>
+                    <label style="display: flex; align-items: center; cursor: pointer; margin: 0;">
+                        <input type="checkbox" asp-for="Input.SeedDefaultWebsite" checked style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--ozikol-primary);" />
+                    </label>
+                </div>
+
                 @* Navigation & Submission Buttons *@
                 <div style="display: flex; gap: 12px;">
                     <button type="button" onclick="goToStep1()" class="btn-auth-outline" style="flex: 1; padding: 12px; font-weight: 700; border-radius: 8px; border: 1px solid #cbd5e1; color: #64748b; background: #fff; cursor: pointer;">
@@ -469,25 +485,21 @@ async function handleOnboardingSubmit(e) {
 
         if (result.success) {
             const step4 = document.getElementById('step4');
-            if (step4) { step4.style.color = '#10b981'; step4.style.fontWeight = '700'; step4.innerHTML = '<span style="color: #10b981;">✓</span> Workspace Ready!'; }
+            if (step4) {
+                step4.style.color = '#10b981';
+                step4.style.fontWeight = '700';
+                step4.innerHTML = '<span class="material-symbols-outlined" style="color: #10b981; font-size: 18px; vertical-align: middle;">check_circle</span> Workspace & Turnkey Website Ready!';
+            }
 
             const regPwd = document.getElementById('regPassword');
             if (regPwd) {
                 regPwd.value = '';
             }
-            form.reset();
 
-            pendingOnboardingResult = result;
-            const progressView = document.getElementById('provisioningProgressView');
-            const choiceView = document.getElementById('seedChoiceView');
-            if (progressView && choiceView) {
-                setTimeout(() => {
-                    progressView.style.display = 'none';
-                    choiceView.style.display = 'block';
-                }, 700);
-            } else {
+            // Directly navigate to setup details; website suite is already seeded atomically
+            setTimeout(() => {
                 window.location.href = result.redirectUrl;
-            }
+            }, 800);
         } else {
             modal.style.display = 'none';
             alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.'));
@@ -518,12 +530,16 @@ async function submitSeedChoice(seedDefaults) {
     try {
         const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
         const token = tokenEl ? tokenEl.value : '';
+        const bodyData = new URLSearchParams();
+        if (token) bodyData.append('__RequestVerificationToken', token);
 
         await fetch(postUrl, {
             method: 'POST',
+            body: bodyData,
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'RequestVerificationToken': token
+                'RequestVerificationToken': token,
+                'Content-Type': 'application/x-www-form-urlencoded'
             }
         });
     } catch (e) {

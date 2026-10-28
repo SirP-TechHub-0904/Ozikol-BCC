@@ -43,6 +43,12 @@ public class TenantOnboardingRequest
     /// Optional promotional coupon or voucher code entered during registration (e.g. "LAUNCH100").
     /// </summary>
     public string? CouponCode { get; set; }
+
+    /// <summary>
+    /// Whether to automatically provision the turnkey default website suite (templates, pages, 10 sections, blogs, forms).
+    /// Defaults to true so the public site is immediately live and populated.
+    /// </summary>
+    public bool SeedDefaultWebsite { get; set; } = true;
 }
 
 public class TenantOnboardingResult
@@ -822,10 +828,26 @@ public class TenantOnboardingService : ITenantOnboardingService
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            // 5. Turnkey Website Suite and Theme Templates are intentionally deferred to the GetStarted portal.
-            // If the user selects "Seed Default Website Suite", SeedTenantDefaultWebsiteAsync seeds both templates and turnkey content.
-            // If the user selects "Start with Blank Canvas", the workspace remains completely empty (0 templates, 0 content).
-            _logger.LogInformation("🚀 Tenant database provisioned cleanly for [{TenantKey}]. Website templates and content deferred to user onboarding choice.", request.TenantKey);
+            // 5. Automatically seed turnkey Corporate Suite website templates, 10 body sections, web pages, forms, and code injections
+            if (request.SeedDefaultWebsite)
+            {
+                try
+                {
+                    await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedDefaultWebsiteSuiteAsync(
+                        dbContext,
+                        request.OrganizationName,
+                        cancellationToken);
+                    _logger.LogInformation("✅ Turnkey default website suite, templates, and 10 body sections successfully seeded during onboarding for tenant [{TenantKey}]", request.TenantKey);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "⚠️ Failed to automatically seed default website suite for tenant [{TenantKey}]: {Message}", request.TenantKey, ex.Message);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("ℹ️ Tenant database provisioned in blank canvas mode for [{TenantKey}] as requested.", request.TenantKey);
+            }
         }
     }
 

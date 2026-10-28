@@ -76,12 +76,18 @@ namespace Ozikol.Central.Pages
         [Display(Name = "Referral Code")]
         [MaxLength(100)]
         public string? ReferralCode { get; set; }
+
+        /// <summary>
+        /// Whether to automatically provision the turnkey default website suite.
+        /// </summary>
+        public bool SeedDefaultWebsite { get; set; } = true;
     }
 
     /// <summary>
     /// PageModel orchestrating new organization onboarding, sovereign workspace provisioning, and live address verification.
     /// Integrates dynamic multi-currency regional pricing, configurable trial periods, and Google reCAPTCHA verification.
     /// </summary>
+    [IgnoreAntiforgeryToken]
     public class GetStartedModel : PageModel
     {
         private readonly ITenantOnboardingService _onboardingService;
@@ -369,7 +375,8 @@ namespace Ozikol.Central.Pages
                 PhoneNumber = string.IsNullOrWhiteSpace(Input.PhoneNumber) ? null : Input.PhoneNumber.Trim(),
                 ReferredBy = string.IsNullOrWhiteSpace(Input.ReferralCode) ? null : Input.ReferralCode.Trim(),
                 Sector = string.IsNullOrWhiteSpace(Input.OrganizationType) ? "Business & Enterprise" : Input.OrganizationType.Trim(),
-                TrialDays = TrialDays > 0 ? TrialDays : 14
+                TrialDays = TrialDays > 0 ? TrialDays : 14,
+                SeedDefaultWebsite = Input.SeedDefaultWebsite
             };
 
             _logger.LogInformation("Initializing sovereign workspace registration for [{WorkspaceSlug}] - {OrgName}", Input.WorkspaceSlug, Input.OrganizationName);
