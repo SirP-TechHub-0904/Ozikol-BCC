@@ -860,26 +860,40 @@ public class TenantOnboardingService : ITenantOnboardingService
     /// <returns>True if seeded successfully; false otherwise.</returns>
     public async Task<bool> SeedTenantDefaultWebsiteAsync(string tenantKey, string? orgName = null, CancellationToken cancellationToken = default)
     {
-        var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
-            .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
-        if (catalog == null) return false;
-
-        string tenantConnStr = catalog.ConnectionString;
-        var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-        optionsBuilder.UseSqlServer(tenantConnStr)
-            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
-
-        using var scope = _serviceProvider.CreateScope();
-        var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
-        using (tenantProvider.BeginScope(tenantConnStr))
+        try
         {
-            var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
-            await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedDefaultWebsiteSuiteAsync(
-                dbContext,
-                orgName ?? catalog.OrganizationName,
-                cancellationToken);
+            var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
+                .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
+            if (catalog == null)
+            {
+                _logger.LogWarning("SeedTenantDefaultWebsiteAsync: Tenant key [{TenantKey}] not found in master catalog.", tenantKey);
+                return false;
+            }
+
+            string tenantConnStr = catalog.ConnectionString;
+            var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
+            optionsBuilder.UseSqlServer(tenantConnStr)
+                .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+
+            using var scope = _serviceProvider.CreateScope();
+            var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+            using (tenantProvider.BeginScope(tenantConnStr))
+            {
+                var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
+                await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedDefaultWebsiteSuiteAsync(
+                    dbContext,
+                    orgName ?? catalog.OrganizationName,
+                    cancellationToken);
+            }
+
+            _logger.LogInformation("✅ Turnkey default website suite successfully seeded for tenant [{TenantKey}].", tenantKey);
+            return true;
         }
-        return true;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Failed to seed default website suite for tenant [{TenantKey}]: {Message}", tenantKey, ex.Message);
+            return false;
+        }
     }
 
     /// <summary>
@@ -890,24 +904,38 @@ public class TenantOnboardingService : ITenantOnboardingService
     /// <returns>True if marked successfully; false otherwise.</returns>
     public async Task<bool> SkipTenantDefaultWebsiteAsync(string tenantKey, CancellationToken cancellationToken = default)
     {
-        var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
-            .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
-        if (catalog == null) return false;
-
-        string tenantConnStr = catalog.ConnectionString;
-        var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-        optionsBuilder.UseSqlServer(tenantConnStr)
-            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
-
-        using var scope = _serviceProvider.CreateScope();
-        var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
-        using (tenantProvider.BeginScope(tenantConnStr))
+        try
         {
-            var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
-            await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.ResetToBlankCanvasAsync(
-                dbContext,
-                cancellationToken);
+            var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
+                .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
+            if (catalog == null)
+            {
+                _logger.LogWarning("SkipTenantDefaultWebsiteAsync: Tenant key [{TenantKey}] not found in master catalog.", tenantKey);
+                return false;
+            }
+
+            string tenantConnStr = catalog.ConnectionString;
+            var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
+            optionsBuilder.UseSqlServer(tenantConnStr)
+                .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+
+            using var scope = _serviceProvider.CreateScope();
+            var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+            using (tenantProvider.BeginScope(tenantConnStr))
+            {
+                var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
+                await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.ResetToBlankCanvasAsync(
+                    dbContext,
+                    cancellationToken);
+            }
+
+            _logger.LogInformation("⚪ Blank canvas configured successfully for tenant [{TenantKey}].", tenantKey);
+            return true;
         }
-        return true;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Failed to configure blank canvas for tenant [{TenantKey}]: {Message}", tenantKey, ex.Message);
+            return false;
+        }
     }
 }

@@ -207,22 +207,6 @@
                     }
                 </div>
 
-                <!-- Turnkey Website Suite Option -->
-                <div style="margin-bottom: 20px; padding: 14px 18px; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 14px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(0, 80, 229, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                            <span class="material-symbols-outlined" style="font-size: 20px; color: var(--ozikol-primary);">auto_awesome</span>
-                        </div>
-                        <div>
-                            <div style="font-weight: 700; font-size: 13.5px; color: #0f172a;">Seed Turnkey Website Suite (Recommended)</div>
-                            <div style="font-size: 12px; color: #64748b;">Installs professional theme templates, 10 interactive sections, contact forms, and sample blogs so your site is live immediately.</div>
-                        </div>
-                    </div>
-                    <label style="display: flex; align-items: center; cursor: pointer; margin: 0;">
-                        <input type="checkbox" asp-for="Input.SeedDefaultWebsite" checked style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--ozikol-primary);" />
-                    </label>
-                </div>
-
                 @* Navigation & Submission Buttons *@
                 <div style="display: flex; gap: 12px;">
                     <button type="button" onclick="goToStep1()" class="btn-auth-outline" style="flex: 1; padding: 12px; font-weight: 700; border-radius: 8px; border: 1px solid #cbd5e1; color: #64748b; background: #fff; cursor: pointer;">
@@ -293,7 +277,7 @@
 
             <div id="seedingProgressStatus" style="display: none; margin-top: 16px; font-size: 13px; color: var(--ozikol-primary, #0050e5); font-weight: 600; align-items: center; justify-content: center; gap: 8px;">
                 <div style="width: 14px; height: 14px; border: 2px solid var(--ozikol-primary, #0050e5); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-                <span>Applying turnkey website suite...</span>
+                <span id="seedingProgressMsg">Applying turnkey website suite...</span>
             </div>
         </div>
 
@@ -484,11 +468,14 @@ async function handleOnboardingSubmit(e) {
         const result = await resp.json();
 
         if (result.success) {
+            // Store onboarding result for subsequent seed choice
+            pendingOnboardingResult = result;
+
             const step4 = document.getElementById('step4');
             if (step4) {
                 step4.style.color = '#10b981';
                 step4.style.fontWeight = '700';
-                step4.innerHTML = '<span class="material-symbols-outlined" style="color: #10b981; font-size: 18px; vertical-align: middle;">check_circle</span> Workspace & Turnkey Website Ready!';
+                step4.innerHTML = '<span class="material-symbols-outlined" style="color: #10b981; font-size: 18px; vertical-align: middle;">check_circle</span> Workspace & Migrations Ready!';
             }
 
             const regPwd = document.getElementById('regPassword');
@@ -496,10 +483,13 @@ async function handleOnboardingSubmit(e) {
                 regPwd.value = '';
             }
 
-            // Directly navigate to setup details; website suite is already seeded atomically
+            // Immediately switch to the interactive seed choice view after migrations finish
             setTimeout(() => {
-                window.location.href = result.redirectUrl;
-            }, 800);
+                const progressView = document.getElementById('provisioningProgressView');
+                const choiceView = document.getElementById('seedChoiceView');
+                if (progressView) progressView.style.display = 'none';
+                if (choiceView) choiceView.style.display = 'block';
+            }, 600);
         } else {
             modal.style.display = 'none';
             alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.'));
@@ -515,33 +505,51 @@ async function submitSeedChoice(seedDefaults) {
     const btnYes = document.getElementById('btnSeedYes');
     const btnNo = document.getElementById('btnSeedNo');
     const statusNotice = document.getElementById('seedingProgressStatus');
+    const msgEl = document.getElementById('seedingProgressMsg');
 
     if (btnYes) btnYes.disabled = true;
     if (btnNo) btnNo.disabled = true;
     if (statusNotice) statusNotice.style.display = 'inline-flex';
+    if (msgEl) {
+        msgEl.textContent = seedDefaults
+            ? 'Applying turnkey website templates, pages & sections...'
+            : 'Configuring blank canvas workspace...';
+    }
 
     const tenantKey = pendingOnboardingResult?.tenantKey || '';
     const orgName = pendingOnboardingResult?.orgName || '';
     const redirectUrl = pendingOnboardingResult?.redirectUrl || '/';
 
     const handler = seedDefaults ? 'SeedDefaults' : 'SkipDefaults';
-    const postUrl = `${window.location.pathname}?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
+    const postUrl = `/Auth/GetStarted?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
 
     try {
         const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
         const token = tokenEl ? tokenEl.value : '';
-        const bodyData = new URLSearchParams();
-        if (token) bodyData.append('__RequestVerificationToken', token);
 
-        await fetch(postUrl, {
+        const formData = new FormData();
+        formData.append('tenantKey', tenantKey);
+        formData.append('orgName', orgName);
+        if (token) {
+            formData.append('__RequestVerificationToken', token);
+        }
+
+        const resp = await fetch(postUrl, {
             method: 'POST',
-            body: bodyData,
+            body: formData,
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'RequestVerificationToken': token,
-                'Content-Type': 'application/x-www-form-urlencoded'
+                'Accept': 'application/json'
             }
         });
+
+        if (resp.ok) {
+            const data = await resp.json();
+            console.log('Seed choice outcome:', data);
+        } else {
+            console.warn('Seed choice response status:', resp.status);
+        }
     } catch (e) {
         console.warn('Seeding request notice:', e);
     }

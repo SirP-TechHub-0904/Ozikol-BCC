@@ -376,7 +376,7 @@ namespace Ozikol.Central.Pages
                 ReferredBy = string.IsNullOrWhiteSpace(Input.ReferralCode) ? null : Input.ReferralCode.Trim(),
                 Sector = string.IsNullOrWhiteSpace(Input.OrganizationType) ? "Business & Enterprise" : Input.OrganizationType.Trim(),
                 TrialDays = TrialDays > 0 ? TrialDays : 14,
-                SeedDefaultWebsite = Input.SeedDefaultWebsite
+                SeedDefaultWebsite = false // Modal prompt decides immediately after migrations!
             };
 
             _logger.LogInformation("Initializing sovereign workspace registration for [{WorkspaceSlug}] - {OrgName}", Input.WorkspaceSlug, Input.OrganizationName);
@@ -489,28 +489,53 @@ namespace Ozikol.Central.Pages
         /// <summary>
         /// AJAX handler: Seeds the turnkey default website suite for the newly provisioned tenant.
         /// </summary>
-        public async Task<IActionResult> OnPostSeedDefaultsAsync([FromQuery] string tenantKey, [FromQuery] string? orgName = null)
+        /// <param name="tenantKey">The tenant identifier passed via query string.</param>
+        /// <param name="orgName">The optional organization name passed via query string.</param>
+        /// <param name="formTenantKey">The optional tenant identifier passed via form body.</param>
+        /// <param name="formOrgName">The optional organization name passed via form body.</param>
+        /// <returns>JSON result indicating outcome and message.</returns>
+        public async Task<IActionResult> OnPostSeedDefaultsAsync(
+            [FromQuery] string? tenantKey = null,
+            [FromQuery] string? orgName = null,
+            [FromForm] string? formTenantKey = null,
+            [FromForm] string? formOrgName = null)
         {
-            if (string.IsNullOrWhiteSpace(tenantKey))
+            var effectiveKey = (!string.IsNullOrWhiteSpace(tenantKey) ? tenantKey : formTenantKey)?.Trim();
+            var effectiveOrg = (!string.IsNullOrWhiteSpace(orgName) ? orgName : formOrgName)?.Trim();
+
+            if (string.IsNullOrWhiteSpace(effectiveKey))
             {
+                _logger.LogWarning("OnPostSeedDefaultsAsync: Tenant key is missing from both query and form.");
                 return new JsonResult(new { success = false, message = "Missing tenant key." });
             }
 
-            var success = await _onboardingService.SeedTenantDefaultWebsiteAsync(tenantKey.Trim(), orgName);
+            _logger.LogInformation("🌱 Seeding turnkey website suite for tenant [{TenantKey}] - Org: {OrgName}", effectiveKey, effectiveOrg);
+            var success = await _onboardingService.SeedTenantDefaultWebsiteAsync(effectiveKey, effectiveOrg);
+            _logger.LogInformation("🌱 Seeding outcome for tenant [{TenantKey}]: {Success}", effectiveKey, success);
+
             return new JsonResult(new { success = success, message = success ? "Default website seeded successfully!" : "Failed to seed default website." });
         }
 
         /// <summary>
         /// AJAX handler: Skips default website seeding and marks tenant in blank canvas mode.
         /// </summary>
-        public async Task<IActionResult> OnPostSkipDefaultsAsync([FromQuery] string tenantKey)
+        /// <param name="tenantKey">The tenant identifier passed via query string.</param>
+        /// <param name="formTenantKey">The optional tenant identifier passed via form body.</param>
+        /// <returns>JSON result indicating outcome and message.</returns>
+        public async Task<IActionResult> OnPostSkipDefaultsAsync(
+            [FromQuery] string? tenantKey = null,
+            [FromForm] string? formTenantKey = null)
         {
-            if (string.IsNullOrWhiteSpace(tenantKey))
+            var effectiveKey = (!string.IsNullOrWhiteSpace(tenantKey) ? tenantKey : formTenantKey)?.Trim();
+
+            if (string.IsNullOrWhiteSpace(effectiveKey))
             {
+                _logger.LogWarning("OnPostSkipDefaultsAsync: Tenant key is missing.");
                 return new JsonResult(new { success = false, message = "Missing tenant key." });
             }
 
-            var success = await _onboardingService.SkipTenantDefaultWebsiteAsync(tenantKey.Trim());
+            _logger.LogInformation("⚪ Marking tenant [{TenantKey}] in blank canvas mode.", effectiveKey);
+            var success = await _onboardingService.SkipTenantDefaultWebsiteAsync(effectiveKey);
             return new JsonResult(new { success = success, message = "Blank canvas initialized." });
         }
     }
