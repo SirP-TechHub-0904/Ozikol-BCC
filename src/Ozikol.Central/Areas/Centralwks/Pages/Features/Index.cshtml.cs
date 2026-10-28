@@ -75,6 +75,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public string? SortDir { get; set; }
 
         /// <summary>
+        /// Display layout mode ("cards" or "table"). Defaults to "cards" matching GetStarted sequence.
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public string ViewMode { get; set; } = "cards";
+
+        /// <summary>
         /// Total distinct suites count.
         /// </summary>
         public int SuitesCount { get; set; }
@@ -215,7 +221,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// <summary>
         /// Resolves the canonical sequence index for a given suite name.
         /// </summary>
-        private static int GetSuiteOrder(string? category)
+        public static int GetSuiteOrder(string? category)
         {
             if (string.IsNullOrWhiteSpace(category)) return 999;
             var idx = Array.FindIndex(CanonicalSuites, s => s.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase));
@@ -252,7 +258,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             await _dbContext.SaveChangesAsync();
             TempData["Success"] = $"Feature status updated to {(feature.IsActive ? "Active" : "Inactive")}.";
 
-            return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir });
+            return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
         }
     }
 }
