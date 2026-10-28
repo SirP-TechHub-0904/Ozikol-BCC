@@ -1306,22 +1306,52 @@ export interface SuiteInfoDetail {
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">credit_card</span><span>{{ 'adm.subscription_plans' | translate:'Subscription Plans' }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>{{ 'adm.payment_methods_contacts' | translate:'Payment Methods & Contacts' }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">calculate</span><span>{{ 'adm.usage_bill_calculator' | translate:'Usage Bill Calculator' }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">extension</span><span>{{ 'nav.feature_billing' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item">
+            <a routerLink="/billing/plans" [class.active]="isCurrentRoute('/billing/plans') || isCurrentRoute('/billing/console')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">credit_card</span>
+                <span>{{ 'adm.subscription_plans' | translate:'Subscription Plans' }}</span>
+                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/plans')" (click)="togglePin('Subscription Plans', '/billing/plans', 'credit_card'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/plans') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/billing/plans') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/billing/invoices" [class.active]="isCurrentRoute('/billing/invoices')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+                <span>{{ 'adm.payment_methods_contacts' | translate:'Payment Methods & Invoices' }}</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/invoices')" (click)="togglePin('Invoices & Receipts', '/billing/invoices', 'account_balance_wallet'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/invoices') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/billing/invoices') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/billing/calculator" [class.active]="isCurrentRoute('/billing/calculator')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">calculate</span>
+                <span>{{ 'adm.usage_bill_calculator' | translate:'Usage Bill Calculator' }}</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/calculator')" (click)="togglePin('Usage Calculator', '/billing/calculator', 'calculate'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/calculator') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/billing/calculator') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/billing/features" [class.active]="isCurrentRoute('/billing/features')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">extension</span>
+                <span>{{ 'nav.feature_billing' | translate }}</span>
+                <span class="badge-pill badge-new">Store</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/features')" (click)="togglePin('Feature Add-ons', '/billing/features', 'extension'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/features') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/billing/features') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
 
           <!-- Suite 14: Security & Audit (Platform Protection) -->
           <div class="menu-title suite-header-row">

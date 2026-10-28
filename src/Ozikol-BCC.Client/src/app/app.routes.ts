@@ -96,6 +96,9 @@ import { ProductOrdersComponent } from './pages/admin/products/product-orders.co
 import { ProductTransactionsComponent } from './pages/admin/products/product-transactions.component';
 import { ProductOrderDetailsComponent } from './pages/admin/products/product-order-details.component';
 
+// Suite 13: Billing & Subscriptions Console
+import { BillingConsoleComponent } from './pages/admin/billing/billing-console.component';
+
 // Public Storefront
 import { StoreCatalogComponent } from './pages/store/store-catalog.component';
 import { StoreProductDetailsComponent } from './pages/store/store-product-details.component';
@@ -311,7 +314,15 @@ export const routes: Routes = [
       { path: 'products/console/orders/details/:id', component: ProductOrderDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },
       { path: 'products/console/transactions', component: ProductTransactionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },
 
-      // 7. Backwards Compatibility Redirects for legacy /admin routes
+      // 7. Suite 13: Billing, Plans, Add-ons Marketplace & Invoice Ledger (Console Only)
+      { path: 'billing/console', component: BillingConsoleComponent, data: { roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/plans', component: BillingConsoleComponent, data: { tab: 'overview', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/features', component: BillingConsoleComponent, data: { tab: 'features', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/invoices', component: BillingConsoleComponent, data: { tab: 'invoices', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/calculator', component: BillingConsoleComponent, data: { tab: 'calculator', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing', redirectTo: 'billing/console', pathMatch: 'full' },
+
+      // 8. Backwards Compatibility Redirects for legacy /admin routes
       { path: 'admin/products', redirectTo: 'products/console', pathMatch: 'full' },
       { path: 'admin/dashboard', redirectTo: 'dashboard/console', pathMatch: 'full' },
       { path: 'admin/users/dashboard', redirectTo: 'users/console/dashboard', pathMatch: 'full' },

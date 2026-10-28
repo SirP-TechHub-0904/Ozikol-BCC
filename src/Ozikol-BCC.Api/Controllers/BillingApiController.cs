@@ -21,6 +21,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [Route("api/billing")]
     [Authorize(Roles = "SuperAdmin,Admin")]
     [Tags("9. Billing & Feature Subscriptions")]
     public class BillingApiController : ControllerBase

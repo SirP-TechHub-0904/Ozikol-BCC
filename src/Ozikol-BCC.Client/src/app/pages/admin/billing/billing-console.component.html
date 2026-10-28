@@ -1,0 +1,812 @@
+<div class="billing-page-container">
+  
+  <!--  ── Header Area ──  -->
+  <div class="admin-page-header">
+    <div class="admin-title-group">
+      <div class="title-with-info">
+        <h1 class="admin-title">Billing &amp; Subscriptions</h1>
+        <button type="button" class="btn-info-icon" (click)="openSuiteInfo('general')" title="About Workspace Billing & Entitlements">
+          <span class="material-symbols-outlined">info</span>
+        </button>
+      </div>
+      <p class="admin-subtitle">
+        Manage sovereign Business Command Center plans, modular capability subscriptions, auto-renewal schedules, and invoice settlements.
+      </p>
+    </div>
+    <div class="admin-actions">
+      <button type="button" class="btn-admin btn-admin-primary" (click)="switchTab('features')">
+        <span class="material-symbols-outlined">add_shopping_cart</span>
+        <span>Explore Add-on Store</span>
+      </button>
+    </div>
+  </div>
+
+  <!--  ── Navigation Tabs ──  -->
+  <div class="billing-tabs-wrapper">
+    <nav class="billing-nav-tabs">
+      <button type="button" class="tab-btn" [class.active]="activeTab === 'overview'" (click)="switchTab('overview')">
+        <span class="material-symbols-outlined">credit_card</span>
+        <span>Subscription Plans</span>
+      </button>
+
+      <button type="button" class="tab-btn" [class.active]="activeTab === 'features'" (click)="switchTab('features')">
+        <span class="material-symbols-outlined">extension</span>
+        <span>Feature Marketplace</span>
+        @if (snapshot?.available?.length) {
+          <span class="tab-badge">{{ snapshot?.available?.length }}</span>
+        }
+      </button>
+
+      <button type="button" class="tab-btn" [class.active]="activeTab === 'invoices'" (click)="switchTab('invoices')">
+        <span class="material-symbols-outlined">receipt_long</span>
+        <span>Invoices &amp; Receipts</span>
+        @if (pendingInvoicesCount > 0) {
+          <span class="tab-badge badge-warning">{{ pendingInvoicesCount }} Pending</span>
+        }
+      </button>
+
+      <button type="button" class="tab-btn" [class.active]="activeTab === 'calculator'" (click)="switchTab('calculator')">
+        <span class="material-symbols-outlined">calculate</span>
+        <span>Usage Bill Calculator</span>
+      </button>
+    </nav>
+  </div>
+
+  <!--  ── Loading Indicator ──  -->
+  @if (isLoading && !snapshot) {
+    <div class="billing-loading-state">
+      <div class="loading-spinner"></div>
+      <p>Synchronizing billing entitlements from Master Catalog...</p>
+    </div>
+  }
+
+  <!--  ══════════════════════════════════════════════════════════════════════════  -->
+  <!--  ── TAB 1: OVERVIEW & ACTIVE PLANS ───────────────────────────────────────  -->
+  <!--  ══════════════════════════════════════════════════════════════════════════  -->
+  @if (activeTab === 'overview' && snapshot) {
+    
+    <!--  Renewal Alerts / Expiration Notices Banner  -->
+    @if (snapshot.notices && snapshot.notices.length > 0) {
+      <div class="notices-container">
+        @for (notice of snapshot.notices; track notice.featureCode) {
+          <div class="notice-card" [class.notice-critical]="notice.severity === 'Critical'" [class.notice-warning]="notice.severity !== 'Critical'">
+            <div class="notice-icon">
+              <span class="material-symbols-outlined">{{ notice.severity === 'Critical' ? 'error' : 'warning' }}</span>
+            </div>
+            <div class="notice-content">
+              <strong>{{ notice.featureName }}</strong>
+              <span>{{ notice.message }}</span>
+            </div>
+            <button type="button" class="btn-admin btn-admin-sm btn-admin-primary" (click)="switchTab('features')">
+              Renew Now
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    <!--  Sovereign Plan Hero Card  -->
+    <div class="plan-hero-card">
+      <div class="hero-left">
+        <div class="plan-badge-pill">
+          <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
+          <span>Sovereign Cloud Environment</span>
+        </div>
+        <h2 class="plan-hero-title">Ozikol Business Command Center</h2>
+        <p class="plan-hero-desc">
+          Your organization is running dedicated enterprise infrastructure with isolated tenant databases, end-to-end audit security, and unlimited staff seats.
+        </p>
+        <div class="hero-meta-items">
+          <div class="meta-item">
+            <span class="meta-label">Total Capabilities</span>
+            <span class="meta-val">{{ (snapshot.included.length + snapshot.subscribed.length) }} Active</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Sovereign Domain</span>
+            <span class="meta-val">{{ snapshot.tenantKey }}.localhost:4200</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Baseline Plan Cost</span>
+            <span class="meta-val text-success">Included Free ($0.00)</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="recurring-cost-box">
+          <span class="cost-label">Total Recurring Spend</span>
+          <div class="cost-amount">
+            <span class="currency">$</span>
+            <span class="number">{{ snapshot.totalRecurringMonthly.toFixed(2) }}</span>
+            <span class="cadence">/ mo</span>
+          </div>
+          <span class="cost-note">Across {{ snapshot.subscribed.length }} paid modular add-ons</span>
+          <button type="button" class="btn-admin btn-admin-secondary" style="width: 100%; margin-top: 14px;" (click)="switchTab('features')">
+            <span class="material-symbols-outlined">add</span>
+            <span>Add Capabilities</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!--  Active Subscribed Modular Add-ons Section  -->
+    <div class="admin-card" style="margin-bottom: 24px;">
+      <div class="card-header-clean">
+        <div class="card-header-left">
+          <h3 class="card-title">Subscribed Modular Add-ons</h3>
+          <p class="card-subtitle">Active paid or promotional capabilities subscribed to by your workspace.</p>
+        </div>
+        <div class="card-header-right">
+          <span class="badge badge-primary">{{ snapshot.subscribed.length }} Subscribed</span>
+        </div>
+      </div>
+
+      @if (snapshot.subscribed.length > 0) {
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>CAPABILITY</th>
+                <th>SUITE</th>
+                <th>CADENCE</th>
+                <th>PRICE</th>
+                <th>EXPIRES</th>
+                <th>AUTO-RENEW</th>
+                <th style="text-align: right;">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (sub of snapshot.subscribed; track sub.featureId) {
+                <tr>
+                  <td>
+                    <div class="feature-cell">
+                      <div class="feature-cell-icon">
+                        <span class="material-symbols-outlined">{{ sub.icon || 'extension' }}</span>
+                      </div>
+                      <div>
+                        <div class="feature-cell-name">{{ sub.name }}</div>
+                        <code class="feature-cell-code">{{ sub.featureCode }}</code>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge badge-neutral">{{ sub.category }}</span>
+                  </td>
+                  <td>
+                    <span class="badge badge-info">{{ sub.billingCadence }}</span>
+                  </td>
+                  <td>
+                    <strong style="color: #0f172a;">${{ sub.effectivePrice.toFixed(2) }}</strong>
+                  </td>
+                  <td>
+                    @if (sub.daysRemaining !== null && sub.daysRemaining !== undefined) {
+                      <div class="expiry-cell">
+                        <span>{{ sub.expiresAtUtc | date:'mediumDate' }}</span>
+                        <span class="badge" [class.badge-success]="sub.severity === 'None'" [class.badge-warning]="sub.severity === 'Warning' || sub.severity === 'Urgent'" [class.badge-danger]="sub.severity === 'Critical'">
+                          {{ sub.daysRemaining > 0 ? (sub.daysRemaining + ' days left') : 'Expired' }}
+                        </span>
+                      </div>
+                    } @else {
+                      <span class="text-muted">Ongoing</span>
+                    }
+                  </td>
+                  <td>
+                    <label class="switch-toggle" [title]="sub.autoRenew ? 'Auto-renew is ON' : 'Auto-renew is OFF'">
+                      <input type="checkbox" [checked]="sub.autoRenew" (change)="toggleAutoRenew(sub)" />
+                      <span class="slider-round"></span>
+                    </label>
+                  </td>
+                  <td style="text-align: right;">
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" (click)="switchTab('features')">
+                      <span>Manage</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-state-clean">
+          <span class="material-symbols-outlined empty-icon">layers_clear</span>
+          <h4>No Subscribed Add-ons Yet</h4>
+          <p>Your workspace is currently operating on the included baseline features. Browse our marketplace to add modular capabilities.</p>
+          <button type="button" class="btn-admin btn-admin-primary" (click)="switchTab('features')">
+            <span class="material-symbols-outlined">storefront</span>
+            <span>Browse Add-on Store</span>
+          </button>
+        </div>
+      }
+    </div>
+
+    <!--  Included Baseline Core Features Accordion / Summary  -->
+    <div class="admin-card">
+      <div class="card-header-clean">
+        <div class="card-header-left">
+          <h3 class="card-title">Included Baseline Capabilities</h3>
+          <p class="card-subtitle">Permanent core capabilities enabled for your organization with zero recurring charge.</p>
+        </div>
+        <div class="card-header-right">
+          <span class="badge badge-success">{{ snapshot.included.length }} Always Included</span>
+        </div>
+      </div>
+
+      <div class="included-grid">
+        @for (core of snapshot.included; track core.featureId) {
+          <div class="included-card">
+            <div class="included-card-icon">
+              <span class="material-symbols-outlined">{{ core.icon || 'check_circle' }}</span>
+            </div>
+            <div class="included-card-body">
+              <div class="included-card-title">{{ core.name }}</div>
+              <p class="included-card-desc">{{ core.description || 'Core sovereign functionality.' }}</p>
+              <div class="included-card-footer">
+                <span class="badge badge-success" style="font-size: 10px;">$0.00 / Included</span>
+                <span class="badge badge-neutral" style="font-size: 10px;">{{ core.category }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+  }
+
+  <!--  ══════════════════════════════════════════════════════════════════════════  -->
+  <!--  ── TAB 2: MODULAR CAPABILITY MARKETPLACE ────────────────────────────────  -->
+  <!--  ══════════════════════════════════════════════════════════════════════════  -->
+  @if (activeTab === 'features' && snapshot) {
+    
+    <!--  Marketplace Filter & Cadence Bar  -->
+    <div class="admin-card" style="margin-bottom: 24px; padding: 18px 20px;">
+      <div class="marketplace-toolbar">
+        <div class="search-and-suite">
+          <div class="table-search-box" style="width: 280px; max-width: 100%;">
+            <span class="search-icon"><span class="material-symbols-outlined" style="font-size: 18px;">search</span></span>
+            <input type="text" [(ngModel)]="featureSearch" placeholder="Search available add-ons..." />
+          </div>
+
+          <select [(ngModel)]="selectedSuite" class="form-select" style="min-width: 220px; height: 38px;">
+            <option value="" [textContent]="'All Modular Suites (' + distinctAvailableSuites.length + ')'"></option>
+            @for (suite of distinctAvailableSuites; track suite) {
+              <option [value]="suite">{{ suite }}</option>
+            }
+          </select>
+        </div>
+
+        <!--  Cadence Switcher Pill  -->
+        <div class="cadence-switcher">
+          <span class="cadence-label">Billing Interval:</span>
+          <div class="cadence-pills">
+            <button type="button" class="cadence-btn" [class.active]="selectedMarketplaceCadence === 'Monthly'" (click)="selectedMarketplaceCadence = 'Monthly'">
+              Monthly
+            </button>
+            <button type="button" class="cadence-btn" [class.active]="selectedMarketplaceCadence === 'Quarterly'" (click)="selectedMarketplaceCadence = 'Quarterly'">
+              Quarterly <span class="savings-tag">-10%</span>
+            </button>
+            <button type="button" class="cadence-btn" [class.active]="selectedMarketplaceCadence === 'Yearly'" (click)="selectedMarketplaceCadence = 'Yearly'">
+              Yearly <span class="savings-tag">-17%</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!--  Available Features Grid  -->
+    @if (filteredAvailableFeatures.length > 0) {
+      <div class="marketplace-grid">
+        @for (feat of filteredAvailableFeatures; track feat.featureId) {
+          <div class="addon-card">
+            <div class="addon-card-header">
+              <div class="addon-icon-wrap">
+                <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
+              </div>
+              <div class="addon-badges">
+                <span class="badge badge-neutral">{{ feat.category }}</span>
+              </div>
+            </div>
+
+            <h3 class="addon-title">{{ feat.name }}</h3>
+            <p class="addon-desc">{{ feat.description || 'Enterprise modular capability for expanding platform operations.' }}</p>
+
+            <div class="addon-pricing-block">
+              <div class="addon-price">
+                <span class="price-curr">$</span>
+                <span class="price-val">{{ getPriceForCadence(feat, selectedMarketplaceCadence).toFixed(2) }}</span>
+                <span class="price-per">/ {{ selectedMarketplaceCadence === 'Yearly' ? 'yr' : (selectedMarketplaceCadence === 'Quarterly' ? 'qtr' : 'mo') }}</span>
+              </div>
+              @if (selectedMarketplaceCadence === 'Yearly') {
+                <span class="price-subtext">Equivalent to ${{ (getPriceForCadence(feat, 'Yearly') / 12).toFixed(2) }}/mo</span>
+              }
+            </div>
+
+            <button type="button" class="btn-admin btn-admin-primary addon-btn" (click)="openSubscribeModal(feat)">
+              <span class="material-symbols-outlined">add_circle</span>
+              <span>Subscribe to Add-on</span>
+            </button>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="admin-card" style="padding: 48px; text-align: center;">
+        <span class="material-symbols-outlined" style="font-size: 36px; color: #94a3b8; margin-bottom: 12px;">search_off</span>
+        <h4 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0 0 6px;">No Add-ons Match Filter</h4>
+        <p style="font-size: 13px; color: #64748b; margin: 0 0 16px;">Try adjusting your keyword search or selecting a different suite.</p>
+        <button type="button" class="btn-admin btn-admin-secondary" (click)="featureSearch = ''; selectedSuite = '';">
+          Clear Filters
+        </button>
+      </div>
+    }
+
+  }
+
+  <!--  ══════════════════════════════════════════════════════════════════════════  -->
+  <!--  ── TAB 3: INVOICES & SETTLEMENT LEDGER ──────────────────────────────────  -->
+  <!--  ══════════════════════════════════════════════════════════════════════════  -->
+  @if (activeTab === 'invoices') {
+    
+    <!--  Invoices KPI summary row  -->
+    <div class="invoices-stat-row">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-primary">
+          <span class="material-symbols-outlined">receipt</span>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Total Invoices</span>
+          <span class="stat-value">{{ invoices.length }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-warning">
+          <span class="material-symbols-outlined">pending_actions</span>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Pending Settlement</span>
+          <span class="stat-value text-warning">{{ pendingInvoicesCount }} (${{ pendingInvoicedAmount.toFixed(2) }})</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-success">
+          <span class="material-symbols-outlined">check_circle</span>
+        </div>
+        <div class="stat-details">
+          <span class="stat-label">Settled Invoices</span>
+          <span class="stat-value text-success">{{ (invoices.length - pendingInvoicesCount) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!--  Pending Settlement Notice Box  -->
+    @if (pendingInvoicesCount > 0) {
+      <div class="pending-notice-banner">
+        <div class="banner-icon-wrap">
+          <span class="material-symbols-outlined">hourglass_top</span>
+        </div>
+        <div class="banner-body">
+          <div class="banner-heading">Invoices Awaiting Settlement</div>
+          <div class="banner-subtext">
+            You have <strong>{{ pendingInvoicesCount }} pending invoice(s)</strong> totaling <strong>${{ pendingInvoicedAmount.toFixed(2) }}</strong>. Payment gateway settlement integration is queued. You can view, download, or print official invoice receipts below.
+          </div>
+        </div>
+      </div>
+    }
+
+    <!--  Invoices Ledger Table  -->
+    <div class="admin-card">
+      <div class="table-toolbar" style="padding: 14px 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 13px; font-weight: 700; color: #475569;">Filter by Status:</span>
+          <select [(ngModel)]="invoiceStatusFilter" class="form-select" style="height: 36px; font-size: 12.5px; width: auto;">
+            <option value="all" [textContent]="'All Invoices (' + invoices.length + ')'"></option>
+            <option value="pending" [textContent]="'Pending Settlement (' + pendingInvoicesCount + ')'"></option>
+            <option value="completed" [textContent]="'Completed / Settled (' + (invoices.length - pendingInvoicesCount) + ')'"></option>
+          </select>
+        </div>
+
+        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" (click)="loadInvoices()">
+          <span class="material-symbols-outlined">refresh</span>
+          <span>Refresh</span>
+        </button>
+      </div>
+
+      @if (filteredInvoices.length > 0) {
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>INVOICE #</th>
+                <th>DESCRIPTION</th>
+                <th>AMOUNT</th>
+                <th>STATUS</th>
+                <th>ISSUED DATE</th>
+                <th style="text-align: right;">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (inv of filteredInvoices; track inv.id) {
+                <tr>
+                  <td>
+                    <strong style="color: var(--ozikol-primary, #0050e5); font-family: monospace;">{{ inv.invoiceNumber || 'INV-DRAFT' }}</strong>
+                  </td>
+                  <td>
+                    <span>{{ inv.description }}</span>
+                  </td>
+                  <td>
+                    <strong style="color: #0f172a;">${{ inv.amount.toFixed(2) }} {{ inv.currency }}</strong>
+                  </td>
+                  <td>
+                    @if (inv.status.toLowerCase() === 'pending') {
+                      <span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 12px;">hourglass_top</span>
+                        Awaiting Settlement
+                      </span>
+                    } @else if (inv.status.toLowerCase() === 'completed') {
+                      <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 12px;">check_circle</span>
+                        Paid &amp; Settled
+                      </span>
+                    } @else {
+                      <span class="badge badge-neutral">{{ inv.status }}</span>
+                    }
+                  </td>
+                  <td>
+                    <span style="font-size: 12.5px; color: #64748b;">{{ inv.createdUtc | date:'mediumDate' }}</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" (click)="viewInvoice(inv)">
+                      <span class="material-symbols-outlined">visibility</span>
+                      <span>View Receipt</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-state-clean">
+          <span class="material-symbols-outlined empty-icon">receipt</span>
+          <h4>No Invoices Found</h4>
+          <p>No billing invoices match the active filter criteria.</p>
+        </div>
+      }
+    </div>
+
+  }
+
+  <!--  ══════════════════════════════════════════════════════════════════════════  -->
+  <!--  ── TAB 4: USAGE BILL CALCULATOR ─────────────────────────────────────────  -->
+  <!--  ══════════════════════════════════════════════════════════════════════════  -->
+  @if (activeTab === 'calculator' && snapshot) {
+    <div class="calculator-layout">
+      <div class="calc-config-card admin-card">
+        <div class="card-header-clean">
+          <div>
+            <h3 class="card-title">Interactive Capability Estimator</h3>
+            <p class="card-subtitle">Select modular features to project your monthly and annual platform investment.</p>
+          </div>
+          <div class="cadence-pills">
+            <button type="button" class="cadence-btn" [class.active]="calculatorCadence === 'Monthly'" (click)="calculatorCadence = 'Monthly'">
+              Monthly
+            </button>
+            <button type="button" class="cadence-btn" [class.active]="calculatorCadence === 'Yearly'" (click)="calculatorCadence = 'Yearly'">
+              Yearly (-17%)
+            </button>
+          </div>
+        </div>
+
+        <div class="calc-feature-list">
+          <div class="calc-group-title">Active Modular Subscriptions:</div>
+          @for (sub of snapshot.subscribed; track sub.featureId) {
+            <div class="calc-item-row active-item">
+              <div class="calc-item-left">
+                <span class="material-symbols-outlined text-success">check_circle</span>
+                <div>
+                  <strong>{{ sub.name }}</strong>
+                  <span class="calc-sub-text">Currently Subscribed ({{ sub.billingCadence }})</span>
+                </div>
+              </div>
+              <div class="calc-item-price">
+                ${{ (calculatorCadence === 'Yearly' ? (sub.monthlyPrice * 10) : sub.monthlyPrice).toFixed(2) }}
+              </div>
+            </div>
+          }
+
+          <div class="calc-group-title" style="margin-top: 18px;">Optional Add-ons to Simulate:</div>
+          @for (avail of snapshot.available; track avail.featureId) {
+            <label class="calc-item-row clickable" (click)="toggleCalcAddon(avail.featureId)">
+              <div class="calc-item-left">
+                <input type="checkbox" [checked]="isCalcAddonSelected(avail.featureId)" (click)="$event.stopPropagation(); toggleCalcAddon(avail.featureId);" />
+                <div>
+                  <strong>{{ avail.name }}</strong>
+                  <span class="calc-sub-text">{{ avail.category }}</span>
+                </div>
+              </div>
+              <div class="calc-item-price">
+                ${{ (calculatorCadence === 'Yearly' ? (avail.yearlyPrice > 0 ? avail.yearlyPrice : avail.monthlyPrice * 10) : avail.monthlyPrice).toFixed(2) }}
+              </div>
+            </label>
+          }
+        </div>
+      </div>
+
+      <div class="calc-summary-card">
+        <h3 class="summary-title">Projected Spend Summary</h3>
+        <p class="summary-subtitle">Estimated cost for selected sovereign capabilities.</p>
+
+        <div class="summary-box">
+          <div class="summary-amount-block">
+            <span class="sum-label">Projected Total ({{ calculatorCadence }})</span>
+            <div class="sum-price">
+              <span class="sum-curr">$</span>
+              <span class="sum-num">
+                {{ (calculatorCadence === 'Yearly' ? calculatedYearlyTotal : calculatedMonthlyTotal).toFixed(2) }}
+              </span>
+              <span class="sum-cadence">/ {{ calculatorCadence === 'Yearly' ? 'yr' : 'mo' }}</span>
+            </div>
+          </div>
+
+          @if (calculatorCadence === 'Yearly') {
+            <div class="summary-savings-banner">
+              <span class="material-symbols-outlined">savings</span>
+              <span>Yearly billing saves 2 months (~17% discount) compared to monthly billing!</span>
+            </div>
+          }
+
+          <div class="summary-breakdown-list">
+            <div class="breakdown-line">
+              <span>Baseline Core Platform:</span>
+              <span class="text-success">$0.00 (Included)</span>
+            </div>
+            <div class="breakdown-line">
+              <span>Active Subscriptions:</span>
+              <span>${{ (calculatorCadence === 'Yearly' ? snapshot.totalRecurringMonthly * 10 : snapshot.totalRecurringMonthly).toFixed(2) }}</span>
+            </div>
+            <div class="breakdown-line">
+              <span>Selected Simulation Add-ons:</span>
+              <span>{{ selectedAddonIdsForCalc.size }} selected</span>
+            </div>
+          </div>
+
+          <button type="button" class="btn-admin btn-admin-primary" style="width: 100%; margin-top: 18px;" (click)="switchTab('features')">
+            <span class="material-symbols-outlined">shopping_cart</span>
+            <span>Activate Add-ons in Store</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>
+
+<!--  ══════════════════════════════════════════════════════════════════════════  -->
+<!--  ── MODAL: SUBSCRIBE / CHECKOUT CONFIRMATION ─────────────────────────────  -->
+<!--  ══════════════════════════════════════════════════════════════════════════  -->
+@if (showSubscribeModal && selectedFeatureToSubscribe) {
+  <div class="modal-backdrop-custom" (click)="closeSubscribeModal()">
+    <div class="modal-card-custom" (click)="$event.stopPropagation()">
+      
+      @if (!pendingSubscribeResult) {
+        <div class="modal-header-custom">
+          <div class="modal-header-icon">
+            <span class="material-symbols-outlined">extension</span>
+          </div>
+          <div>
+            <h3 class="modal-title">Subscribe to Capability</h3>
+            <p class="modal-subtitle">Add modular feature to your sovereign workspace.</p>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeSubscribeModal()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="modal-body-custom">
+          <div class="feature-subscribe-preview">
+            <div class="feat-prev-title">{{ selectedFeatureToSubscribe.name }}</div>
+            <code class="feat-prev-code">{{ selectedFeatureToSubscribe.featureCode }}</code>
+            <p class="feat-prev-desc">{{ selectedFeatureToSubscribe.description }}</p>
+          </div>
+
+          <div class="cadence-selection-block">
+            <label class="form-label">Select Billing Interval:</label>
+            <div class="cadence-cards-grid">
+              <label class="cadence-card-option" [class.selected]="subscribeCadence === 'Monthly'">
+                <input type="radio" name="cadence" value="Monthly" [(ngModel)]="subscribeCadence" />
+                <div class="cad-title">Monthly</div>
+                <div class="cad-price">${{ selectedFeatureToSubscribe.monthlyPrice.toFixed(2) }} <span class="cad-unit">/mo</span></div>
+              </label>
+
+              <label class="cadence-card-option" [class.selected]="subscribeCadence === 'Quarterly'">
+                <input type="radio" name="cadence" value="Quarterly" [(ngModel)]="subscribeCadence" />
+                <div class="cad-title">Quarterly <span class="badge-discount">-10%</span></div>
+                <div class="cad-price">${{ getPriceForCadence(selectedFeatureToSubscribe, 'Quarterly').toFixed(2) }} <span class="cad-unit">/qtr</span></div>
+              </label>
+
+              <label class="cadence-card-option" [class.selected]="subscribeCadence === 'Yearly'">
+                <input type="radio" name="cadence" value="Yearly" [(ngModel)]="subscribeCadence" />
+                <div class="cad-title">Yearly <span class="badge-discount">-17%</span></div>
+                <div class="cad-price">${{ getPriceForCadence(selectedFeatureToSubscribe, 'Yearly').toFixed(2) }} <span class="cad-unit">/yr</span></div>
+              </label>
+            </div>
+          </div>
+
+          <!--  Flow Notice: Keeping Payment Pending  -->
+          <div class="settlement-info-box">
+            <span class="material-symbols-outlined box-icon">info</span>
+            <div class="box-text">
+              <strong>Flow Notice:</strong> Subscribing will generate an official invoice in your billing ledger. Payment gateway settlement integration is queued; the invoice will be marked as <strong>Awaiting Settlement</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer-custom">
+          <button type="button" class="btn-admin btn-admin-secondary" (click)="closeSubscribeModal()" [disabled]="isActionLoading">
+            Cancel
+          </button>
+          <button type="button" class="btn-admin btn-admin-primary" (click)="confirmSubscribe()" [disabled]="isActionLoading">
+            @if (isActionLoading) {
+              <div class="spinner-sm"></div>
+              <span>Generating Invoice...</span>
+            } @else {
+              <span class="material-symbols-outlined">receipt</span>
+              <span>Confirm &amp; Generate Invoice</span>
+            }
+          </button>
+        </div>
+      } @else {
+        <!--  Success State with Invoice Generated  -->
+        <div class="modal-body-custom text-center" style="padding: 32px 24px;">
+          <div class="success-icon-wrap">
+            <span class="material-symbols-outlined" style="font-size: 38px; color: #10b981;">check_circle</span>
+          </div>
+          <h3 style="font-size: 19px; font-weight: 800; color: #0f172a; margin: 12px 0 6px;">Invoice Generated Successfully</h3>
+          <p style="font-size: 13.5px; color: #64748b; margin-bottom: 20px;">
+            Invoice <strong>{{ pendingSubscribeResult.invoiceNumber }}</strong> for <strong>${{ pendingSubscribeResult.amountDue.toFixed(2) }} USD</strong> has been placed in your ledger.
+          </p>
+
+          <div class="invoice-status-pill-box">
+            <span class="badge badge-warning" style="padding: 6px 14px; font-size: 12.5px;">
+              <span class="material-symbols-outlined" style="font-size: 14px;">hourglass_top</span>
+              Status: Awaiting Settlement
+            </span>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: center; margin-top: 24px;">
+            <button type="button" class="btn-admin btn-admin-secondary" (click)="closeSubscribeModal()">
+              Close
+            </button>
+            <button type="button" class="btn-admin btn-admin-primary" (click)="closeSubscribeModal(); switchTab('invoices');">
+              <span class="material-symbols-outlined">receipt_long</span>
+              <span>View Invoice in Ledger</span>
+            </button>
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+}
+
+<!--  ══════════════════════════════════════════════════════════════════════════  -->
+<!--  ── MODAL: INVOICE RECEIPT & PRINTABLE DESIGN ────────────────────────────  -->
+<!--  ══════════════════════════════════════════════════════════════════════════  -->
+@if (showInvoiceModal && selectedInvoice) {
+  <div class="modal-backdrop-custom" (click)="closeInvoiceModal()">
+    <div class="modal-card-custom invoice-printable-card" (click)="$event.stopPropagation()">
+      <div class="modal-header-custom no-print">
+        <h3 class="modal-title">Invoice Receipt</h3>
+        <button type="button" class="btn-close-modal" (click)="closeInvoiceModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="invoice-printable-body" id="printableInvoiceArea">
+        <div class="inv-header">
+          <div class="inv-brand">
+            <div class="inv-logo-box">BCC</div>
+            <div>
+              <div class="inv-brand-name">Ozikol Business Command Center</div>
+              <div class="inv-subbrand">Sovereign Enterprise Cloud Platform</div>
+            </div>
+          </div>
+          <div class="inv-meta-right">
+            <div class="inv-number">{{ selectedInvoice.invoiceNumber || 'INV-DRAFT' }}</div>
+            <div class="inv-date">Date: {{ selectedInvoice.createdUtc | date:'mediumDate' }}</div>
+          </div>
+        </div>
+
+        <div class="inv-status-banner" [class.status-pending]="selectedInvoice.status.toLowerCase() === 'pending'" [class.status-paid]="selectedInvoice.status.toLowerCase() === 'completed'">
+          @if (selectedInvoice.status.toLowerCase() === 'pending') {
+            <span class="material-symbols-outlined">hourglass_top</span>
+            <span>STATUS: PENDING SETTLEMENT — Awaiting Gateway Processing</span>
+          } @else {
+            <span class="material-symbols-outlined">verified</span>
+            <span>STATUS: PAID &amp; SETTLED</span>
+          }
+        </div>
+
+        <div class="inv-details-grid">
+          <div>
+            <span class="inv-detail-k">Billed To Organization:</span>
+            <div class="inv-detail-v">{{ snapshot?.tenantKey }}.localhost:4200</div>
+          </div>
+          <div>
+            <span class="inv-detail-k">Payment Terms:</span>
+            <div class="inv-detail-v">Due Upon Receipt (USD)</div>
+          </div>
+        </div>
+
+        <table class="inv-line-items-table">
+          <thead>
+            <tr>
+              <th>DESCRIPTION</th>
+              <th style="text-align: right;">AMOUNT (USD)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <strong>{{ selectedInvoice.description }}</strong>
+                <div style="font-size: 11.5px; color: #64748b;">Modular BCC feature subscription entitlement</div>
+              </td>
+              <td style="text-align: right;">
+                <strong>${{ selectedInvoice.amount.toFixed(2) }}</strong>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td style="text-align: right; font-weight: 800;">TOTAL DUE:</td>
+              <td style="text-align: right; font-weight: 900; font-size: 16px; color: var(--ozikol-primary, #0050e5);">
+                ${{ selectedInvoice.amount.toFixed(2) }} USD
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <div class="inv-notes-footer">
+          <p>Thank you for choosing Ozikol Business Command Center. This document serves as an official proof of invoice generation.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer-custom no-print">
+        <button type="button" class="btn-admin btn-admin-secondary" (click)="closeInvoiceModal()">
+          Close
+        </button>
+        <button type="button" class="btn-admin btn-admin-primary" (click)="printInvoice()">
+          <span class="material-symbols-outlined">print</span>
+          <span>Print / Save PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!--  ── Contextual Info Popover Modal ──  -->
+@if (showInfoModal) {
+  <div class="modal-backdrop-custom" (click)="closeInfoModal()">
+    <div class="modal-card-custom" style="max-width: 480px;" (click)="$event.stopPropagation()">
+      <div class="modal-header-custom">
+        <div class="modal-header-icon" style="background: rgba(0, 80, 229, 0.08); color: var(--ozikol-primary, #0050e5);">
+          <span class="material-symbols-outlined">info</span>
+        </div>
+        <h3 class="modal-title">About Workspace Billing</h3>
+        <button type="button" class="btn-close-modal" (click)="closeInfoModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body-custom" style="font-size: 13.5px; color: #475569; line-height: 1.6;">
+        <p><strong>Sovereign Licensing:</strong> Your organization operates an isolated tenant database. Baseline core capabilities are included with permanent zero-cost licenses.</p>
+        <p><strong>Modular Add-ons:</strong> Add optional capabilities at any time. Subscribing generates an invoice in your ledger. Auto-renew can be toggled on or off per feature at any moment.</p>
+        <p><strong>Billing Cadences:</strong> Yearly intervals include approximately 2 months free (~17% discount) compared to standard monthly pricing.</p>
+      </div>
+      <div class="modal-footer-custom">
+        <button type="button" class="btn-admin btn-admin-primary" (click)="closeInfoModal()">
+          Got It
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
