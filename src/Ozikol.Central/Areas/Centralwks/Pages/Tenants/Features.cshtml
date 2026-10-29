@@ -113,57 +113,113 @@
     </div>
 </div>
 
-@* ── 4 Combined Metric Stat Cards Row ── *@
-<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
-    @* Card 1: Suites *@
-    <div class="stat-card">
-        <div class="stat-icon-wrapper stat-icon-primary">
-            <span class="material-symbols-outlined">category</span>
-        </div>
-        <div class="stat-details">
-            <span class="stat-label">Suites</span>
-            <span class="stat-value">@Model.SuitesCount.ToString("N0")</span>
-        </div>
-    </div>
-
-    @* Card 2: Active / Not Active (Per-Tenant Subscription Status) *@
-    <div class="stat-card">
+@* ── 5 Complete Tenant Governance Dashboard KPI Cards Row ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 14px; margin-bottom: 24px;">
+    @* Card 1: Active / Subscribed / Not Active *@
+    <div class="stat-card" style="padding: 16px 18px;">
         <div class="stat-icon-wrapper stat-icon-success">
             <span class="material-symbols-outlined">check_circle</span>
         </div>
-        <div class="stat-details" style="flex: 1;">
-            <span class="stat-label">Active / Not Active</span>
-            <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 2px;">
-                <span class="stat-value" style="color: var(--admin-success);" title="Active for this Tenant">@Model.ActiveCount.ToString("N0")</span>
-                <span style="font-size: 16px; color: #cbd5e1; font-weight: 700;">/</span>
-                <span class="stat-value" style="color: var(--admin-danger);" title="Not Active for this Tenant">@Model.InactiveCount.ToString("N0")</span>
+        <div class="stat-details" style="flex: 1; min-width: 0;">
+            <span class="stat-label">Active / Subscribed / Not Active</span>
+            <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 3px; flex-wrap: wrap;">
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=active&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Filter Active Capabilities">
+                    <span class="stat-value" style="font-size: 21px; color: #059669;">@Model.ActiveCount</span>
+                </a>
+                <span style="font-size: 14px; color: #cbd5e1; font-weight: 700;">/</span>
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=subscribed&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Filter Subscribed Add-on Capabilities">
+                    <span class="stat-value" style="font-size: 21px; color: #0050e5;">@Model.SubscribedAddonCount</span>
+                </a>
+                <span style="font-size: 14px; color: #cbd5e1; font-weight: 700;">/</span>
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=inactive&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Filter Not Active Capabilities">
+                    <span class="stat-value" style="font-size: 21px; color: #dc2626;">@Model.InactiveCount</span>
+                </a>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 3px; font-weight: 600;">
+                <span style="color: #059669;">@Model.ActiveCount Active</span> • <span style="color: #0050e5;">@Model.SubscribedAddonCount Subscribed</span> • <span style="color: #dc2626;">@Model.InactiveCount Off</span>
             </div>
         </div>
     </div>
 
-    @* Card 3: Available / Coming Soon (For This Tenant) *@
-    <div class="stat-card">
+    @* Card 2: Available / Coming Soon *@
+    <div class="stat-card" style="padding: 16px 18px;">
         <div class="stat-icon-wrapper" style="background: rgba(16, 185, 129, 0.14); color: #059669;">
             <span class="material-symbols-outlined">verified</span>
         </div>
-        <div class="stat-details" style="flex: 1;">
+        <div class="stat-details" style="flex: 1; min-width: 0;">
             <span class="stat-label">Available / Coming Soon</span>
-            <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 2px;">
-                <span class="stat-value" style="color: #059669;" title="Available for Use">@Model.AvailableForUseCount.ToString("N0")</span>
-                <span style="font-size: 16px; color: #cbd5e1; font-weight: 700;">/</span>
-                <span class="stat-value" style="color: var(--admin-warning);" title="Coming Soon">@Model.ComingSoonCount.ToString("N0")</span>
+            <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 3px;">
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=available&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Filter Available for Use">
+                    <span class="stat-value" style="font-size: 21px; color: #059669;">@Model.AvailableForUseCount</span>
+                </a>
+                <span style="font-size: 15px; color: #cbd5e1; font-weight: 700;">/</span>
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=coming_soon&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Filter Coming Soon">
+                    <span class="stat-value" style="font-size: 21px; color: #d97706;">@Model.ComingSoonCount</span>
+                </a>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 3px; font-weight: 600;">
+                Across @Model.SuitesCount Suites (@Model.TotalCount Total)
             </div>
         </div>
     </div>
 
-    @* Card 4: Monthly Recurring Spend (MRR) *@
-    <div class="stat-card">
+    @* Card 3: Custom Available / General Available *@
+    <div class="stat-card" style="padding: 16px 18px;">
+        <div class="stat-icon-wrapper" style="background: rgba(124, 58, 237, 0.12); color: #7c3aed;">
+            <span class="material-symbols-outlined">tune</span>
+        </div>
+        <div class="stat-details" style="flex: 1; min-width: 0;">
+            <span class="stat-label">Custom / General Available</span>
+            <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 3px;">
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=custom_avail&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Features with Custom Tenant Availability">
+                    <span class="stat-value" style="font-size: 21px; color: #7c3aed;">@Model.CustomAvailableFeaturesCount</span>
+                </a>
+                <span style="font-size: 15px; color: #cbd5e1; font-weight: 700;">/</span>
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=general_avail&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Features using General Master Availability">
+                    <span class="stat-value" style="font-size: 21px; color: #475569;">@Model.GeneralAvailableFeaturesCount</span>
+                </a>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 3px; font-weight: 600;">
+                Policy: <strong style="color: @(Model.Tenant.UseCustomAvailability ? "#059669" : "#475569");">@(Model.Tenant.UseCustomAvailability ? "Custom Availability" : "General Availability")</strong>
+            </div>
+        </div>
+    </div>
+
+    @* Card 4: Custom Pricing / General Pricing *@
+    <div class="stat-card" style="padding: 16px 18px;">
+        <div class="stat-icon-wrapper" style="background: rgba(0, 80, 229, 0.12); color: #0050e5;">
+            <span class="material-symbols-outlined">sell</span>
+        </div>
+        <div class="stat-details" style="flex: 1; min-width: 0;">
+            <span class="stat-label">Custom / General Pricing</span>
+            <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 3px;">
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=custom_price&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Features with Custom Tenant Pricing">
+                    <span class="stat-value" style="font-size: 21px; color: #0050e5;">@Model.CustomPricingFeaturesCount</span>
+                </a>
+                <span style="font-size: 15px; color: #cbd5e1; font-weight: 700;">/</span>
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=general_price&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Features using General Master Pricing">
+                    <span class="stat-value" style="font-size: 21px; color: #475569;">@Model.GeneralPricingFeaturesCount</span>
+                </a>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 3px; font-weight: 600;">
+                Policy: <strong style="color: @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#475569");">@(Model.Tenant.UseCustomPricing ? "Custom Pricing" : "General Pricing")</strong>
+            </div>
+        </div>
+    </div>
+
+    @* Card 5: Monthly Recurring Spend (MRR) *@
+    <div class="stat-card" style="padding: 16px 18px;">
         <div class="stat-icon-wrapper" style="background: rgba(14, 165, 233, 0.14); color: #0284c7;">
             <span class="material-symbols-outlined">payments</span>
         </div>
-        <div class="stat-details">
+        <div class="stat-details" style="flex: 1; min-width: 0;">
             <span class="stat-label">Tenant Monthly Spend</span>
-            <span class="stat-value">$@Model.TotalMonthlyMrr.ToString("N2")<span style="font-size: 12px; font-weight: 600; color: #64748b;">/mo</span></span>
+            <div style="display: flex; align-items: baseline; gap: 4px; margin-top: 3px;">
+                <span class="stat-value" style="font-size: 21px; color: #0f172a;">$@Model.TotalMonthlyMrr.ToString("N2")<span style="font-size: 12px; font-weight: 600; color: #64748b;">/mo</span></span>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 3px; font-weight: 600;">
+                From <strong>@Model.SubscribedAddonCount</strong> Subscribed Add-ons
+            </div>
         </div>
     </div>
 </div>
@@ -190,13 +246,17 @@
                 }
             </select>
 
-            <select name="status" class="form-select" style="width: 175px; max-width: 175px; height: 38px; padding: 6px 12px; font-size: 13px;" onchange="this.form.submit()">
-                <option value="">All Statuses</option>
+            <select name="status" class="form-select" style="width: 215px; max-width: 215px; height: 38px; padding: 6px 12px; font-size: 13px;" onchange="this.form.submit()">
+                <option value="">All Statuses (@Model.TotalCount)</option>
                 <option value="active" selected="@(Model.Status == "active")">Active (@Model.ActiveCount)</option>
+                <option value="subscribed" selected="@(Model.Status == "subscribed")">Subscribed Add-ons (@Model.SubscribedAddonCount)</option>
                 <option value="inactive" selected="@(Model.Status == "inactive")">Not Active (@Model.InactiveCount)</option>
                 <option value="available" selected="@(Model.Status == "available")">Available for Use (@Model.AvailableForUseCount)</option>
                 <option value="coming_soon" selected="@(Model.Status == "coming_soon")">Coming Soon (@Model.ComingSoonCount)</option>
-                <option value="custom_price" selected="@(Model.Status == "custom_price")">Custom Priced</option>
+                <option value="custom_avail" selected="@(Model.Status == "custom_avail")">Custom Available (@Model.CustomAvailableFeaturesCount)</option>
+                <option value="general_avail" selected="@(Model.Status == "general_avail")">General Available (@Model.GeneralAvailableFeaturesCount)</option>
+                <option value="custom_price" selected="@(Model.Status == "custom_price")">Custom Pricing (@Model.CustomPricingFeaturesCount)</option>
+                <option value="general_price" selected="@(Model.Status == "general_price")">General Pricing (@Model.GeneralPricingFeaturesCount)</option>
             </select>
 
             <button type="submit" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 14px; font-size: 13px;">
@@ -301,15 +361,22 @@
                                         @(string.IsNullOrWhiteSpace(feat.Description) ? "Core sovereign capabilities and operations." : feat.Description)
                                     </p>
 
-                                    @* Meta Badges Row: 1. Active/Not Active (Tenant), 2. Available/Coming Soon (Tenant), 3. Tier *@
+                                    @* Meta Badges Row: 1. Active/Not Active + Subscribed (Tenant), 2. Available/Coming Soon (Tenant), 3. Tier *@
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
-                                        @* 1. Tenant Subscription Active vs Not Active *@
+                                        @* 1. Tenant Subscription Active vs Not Active + Subscribed beside Active *@
                                         @if (item.IsSubscribed)
                                         {
                                             <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
                                                 <span class="badge-dot" style="background-color: #10b981;"></span>
                                                 Active
                                             </span>
+                                            @if (item.IsPaidSubscribed)
+                                            {
+                                                <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(0, 80, 229, 0.25);">
+                                                    <span class="material-symbols-outlined" style="font-size: 12px;">subscriptions</span>
+                                                    Subscribed
+                                                </span>
+                                            }
                                         }
                                         else
                                         {
@@ -319,19 +386,19 @@
                                             </span>
                                         }
 
-                                        @* 2. Tenant Availability: Available for Use vs Coming Soon *@
+                                        @* 2. Tenant Availability: Available for Use vs Coming Soon (with Custom vs General indicator) *@
                                         @if (item.EffectiveAvailableForUse)
                                         {
                                             <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
                                                 <span class="material-symbols-outlined" style="font-size: 12px;">verified</span>
-                                                Available for Use @(item.HasCustomAvailabilityOverride ? "(Custom)" : "")
+                                                Available @(item.HasCustomAvailabilityOverride ? "(Custom)" : "(General)")
                                             </span>
                                         }
                                         else
                                         {
                                             <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(245, 158, 11, 0.25);">
                                                 <span class="material-symbols-outlined" style="font-size: 12px;">schedule</span>
-                                                Coming Soon @(item.HasCustomAvailabilityOverride ? "(Custom)" : "")
+                                                Coming Soon @(item.HasCustomAvailabilityOverride ? "(Custom)" : "(General)")
                                             </span>
                                         }
 
@@ -366,8 +433,12 @@
 
                                         @if (item.HasCustomPriceOverride)
                                         {
-                                            <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5; font-size: 10px; font-weight: 700;">Custom Price</span>
+                                            <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10px; font-weight: 700;">Custom Price</span>
                                             <span style="font-size: 11px; color: #94a3b8; text-decoration: line-through;">$@feat.MonthlyPrice.ToString("F2")</span>
+                                        }
+                                        else if (!feat.IsCompulsory || feat.MonthlyPrice > 0)
+                                        {
+                                            <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px; font-weight: 600;">General Price</span>
                                         }
                                     </div>
 
@@ -492,34 +563,42 @@ else
                                 <span class="badge badge-neutral" style="font-size: 11.5px; font-weight: 500;">@feat.Category</span>
                             </td>
                             <td>
-                                @if (item.IsSubscribed)
-                                {
-                                    <span class="badge badge-success" style="font-size: 11px;">
-                                        <span class="badge-dot" style="background-color: var(--admin-success);"></span>
-                                        Active
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-danger" style="font-size: 11px;">
-                                        <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
-                                        Not Active
-                                    </span>
-                                }
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    @if (item.IsSubscribed)
+                                    {
+                                        <span class="badge badge-success" style="font-size: 11px;">
+                                            <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                                            Active
+                                        </span>
+                                        @if (item.IsPaidSubscribed)
+                                        {
+                                            <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-weight: 700; font-size: 11px;">
+                                                Subscribed
+                                            </span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-danger" style="font-size: 11px;">
+                                            <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                                            Not Active
+                                        </span>
+                                    }
+                                </div>
                             </td>
                             <td>
                                 @if (item.EffectiveAvailableForUse)
                                 {
                                     <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
                                         <span class="material-symbols-outlined" style="font-size: 12px;">verified</span>
-                                        Available for Use @(item.HasCustomAvailabilityOverride ? "(Custom)" : "")
+                                        Available @(item.HasCustomAvailabilityOverride ? "(Custom)" : "(General)")
                                     </span>
                                 }
                                 else
                                 {
                                     <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(245, 158, 11, 0.25);">
                                         <span class="material-symbols-outlined" style="font-size: 12px;">schedule</span>
-                                        Coming Soon @(item.HasCustomAvailabilityOverride ? "(Custom)" : "")
+                                        Coming Soon @(item.HasCustomAvailabilityOverride ? "(Custom)" : "(General)")
                                     </span>
                                 }
                             </td>
@@ -535,7 +614,11 @@ else
                                     }
                                     @if (item.HasCustomPriceOverride)
                                     {
-                                        <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5; font-size: 10px;">Custom</span>
+                                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10px;">Custom Price</span>
+                                    }
+                                    else if (!feat.IsCompulsory || feat.MonthlyPrice > 0)
+                                    {
+                                        <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10px;">General Price</span>
                                     }
                                 </div>
                             </td>

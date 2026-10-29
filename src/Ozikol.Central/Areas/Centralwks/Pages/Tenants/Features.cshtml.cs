@@ -100,9 +100,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public int SuitesCount { get; set; }
         public int TotalCount { get; set; }
         public int ActiveCount { get; set; }
+        public int SubscribedAddonCount { get; set; }
+        public int CompulsoryActiveCount { get; set; }
         public int InactiveCount { get; set; }
         public int AvailableForUseCount { get; set; }
         public int ComingSoonCount { get; set; }
+        public int CustomAvailableFeaturesCount { get; set; }
+        public int GeneralAvailableFeaturesCount { get; set; }
+        public int CustomPricingFeaturesCount { get; set; }
+        public int GeneralPricingFeaturesCount { get; set; }
         public decimal TotalMonthlyMrr { get; set; }
 
         /// <summary>
@@ -225,22 +231,25 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 }
 
                 // Determine effective Availability (Available for Use vs Coming Soon) for this tenant
-                bool hasCustomAvailOverride = tenant.UseCustomAvailability && sub?.IsAvailableForUseOverride != null;
-                bool effectiveAvailableForUse = hasCustomAvailOverride
+                bool hasCustomAvailOverride = sub?.IsAvailableForUseOverride != null;
+                bool effectiveAvailableForUse = (tenant.UseCustomAvailability && hasCustomAvailOverride)
                     ? sub!.IsAvailableForUseOverride!.Value
                     : f.IsAvailableForUse;
 
                 // Determine effective Monthly Price for this tenant
-                bool hasCustomPriceOverride = tenant.UseCustomPricing && sub?.CustomPriceOverride != null;
-                decimal effectiveMonthlyPrice = hasCustomPriceOverride
+                bool hasCustomPriceOverride = sub?.CustomPriceOverride != null;
+                decimal effectiveMonthlyPrice = (tenant.UseCustomPricing && hasCustomPriceOverride)
                     ? sub!.CustomPriceOverride!.Value
                     : f.MonthlyPrice;
+
+                bool isPaidSubscribed = isActiveForTenant && (!f.IsCompulsory || effectiveMonthlyPrice > 0);
 
                 allItems.Add(new FeatureItemDto
                 {
                     Feature = f,
                     Subscription = sub,
                     IsSubscribed = isActiveForTenant,
+                    IsPaidSubscribed = isPaidSubscribed,
                     EffectiveAvailableForUse = effectiveAvailableForUse,
                     HasCustomAvailabilityOverride = hasCustomAvailOverride,
                     EffectiveMonthlyPrice = effectiveMonthlyPrice,
@@ -251,9 +260,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             // Compute Tenant KPI Counters
             TotalCount = allItems.Count;
             ActiveCount = allItems.Count(x => x.IsSubscribed);
+            SubscribedAddonCount = allItems.Count(x => x.IsPaidSubscribed);
+            CompulsoryActiveCount = allItems.Count(x => x.IsSubscribed && x.Feature.IsCompulsory);
             InactiveCount = allItems.Count(x => !x.IsSubscribed);
             AvailableForUseCount = allItems.Count(x => x.EffectiveAvailableForUse);
             ComingSoonCount = allItems.Count(x => !x.EffectiveAvailableForUse);
+            CustomAvailableFeaturesCount = allItems.Count(x => x.HasCustomAvailabilityOverride);
+            GeneralAvailableFeaturesCount = TotalCount - CustomAvailableFeaturesCount;
+            CustomPricingFeaturesCount = allItems.Count(x => x.HasCustomPriceOverride);
+            GeneralPricingFeaturesCount = TotalCount - CustomPricingFeaturesCount;
             TotalMonthlyMrr = allItems
                 .Where(x => x.IsSubscribed && x.EffectiveMonthlyPrice > 0)
                 .Sum(x => x.EffectiveMonthlyPrice);
@@ -294,14 +309,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 var st = Status.Trim().ToLowerInvariant();
                 if (st == "active")
                     filtered = filtered.Where(x => x.IsSubscribed);
+                else if (st == "subscribed")
+                    filtered = filtered.Where(x => x.IsPaidSubscribed);
                 else if (st == "inactive")
                     filtered = filtered.Where(x => !x.IsSubscribed);
                 else if (st == "available")
                     filtered = filtered.Where(x => x.EffectiveAvailableForUse);
                 else if (st == "coming_soon")
                     filtered = filtered.Where(x => !x.EffectiveAvailableForUse);
+                else if (st == "custom_avail")
+                    filtered = filtered.Where(x => x.HasCustomAvailabilityOverride);
+                else if (st == "general_avail")
+                    filtered = filtered.Where(x => !x.HasCustomAvailabilityOverride);
                 else if (st == "custom_price")
                     filtered = filtered.Where(x => x.HasCustomPriceOverride);
+                else if (st == "general_price")
+                    filtered = filtered.Where(x => !x.HasCustomPriceOverride);
             }
 
             AvailableFeatures = filtered.ToList();
@@ -622,6 +645,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             public MasterFeatureCatalog Feature { get; set; } = null!;
             public MasterTenantFeatureSubscription? Subscription { get; set; }
             public bool IsSubscribed { get; set; }
+            public bool IsPaidSubscribed { get; set; }
             public bool EffectiveAvailableForUse { get; set; }
             public bool HasCustomAvailabilityOverride { get; set; }
             public decimal EffectiveMonthlyPrice { get; set; }
