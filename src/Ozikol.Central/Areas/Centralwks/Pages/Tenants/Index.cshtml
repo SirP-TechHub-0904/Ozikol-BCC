@@ -104,6 +104,7 @@
                     <th style="width: 50px; text-align: center;">S/N</th>
                     <th>Organization</th>
                     <th>Domains &amp; URLs</th>
+                    <th>Currency</th>
                     <th>Modules</th>
                     <th>Status</th>
                     <th>Date Registered</th>
@@ -119,6 +120,8 @@
                         var tenant = Model.Tenants[i];
                         var sn = (Model.PageNumber - 1) * Model.PageSize + (i + 1);
                         var isTenantSuspended = tenant.IsSuspended || !tenant.IsActive;
+                        var currCode = string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode) ? "USD" : tenant.DefaultCurrencyCode.Trim().ToUpperInvariant();
+                        var currSym = Model.CurrencySymbols.TryGetValue(currCode, out var sym) ? sym : "$";
                         <tr>
                             <td style="text-align: center;">
                                 <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@sn</span>
@@ -153,6 +156,13 @@
                                         </div>
                                     }
                                 </div>
+                            </td>
+                            <td>
+                                <a href="/centralwks/tenants/features?tenantId=@tenant.Id" title="Click to manage tenant currency &amp; features" style="text-decoration: none;">
+                                    <span class="badge" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; font-weight: 700; font-size: 11.5px; border: 1px solid rgba(14, 165, 233, 0.25);">
+                                        @currCode (@currSym)
+                                    </span>
+                                </a>
                             </td>
                             <td>
                                 <span class="badge badge-info" style="font-size: 11.5px;">
@@ -245,7 +255,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 48px 20px; color: var(--admin-text-muted);">
+                        <td colspan="9" style="text-align: center; padding: 48px 20px; color: var(--admin-text-muted);">
                             <span class="material-symbols-outlined" style="font-size: 40px; color: var(--admin-text-dim); display: block; margin-bottom: 8px;">domain_disabled</span>
                             <div style="font-weight: 600; font-size: 15px; color: var(--admin-text);">No organizations found</div>
                             <div style="font-size: 13px; margin-top: 4px;">Try adjusting your search terms or status filters.</div>

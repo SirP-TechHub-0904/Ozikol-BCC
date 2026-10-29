@@ -90,6 +90,7 @@ namespace Ozikol_BCC.Api.Services
         private readonly MasterCatalogDbContext _master;
         private readonly IMemoryCache _cache;
         private readonly IHubContext<NotificationHub> _hub;
+        private readonly Microsoft.AspNetCore.Http.IHttpContextAccessor? _httpContextAccessor;
 
         /// <summary>
         /// Initializes a new instance of <see cref="BillingSnapshotService"/>.
@@ -97,14 +98,17 @@ namespace Ozikol_BCC.Api.Services
         /// <param name="master">Master catalog database context.</param>
         /// <param name="cache">Memory cache holding tenant entitlements.</param>
         /// <param name="hub">Notification hub context used for socket broadcasts.</param>
+        /// <param name="httpContextAccessor">Optional HTTP context accessor for background regional currency detection on startup.</param>
         public BillingSnapshotService(
             MasterCatalogDbContext master,
             IMemoryCache cache,
-            IHubContext<NotificationHub> hub)
+            IHubContext<NotificationHub> hub,
+            Microsoft.AspNetCore.Http.IHttpContextAccessor? httpContextAccessor = null)
         {
             _master = master;
             _cache = cache;
             _hub = hub;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
@@ -233,9 +237,79 @@ namespace Ozikol_BCC.Api.Services
                     .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.ExpiresAtUtc).First())
                 : new Dictionary<Guid, MasterTenantFeatureSubscription>();
 
+            // Resolve tenant running currency & exchange rate from MasterCurrencyRates (with background regional detection on startup if empty)
+            string currCode = tenant?.DefaultCurrencyCode?.Trim().ToUpperInvariant() ?? "";
+            string currSymbol = "$";
+            decimal currRate = 1.0m;
+            try
+            {
+                var rates = await _master.MasterCurrencyRates.AsNoTracking().Where(r => r.IsActive).ToListAsync(cancellationToken);
+                if (string.IsNullOrWhiteSpace(currCode))
+                {
+                    var httpCtx = _httpContextAccessor?.HttpContext;
+                    string? countryIso = httpCtx?.Request.Headers["CF-IPCountry"].FirstOrDefault()
+                                      ?? httpCtx?.Request.Headers["CloudFront-Viewer-Country"].FirstOrDefault()
+                                      ?? httpCtx?.Request.Headers["X-Country-Code"].FirstOrDefault();
+
+                    if (!string.IsNullOrWhiteSpace(countryIso))
+                    {
+                        var matchedRate = rates.FirstOrDefault(r =>
+                            !string.IsNullOrWhiteSpace(r.AssociatedCountryCodes) &&
+                            r.AssociatedCountryCodes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                                .Any(c => c.Equals(countryIso.Trim(), StringComparison.OrdinalIgnoreCase)));
+                        if (matchedRate != null)
+                        {
+                            currCode = matchedRate.CurrencyCode.ToUpperInvariant();
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(currCode))
+                    {
+                        var acceptLang = httpCtx?.Request.Headers["Accept-Language"].FirstOrDefault();
+                        if (!string.IsNullOrWhiteSpace(acceptLang))
+                        {
+                            if (acceptLang.Contains("NG", StringComparison.OrdinalIgnoreCase)) currCode = "NGN";
+                            else if (acceptLang.Contains("GB", StringComparison.OrdinalIgnoreCase)) currCode = "GBP";
+                            else if (acceptLang.Contains("GH", StringComparison.OrdinalIgnoreCase)) currCode = "GHS";
+                            else if (acceptLang.Contains("KE", StringComparison.OrdinalIgnoreCase)) currCode = "KES";
+                            else if (acceptLang.Contains("ZA", StringComparison.OrdinalIgnoreCase)) currCode = "ZAR";
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(currCode))
+                    {
+                        currCode = "USD";
+                    }
+
+                    if (tenant != null)
+                    {
+                        var trackedTenant = await _master.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.Id == tenant.Id, cancellationToken);
+                        if (trackedTenant != null && string.IsNullOrWhiteSpace(trackedTenant.DefaultCurrencyCode))
+                        {
+                            trackedTenant.DefaultCurrencyCode = currCode;
+                            await _master.SaveChangesAsync(cancellationToken);
+                        }
+                    }
+                }
+
+                var rateObj = rates.FirstOrDefault(r => r.CurrencyCode.Equals(currCode, StringComparison.OrdinalIgnoreCase));
+                if (rateObj != null)
+                {
+                    currSymbol = rateObj.CurrencySymbol;
+                    currRate = rateObj.RateFromUsd > 0 ? rateObj.RateFromUsd : 1.0m;
+                }
+            }
+            catch
+            {
+                if (string.IsNullOrWhiteSpace(currCode)) currCode = "USD";
+            }
+
             var snapshot = new BillingFeaturesSnapshotDto
             {
                 TenantKey = tenant?.TenantKey ?? key,
+                CurrencyCode = currCode,
+                CurrencySymbol = currSymbol,
+                ExchangeRateFromUsd = currRate,
                 ServerTimeUtc = now
             };
 

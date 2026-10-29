@@ -108,6 +108,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public List<MasterTenantCatalog> Tenants { get; set; } = new();
 
         /// <summary>
+        /// Lookup mapping ISO 4217 currency code (e.g. "USD", "NGN") to its currency symbol (e.g. "$", "₦").
+        /// </summary>
+        public Dictionary<string, string> CurrencySymbols { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Handles HTTP GET requests to retrieve paginated tenant records and suite metrics.
         /// </summary>
         public async Task OnGetAsync()
@@ -115,6 +120,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             // Normalize page size
             if (PageSize <= 0) PageSize = 10;
             if (PageNumber <= 0) PageNumber = 1;
+
+            try
+            {
+                var rates = await _dbContext.MasterCurrencyRates.AsNoTracking().ToListAsync();
+                foreach (var r in rates)
+                {
+                    if (!string.IsNullOrWhiteSpace(r.CurrencyCode))
+                    {
+                        CurrencySymbols[r.CurrencyCode.Trim().ToUpperInvariant()] = r.CurrencySymbol;
+                    }
+                }
+            }
+            catch
+            {
+                CurrencySymbols["USD"] = "$";
+            }
 
             var oneWeekAgo = DateTime.UtcNow.AddDays(-7);
 

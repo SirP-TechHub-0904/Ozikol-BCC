@@ -49,6 +49,17 @@ public class TenantOnboardingRequest
     /// Defaults to true so the public site is immediately live and populated.
     /// </summary>
     public bool SeedDefaultWebsite { get; set; } = true;
+
+    /// <summary>
+    /// Regionally detected or explicitly selected ISO 4217 currency code (e.g. "NGN", "USD", "GBP").
+    /// Resolved automatically in the background via <see cref="ICurrencyService"/> if not supplied.
+    /// </summary>
+    public string? CurrencyCode { get; set; }
+
+    /// <summary>
+    /// Currency symbol corresponding to <see cref="CurrencyCode"/> (e.g. "₦", "$", "£").
+    /// </summary>
+    public string? CurrencySymbol { get; set; }
 }
 
 public class TenantOnboardingResult
@@ -402,6 +413,31 @@ public class TenantOnboardingService : ITenantOnboardingService
                 _logger.LogInformation("   └── Referred By Partner: {PartnerCode}", cleanReferralCode);
             }
 
+            // Resolve regional currency in the background via ICurrencyService if not already specified on the request
+            string resolvedCurrencyCode = string.IsNullOrWhiteSpace(request.CurrencyCode) ? "USD" : request.CurrencyCode.Trim().ToUpperInvariant();
+            string resolvedCurrencySymbol = string.IsNullOrWhiteSpace(request.CurrencySymbol) ? "$" : request.CurrencySymbol.Trim();
+            try
+            {
+                var currencySvc = _serviceProvider.GetService<ICurrencyService>();
+                var httpContext = _serviceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext;
+                if (currencySvc != null)
+                {
+                    if (string.IsNullOrWhiteSpace(request.CurrencyCode) && httpContext != null)
+                    {
+                        resolvedCurrencyCode = currencySvc.ResolveCurrencyCodeFromRequest(httpContext);
+                    }
+                    var currencyInfo = currencySvc.ResolveCurrency(resolvedCurrencyCode);
+                    resolvedCurrencyCode = currencyInfo.Code;
+                    resolvedCurrencySymbol = currencyInfo.Symbol;
+                }
+            }
+            catch
+            {
+                // Fallback to USD ($) if regional lookup encounters an error
+            }
+            request.CurrencyCode = resolvedCurrencyCode;
+            request.CurrencySymbol = resolvedCurrencySymbol;
+
             // Step A: Execute SQL DDL via Master DB Connection (Create Login, DB, User)
             await CreateDatabaseAndSqlLoginAsync(masterConnStr, dbName, sqlUsername, sqlPassword, cancellationToken);
 
@@ -423,6 +459,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                 ConnectionString = dedicatedTenantConnStr,
                 AdminEmail = request.AdminEmail,
                 ReferredByPartnerCode = cleanReferralCode,
+                DefaultCurrencyCode = resolvedCurrencyCode,
                 IsActive = true,
                 CreatedUtc = DateTime.UtcNow
             };
@@ -815,14 +852,14 @@ public class TenantOnboardingService : ITenantOnboardingService
                 });
             }
 
-            // 4. Seed MisConfigurationSettings
+            // 4. Seed MisConfigurationSettings with resolved regional currency
             if (!await dbContext.MisConfigurationSettings.AnyAsync(cancellationToken))
             {
                 dbContext.MisConfigurationSettings.Add(new MisConfigurationSetting
                 {
                     Id = Guid.NewGuid(),
-                    CurrencyCode = "USD",
-                    CurrencySymbol = "$"
+                    CurrencyCode = string.IsNullOrWhiteSpace(request.CurrencyCode) ? "USD" : request.CurrencyCode.Trim().ToUpperInvariant(),
+                    CurrencySymbol = string.IsNullOrWhiteSpace(request.CurrencySymbol) ? "$" : request.CurrencySymbol.Trim()
                 });
             }
 

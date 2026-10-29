@@ -96,6 +96,15 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>Tenant key this snapshot belongs to.</summary>
         public string TenantKey { get; set; } = string.Empty;
 
+        /// <summary>ISO 4217 currency code configured for this tenant (e.g., "USD", "NGN", "GBP").</summary>
+        public string CurrencyCode { get; set; } = "USD";
+
+        /// <summary>Currency symbol corresponding to <see cref="CurrencyCode"/> (e.g., "$", "₦", "£").</summary>
+        public string CurrencySymbol { get; set; } = "$";
+
+        /// <summary>Exchange rate multiplier from 1.00 USD base to <see cref="CurrencyCode"/>.</summary>
+        public decimal ExchangeRateFromUsd { get; set; } = 1.0m;
+
         /// <summary>Server clock (UTC) when the snapshot was generated, so clients can correct countdown drift.</summary>
         public DateTime ServerTimeUtc { get; set; } = DateTime.UtcNow;
 
