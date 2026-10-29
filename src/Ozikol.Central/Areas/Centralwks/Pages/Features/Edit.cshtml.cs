@@ -234,10 +234,54 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             feature.MeterUnitName = Input.IsMetered ? Input.MeterUnitName?.Trim() : null;
             feature.MeterUnitPrice = Input.IsMetered ? Input.MeterUnitPrice : 0m;
             feature.MeterBlockSize = Input.IsMetered && Input.MeterBatchSize > 0 ? Input.MeterBatchSize : 1;
+            var previousOrder = feature.SortOrder;
             feature.SortOrder = Input.DisplayOrder;
             feature.IsActive = Input.IsPublished;
             feature.IsPublished = Input.IsPublished;
             feature.IsAvailableForUse = Input.IsAvailableForUse;
+
+            // If SortOrder changed, rearrange all features sequentially (1..N) without duplicates
+            if (Input.DisplayOrder > 0 && Input.DisplayOrder != previousOrder)
+            {
+                var suiteOrderLookup = Suites.ToDictionary(s => s.Id, s => s.SortOrder);
+                var suiteNameLookup = Suites
+                    .GroupBy(s => s.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First().SortOrder, StringComparer.OrdinalIgnoreCase);
+
+                int ResolveSuiteSort(MasterFeatureCatalog f)
+                {
+                    if (f.MasterFeatureSuiteId.HasValue && suiteOrderLookup.TryGetValue(f.MasterFeatureSuiteId.Value, out var byId))
+                        return byId;
+                    if (!string.IsNullOrWhiteSpace(f.Category) && suiteNameLookup.TryGetValue(f.Category.Trim(), out var byName))
+                        return byName;
+                    return 999;
+                }
+
+                var allOthers = await _dbContext.MasterFeatureCatalogs
+                    .Where(f => f.Id != feature.Id)
+                    .ToListAsync();
+
+                var orderedList = allOthers
+                    .OrderBy(f => ResolveSuiteSort(f))
+                    .ThenBy(f => f.SortOrder)
+                    .ThenBy(f => f.Name)
+                    .ToList();
+
+                int targetIdx = Math.Clamp(Input.DisplayOrder - 1, 0, orderedList.Count);
+                orderedList.Insert(targetIdx, feature);
+
+                var finalOrdered = orderedList
+                    .Select((f, idx) => new { Feature = f, RequestedIdx = idx })
+                    .OrderBy(x => ResolveSuiteSort(x.Feature))
+                    .ThenBy(x => x.RequestedIdx)
+                    .Select(x => x.Feature)
+                    .ToList();
+
+                for (int i = 0; i < finalOrdered.Count; i++)
+                {
+                    finalOrdered[i].SortOrder = i + 1;
+                }
+            }
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {

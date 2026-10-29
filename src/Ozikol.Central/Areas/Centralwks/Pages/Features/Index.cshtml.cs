@@ -350,6 +350,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                         : filtered.OrderBy(f => f.IsInBeta ? 2 : (f.IsActive ? 1 : 0));
                     break;
 
+                case "order":
+                    filtered = isDesc
+                        ? filtered.OrderByDescending(f => f.SortOrder).ThenBy(f => ResolveDynamicSuiteSort(f)).ThenBy(f => f.Name)
+                        : filtered.OrderBy(f => ResolveDynamicSuiteSort(f)).ThenBy(f => f.SortOrder).ThenBy(f => f.Name);
+                    break;
+
                 default:
                     // Default strictly respects Suite SortOrder then Feature SortOrder
                     filtered = filtered
@@ -514,9 +520,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         }
 
         /// <summary>
-        /// Handles HTTP POST requests to update a Suite's Full Title (<see cref="MasterFeatureSuite.Name"/>)
-        /// and concise Sidebar Menu Title (<see cref="MasterFeatureSuite.MenuTitle"/>) in <c>MasterFeatureSuites</c>,
-        /// synchronizing linked <c>MasterFeatureCatalogs</c>.
+        /// Handles HTTP POST requests to update a Suite's Full Title (<see cref="MasterFeatureSuite.Name"/>),
+        /// concise Sidebar Menu Title (<see cref="MasterFeatureSuite.MenuTitle"/>), and SortOrder in <c>MasterFeatureSuites</c>,
+        /// automatically rearranging suite numbering (1..N, Suite A..K) and feature numbering (1..46) without duplicates.
         /// </summary>
         public async Task<IActionResult> OnPostUpdateSuiteAsync(Guid suiteId, string name, string menuTitle, string? description, int sortOrder = 1)
         {
@@ -528,7 +534,18 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
             try
             {
-                var suite = await _dbContext.MasterFeatureSuites.FirstOrDefaultAsync(s => s.Id == suiteId);
+                var allSuites = await _dbContext.MasterFeatureSuites
+                    .OrderBy(s => s.SortOrder)
+                    .ThenBy(s => s.Name)
+                    .ToListAsync();
+
+                if (allSuites.Count == 0)
+                {
+                    allSuites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+                    _dbContext.MasterFeatureSuites.AddRange(allSuites);
+                }
+
+                var suite = allSuites.FirstOrDefault(s => s.Id == suiteId);
                 var oldName = suite?.Name;
 
                 if (suite == null)
@@ -544,28 +561,66 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                         SortOrder = sortOrder
                     };
                     _dbContext.MasterFeatureSuites.Add(suite);
+                    allSuites.Add(suite);
                 }
 
                 suite.Name = name.Trim();
                 suite.MenuTitle = menuTitle.Trim();
-                if (sortOrder > 0)
-                {
-                    suite.SortOrder = sortOrder;
-                }
                 if (!string.IsNullOrWhiteSpace(description))
                 {
                     suite.Description = description.Trim();
                 }
 
-                // Synchronize Category and MasterFeatureSuiteId on all features belonging to this suite
-                var matchingFeatures = await _dbContext.MasterFeatureCatalogs
-                    .Where(f => f.MasterFeatureSuiteId == suite.Id || (oldName != null && f.Category == oldName))
-                    .ToListAsync();
+                // Rearrange Suite SortOrder (1..N) and SuiteLetter (A..K) cleanly without duplicates
+                var otherSuites = allSuites
+                    .Where(s => s.Id != suite.Id)
+                    .OrderBy(s => s.SortOrder)
+                    .ThenBy(s => s.Name)
+                    .ToList();
 
-                foreach (var feat in matchingFeatures)
+                int targetSuiteIndex = Math.Clamp(sortOrder - 1, 0, otherSuites.Count);
+                otherSuites.Insert(targetSuiteIndex, suite);
+
+                for (int i = 0; i < otherSuites.Count; i++)
                 {
-                    feat.MasterFeatureSuiteId = suite.Id;
-                    feat.Category = suite.Name;
+                    otherSuites[i].SortOrder = i + 1;
+                    otherSuites[i].SuiteLetter = ((char)('A' + i)).ToString();
+                }
+
+                // Synchronize Category and MasterFeatureSuiteId on all features, then rearrange feature numbering (1..N)
+                var allFeatures = await _dbContext.MasterFeatureCatalogs.ToListAsync();
+                foreach (var feat in allFeatures)
+                {
+                    if (feat.MasterFeatureSuiteId == suite.Id || (oldName != null && string.Equals(feat.Category, oldName, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        feat.MasterFeatureSuiteId = suite.Id;
+                        feat.Category = suite.Name;
+                    }
+                }
+
+                var suiteOrderLookup = otherSuites.ToDictionary(s => s.Id, s => s.SortOrder);
+                var suiteNameOrderLookup = otherSuites
+                    .GroupBy(s => s.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First().SortOrder, StringComparer.OrdinalIgnoreCase);
+
+                int ResolveSuiteOrderForFeature(MasterFeatureCatalog f)
+                {
+                    if (f.MasterFeatureSuiteId.HasValue && suiteOrderLookup.TryGetValue(f.MasterFeatureSuiteId.Value, out var byId))
+                        return byId;
+                    if (!string.IsNullOrWhiteSpace(f.Category) && suiteNameOrderLookup.TryGetValue(f.Category.Trim(), out var byName))
+                        return byName;
+                    return 999;
+                }
+
+                var orderedFeatures = allFeatures
+                    .OrderBy(f => ResolveSuiteOrderForFeature(f))
+                    .ThenBy(f => f.SortOrder)
+                    .ThenBy(f => f.Name)
+                    .ToList();
+
+                for (int i = 0; i < orderedFeatures.Count; i++)
+                {
+                    orderedFeatures[i].SortOrder = i + 1;
                 }
 
                 _dbContext.MasterAuditLogs.Add(new MasterAuditLog
@@ -575,7 +630,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                     Action = "UpdateSuite",
                     EntityType = "FeatureSuite",
                     EntityId = suite.Id.ToString(),
-                    Summary = $"Updated Suite {suite.SuiteLetter} Full Title to '{suite.Name}' and Sidebar Menu Title to '{suite.MenuTitle}'",
+                    Summary = $"Updated Suite {suite.SuiteLetter} ('{suite.Name}', Menu: '{suite.MenuTitle}', SortOrder: {suite.SortOrder}) and rearranged catalog numbering",
                     IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                     UserAgent = Request.Headers["User-Agent"].ToString(),
                     CreatedUtc = DateTime.UtcNow
@@ -583,7 +638,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
                 await _dbContext.SaveChangesAsync();
                 _currencyService?.InvalidatePricingCache();
-                TempData["Success"] = $"Suite '{suite.Name}' (Sidebar Menu Title: '{suite.MenuTitle}') updated successfully.";
+                TempData["Success"] = $"Suite '{suite.Name}' updated to position #{suite.SortOrder} (Suite {suite.SuiteLetter}) and all capability numbers rearranged.";
             }
             catch (Exception ex)
             {
@@ -591,6 +646,157 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
 
             return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to update a Feature's <see cref="MasterFeatureCatalog.SortOrder"/>
+        /// and automatically rearrange the numbering of all features sequentially without duplicates or gaps.
+        /// </summary>
+        /// <param name="featureId">The identifier of the feature to move.</param>
+        /// <param name="newOrder">The requested 1-based position.</param>
+        public async Task<IActionResult> OnPostUpdateFeatureOrderAsync(Guid featureId, int newOrder)
+        {
+            try
+            {
+                var allSuites = await _dbContext.MasterFeatureSuites
+                    .AsNoTracking()
+                    .OrderBy(s => s.SortOrder)
+                    .ToListAsync();
+
+                if (allSuites.Count == 0)
+                {
+                    allSuites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+                }
+
+                var suiteOrderLookup = allSuites.ToDictionary(s => s.Id, s => s.SortOrder);
+                var suiteNameOrderLookup = allSuites
+                    .GroupBy(s => s.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First().SortOrder, StringComparer.OrdinalIgnoreCase);
+
+                int ResolveSuiteOrder(MasterFeatureCatalog f)
+                {
+                    if (f.MasterFeatureSuiteId.HasValue && suiteOrderLookup.TryGetValue(f.MasterFeatureSuiteId.Value, out var byId))
+                        return byId;
+                    if (!string.IsNullOrWhiteSpace(f.Category) && suiteNameOrderLookup.TryGetValue(f.Category.Trim(), out var byName))
+                        return byName;
+                    return GetSuiteOrder(f.Category) + 100;
+                }
+
+                var allFeatures = await _dbContext.MasterFeatureCatalogs.ToListAsync();
+                var target = allFeatures.FirstOrDefault(f => f.Id == featureId);
+                if (target == null)
+                {
+                    TempData["Error"] = "Capability not found.";
+                    return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+                }
+
+                // Order all features currently by Suite SortOrder -> Feature SortOrder -> Name
+                var fullOrdered = allFeatures
+                    .OrderBy(f => ResolveSuiteOrder(f))
+                    .ThenBy(f => f.SortOrder)
+                    .ThenBy(f => f.Name)
+                    .ToList();
+
+                int oldIdx = fullOrdered.FindIndex(f => f.Id == featureId);
+                var others = fullOrdered.Where(f => f.Id != featureId).ToList();
+
+                int targetIdx = Math.Clamp(newOrder - 1, 0, others.Count);
+
+                // If moving across suite boundaries, adopt the destination neighbor's suite so features can move up/down between suites
+                if (others.Count > 0 && oldIdx >= 0 && targetIdx != oldIdx)
+                {
+                    var neighbor = targetIdx < oldIdx
+                        ? others[Math.Clamp(targetIdx, 0, others.Count - 1)]
+                        : others[Math.Clamp(targetIdx - 1, 0, others.Count - 1)];
+
+                    if (neighbor != null && !string.Equals(neighbor.Category, target.Category, StringComparison.OrdinalIgnoreCase))
+                    {
+                        target.Category = neighbor.Category;
+                        target.MasterFeatureSuiteId = neighbor.MasterFeatureSuiteId;
+                    }
+                }
+
+                others.Insert(targetIdx, target);
+
+                // Re-number all features sequentially (1..N)
+                for (int i = 0; i < others.Count; i++)
+                {
+                    others[i].SortOrder = i + 1;
+                }
+
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.Identity?.Name,
+                    UserName = User.Identity?.Name,
+                    Action = "ReorderFeature",
+                    EntityType = "Feature",
+                    EntityId = target.Id.ToString(),
+                    Summary = $"Rearranged capability '{target.Name}' ({target.FeatureCode}) to SortOrder #{target.SortOrder} (Suite: {target.Category})",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers["User-Agent"].ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+
+                await _dbContext.SaveChangesAsync();
+                _currencyService?.InvalidatePricingCache();
+
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return new JsonResult(new
+                    {
+                        success = true,
+                        featureId = target.Id,
+                        sortOrder = target.SortOrder,
+                        message = $"'{target.Name}' moved to #{target.SortOrder} and numbering rearranged."
+                    });
+                }
+
+                TempData["Success"] = $"'{target.Name}' moved to #{target.SortOrder} ({target.Category}) and all capability numbers rearranged.";
+            }
+            catch (Exception ex)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return new JsonResult(new { success = false, message = ex.Message }) { StatusCode = 500 };
+                }
+                TempData["Error"] = $"Could not rearrange capability order: {ex.Message}";
+            }
+
+            return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+        }
+
+        /// <summary>
+        /// Moves an entire Feature Suite up or down by 1 position, automatically rearranging Suite SortOrder (1..N),
+        /// SuiteLetter (A..K), and all 46 Feature SortOrder numbers sequentially.
+        /// </summary>
+        /// <param name="suiteId">The identifier of the suite to move.</param>
+        /// <param name="direction">"up" or "down".</param>
+        public async Task<IActionResult> OnPostMoveSuiteAsync(Guid suiteId, string direction)
+        {
+            var allSuites = await _dbContext.MasterFeatureSuites
+                .AsNoTracking()
+                .OrderBy(s => s.SortOrder)
+                .ThenBy(s => s.Name)
+                .ToListAsync();
+
+            if (allSuites.Count == 0)
+            {
+                allSuites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+            }
+
+            var idx = allSuites.FindIndex(s => s.Id == suiteId);
+            if (idx < 0)
+            {
+                TempData["Error"] = "Suite not found.";
+                return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+            }
+
+            var targetSuite = allSuites[idx];
+            int newSortOrder = string.Equals(direction, "up", StringComparison.OrdinalIgnoreCase)
+                ? Math.Max(1, idx)
+                : Math.Min(allSuites.Count, idx + 2);
+
+            return await OnPostUpdateSuiteAsync(targetSuite.Id, targetSuite.Name, targetSuite.MenuTitle, targetSuite.Description, newSortOrder);
         }
     }
 }

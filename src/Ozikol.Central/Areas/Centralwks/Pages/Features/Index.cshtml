@@ -27,10 +27,10 @@
         return string.Equals(Model.SortDir, "desc", StringComparison.OrdinalIgnoreCase) ? "arrow_downward" : "arrow_upward";
     }
 
-    // Group features by Category in canonical sequence
+    // Group features by Category strictly ordered by MasterFeatureSuites.SortOrder
     var suiteGroups = Model.Features
         .GroupBy(f => f.Category)
-        .OrderBy(g => IndexModel.GetSuiteOrder(g.Key))
+        .OrderBy(g => Model.Suites.FirstOrDefault(s => string.Equals(s.Name, g.Key, StringComparison.OrdinalIgnoreCase))?.SortOrder ?? IndexModel.GetSuiteOrder(g.Key))
         .ToList();
 }
 
@@ -208,6 +208,40 @@
                             </span>
                         </div>
                         <div style="display: inline-flex; align-items: center; gap: 8px;">
+                            @if (matchedSuite != null)
+                            {
+                                <div style="display: inline-flex; align-items: center; gap: 4px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 2px;">
+                                    <form method="post" asp-page-handler="MoveSuite" style="margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="suiteId" value="@matchedSuite.Id" />
+                                        <input type="hidden" name="direction" value="up" />
+                                        <input type="hidden" name="search" value="@Model.Search" />
+                                        <input type="hidden" name="category" value="@Model.Category" />
+                                        <input type="hidden" name="status" value="@Model.Status" />
+                                        <input type="hidden" name="sortBy" value="@Model.SortBy" />
+                                        <input type="hidden" name="sortDir" value="@Model.SortDir" />
+                                        <input type="hidden" name="viewMode" value="@Model.ViewMode" />
+                                        <button type="submit" class="btn-order-step" title="Move Suite Up" disabled="@(matchedSuite.SortOrder <= 1)">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_upward</span>
+                                        </button>
+                                    </form>
+                                    <span style="font-size: 11px; font-weight: 800; color: #0050e5; padding: 0 4px;" title="Suite Sort Order">#@matchedSuite.SortOrder</span>
+                                    <form method="post" asp-page-handler="MoveSuite" style="margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="suiteId" value="@matchedSuite.Id" />
+                                        <input type="hidden" name="direction" value="down" />
+                                        <input type="hidden" name="search" value="@Model.Search" />
+                                        <input type="hidden" name="category" value="@Model.Category" />
+                                        <input type="hidden" name="status" value="@Model.Status" />
+                                        <input type="hidden" name="sortBy" value="@Model.SortBy" />
+                                        <input type="hidden" name="sortDir" value="@Model.SortDir" />
+                                        <input type="hidden" name="viewMode" value="@Model.ViewMode" />
+                                        <button type="submit" class="btn-order-step" title="Move Suite Down" disabled="@(matchedSuite.SortOrder >= Model.Suites.Count)">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_downward</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            }
                             <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="document.getElementById('manageSuitesModal').style.display='flex'" title="Edit Suite Full Title &amp; Menu Title">
                                 <span class="material-symbols-outlined" style="font-size: 14px;">edit</span>
                                 <span>Edit Suite</span>
@@ -241,7 +275,28 @@
                                             </div>
                                             <div style="min-width: 0; flex: 1;">
                                                 <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
-                                                    <span style="font-size: 11px; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 2px 7px; border-radius: 5px;">#@runningSerialNo</span>
+                                                    @{
+                                                        var curCardOrder = feat.SortOrder > 0 ? feat.SortOrder : runningSerialNo;
+                                                    }
+                                                    <form method="post" asp-page-handler="UpdateFeatureOrder" style="display: inline-flex; align-items: center; gap: 2px; margin: 0; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 1px 3px;" title="Move Up/Down or type position number and press Enter">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="featureId" value="@feat.Id" />
+                                                        <input type="hidden" name="search" value="@Model.Search" />
+                                                        <input type="hidden" name="category" value="@Model.Category" />
+                                                        <input type="hidden" name="status" value="@Model.Status" />
+                                                        <input type="hidden" name="sortBy" value="@Model.SortBy" />
+                                                        <input type="hidden" name="sortDir" value="@Model.SortDir" />
+                                                        <input type="hidden" name="viewMode" value="@Model.ViewMode" />
+                                                        <button type="button" class="btn-order-step" title="Move Up (even across suites)" onclick="stepOrderAndSubmit(this, -1)" disabled="@(curCardOrder <= 1)">
+                                                            <span class="material-symbols-outlined" style="font-size: 13px;">arrow_upward</span>
+                                                        </button>
+                                                        <input type="number" name="newOrder" min="1" max="@Model.TotalCount" value="@curCardOrder"
+                                                               onchange="this.form.submit()"
+                                                               style="width: 38px; height: 22px; font-size: 11.5px; font-weight: 800; color: #0050e5; background: #ffffff; border: 1px solid #bfdbfe; border-radius: 4px; text-align: center; padding: 0;" />
+                                                        <button type="button" class="btn-order-step" title="Move Down (even across suites)" onclick="stepOrderAndSubmit(this, 1)" disabled="@(curCardOrder >= Model.TotalCount)">
+                                                            <span class="material-symbols-outlined" style="font-size: 13px;">arrow_downward</span>
+                                                        </button>
+                                                    </form>
                                                     <a href="/centralwks/features/details?id=@feat.Id" style="font-size: 14px; font-weight: 700; color: #0f172a; text-decoration: none; word-break: break-word;" class="feature-title-link">
                                                         @feat.Name
                                                     </a>
@@ -395,12 +450,17 @@
 @* ══════════════════════════════════════════════════════════════════════════ *@
 else
 {
-    <div class="admin-card">
-        <div class="table-responsive">
+    <div class="admin-card" style="overflow: visible;">
+        <div class="table-responsive" style="overflow: visible;">
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th style="width: 50px; text-align: center;">S/N</th>
+                        <th style="width: 82px; text-align: center;">
+                            <a href="@GetSortUrl("order")" style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Sort by Order / S/N">
+                                <span>ORDER</span>
+                                <span class="material-symbols-outlined" style="font-size: 14px; opacity: 0.7;">@GetSortIcon("order")</span>
+                            </a>
+                        </th>
                         <th>
                             <a href="@GetSortUrl("name")" style="color: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
                                 <span>FEATURE</span>
@@ -446,7 +506,28 @@ else
                             var iconName = string.IsNullOrEmpty(feat.Icon) ? "extension" : feat.Icon;
                             <tr>
                                 <td style="text-align: center;">
-                                    <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@(i + 1)</span>
+                                    @{
+                                        var curRowOrder = feat.SortOrder > 0 ? feat.SortOrder : i + 1;
+                                    }
+                                    <form method="post" asp-page-handler="UpdateFeatureOrder" style="display: inline-flex; align-items: center; justify-content: center; gap: 2px; margin: 0; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 7px; padding: 2px 4px;" title="Click Up/Down or type number and press Enter to rearrange">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="featureId" value="@feat.Id" />
+                                        <input type="hidden" name="search" value="@Model.Search" />
+                                        <input type="hidden" name="category" value="@Model.Category" />
+                                        <input type="hidden" name="status" value="@Model.Status" />
+                                        <input type="hidden" name="sortBy" value="@Model.SortBy" />
+                                        <input type="hidden" name="sortDir" value="@Model.SortDir" />
+                                        <input type="hidden" name="viewMode" value="@Model.ViewMode" />
+                                        <button type="button" class="btn-order-step" title="Move Up (even across suites)" onclick="stepOrderAndSubmit(this, -1)" disabled="@(curRowOrder <= 1)">
+                                            <span class="material-symbols-outlined" style="font-size: 14px;">arrow_upward</span>
+                                        </button>
+                                        <input type="number" name="newOrder" min="1" max="@Model.TotalCount" value="@curRowOrder"
+                                               onchange="this.form.submit()"
+                                               style="width: 42px; height: 24px; font-size: 12px; font-weight: 800; color: #0050e5; background: #ffffff; border: 1px solid #bfdbfe; border-radius: 5px; text-align: center; padding: 0 2px;" />
+                                        <button type="button" class="btn-order-step" title="Move Down (even across suites)" onclick="stepOrderAndSubmit(this, 1)" disabled="@(curRowOrder >= Model.TotalCount)">
+                                            <span class="material-symbols-outlined" style="font-size: 14px;">arrow_downward</span>
+                                        </button>
+                                    </form>
                                 </td>
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -550,7 +631,7 @@ else
                                                 <span class="material-symbols-outlined" style="font-size: 15px;">expand_more</span>
                                             </button>
 
-                                            <div id="menu-table-@feat.Id" class="feature-action-dropdown-menu">
+                                            <div id="menu-table-@feat.Id" class="feature-action-dropdown-menu @(i < Model.Features.Count - 2 ? "dropdown-down" : "")">
                                                 <a href="/centralwks/features/edit?id=@feat.Id" class="dropdown-action-item">
                                                     <span class="material-symbols-outlined" style="color: #0050e5;">edit</span>
                                                     <span>Edit Capability &amp; Pricing</span>
@@ -660,6 +741,32 @@ else
     padding: 6px;
     z-index: 999;
     text-align: left;
+}
+.feature-action-dropdown-menu.dropdown-down {
+    bottom: auto;
+    top: calc(100% + 6px);
+}
+.btn-order-step {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: #0050e5;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.btn-order-step:hover:not(:disabled) {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+.btn-order-step:disabled {
+    opacity: 0.32;
+    cursor: not-allowed;
 }
 .feature-action-dropdown-menu.open {
     display: block;
@@ -915,6 +1022,21 @@ else
             }
         }
 
+        function stepOrderAndSubmit(btn, delta) {
+            const form = btn.closest('form');
+            if (!form) return;
+            const input = form.querySelector('input[type="number"]');
+            if (!input) return;
+            const currentVal = parseInt(input.value, 10) || 1;
+            const minVal = parseInt(input.min, 10) || 1;
+            const maxVal = parseInt(input.max, 10) || 999;
+            const nextVal = Math.max(minVal, Math.min(maxVal, currentVal + delta));
+            if (nextVal !== currentVal) {
+                input.value = nextVal;
+                form.submit();
+            }
+        }
+
         document.addEventListener('click', function () {
             document.querySelectorAll('.feature-action-dropdown-menu.open').forEach(m => {
                 m.classList.remove('open');
@@ -966,7 +1088,7 @@ else
         <div style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
             <div>
                 <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0;">Manage Platform Feature Suites (MasterFeatureSuites)</h2>
-                <p style="font-size: 12.5px; color: #64748b; margin: 4px 0 0;">Edit both the <strong>Suite Full Title</strong> (shown in Tables &amp; Details) and the <strong>Suite Menu Title</strong> (short header shown in the Tenant Sidebar).</p>
+                <p style="font-size: 12.5px; color: #64748b; margin: 4px 0 0;">Edit <strong>Sort Order</strong> (automatically rearranges Suite A–K and feature numbering), <strong>Suite Full Title</strong>, and <strong>Suite Menu Title</strong>.</p>
             </div>
             <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="document.getElementById('manageSuitesModal').style.display='none'">
                 <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
@@ -976,16 +1098,27 @@ else
         <div style="padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
             @foreach (var s in Model.Suites.OrderBy(x => x.SortOrder))
             {
-                <form method="post" asp-page-handler="UpdateSuite" style="display: grid; grid-template-columns: 70px 1.4fr 1fr auto; gap: 12px; align-items: end; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+                <form method="post" asp-page-handler="UpdateSuite" style="display: grid; grid-template-columns: 70px 118px 1.4fr 1fr auto; gap: 12px; align-items: end; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="suiteId" value="@s.Id" />
-                    <input type="hidden" name="sortOrder" value="@s.SortOrder" />
                     <input type="hidden" name="description" value="@s.Description" />
                     <div>
                         <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 4px;">SUITE</label>
                         <span style="display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 12px; background: #0050e5; color: #fff; font-weight: 800; font-size: 12px; border-radius: 6px;">
                             Suite @s.SuiteLetter
                         </span>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 11px; font-weight: 700; color: #0050e5; margin-bottom: 4px;">ORDER (UP/DOWN)</label>
+                        <div style="display: flex; align-items: center; gap: 3px; height: 36px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0 4px;">
+                            <button type="button" class="btn-order-step" title="Move Suite Up" onclick="stepOrderAndSubmit(this, -1)" disabled="@(s.SortOrder <= 1)">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_upward</span>
+                            </button>
+                            <input type="number" name="sortOrder" min="1" max="@Model.Suites.Count" value="@s.SortOrder" class="form-control" style="height: 28px; width: 46px; font-size: 13px; font-weight: 800; text-align: center; padding: 0 2px;" required />
+                            <button type="button" class="btn-order-step" title="Move Suite Down" onclick="stepOrderAndSubmit(this, 1)" disabled="@(s.SortOrder >= Model.Suites.Count)">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_downward</span>
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label style="display: block; font-size: 11px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Suite Full Title (Table &amp; Details Page)</label>
