@@ -146,6 +146,7 @@ namespace Ozikol_BCC.Api.Services
                         f.Name,
                         f.Category,
                         f.IsActive,
+                        f.IsPublished,
                         f.IsAvailableForUse,
                         f.IsCompulsory,
                         f.IsInBeta,
@@ -159,9 +160,9 @@ namespace Ozikol_BCC.Api.Services
                 foreach (var f in catalog)
                 {
                     catalogSb.Append(f.Id).Append('|').Append(f.Name).Append('|').Append(f.Category).Append('|')
-                             .Append(f.IsActive).Append('|').Append(f.IsAvailableForUse).Append('|').Append(f.IsCompulsory).Append('|')
-                             .Append(f.IsInBeta).Append('|').Append(f.MonthlyPrice).Append('|').Append(f.QuarterlyPrice).Append('|')
-                             .Append(f.YearlyPrice).Append('|').Append(f.SortOrder).Append(';');
+                             .Append(f.IsActive).Append('|').Append(f.IsPublished).Append('|').Append(f.IsAvailableForUse).Append('|')
+                             .Append(f.IsCompulsory).Append('|').Append(f.IsInBeta).Append('|').Append(f.MonthlyPrice).Append('|')
+                             .Append(f.QuarterlyPrice).Append('|').Append(f.YearlyPrice).Append('|').Append(f.SortOrder).Append(';');
                 }
             }
             catch

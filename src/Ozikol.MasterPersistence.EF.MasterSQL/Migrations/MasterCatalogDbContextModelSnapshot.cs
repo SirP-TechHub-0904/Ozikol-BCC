@@ -1476,6 +1476,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<bool>("IsMetered")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
                     b.Property<int>("MeterBlockSize")
                         .HasColumnType("int");
 

@@ -149,13 +149,13 @@ namespace Ozikol_BCC.Api.Services
             {
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => f.IsActive)
+                    .Where(f => f.IsActive && f.IsPublished)
                     .ToListAsync(cancellationToken);
             }
             catch
             {
                 usedFallbackQuery = true;
-                // Graceful fallback if the IsAvailableForUse migration has not yet been applied to SQL Server
+                // Graceful fallback if the IsAvailableForUse / IsPublished migration has not yet been applied to SQL Server
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
                     .Where(f => f.IsActive)
@@ -175,6 +175,7 @@ namespace Ozikol_BCC.Api.Services
                         YearlyPrice = f.YearlyPrice,
                         IsMetered = f.IsMetered,
                         IsActive = f.IsActive,
+                        IsPublished = true,
                         IsInBeta = f.IsInBeta,
                         SortOrder = f.SortOrder
                     })

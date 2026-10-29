@@ -141,10 +141,12 @@
 
             <select name="status" class="form-select" style="width: auto; min-width: 165px; height: 38px; padding: 6px 12px; font-size: 13px;" onchange="this.form.submit()">
                 <option value="">All Statuses</option>
-                <option value="published" selected="@(Model.Status == "published" || Model.Status == "active")">Published (@Model.ActiveCount)</option>
-                <option value="unpublished" selected="@(Model.Status == "unpublished" || Model.Status == "inactive")">Unpublished (@Model.InactiveCount)</option>
+                <option value="published" selected="@(Model.Status == "published")">Published (@Model.PublishedCount)</option>
+                <option value="unpublished" selected="@(Model.Status == "unpublished")">Unpublished (@Model.UnpublishedCount)</option>
                 <option value="available" selected="@(Model.Status == "available")">Available for Use (@Model.AvailableForUseCount)</option>
                 <option value="coming_soon" selected="@(Model.Status == "coming_soon")">Coming Soon (@Model.ComingSoonCount)</option>
+                <option value="active" selected="@(Model.Status == "active")">Active (@Model.ActiveCount)</option>
+                <option value="inactive" selected="@(Model.Status == "inactive")">Deactivated (@Model.InactiveCount)</option>
                 <option value="maintenance" selected="@(Model.Status == "maintenance")">Under Maintenance (@Model.MaintenanceCount)</option>
             </select>
 
@@ -260,7 +262,23 @@
 
                                     @* Meta Badges Row *@
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
-                                        @* Availability for Use Badge *@
+                                        @* 1. Visibility Badge: Published vs Unpublished *@
+                                        @if (feat.IsPublished)
+                                        {
+                                            <span class="badge" style="background: rgba(0, 80, 229, 0.08); color: #0050e5; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(0, 80, 229, 0.2);">
+                                                <span class="material-symbols-outlined" style="font-size: 12px;">public</span>
+                                                Published
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(239, 68, 68, 0.25);">
+                                                <span class="material-symbols-outlined" style="font-size: 12px;">visibility_off</span>
+                                                Unpublished
+                                            </span>
+                                        }
+
+                                        @* 2. Readiness Badge: Available for Use vs Coming Soon *@
                                         @if (feat.IsAvailableForUse)
                                         {
                                             <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
@@ -276,7 +294,30 @@
                                             </span>
                                         }
 
-                                        @* Tier Badge *@
+                                        @* 3. Operational Status Badge: Active vs Deactivated vs Maintenance *@
+                                        @if (feat.IsInBeta)
+                                        {
+                                            <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #d97706; font-weight: 700; font-size: 11px; border: 1px solid rgba(245, 158, 11, 0.2);">
+                                                <span class="badge-dot" style="background-color: #d97706;"></span>
+                                                Maintenance
+                                            </span>
+                                        }
+                                        else if (feat.IsActive)
+                                        {
+                                            <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #059669; font-weight: 700; font-size: 11px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                                                <span class="badge-dot" style="background-color: #10b981;"></span>
+                                                Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; font-weight: 700; font-size: 11px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                                                <span class="badge-dot" style="background-color: #ef4444;"></span>
+                                                Deactivated
+                                            </span>
+                                        }
+
+                                        @* 4. Tier Badge *@
                                         @if (feat.IsCompulsory)
                                         {
                                             <span class="badge" style="background: rgba(0, 80, 229, 0.08); color: var(--ozikol-primary, #0050e5); font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(0, 80, 229, 0.2);">
@@ -290,87 +331,80 @@
                                                 Optional Addon
                                             </span>
                                         }
-
-                                        @* Status Badge *@
-                                        @if (feat.IsInBeta)
-                                        {
-                                            <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #d97706; font-weight: 700; font-size: 11px; border: 1px solid rgba(245, 158, 11, 0.2);">
-                                                <span class="badge-dot" style="background-color: #d97706;"></span>
-                                                Under Maintenance
-                                            </span>
-                                        }
-                                        else if (feat.IsActive)
-                                        {
-                                            <span class="badge" style="background: rgba(16, 185, 129, 0.1); color: #059669; font-weight: 700; font-size: 11px; border: 1px solid rgba(16, 185, 129, 0.2);">
-                                                <span class="badge-dot" style="background-color: #10b981;"></span>
-                                                Published
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; font-weight: 700; font-size: 11px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                                                <span class="badge-dot" style="background-color: #ef4444;"></span>
-                                                Unpublished
-                                            </span>
-                                        }
-
-                                        @* Billing Model Badge *@
-                                        @switch (feat.BillingType)
-                                        {
-                                            case Ozikol.MasterDomain.Models.FeatureBillingType.FlatSubscription:
-                                                <span class="badge" style="background: #f8fafc; color: #334155; font-size: 10.5px; border: 1px solid #e2e8f0;">Flat Subscription</span>
-                                                break;
-                                            case Ozikol.MasterDomain.Models.FeatureBillingType.PayAsYouGo:
-                                                <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #b45309; font-size: 10.5px; border: 1px solid rgba(245, 158, 11, 0.2);">Pay As You Go</span>
-                                                break;
-                                            case Ozikol.MasterDomain.Models.FeatureBillingType.Hybrid:
-                                                <span class="badge" style="background: rgba(99, 102, 241, 0.1); color: #4f46e5; font-size: 10.5px; border: 1px solid rgba(99, 102, 241, 0.2);">Hybrid</span>
-                                                break;
-                                            default:
-                                                <span class="badge" style="background: #f1f5f9; color: #64748b; font-size: 10.5px;">@feat.BillingType</span>
-                                                break;
-                                        }
                                     </div>
                                 </div>
 
-                                @* Bottom Actions Row *@
+                                @* Bottom Actions Row (Clean Dropdown Action Menu — Zero Button Overflow) *@
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid #f1f5f9;">
-                                    <div style="font-size: 11.5px; font-weight: 700; color: #0f172a;">
+                                    <div style="font-size: 12px; font-weight: 800; color: #0f172a;">
                                         @if (feat.MonthlyPrice > 0)
                                         {
                                             <span>$@feat.MonthlyPrice.ToString("F2")/mo</span>
                                         }
                                         else
                                         {
-                                            <span style="color: #059669;">Included</span>
+                                            <span style="color: #059669;">Included Free</span>
                                         }
                                     </div>
 
-                                    <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                        <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@feat.Id" style="display: inline; margin: 0;">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm"
-                                                    style="color: @(feat.IsAvailableForUse ? "#d97706" : "#059669");"
-                                                    title="@(feat.IsAvailableForUse ? "Set to Coming Soon" : "Set to Available for Use")">
-                                                <span class="material-symbols-outlined" style="font-size: 14px;">@(feat.IsAvailableForUse ? "schedule" : "verified")</span>
-                                                <span>@(feat.IsAvailableForUse ? "Coming Soon" : "Make Available")</span>
-                                            </button>
-                                        </form>
-                                        <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@feat.Id" style="display: inline; margin: 0;">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm"
-                                                    style="color: @(feat.IsActive ? "var(--admin-danger)" : "var(--admin-success)");"
-                                                    title="@(feat.IsActive ? "Unpublish Capability (Hide from Tenants)" : "Publish Capability (Show to Tenants)")">
-                                                <span class="material-symbols-outlined" style="font-size: 14px;">@(feat.IsActive ? "visibility_off" : "public")</span>
-                                                <span>@(feat.IsActive ? "Unpublish" : "Publish")</span>
-                                            </button>
-                                        </form>
+                                    <div style="display: inline-flex; align-items: center; gap: 6px; position: relative;">
                                         <a href="/centralwks/features/details?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View Feature Details">
                                             <span class="material-symbols-outlined" style="font-size: 14px;">visibility</span>
+                                            <span>Details</span>
                                         </a>
-                                        <a href="/centralwks/features/edit?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="Edit Capability">
-                                            <span class="material-symbols-outlined" style="font-size: 14px;">edit</span>
-                                        </a>
+
+                                        <div class="action-dropdown-wrapper">
+                                            <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm action-dropdown-trigger" onclick="toggleFeatureActionMenu(event, 'menu-card-@feat.Id')">
+                                                <span>Actions</span>
+                                                <span class="material-symbols-outlined" style="font-size: 15px;">expand_more</span>
+                                            </button>
+
+                                            <div id="menu-card-@feat.Id" class="feature-action-dropdown-menu">
+                                                <a href="/centralwks/features/edit?id=@feat.Id" class="dropdown-action-item">
+                                                    <span class="material-symbols-outlined" style="color: #0050e5;">edit</span>
+                                                    <span>Edit Capability &amp; Pricing</span>
+                                                </a>
+                                                <a href="/centralwks/features/details?id=@feat.Id" class="dropdown-action-item">
+                                                    <span class="material-symbols-outlined" style="color: #64748b;">visibility</span>
+                                                    <span>View Specification</span>
+                                                </a>
+
+                                                <div class="dropdown-action-divider"></div>
+
+                                                @* Toggle Available for Use vs Coming Soon *@
+                                                <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@feat.Id" style="margin: 0;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="dropdown-action-item">
+                                                        <span class="material-symbols-outlined" style="color: @(feat.IsAvailableForUse ? "#d97706" : "#059669");">
+                                                            @(feat.IsAvailableForUse ? "schedule" : "verified")
+                                                        </span>
+                                                        <span>@(feat.IsAvailableForUse ? "Mark as Coming Soon" : "Make Available for Use")</span>
+                                                    </button>
+                                                </form>
+
+                                                @* Toggle Publish vs Unpublish (Visibility) *@
+                                                <form method="post" asp-page-handler="TogglePublish" asp-route-id="@feat.Id" style="margin: 0;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="dropdown-action-item">
+                                                        <span class="material-symbols-outlined" style="color: @(feat.IsPublished ? "#dc2626" : "#0050e5");">
+                                                            @(feat.IsPublished ? "visibility_off" : "public")
+                                                        </span>
+                                                        <span>@(feat.IsPublished ? "Unpublish (Hide from Tenants)" : "Publish (Show to Tenants)")</span>
+                                                    </button>
+                                                </form>
+
+                                                @* Toggle Active vs Deactivate (Operational Status) *@
+                                                <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@feat.Id" style="margin: 0;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="dropdown-action-item">
+                                                        <span class="material-symbols-outlined" style="color: @(feat.IsActive ? "#dc2626" : "#059669");">
+                                                            @(feat.IsActive ? "block" : "check_circle")
+                                                        </span>
+                                                        <span>@(feat.IsActive ? "Deactivate Capability" : "Activate Capability")</span>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -519,50 +553,101 @@ else
                                     }
                                 </td>
                                 <td>
-                                    @if (feat.IsInBeta)
-                                    {
-                                        <span class="badge badge-warning" style="font-size: 11px;">
-                                            <span class="badge-dot" style="background-color: var(--admin-warning);"></span>
-                                            Under Maintenance
-                                        </span>
-                                    }
-                                    else if (feat.IsActive)
-                                    {
-                                        <span class="badge badge-success" style="font-size: 11px;">
-                                            <span class="badge-dot" style="background-color: var(--admin-success);"></span>
-                                            Published
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge badge-danger" style="font-size: 11px;">
-                                            <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
-                                            Unpublished
-                                        </span>
-                                    }
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        @if (feat.IsPublished)
+                                        {
+                                            <span class="badge" style="background: rgba(0, 80, 229, 0.08); color: #0050e5; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(0, 80, 229, 0.2);">
+                                                <span class="material-symbols-outlined" style="font-size: 12px;">public</span>
+                                                Published
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(239, 68, 68, 0.25);">
+                                                <span class="material-symbols-outlined" style="font-size: 12px;">visibility_off</span>
+                                                Unpublished
+                                            </span>
+                                        }
+
+                                        @if (feat.IsInBeta)
+                                        {
+                                            <span class="badge badge-warning" style="font-size: 11px;">
+                                                <span class="badge-dot" style="background-color: var(--admin-warning);"></span>
+                                                Maintenance
+                                            </span>
+                                        }
+                                        else if (feat.IsActive)
+                                        {
+                                            <span class="badge badge-success" style="font-size: 11px;">
+                                                <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                                                Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-danger" style="font-size: 11px;">
+                                                <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                                                Deactivated
+                                            </span>
+                                        }
+                                    </div>
                                 </td>
                                 <td style="text-align: right;">
-                                    <div style="display: inline-flex; align-items: center; gap: 4px;">
-                                        <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@feat.Id" style="display: inline; margin: 0;">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: @(feat.IsAvailableForUse ? "#d97706" : "#059669");" title="@(feat.IsAvailableForUse ? "Set to Coming Soon" : "Set to Available for Use")">
-                                                <span class="material-symbols-outlined" style="font-size: 15px;">@(feat.IsAvailableForUse ? "schedule" : "verified")</span>
-                                                <span>@(feat.IsAvailableForUse ? "Coming Soon" : "Make Available")</span>
-                                            </button>
-                                        </form>
-                                        <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@feat.Id" style="display: inline; margin: 0;">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="color: @(feat.IsActive ? "var(--admin-danger)" : "var(--admin-success)");" title="@(feat.IsActive ? "Unpublish Capability (Hide from Tenants)" : "Publish Capability (Show to Tenants)")">
-                                                <span class="material-symbols-outlined" style="font-size: 15px;">@(feat.IsActive ? "visibility_off" : "public")</span>
-                                                <span>@(feat.IsActive ? "Unpublish" : "Publish")</span>
-                                            </button>
-                                        </form>
-                                        <a href="/centralwks/features/details?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View Feature Details" aria-label="Details">
+                                    <div style="display: inline-flex; align-items: center; gap: 6px; position: relative;">
+                                        <a href="/centralwks/features/details?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View Feature Details">
                                             <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
+                                            <span>Details</span>
                                         </a>
-                                        <a href="/centralwks/features/edit?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="Edit Feature & Pricing in USD" aria-label="Edit">
-                                            <span class="material-symbols-outlined" style="font-size: 15px;">edit</span>
-                                        </a>
+
+                                        <div class="action-dropdown-wrapper">
+                                            <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm action-dropdown-trigger" onclick="toggleFeatureActionMenu(event, 'menu-table-@feat.Id')">
+                                                <span>Actions</span>
+                                                <span class="material-symbols-outlined" style="font-size: 15px;">expand_more</span>
+                                            </button>
+
+                                            <div id="menu-table-@feat.Id" class="feature-action-dropdown-menu">
+                                                <a href="/centralwks/features/edit?id=@feat.Id" class="dropdown-action-item">
+                                                    <span class="material-symbols-outlined" style="color: #0050e5;">edit</span>
+                                                    <span>Edit Capability &amp; Pricing</span>
+                                                </a>
+                                                <a href="/centralwks/features/details?id=@feat.Id" class="dropdown-action-item">
+                                                    <span class="material-symbols-outlined" style="color: #64748b;">visibility</span>
+                                                    <span>View Specification</span>
+                                                </a>
+
+                                                <div class="dropdown-action-divider"></div>
+
+                                                <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@feat.Id" style="margin: 0;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="dropdown-action-item">
+                                                        <span class="material-symbols-outlined" style="color: @(feat.IsAvailableForUse ? "#d97706" : "#059669");">
+                                                            @(feat.IsAvailableForUse ? "schedule" : "verified")
+                                                        </span>
+                                                        <span>@(feat.IsAvailableForUse ? "Mark as Coming Soon" : "Make Available for Use")</span>
+                                                    </button>
+                                                </form>
+
+                                                <form method="post" asp-page-handler="TogglePublish" asp-route-id="@feat.Id" style="margin: 0;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="dropdown-action-item">
+                                                        <span class="material-symbols-outlined" style="color: @(feat.IsPublished ? "#dc2626" : "#0050e5");">
+                                                            @(feat.IsPublished ? "visibility_off" : "public")
+                                                        </span>
+                                                        <span>@(feat.IsPublished ? "Unpublish (Hide from Tenants)" : "Publish (Show to Tenants)")</span>
+                                                    </button>
+                                                </form>
+
+                                                <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@feat.Id" style="margin: 0;">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="dropdown-action-item">
+                                                        <span class="material-symbols-outlined" style="color: @(feat.IsActive ? "#dc2626" : "#059669");">
+                                                            @(feat.IsActive ? "block" : "check_circle")
+                                                        </span>
+                                                        <span>@(feat.IsActive ? "Deactivate Capability" : "Activate Capability")</span>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -617,10 +702,86 @@ else
 .feature-title-link:hover {
     color: var(--ozikol-primary, #0050e5) !important;
 }
+.action-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+}
+.action-dropdown-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 700;
+}
+.feature-action-dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    min-width: 225px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.16), 0 4px 10px -2px rgba(15, 23, 42, 0.08);
+    padding: 6px;
+    z-index: 999;
+    text-align: left;
+}
+.feature-action-dropdown-menu.open {
+    display: block;
+}
+.dropdown-action-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1e293b;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    text-align: left;
+    font-family: inherit;
+}
+.dropdown-action-item:hover {
+    background: #f1f5f9;
+    color: #0050e5;
+}
+.dropdown-action-item .material-symbols-outlined {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.dropdown-action-divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 5px 0;
+}
 </style>
 
 @section Scripts {
     <script>
+        function toggleFeatureActionMenu(event, menuId) {
+            event.stopPropagation();
+            const allMenus = document.querySelectorAll('.feature-action-dropdown-menu.open');
+            allMenus.forEach(m => {
+                if (m.id !== menuId) m.classList.remove('open');
+            });
+            const menu = document.getElementById(menuId);
+            if (menu) {
+                menu.classList.toggle('open');
+            }
+        }
+
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.feature-action-dropdown-menu.open').forEach(m => {
+                m.classList.remove('open');
+            });
+        });
+
         // Live client-side instant search filter
         const searchInput = document.getElementById('featureSearchInput');
         const cards = document.querySelectorAll('.admin-feature-card');

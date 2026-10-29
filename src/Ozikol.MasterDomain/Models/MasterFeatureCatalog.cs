@@ -99,6 +99,12 @@ namespace Ozikol.MasterDomain.Models
         public bool IsInBeta { get; set; } = false;
 
         /// <summary>
+        /// Indicates whether the capability is published and visible in tenant billing consoles and onboarding directories
+        /// (true = Published / Visible, false = Unpublished / Hidden).
+        /// </summary>
+        public bool IsPublished { get; set; } = true;
+
+        /// <summary>
         /// Indicates whether the capability is fully implemented and available for immediate use in tenant workspaces
         /// (true = Available for Use, false = Coming Soon while in active engineering).
         /// </summary>

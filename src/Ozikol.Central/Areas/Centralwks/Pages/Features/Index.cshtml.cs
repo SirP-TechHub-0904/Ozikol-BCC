@@ -116,6 +116,16 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public int ComingSoonCount { get; set; }
 
         /// <summary>
+        /// Total capabilities published (visible to tenants).
+        /// </summary>
+        public int PublishedCount { get; set; }
+
+        /// <summary>
+        /// Total capabilities unpublished (hidden from tenants).
+        /// </summary>
+        public int UnpublishedCount { get; set; }
+
+        /// <summary>
         /// Available category list arranged in canonical order.
         /// </summary>
         public List<string> Categories { get; set; } = new();
@@ -156,6 +166,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                         YearlyPrice = f.YearlyPrice,
                         IsMetered = f.IsMetered,
                         IsActive = f.IsActive,
+                        IsPublished = true,
                         IsInBeta = f.IsInBeta,
                         SortOrder = f.SortOrder
                     })
@@ -168,6 +179,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             MaintenanceCount = allFeatures.Count(f => f.IsInBeta);
             AvailableForUseCount = allFeatures.Count(f => f.IsAvailableForUse);
             ComingSoonCount = allFeatures.Count(f => !f.IsAvailableForUse);
+            PublishedCount = allFeatures.Count(f => f.IsPublished);
+            UnpublishedCount = allFeatures.Count(f => !f.IsPublished);
 
             // Populate suites in canonical sequence
             var distinctDbCategories = allFeatures
@@ -204,13 +217,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             if (!string.IsNullOrWhiteSpace(Status))
             {
                 var statusNorm = Status.Trim().ToLowerInvariant();
-                if (statusNorm == "active" || statusNorm == "published")
+                if (statusNorm == "active")
                 {
                     filtered = filtered.Where(f => f.IsActive && !f.IsInBeta);
                 }
-                else if (statusNorm == "inactive" || statusNorm == "unpublished")
+                else if (statusNorm == "inactive" || statusNorm == "deactivated")
                 {
                     filtered = filtered.Where(f => !f.IsActive && !f.IsInBeta);
+                }
+                else if (statusNorm == "published")
+                {
+                    filtered = filtered.Where(f => f.IsPublished);
+                }
+                else if (statusNorm == "unpublished")
+                {
+                    filtered = filtered.Where(f => !f.IsPublished);
                 }
                 else if (statusNorm == "available")
                 {
@@ -295,17 +316,52 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             {
                 UserId = User.Identity?.Name,
                 UserName = User.Identity?.Name,
-                Action = feature.IsActive ? "Publish" : "Unpublish",
+                Action = feature.IsActive ? "Activate" : "Deactivate",
                 EntityType = "Feature",
                 EntityId = feature.Id.ToString(),
-                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) was {(feature.IsActive ? "published" : "unpublished")}",
+                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) was {(feature.IsActive ? "activated" : "deactivated")}",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"'{feature.Name}' is now {(feature.IsActive ? "Published (visible to tenants)" : "Unpublished (hidden from tenants)")}.";
+            TempData["Success"] = $"'{feature.Name}' operational status updated to {(feature.IsActive ? "Active" : "Deactivated")}.";
+
+            return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to toggle whether a feature is Published (visible to tenants) or Unpublished (hidden).
+        /// </summary>
+        /// <param name="id">The identifier of the feature to toggle.</param>
+        /// <returns>A redirect back to the feature directory.</returns>
+        public async Task<IActionResult> OnPostTogglePublishAsync(Guid id)
+        {
+            var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(id);
+            if (feature == null)
+            {
+                TempData["Error"] = "Feature not found.";
+                return RedirectToPage();
+            }
+
+            feature.IsPublished = !feature.IsPublished;
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = feature.IsPublished ? "Publish" : "Unpublish",
+                EntityType = "Feature",
+                EntityId = feature.Id.ToString(),
+                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) was {(feature.IsPublished ? "published" : "unpublished")}",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+            TempData["Success"] = $"'{feature.Name}' visibility set to {(feature.IsPublished ? "Published (Visible to Tenants)" : "Unpublished (Hidden from Tenants)")}.";
 
             return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
         }

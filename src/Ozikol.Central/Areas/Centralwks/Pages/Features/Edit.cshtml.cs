@@ -125,7 +125,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 MeterUnitPrice = feature.MeterUnitPrice,
                 MeterBatchSize = feature.MeterBlockSize,
                 DisplayOrder = feature.SortOrder,
-                IsActive = feature.IsActive
+                IsActive = feature.IsActive,
+                IsPublished = feature.IsPublished,
+                IsAvailableForUse = feature.IsAvailableForUse,
+                IsInBeta = feature.IsInBeta
             };
 
             return Page();
@@ -182,6 +185,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             feature.MeterBlockSize = Input.IsMetered && Input.MeterBatchSize > 0 ? Input.MeterBatchSize : 1;
             feature.SortOrder = Input.DisplayOrder;
             feature.IsActive = Input.IsActive;
+            feature.IsPublished = Input.IsPublished;
+            feature.IsAvailableForUse = Input.IsAvailableForUse;
+            feature.IsInBeta = Input.IsInBeta;
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
@@ -258,6 +264,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             public int DisplayOrder { get; set; }
 
             public bool IsActive { get; set; } = true;
+
+            public bool IsPublished { get; set; } = true;
+
+            public bool IsAvailableForUse { get; set; } = false;
+
+            public bool IsInBeta { get; set; } = false;
         }
     }
 }
