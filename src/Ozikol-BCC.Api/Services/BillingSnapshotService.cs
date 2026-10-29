@@ -210,9 +210,48 @@ namespace Ozikol_BCC.Api.Services
                     .ToListAsync(cancellationToken);
             }
 
+            List<MasterFeatureSuite> allSuites;
+            try
+            {
+                allSuites = await _master.MasterFeatureSuites
+                    .AsNoTracking()
+                    .OrderBy(s => s.SortOrder)
+                    .ToListAsync(cancellationToken);
+                if (allSuites.Count == 0)
+                {
+                    allSuites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+                }
+            }
+            catch
+            {
+                allSuites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+            }
+
+            MasterFeatureSuite? ResolveMatchedSuite(MasterFeatureCatalog f)
+            {
+                if (f.Suite != null) return f.Suite;
+                if (f.MasterFeatureSuiteId.HasValue)
+                {
+                    var byId = allSuites.FirstOrDefault(s => s.Id == f.MasterFeatureSuiteId.Value);
+                    if (byId != null) return byId;
+                }
+                if (!string.IsNullOrWhiteSpace(f.Category))
+                {
+                    var byName = allSuites.FirstOrDefault(s => string.Equals(s.Name.Trim(), f.Category.Trim(), StringComparison.OrdinalIgnoreCase));
+                    if (byName != null) return byName;
+                }
+                return null;
+            }
+
+            int ResolveSuiteSortOrder(MasterFeatureCatalog f)
+            {
+                var s = ResolveMatchedSuite(f);
+                return s?.SortOrder ?? (GetSuiteOrder(f.Category) + 1);
+            }
+
             // Order strictly by Suite SortOrder -> Feature SortOrder -> Name (matching Master /centralwks/features)
             var features = rawFeatures
-                .OrderBy(f => f.Suite?.SortOrder ?? GetSuiteOrder(f.Category))
+                .OrderBy(f => ResolveSuiteSortOrder(f))
                 .ThenBy(f => f.SortOrder)
                 .ThenBy(f => f.Name)
                 .ToList();
@@ -342,9 +381,11 @@ namespace Ozikol_BCC.Api.Services
                     ? Math.Round(effectiveMonthlyUsd * 10m, 2)
                     : (f.YearlyPrice > 0 ? f.YearlyPrice : f.MonthlyPrice * 10m);
 
-                var suiteFullTitle = f.Suite?.Name ?? f.Category;
-                var suiteMenuTitle = MasterFeatureSuiteDefaults.ResolveSuiteMenuTitle(suiteFullTitle, f.Suite?.MenuTitle);
+                var matchedSuite = ResolveMatchedSuite(f);
+                var suiteFullTitle = matchedSuite?.Name ?? f.Category;
+                var suiteMenuTitle = MasterFeatureSuiteDefaults.ResolveSuiteMenuTitle(suiteFullTitle, matchedSuite?.MenuTitle);
                 var featureMenuTitle = MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(f.FeatureCode, f.MenuTitle, f.Name);
+                var suiteSortOrder = matchedSuite?.SortOrder ?? (GetSuiteOrder(suiteFullTitle) + 1);
 
                 var item = new BillingFeatureItemDto
                 {
@@ -352,9 +393,10 @@ namespace Ozikol_BCC.Api.Services
                     FeatureCode = f.FeatureCode,
                     Name = f.Name,
                     MenuTitle = featureMenuTitle,
-                    SuiteId = f.MasterFeatureSuiteId ?? MasterFeatureSuiteDefaults.ResolveSuiteId(suiteFullTitle),
+                    SuiteId = matchedSuite?.Id ?? f.MasterFeatureSuiteId ?? MasterFeatureSuiteDefaults.ResolveSuiteId(suiteFullTitle),
                     Category = suiteFullTitle,
                     SuiteMenuTitle = suiteMenuTitle,
+                    SuiteSortOrder = suiteSortOrder,
                     Description = f.Description,
                     Icon = f.Icon,
                     RoutePrefix = f.RoutePrefix,

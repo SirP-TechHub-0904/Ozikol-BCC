@@ -13,6 +13,7 @@ export interface BillingFeatureItem {
   suiteId?: string;
   category: string;
   suiteMenuTitle?: string;
+  suiteSortOrder?: number;
   description?: string;
   icon?: string;
   routePrefix?: string;

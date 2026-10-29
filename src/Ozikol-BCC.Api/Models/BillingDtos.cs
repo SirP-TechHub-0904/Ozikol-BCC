@@ -59,6 +59,9 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>True when a custom availability override is set for this tenant in Central.</summary>
         public bool HasCustomAvailabilityOverride { get; set; }
 
+        /// <summary>Canonical sort order of the parent suite (1..11).</summary>
+        public int SuiteSortOrder { get; set; }
+
         /// <summary>Canonical sort order within the catalog.</summary>
         public int SortOrder { get; set; }
 

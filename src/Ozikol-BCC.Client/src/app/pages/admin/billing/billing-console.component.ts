@@ -400,11 +400,20 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Resolves the 0-based canonical suite order index matching Master (/centralwks/features).
+   * Resolves the 0-based suite order index from dynamic SuiteSortOrder (MasterFeatureSuites) with fallback to CanonicalSuites.
    */
   getSuiteOrder(category?: string): number {
     if (!category) return 999;
     const clean = category.trim().toLowerCase();
+    const combined: BillingFeatureItem[] = [
+      ...(this.snapshot.included || []),
+      ...(this.snapshot.subscribed || []),
+      ...(this.snapshot.available || [])
+    ];
+    const matched = combined.find(f => f && f.category && f.category.trim().toLowerCase() === clean && f.suiteSortOrder !== undefined && f.suiteSortOrder > 0);
+    if (matched && matched.suiteSortOrder !== undefined) {
+      return matched.suiteSortOrder - 1;
+    }
     const idx = BillingConsoleComponent.CanonicalSuites.findIndex(
       s => s.toLowerCase() === clean
     );
@@ -412,7 +421,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Resolves the Suite Letter (A - J) for a given suite category.
+   * Resolves the Suite Letter (A - K) for a given suite category based on its dynamic SuiteSortOrder.
    */
   getSuiteLetter(category?: string): string {
     const idx = this.getSuiteOrder(category);
@@ -423,7 +432,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * All published capabilities from Central for this tenant combined and ordered in canonical Master sequence.
+   * All published capabilities from Central for this tenant combined and ordered strictly by SuiteSortOrder and Feature SortOrder.
    * Includes both Available (isAvailableForUse == true) and Coming Soon (isAvailableForUse == false) capabilities.
    */
   get allOrderedFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
@@ -446,7 +455,9 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     const published = Array.from(byCode.values());
 
     const sorted = published.sort((a, b) => {
-      const suiteDiff = this.getSuiteOrder(a.category) - this.getSuiteOrder(b.category);
+      const aSuite = (a.suiteSortOrder && a.suiteSortOrder > 0) ? (a.suiteSortOrder - 1) : this.getSuiteOrder(a.category);
+      const bSuite = (b.suiteSortOrder && b.suiteSortOrder > 0) ? (b.suiteSortOrder - 1) : this.getSuiteOrder(b.category);
+      const suiteDiff = aSuite - bSuite;
       if (suiteDiff !== 0) return suiteDiff;
       const orderDiff = (a.sortOrder ?? 999) - (b.sortOrder ?? 999);
       if (orderDiff !== 0) return orderDiff;
@@ -455,7 +466,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
     return sorted.map((item, idx) => ({
       ...item,
-      serialNo: idx + 1,
+      serialNo: (item.sortOrder && item.sortOrder > 0) ? item.sortOrder : (idx + 1),
       suiteLetter: this.getSuiteLetter(item.category)
     }));
   }
