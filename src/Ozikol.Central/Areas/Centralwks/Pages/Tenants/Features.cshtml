@@ -115,28 +115,24 @@
 
 @* ── 5 Complete Tenant Governance Dashboard KPI Cards Row ── *@
 <div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 14px; margin-bottom: 24px;">
-    @* Card 1: Active / Subscribed / Not Active *@
+    @* Card 1: Active (Subscribed) / Not Active *@
     <div class="stat-card" style="padding: 16px 18px;">
         <div class="stat-icon-wrapper stat-icon-success">
             <span class="material-symbols-outlined">check_circle</span>
         </div>
         <div class="stat-details" style="flex: 1; min-width: 0;">
-            <span class="stat-label">Active / Subscribed / Not Active</span>
+            <span class="stat-label">Active (Subscribed) / Not Active</span>
             <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 3px; flex-wrap: wrap;">
-                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=active&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Filter Active Capabilities">
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=active&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Filter Active (Subscribed) Capabilities">
                     <span class="stat-value" style="font-size: 21px; color: #059669;">@Model.ActiveCount</span>
                 </a>
-                <span style="font-size: 14px; color: #cbd5e1; font-weight: 700;">/</span>
-                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=subscribed&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Filter Subscribed Add-on Capabilities">
-                    <span class="stat-value" style="font-size: 21px; color: #0050e5;">@Model.SubscribedAddonCount</span>
-                </a>
-                <span style="font-size: 14px; color: #cbd5e1; font-weight: 700;">/</span>
+                <span style="font-size: 15px; color: #cbd5e1; font-weight: 700;">/</span>
                 <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&status=inactive&viewMode=@Model.ViewMode" style="text-decoration: none;" title="Filter Not Active Capabilities">
                     <span class="stat-value" style="font-size: 21px; color: #dc2626;">@Model.InactiveCount</span>
                 </a>
             </div>
             <div style="font-size: 11px; color: #64748b; margin-top: 3px; font-weight: 600;">
-                <span style="color: #059669;">@Model.ActiveCount Active</span> • <span style="color: #0050e5;">@Model.SubscribedAddonCount Subscribed</span> • <span style="color: #dc2626;">@Model.InactiveCount Off</span>
+                <span style="color: #059669;">@Model.ActiveCount Active (Subscribed)</span> • <span style="color: #dc2626;">@Model.InactiveCount Not Active</span>
             </div>
         </div>
     </div>
@@ -248,8 +244,7 @@
 
             <select name="status" class="form-select" style="width: 215px; max-width: 215px; height: 38px; padding: 6px 12px; font-size: 13px;" onchange="this.form.submit()">
                 <option value="">All Statuses (@Model.TotalCount)</option>
-                <option value="active" selected="@(Model.Status == "active")">Active (@Model.ActiveCount)</option>
-                <option value="subscribed" selected="@(Model.Status == "subscribed")">Subscribed Add-ons (@Model.SubscribedAddonCount)</option>
+                <option value="active" selected="@(Model.Status == "active")">Active (Subscribed) (@Model.ActiveCount)</option>
                 <option value="inactive" selected="@(Model.Status == "inactive")">Not Active (@Model.InactiveCount)</option>
                 <option value="available" selected="@(Model.Status == "available")">Available for Use (@Model.AvailableForUseCount)</option>
                 <option value="coming_soon" selected="@(Model.Status == "coming_soon")">Coming Soon (@Model.ComingSoonCount)</option>
@@ -363,20 +358,13 @@
 
                                     @* Meta Badges Row: 1. Active/Not Active + Subscribed (Tenant), 2. Available/Coming Soon (Tenant), 3. Tier *@
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
-                                        @* 1. Tenant Subscription Active vs Not Active + Subscribed beside Active *@
+                                        @* 1. Tenant Subscription Active (Subscribed) vs Not Active *@
                                         @if (item.IsSubscribed)
                                         {
                                             <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
                                                 <span class="badge-dot" style="background-color: #10b981;"></span>
-                                                Active
+                                                Active (Subscribed)
                                             </span>
-                                            @if (item.IsPaidSubscribed)
-                                            {
-                                                <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(0, 80, 229, 0.25);">
-                                                    <span class="material-symbols-outlined" style="font-size: 12px;">subscriptions</span>
-                                                    Subscribed
-                                                </span>
-                                            }
                                         }
                                         else
                                         {
@@ -563,28 +551,20 @@ else
                                 <span class="badge badge-neutral" style="font-size: 11.5px; font-weight: 500;">@feat.Category</span>
                             </td>
                             <td>
-                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                    @if (item.IsSubscribed)
-                                    {
-                                        <span class="badge badge-success" style="font-size: 11px;">
-                                            <span class="badge-dot" style="background-color: var(--admin-success);"></span>
-                                            Active
-                                        </span>
-                                        @if (item.IsPaidSubscribed)
-                                        {
-                                            <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-weight: 700; font-size: 11px;">
-                                                Subscribed
-                                            </span>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <span class="badge badge-danger" style="font-size: 11px;">
-                                            <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
-                                            Not Active
-                                        </span>
-                                    }
-                                </div>
+                                @if (item.IsSubscribed)
+                                {
+                                    <span class="badge badge-success" style="font-size: 11px;">
+                                        <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                                        Active (Subscribed)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-danger" style="font-size: 11px;">
+                                        <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                                        Not Active
+                                    </span>
+                                }
                             </td>
                             <td>
                                 @if (item.EffectiveAvailableForUse)
