@@ -64,6 +64,7 @@ public class TenantProvider : ITenantProvider
 
                 if (match != null && !string.IsNullOrEmpty(match.ConnectionString))
                 {
+                    TouchTenantLastAccessed(match.Id, match.TenantKey);
                     return ResolveActiveTenantConnectionString(match.ConnectionString);
                 }
 
@@ -215,6 +216,63 @@ public class TenantProvider : ITenantProvider
         ));
 
         return match;
+    }
+
+    /// <summary>
+    /// Updates <c>LastAccessedUtc</c> on the resolved tenant record in the Master Catalog Database in the background,
+    /// throttled via in-memory cache to once every 2 minutes per tenant to ensure zero request latency.
+    /// </summary>
+    private void TouchTenantLastAccessed(Guid tenantId, string tenantKey)
+    {
+        if (tenantId == Guid.Empty || _scopeFactory == null) return;
+
+        var throttleKey = $"tenant_last_accessed_touch_{tenantId}";
+        if (_memoryCache != null && _memoryCache.TryGetValue(throttleKey, out _))
+        {
+            return;
+        }
+
+        _memoryCache?.Set(throttleKey, true, new MemoryCacheEntryOptions
+        {
+            Size = 1,
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2)
+        });
+
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var dbContextType = AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => a.GetTypes())
+                    .FirstOrDefault(t => t.Name == "MasterCatalogDbContext");
+
+                if (dbContextType == null) return;
+                var masterDbContext = scope.ServiceProvider.GetService(dbContextType);
+                if (masterDbContext == null) return;
+
+                var tenantsProperty = dbContextType.GetProperty("MasterTenantCatalogs");
+                if (tenantsProperty?.GetValue(masterDbContext) is IQueryable<object> queryable)
+                {
+                    foreach (dynamic item in queryable)
+                    {
+                        object? rawId = item.Id;
+                        Guid itemId = rawId is Guid gid ? gid : Guid.Empty;
+                        if (itemId == tenantId || string.Equals((string)item.TenantKey, tenantKey, StringComparison.OrdinalIgnoreCase))
+                        {
+                            item.LastAccessedUtc = DateTime.UtcNow;
+                            var saveMethod = dbContextType.GetMethod("SaveChanges", Type.EmptyTypes);
+                            saveMethod?.Invoke(masterDbContext, null);
+                            break;
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Non-blocking background telemetry touch
+            }
+        });
     }
 
     private List<CachedTenantEntry> LoadTenantsFromMasterDb()

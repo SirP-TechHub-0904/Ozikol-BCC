@@ -124,6 +124,12 @@ namespace Ozikol_BCC.Api.Controllers
             MasterTenantDetailsDto? tenantDetails = null;
             if (masterTenant != null)
             {
+                if (!masterTenant.LastAccessedUtc.HasValue || (DateTime.UtcNow - masterTenant.LastAccessedUtc.Value).TotalMinutes >= 1)
+                {
+                    masterTenant.LastAccessedUtc = DateTime.UtcNow;
+                    await _masterCatalogDbContext.SaveChangesAsync();
+                }
+
                 tenantDetails = new MasterTenantDetailsDto
                 {
                     Id = masterTenant.Id,

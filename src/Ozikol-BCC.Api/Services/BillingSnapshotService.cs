@@ -298,6 +298,18 @@ namespace Ozikol_BCC.Api.Services
                     currSymbol = rateObj.CurrencySymbol;
                     currRate = rateObj.RateFromUsd > 0 ? rateObj.RateFromUsd : 1.0m;
                 }
+
+                // Stamp LastAccessedUtc when a tenant workspace actively requests its billing/startup snapshot
+                if (tenant != null && _httpContextAccessor?.HttpContext != null &&
+                    (!tenant.LastAccessedUtc.HasValue || (now - tenant.LastAccessedUtc.Value).TotalMinutes >= 1))
+                {
+                    var tracked = await _master.MasterTenantCatalogs.FirstOrDefaultAsync(t => t.Id == tenant.Id, cancellationToken);
+                    if (tracked != null)
+                    {
+                        tracked.LastAccessedUtc = now;
+                        await _master.SaveChangesAsync(cancellationToken);
+                    }
+                }
             }
             catch
             {
