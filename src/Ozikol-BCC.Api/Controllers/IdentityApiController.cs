@@ -1017,6 +1017,9 @@ namespace Ozikol_BCC.Api.Controllers
 
             foreach (var a in rawActivities)
             {
+                if (IsFollowComeSeedActivity(a))
+                    continue;
+
                 if (!isSuperAdmin)
                 {
                     if (!string.IsNullOrEmpty(a.PerformedByProfileId) && idFilterSet.Contains(a.PerformedByProfileId))
@@ -1027,10 +1030,12 @@ namespace Ozikol_BCC.Api.Controllers
 
                 var email = a.PerformedByUserEmail ?? "";
                 var fullName = a.PerformedByFullName;
-                if (string.IsNullOrWhiteSpace(fullName) && !string.IsNullOrWhiteSpace(a.PerformedByProfileId) && nameById.TryGetValue(a.PerformedByProfileId, out var resolvedById))
+                if ((string.IsNullOrWhiteSpace(fullName) || fullName.Contains('@')) && !string.IsNullOrWhiteSpace(a.PerformedByProfileId) && nameById.TryGetValue(a.PerformedByProfileId, out var resolvedById))
                     fullName = resolvedById;
-                if (string.IsNullOrWhiteSpace(fullName) && !string.IsNullOrWhiteSpace(email) && nameByEmail.TryGetValue(email, out var resolvedByEmail))
+                if ((string.IsNullOrWhiteSpace(fullName) || fullName.Contains('@')) && !string.IsNullOrWhiteSpace(email) && nameByEmail.TryGetValue(email, out var resolvedByEmail))
                     fullName = resolvedByEmail;
+
+                var (cleanAction, cleanDesc, cleanModule) = FormatActivityDisplay(a.ActionType, a.Description, a.Module);
 
                 unified.Add((
                     a.Id,
@@ -1038,9 +1043,9 @@ namespace Ozikol_BCC.Api.Controllers
                     a.PerformedByProfileId,
                     !string.IsNullOrWhiteSpace(fullName) ? fullName : (!string.IsNullOrWhiteSpace(email) ? email : "System"),
                     !string.IsNullOrWhiteSpace(email) ? email : "system@workspace.local",
-                    a.ActionType ?? "OPERATIONAL_TASK",
-                    a.Description ?? a.ActionType ?? "Operational activity",
-                    !string.IsNullOrWhiteSpace(a.Module) ? a.Module : "System",
+                    cleanAction,
+                    cleanDesc,
+                    cleanModule,
                     a.IpAddress ?? "127.0.0.1",
                     a.UserAgent ?? "Web Browser",
                     a.Date
@@ -1815,23 +1820,32 @@ namespace Ozikol_BCC.Api.Controllers
             var hasOlderLogin = await loginQuery.AnyAsync(l => l.Timestamp < cutoffDate);
             var hasOlderRecords = hasOlderActivity || hasOlderLogin;
 
-            // Filter to last 30 days
-            var recentActivities = await activityQuery
+            // Filter to last 30 days and strip out automatic "follow-come" starter seed rows
+            var rawRecentActivities = await activityQuery
                 .Where(a => a.Date >= cutoffDate)
                 .OrderByDescending(a => a.Date)
-                .Take(200)
-                .Select(a => new
-                {
-                    Id = a.Id.ToString(),
-                    Email = a.PerformedByUserEmail ?? userEmail ?? "account@domain.com",
-                    Status = a.ActionType ?? "Operational Task",
-                    Description = a.Description ?? a.ActionType ?? "User activity",
-                    Module = a.Module ?? "System",
-                    IpAddress = a.IpAddress ?? "127.0.0.1",
-                    UserAgent = a.UserAgent ?? "Web Browser",
-                    Timestamp = a.Date
-                })
+                .Take(500)
                 .ToListAsync();
+
+            var recentActivities = rawRecentActivities
+                .Where(a => !IsFollowComeSeedActivity(a))
+                .Take(200)
+                .Select(a =>
+                {
+                    var (cleanAction, cleanDesc, cleanModule) = FormatActivityDisplay(a.ActionType, a.Description, a.Module);
+                    return new
+                    {
+                        Id = a.Id.ToString(),
+                        Email = a.PerformedByUserEmail ?? userEmail ?? "account@domain.com",
+                        Status = cleanAction,
+                        Description = cleanDesc,
+                        Module = cleanModule,
+                        IpAddress = a.IpAddress ?? "127.0.0.1",
+                        UserAgent = a.UserAgent ?? "Web Browser",
+                        Timestamp = a.Date
+                    };
+                })
+                .ToList();
 
             var recentLogins = await loginQuery
                 .Where(l => l.Timestamp >= cutoffDate)
@@ -1938,6 +1952,117 @@ namespace Ozikol_BCC.Api.Controllers
                 retentionDays = 30,
                 retentionNotice = "Showing activity records from the last 30 days. For archival records older than 1 month, please contact your workspace Administrator."
             }, "Personal activity history retrieved."));
+        }
+
+        /// <summary>
+        /// Determines whether an activity log record was generated by automatic background or lazy "follow-come" starter seeding
+        /// (e.g., default message templates, default KPI indicators, default registration fields, default user categories, or system bootstrap rows).
+        /// </summary>
+        private static bool IsFollowComeSeedActivity(BcpActivityLog log)
+        {
+            var action = (log.ActionType ?? string.Empty).Trim();
+            var desc = (log.Description ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(action) && string.IsNullOrWhiteSpace(desc))
+                return true;
+
+            // Auto-seeded "follow-come" entity creation codes captured previously by SaveChangesAsync during GET endpoints
+            string[] followComeActionCodes =
+            {
+                "CREATE_BCPMESSAGETEMPLATE",
+                "UPDATE_BCPMESSAGETEMPLATE",
+                "DELETE_BCPMESSAGETEMPLATE",
+                "CREATE_BCPKPIINDICATOR",
+                "CREATE_BCPREGISTRATIONFORMFIELD",
+                "CREATE_BCPUSERCATEGORY",
+                "CREATE_APPROLE",
+                "CREATE_IDENTITYROLE",
+                "CREATE_MISCONFIGURATIONSETTING",
+                "CREATE_MISWEBSITESETTING",
+                "CREATE_TEMPLATECATEGORY",
+                "CREATE_TEMPLATETAG",
+                "CREATE_PAGESECTION",
+                "CREATE_WEBPAGE",
+                "CREATE_BCPNOTIFICATION",
+                "UPDATE_BCPNOTIFICATION",
+                "CREATE_BCPUSERFEATUREROLE"
+            };
+
+            foreach (var code in followComeActionCodes)
+            {
+                if (string.Equals(action, code, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            // Also filter out noisy LastLogin / SecurityStamp-only profile updates that are already represented as Login events
+            if (string.Equals(action, "UPDATE_PROFILE", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(action, "UPDATE_APPLICATIONUSER", StringComparison.OrdinalIgnoreCase))
+            {
+                if (desc.Contains("LastLogin:", StringComparison.OrdinalIgnoreCase) && !desc.Contains("FirstName:", StringComparison.OrdinalIgnoreCase) && !desc.Contains("LastName:", StringComparison.OrdinalIgnoreCase) && !desc.Contains("PhoneNumber:", StringComparison.OrdinalIgnoreCase) && !desc.Contains("AvatarUrl:", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            if (desc.StartsWith("Created BcpMessageTemplate", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created BcpKpiIndicator", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created BcpRegistrationFormField", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created BcpUserCategory", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created AppRole", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created MisConfigurationSetting", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created MisWebsiteSetting", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created TemplateCategory", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created TemplateTag", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created BcpNotification", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Formats raw database activity codes and descriptions into human-friendly titles and modules for UI presentation.
+        /// </summary>
+        private static (string ActionType, string Description, string Module) FormatActivityDisplay(string? rawAction, string? rawDescription, string? rawModule)
+        {
+            var action = (rawAction ?? "Activity").Trim();
+            var desc = (rawDescription ?? action).Trim();
+            var mod = !string.IsNullOrWhiteSpace(rawModule) ? rawModule.Trim() : "Workspace";
+
+            var cleanAction = action.ToUpperInvariant() switch
+            {
+                "UPDATE_PROFILE" or "UPDATE_APPLICATIONUSER" => "Profile Updated",
+                "CREATE_PROFILE" or "CREATE_APPLICATIONUSER" => "Member Registered",
+                "DELETE_PROFILE" or "DELETE_APPLICATIONUSER" => "Member Removed",
+                "UPDATE_MISWEBSITESETTING" => "Brand & Settings Updated",
+                "UPDATE_WEBPAGE" => "Web Page Updated",
+                "DELETE_WEBPAGE" => "Web Page Deleted",
+                "UPDATE_PAGESECTION" => "Page Section Updated",
+                "CREATE_BLOG" or "CREATE_BLOGPOST" => "Blog Post Created",
+                "UPDATE_BLOG" or "UPDATE_BLOGPOST" => "Blog Post Updated",
+                "DELETE_BLOG" or "DELETE_BLOGPOST" => "Blog Post Deleted",
+                "CREATE_CUSTOMFORM" => "Custom Form Created",
+                "UPDATE_CUSTOMFORM" => "Custom Form Updated",
+                "DELETE_CUSTOMFORM" => "Custom Form Deleted",
+                "CREATE_BCPUSERINVITATION" => "Member Invited",
+                "DELETE_BCPUSERINVITATION" => "Invitation Revoked",
+                "SESSION_REVOKED" => "Device Session Revoked",
+                "SESSIONS_REVOKED" => "Other Sessions Revoked",
+                "PASSWORD_CHANGED" or "PASSWORD_UPDATED" => "Password Updated",
+                "MFA_ENABLED" or "2FA_ENABLED" => "2FA Security Enabled",
+                "MFA_DISABLED" or "2FA_DISABLED" => "2FA Security Disabled",
+                "FEATURE_INSTALLED" => "Feature Installed",
+                "FEATURE_DEACTIVATED" => "Feature Deactivated",
+                _ => action.Replace('_', ' ')
+            };
+
+            desc = desc
+                .Replace("Modified Profile ", "Updated profile ")
+                .Replace("Modified MisWebsiteSetting ", "Updated brand & website settings ")
+                .Replace("Modified WebPage ", "Updated web page ")
+                .Replace("Modified PageSection ", "Updated page section ")
+                .Replace("Created BcpUserInvitation ", "Sent member invitation ");
+
+            return (cleanAction, desc, mod);
         }
 
         /// <summary>

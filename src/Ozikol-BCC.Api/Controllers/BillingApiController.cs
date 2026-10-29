@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -10,7 +11,9 @@ using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Api.Services;
+using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.TenantSupport;
+using Ozikol_BCC.Persistence.EF.SQL;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -29,6 +32,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly MasterCatalogDbContext _master;
         private readonly IBillingSnapshotService _snapshots;
         private readonly ITenantProvider? _tenantProvider;
+        private readonly DashboardDbContext? _tenantDb;
 
         /// <summary>
         /// Initializes a new instance of <see cref="BillingApiController"/>.
@@ -36,11 +40,17 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="master">Master catalog database context.</param>
         /// <param name="snapshots">Snapshot builder and real-time publisher.</param>
         /// <param name="tenantProvider">Current tenant resolver.</param>
-        public BillingApiController(MasterCatalogDbContext master, IBillingSnapshotService snapshots, ITenantProvider? tenantProvider = null)
+        /// <param name="tenantDb">Tenant workspace database context for activity audit logging.</param>
+        public BillingApiController(
+            MasterCatalogDbContext master,
+            IBillingSnapshotService snapshots,
+            ITenantProvider? tenantProvider = null,
+            DashboardDbContext? tenantDb = null)
         {
             _master = master;
             _snapshots = snapshots;
             _tenantProvider = tenantProvider;
+            _tenantDb = tenantDb;
         }
 
         /// <summary>
@@ -146,13 +156,7 @@ namespace Ozikol_BCC.Api.Controllers
             var existing = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feature.Id);
 
             // Check whether this feature is available for use for this tenant (respecting Central Custom Availability)
-            bool anyMasterAvail = await _master.MasterFeatureCatalogs.AnyAsync(f => f.IsActive && f.IsAvailableForUse, cancellationToken);
-            var defaultAvailCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                "bcp-community-messenger", "bcp-committees", "bcp-alumni-directory",
-                "bcp-form-builder", "bcp-store-ecommerce", "bcp-ai-smart-assist", "bcp-mass-communication"
-            };
-            bool masterAvail = anyMasterAvail ? feature.IsAvailableForUse : defaultAvailCodes.Contains(feature.FeatureCode);
+            bool masterAvail = feature.IsAvailableForUse;
             bool effectiveAvail = tenant.UseCustomAvailability
                 ? (existing?.IsAvailableForUseOverride ?? ((existing?.CustomPriceOverride != null || (existing != null && existing.IsActive && !feature.IsCompulsory)) ? true : masterAvail))
                 : masterAvail;
@@ -234,6 +238,15 @@ namespace Ozikol_BCC.Api.Controllers
             });
 
             await _master.SaveChangesAsync(cancellationToken);
+
+            // Also record the feature installation or deactivation in the tenant's own BcpActivityLogs
+            await LogTenantFeatureActivityAsync(
+                targetActive ? "Feature Installed" : "Feature Deactivated",
+                targetActive
+                    ? $"Installed and activated capability '{feature.Name}' ({feature.FeatureCode})."
+                    : $"Deactivated capability '{feature.Name}' ({feature.FeatureCode}).",
+                cancellationToken);
+
             await _snapshots.PublishAsync(tenant.TenantKey, cancellationToken);
 
             var updatedSnapshot = await _snapshots.BuildAsync(tenant.TenantKey, cancellationToken);
@@ -327,6 +340,14 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             await _master.SaveChangesAsync(cancellationToken);
+
+            await LogTenantFeatureActivityAsync(
+                free ? "Feature Installed" : "Feature Subscription Initiated",
+                free
+                    ? $"Installed and activated capability '{feature.Name}' ({feature.FeatureCode})."
+                    : $"Initiated {cadence} subscription for capability '{feature.Name}' (Invoice {result.InvoiceNumber}).",
+                cancellationToken);
+
             await _snapshots.PublishAsync(key, cancellationToken);
 
             return Ok(ApiResponse<SubscribeFeatureResultDto>.SuccessResponse(result,
@@ -406,6 +427,49 @@ namespace Ozikol_BCC.Api.Controllers
             var count = await _master.MasterBillingTransactions
                 .CountAsync(t => t.InvoiceNumber != null && t.InvoiceNumber.StartsWith(prefix), cancellationToken);
             return $"{prefix}{count + 1:D5}";
+        }
+
+        /// <summary>
+        /// Records a workspace feature installation, deactivation, or subscription event into the tenant's BcpActivityLogs.
+        /// </summary>
+        private async Task LogTenantFeatureActivityAsync(string actionType, string description, CancellationToken cancellationToken)
+        {
+            if (_tenantDb == null) return;
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userEmail = User.FindFirstValue(ClaimTypes.Email)
+                    ?? User.FindFirst("email")?.Value
+                    ?? (User.Identity?.Name?.Contains('@') == true ? User.Identity.Name : null);
+                var fullName = User.FindFirst("full_name")?.Value
+                    ?? User.FindFirst(ClaimTypes.GivenName)?.Value
+                    ?? User.Identity?.Name
+                    ?? userEmail
+                    ?? "Administrator";
+                var ipAddress = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                    ?? HttpContext.Connection.RemoteIpAddress?.ToString()
+                    ?? "127.0.0.1";
+                var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
+
+                _tenantDb.BcpActivityLogs.Add(new BcpActivityLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    ActionType = actionType,
+                    Description = description,
+                    Module = "Billing & Capabilities",
+                    PerformedByProfileId = userId,
+                    PerformedByFullName = fullName,
+                    PerformedByUserEmail = userEmail,
+                    IpAddress = ipAddress,
+                    UserAgent = userAgent,
+                    Date = DateTime.UtcNow
+                });
+                await _tenantDb.SaveChangesAsync(cancellationToken);
+            }
+            catch
+            {
+                // Non-blocking audit log safeguard
+            }
         }
     }
 }

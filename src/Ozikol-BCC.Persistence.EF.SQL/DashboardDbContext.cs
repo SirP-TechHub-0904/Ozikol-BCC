@@ -199,6 +199,10 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     {
         typeof(BcpActivityLog),
         typeof(BcpLoginAuditLog),
+        typeof(BcpNotification),
+        typeof(BcpMessageTemplate),
+        typeof(MisConfigurationSetting),
+        typeof(TemplateCategory),
         typeof(WebPageViewLog),
         typeof(BcpEmailQueue),
         typeof(BcpSmsQueue),
@@ -221,12 +225,15 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         "Token",
         "Password",
         "NormalizedEmail",
-        "NormalizedUserName"
+        "NormalizedUserName",
+        "LastLogin",
+        "UpdatedAt",
+        "AccessFailedCount"
     };
 
     /// <summary>
-    /// Automatically tracks database entity changes (Added, Modified, Deleted) across the tenant database.
-    /// Captures property-level string diffs ('old' ➔ 'new') and persists audit rows directly to [dbo].[BcpActivityLogs].
+    /// Automatically tracks intentional user/admin database mutations (Added, Modified, Deleted) across the tenant database.
+    /// Skips lazy background "follow-come" seeding triggered during HTTP GET requests and skips redundant auto-logs when an explicit BcpActivityLog is already staged.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token for async execution.</param>
     /// <returns>The total number of state entries written to the database.</returns>
@@ -234,15 +241,32 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     {
         try
         {
-            // Inspect entries that were added, modified, or deleted, excluding telemetry and queue items
-            var entries = ChangeTracker.Entries()
-                .Where(e => (e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted)
-                            && !ExcludedAuditTypes.Contains(e.Entity.GetType()))
+            var httpContext = _httpContextAccessor?.HttpContext;
+            var httpMethod = httpContext?.Request?.Method;
+
+            // Never auto-capture lazy "follow-come" starter seeding that runs during HTTP GET/HEAD/OPTIONS requests or background startup jobs
+            bool isIntentionalMutationRequest = httpContext != null
+                && !string.IsNullOrWhiteSpace(httpMethod)
+                && !string.Equals(httpMethod, "GET", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(httpMethod, "HEAD", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(httpMethod, "OPTIONS", StringComparison.OrdinalIgnoreCase);
+
+            // Check if the controller/service already staged an explicit, descriptive BcpActivityLog in this transaction
+            var existingStagedLogs = ChangeTracker.Entries<BcpActivityLog>()
+                .Where(e => e.State == EntityState.Added)
+                .Select(e => e.Entity)
                 .ToList();
+
+            // Inspect entries that were added, modified, or deleted, excluding telemetry, notifications, and queue items
+            var entries = (isIntentionalMutationRequest && !existingStagedLogs.Any())
+                ? ChangeTracker.Entries()
+                    .Where(e => (e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted)
+                                && !ExcludedAuditTypes.Contains(e.Entity.GetType()))
+                    .ToList()
+                : new List<Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry>();
 
             if (entries.Any())
             {
-                var httpContext = _httpContextAccessor?.HttpContext;
                 var user = httpContext?.User;
                 var userEmail = user?.FindFirst(ClaimTypes.Email)?.Value
                     ?? user?.FindFirst("email")?.Value
@@ -272,19 +296,13 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
                 var userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var userName = user?.Identity?.Name ?? "System";
 
-                // Check for explicit BcpActivityLogs staged in this transaction
-                var existingStagedLogs = ChangeTracker.Entries<BcpActivityLog>()
-                    .Where(e => e.State == EntityState.Added)
-                    .Select(e => e.Entity)
-                    .ToList();
-
                 var auditLogs = new List<BcpActivityLog>();
 
                 foreach (var entry in entries)
                 {
                     var entityType = entry.Entity.GetType();
                     var entityTypeName = entityType.Name;
-                    string actionType = entry.State.ToString();
+                    var friendlyEntityLabel = ResolveFriendlyEntityLabel(entityTypeName);
 
                     // Infer module categorization
                     string module = ResolveModuleForEntity(entry.Entity);
@@ -311,12 +329,6 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
                         targetProfileId = score.ProfileId;
                     }
 
-                    // If an explicit business log is already staged targeting this entity, skip redundant generic row
-                    if (existingStagedLogs.Any(l => (!string.IsNullOrEmpty(targetProfileId) && l.TargetProfileId == targetProfileId)))
-                    {
-                        continue;
-                    }
-
                     string identifier = GetEntityIdentifier(entry.Entity);
 
                     if (entry.State == EntityState.Modified)
@@ -331,14 +343,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 
                             var propName = prop.Metadata.Name;
                             if (SensitiveAuditProperties.Contains(propName))
-                            {
-                                if (!Equals(prop.OriginalValue, prop.CurrentValue))
-                                {
-                                    diffList.Add($"{propName}: '[PROTECTED]' ➔ '[UPDATED]'");
-                                    changeRecords.Add(new { property = propName, previous = "[PROTECTED]", @new = "[UPDATED]" });
-                                }
                                 continue;
-                            }
 
                             var originalVal = prop.OriginalValue?.ToString() ?? "null";
                             var currentVal = prop.CurrentValue?.ToString() ?? "null";
@@ -358,13 +363,13 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
                             continue;
 
                         string diffString = string.Join(", ", diffList);
-                        string description = $"Modified {entityTypeName} '{identifier}': [{diffString}]";
+                        string description = $"Updated {friendlyEntityLabel} '{identifier}': [{diffString}]";
                         if (description.Length > 1000) description = description.Substring(0, 997) + "...";
 
                         auditLogs.Add(new BcpActivityLog
                         {
                             Id = Guid.CreateVersion7(),
-                            ActionType = $"UPDATE_{entityTypeName.ToUpperInvariant()}",
+                            ActionType = $"{friendlyEntityLabel} Updated",
                             Description = description,
                             PerformedByProfileId = userId,
                             PerformedByFullName = userName,
@@ -386,13 +391,13 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
                     }
                     else if (entry.State == EntityState.Added)
                     {
-                        string description = $"Created {entityTypeName} '{identifier}'";
+                        string description = $"Created {friendlyEntityLabel} '{identifier}'";
                         if (description.Length > 1000) description = description.Substring(0, 997) + "...";
 
                         auditLogs.Add(new BcpActivityLog
                         {
                             Id = Guid.CreateVersion7(),
-                            ActionType = $"CREATE_{entityTypeName.ToUpperInvariant()}",
+                            ActionType = $"{friendlyEntityLabel} Created",
                             Description = description,
                             PerformedByProfileId = userId,
                             PerformedByFullName = userName,
@@ -413,13 +418,13 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
                     }
                     else if (entry.State == EntityState.Deleted)
                     {
-                        string description = $"Deleted {entityTypeName} '{identifier}'";
+                        string description = $"Deleted {friendlyEntityLabel} '{identifier}'";
                         if (description.Length > 1000) description = description.Substring(0, 997) + "...";
 
                         auditLogs.Add(new BcpActivityLog
                         {
                             Id = Guid.CreateVersion7(),
-                            ActionType = $"DELETE_{entityTypeName.ToUpperInvariant()}",
+                            ActionType = $"{friendlyEntityLabel} Deleted",
                             Description = description,
                             PerformedByProfileId = userId,
                             PerformedByFullName = userName,
@@ -453,6 +458,27 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
 
         return await base.SaveChangesAsync(cancellationToken);
     }
+
+    /// <summary>
+    /// Maps internal EF entity class names into clean, human-readable domain labels for activity logs.
+    /// </summary>
+    private static string ResolveFriendlyEntityLabel(string entityTypeName) => entityTypeName switch
+    {
+        "Profile" or "ApplicationUser" => "User Profile",
+        "MisWebsiteSetting" => "Brand & Website Settings",
+        "WebPage" => "Web Page",
+        "PageSection" => "Page Section",
+        "Blog" or "BlogPost" => "Blog Article",
+        "CustomForm" => "Custom Form",
+        "BcpUserCategory" => "User Category",
+        "BcpUserInvitation" => "Member Invitation",
+        "BcpUserFeatureRole" => "Feature Permission",
+        "BcpKpiIndicator" => "KPI Metric",
+        "BcpKpiUserScore" => "KPI Evaluation",
+        "BcpRegistrationFormField" => "Registration Field",
+        "AppRole" or "IdentityRole" => "Security Role",
+        _ => entityTypeName
+    };
 
     /// <summary>
     /// Resolves the human-readable workspace module categorization for an audited entity.

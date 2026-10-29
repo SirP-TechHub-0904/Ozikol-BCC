@@ -2223,9 +2223,9 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
    */
   getStatusIcon(status: string): string {
     const s = (status || '').toLowerCase();
-    if (s.includes('success') || s.includes('granted')) return 'check_circle';
+    if (s.includes('success') || s.includes('granted') || s.includes('installed') || s.includes('enabled') || s.includes('activated')) return 'check_circle';
     if (s.includes('fail') || s.includes('denied')) return 'cancel';
-    if (s.includes('revoked') || s.includes('terminated')) return 'block';
+    if (s.includes('revoked') || s.includes('terminated') || s.includes('deactivated') || s.includes('disabled') || s.includes('deleted') || s.includes('removed')) return 'block';
     return 'info';
   }
 
@@ -2235,8 +2235,8 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
    */
   getStatusClass(status: string): string {
     const s = (status || '').toLowerCase();
-    if (s.includes('success') || s.includes('granted')) return 'log-good';
-    if (s.includes('fail') || s.includes('denied') || s.includes('revoked')) return 'log-bad';
+    if (s.includes('success') || s.includes('granted') || s.includes('installed') || s.includes('enabled') || s.includes('activated')) return 'log-good';
+    if (s.includes('fail') || s.includes('denied') || s.includes('revoked') || s.includes('deactivated') || s.includes('disabled') || s.includes('deleted') || s.includes('removed')) return 'log-bad';
     return 'log-info';
   }
 
