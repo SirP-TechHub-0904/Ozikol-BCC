@@ -4239,9 +4239,9 @@ export class AdminLayoutComponent implements OnInit {
     });
   }
 
-  /// <summary>
-  /// Set of lowercase FeatureCodes that are visible to the tenant (Published in Central, and if UseCustomAvailability is enabled, included in the tenant's Custom Features list).
-  /// </summary>
+  /**
+   * Set of lowercase FeatureCodes that are visible to the tenant (Published in Central, and if UseCustomAvailability is enabled, included in the tenant's Custom Features list).
+   */
   visibleFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
@@ -4253,9 +4253,9 @@ export class AdminLayoutComponent implements OnInit {
     })()
   );
 
-  /// <summary>
-  /// Set of lowercase FeatureCodes that are currently installed and active for the tenant workspace.
-  /// </summary>
+  /**
+   * Set of lowercase FeatureCodes that are currently installed and active for the tenant workspace.
+   */
   activeFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
@@ -4267,17 +4267,17 @@ export class AdminLayoutComponent implements OnInit {
     })()
   );
 
-  /// <summary>
-  /// Controls the "Feature Not Active" modal when a user clicks a locked capability in the sidebar.
-  /// </summary>
+  /**
+   * Controls the "Feature Not Active" modal when a user clicks a locked capability in the sidebar.
+   */
   showLockedFeatureModal = false;
   lockedFeatureCode = '';
   lockedFeatureTitle = '';
 
-  /// <summary>
-  /// Applies a BillingFeaturesSnapshot payload to update both visibleFeatureCodes and activeFeatureCodes.
-  /// </summary>
-  /// <param name="d">BillingFeaturesSnapshot payload.</param>
+  /**
+   * Applies a BillingFeaturesSnapshot payload to update both visibleFeatureCodes and activeFeatureCodes.
+   * @param d BillingFeaturesSnapshot payload.
+   */
   applyBillingSnapshot(d: any): void {
     if (!d) return;
     const all = [
@@ -4302,10 +4302,10 @@ export class AdminLayoutComponent implements OnInit {
     localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
   }
 
-  /// <summary>
-  /// Fetches the tenant's published and custom-filtered features from the Master Catalog billing snapshot
-  /// and updates sidebar visibility and lock states in real time.
-  /// </summary>
+  /**
+   * Fetches the tenant's published and custom-filtered features from the Master Catalog billing snapshot
+   * and updates sidebar visibility and lock states in real time.
+   */
   loadActiveBillingFeatures(): void {
     this.api.get<any>('billing/features').subscribe({
       next: (res) => {
@@ -4317,54 +4317,54 @@ export class AdminLayoutComponent implements OnInit {
     });
   }
 
-  /// <summary>
-  /// Checks whether a modular capability is visible to the tenant (Published in Central, and if UseCustomAvailability is enabled, assigned to the tenant).
-  /// </summary>
-  /// <param name="featureCode">Canonical feature code (e.g. 'bcp-committees').</param>
-  /// <returns>True when the feature should appear in the sidebar.</returns>
+  /**
+   * Checks whether a modular capability is visible to the tenant (Published in Central, and if UseCustomAvailability is enabled, assigned to the tenant).
+   * @param featureCode Canonical feature code (e.g. 'bcp-committees').
+   * @returns True when the feature should appear in the sidebar.
+   */
   isFeatureVisible(featureCode: string): boolean {
     if (!featureCode) return false;
     return this.visibleFeatureCodes.has(featureCode.toLowerCase());
   }
 
-  /// <summary>
-  /// Checks whether at least one of the specified modular capability codes is visible to the tenant.
-  /// </summary>
-  /// <param name="featureCodes">Array of canonical feature codes belonging to the suite.</param>
-  /// <returns>True when one or more features in the list are visible.</returns>
+  /**
+   * Checks whether at least one of the specified modular capability codes is visible to the tenant.
+   * @param featureCodes Array of canonical feature codes belonging to the suite.
+   * @returns True when one or more features in the list are visible.
+   */
   isAnyFeatureVisible(featureCodes: string[]): boolean {
     if (!featureCodes || featureCodes.length === 0) return false;
     return featureCodes.some(code => this.isFeatureVisible(code));
   }
 
-  /// <summary>
-  /// Checks whether a specific modular capability code is currently installed and active for the tenant.
-  /// </summary>
-  /// <param name="featureCode">Canonical feature code (e.g. 'bcp-committees').</param>
-  /// <returns>True when the feature is active for the tenant.</returns>
+  /**
+   * Checks whether a specific modular capability code is currently installed and active for the tenant.
+   * @param featureCode Canonical feature code (e.g. 'bcp-committees').
+   * @returns True when the feature is active for the tenant.
+   */
   isFeatureActive(featureCode: string): boolean {
     if (!featureCode) return false;
     return this.activeFeatureCodes.has(featureCode.toLowerCase());
   }
 
-  /// <summary>
-  /// Checks whether at least one of the specified modular capability codes is installed and active.
-  /// </summary>
-  /// <param name="featureCodes">Array of canonical feature codes belonging to the suite.</param>
-  /// <returns>True when one or more features in the list are active.</returns>
+  /**
+   * Checks whether at least one of the specified modular capability codes is installed and active.
+   * @param featureCodes Array of canonical feature codes belonging to the suite.
+   * @returns True when one or more features in the list are active.
+   */
   isAnyFeatureActive(featureCodes: string[]): boolean {
     if (!featureCodes || featureCodes.length === 0) return false;
     return featureCodes.some(code => this.isFeatureActive(code));
   }
 
-  /// <summary>
-  /// Handles clicking a modular capability menu item in the sidebar.
-  /// If the capability is Not Active, prevents navigation and opens the "Feature Not Active" modal.
-  /// </summary>
-  /// <param name="featureCode">Canonical feature code.</param>
-  /// <param name="featureTitle">Human-readable title of the capability.</param>
-  /// <param name="event">DOM click event.</param>
-  /// <param name="menuKeyToToggle">Optional submenu key to toggle when the capability is active.</param>
+  /**
+   * Handles clicking a modular capability menu item in the sidebar.
+   * If the capability is Not Active, prevents navigation and opens the "Feature Not Active" modal.
+   * @param featureCode Canonical feature code.
+   * @param featureTitle Human-readable title of the capability.
+   * @param event DOM click event.
+   * @param menuKeyToToggle Optional submenu key to toggle when the capability is active.
+   */
   onFeatureMenuClick(featureCode: string, featureTitle: string, event: Event, menuKeyToToggle?: string): void {
     if (!this.isFeatureActive(featureCode)) {
       event.preventDefault();
@@ -4379,14 +4379,14 @@ export class AdminLayoutComponent implements OnInit {
     }
   }
 
-  /// <summary>
-  /// Handles clicking a grouped parent submenu item in the sidebar.
-  /// If none of the group's capabilities are active, opens the "Feature Not Active" modal.
-  /// </summary>
-  /// <param name="featureCodes">Array of canonical feature codes in the group.</param>
-  /// <param name="groupTitle">Human-readable group title.</param>
-  /// <param name="event">DOM click event.</param>
-  /// <param name="menuKeyToToggle">Optional submenu key to toggle when at least one capability is active.</param>
+  /**
+   * Handles clicking a grouped parent submenu item in the sidebar.
+   * If none of the group's capabilities are active, opens the "Feature Not Active" modal.
+   * @param featureCodes Array of canonical feature codes in the group.
+   * @param groupTitle Human-readable group title.
+   * @param event DOM click event.
+   * @param menuKeyToToggle Optional submenu key to toggle when at least one capability is active.
+   */
   onFeatureGroupMenuClick(featureCodes: string[], groupTitle: string, event: Event, menuKeyToToggle?: string): void {
     if (!this.isAnyFeatureActive(featureCodes)) {
       event.preventDefault();
@@ -4401,18 +4401,18 @@ export class AdminLayoutComponent implements OnInit {
     }
   }
 
-  /// <summary>
-  /// Closes the "Feature Not Active" modal.
-  /// </summary>
+  /**
+   * Closes the "Feature Not Active" modal.
+   */
   closeLockedFeatureModal(): void {
     this.showLockedFeatureModal = false;
     this.lockedFeatureCode = '';
     this.lockedFeatureTitle = '';
   }
 
-  /// <summary>
-  /// Navigates the administrator to /billing/features to install and activate the locked capability.
-  /// </summary>
+  /**
+   * Navigates the administrator to /billing/features to install and activate the locked capability.
+   */
   goToActivateFeature(): void {
     this.closeLockedFeatureModal();
     this.router.navigate(['/billing/features']);
