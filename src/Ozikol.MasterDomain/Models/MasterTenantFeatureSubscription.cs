@@ -46,6 +46,13 @@ namespace Ozikol.MasterDomain.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal? CustomPriceOverride { get; set; }
 
+        /// <summary>
+        /// Optional tenant-specific override for whether this capability is Available for Use (true)
+        /// or Coming Soon (false) for this tenant when UseCustomAvailability is enabled.
+        /// Null inherits from MasterFeatureCatalog.IsAvailableForUse.
+        /// </summary>
+        public bool? IsAvailableForUseOverride { get; set; }
+
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
         public DateTime? LastRenewedUtc { get; set; }
     }

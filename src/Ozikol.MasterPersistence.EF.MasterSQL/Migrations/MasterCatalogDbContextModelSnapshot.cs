@@ -3349,6 +3349,12 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<DateTime?>("UpdatedUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("UseCustomAvailability")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("UseCustomPricing")
+                        .HasColumnType("bit");
+
                     b.Property<string>("WebsiteUrl")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -3395,6 +3401,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("IsAvailableForUseOverride")
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastRenewedUtc")

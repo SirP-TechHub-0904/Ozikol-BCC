@@ -134,14 +134,51 @@ namespace Ozikol_BCC.Api.Services
             var key = (tenantKey ?? "workspace").Trim().ToLowerInvariant();
 
             // Read straight from the database (no entitlement cache) so the snapshot is always current
-            var tenant = await _master.MasterTenantCatalogs
-                .AsNoTracking()
-                .Include(t => t.FeatureSubscriptions)
-                .FirstOrDefaultAsync(t =>
-                    t.TenantKey.ToLower() == key ||
-                    (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
-                    (t.CustomDomain != null && t.CustomDomain.ToLower() == key),
-                    cancellationToken);
+            MasterTenantCatalog? tenant = null;
+            try
+            {
+                tenant = await _master.MasterTenantCatalogs
+                    .AsNoTracking()
+                    .Include(t => t.FeatureSubscriptions)
+                    .FirstOrDefaultAsync(t =>
+                        t.TenantKey.ToLower() == key ||
+                        (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                        (t.CustomDomain != null && t.CustomDomain.ToLower() == key),
+                        cancellationToken);
+            }
+            catch
+            {
+                // Graceful fallback if UseCustomPricing / UseCustomAvailability / IsAvailableForUseOverride columns are pending migration
+                tenant = await _master.MasterTenantCatalogs
+                    .AsNoTracking()
+                    .Where(t =>
+                        t.TenantKey.ToLower() == key ||
+                        (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                        (t.CustomDomain != null && t.CustomDomain.ToLower() == key))
+                    .Select(t => new MasterTenantCatalog
+                    {
+                        Id = t.Id,
+                        TenantKey = t.TenantKey,
+                        OrganizationName = t.OrganizationName,
+                        UseCustomPricing = false,
+                        UseCustomAvailability = false,
+                        FeatureSubscriptions = t.FeatureSubscriptions.Select(s => new MasterTenantFeatureSubscription
+                        {
+                            Id = s.Id,
+                            MasterTenantCatalogId = s.MasterTenantCatalogId,
+                            MasterFeatureCatalogId = s.MasterFeatureCatalogId,
+                            IsActive = s.IsActive,
+                            Status = s.Status,
+                            AutoRenew = s.AutoRenew,
+                            DurationType = s.DurationType,
+                            RecurringPrice = s.RecurringPrice,
+                            CustomPriceOverride = s.CustomPriceOverride,
+                            IsAvailableForUseOverride = null,
+                            ExpiresAtUtc = s.ExpiresAtUtc
+                        }).ToList()
+                    })
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
 
             List<MasterFeatureCatalog> rawFeatures;
             bool usedFallbackQuery = false;
@@ -206,9 +243,19 @@ namespace Ozikol_BCC.Api.Services
             {
                 subsByFeature.TryGetValue(f.Id, out var sub);
 
-                bool isAvailForUse = usedFallbackQuery
+                bool masterAvailForUse = usedFallbackQuery
                     ? DefaultAvailableCodes.Contains(f.FeatureCode)
                     : f.IsAvailableForUse;
+
+                // Apply per-tenant availability override when tenant policy is set to Custom Availability
+                bool isAvailForUse = (tenant?.UseCustomAvailability == true && sub?.IsAvailableForUseOverride != null)
+                    ? sub.IsAvailableForUseOverride.Value
+                    : masterAvailForUse;
+
+                // Apply per-tenant custom monthly price override when tenant policy is set to Custom Pricing
+                decimal effectiveMonthly = (tenant?.UseCustomPricing == true && sub?.CustomPriceOverride != null)
+                    ? sub.CustomPriceOverride.Value
+                    : f.MonthlyPrice;
 
                 var item = new BillingFeatureItemDto
                 {
@@ -224,17 +271,27 @@ namespace Ozikol_BCC.Api.Services
                     IsInBeta = f.IsInBeta,
                     SortOrder = f.SortOrder,
                     BillingType = f.BillingType.ToString(),
-                    MonthlyPrice = f.MonthlyPrice,
-                    QuarterlyPrice = f.QuarterlyPrice > 0 ? f.QuarterlyPrice : Math.Round(f.MonthlyPrice * 3m * 0.9m, 2),
-                    YearlyPrice = f.YearlyPrice > 0 ? f.YearlyPrice : f.MonthlyPrice * 10m
+                    MonthlyPrice = effectiveMonthly,
+                    QuarterlyPrice = (tenant?.UseCustomPricing == true && sub?.CustomPriceOverride != null)
+                        ? Math.Round(effectiveMonthly * 3m * 0.9m, 2)
+                        : (f.QuarterlyPrice > 0 ? f.QuarterlyPrice : Math.Round(f.MonthlyPrice * 3m * 0.9m, 2)),
+                    YearlyPrice = (tenant?.UseCustomPricing == true && sub?.CustomPriceOverride != null)
+                        ? Math.Round(effectiveMonthly * 10m, 2)
+                        : (f.YearlyPrice > 0 ? f.YearlyPrice : f.MonthlyPrice * 10m)
                 };
 
                 if (f.IsCompulsory)
                 {
-                    item.IsSubscribed = true;
-                    item.IsActive = true;
-                    item.Status = "Included";
+                    bool compActive = sub == null || sub.IsActive;
+                    item.IsSubscribed = compActive;
+                    item.IsActive = compActive;
+                    item.Status = compActive ? "Included" : "Suspended";
                     item.BillingCadence = "Included";
+                    item.EffectivePrice = effectiveMonthly;
+                    if (compActive && effectiveMonthly > 0)
+                    {
+                        snapshot.TotalRecurringMonthly += effectiveMonthly;
+                    }
                     snapshot.Included.Add(item);
                     continue;
                 }
@@ -260,7 +317,9 @@ namespace Ozikol_BCC.Api.Services
                 item.AutoRenew = sub.AutoRenew;
                 item.Status = status;
                 item.BillingCadence = sub.DurationType.ToString();
-                item.EffectivePrice = sub.CustomPriceOverride ?? sub.RecurringPrice;
+                item.EffectivePrice = (tenant?.UseCustomPricing == true && sub.CustomPriceOverride != null)
+                    ? sub.CustomPriceOverride.Value
+                    : (sub.RecurringPrice > 0 ? sub.RecurringPrice : f.MonthlyPrice);
                 item.ExpiresAtUtc = sub.ExpiresAtUtc;
                 item.DaysRemaining = days;
                 item.Severity = sub.IsActive && !string.Equals(sub.Status, "Pending", StringComparison.OrdinalIgnoreCase)

@@ -1,120 +1,742 @@
 @page
 @model Ozikol.Central.Areas.Centralwks.Pages.Tenants.FeaturesModel
 @{
-    ViewData["Title"] = $"Modular Capabilities — {Model.Tenant.OrganizationName}";
+    ViewData["Title"] = $"Tenant Capabilities & Pricing — {Model.Tenant.OrganizationName}";
     ViewData["BreadcrumbSection"] = "Tenants";
+
+    var suiteLetterMap = new Dictionary<string, char>(StringComparer.OrdinalIgnoreCase);
+    for (int i = 0; i < FeaturesModel.CanonicalSuites.Length; i++)
+    {
+        suiteLetterMap[FeaturesModel.CanonicalSuites[i]] = (char)('A' + i);
+    }
+
+    var suiteGroups = Model.AvailableFeatures
+        .GroupBy(x => x.Feature.Category)
+        .OrderBy(g => FeaturesModel.GetSuiteOrder(g.Key))
+        .ToList();
 }
 
 <div class="admin-page-header">
     <div class="admin-title-group">
-        <h1 class="admin-title">Modular Feature Activations</h1>
-        <p class="admin-subtitle">Activate, configure pricing, or suspend modular capabilities for <strong>@Model.Tenant.OrganizationName</strong> (<code>@Model.Tenant.TenantKey</code>).</p>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-info" style="font-size: 11px; font-weight: 700;">TENANT WORKSPACE GOVERNANCE</span>
+            <code style="font-size: 12px; padding: 2px 8px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 5px; color: #0050e5; font-weight: 700;">@Model.Tenant.TenantKey</code>
+            <span style="font-size: 12px; color: #64748b;">@Model.Tenant.PrimaryDomain</span>
+        </div>
+        <h1 class="admin-title">@Model.Tenant.OrganizationName — Capabilities, Pricing &amp; Availability</h1>
+        <p class="admin-subtitle">Govern per-tenant <strong>Active / Not Active</strong> status, <strong>General vs. Custom Pricing</strong>, and <strong>Available for Use vs. Coming Soon</strong> with real-time WebSocket sync.</p>
     </div>
     <div class="admin-actions" style="display: flex; gap: 8px;">
-        <a href="/centralwks/features/analytics" class="btn-admin btn-admin-primary">
+        <a href="/centralwks/features/analytics" class="btn-admin btn-admin-secondary">
             <span class="material-symbols-outlined" style="font-size: 16px;">analytics</span>
-            Back to Feature Adoption
+            <span>Back to Feature Adoption</span>
         </a>
-        <a href="/centralwks/tenants" class="btn-admin btn-admin-secondary">
+        <a href="/centralwks/tenants/details?id=@Model.Tenant.Id" class="btn-admin btn-admin-primary">
             <span class="material-symbols-outlined" style="font-size: 16px;">domain</span>
-            Back to Tenants
+            <span>Tenant Overview</span>
         </a>
     </div>
 </div>
 
-<div class="admin-card">
-    <div class="table-responsive">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Capability</th>
-                    <th>Category</th>
-                    <th>Base Price</th>
-                    <th>Activation Status</th>
-                    <th>Billing Cadence</th>
-                    <th>Expires At</th>
-                    <th style="text-align: right;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model.AvailableFeatures.Any())
-                {
-                    @foreach (var item in Model.AvailableFeatures)
+@* ── 2 Tenant Policy Switches Banner: Pricing Mode & Availability Mode ── *@
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 20px;">
+    @* Switch 1: Pricing Policy (General vs Custom Pricing) *@
+    <div class="admin-card" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#e2e8f0"); background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.03)" : "#ffffff");">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.12)" : "#f1f5f9"); color: @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#475569"); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="font-size: 22px;">payments</span>
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Pricing Policy</span>
+                    @if (Model.Tenant.UseCustomPricing)
                     {
-                        <tr>
-                            <td>
+                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10.5px; font-weight: 700;">Custom Tenant Pricing</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-neutral" style="font-size: 10.5px; font-weight: 700;">General Master Pricing</span>
+                    }
+                </div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 3px;">
+                    @(Model.Tenant.UseCustomPricing
+                        ? "Custom per-feature price overrides are active for this tenant."
+                        : "Inheriting standard global USD prices from the Master Feature Catalog.")
+                </div>
+            </div>
+        </div>
+
+        <form method="post" asp-page-handler="TogglePricingPolicy" style="margin: 0; flex-shrink: 0;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+            <button type="submit" class="btn-admin @(Model.Tenant.UseCustomPricing ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm">
+                <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomPricing ? "public" : "tune")</span>
+                <span>@(Model.Tenant.UseCustomPricing ? "Use General Pricing" : "Use Custom Pricing")</span>
+            </button>
+        </form>
+    </div>
+
+    @* Switch 2: Availability Policy (General vs Custom Availability) *@
+    <div class="admin-card" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid @(Model.Tenant.UseCustomAvailability ? "#059669" : "#e2e8f0"); background: @(Model.Tenant.UseCustomAvailability ? "rgba(16, 185, 129, 0.03)" : "#ffffff");">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: @(Model.Tenant.UseCustomAvailability ? "rgba(16, 185, 129, 0.14)" : "#f1f5f9"); color: @(Model.Tenant.UseCustomAvailability ? "#059669" : "#475569"); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="font-size: 22px;">verified</span>
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Availability Policy</span>
+                    @if (Model.Tenant.UseCustomAvailability)
+                    {
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.14); color: #059669; font-size: 10.5px; font-weight: 700;">Custom Tenant Availability</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-neutral" style="font-size: 10.5px; font-weight: 700;">General Master Availability</span>
+                    }
+                </div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 3px;">
+                    @(Model.Tenant.UseCustomAvailability
+                        ? "Custom Available for Use / Coming Soon overrides are enabled for this tenant."
+                        : "Inheriting Available for Use / Coming Soon status from the Master Feature Catalog.")
+                </div>
+            </div>
+        </div>
+
+        <form method="post" asp-page-handler="ToggleAvailabilityPolicy" style="margin: 0; flex-shrink: 0;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+            <button type="submit" class="btn-admin @(Model.Tenant.UseCustomAvailability ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm">
+                <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomAvailability ? "public" : "tune")</span>
+                <span>@(Model.Tenant.UseCustomAvailability ? "Use General Availability" : "Use Custom Availability")</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+@* ── 4 Combined Metric Stat Cards Row ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
+    @* Card 1: Suites *@
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-primary">
+            <span class="material-symbols-outlined">category</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Suites</span>
+            <span class="stat-value">@Model.SuitesCount.ToString("N0")</span>
+        </div>
+    </div>
+
+    @* Card 2: Active / Not Active (Per-Tenant Subscription Status) *@
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-success">
+            <span class="material-symbols-outlined">check_circle</span>
+        </div>
+        <div class="stat-details" style="flex: 1;">
+            <span class="stat-label">Active / Not Active</span>
+            <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 2px;">
+                <span class="stat-value" style="color: var(--admin-success);" title="Active for this Tenant">@Model.ActiveCount.ToString("N0")</span>
+                <span style="font-size: 16px; color: #cbd5e1; font-weight: 700;">/</span>
+                <span class="stat-value" style="color: var(--admin-danger);" title="Not Active for this Tenant">@Model.InactiveCount.ToString("N0")</span>
+            </div>
+        </div>
+    </div>
+
+    @* Card 3: Available / Coming Soon (For This Tenant) *@
+    <div class="stat-card">
+        <div class="stat-icon-wrapper" style="background: rgba(16, 185, 129, 0.14); color: #059669;">
+            <span class="material-symbols-outlined">verified</span>
+        </div>
+        <div class="stat-details" style="flex: 1;">
+            <span class="stat-label">Available / Coming Soon</span>
+            <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 2px;">
+                <span class="stat-value" style="color: #059669;" title="Available for Use">@Model.AvailableForUseCount.ToString("N0")</span>
+                <span style="font-size: 16px; color: #cbd5e1; font-weight: 700;">/</span>
+                <span class="stat-value" style="color: var(--admin-warning);" title="Coming Soon">@Model.ComingSoonCount.ToString("N0")</span>
+            </div>
+        </div>
+    </div>
+
+    @* Card 4: Monthly Recurring Spend (MRR) *@
+    <div class="stat-card">
+        <div class="stat-icon-wrapper" style="background: rgba(14, 165, 233, 0.14); color: #0284c7;">
+            <span class="material-symbols-outlined">payments</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Tenant Monthly Spend</span>
+            <span class="stat-value">$@Model.TotalMonthlyMrr.ToString("N2")<span style="font-size: 12px; font-weight: 600; color: #64748b;">/mo</span></span>
+        </div>
+    </div>
+</div>
+
+@* ── Search, Suite Filter & View Switcher Toolbar Card ── *@
+<div class="admin-card" style="margin-bottom: 24px;">
+    <div class="table-toolbar" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 18px;">
+        <form method="get" class="table-filters" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1;">
+            <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+            <input type="hidden" name="viewMode" value="@Model.ViewMode" />
+
+            <div class="table-search-box" style="width: 240px; max-width: 100%;">
+                <span class="search-icon">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">search</span>
+                </span>
+                <input type="text" id="tenantFeatureSearchInput" name="search" value="@Model.Search" placeholder="Search by name, code..." style="height: 38px;" autocomplete="off" />
+            </div>
+
+            <select name="category" class="form-select" style="width: 185px; max-width: 185px; height: 38px; padding: 6px 12px; font-size: 13px;" onchange="this.form.submit()">
+                <option value="">All Suites (@Model.Categories.Count)</option>
+                @foreach (var cat in Model.Categories)
+                {
+                    <option value="@cat" selected="@(string.Equals(Model.Category, cat, StringComparison.OrdinalIgnoreCase))">@cat</option>
+                }
+            </select>
+
+            <select name="status" class="form-select" style="width: 175px; max-width: 175px; height: 38px; padding: 6px 12px; font-size: 13px;" onchange="this.form.submit()">
+                <option value="">All Statuses</option>
+                <option value="active" selected="@(Model.Status == "active")">Active (@Model.ActiveCount)</option>
+                <option value="inactive" selected="@(Model.Status == "inactive")">Not Active (@Model.InactiveCount)</option>
+                <option value="available" selected="@(Model.Status == "available")">Available for Use (@Model.AvailableForUseCount)</option>
+                <option value="coming_soon" selected="@(Model.Status == "coming_soon")">Coming Soon (@Model.ComingSoonCount)</option>
+                <option value="custom_price" selected="@(Model.Status == "custom_price")">Custom Priced</option>
+            </select>
+
+            <button type="submit" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 14px; font-size: 13px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">filter_alt</span>
+                <span>Filter</span>
+            </button>
+
+            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Category) || !string.IsNullOrEmpty(Model.Status))
+            {
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&amp;viewMode=@Model.ViewMode" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 12px; font-size: 13px; color: var(--admin-danger);">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                    <span>Reset</span>
+                </a>
+            }
+        </form>
+
+        <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
+            <div style="font-size: 12.5px; color: var(--admin-text-muted); display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-text-dim);">format_list_bulleted</span>
+                <span>Showing <strong id="visibleCountText">@Model.AvailableFeatures.Count</strong> of <strong>@Model.TotalCount</strong> capabilities</span>
+            </div>
+
+            <div class="view-mode-toggle" style="display: inline-flex; background: var(--admin-bg-surface-elevated, #f1f5f9); padding: 3px; border-radius: 8px; border: 1px solid var(--admin-border, #e2e8f0);">
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&amp;search=@Uri.EscapeDataString(Model.Search ?? "")&amp;category=@Uri.EscapeDataString(Model.Category ?? "")&amp;status=@Uri.EscapeDataString(Model.Status ?? "")&amp;viewMode=cards"
+                   class="btn-view-toggle @(Model.ViewMode != "table" ? "active" : "")">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">grid_view</span>
+                    <span>Cards</span>
+                </a>
+                <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id&amp;search=@Uri.EscapeDataString(Model.Search ?? "")&amp;category=@Uri.EscapeDataString(Model.Category ?? "")&amp;status=@Uri.EscapeDataString(Model.Status ?? "")&amp;viewMode=table"
+                   class="btn-view-toggle @(Model.ViewMode == "table" ? "active" : "")">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">table_rows</span>
+                    <span>Table</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ══════════════════════════════════════════════════════════════════════════ *@
+@* ── VIEW MODE A: SUITE CARDS VIEW (Suite A – Suite J) ──────────────────── *@
+@* ══════════════════════════════════════════════════════════════════════════ *@
+@if (Model.ViewMode != "table")
+{
+    int runningSerialNo = 0;
+
+    @if (suiteGroups.Any())
+    {
+        <div id="suiteCardsContainer">
+            @foreach (var group in suiteGroups)
+            {
+                var letter = suiteLetterMap.TryGetValue(group.Key, out var l) ? l : '•';
+                var groupItems = group.OrderBy(x => x.Feature.SortOrder).ThenBy(x => x.Feature.Name).ToList();
+
+                <div class="suite-group-section" style="margin-bottom: 32px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="background: var(--ozikol-primary, #0050e5); color: #ffffff; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 6px; letter-spacing: 0.05em; text-transform: uppercase;">
+                                Suite @letter
+                            </span>
+                            <h2 style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; text-transform: uppercase; letter-spacing: 0.03em;">
+                                @group.Key
+                            </h2>
+                        </div>
+                        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #64748b; background: #ffffff; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 9999px;">
+                            <span class="material-symbols-outlined" style="font-size: 14px; color: var(--ozikol-primary, #0050e5);">check_circle</span>
+                            <span>@groupItems.Count(x => x.IsSubscribed) / @groupItems.Count Active</span>
+                        </div>
+                    </div>
+
+                    <div class="suite-feature-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px;">
+                        @foreach (var item in groupItems)
+                        {
+                            runningSerialNo++;
+                            var feat = item.Feature;
+                            var iconName = string.IsNullOrEmpty(feat.Icon) ? "extension" : feat.Icon;
+
+                            <div class="admin-feature-card"
+                                 data-name="@feat.Name.ToLowerInvariant()"
+                                 data-code="@feat.FeatureCode.ToLowerInvariant()"
+                                 data-desc="@(feat.Description?.ToLowerInvariant() ?? "")"
+                                 style="background: #ffffff; border: 1.5px solid @(item.IsSubscribed ? "rgba(16, 185, 129, 0.35)" : "#e2e8f0"); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+
                                 <div>
-                                    <strong style="color: var(--admin-text);">@item.Feature.Name</strong>
-                                    <div style="font-size: 11.5px; color: var(--admin-text-dim);">
-                                        <code>@item.Feature.FeatureCode</code> • @item.Feature.Description
+                                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px;">
+                                        <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0;">
+                                            <div style="width: 40px; height: 40px; border-radius: 10px; background: @(item.IsSubscribed ? "rgba(16, 185, 129, 0.1)" : "rgba(0, 80, 229, 0.08)"); border: 1px solid @(item.IsSubscribed ? "rgba(16, 185, 129, 0.25)" : "rgba(0, 80, 229, 0.15)"); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: @(item.IsSubscribed ? "#059669" : "#0050e5");">
+                                                <span class="material-symbols-outlined" style="font-size: 22px;">@iconName</span>
+                                            </div>
+                                            <div style="min-width: 0; flex: 1;">
+                                                <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+                                                    <span style="font-size: 11px; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 2px 7px; border-radius: 5px;">#@runningSerialNo</span>
+                                                    <span style="font-size: 14px; font-weight: 700; color: #0f172a; word-break: break-word;">@feat.Name</span>
+                                                </div>
+                                                <div style="font-size: 11px; color: #64748b;">
+                                                    <code style="font-size: 11px; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">@feat.FeatureCode</code>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <p style="font-size: 12.5px; color: #475569; line-height: 1.5; margin: 0 0 14px; min-height: 38px;">
+                                        @(string.IsNullOrWhiteSpace(feat.Description) ? "Core sovereign capabilities and operations." : feat.Description)
+                                    </p>
+
+                                    @* Meta Badges Row: 1. Active/Not Active (Tenant), 2. Available/Coming Soon (Tenant), 3. Tier *@
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
+                                        @* 1. Tenant Subscription Active vs Not Active *@
+                                        @if (item.IsSubscribed)
+                                        {
+                                            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
+                                                <span class="badge-dot" style="background-color: #10b981;"></span>
+                                                Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(239, 68, 68, 0.25);">
+                                                <span class="badge-dot" style="background-color: #ef4444;"></span>
+                                                Not Active
+                                            </span>
+                                        }
+
+                                        @* 2. Tenant Availability: Available for Use vs Coming Soon *@
+                                        @if (item.EffectiveAvailableForUse)
+                                        {
+                                            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
+                                                <span class="material-symbols-outlined" style="font-size: 12px;">verified</span>
+                                                Available for Use @(item.HasCustomAvailabilityOverride ? "(Custom)" : "")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(245, 158, 11, 0.25);">
+                                                <span class="material-symbols-outlined" style="font-size: 12px;">schedule</span>
+                                                Coming Soon @(item.HasCustomAvailabilityOverride ? "(Custom)" : "")
+                                            </span>
+                                        }
+
+                                        @* 3. Tier Class *@
+                                        @if (feat.IsCompulsory)
+                                        {
+                                            <span class="badge" style="background: rgba(0, 80, 229, 0.08); color: var(--ozikol-primary, #0050e5); font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(0, 80, 229, 0.2);">
+                                                <span class="material-symbols-outlined" style="font-size: 12px;">lock</span>
+                                                Compulsory Core
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 600; font-size: 11px; border: 1px solid #e2e8f0;">
+                                                Optional Addon
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+
+                                @* Bottom Footer: Effective Tenant Price + Actions Dropdown *@
+                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid #f1f5f9;">
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        @if (item.EffectiveMonthlyPrice > 0)
+                                        {
+                                            <span style="font-size: 13px; font-weight: 800; color: #0f172a;">$@item.EffectiveMonthlyPrice.ToString("F2")/mo</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="font-size: 12px; font-weight: 800; color: #059669;">Included Free</span>
+                                        }
+
+                                        @if (item.HasCustomPriceOverride)
+                                        {
+                                            <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5; font-size: 10px; font-weight: 700;">Custom Price</span>
+                                            <span style="font-size: 11px; color: #94a3b8; text-decoration: line-through;">$@feat.MonthlyPrice.ToString("F2")</span>
+                                        }
+                                    </div>
+
+                                    <div style="display: inline-flex; align-items: center; gap: 6px; position: relative;">
+                                        <button type="button"
+                                                class="btn-admin btn-admin-secondary btn-admin-sm"
+                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")')"
+                                                title="Configure Custom Price for this Tenant">
+                                            <span class="material-symbols-outlined" style="font-size: 14px;">attach_money</span>
+                                            <span>Price</span>
+                                        </button>
+
+                                        <div class="action-dropdown-wrapper">
+                                            <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm action-dropdown-trigger" onclick="toggleFeatureActionMenu(event, 'menu-tcard-@feat.Id')">
+                                                <span>Actions</span>
+                                                <span class="material-symbols-outlined" style="font-size: 15px;">expand_more</span>
+                                            </button>
+
+                                            <div id="menu-tcard-@feat.Id" class="feature-action-dropdown-menu">
+                                                @* 1. Toggle Active / Not Active for this Tenant *@
+                                                <form method="post" asp-page-handler="ToggleTenantActive" style="margin: 0;">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+                                                    <input type="hidden" name="featureId" value="@feat.Id" />
+                                                    <button type="submit" class="dropdown-action-item">
+                                                        <span class="material-symbols-outlined" style="color: @(item.IsSubscribed ? "#dc2626" : "#059669");">
+                                                            @(item.IsSubscribed ? "cancel" : "check_circle")
+                                                        </span>
+                                                        <span>@(item.IsSubscribed ? "Deactivate for Tenant" : "Activate for Tenant")</span>
+                                                    </button>
+                                                </form>
+
+                                                @* 2. Toggle Available for Use / Coming Soon for this Tenant *@
+                                                <form method="post" asp-page-handler="ToggleTenantAvailability" style="margin: 0;">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+                                                    <input type="hidden" name="featureId" value="@feat.Id" />
+                                                    <button type="submit" class="dropdown-action-item">
+                                                        <span class="material-symbols-outlined" style="color: @(item.EffectiveAvailableForUse ? "#d97706" : "#059669");">
+                                                            @(item.EffectiveAvailableForUse ? "schedule" : "verified")
+                                                        </span>
+                                                        <span>@(item.EffectiveAvailableForUse ? "Mark Coming Soon for Tenant" : "Make Available for Tenant")</span>
+                                                    </button>
+                                                </form>
+
+                                                <div class="dropdown-action-divider"></div>
+
+                                                @* 3. Set Custom Price *@
+                                                <button type="button"
+                                                        class="dropdown-action-item"
+                                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")')">
+                                                    <span class="material-symbols-outlined" style="color: #0050e5;">payments</span>
+                                                    <span>Set Custom Tenant Price...</span>
+                                                </button>
+
+                                                @if (item.HasCustomPriceOverride)
+                                                {
+                                                    <form method="post" asp-page-handler="SetCustomPrice" style="margin: 0;">
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+                                                        <input type="hidden" name="featureId" value="@feat.Id" />
+                                                        <input type="hidden" name="resetToGeneral" value="true" />
+                                                        <button type="submit" class="dropdown-action-item">
+                                                            <span class="material-symbols-outlined" style="color: #64748b;">restart_alt</span>
+                                                            <span>Reset to Master Price ($@feat.MonthlyPrice.ToString("F2"))</span>
+                                                        </button>
+                                                    </form>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+else
+{
+    @* ══════════════════════════════════════════════════════════════════════════ *@
+    @* ── VIEW MODE B: COMPACT DATA TABLE VIEW ───────────────────────────────── *@
+    @* ══════════════════════════════════════════════════════════════════════════ *@
+    <div class="admin-card">
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">S/N</th>
+                        <th>CAPABILITY</th>
+                        <th>SUITE</th>
+                        <th>TENANT STATUS</th>
+                        <th>TENANT AVAILABILITY</th>
+                        <th>EFFECTIVE PRICE</th>
+                        <th style="text-align: right; width: 190px;">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.AvailableFeatures.Count; i++)
+                    {
+                        var item = Model.AvailableFeatures[i];
+                        var feat = item.Feature;
+                        var iconName = string.IsNullOrEmpty(feat.Icon) ? "extension" : feat.Icon;
+                        <tr>
+                            <td style="text-align: center;">
+                                <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@(i + 1)</span>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--admin-primary);">
+                                        <span class="material-symbols-outlined" style="font-size: 18px;">@iconName</span>
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600; color: var(--admin-text); font-size: 13.5px;">@feat.Name</div>
+                                        <div style="font-size: 11px; color: var(--admin-text-dim);"><code>@feat.FeatureCode</code></div>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <span class="badge badge-neutral">@item.Feature.Category</span>
-                            </td>
-                            <td>
-                                $@item.Feature.MonthlyPrice.ToString("N2")/mo
+                                <span class="badge badge-neutral" style="font-size: 11.5px; font-weight: 500;">@feat.Category</span>
                             </td>
                             <td>
                                 @if (item.IsSubscribed)
                                 {
-                                    <span class="badge badge-success"><span class="badge-dot"></span> Active</span>
-                                }
-                                else if (item.Subscription != null)
-                                {
-                                    <span class="badge badge-warning"><span class="badge-dot"></span> Suspended</span>
+                                    <span class="badge badge-success" style="font-size: 11px;">
+                                        <span class="badge-dot" style="background-color: var(--admin-success);"></span>
+                                        Active
+                                    </span>
                                 }
                                 else
                                 {
-                                    <span class="badge badge-neutral">Not Subscribed</span>
+                                    <span class="badge badge-danger" style="font-size: 11px;">
+                                        <span class="badge-dot" style="background-color: var(--admin-danger);"></span>
+                                        Not Active
+                                    </span>
                                 }
                             </td>
-                            <td style="font-size: 12.5px; color: var(--admin-text-muted);">
-                                @(item.Subscription?.DurationType.ToString() ?? "—")
+                            <td>
+                                @if (item.EffectiveAvailableForUse)
+                                {
+                                    <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
+                                        <span class="material-symbols-outlined" style="font-size: 12px;">verified</span>
+                                        Available for Use @(item.HasCustomAvailabilityOverride ? "(Custom)" : "")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(245, 158, 11, 0.25);">
+                                        <span class="material-symbols-outlined" style="font-size: 12px;">schedule</span>
+                                        Coming Soon @(item.HasCustomAvailabilityOverride ? "(Custom)" : "")
+                                    </span>
+                                }
                             </td>
-                            <td style="font-size: 12px; color: var(--admin-text-dim);">
-                                @(item.Subscription?.ExpiresAtUtc.ToString("MMM dd, yyyy") ?? "—")
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    @if (item.EffectiveMonthlyPrice > 0)
+                                    {
+                                        <strong style="font-size: 13px; color: #0f172a;">$@item.EffectiveMonthlyPrice.ToString("F2")/mo</strong>
+                                    }
+                                    else
+                                    {
+                                        <strong style="font-size: 12.5px; color: #059669;">Included Free</strong>
+                                    }
+                                    @if (item.HasCustomPriceOverride)
+                                    {
+                                        <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: #4f46e5; font-size: 10px;">Custom</span>
+                                    }
+                                </div>
                             </td>
                             <td style="text-align: right;">
-                                @if (item.IsSubscribed && item.Subscription != null)
-                                {
-                                    <form method="post" asp-page-handler="Deactivate" style="display: inline; margin: 0;">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="subscriptionId" value="@item.Subscription.Id" />
-                                        <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" onclick="return confirm('Suspend capability @item.Feature.Name?');">
-                                            Suspend
+                                <div style="display: inline-flex; align-items: center; gap: 6px; position: relative;">
+                                    <button type="button"
+                                            class="btn-admin btn-admin-secondary btn-admin-sm"
+                                            onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")')">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">attach_money</span>
+                                        <span>Price</span>
+                                    </button>
+
+                                    <div class="action-dropdown-wrapper">
+                                        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm action-dropdown-trigger" onclick="toggleFeatureActionMenu(event, 'menu-ttable-@feat.Id')">
+                                            <span>Actions</span>
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">expand_more</span>
                                         </button>
-                                    </form>
-                                }
-                                else
-                                {
-                                    <form method="post" asp-page-handler="Activate" style="display: inline-flex; align-items: center; gap: 6px; margin: 0;">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="featureId" value="@item.Feature.Id" />
-                                        <select name="durationType" class="form-select" style="padding: 4px 8px; font-size: 12px; width: 100px;">
-                                            <option value="1">Monthly</option>
-                                            <option value="2">Quarterly</option>
-                                            <option value="3">Yearly</option>
-                                        </select>
-                                        <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm">
-                                            Activate
-                                        </button>
-                                    </form>
-                                }
+
+                                        <div id="menu-ttable-@feat.Id" class="feature-action-dropdown-menu">
+                                            <form method="post" asp-page-handler="ToggleTenantActive" style="margin: 0;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+                                                <input type="hidden" name="featureId" value="@feat.Id" />
+                                                <button type="submit" class="dropdown-action-item">
+                                                    <span class="material-symbols-outlined" style="color: @(item.IsSubscribed ? "#dc2626" : "#059669");">
+                                                        @(item.IsSubscribed ? "cancel" : "check_circle")
+                                                    </span>
+                                                    <span>@(item.IsSubscribed ? "Deactivate for Tenant" : "Activate for Tenant")</span>
+                                                </button>
+                                            </form>
+
+                                            <form method="post" asp-page-handler="ToggleTenantAvailability" style="margin: 0;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+                                                <input type="hidden" name="featureId" value="@feat.Id" />
+                                                <button type="submit" class="dropdown-action-item">
+                                                    <span class="material-symbols-outlined" style="color: @(item.EffectiveAvailableForUse ? "#d97706" : "#059669");">
+                                                        @(item.EffectiveAvailableForUse ? "schedule" : "verified")
+                                                    </span>
+                                                    <span>@(item.EffectiveAvailableForUse ? "Mark Coming Soon for Tenant" : "Make Available for Tenant")</span>
+                                                </button>
+                                            </form>
+
+                                            <div class="dropdown-action-divider"></div>
+
+                                            <button type="button"
+                                                    class="dropdown-action-item"
+                                                    onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")')">
+                                                <span class="material-symbols-outlined" style="color: #0050e5;">payments</span>
+                                                <span>Set Custom Tenant Price...</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="7" style="text-align: center; padding: 32px; color: var(--admin-text-muted);">
-                            No features found in the master catalog.
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@* ── Custom Tenant Price Modal ── *@
+<div id="customPriceModalBackdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 440px; width: 100%; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2); overflow: hidden;">
+        <div style="padding: 18px 22px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="color: #0050e5;">payments</span>
+                <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">Custom Tenant Price</h3>
+            </div>
+            <button type="button" onclick="closeCustomPriceModal()" style="background: none; border: none; cursor: pointer; color: #64748b;">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form method="post" asp-page-handler="SetCustomPrice" style="margin: 0; padding: 22px;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+            <input type="hidden" name="featureId" id="modalFeatureId" />
+
+            <div style="margin-bottom: 14px;">
+                <div style="font-size: 12px; color: #64748b;">Capability</div>
+                <div id="modalFeatureName" style="font-size: 14.5px; font-weight: 800; color: #0f172a; margin-top: 2px;"></div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                    General Master Price: <strong id="modalMasterPrice" style="color: #0f172a;"></strong>/mo
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label class="form-label" style="font-weight: 700; font-size: 12.5px;">Custom Monthly Price for @Model.Tenant.OrganizationName ($ USD)</label>
+                <input type="number" step="0.01" min="0" name="customPrice" id="modalCustomPriceInput" class="form-control" placeholder="e.g. 0.00" required />
+                <span class="form-help" style="font-size: 11.5px; color: #64748b;">Enter 0.00 to include this capability free for this tenant.</span>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closeCustomPriceModal()">Cancel</button>
+                <button type="submit" class="btn-admin btn-admin-primary">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">save</span>
+                    <span>Save Custom Price</span>
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+
+<style>
+.btn-view-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--admin-text-muted, #64748b);
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+.btn-view-toggle.active {
+    background: #ffffff;
+    color: var(--ozikol-primary, #0050e5);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.action-dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+}
+.feature-action-dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    min-width: 235px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.16);
+    padding: 6px;
+    z-index: 999;
+    text-align: left;
+}
+.feature-action-dropdown-menu.open {
+    display: block;
+}
+.dropdown-action-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1e293b;
+    text-decoration: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+}
+.dropdown-action-item:hover {
+    background: #f1f5f9;
+    color: #0050e5;
+}
+.dropdown-action-item .material-symbols-outlined {
+    font-size: 16px;
+}
+.dropdown-action-divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 5px 0;
+}
+</style>
+
+@section Scripts {
+    <script>
+        function toggleFeatureActionMenu(event, menuId) {
+            event.stopPropagation();
+            document.querySelectorAll('.feature-action-dropdown-menu.open').forEach(m => {
+                if (m.id !== menuId) m.classList.remove('open');
+            });
+            const menu = document.getElementById(menuId);
+            if (menu) menu.classList.toggle('open');
+        }
+
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.feature-action-dropdown-menu.open').forEach(m => m.classList.remove('open'));
+        });
+
+        function openCustomPriceModal(featureId, featureName, masterPrice, currentPrice) {
+            document.getElementById('modalFeatureId').value = featureId;
+            document.getElementById('modalFeatureName').textContent = featureName;
+            document.getElementById('modalMasterPrice').textContent = '$' + masterPrice;
+            document.getElementById('modalCustomPriceInput').value = currentPrice;
+            document.getElementById('customPriceModalBackdrop').style.display = 'flex';
+        }
+
+        function closeCustomPriceModal() {
+            document.getElementById('customPriceModalBackdrop').style.display = 'none';
+        }
+    </script>
+}

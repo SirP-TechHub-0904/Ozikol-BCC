@@ -11,11 +11,30 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 {
     /// <summary>
-    /// PageModel enabling administrators to toggle, provision, and configure modular capability subscriptions for a specific tenant database.
+    /// PageModel enabling super-administrators to govern per-tenant capability activations (Active / Not Active),
+    /// General vs. Custom Pricing overrides, and General vs. Custom Availability (Available for Use / Coming Soon)
+    /// for a specific tenant workspace in real time.
     /// </summary>
     public class FeaturesModel : PageModel
     {
         private readonly MasterCatalogDbContext _dbContext;
+
+        /// <summary>
+        /// Canonical ordering of the 10 platform suites matching the Master Feature Catalog (/centralwks/features).
+        /// </summary>
+        public static readonly string[] CanonicalSuites = new[]
+        {
+            "People, Community & Collaboration",
+            "Workforce, Rota & Scheduling",
+            "Reports, Forms & Analytics",
+            "Events & Training Management",
+            "Finance & Commercial Revenue",
+            "Operations & Workflows",
+            "Communication, AI & Support",
+            "Compliance, Learning & Certification",
+            "Demographics & Civic Census",
+            "Life Events & Publications"
+        };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FeaturesModel"/> class.
@@ -23,20 +42,44 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// <param name="dbContext">Master catalog database context.</param>
         public FeaturesModel(MasterCatalogDbContext dbContext)
         {
-            _dbContext = dbContext;
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         }
 
         /// <summary>
-        /// Tenant ID whose subscriptions are being managed.
+        /// Tenant ID whose subscriptions, pricing, and availability are being managed.
         /// </summary>
         [BindProperty(SupportsGet = true)]
         public Guid Id { get; set; }
 
         /// <summary>
-        /// Alias tenant ID parameter for navigation links.
+        /// Alias tenant ID parameter for navigation links from /centralwks/features/analytics.
         /// </summary>
         [BindProperty(SupportsGet = true)]
         public Guid? TenantId { get; set; }
+
+        /// <summary>
+        /// Search keyword filter.
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public string? Search { get; set; }
+
+        /// <summary>
+        /// Suite / Category filter.
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public string? Category { get; set; }
+
+        /// <summary>
+        /// Status filter ("active", "inactive", "available", "coming_soon", "custom_price").
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public string? Status { get; set; }
+
+        /// <summary>
+        /// Display layout mode ("cards" or "table"). Defaults to "cards".
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public string ViewMode { get; set; } = "cards";
 
         /// <summary>
         /// The loaded tenant entity.
@@ -44,117 +87,356 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public MasterTenantCatalog Tenant { get; set; } = null!;
 
         /// <summary>
-        /// All platform capabilities grouped by category.
+        /// Distinct suites in canonical order.
+        /// </summary>
+        public List<string> Categories { get; set; } = new();
+
+        /// <summary>
+        /// Filtered and sorted capability items for this tenant.
         /// </summary>
         public List<FeatureItemDto> AvailableFeatures { get; set; } = new();
 
+        // ── Tenant KPI Counters ──
+        public int SuitesCount { get; set; }
+        public int TotalCount { get; set; }
+        public int ActiveCount { get; set; }
+        public int InactiveCount { get; set; }
+        public int AvailableForUseCount { get; set; }
+        public int ComingSoonCount { get; set; }
+        public decimal TotalMonthlyMrr { get; set; }
+
         /// <summary>
-        /// Handles HTTP GET requests to build the feature activation matrix.
+        /// Resolves the canonical 0-based suite index for a given category name.
+        /// </summary>
+        public static int GetSuiteOrder(string? category)
+        {
+            if (string.IsNullOrWhiteSpace(category)) return 999;
+            var idx = Array.FindIndex(CanonicalSuites, s => s.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase));
+            return idx >= 0 ? idx : 500;
+        }
+
+        /// <summary>
+        /// Handles HTTP GET requests to build the tenant's feature, pricing, and availability console.
         /// </summary>
         public async Task<IActionResult> OnGetAsync()
         {
             var targetId = Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty);
+            if (targetId == Guid.Empty)
+            {
+                var firstTenant = await _dbContext.MasterTenantCatalogs.AsNoTracking().FirstOrDefaultAsync();
+                if (firstTenant != null) targetId = firstTenant.Id;
+            }
+
+            MasterTenantCatalog? tenant = null;
+            try
+            {
+                tenant = await _dbContext.MasterTenantCatalogs
+                    .Include(t => t.FeatureSubscriptions)
+                    .FirstOrDefaultAsync(t => t.Id == targetId);
+            }
+            catch
+            {
+                tenant = await _dbContext.MasterTenantCatalogs
+                    .AsNoTracking()
+                    .Select(t => new MasterTenantCatalog
+                    {
+                        Id = t.Id,
+                        TenantKey = t.TenantKey,
+                        OrganizationName = t.OrganizationName,
+                        PrimaryDomain = t.PrimaryDomain,
+                        CustomDomain = t.CustomDomain,
+                        IsActive = t.IsActive
+                    })
+                    .FirstOrDefaultAsync(t => t.Id == targetId);
+            }
+
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant organization not found.";
+                return RedirectToPage("/Features/Analytics");
+            }
+
+            Id = tenant.Id;
+            TenantId = tenant.Id;
+            Tenant = tenant;
+
+            List<MasterFeatureCatalog> allFeatures;
+            try
+            {
+                allFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .ToListAsync();
+            }
+            catch
+            {
+                allFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .Select(f => new MasterFeatureCatalog
+                    {
+                        Id = f.Id,
+                        FeatureCode = f.FeatureCode,
+                        Name = f.Name,
+                        Category = f.Category,
+                        Description = f.Description,
+                        Icon = f.Icon,
+                        IsCompulsory = f.IsCompulsory,
+                        BillingType = f.BillingType,
+                        MonthlyPrice = f.MonthlyPrice,
+                        QuarterlyPrice = f.QuarterlyPrice,
+                        YearlyPrice = f.YearlyPrice,
+                        IsActive = f.IsActive,
+                        SortOrder = f.SortOrder
+                    })
+                    .ToListAsync();
+            }
+
+            var orderedFeatures = allFeatures
+                .OrderBy(f => GetSuiteOrder(f.Category))
+                .ThenBy(f => f.SortOrder)
+                .ThenBy(f => f.Name)
+                .ToList();
+
+            var subsByFeature = (tenant.FeatureSubscriptions ?? new List<MasterTenantFeatureSubscription>())
+                .GroupBy(s => s.MasterFeatureCatalogId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.ExpiresAtUtc).First());
+
+            var now = DateTime.UtcNow;
+            var allItems = new List<FeatureItemDto>();
+
+            foreach (var f in orderedFeatures)
+            {
+                subsByFeature.TryGetValue(f.Id, out var sub);
+
+                // Determine whether capability is Active or Not Active for this specific tenant
+                bool isActiveForTenant;
+                if (sub != null)
+                {
+                    bool notExpired = sub.ExpiresAtUtc > now;
+                    bool notSuspended = !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                                        !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase);
+                    isActiveForTenant = sub.IsActive && notSuspended && (f.IsCompulsory || notExpired);
+                }
+                else
+                {
+                    // Compulsory core modules are active by default unless explicitly deactivated for this tenant
+                    isActiveForTenant = f.IsCompulsory;
+                }
+
+                // Determine effective Availability (Available for Use vs Coming Soon) for this tenant
+                bool hasCustomAvailOverride = tenant.UseCustomAvailability && sub?.IsAvailableForUseOverride != null;
+                bool effectiveAvailableForUse = hasCustomAvailOverride
+                    ? sub!.IsAvailableForUseOverride!.Value
+                    : f.IsAvailableForUse;
+
+                // Determine effective Monthly Price for this tenant
+                bool hasCustomPriceOverride = tenant.UseCustomPricing && sub?.CustomPriceOverride != null;
+                decimal effectiveMonthlyPrice = hasCustomPriceOverride
+                    ? sub!.CustomPriceOverride!.Value
+                    : f.MonthlyPrice;
+
+                allItems.Add(new FeatureItemDto
+                {
+                    Feature = f,
+                    Subscription = sub,
+                    IsSubscribed = isActiveForTenant,
+                    EffectiveAvailableForUse = effectiveAvailableForUse,
+                    HasCustomAvailabilityOverride = hasCustomAvailOverride,
+                    EffectiveMonthlyPrice = effectiveMonthlyPrice,
+                    HasCustomPriceOverride = hasCustomPriceOverride
+                });
+            }
+
+            // Compute Tenant KPI Counters
+            TotalCount = allItems.Count;
+            ActiveCount = allItems.Count(x => x.IsSubscribed);
+            InactiveCount = allItems.Count(x => !x.IsSubscribed);
+            AvailableForUseCount = allItems.Count(x => x.EffectiveAvailableForUse);
+            ComingSoonCount = allItems.Count(x => !x.EffectiveAvailableForUse);
+            TotalMonthlyMrr = allItems
+                .Where(x => x.IsSubscribed && x.EffectiveMonthlyPrice > 0)
+                .Sum(x => x.EffectiveMonthlyPrice);
+
+            var distinctCats = allItems
+                .Select(x => x.Feature.Category)
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            Categories = CanonicalSuites
+                .Where(s => distinctCats.Contains(s, StringComparer.OrdinalIgnoreCase))
+                .Concat(distinctCats.Where(c => !CanonicalSuites.Contains(c, StringComparer.OrdinalIgnoreCase)).OrderBy(c => c))
+                .ToList();
+
+            SuitesCount = Categories.Count;
+
+            // Apply Search, Suite, and Status filters
+            var filtered = allItems.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(Search))
+            {
+                var term = Search.Trim().ToLowerInvariant();
+                filtered = filtered.Where(x =>
+                    (x.Feature.Name != null && x.Feature.Name.ToLowerInvariant().Contains(term)) ||
+                    (x.Feature.FeatureCode != null && x.Feature.FeatureCode.ToLowerInvariant().Contains(term)) ||
+                    (x.Feature.Category != null && x.Feature.Category.ToLowerInvariant().Contains(term)) ||
+                    (x.Feature.Description != null && x.Feature.Description.ToLowerInvariant().Contains(term)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(Category))
+            {
+                filtered = filtered.Where(x => x.Feature.Category.Equals(Category, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(Status))
+            {
+                var st = Status.Trim().ToLowerInvariant();
+                if (st == "active")
+                    filtered = filtered.Where(x => x.IsSubscribed);
+                else if (st == "inactive")
+                    filtered = filtered.Where(x => !x.IsSubscribed);
+                else if (st == "available")
+                    filtered = filtered.Where(x => x.EffectiveAvailableForUse);
+                else if (st == "coming_soon")
+                    filtered = filtered.Where(x => !x.EffectiveAvailableForUse);
+                else if (st == "custom_price")
+                    filtered = filtered.Where(x => x.HasCustomPriceOverride);
+            }
+
+            AvailableFeatures = filtered.ToList();
+            return Page();
+        }
+
+        /// <summary>
+        /// Toggles whether this tenant uses General Master Pricing or Custom Tenant Pricing.
+        /// </summary>
+        public async Task<IActionResult> OnPostTogglePricingPolicyAsync(Guid tenantId)
+        {
+            var targetId = tenantId != Guid.Empty ? tenantId : (Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty));
+            var tenant = await _dbContext.MasterTenantCatalogs.FindAsync(targetId);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant not found.";
+                return RedirectToPage("/Features/Analytics");
+            }
+
+            tenant.UseCustomPricing = !tenant.UseCustomPricing;
+            tenant.UpdatedUtc = DateTime.UtcNow;
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = "TogglePricingPolicy",
+                EntityType = "Tenant",
+                EntityId = tenant.Id.ToString(),
+                Summary = $"Switched tenant '{tenant.OrganizationName}' pricing policy to {(tenant.UseCustomPricing ? "Custom Tenant Pricing" : "General Master Pricing")}",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+            TempData["Success"] = $"Pricing mode for {tenant.OrganizationName} set to {(tenant.UseCustomPricing ? "Custom Tenant Pricing" : "General Master Pricing")}.";
+
+            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
+        }
+
+        /// <summary>
+        /// Toggles whether this tenant uses General Master Availability or Custom Tenant Availability.
+        /// </summary>
+        public async Task<IActionResult> OnPostToggleAvailabilityPolicyAsync(Guid tenantId)
+        {
+            var targetId = tenantId != Guid.Empty ? tenantId : (Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty));
+            var tenant = await _dbContext.MasterTenantCatalogs.FindAsync(targetId);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant not found.";
+                return RedirectToPage("/Features/Analytics");
+            }
+
+            tenant.UseCustomAvailability = !tenant.UseCustomAvailability;
+            tenant.UpdatedUtc = DateTime.UtcNow;
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = "ToggleAvailabilityPolicy",
+                EntityType = "Tenant",
+                EntityId = tenant.Id.ToString(),
+                Summary = $"Switched tenant '{tenant.OrganizationName}' availability policy to {(tenant.UseCustomAvailability ? "Custom Tenant Availability" : "General Master Availability")}",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+            TempData["Success"] = $"Availability mode for {tenant.OrganizationName} set to {(tenant.UseCustomAvailability ? "Custom Tenant Availability" : "General Master Availability")}.";
+
+            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
+        }
+
+        /// <summary>
+        /// Toggles whether a specific capability is Active or Not Active for this tenant.
+        /// </summary>
+        public async Task<IActionResult> OnPostToggleTenantActiveAsync(Guid tenantId, Guid featureId, int durationType = 1)
+        {
+            var targetId = tenantId != Guid.Empty ? tenantId : (Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty));
             var tenant = await _dbContext.MasterTenantCatalogs
                 .Include(t => t.FeatureSubscriptions)
                 .FirstOrDefaultAsync(t => t.Id == targetId);
 
             if (tenant == null)
             {
-                TempData["Error"] = "Tenant organization not found.";
-                return RedirectToPage("/Tenants/Index");
-            }
-
-            Id = tenant.Id;
-            Tenant = tenant;
-
-            var allFeatures = await _dbContext.MasterFeatureCatalogs
-                .Where(f => f.IsActive)
-                .OrderBy(f => f.Category)
-                .ThenBy(f => f.Name)
-                .ToListAsync();
-
-            var tenantSubscriptions = tenant.FeatureSubscriptions.ToDictionary(s => s.MasterFeatureCatalogId);
-
-            AvailableFeatures = allFeatures.Select(f =>
-            {
-                tenantSubscriptions.TryGetValue(f.Id, out var sub);
-                return new FeatureItemDto
-                {
-                    Feature = f,
-                    Subscription = sub,
-                    IsSubscribed = sub != null && sub.IsActive
-                };
-            }).ToList();
-
-            return Page();
-        }
-
-        /// <summary>
-        /// Handles HTTP POST requests to activate a modular capability for this tenant.
-        /// </summary>
-        /// <param name="featureId">Target feature catalog ID.</param>
-        /// <param name="durationType">Billing cadence (1=Monthly, 2=Quarterly, 3=Yearly).</param>
-        /// <param name="priceOverride">Optional custom price override.</param>
-        public async Task<IActionResult> OnPostActivateAsync(Guid featureId, int durationType = 1, decimal? priceOverride = null)
-        {
-            var tenant = await _dbContext.MasterTenantCatalogs
-                .Include(t => t.FeatureSubscriptions)
-                .FirstOrDefaultAsync(t => t.Id == Id);
-
-            if (tenant == null)
-            {
                 TempData["Error"] = "Tenant not found.";
-                return RedirectToPage("/Tenants/Index");
+                return RedirectToPage("/Features/Analytics");
             }
 
             var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(featureId);
             if (feature == null)
             {
-                TempData["Error"] = "Feature capability not found.";
-                return RedirectToPage(new { id = Id });
+                TempData["Error"] = "Capability not found.";
+                return RedirectToPage(new { tenantId = tenant.Id });
             }
 
             var existing = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == featureId);
             var duration = (SubscriptionBillingDuration)durationType;
+            bool nowActive;
 
             if (existing != null)
             {
-                existing.IsActive = true;
-                existing.Status = "Active";
-                existing.DurationType = duration;
-                existing.CustomPriceOverride = priceOverride;
-                existing.ExpiresAtUtc = duration switch
+                bool currentlyActive = existing.IsActive && !string.Equals(existing.Status, "Suspended", StringComparison.OrdinalIgnoreCase);
+                nowActive = !currentlyActive;
+                existing.IsActive = nowActive;
+                existing.Status = nowActive ? "Active" : "Suspended";
+                if (nowActive && existing.ExpiresAtUtc <= DateTime.UtcNow)
                 {
-                    SubscriptionBillingDuration.Yearly => DateTime.UtcNow.AddYears(1),
-                    SubscriptionBillingDuration.Quarterly => DateTime.UtcNow.AddMonths(3),
-                    _ => DateTime.UtcNow.AddMonths(1)
-                };
+                    existing.ExpiresAtUtc = duration switch
+                    {
+                        SubscriptionBillingDuration.Yearly => DateTime.UtcNow.AddYears(1),
+                        SubscriptionBillingDuration.Quarterly => DateTime.UtcNow.AddMonths(3),
+                        _ => DateTime.UtcNow.AddMonths(1)
+                    };
+                }
             }
             else
             {
+                // If no subscription row existed yet: if Compulsory, clicking toggle deactivates it; if Optional, clicking activates it
+                nowActive = !feature.IsCompulsory;
                 var newSub = new MasterTenantFeatureSubscription
                 {
                     Id = Guid.NewGuid(),
                     MasterTenantCatalogId = tenant.Id,
                     MasterFeatureCatalogId = feature.Id,
                     DurationType = duration,
-                    RecurringPrice = duration switch
-                    {
-                        SubscriptionBillingDuration.Yearly => feature.YearlyPrice > 0 ? feature.YearlyPrice : feature.MonthlyPrice * 12 * 0.8m,
-                        SubscriptionBillingDuration.Quarterly => feature.QuarterlyPrice > 0 ? feature.QuarterlyPrice : feature.MonthlyPrice * 3 * 0.9m,
-                        _ => feature.MonthlyPrice
-                    },
-                    CustomPriceOverride = priceOverride,
+                    RecurringPrice = feature.MonthlyPrice,
                     StartsAtUtc = DateTime.UtcNow,
-                    ExpiresAtUtc = duration switch
-                    {
-                        SubscriptionBillingDuration.Yearly => DateTime.UtcNow.AddYears(1),
-                        SubscriptionBillingDuration.Quarterly => DateTime.UtcNow.AddMonths(3),
-                        _ => DateTime.UtcNow.AddMonths(1)
-                    },
+                    ExpiresAtUtc = DateTime.UtcNow.AddMonths(1),
                     AutoRenew = true,
-                    IsActive = true,
-                    Status = "Active",
+                    IsActive = nowActive,
+                    Status = nowActive ? "Active" : "Suspended",
                     CreatedUtc = DateTime.UtcNow
                 };
                 _dbContext.MasterTenantFeatureSubscriptions.Add(newSub);
@@ -164,68 +446,186 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             {
                 UserId = User.Identity?.Name,
                 UserName = User.Identity?.Name,
-                Action = "Activate",
+                Action = nowActive ? "ActivateTenantFeature" : "DeactivateTenantFeature",
                 EntityType = "FeatureSubscription",
                 EntityId = feature.Id.ToString(),
-                Summary = $"Activated feature '{feature.Name}' ({feature.FeatureCode}) for tenant '{tenant.OrganizationName}'",
+                Summary = $"{(nowActive ? "Activated" : "Deactivated")} '{feature.Name}' for tenant '{tenant.OrganizationName}'",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"Capability '{feature.Name}' activated for {tenant.OrganizationName}.";
+            TempData["Success"] = $"'{feature.Name}' is now {(nowActive ? "Active" : "Not Active")} for {tenant.OrganizationName}.";
 
-            return RedirectToPage(new { id = Id });
+            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
         }
 
         /// <summary>
-        /// Handles HTTP POST requests to deactivate / suspend a specific module for this tenant.
+        /// Toggles whether a specific capability is Available for Use or Coming Soon specifically for this tenant.
         /// </summary>
-        /// <param name="subscriptionId">Subscription identifier.</param>
-        public async Task<IActionResult> OnPostDeactivateAsync(Guid subscriptionId)
+        public async Task<IActionResult> OnPostToggleTenantAvailabilityAsync(Guid tenantId, Guid featureId)
         {
-            var sub = await _dbContext.MasterTenantFeatureSubscriptions
-                .Include(s => s.MasterFeatureCatalog)
-                .Include(s => s.MasterTenantCatalog)
-                .FirstOrDefaultAsync(s => s.Id == subscriptionId && s.MasterTenantCatalogId == Id);
+            var targetId = tenantId != Guid.Empty ? tenantId : (Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty));
+            var tenant = await _dbContext.MasterTenantCatalogs
+                .Include(t => t.FeatureSubscriptions)
+                .FirstOrDefaultAsync(t => t.Id == targetId);
 
-            if (sub == null)
+            if (tenant == null)
             {
-                TempData["Error"] = "Subscription not found.";
-                return RedirectToPage(new { id = Id });
+                TempData["Error"] = "Tenant not found.";
+                return RedirectToPage("/Features/Analytics");
             }
 
-            sub.IsActive = false;
-            sub.Status = "Suspended";
+            var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(featureId);
+            if (feature == null)
+            {
+                TempData["Error"] = "Capability not found.";
+                return RedirectToPage(new { tenantId = tenant.Id });
+            }
+
+            // Ensure Custom Tenant Availability mode is enabled when setting a tenant-level availability override
+            tenant.UseCustomAvailability = true;
+
+            var existing = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == featureId);
+            bool newAvailability;
+
+            if (existing != null)
+            {
+                bool current = existing.IsAvailableForUseOverride ?? feature.IsAvailableForUse;
+                newAvailability = !current;
+                existing.IsAvailableForUseOverride = newAvailability;
+            }
+            else
+            {
+                newAvailability = !feature.IsAvailableForUse;
+                var newSub = new MasterTenantFeatureSubscription
+                {
+                    Id = Guid.NewGuid(),
+                    MasterTenantCatalogId = tenant.Id,
+                    MasterFeatureCatalogId = feature.Id,
+                    DurationType = SubscriptionBillingDuration.Monthly,
+                    RecurringPrice = feature.MonthlyPrice,
+                    StartsAtUtc = DateTime.UtcNow,
+                    ExpiresAtUtc = DateTime.UtcNow.AddMonths(1),
+                    AutoRenew = true,
+                    IsActive = feature.IsCompulsory,
+                    Status = feature.IsCompulsory ? "Active" : "Suspended",
+                    IsAvailableForUseOverride = newAvailability,
+                    CreatedUtc = DateTime.UtcNow
+                };
+                _dbContext.MasterTenantFeatureSubscriptions.Add(newSub);
+            }
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
                 UserId = User.Identity?.Name,
                 UserName = User.Identity?.Name,
-                Action = "Suspend",
+                Action = "ToggleTenantFeatureAvailability",
                 EntityType = "FeatureSubscription",
-                EntityId = sub.Id.ToString(),
-                Summary = $"Suspended feature '{sub.MasterFeatureCatalog?.Name}' for tenant '{sub.MasterTenantCatalog?.OrganizationName}'",
+                EntityId = feature.Id.ToString(),
+                Summary = $"Set '{feature.Name}' availability to {(newAvailability ? "Available for Use" : "Coming Soon")} for tenant '{tenant.OrganizationName}'",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"Capability suspended.";
+            TempData["Success"] = $"'{feature.Name}' marked as {(newAvailability ? "Available for Use" : "Coming Soon")} for {tenant.OrganizationName}.";
 
-            return RedirectToPage(new { id = Id });
+            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
         }
 
         /// <summary>
-        /// View transfer representation of a capability with optional subscription state.
+        /// Sets or resets a custom monthly price override for a specific capability on this tenant.
+        /// </summary>
+        public async Task<IActionResult> OnPostSetCustomPriceAsync(Guid tenantId, Guid featureId, decimal? customPrice, bool resetToGeneral = false)
+        {
+            var targetId = tenantId != Guid.Empty ? tenantId : (Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty));
+            var tenant = await _dbContext.MasterTenantCatalogs
+                .Include(t => t.FeatureSubscriptions)
+                .FirstOrDefaultAsync(t => t.Id == targetId);
+
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant not found.";
+                return RedirectToPage("/Features/Analytics");
+            }
+
+            var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(featureId);
+            if (feature == null)
+            {
+                TempData["Error"] = "Capability not found.";
+                return RedirectToPage(new { tenantId = tenant.Id });
+            }
+
+            if (!resetToGeneral)
+            {
+                tenant.UseCustomPricing = true;
+            }
+
+            var existing = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == featureId);
+            decimal? effectiveOverride = resetToGeneral ? null : Math.Max(0m, customPrice ?? 0m);
+
+            if (existing != null)
+            {
+                existing.CustomPriceOverride = effectiveOverride;
+            }
+            else if (!resetToGeneral)
+            {
+                var newSub = new MasterTenantFeatureSubscription
+                {
+                    Id = Guid.NewGuid(),
+                    MasterTenantCatalogId = tenant.Id,
+                    MasterFeatureCatalogId = feature.Id,
+                    DurationType = SubscriptionBillingDuration.Monthly,
+                    RecurringPrice = feature.MonthlyPrice,
+                    CustomPriceOverride = effectiveOverride,
+                    StartsAtUtc = DateTime.UtcNow,
+                    ExpiresAtUtc = DateTime.UtcNow.AddMonths(1),
+                    AutoRenew = true,
+                    IsActive = feature.IsCompulsory,
+                    Status = feature.IsCompulsory ? "Active" : "Suspended",
+                    CreatedUtc = DateTime.UtcNow
+                };
+                _dbContext.MasterTenantFeatureSubscriptions.Add(newSub);
+            }
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = resetToGeneral ? "ResetTenantCustomPrice" : "SetTenantCustomPrice",
+                EntityType = "FeatureSubscription",
+                EntityId = feature.Id.ToString(),
+                Summary = resetToGeneral
+                    ? $"Reset '{feature.Name}' to General Master Price (${feature.MonthlyPrice:F2}/mo) for tenant '{tenant.OrganizationName}'"
+                    : $"Set custom price ${effectiveOverride:F2}/mo on '{feature.Name}' for tenant '{tenant.OrganizationName}'",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+            TempData["Success"] = resetToGeneral
+                ? $"'{feature.Name}' reset to General Master Price (${feature.MonthlyPrice:F2}/mo) for {tenant.OrganizationName}."
+                : $"Custom price for '{feature.Name}' set to ${effectiveOverride:F2}/mo for {tenant.OrganizationName}.";
+
+            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
+        }
+
+        /// <summary>
+        /// View transfer representation of a capability with per-tenant active, availability, and pricing posture.
         /// </summary>
         public class FeatureItemDto
         {
             public MasterFeatureCatalog Feature { get; set; } = null!;
             public MasterTenantFeatureSubscription? Subscription { get; set; }
             public bool IsSubscribed { get; set; }
+            public bool EffectiveAvailableForUse { get; set; }
+            public bool HasCustomAvailabilityOverride { get; set; }
+            public decimal EffectiveMonthlyPrice { get; set; }
+            public bool HasCustomPriceOverride { get; set; }
         }
     }
 }

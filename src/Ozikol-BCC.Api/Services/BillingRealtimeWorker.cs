@@ -100,28 +100,67 @@ namespace Ozikol_BCC.Api.Services
 
             var now = DateTime.UtcNow;
 
-            var tenants = await db.MasterTenantCatalogs.AsNoTracking()
-                .Select(t => new { t.Id, t.TenantKey })
-                .ToListAsync(ct);
+            List<(Guid Id, string TenantKey, bool UseCustomPricing, bool UseCustomAvailability)> tenants;
+            try
+            {
+                var rawTenants = await db.MasterTenantCatalogs.AsNoTracking()
+                    .Select(t => new { t.Id, t.TenantKey, t.UseCustomPricing, t.UseCustomAvailability })
+                    .ToListAsync(ct);
+                tenants = rawTenants.Select(t => (t.Id, t.TenantKey, t.UseCustomPricing, t.UseCustomAvailability)).ToList();
+            }
+            catch
+            {
+                var fallbackTenants = await db.MasterTenantCatalogs.AsNoTracking()
+                    .Select(t => new { t.Id, t.TenantKey })
+                    .ToListAsync(ct);
+                tenants = fallbackTenants.Select(t => (t.Id, t.TenantKey, false, false)).ToList();
+            }
             var keyById = tenants.ToDictionary(t => t.Id, t => t.TenantKey.ToLowerInvariant());
 
-            var subs = await db.MasterTenantFeatureSubscriptions.AsNoTracking()
-                .Where(s => !s.MasterFeatureCatalog.IsCompulsory)
-                .Select(s => new
-                {
-                    s.Id,
-                    s.MasterTenantCatalogId,
-                    s.ExpiresAtUtc,
-                    s.IsActive,
-                    s.Status,
-                    s.AutoRenew,
-                    s.DurationType,
-                    s.CustomPriceOverride,
-                    s.RecurringPrice,
-                    FeatureCode = s.MasterFeatureCatalog.FeatureCode,
-                    FeatureName = s.MasterFeatureCatalog.Name
-                })
-                .ToListAsync(ct);
+            List<(Guid Id, Guid MasterTenantCatalogId, DateTime ExpiresAtUtc, bool IsActive, string Status, bool AutoRenew, int DurationType, decimal? CustomPriceOverride, bool? IsAvailableForUseOverride, decimal RecurringPrice, bool IsCompulsory, string FeatureCode, string FeatureName)> subs;
+            try
+            {
+                var rawSubs = await db.MasterTenantFeatureSubscriptions.AsNoTracking()
+                    .Select(s => new
+                    {
+                        s.Id,
+                        s.MasterTenantCatalogId,
+                        s.ExpiresAtUtc,
+                        s.IsActive,
+                        s.Status,
+                        s.AutoRenew,
+                        DurationType = (int)s.DurationType,
+                        s.CustomPriceOverride,
+                        s.IsAvailableForUseOverride,
+                        s.RecurringPrice,
+                        IsCompulsory = s.MasterFeatureCatalog.IsCompulsory,
+                        FeatureCode = s.MasterFeatureCatalog.FeatureCode,
+                        FeatureName = s.MasterFeatureCatalog.Name
+                    })
+                    .ToListAsync(ct);
+                subs = rawSubs.Select(s => (s.Id, s.MasterTenantCatalogId, s.ExpiresAtUtc, s.IsActive, s.Status, s.AutoRenew, s.DurationType, s.CustomPriceOverride, s.IsAvailableForUseOverride, s.RecurringPrice, s.IsCompulsory, s.FeatureCode, s.FeatureName)).ToList();
+            }
+            catch
+            {
+                var fallbackSubs = await db.MasterTenantFeatureSubscriptions.AsNoTracking()
+                    .Select(s => new
+                    {
+                        s.Id,
+                        s.MasterTenantCatalogId,
+                        s.ExpiresAtUtc,
+                        s.IsActive,
+                        s.Status,
+                        s.AutoRenew,
+                        DurationType = (int)s.DurationType,
+                        s.CustomPriceOverride,
+                        s.RecurringPrice,
+                        IsCompulsory = s.MasterFeatureCatalog.IsCompulsory,
+                        FeatureCode = s.MasterFeatureCatalog.FeatureCode,
+                        FeatureName = s.MasterFeatureCatalog.Name
+                    })
+                    .ToListAsync(ct);
+                subs = fallbackSubs.Select(s => (s.Id, s.MasterTenantCatalogId, s.ExpiresAtUtc, s.IsActive, s.Status, s.AutoRenew, s.DurationType, s.CustomPriceOverride, (bool?)null, s.RecurringPrice, s.IsCompulsory, s.FeatureCode, s.FeatureName)).ToList();
+            }
 
             var invoices = await db.MasterBillingTransactions.AsNoTracking()
                 .GroupBy(t => t.MasterTenantCatalogId)
@@ -184,7 +223,9 @@ namespace Ozikol_BCC.Api.Services
             var catalogChanged = _catalogFingerprint != null && _catalogFingerprint != catalogFingerprint;
             _catalogFingerprint = catalogFingerprint;
 
-            var builders = tenants.ToDictionary(t => t.TenantKey.ToLowerInvariant(), _ => new StringBuilder());
+            var builders = tenants.ToDictionary(
+                t => t.TenantKey.ToLowerInvariant(),
+                t => new StringBuilder().Append("policy|").Append(t.UseCustomPricing).Append('|').Append(t.UseCustomAvailability).Append(';'));
             var alerts = new List<(string TenantKey, FeatureExpiryAlertDto Alert)>();
 
             foreach (var s in subs.OrderBy(s => s.Id))
@@ -193,11 +234,12 @@ namespace Ozikol_BCC.Api.Services
 
                 var days = (int)Math.Ceiling((s.ExpiresAtUtc - now).TotalDays);
                 var pending = string.Equals(s.Status, "Pending", StringComparison.OrdinalIgnoreCase);
-                var severity = s.IsActive && !pending ? BillingSnapshotService.SeverityFor(days) : "None";
+                var severity = (!s.IsCompulsory && s.IsActive && !pending) ? BillingSnapshotService.SeverityFor(days) : "None";
 
                 builders[key].Append(s.Id).Append('|').Append(s.ExpiresAtUtc.Ticks).Append('|').Append(s.IsActive).Append('|')
-                             .Append(s.Status).Append('|').Append(s.AutoRenew).Append('|').Append((int)s.DurationType).Append('|')
-                             .Append(s.CustomPriceOverride).Append('|').Append(s.RecurringPrice).Append('|').Append(severity).Append(';');
+                             .Append(s.Status).Append('|').Append(s.AutoRenew).Append('|').Append(s.DurationType).Append('|')
+                             .Append(s.CustomPriceOverride).Append('|').Append(s.IsAvailableForUseOverride).Append('|')
+                             .Append(s.RecurringPrice).Append('|').Append(severity).Append(';');
 
                 var severityKey = $"{key}|{s.Id}";
                 _severities.TryGetValue(severityKey, out var previous);

@@ -157,5 +157,17 @@ public class MasterTenantCatalog
     [MaxLength(500)]
     public string? DeletionReason { get; set; }
 
+    /// <summary>
+    /// Indicates whether this tenant uses custom negotiated per-feature pricing (true)
+    /// or inherits the general Master Catalog pricing (false).
+    /// </summary>
+    public bool UseCustomPricing { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether this tenant uses custom per-feature availability overrides (true)
+    /// or inherits the general Master Catalog Available for Use / Coming Soon status (false).
+    /// </summary>
+    public bool UseCustomAvailability { get; set; } = false;
+
     public ICollection<MasterTenantFeatureSubscription> FeatureSubscriptions { get; set; } = new List<MasterTenantFeatureSubscription>();
 }
