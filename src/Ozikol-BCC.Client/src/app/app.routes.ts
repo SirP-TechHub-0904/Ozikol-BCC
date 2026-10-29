@@ -314,10 +314,11 @@ export const routes: Routes = [
       { path: 'products/console/orders/details/:id', component: ProductOrderDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },
       { path: 'products/console/transactions', component: ProductTransactionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },
 
-      // 7. Suite 13: Billing, Plans, Add-ons Marketplace & Invoice Ledger (Console Only)
+      // 7. Suite 13: Billing, Plans, Payment Methods & Invoice Ledger (Console Only)
       { path: 'billing/console', component: BillingConsoleComponent, data: { roles: ['SuperAdmin', 'Admin'] } },
       { path: 'billing/plans', component: BillingConsoleComponent, data: { tab: 'overview', roles: ['SuperAdmin', 'Admin'] } },
-      { path: 'billing/features', component: BillingConsoleComponent, data: { tab: 'features', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/payment-methods', component: BillingConsoleComponent, data: { tab: 'payment_methods', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/features', redirectTo: 'billing/payment-methods', pathMatch: 'full' },
       { path: 'billing/invoices', component: BillingConsoleComponent, data: { tab: 'invoices', roles: ['SuperAdmin', 'Admin'] } },
       { path: 'billing/calculator', component: BillingConsoleComponent, data: { tab: 'calculator', roles: ['SuperAdmin', 'Admin'] } },
       { path: 'billing', redirectTo: 'billing/console', pathMatch: 'full' },

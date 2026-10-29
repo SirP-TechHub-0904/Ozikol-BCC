@@ -1,51 +1,64 @@
 <div class="billing-page-container">
-  
   <!--  ── Header Area ──  -->
-  <div class="admin-page-header">
-    <div class="admin-title-group">
-      <div class="title-with-info">
-        <h1 class="admin-title">Billing &amp; Subscriptions</h1>
-        <button type="button" class="btn-info-icon" (click)="openSuiteInfo('general')" title="About Workspace Billing & Entitlements">
+  <div class="admin-header">
+    <div>
+      <div class="admin-title-row">
+        <h1 class="admin-title">Billing & Subscriptions</h1>
+        <button type="button" class="btn-info-icon" (click)="openSuiteInfo('overview')" title="Learn more about billing">
           <span class="material-symbols-outlined">info</span>
         </button>
       </div>
       <p class="admin-subtitle">
-        Manage sovereign Business Command Center plans, modular capability subscriptions, auto-renewal schedules, and invoice settlements.
+        Manage sovereign Business Command Center plans, payment methods, auto-renewal schedules, and invoice settlements.
       </p>
-    </div>
-    <div class="admin-actions">
-      <button type="button" class="btn-admin btn-admin-primary" (click)="switchTab('features')">
-        <span class="material-symbols-outlined">add_shopping_cart</span>
-        <span>Explore Add-on Store</span>
-      </button>
     </div>
   </div>
 
   <!--  ── Navigation Tabs ──  -->
   <div class="billing-tabs-wrapper">
     <nav class="billing-nav-tabs">
-      <button type="button" class="tab-btn" [class.active]="activeTab === 'overview'" (click)="switchTab('overview')">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'overview'"
+        (click)="switchTab('overview')"
+      >
         <span class="material-symbols-outlined">credit_card</span>
         <span>Subscription Plans</span>
       </button>
 
-      <button type="button" class="tab-btn" [class.active]="activeTab === 'features'" (click)="switchTab('features')">
-        <span class="material-symbols-outlined">extension</span>
-        <span>Feature Marketplace</span>
-        @if (snapshot?.available?.length) {
-          <span class="tab-badge">{{ snapshot?.available?.length }}</span>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'payment_methods'"
+        (click)="switchTab('payment_methods')"
+      >
+        <span class="material-symbols-outlined">account_balance_wallet</span>
+        <span>Payment Methods</span>
+        @if (paymentCards.length > 0) {
+          <span class="tab-badge badge-neutral">{{ paymentCards.length }}</span>
         }
       </button>
 
-      <button type="button" class="tab-btn" [class.active]="activeTab === 'invoices'" (click)="switchTab('invoices')">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'invoices'"
+        (click)="switchTab('invoices')"
+      >
         <span class="material-symbols-outlined">receipt_long</span>
-        <span>Invoices &amp; Receipts</span>
+        <span>Invoices & Receipts</span>
         @if (pendingInvoicesCount > 0) {
-          <span class="tab-badge badge-warning">{{ pendingInvoicesCount }} Pending</span>
+          <span class="tab-badge badge-warning">{{ pendingInvoicesCount }}</span>
         }
       </button>
 
-      <button type="button" class="tab-btn" [class.active]="activeTab === 'calculator'" (click)="switchTab('calculator')">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab === 'calculator'"
+        (click)="switchTab('calculator')"
+      >
         <span class="material-symbols-outlined">calculate</span>
         <span>Usage Bill Calculator</span>
       </button>
@@ -53,17 +66,19 @@
   </div>
 
   <!--  ── Loading Indicator ──  -->
-  @if (isLoading && !snapshot) {
-    <div class="billing-loading-state">
-      <div class="loading-spinner"></div>
-      <p>Synchronizing billing entitlements from Master Catalog...</p>
+  @if (isLoading) {
+    <div class="billing-loading-container">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading billing posture...</span>
+      </div>
+      <p class="loading-text">Synchronizing workspace billing posture...</p>
     </div>
   }
 
   <!--  ══════════════════════════════════════════════════════════════════════════  -->
   <!--  ── TAB 1: OVERVIEW & ACTIVE PLANS ───────────────────────────────────────  -->
   <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  @if (activeTab === 'overview' && snapshot) {
+  @if (activeTab === 'overview') {
     
     <!--  Renewal Alerts / Expiration Notices Banner  -->
     @if (snapshot.notices && snapshot.notices.length > 0) {
@@ -77,8 +92,8 @@
               <strong>{{ notice.featureName }}</strong>
               <span>{{ notice.message }}</span>
             </div>
-            <button type="button" class="btn-admin btn-admin-sm btn-admin-primary" (click)="switchTab('features')">
-              Renew Now
+            <button type="button" class="btn-admin btn-admin-sm btn-admin-primary" (click)="switchTab('payment_methods')">
+              Update Payment
             </button>
           </div>
         }
@@ -113,30 +128,29 @@
       </div>
       <div class="hero-right">
         <div class="recurring-cost-box">
-          <span class="cost-label">Total Recurring Spend</span>
-          <div class="cost-amount">
-            <span class="currency">$</span>
-            <span class="number">{{ snapshot.totalRecurringMonthly.toFixed(2) }}</span>
-            <span class="cadence">/ mo</span>
+          <span class="rc-label">Active Recurring Spend</span>
+          <div class="rc-amount">
+            <span class="rc-curr">$</span>
+            <span class="rc-val">{{ snapshot.totalRecurringMonthly.toFixed(2) }}</span>
+            <span class="rc-period">/mo</span>
           </div>
-          <span class="cost-note">Across {{ snapshot.subscribed.length }} paid modular add-ons</span>
-          <button type="button" class="btn-admin btn-admin-secondary" style="width: 100%; margin-top: 14px;" (click)="switchTab('features')">
-            <span class="material-symbols-outlined">add</span>
-            <span>Add Capabilities</span>
-          </button>
+          <p class="rc-subtext">Zero hidden charges. Predictable flat-tier invoicing.</p>
+          <div class="rc-actions">
+            <button type="button" class="btn-admin btn-admin-sm btn-admin-secondary" (click)="switchTab('payment_methods')">
+              <span class="material-symbols-outlined">credit_card</span>
+              <span>Manage Payment Cards</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!--  Active Subscribed Modular Add-ons Section  -->
-    <div class="admin-card" style="margin-bottom: 24px;">
-      <div class="card-header-clean">
-        <div class="card-header-left">
-          <h3 class="card-title">Subscribed Modular Add-ons</h3>
-          <p class="card-subtitle">Active paid or promotional capabilities subscribed to by your workspace.</p>
-        </div>
-        <div class="card-header-right">
-          <span class="badge badge-primary">{{ snapshot.subscribed.length }} Subscribed</span>
+    <!--  Active Subscribed Add-ons Section  -->
+    <div class="admin-card" style="margin-top: 24px;">
+      <div class="card-header-row">
+        <div class="title-with-info">
+          <h3 class="card-title">Subscribed Add-ons & Extended Capabilities</h3>
+          <span class="badge badge-info">{{ snapshot.subscribed.length }} Subscribed</span>
         </div>
       </div>
 
@@ -145,13 +159,12 @@
           <table class="admin-table">
             <thead>
               <tr>
-                <th>CAPABILITY</th>
-                <th>SUITE</th>
-                <th>CADENCE</th>
-                <th>PRICE</th>
-                <th>EXPIRES</th>
+                <th>FEATURE / CAPABILITY</th>
+                <th>CATEGORY</th>
+                <th>BILLING CADENCE</th>
+                <th>RATE</th>
+                <th>EXPIRATION</th>
                 <th>AUTO-RENEW</th>
-                <th style="text-align: right;">ACTIONS</th>
               </tr>
             </thead>
             <tbody>
@@ -159,46 +172,36 @@
                 <tr>
                   <td>
                     <div class="feature-cell">
-                      <div class="feature-cell-icon">
-                        <span class="material-symbols-outlined">{{ sub.icon || 'extension' }}</span>
-                      </div>
+                      <span class="material-symbols-outlined feature-icon">{{ sub.icon || 'extension' }}</span>
                       <div>
-                        <div class="feature-cell-name">{{ sub.name }}</div>
-                        <code class="feature-cell-code">{{ sub.featureCode }}</code>
+                        <strong>{{ sub.name }}</strong>
+                        <span class="feature-code">{{ sub.featureCode }}</span>
                       </div>
                     </div>
                   </td>
-                  <td>
-                    <span class="badge badge-neutral">{{ sub.category }}</span>
-                  </td>
-                  <td>
-                    <span class="badge badge-info">{{ sub.billingCadence }}</span>
-                  </td>
+                  <td><span class="badge badge-neutral">{{ sub.category }}</span></td>
+                  <td>{{ sub.billingCadence }}</td>
                   <td>
                     <strong style="color: #0f172a;">${{ sub.effectivePrice.toFixed(2) }}</strong>
                   </td>
                   <td>
                     @if (sub.daysRemaining !== null && sub.daysRemaining !== undefined) {
-                      <div class="expiry-cell">
-                        <span>{{ sub.expiresAtUtc | date:'mediumDate' }}</span>
-                        <span class="badge" [class.badge-success]="sub.severity === 'None'" [class.badge-warning]="sub.severity === 'Warning' || sub.severity === 'Urgent'" [class.badge-danger]="sub.severity === 'Critical'">
-                          {{ sub.daysRemaining > 0 ? (sub.daysRemaining + ' days left') : 'Expired' }}
-                        </span>
-                      </div>
+                      <span [class]="'badge-expiry ' + sub.severity.toLowerCase()">
+                        {{ sub.daysRemaining <= 0 ? 'Expired' : sub.daysRemaining + ' days left' }}
+                      </span>
                     } @else {
                       <span class="text-muted">Ongoing</span>
                     }
                   </td>
                   <td>
-                    <label class="switch-toggle" [title]="sub.autoRenew ? 'Auto-renew is ON' : 'Auto-renew is OFF'">
-                      <input type="checkbox" [checked]="sub.autoRenew" (change)="toggleAutoRenew(sub)" />
-                      <span class="slider-round"></span>
+                    <label class="switch-toggle" [title]="sub.autoRenew ? 'Auto-renew is active' : 'Auto-renew is disabled'">
+                      <input
+                        type="checkbox"
+                        [checked]="sub.autoRenew"
+                        (change)="toggleAutoRenew(sub)"
+                      />
+                      <span class="slider"></span>
                     </label>
-                  </td>
-                  <td style="text-align: right;">
-                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" (click)="switchTab('features')">
-                      <span>Manage</span>
-                    </button>
                   </td>
                 </tr>
               }
@@ -206,43 +209,31 @@
           </table>
         </div>
       } @else {
-        <div class="empty-state-clean">
-          <span class="material-symbols-outlined empty-icon">layers_clear</span>
-          <h4>No Subscribed Add-ons Yet</h4>
-          <p>Your workspace is currently operating on the included baseline features. Browse our marketplace to add modular capabilities.</p>
-          <button type="button" class="btn-admin btn-admin-primary" (click)="switchTab('features')">
-            <span class="material-symbols-outlined">storefront</span>
-            <span>Browse Add-on Store</span>
-          </button>
+        <div class="empty-state-box">
+          <span class="material-symbols-outlined empty-icon">layers</span>
+          <h4>No Paid Add-ons Active</h4>
+          <p>Your workspace is running entirely on the included sovereign core features without recurring fees.</p>
         </div>
       }
     </div>
 
     <!--  Included Baseline Core Features Accordion / Summary  -->
-    <div class="admin-card">
-      <div class="card-header-clean">
-        <div class="card-header-left">
-          <h3 class="card-title">Included Baseline Capabilities</h3>
-          <p class="card-subtitle">Permanent core capabilities enabled for your organization with zero recurring charge.</p>
+    <div class="admin-card" style="margin-top: 24px;">
+      <div class="card-header-row">
+        <div>
+          <h3 class="card-title">Included Baseline Core Capabilities</h3>
+          <p class="card-subtitle">Permanent, unmetered tools included in your sovereign Business Command Center plan.</p>
         </div>
-        <div class="card-header-right">
-          <span class="badge badge-success">{{ snapshot.included.length }} Always Included</span>
-        </div>
+        <span class="badge badge-success">{{ snapshot.included.length }} Built-in</span>
       </div>
 
-      <div class="included-grid">
+      <div class="included-features-grid">
         @for (core of snapshot.included; track core.featureId) {
-          <div class="included-card">
-            <div class="included-card-icon">
-              <span class="material-symbols-outlined">{{ core.icon || 'check_circle' }}</span>
-            </div>
-            <div class="included-card-body">
-              <div class="included-card-title">{{ core.name }}</div>
-              <p class="included-card-desc">{{ core.description || 'Core sovereign functionality.' }}</p>
-              <div class="included-card-footer">
-                <span class="badge badge-success" style="font-size: 10px;">$0.00 / Included</span>
-                <span class="badge badge-neutral" style="font-size: 10px;">{{ core.category }}</span>
-              </div>
+          <div class="core-feature-pill">
+            <span class="material-symbols-outlined core-icon">check_circle</span>
+            <div class="core-text">
+              <strong>{{ core.name }}</strong>
+              <span class="core-cat">{{ core.category }}</span>
             </div>
           </div>
         }
@@ -252,126 +243,178 @@
   }
 
   <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  <!--  ── TAB 2: MODULAR CAPABILITY MARKETPLACE ────────────────────────────────  -->
+  <!--  ── TAB 2: PAYMENT METHODS & CONTACTS ────────────────────────────────────  -->
   <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  @if (activeTab === 'features' && snapshot) {
-    
-    <!--  Marketplace Filter & Cadence Bar  -->
-    <div class="admin-card" style="margin-bottom: 24px; padding: 18px 20px;">
-      <div class="marketplace-toolbar">
-        <div class="search-and-suite">
-          <div class="table-search-box" style="width: 280px; max-width: 100%;">
-            <span class="search-icon"><span class="material-symbols-outlined" style="font-size: 18px;">search</span></span>
-            <input type="text" [(ngModel)]="featureSearch" placeholder="Search available add-ons..." />
-          </div>
-
-          <select [(ngModel)]="selectedSuite" class="form-select" style="min-width: 220px; height: 38px;">
-            <option value="" [textContent]="'All Modular Suites (' + distinctAvailableSuites.length + ')'"></option>
-            @for (suite of distinctAvailableSuites; track suite) {
-              <option [value]="suite">{{ suite }}</option>
-            }
-          </select>
-        </div>
-
-        <!--  Cadence Switcher Pill  -->
-        <div class="cadence-switcher">
-          <span class="cadence-label">Billing Interval:</span>
-          <div class="cadence-pills">
-            <button type="button" class="cadence-btn" [class.active]="selectedMarketplaceCadence === 'Monthly'" (click)="selectedMarketplaceCadence = 'Monthly'">
-              Monthly
-            </button>
-            <button type="button" class="cadence-btn" [class.active]="selectedMarketplaceCadence === 'Quarterly'" (click)="selectedMarketplaceCadence = 'Quarterly'">
-              Quarterly <span class="savings-tag">-10%</span>
-            </button>
-            <button type="button" class="cadence-btn" [class.active]="selectedMarketplaceCadence === 'Yearly'" (click)="selectedMarketplaceCadence = 'Yearly'">
-              Yearly <span class="savings-tag">-17%</span>
-            </button>
-          </div>
-        </div>
+  @if (activeTab === 'payment_methods') {
+    <div class="tab-section-header">
+      <div>
+        <h2 class="section-title">Payment Methods & Billing Contacts</h2>
+        <p class="section-subtitle">Link credit/debit cards for automated monthly settlements and manage your organization's tax profile.</p>
       </div>
+      <button type="button" class="btn-admin btn-admin-primary" (click)="openAddCardModal()">
+        <span class="material-symbols-outlined">add_card</span>
+        <span>Link New Card</span>
+      </button>
     </div>
 
-    <!--  Available Features Grid  -->
-    @if (filteredAvailableFeatures.length > 0) {
-      <div class="marketplace-grid">
-        @for (feat of filteredAvailableFeatures; track feat.featureId) {
-          <div class="addon-card">
-            <div class="addon-card-header">
-              <div class="addon-icon-wrap">
-                <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
-              </div>
-              <div class="addon-badges">
-                <span class="badge badge-neutral">{{ feat.category }}</span>
-              </div>
-            </div>
-
-            <h3 class="addon-title">{{ feat.name }}</h3>
-            <p class="addon-desc">{{ feat.description || 'Enterprise modular capability for expanding platform operations.' }}</p>
-
-            <div class="addon-pricing-block">
-              <div class="addon-price">
-                <span class="price-curr">$</span>
-                <span class="price-val">{{ getPriceForCadence(feat, selectedMarketplaceCadence).toFixed(2) }}</span>
-                <span class="price-per">/ {{ selectedMarketplaceCadence === 'Yearly' ? 'yr' : (selectedMarketplaceCadence === 'Quarterly' ? 'qtr' : 'mo') }}</span>
-              </div>
-              @if (selectedMarketplaceCadence === 'Yearly') {
-                <span class="price-subtext">Equivalent to ${{ (getPriceForCadence(feat, 'Yearly') / 12).toFixed(2) }}/mo</span>
-              }
-            </div>
-
-            <button type="button" class="btn-admin btn-admin-primary addon-btn" (click)="openSubscribeModal(feat)">
-              <span class="material-symbols-outlined">add_circle</span>
-              <span>Subscribe to Add-on</span>
-            </button>
-          </div>
-        }
+    <!--  Saved Cards Grid  -->
+    <div class="admin-card" style="margin-bottom: 24px;">
+      <div class="card-header-row">
+        <h3 class="card-title">Saved Payment Cards</h3>
+        <span class="badge badge-info">{{ paymentCards.length }} Active</span>
       </div>
-    } @else {
-      <div class="admin-card" style="padding: 48px; text-align: center;">
-        <span class="material-symbols-outlined" style="font-size: 36px; color: #94a3b8; margin-bottom: 12px;">search_off</span>
-        <h4 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 0 0 6px;">No Add-ons Match Filter</h4>
-        <p style="font-size: 13px; color: #64748b; margin: 0 0 16px;">Try adjusting your keyword search or selecting a different suite.</p>
-        <button type="button" class="btn-admin btn-admin-secondary" (click)="featureSearch = ''; selectedSuite = '';">
-          Clear Filters
+
+      @if (paymentCards.length > 0) {
+        <div class="cards-grid">
+          @for (card of paymentCards; track card.id) {
+            <div class="payment-card-tile" [class.is-default]="card.isDefault">
+              <div class="card-tile-top">
+                <div class="card-chip-wrap">
+                  <span class="material-symbols-outlined card-brand-icon">credit_card</span>
+                  <span class="card-brand-name">{{ card.brand }}</span>
+                </div>
+                @if (card.isDefault) {
+                  <span class="badge badge-primary">Default</span>
+                }
+              </div>
+
+              <div class="card-tile-number">
+                •••• •••• •••• <strong>{{ card.last4 }}</strong>
+              </div>
+
+              <div class="card-tile-meta">
+                <div>
+                  <span class="meta-tiny-label">CARDHOLDER</span>
+                  <span class="meta-tiny-val">{{ card.holderName }}</span>
+                </div>
+                <div>
+                  <span class="meta-tiny-label">EXPIRES</span>
+                  <span class="meta-tiny-val">{{ card.expMonth }}/{{ card.expYear }}</span>
+                </div>
+              </div>
+
+              <div class="card-tile-actions">
+                @if (!card.isDefault) {
+                  <button type="button" class="btn-tile-action" (click)="setDefaultCard(card.id)">
+                    Make Default
+                  </button>
+                }
+                <button type="button" class="btn-tile-delete" (click)="deleteCard(card)" title="Remove card">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state-box">
+          <span class="material-symbols-outlined empty-icon">credit_card_off</span>
+          <h4>No Payment Methods Linked</h4>
+          <p>Link a credit or debit card to enable automatic subscription renewals and avoid account interruptions.</p>
+          <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" (click)="openAddCardModal()" style="margin-top: 12px;">
+            Link First Card
+          </button>
+        </div>
+      }
+    </div>
+
+    <!--  Corporate Billing Profile & Address  -->
+    <div class="admin-card">
+      <div class="card-header-row">
+        <div>
+          <h3 class="card-title">Corporate Billing Profile & Address</h3>
+          <p class="card-subtitle">These details are rendered onto your downloadable monthly invoices and receipts.</p>
+        </div>
+      </div>
+
+      <div class="billing-form-grid">
+        <div class="form-group">
+          <label class="form-label">Legal Organization Name</label>
+          <input type="text" [(ngModel)]="billingContact.companyName" class="form-control" placeholder="e.g. Your Organization Name" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Billing & Invoicing Email</label>
+          <input type="email" [(ngModel)]="billingContact.billingEmail" class="form-control" placeholder="billing@company.com" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tax ID / VAT Registration Number</label>
+          <input type="text" [(ngModel)]="billingContact.taxId" class="form-control" placeholder="e.g. US-TAX-123456" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Phone Number (Optional)</label>
+          <input type="text" [(ngModel)]="billingContact.phoneNumber" class="form-control" placeholder="e.g. +0 (000) 000-0000" />
+        </div>
+
+        <div class="form-group span-2">
+          <label class="form-label">Billing Street Address</label>
+          <input type="text" [(ngModel)]="billingContact.addressLine1" class="form-control" placeholder="Suite 400, Enterprise Boulevard" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input type="text" [(ngModel)]="billingContact.city" class="form-control" placeholder="San Francisco" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">State / Province</label>
+          <input type="text" [(ngModel)]="billingContact.stateProvince" class="form-control" placeholder="CA" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Postal / ZIP Code</label>
+          <input type="text" [(ngModel)]="billingContact.postalCode" class="form-control" placeholder="94103" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Country</label>
+          <input type="text" [(ngModel)]="billingContact.country" class="form-control" placeholder="United States" />
+        </div>
+      </div>
+
+      <div class="form-actions-bar">
+        <button type="button" class="btn-admin btn-admin-primary" (click)="saveBillingProfile()">
+          <span class="material-symbols-outlined">save</span>
+          <span>Save Billing Profile</span>
         </button>
       </div>
-    }
-
+    </div>
   }
 
   <!--  ══════════════════════════════════════════════════════════════════════════  -->
   <!--  ── TAB 3: INVOICES & SETTLEMENT LEDGER ──────────────────────────────────  -->
   <!--  ══════════════════════════════════════════════════════════════════════════  -->
   @if (activeTab === 'invoices') {
-    
     <!--  Invoices KPI summary row  -->
-    <div class="invoices-stat-row">
+    <div class="billing-stats-grid">
       <div class="stat-card">
-        <div class="stat-icon-wrapper stat-icon-primary">
+        <div class="stat-icon-wrap bg-blue-subtle text-primary">
           <span class="material-symbols-outlined">receipt</span>
         </div>
-        <div class="stat-details">
+        <div class="stat-content">
           <span class="stat-label">Total Invoices</span>
           <span class="stat-value">{{ invoices.length }}</span>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon-wrapper stat-icon-warning">
+        <div class="stat-icon-wrap bg-yellow-subtle text-warning">
           <span class="material-symbols-outlined">pending_actions</span>
         </div>
-        <div class="stat-details">
+        <div class="stat-content">
           <span class="stat-label">Pending Settlement</span>
           <span class="stat-value text-warning">{{ pendingInvoicesCount }} (${{ pendingInvoicedAmount.toFixed(2) }})</span>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon-wrapper stat-icon-success">
-          <span class="material-symbols-outlined">check_circle</span>
+        <div class="stat-icon-wrap bg-green-subtle text-success">
+          <span class="material-symbols-outlined">task_alt</span>
         </div>
-        <div class="stat-details">
-          <span class="stat-label">Settled Invoices</span>
+        <div class="stat-content">
+          <span class="stat-label">Settled & Completed</span>
           <span class="stat-value text-success">{{ (invoices.length - pendingInvoicesCount) }}</span>
         </div>
       </div>
@@ -379,15 +422,16 @@
 
     <!--  Pending Settlement Notice Box  -->
     @if (pendingInvoicesCount > 0) {
-      <div class="pending-notice-banner">
-        <div class="banner-icon-wrap">
-          <span class="material-symbols-outlined">hourglass_top</span>
+      <div class="pending-flow-banner">
+        <div class="banner-icon">
+          <span class="material-symbols-outlined">account_balance</span>
         </div>
         <div class="banner-body">
-          <div class="banner-heading">Invoices Awaiting Settlement</div>
-          <div class="banner-subtext">
-            You have <strong>{{ pendingInvoicesCount }} pending invoice(s)</strong> totaling <strong>${{ pendingInvoicedAmount.toFixed(2) }}</strong>. Payment gateway settlement integration is queued. You can view, download, or print official invoice receipts below.
-          </div>
+          <h4 class="banner-title">Invoices Awaiting Settlement</h4>
+          <p class="banner-desc">
+            You have <strong>{{ pendingInvoicesCount }} pending invoice(s)</strong> totaling <strong>${{ pendingInvoicedAmount.toFixed(2) }}</strong>. 
+            Once your payment method is processed, your subscription posture will be updated automatically.
+          </p>
         </div>
       </div>
     }
@@ -427,34 +471,27 @@
               @for (inv of filteredInvoices; track inv.id) {
                 <tr>
                   <td>
-                    <strong style="color: var(--ozikol-primary, #0050e5); font-family: monospace;">{{ inv.invoiceNumber || 'INV-DRAFT' }}</strong>
+                    <strong style="color: #0f172a; font-family: monospace;">{{ inv.invoiceNumber || inv.id }}</strong>
                   </td>
                   <td>
-                    <span>{{ inv.description }}</span>
+                    <span style="font-weight: 600; color: #334155;">{{ inv.description }}</span>
+                    @if (inv.reference) {
+                      <div style="font-size: 11px; color: #94a3b8; font-family: monospace;">Ref: {{ inv.reference }}</div>
+                    }
                   </td>
                   <td>
                     <strong style="color: #0f172a;">${{ inv.amount.toFixed(2) }} {{ inv.currency }}</strong>
                   </td>
                   <td>
-                    @if (inv.status.toLowerCase() === 'pending') {
-                      <span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;">
-                        <span class="material-symbols-outlined" style="font-size: 12px;">hourglass_top</span>
-                        Awaiting Settlement
-                      </span>
-                    } @else if (inv.status.toLowerCase() === 'completed') {
-                      <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;">
-                        <span class="material-symbols-outlined" style="font-size: 12px;">check_circle</span>
-                        Paid &amp; Settled
-                      </span>
-                    } @else {
-                      <span class="badge badge-neutral">{{ inv.status }}</span>
-                    }
+                    <span [class]="'badge-status ' + (inv.status.toLowerCase() === 'completed' ? 'status-completed' : 'status-pending')">
+                      {{ inv.status === 'Completed' ? 'Paid & Settled' : 'Awaiting Settlement' }}
+                    </span>
                   </td>
                   <td>
-                    <span style="font-size: 12.5px; color: #64748b;">{{ inv.createdUtc | date:'mediumDate' }}</span>
+                    <span style="color: #64748b; font-size: 12.5px;">{{ inv.createdUtc | date:'mediumDate' }}</span>
                   </td>
                   <td style="text-align: right;">
-                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" (click)="viewInvoice(inv)">
+                    <button type="button" class="btn-admin btn-admin-sm btn-admin-secondary" (click)="viewInvoice(inv)">
                       <span class="material-symbols-outlined">visibility</span>
                       <span>View Receipt</span>
                     </button>
@@ -465,225 +502,194 @@
           </table>
         </div>
       } @else {
-        <div class="empty-state-clean">
-          <span class="material-symbols-outlined empty-icon">receipt</span>
+        <div class="empty-state-box">
+          <span class="material-symbols-outlined empty-icon">receipt_long</span>
           <h4>No Invoices Found</h4>
-          <p>No billing invoices match the active filter criteria.</p>
+          <p>No billing invoices match your current filter selection.</p>
         </div>
       }
     </div>
-
   }
 
   <!--  ══════════════════════════════════════════════════════════════════════════  -->
   <!--  ── TAB 4: USAGE BILL CALCULATOR ─────────────────────────────────────────  -->
   <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  @if (activeTab === 'calculator' && snapshot) {
-    <div class="calculator-layout">
-      <div class="calc-config-card admin-card">
-        <div class="card-header-clean">
-          <div>
-            <h3 class="card-title">Interactive Capability Estimator</h3>
-            <p class="card-subtitle">Select modular features to project your monthly and annual platform investment.</p>
-          </div>
-          <div class="cadence-pills">
-            <button type="button" class="cadence-btn" [class.active]="calculatorCadence === 'Monthly'" (click)="calculatorCadence = 'Monthly'">
-              Monthly
-            </button>
-            <button type="button" class="cadence-btn" [class.active]="calculatorCadence === 'Yearly'" (click)="calculatorCadence = 'Yearly'">
-              Yearly (-17%)
-            </button>
-          </div>
+  @if (activeTab === 'calculator') {
+    <div class="admin-card" style="margin-bottom: 24px;">
+      <div class="card-header-row">
+        <div>
+          <h3 class="card-title">Interactive Workspace Budget Simulator</h3>
+          <p class="card-subtitle">Estimate future infrastructure and member expansion costs transparently with zero commitments.</p>
         </div>
 
-        <div class="calc-feature-list">
-          <div class="calc-group-title">Active Modular Subscriptions:</div>
-          @for (sub of snapshot.subscribed; track sub.featureId) {
-            <div class="calc-item-row active-item">
-              <div class="calc-item-left">
-                <span class="material-symbols-outlined text-success">check_circle</span>
-                <div>
-                  <strong>{{ sub.name }}</strong>
-                  <span class="calc-sub-text">Currently Subscribed ({{ sub.billingCadence }})</span>
-                </div>
-              </div>
-              <div class="calc-item-price">
-                ${{ (calculatorCadence === 'Yearly' ? (sub.monthlyPrice * 10) : sub.monthlyPrice).toFixed(2) }}
-              </div>
-            </div>
-          }
-
-          <div class="calc-group-title" style="margin-top: 18px;">Optional Add-ons to Simulate:</div>
-          @for (avail of snapshot.available; track avail.featureId) {
-            <label class="calc-item-row clickable" (click)="toggleCalcAddon(avail.featureId)">
-              <div class="calc-item-left">
-                <input type="checkbox" [checked]="isCalcAddonSelected(avail.featureId)" (click)="$event.stopPropagation(); toggleCalcAddon(avail.featureId);" />
-                <div>
-                  <strong>{{ avail.name }}</strong>
-                  <span class="calc-sub-text">{{ avail.category }}</span>
-                </div>
-              </div>
-              <div class="calc-item-price">
-                ${{ (calculatorCadence === 'Yearly' ? (avail.yearlyPrice > 0 ? avail.yearlyPrice : avail.monthlyPrice * 10) : avail.monthlyPrice).toFixed(2) }}
-              </div>
-            </label>
-          }
+        <div class="cadence-switcher">
+          <button
+            type="button"
+            class="cadence-btn"
+            [class.active]="calculatorCadence === 'Monthly'"
+            (click)="calculatorCadence = 'Monthly'"
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            class="cadence-btn"
+            [class.active]="calculatorCadence === 'Yearly'"
+            (click)="calculatorCadence = 'Yearly'"
+          >
+            Annual (2 Months Free)
+          </button>
         </div>
       </div>
 
-      <div class="calc-summary-card">
-        <h3 class="summary-title">Projected Spend Summary</h3>
-        <p class="summary-subtitle">Estimated cost for selected sovereign capabilities.</p>
+      <div class="calc-grid">
+        <div class="calc-config-col">
+          <div class="calc-group">
+            <div class="calc-label-row">
+              <label class="form-label">Team & Staff Seats</label>
+              <strong class="calc-val-badge">{{ teamSeatsCount }} Members</strong>
+            </div>
+            <input type="range" [(ngModel)]="teamSeatsCount" min="1" max="250" step="1" class="calc-slider" />
+            <span class="calc-hint">First 10 members included free. Additional seats at $4.50/user/mo.</span>
+          </div>
 
-        <div class="summary-box">
-          <div class="summary-amount-block">
-            <span class="sum-label">Projected Total ({{ calculatorCadence }})</span>
-            <div class="sum-price">
-              <span class="sum-curr">$</span>
-              <span class="sum-num">
-                {{ (calculatorCadence === 'Yearly' ? calculatedYearlyTotal : calculatedMonthlyTotal).toFixed(2) }}
+          <div class="calc-group">
+            <div class="calc-label-row">
+              <label class="form-label">Encrypted Document Storage</label>
+              <strong class="calc-val-badge">{{ storageGb }} GB</strong>
+            </div>
+            <input type="range" [(ngModel)]="storageGb" min="5" max="500" step="5" class="calc-slider" />
+            <span class="calc-hint">First 25 GB storage included free. Overages at $0.20/GB/mo.</span>
+          </div>
+        </div>
+
+        <div class="calc-summary-col">
+          <div class="calc-summary-box">
+            <h4 class="cs-title">Estimated Commitment</h4>
+            <div class="cs-price">
+              <span class="cs-curr">$</span>
+              <span class="cs-val">
+                {{ (calculatorCadence === 'Yearly' ? calculatedYearlyEstimate : calculatedMonthlyEstimate).toFixed(2) }}
               </span>
-              <span class="sum-cadence">/ {{ calculatorCadence === 'Yearly' ? 'yr' : 'mo' }}</span>
+              <span class="cs-per">/ {{ calculatorCadence === 'Yearly' ? 'yr' : 'mo' }}</span>
             </div>
+
+            <div class="cs-breakdown">
+              <div class="cs-line">
+                <span>Base Sovereign Plan</span>
+                <span class="text-success">Free ($0.00)</span>
+              </div>
+              <div class="cs-line">
+                <span>Active Subscribed Add-ons</span>
+                <span>${{ snapshot.totalRecurringMonthly.toFixed(2) }}/mo</span>
+              </div>
+              <div class="cs-line">
+                <span>Staff Seats ({{ teamSeatsCount }})</span>
+                <span>${{ (Math.max(0, teamSeatsCount - 10) * 4.5).toFixed(2) }}/mo</span>
+              </div>
+              <div class="cs-line">
+                <span>Encrypted Storage ({{ storageGb }} GB)</span>
+                <span>${{ (Math.max(0, storageGb - 25) * 0.20).toFixed(2) }}/mo</span>
+              </div>
+            </div>
+
+            <p class="cs-note">
+              Billed transparently to your default linked card. Zero surprises or overage penalties.
+            </p>
           </div>
-
-          @if (calculatorCadence === 'Yearly') {
-            <div class="summary-savings-banner">
-              <span class="material-symbols-outlined">savings</span>
-              <span>Yearly billing saves 2 months (~17% discount) compared to monthly billing!</span>
-            </div>
-          }
-
-          <div class="summary-breakdown-list">
-            <div class="breakdown-line">
-              <span>Baseline Core Platform:</span>
-              <span class="text-success">$0.00 (Included)</span>
-            </div>
-            <div class="breakdown-line">
-              <span>Active Subscriptions:</span>
-              <span>${{ (calculatorCadence === 'Yearly' ? snapshot.totalRecurringMonthly * 10 : snapshot.totalRecurringMonthly).toFixed(2) }}</span>
-            </div>
-            <div class="breakdown-line">
-              <span>Selected Simulation Add-ons:</span>
-              <span>{{ selectedAddonIdsForCalc.size }} selected</span>
-            </div>
-          </div>
-
-          <button type="button" class="btn-admin btn-admin-primary" style="width: 100%; margin-top: 18px;" (click)="switchTab('features')">
-            <span class="material-symbols-outlined">shopping_cart</span>
-            <span>Activate Add-ons in Store</span>
-          </button>
         </div>
       </div>
     </div>
   }
-
 </div>
 
 <!--  ══════════════════════════════════════════════════════════════════════════  -->
-<!--  ── MODAL: SUBSCRIBE / CHECKOUT CONFIRMATION ─────────────────────────────  -->
+<!--  ── MODAL: LINK PAYMENT CARD ─────────────────────────────────────────────  -->
 <!--  ══════════════════════════════════════════════════════════════════════════  -->
-@if (showSubscribeModal && selectedFeatureToSubscribe) {
-  <div class="modal-backdrop-custom" (click)="closeSubscribeModal()">
+@if (showAddCardModal) {
+  <div class="modal-backdrop-custom" (click)="closeAddCardModal()">
     <div class="modal-card-custom" (click)="$event.stopPropagation()">
-      
-      @if (!pendingSubscribeResult) {
-        <div class="modal-header-custom">
-          <div class="modal-header-icon">
-            <span class="material-symbols-outlined">extension</span>
-          </div>
-          <div>
-            <h3 class="modal-title">Subscribe to Capability</h3>
-            <p class="modal-subtitle">Add modular feature to your sovereign workspace.</p>
-          </div>
-          <button type="button" class="btn-close-modal" (click)="closeSubscribeModal()">
-            <span class="material-symbols-outlined">close</span>
-          </button>
+      <div class="modal-header-custom">
+        <div class="title-with-info">
+          <span class="material-symbols-outlined text-primary" style="font-size: 24px;">add_card</span>
+          <h3 class="modal-title-custom">Link New Payment Card</h3>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeAddCardModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body-custom">
+        <p style="font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 20px;">
+          Cards are securely tokenized with end-to-end encryption. Your card is not charged until an invoice is settled.
+        </p>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Name on Card</label>
+          <input type="text" [(ngModel)]="cardForm.holderName" class="form-control" placeholder="e.g. First Last" />
         </div>
 
-        <div class="modal-body-custom">
-          <div class="feature-subscribe-preview">
-            <div class="feat-prev-title">{{ selectedFeatureToSubscribe.name }}</div>
-            <code class="feat-prev-code">{{ selectedFeatureToSubscribe.featureCode }}</code>
-            <p class="feat-prev-desc">{{ selectedFeatureToSubscribe.description }}</p>
-          </div>
-
-          <div class="cadence-selection-block">
-            <label class="form-label">Select Billing Interval:</label>
-            <div class="cadence-cards-grid">
-              <label class="cadence-card-option" [class.selected]="subscribeCadence === 'Monthly'">
-                <input type="radio" name="cadence" value="Monthly" [(ngModel)]="subscribeCadence" />
-                <div class="cad-title">Monthly</div>
-                <div class="cad-price">${{ selectedFeatureToSubscribe.monthlyPrice.toFixed(2) }} <span class="cad-unit">/mo</span></div>
-              </label>
-
-              <label class="cadence-card-option" [class.selected]="subscribeCadence === 'Quarterly'">
-                <input type="radio" name="cadence" value="Quarterly" [(ngModel)]="subscribeCadence" />
-                <div class="cad-title">Quarterly <span class="badge-discount">-10%</span></div>
-                <div class="cad-price">${{ getPriceForCadence(selectedFeatureToSubscribe, 'Quarterly').toFixed(2) }} <span class="cad-unit">/qtr</span></div>
-              </label>
-
-              <label class="cadence-card-option" [class.selected]="subscribeCadence === 'Yearly'">
-                <input type="radio" name="cadence" value="Yearly" [(ngModel)]="subscribeCadence" />
-                <div class="cad-title">Yearly <span class="badge-discount">-17%</span></div>
-                <div class="cad-price">${{ getPriceForCadence(selectedFeatureToSubscribe, 'Yearly').toFixed(2) }} <span class="cad-unit">/yr</span></div>
-              </label>
-            </div>
-          </div>
-
-          <!--  Flow Notice: Keeping Payment Pending  -->
-          <div class="settlement-info-box">
-            <span class="material-symbols-outlined box-icon">info</span>
-            <div class="box-text">
-              <strong>Flow Notice:</strong> Subscribing will generate an official invoice in your billing ledger. Payment gateway settlement integration is queued; the invoice will be marked as <strong>Awaiting Settlement</strong>.
-            </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Card Number</label>
+          <div class="input-icon-wrap">
+            <span class="material-symbols-outlined input-prefix-icon">credit_card</span>
+            <input type="text" [(ngModel)]="cardForm.cardNumber" class="form-control" placeholder="4242 •••• •••• 4242" maxlength="19" />
           </div>
         </div>
 
-        <div class="modal-footer-custom">
-          <button type="button" class="btn-admin btn-admin-secondary" (click)="closeSubscribeModal()" [disabled]="isActionLoading">
-            Cancel
-          </button>
-          <button type="button" class="btn-admin btn-admin-primary" (click)="confirmSubscribe()" [disabled]="isActionLoading">
-            @if (isActionLoading) {
-              <div class="spinner-sm"></div>
-              <span>Generating Invoice...</span>
-            } @else {
-              <span class="material-symbols-outlined">receipt</span>
-              <span>Confirm &amp; Generate Invoice</span>
-            }
-          </button>
-        </div>
-      } @else {
-        <!--  Success State with Invoice Generated  -->
-        <div class="modal-body-custom text-center" style="padding: 32px 24px;">
-          <div class="success-icon-wrap">
-            <span class="material-symbols-outlined" style="font-size: 38px; color: #10b981;">check_circle</span>
-          </div>
-          <h3 style="font-size: 19px; font-weight: 800; color: #0f172a; margin: 12px 0 6px;">Invoice Generated Successfully</h3>
-          <p style="font-size: 13.5px; color: #64748b; margin-bottom: 20px;">
-            Invoice <strong>{{ pendingSubscribeResult.invoiceNumber }}</strong> for <strong>${{ pendingSubscribeResult.amountDue.toFixed(2) }} USD</strong> has been placed in your ledger.
-          </p>
-
-          <div class="invoice-status-pill-box">
-            <span class="badge badge-warning" style="padding: 6px 14px; font-size: 12.5px;">
-              <span class="material-symbols-outlined" style="font-size: 14px;">hourglass_top</span>
-              Status: Awaiting Settlement
-            </span>
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label class="form-label">Expiration Month</label>
+            <select [(ngModel)]="cardForm.expMonth" class="form-select">
+              <option [value]="1">01 - Jan</option>
+              <option [value]="2">02 - Feb</option>
+              <option [value]="3">03 - Mar</option>
+              <option [value]="4">04 - Apr</option>
+              <option [value]="5">05 - May</option>
+              <option [value]="6">06 - Jun</option>
+              <option [value]="7">07 - Jul</option>
+              <option [value]="8">08 - Aug</option>
+              <option [value]="9">09 - Sep</option>
+              <option [value]="10">10 - Oct</option>
+              <option [value]="11">11 - Nov</option>
+              <option [value]="12">12 - Dec</option>
+            </select>
           </div>
 
-          <div style="display: flex; gap: 10px; justify-content: center; margin-top: 24px;">
-            <button type="button" class="btn-admin btn-admin-secondary" (click)="closeSubscribeModal()">
-              Close
-            </button>
-            <button type="button" class="btn-admin btn-admin-primary" (click)="closeSubscribeModal(); switchTab('invoices');">
-              <span class="material-symbols-outlined">receipt_long</span>
-              <span>View Invoice in Ledger</span>
-            </button>
+          <div class="form-group">
+            <label class="form-label">Expiration Year</label>
+            <select [(ngModel)]="cardForm.expYear" class="form-select">
+              <option [value]="2026">2026</option>
+              <option [value]="2027">2027</option>
+              <option [value]="2028">2028</option>
+              <option [value]="2029">2029</option>
+              <option [value]="2030">2030</option>
+              <option [value]="2031">2031</option>
+              <option [value]="2032">2032</option>
+            </select>
           </div>
         </div>
-      }
 
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label">Security Code (CVV / CVC)</label>
+          <input type="password" [(ngModel)]="cardForm.cvc" class="form-control" placeholder="•••" maxlength="4" style="max-width: 120px;" />
+        </div>
+
+        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #475569; cursor: pointer;">
+          <input type="checkbox" [(ngModel)]="cardForm.isDefault" />
+          <span>Set this card as the default payment method for all future settlements</span>
+        </label>
+      </div>
+
+      <div class="modal-footer-custom">
+        <button type="button" class="btn-admin btn-admin-secondary" (click)="closeAddCardModal()">
+          Cancel
+        </button>
+        <button type="button" class="btn-admin btn-admin-primary" (click)="saveCard()">
+          <span class="material-symbols-outlined">check</span>
+          <span>Save & Link Card</span>
+        </button>
+      </div>
     </div>
   </div>
 }
@@ -693,91 +699,111 @@
 <!--  ══════════════════════════════════════════════════════════════════════════  -->
 @if (showInvoiceModal && selectedInvoice) {
   <div class="modal-backdrop-custom" (click)="closeInvoiceModal()">
-    <div class="modal-card-custom invoice-printable-card" (click)="$event.stopPropagation()">
+    <div class="modal-card-custom modal-card-lg printable-invoice-card" (click)="$event.stopPropagation()">
       <div class="modal-header-custom no-print">
-        <h3 class="modal-title">Invoice Receipt</h3>
-        <button type="button" class="btn-close-modal" (click)="closeInvoiceModal()">
-          <span class="material-symbols-outlined">close</span>
-        </button>
+        <div class="title-with-info">
+          <span class="material-symbols-outlined text-primary" style="font-size: 24px;">receipt_long</span>
+          <h3 class="modal-title-custom">Invoice Receipt #{{ selectedInvoice.invoiceNumber || selectedInvoice.id }}</h3>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-admin btn-admin-sm btn-admin-primary" (click)="printInvoice()">
+            <span class="material-symbols-outlined">print</span>
+            <span>Print Receipt</span>
+          </button>
+          <button type="button" class="btn-close-modal" (click)="closeInvoiceModal()">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
       </div>
 
-      <div class="invoice-printable-body" id="printableInvoiceArea">
-        <div class="inv-header">
-          <div class="inv-brand">
-            <div class="inv-logo-box">BCC</div>
-            <div>
-              <div class="inv-brand-name">Ozikol Business Command Center</div>
-              <div class="inv-subbrand">Sovereign Enterprise Cloud Platform</div>
+      <div class="invoice-printable-body">
+        <div class="inv-doc-header">
+          <div>
+            <div class="inv-brand-logo">
+              <span class="material-symbols-outlined" style="font-size: 32px; color: #0050e5;">verified</span>
+              <span style="font-size: 20px; font-weight: 800; color: #0f172a;">Ozikol BCC</span>
+            </div>
+            <p style="font-size: 12.5px; color: #64748b; margin: 4px 0 0;">
+              Sovereign Business Command Center Infrastructure<br />
+              Cloud Platform Governance & Licensing
+            </p>
+          </div>
+
+          <div style="text-align: right;">
+            <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 4px;">OFFICIAL RECEIPT</h2>
+            <div style="font-family: monospace; font-size: 13px; color: #0050e5; font-weight: 700;">
+              #{{ selectedInvoice.invoiceNumber || selectedInvoice.id }}
+            </div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+              Date: {{ selectedInvoice.createdUtc | date:'mediumDate' }}
             </div>
           </div>
-          <div class="inv-meta-right">
-            <div class="inv-number">{{ selectedInvoice.invoiceNumber || 'INV-DRAFT' }}</div>
-            <div class="inv-date">Date: {{ selectedInvoice.createdUtc | date:'mediumDate' }}</div>
-          </div>
         </div>
 
-        <div class="inv-status-banner" [class.status-pending]="selectedInvoice.status.toLowerCase() === 'pending'" [class.status-paid]="selectedInvoice.status.toLowerCase() === 'completed'">
-          @if (selectedInvoice.status.toLowerCase() === 'pending') {
-            <span class="material-symbols-outlined">hourglass_top</span>
-            <span>STATUS: PENDING SETTLEMENT — Awaiting Gateway Processing</span>
-          } @else {
-            <span class="material-symbols-outlined">verified</span>
-            <span>STATUS: PAID &amp; SETTLED</span>
-          }
-        </div>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
 
-        <div class="inv-details-grid">
+        <div class="inv-parties-grid">
           <div>
-            <span class="inv-detail-k">Billed To Organization:</span>
-            <div class="inv-detail-v">{{ snapshot?.tenantKey }}.localhost:4200</div>
+            <span class="inv-party-label">BILLED TO:</span>
+            <h4 class="inv-party-name">{{ billingContact.companyName }}</h4>
+            <div class="inv-party-details">
+              {{ billingContact.billingEmail }}<br />
+              {{ billingContact.addressLine1 }}<br />
+              {{ billingContact.city }}, {{ billingContact.stateProvince }} {{ billingContact.postalCode }} {{ billingContact.country }}<br />
+              @if (billingContact.taxId) {
+                <span>Tax ID: {{ billingContact.taxId }}</span>
+              }
+            </div>
           </div>
-          <div>
-            <span class="inv-detail-k">Payment Terms:</span>
-            <div class="inv-detail-v">Due Upon Receipt (USD)</div>
+
+          <div style="text-align: right;">
+            <span class="inv-party-label">PAYMENT STATUS:</span>
+            <div>
+              <span [class]="'badge-status ' + (selectedInvoice.status.toLowerCase() === 'completed' ? 'status-completed' : 'status-pending')" style="display: inline-block; margin-top: 6px;">
+                {{ selectedInvoice.status === 'Completed' ? 'PAID & SETTLED' : 'AWAITING SETTLEMENT' }}
+              </span>
+            </div>
+            @if (selectedInvoice.reference) {
+              <div style="font-size: 12px; color: #64748b; margin-top: 6px;">
+                Reference: <code style="color: #0f172a;">{{ selectedInvoice.reference }}</code>
+              </div>
+            }
           </div>
         </div>
 
-        <table class="inv-line-items-table">
+        <table class="inv-items-table">
           <thead>
             <tr>
-              <th>DESCRIPTION</th>
-              <th style="text-align: right;">AMOUNT (USD)</th>
+              <th>ITEM DESCRIPTION</th>
+              <th style="text-align: right;">AMOUNT</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>
                 <strong>{{ selectedInvoice.description }}</strong>
-                <div style="font-size: 11.5px; color: #64748b;">Modular BCC feature subscription entitlement</div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                  Sovereign capability allocation and dedicated database provisioning
+                </div>
               </td>
-              <td style="text-align: right;">
+              <td style="text-align: right; vertical-align: top;">
                 <strong>${{ selectedInvoice.amount.toFixed(2) }}</strong>
               </td>
             </tr>
           </tbody>
           <tfoot>
             <tr>
-              <td style="text-align: right; font-weight: 800;">TOTAL DUE:</td>
-              <td style="text-align: right; font-weight: 900; font-size: 16px; color: var(--ozikol-primary, #0050e5);">
+              <td style="text-align: right; font-weight: 700; color: #475569;">Total Amount:</td>
+              <td style="text-align: right; font-weight: 800; font-size: 16px; color: #0050e5;">
                 ${{ selectedInvoice.amount.toFixed(2) }} USD
               </td>
             </tr>
           </tfoot>
         </table>
 
-        <div class="inv-notes-footer">
-          <p>Thank you for choosing Ozikol Business Command Center. This document serves as an official proof of invoice generation.</p>
+        <div class="inv-doc-footer">
+          <p>Thank you for choosing Ozikol Business Command Center. For billing inquiries, contact support at billing&#64;ozikol.cloud.</p>
         </div>
-      </div>
-
-      <div class="modal-footer-custom no-print">
-        <button type="button" class="btn-admin btn-admin-secondary" (click)="closeInvoiceModal()">
-          Close
-        </button>
-        <button type="button" class="btn-admin btn-admin-primary" (click)="printInvoice()">
-          <span class="material-symbols-outlined">print</span>
-          <span>Print / Save PDF</span>
-        </button>
       </div>
     </div>
   </div>
@@ -786,21 +812,29 @@
 <!--  ── Contextual Info Popover Modal ──  -->
 @if (showInfoModal) {
   <div class="modal-backdrop-custom" (click)="closeInfoModal()">
-    <div class="modal-card-custom" style="max-width: 480px;" (click)="$event.stopPropagation()">
+    <div class="modal-card-custom" (click)="$event.stopPropagation()">
       <div class="modal-header-custom">
-        <div class="modal-header-icon" style="background: rgba(0, 80, 229, 0.08); color: var(--ozikol-primary, #0050e5);">
-          <span class="material-symbols-outlined">info</span>
+        <div class="title-with-info">
+          <span class="material-symbols-outlined text-primary" style="font-size: 22px;">info</span>
+          <h3 class="modal-title-custom">About Suite 13: Billing & Subscriptions</h3>
         </div>
-        <h3 class="modal-title">About Workspace Billing</h3>
         <button type="button" class="btn-close-modal" (click)="closeInfoModal()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
-      <div class="modal-body-custom" style="font-size: 13.5px; color: #475569; line-height: 1.6;">
-        <p><strong>Sovereign Licensing:</strong> Your organization operates an isolated tenant database. Baseline core capabilities are included with permanent zero-cost licenses.</p>
-        <p><strong>Modular Add-ons:</strong> Add optional capabilities at any time. Subscribing generates an invoice in your ledger. Auto-renew can be toggled on or off per feature at any moment.</p>
-        <p><strong>Billing Cadences:</strong> Yearly intervals include approximately 2 months free (~17% discount) compared to standard monthly pricing.</p>
+
+      <div class="modal-body-custom" style="line-height: 1.6; font-size: 13.5px; color: #334155;">
+        <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0 0 6px;">How Billing Works</h4>
+        <p style="margin: 0 0 14px;">
+          Your sovereign Business Command Center comes with an all-inclusive baseline core tier ($0.00) providing identity management, CMS, forms, and database isolation.
+        </p>
+
+        <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Payment Methods & Invoices</h4>
+        <p style="margin: 0 0 14px;">
+          Link your credit/debit card to automate renewals. All generated invoices appear in your ledger with full printable receipts for your accounting and tax filing.
+        </p>
       </div>
+
       <div class="modal-footer-custom">
         <button type="button" class="btn-admin btn-admin-primary" (click)="closeInfoModal()">
           Got It
@@ -809,4 +843,3 @@
     </div>
   </div>
 }
-

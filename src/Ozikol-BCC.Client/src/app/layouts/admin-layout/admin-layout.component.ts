@@ -1319,12 +1319,23 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <div class="nav-item">
-            <a routerLink="/billing/invoices" [class.active]="isCurrentRoute('/billing/invoices')" class="nav-link">
+            <a routerLink="/billing/payment-methods" [class.active]="isCurrentRoute('/billing/payment-methods')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">account_balance_wallet</span>
-                <span>{{ 'adm.payment_methods_contacts' | translate:'Payment Methods & Invoices' }}</span>
+                <span>{{ 'adm.payment_methods_contacts' | translate:'Payment Methods & Contacts' }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/invoices')" (click)="togglePin('Invoices & Receipts', '/billing/invoices', 'account_balance_wallet'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/invoices') ? 'Unpin Task' : 'Pin Task'">
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/payment-methods')" (click)="togglePin('Payment Methods', '/billing/payment-methods', 'account_balance_wallet'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/payment-methods') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/billing/payment-methods') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/billing/invoices" [class.active]="isCurrentRoute('/billing/invoices')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">receipt_long</span>
+                <span>{{ 'adm.invoices_receipts' | translate:'Invoices & Receipts' }}</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/invoices')" (click)="togglePin('Invoices & Receipts', '/billing/invoices', 'receipt_long'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/invoices') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/billing/invoices') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
@@ -1337,18 +1348,6 @@ export interface SuiteInfoDetail {
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/calculator')" (click)="togglePin('Usage Calculator', '/billing/calculator', 'calculate'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/calculator') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/billing/calculator') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/billing/features" [class.active]="isCurrentRoute('/billing/features')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">extension</span>
-                <span>{{ 'nav.feature_billing' | translate }}</span>
-                <span class="badge-pill badge-new">Store</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/features')" (click)="togglePin('Feature Add-ons', '/billing/features', 'extension'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/features') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/billing/features') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
