@@ -1,8 +1,10 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import * as signalR from '@microsoft/signalr';
+import { environment } from '../../../../environments/environment';
 import {
   BillingService,
   BillingFeaturesSnapshot,
@@ -67,23 +69,105 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   // Contextual Suite Info Modal
   showInfoModal = false;
 
+  // Real-time WebSocket state (/hubs/notifications)
+  isRealtimeConnected = false;
+  private hubConnection: signalR.HubConnection | null = null;
   private routeSub: Subscription | null = null;
 
   constructor(
     private billingService: BillingService,
     private toastService: ToastService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private ngZone: NgZone
   ) {}
 
   ngOnInit(): void {
     this.loadSnapshot();
+    this.startRealtimeSocket();
   }
 
   ngOnDestroy(): void {
     if (this.routeSub) {
       this.routeSub.unsubscribe();
     }
+    if (this.hubConnection) {
+      this.hubConnection.stop().catch(() => {});
+      this.hubConnection = null;
+    }
+  }
+
+  /**
+   * Establishes a real-time SignalR WebSocket connection to /hubs/notifications
+   * so any capability toggled in Master (/centralwks/features) updates the UI automatically.
+   */
+  private startRealtimeSocket(): void {
+    const apiOrigin = environment.apiUrl.startsWith('http')
+      ? environment.apiUrl.replace(/\/api\/?$/, '')
+      : typeof window !== 'undefined'
+        ? `${window.location.origin}${environment.apiUrl.replace(/\/api\/?$/, '')}`
+        : '';
+
+    const tenantKey =
+      localStorage.getItem('tenant_key') ||
+      localStorage.getItem('tenant_domain') ||
+      'workspace';
+
+    const hubUrl = `${apiOrigin}/hubs/notifications?tenantKey=${encodeURIComponent(tenantKey)}`;
+
+    this.hubConnection = new signalR.HubConnectionBuilder()
+      .withUrl(hubUrl)
+      .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
+      .configureLogging(signalR.LogLevel.Warning)
+      .build();
+
+    this.hubConnection.on('BillingUpdated', (incoming: BillingFeaturesSnapshot) => {
+      this.ngZone.run(() => {
+        if (incoming) {
+          this.snapshot = incoming;
+          if (this.selectedFeatureDetail) {
+            const refreshed = this.allOrderedFeatures.find(
+              f => f.featureCode === this.selectedFeatureDetail?.featureCode
+            );
+            if (refreshed) {
+              this.selectedFeatureDetail = refreshed;
+            } else {
+              this.closeFeatureDetail();
+            }
+          }
+          this.toastService.info(
+            'Master Catalog Synchronized',
+            'Published capabilities and availability updated in real time.'
+          );
+        }
+      });
+    });
+
+    this.hubConnection
+      .start()
+      .then(() => {
+        this.ngZone.run(() => {
+          this.isRealtimeConnected = true;
+        });
+      })
+      .catch(() => {
+        this.ngZone.run(() => {
+          this.isRealtimeConnected = false;
+        });
+      });
+
+    this.hubConnection.onclose(() => {
+      this.ngZone.run(() => {
+        this.isRealtimeConnected = false;
+      });
+    });
+
+    this.hubConnection.onreconnected(() => {
+      this.ngZone.run(() => {
+        this.isRealtimeConnected = true;
+        this.loadSnapshot();
+      });
+    });
   }
 
   /**

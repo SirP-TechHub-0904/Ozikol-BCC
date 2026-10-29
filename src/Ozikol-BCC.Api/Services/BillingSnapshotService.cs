@@ -97,7 +97,10 @@ namespace Ozikol_BCC.Api.Services
         /// <param name="master">Master catalog database context.</param>
         /// <param name="cache">Memory cache holding tenant entitlements.</param>
         /// <param name="hub">Notification hub context used for socket broadcasts.</param>
-        public BillingSnapshotService(MasterCatalogDbContext master, IMemoryCache cache, IHubContext<NotificationHub> hub)
+        public BillingSnapshotService(
+            MasterCatalogDbContext master,
+            IMemoryCache cache,
+            IHubContext<NotificationHub> hub)
         {
             _master = master;
             _cache = cache;
@@ -141,6 +144,7 @@ namespace Ozikol_BCC.Api.Services
                     cancellationToken);
 
             List<MasterFeatureCatalog> rawFeatures;
+            bool usedFallbackQuery = false;
             try
             {
                 rawFeatures = await _master.MasterFeatureCatalogs
@@ -150,6 +154,7 @@ namespace Ozikol_BCC.Api.Services
             }
             catch
             {
+                usedFallbackQuery = true;
                 // Graceful fallback if the IsAvailableForUse migration has not yet been applied to SQL Server
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
@@ -183,8 +188,6 @@ namespace Ozikol_BCC.Api.Services
                 .ThenBy(f => f.Name)
                 .ToList();
 
-            bool anyDbAvailableFlagSet = features.Any(f => f.IsAvailableForUse);
-
             var now = DateTime.UtcNow;
             var subsByFeature = tenant != null
                 ? tenant.FeatureSubscriptions
@@ -202,9 +205,9 @@ namespace Ozikol_BCC.Api.Services
             {
                 subsByFeature.TryGetValue(f.Id, out var sub);
 
-                bool isAvailForUse = anyDbAvailableFlagSet
-                    ? f.IsAvailableForUse
-                    : DefaultAvailableCodes.Contains(f.FeatureCode);
+                bool isAvailForUse = usedFallbackQuery
+                    ? DefaultAvailableCodes.Contains(f.FeatureCode)
+                    : f.IsAvailableForUse;
 
                 var item = new BillingFeatureItemDto
                 {
@@ -300,7 +303,7 @@ namespace Ozikol_BCC.Api.Services
         /// <inheritdoc />
         public async Task PublishAsync(string tenantKey, CancellationToken cancellationToken = default)
         {
-            var key = tenantKey.Trim().ToLowerInvariant();
+            var key = (tenantKey ?? "workspace").Trim().ToLowerInvariant();
 
             // Drop cached entitlements so feature gates reflect the change on the very next request
             _cache.Remove($"{TenantFeatureGateService.CacheKeyPrefix}{key}");
@@ -308,7 +311,14 @@ namespace Ozikol_BCC.Api.Services
             var snapshot = await BuildAsync(key, cancellationToken);
             if (snapshot == null) return;
 
-            await _hub.Clients.Group($"tenant_{key}").SendAsync(BillingUpdatedEvent, snapshot, cancellationToken);
+            if (key == "workspace")
+            {
+                await _hub.Clients.All.SendAsync(BillingUpdatedEvent, snapshot, cancellationToken);
+            }
+            else
+            {
+                await _hub.Clients.Group($"tenant_{key}").SendAsync(BillingUpdatedEvent, snapshot, cancellationToken);
+            }
         }
     }
 }

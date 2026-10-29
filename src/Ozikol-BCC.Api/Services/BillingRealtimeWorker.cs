@@ -31,7 +31,7 @@ namespace Ozikol_BCC.Api.Services
         /// <summary>Socket event raised when a feature crosses a renewal threshold.</summary>
         public const string FeatureExpiryAlertEvent = "FeatureExpiryAlert";
 
-        private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(3);
 
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IHubContext<NotificationHub> _hub;
@@ -134,17 +134,51 @@ namespace Ozikol_BCC.Api.Services
                 })
                 .ToListAsync(ct);
 
-            var catalog = await db.MasterFeatureCatalogs.AsNoTracking()
-                .OrderBy(f => f.Id)
-                .Select(f => new { f.Id, f.Name, f.IsActive, f.IsCompulsory, f.MonthlyPrice, f.QuarterlyPrice, f.YearlyPrice, f.SortOrder })
-                .ToListAsync(ct);
-
-            // Catalog-wide fingerprint: a price or availability change affects every tenant's marketplace
+            // Catalog-wide fingerprint: an availability, activation, price, or suite change affects every tenant
             var catalogSb = new StringBuilder();
-            foreach (var f in catalog)
-                catalogSb.Append(f.Id).Append('|').Append(f.Name).Append('|').Append(f.IsActive).Append('|').Append(f.IsCompulsory)
-                         .Append('|').Append(f.MonthlyPrice).Append('|').Append(f.QuarterlyPrice).Append('|').Append(f.YearlyPrice)
-                         .Append('|').Append(f.SortOrder).Append(';');
+            try
+            {
+                var catalog = await db.MasterFeatureCatalogs.AsNoTracking()
+                    .OrderBy(f => f.Id)
+                    .Select(f => new
+                    {
+                        f.Id,
+                        f.Name,
+                        f.Category,
+                        f.IsActive,
+                        f.IsAvailableForUse,
+                        f.IsCompulsory,
+                        f.IsInBeta,
+                        f.MonthlyPrice,
+                        f.QuarterlyPrice,
+                        f.YearlyPrice,
+                        f.SortOrder
+                    })
+                    .ToListAsync(ct);
+
+                foreach (var f in catalog)
+                {
+                    catalogSb.Append(f.Id).Append('|').Append(f.Name).Append('|').Append(f.Category).Append('|')
+                             .Append(f.IsActive).Append('|').Append(f.IsAvailableForUse).Append('|').Append(f.IsCompulsory).Append('|')
+                             .Append(f.IsInBeta).Append('|').Append(f.MonthlyPrice).Append('|').Append(f.QuarterlyPrice).Append('|')
+                             .Append(f.YearlyPrice).Append('|').Append(f.SortOrder).Append(';');
+                }
+            }
+            catch
+            {
+                var catalogFallback = await db.MasterFeatureCatalogs.AsNoTracking()
+                    .OrderBy(f => f.Id)
+                    .Select(f => new { f.Id, f.Name, f.Category, f.IsActive, f.IsCompulsory, f.MonthlyPrice, f.QuarterlyPrice, f.YearlyPrice, f.SortOrder })
+                    .ToListAsync(ct);
+
+                foreach (var f in catalogFallback)
+                {
+                    catalogSb.Append(f.Id).Append('|').Append(f.Name).Append('|').Append(f.Category).Append('|')
+                             .Append(f.IsActive).Append('|').Append(f.IsCompulsory).Append('|').Append(f.MonthlyPrice).Append('|')
+                             .Append(f.QuarterlyPrice).Append('|').Append(f.YearlyPrice).Append('|').Append(f.SortOrder).Append(';');
+                }
+            }
+
             var catalogFingerprint = catalogSb.ToString();
             var catalogChanged = _catalogFingerprint != null && _catalogFingerprint != catalogFingerprint;
             _catalogFingerprint = catalogFingerprint;
@@ -201,6 +235,12 @@ namespace Ozikol_BCC.Api.Services
                 // First pass only records the baseline so a restart does not flood every tenant with updates
                 _primed = true;
                 return;
+            }
+
+            if (catalogChanged)
+            {
+                // Broadcast global catalog update so localhost and all connected workspace clients refresh immediately
+                await snapshots.PublishAsync("workspace", ct);
             }
 
             foreach (var key in toPublish)

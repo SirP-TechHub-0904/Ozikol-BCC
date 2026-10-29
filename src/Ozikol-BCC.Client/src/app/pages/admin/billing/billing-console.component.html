@@ -26,6 +26,16 @@
     </div>
 
     <div class="header-actions">
+      <span
+        class="badge-pill-md"
+        [class.badge-available]="isRealtimeConnected"
+        [class.badge-optional]="!isRealtimeConnected"
+        title="Real-time WebSocket connection to Master Feature Catalog (/hubs/notifications)"
+      >
+        <span class="dot" [class.bg-green]="isRealtimeConnected" [class.bg-amber]="!isRealtimeConnected"></span>
+        <span>{{ isRealtimeConnected ? 'Live WebSocket Sync' : 'Connecting Socket...' }}</span>
+      </span>
+
       <button
         type="button"
         class="btn btn-outline"

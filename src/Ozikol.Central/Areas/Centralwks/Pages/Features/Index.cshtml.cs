@@ -204,13 +204,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             if (!string.IsNullOrWhiteSpace(Status))
             {
                 var statusNorm = Status.Trim().ToLowerInvariant();
-                if (statusNorm == "active")
+                if (statusNorm == "active" || statusNorm == "published")
                 {
                     filtered = filtered.Where(f => f.IsActive && !f.IsInBeta);
                 }
-                else if (statusNorm == "inactive")
+                else if (statusNorm == "inactive" || statusNorm == "unpublished")
                 {
                     filtered = filtered.Where(f => !f.IsActive && !f.IsInBeta);
+                }
+                else if (statusNorm == "available")
+                {
+                    filtered = filtered.Where(f => f.IsAvailableForUse);
+                }
+                else if (statusNorm == "coming_soon")
+                {
+                    filtered = filtered.Where(f => !f.IsAvailableForUse);
                 }
                 else if (statusNorm == "maintenance" || statusNorm == "beta")
                 {
@@ -287,17 +295,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             {
                 UserId = User.Identity?.Name,
                 UserName = User.Identity?.Name,
-                Action = feature.IsActive ? "Activate" : "Deactivate",
+                Action = feature.IsActive ? "Publish" : "Unpublish",
                 EntityType = "Feature",
                 EntityId = feature.Id.ToString(),
-                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) was {(feature.IsActive ? "activated" : "deactivated")}",
+                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) was {(feature.IsActive ? "published" : "unpublished")}",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"Feature status updated to {(feature.IsActive ? "Active" : "Inactive")}.";
+            TempData["Success"] = $"'{feature.Name}' is now {(feature.IsActive ? "Published (visible to tenants)" : "Unpublished (hidden from tenants)")}.";
 
             return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
         }
