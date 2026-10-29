@@ -41,15 +41,15 @@
     </div>
 </div>
 
-@* ── 3 Tenant Policy Switches Banner: Pricing Mode, Availability Mode & Tenant Default Currency ── *@
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 16px; margin-bottom: 20px;">
+@* ── 2 Tenant Policy Switches Banner (50% / 50%): Pricing Mode & Availability Mode ── *@
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; margin-bottom: 20px;">
     @* Switch 1: Pricing Policy (General vs Custom Pricing) *@
-    <div class="admin-card" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#e2e8f0"); background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.03)" : "#ffffff");">
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
+    <div class="admin-card" style="padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1.5px solid @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#e2e8f0"); background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.03)" : "#ffffff");">
+        <div style="display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1;">
             <div style="width: 40px; height: 40px; border-radius: 10px; background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.12)" : "#f1f5f9"); color: @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#475569"); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <span class="material-symbols-outlined" style="font-size: 22px;">payments</span>
             </div>
-            <div>
+            <div style="min-width: 0; flex: 1;">
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Pricing Policy</span>
                     @if (Model.Tenant.UseCustomPricing)
@@ -78,7 +78,7 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
             <input type="hidden" name="tab" value="@Model.ActiveTab" />
-            <button type="submit" class="btn-admin @(Model.Tenant.UseCustomPricing ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm">
+            <button type="submit" class="btn-admin @(Model.Tenant.UseCustomPricing ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm" style="white-space: nowrap;">
                 <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomPricing ? "toggle_off" : "tune")</span>
                 <span>@(Model.Tenant.UseCustomPricing ? "Disable Custom Pricing" : "Enable Custom Pricing")</span>
             </button>
@@ -86,12 +86,12 @@
     </div>
 
     @* Switch 2: Availability Policy (General vs Custom Availability) *@
-    <div class="admin-card" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid @(Model.Tenant.UseCustomAvailability ? "#059669" : "#e2e8f0"); background: @(Model.Tenant.UseCustomAvailability ? "rgba(16, 185, 129, 0.03)" : "#ffffff");">
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
+    <div class="admin-card" style="padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1.5px solid @(Model.Tenant.UseCustomAvailability ? "#059669" : "#e2e8f0"); background: @(Model.Tenant.UseCustomAvailability ? "rgba(16, 185, 129, 0.03)" : "#ffffff");">
+        <div style="display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1;">
             <div style="width: 40px; height: 40px; border-radius: 10px; background: @(Model.Tenant.UseCustomAvailability ? "rgba(16, 185, 129, 0.14)" : "#f1f5f9"); color: @(Model.Tenant.UseCustomAvailability ? "#059669" : "#475569"); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                 <span class="material-symbols-outlined" style="font-size: 22px;">verified</span>
             </div>
-            <div>
+            <div style="min-width: 0; flex: 1;">
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Availability Policy</span>
                     @if (Model.Tenant.UseCustomAvailability)
@@ -119,51 +119,10 @@
         <form method="post" asp-page-handler="ToggleAvailabilityPolicy" style="margin: 0; flex-shrink: 0;">
             @Html.AntiForgeryToken()
             <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
-            <button type="submit" class="btn-admin @(Model.Tenant.UseCustomAvailability ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm">
+            <button type="submit" class="btn-admin @(Model.Tenant.UseCustomAvailability ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm" style="white-space: nowrap;">
                 <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomAvailability ? "toggle_off" : "tune")</span>
                 <span>@(Model.Tenant.UseCustomAvailability ? "Disable Custom Availability" : "Enable Custom Availability")</span>
             </button>
-        </form>
-    </div>
-
-    @* Switch 3: Tenant Default Currency *@
-    <div class="admin-card" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid #cbd5e1; background: #ffffff;">
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(14, 165, 233, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <span class="material-symbols-outlined" style="font-size: 22px;">currency_exchange</span>
-            </div>
-            <div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Running Currency</span>
-                    <span class="badge" style="background: rgba(14, 165, 233, 0.14); color: #0284c7; font-size: 10.5px; font-weight: 800;">
-                        @Model.TenantCurrencyCode (@Model.TenantCurrencySymbol)
-                    </span>
-                </div>
-                <div style="font-size: 12px; color: #64748b; margin-top: 3px;">
-                    @if (Model.TenantCurrencyCode == "USD")
-                    {
-                        <span>Using base USD ($1.00) pricing. <a href="/centralwks/currencies" style="color: #0050e5; font-weight: 600; text-decoration: none;">Manage rates →</a></span>
-                    }
-                    else
-                    {
-                        <span>Rate: <strong>$1.00 USD = @Model.TenantCurrencySymbol@Model.TenantCurrencyRateFromUsd.ToString("N2") @Model.TenantCurrencyCode</strong> • <a href="/centralwks/currencies" style="color: #0050e5; font-weight: 600; text-decoration: none;">Rates →</a></span>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <form method="post" asp-page-handler="SetTenantCurrency" style="margin: 0; display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
-            <input type="hidden" name="tab" value="@Model.ActiveTab" />
-            <select name="currencyCode" class="form-select" style="height: 34px; padding: 4px 10px; font-size: 12.5px; font-weight: 700; min-width: 115px;" onchange="this.form.submit()">
-                @foreach (var curr in Model.AvailableCurrencies)
-                {
-                    <option value="@curr.CurrencyCode" selected="@(string.Equals(curr.CurrencyCode, Model.TenantCurrencyCode, StringComparison.OrdinalIgnoreCase))">
-                        @curr.CurrencyCode (@curr.CurrencySymbol)
-                    </option>
-                }
-            </select>
         </form>
     </div>
 </div>
@@ -267,6 +226,46 @@
             </div>
         </div>
     </div>
+</div>
+
+@* ── Tenant Running Currency Bar (Full-Width Bar Like Search Area) ── *@
+<div class="admin-card" style="padding: 12px 18px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div style="width: 36px; height: 36px; border-radius: 9px; background: rgba(14, 165, 233, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <span class="material-symbols-outlined" style="font-size: 20px;">currency_exchange</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Running Currency:</span>
+            <span class="badge" style="background: rgba(14, 165, 233, 0.14); color: #0284c7; font-size: 11px; font-weight: 800;">
+                ● Selected: @Model.TenantCurrencyCode (@Model.TenantCurrencySymbol) is Active
+            </span>
+            <span style="font-size: 12px; color: #64748b;">
+                @if (Model.TenantCurrencyCode == "USD")
+                {
+                    <span>Using base USD ($1.00) pricing • <a href="/centralwks/currencies" style="color: #0050e5; font-weight: 600; text-decoration: none;">Manage currency rates →</a></span>
+                }
+                else
+                {
+                    <span>Exchange Rate: <strong>$1.00 USD = @Model.TenantCurrencySymbol@Model.TenantCurrencyRateFromUsd.ToString("N2") @Model.TenantCurrencyCode</strong> • <a href="/centralwks/currencies" style="color: #0050e5; font-weight: 600; text-decoration: none;">Manage currency rates →</a></span>
+                }
+            </span>
+        </div>
+    </div>
+
+    <form method="post" asp-page-handler="SetTenantCurrency" style="margin: 0; display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+        <input type="hidden" name="tab" value="@Model.ActiveTab" />
+        <label style="font-size: 12px; font-weight: 700; color: #475569; margin: 0;">Switch Currency:</label>
+        <select name="currencyCode" class="form-select" style="height: 36px; padding: 4px 12px; font-size: 13px; font-weight: 700; min-width: 150px;" onchange="this.form.submit()">
+            @foreach (var curr in Model.AvailableCurrencies)
+            {
+                <option value="@curr.CurrencyCode" selected="@(string.Equals(curr.CurrencyCode, Model.TenantCurrencyCode, StringComparison.OrdinalIgnoreCase))">
+                    @curr.CurrencyCode (@curr.CurrencySymbol) — @curr.DisplayName
+                </option>
+            }
+        </select>
+    </form>
 </div>
 
 @* ── Toolbar Card (Tabs Bar ONLY shown when UseCustomAvailability is true) ── *@
