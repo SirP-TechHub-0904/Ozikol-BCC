@@ -1133,25 +1133,6 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">manage_accounts</span><span>{{ 'adm.login_access_history' | translate:'Login & Access History' }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">devices</span><span>{{ 'adm.active_sessions_remote_kill' | translate:'Active Sessions & Remote Kill' }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <div class="nav-item">
-            <a routerLink="/identity/console/policies" [class.active]="isCurrentRoute('/identity/console/policies')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">password</span>
-                <span>{{ 'nav.global_policies' | translate }}</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/policies')" (click)="togglePin('Global Policies', '/identity/console/policies', 'password')" [title]="isPinned('/identity/console/policies') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/identity/console/policies') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
         </ng-container>
 
         <!-- ============================================== -->
