@@ -323,20 +323,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     ? f.IsAvailableForUse
                     : DefaultAvailableCodes.Contains(f.FeatureCode);
 
-                // Determine whether capability is Active or Not Active for this specific tenant
-                bool isActiveForTenant;
-                if (sub != null)
-                {
-                    bool notExpired = sub.ExpiresAtUtc > now;
-                    bool notSuspended = !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
-                                        !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase);
-                    isActiveForTenant = sub.IsActive && notSuspended && (f.IsCompulsory || notExpired);
-                }
-                else
-                {
-                    isActiveForTenant = f.IsCompulsory;
-                }
-
                 // Determine effective Monthly Price for this tenant
                 bool hasCustomPriceOverride = sub?.CustomPriceOverride != null;
                 decimal effectiveMonthlyPrice = (tenant.UseCustomPricing && hasCustomPriceOverride)
@@ -365,6 +351,24 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 else
                 {
                     effectiveAvailableForUse = generalAvailable;
+                }
+
+                // Determine whether capability is Active (Installed) or Not Active for this specific tenant
+                bool isActiveForTenant;
+                if (!effectiveAvailableForUse)
+                {
+                    isActiveForTenant = false;
+                }
+                else if (sub != null)
+                {
+                    bool notExpired = sub.ExpiresAtUtc > now;
+                    bool notSuspended = !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                                        !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase);
+                    isActiveForTenant = sub.IsActive && notSuspended && (f.IsCompulsory || notExpired);
+                }
+                else
+                {
+                    isActiveForTenant = false;
                 }
 
                 bool isPaidSubscribed = isActiveForTenant && (!f.IsCompulsory || effectiveMonthlyPrice > 0);
@@ -667,7 +671,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             }
             else
             {
-                nowActive = !feature.IsCompulsory;
+                nowActive = true;
                 var newSub = new MasterTenantFeatureSubscription
                 {
                     Id = Guid.NewGuid(),
@@ -676,11 +680,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     DurationType = duration,
                     RecurringPrice = feature.MonthlyPrice,
                     StartsAtUtc = DateTime.UtcNow,
-                    ExpiresAtUtc = DateTime.UtcNow.AddMonths(1),
+                    ExpiresAtUtc = DateTime.UtcNow.AddYears(1),
                     AutoRenew = true,
                     IsActive = nowActive,
-                    Status = nowActive ? "Active" : "Suspended",
-                    IsAvailableForUseOverride = nowActive ? true : null,
+                    Status = "Active",
+                    IsAvailableForUseOverride = true,
                     CreatedUtc = DateTime.UtcNow
                 };
                 _dbContext.MasterTenantFeatureSubscriptions.Add(newSub);

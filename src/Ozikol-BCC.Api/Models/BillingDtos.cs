@@ -44,6 +44,12 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>True when the feature is currently under beta/maintenance.</summary>
         public bool IsInBeta { get; set; }
 
+        /// <summary>True when a custom price override is set for this tenant in Central.</summary>
+        public bool HasCustomPriceOverride { get; set; }
+
+        /// <summary>True when a custom availability override is set for this tenant in Central.</summary>
+        public bool HasCustomAvailabilityOverride { get; set; }
+
         /// <summary>Canonical sort order within the catalog.</summary>
         public int SortOrder { get; set; }
 
@@ -105,6 +111,12 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>Exchange rate multiplier from 1.00 USD base to <see cref="CurrencyCode"/>.</summary>
         public decimal ExchangeRateFromUsd { get; set; } = 1.0m;
 
+        /// <summary>True when Central has enabled Custom Tenant Pricing for this workspace.</summary>
+        public bool UseCustomPricing { get; set; }
+
+        /// <summary>True when Central has enabled Custom Tenant Availability for this workspace.</summary>
+        public bool UseCustomAvailability { get; set; }
+
         /// <summary>Server clock (UTC) when the snapshot was generated, so clients can correct countdown drift.</summary>
         public DateTime ServerTimeUtc { get; set; } = DateTime.UtcNow;
 
@@ -158,6 +170,22 @@ namespace Ozikol_BCC.Api.Models
 
         /// <summary>Billing cadence: Monthly, Quarterly, or Yearly.</summary>
         [Required]
+        public string Cadence { get; set; } = "Monthly";
+    }
+
+    /// <summary>Request to install/activate or deactivate/uninstall a capability in the tenant workspace.</summary>
+    public class ToggleFeatureActiveRequest
+    {
+        /// <summary>Master feature catalog identifier (optional if FeatureCode is supplied).</summary>
+        public Guid? FeatureId { get; set; }
+
+        /// <summary>Canonical feature code (e.g. "bcp-community-messenger").</summary>
+        public string? FeatureCode { get; set; }
+
+        /// <summary>Optional explicit target state (true = install/activate, false = deactivate/uninstall; null = toggle).</summary>
+        public bool? SetActive { get; set; }
+
+        /// <summary>Billing cadence when activating: Monthly, Quarterly, or Yearly.</summary>
         public string Cadence { get; set; } = "Monthly";
     }
 

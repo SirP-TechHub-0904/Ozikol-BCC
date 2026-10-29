@@ -18,6 +18,8 @@ export interface BillingFeatureItem {
   isActive: boolean;
   isAvailableForUse: boolean;
   isInBeta?: boolean;
+  hasCustomPriceOverride?: boolean;
+  hasCustomAvailabilityOverride?: boolean;
   sortOrder?: number;
   billingType?: string;
   autoRenew: boolean;
@@ -53,6 +55,8 @@ export interface BillingFeaturesSnapshot {
   currencyCode?: string;
   currencySymbol?: string;
   exchangeRateFromUsd?: number;
+  useCustomPricing?: boolean;
+  useCustomAvailability?: boolean;
   serverTimeUtc: string;
   included: BillingFeatureItem[];
   subscribed: BillingFeatureItem[];
@@ -153,6 +157,23 @@ export class BillingService {
   subscribeFeature(featureId: string, cadence: 'Monthly' | 'Quarterly' | 'Yearly'): Observable<ApiResponse<SubscribeFeatureResult>> {
     return this.api.post<ApiResponse<SubscribeFeatureResult>>('billing/features/subscribe', {
       featureId,
+      cadence
+    });
+  }
+
+  /**
+   * Installs/activates or deactivates/uninstalls a capability for the workspace and syncs with Central.
+   */
+  toggleFeatureActive(
+    featureId: string,
+    featureCode: string,
+    setActive?: boolean,
+    cadence: 'Monthly' | 'Quarterly' | 'Yearly' = 'Monthly'
+  ): Observable<ApiResponse<BillingFeaturesSnapshot>> {
+    return this.api.post<ApiResponse<BillingFeaturesSnapshot>>('billing/features/toggle-active', {
+      featureId,
+      featureCode,
+      setActive,
       cadence
     });
   }

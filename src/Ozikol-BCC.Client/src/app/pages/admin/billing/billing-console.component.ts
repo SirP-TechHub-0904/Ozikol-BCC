@@ -8,7 +8,10 @@ import { environment } from '../../../../environments/environment';
 import {
   BillingService,
   BillingFeaturesSnapshot,
-  BillingFeatureItem
+  BillingFeatureItem,
+  BillingInvoice,
+  PaymentCard,
+  BillingContactProfile
 } from './services/billing.service';
 import { ToastService } from '../../../core/services/toast.service';
 
@@ -21,10 +24,14 @@ export interface SuiteFeatureGroup {
   comingSoonCount: number;
 }
 
+export type BillingPageSection = 'features' | 'paymentmethod' | 'subscriptions';
+
 /**
- * Subscription Plans & Master Capability Directory Console (Suite 13 - Page 1).
- * Displays all platform capabilities from MasterCatalogDbContext grouped by the 10 canonical suites,
- * showing Available for Use vs. Coming Soon posture, tier classification, and subscription rates.
+ * Billing, Features, Payment Methods & Subscriptions Console (Suite 13).
+ * Supports:
+ * - /billing/features (with Simple Tab and Detailed Tab, one-click Install/Activate synced with Central)
+ * - /billing/paymentmethod (Saved Payment Cards & Corporate Billing Contact Profile)
+ * - /billing/subscriptions (Active Installed Capabilities & Invoices Ledger)
  */
 @Component({
   selector: 'app-billing-console',
@@ -50,17 +57,51 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     'Life Events & Publications'
   ];
 
-  isLoading = false;
+  activePage: BillingPageSection = 'features';
+  featuresTab: 'simple' | 'detailed' = 'simple';
   viewMode: 'cards' | 'table' = 'cards';
+
+  isLoading = false;
+  togglingFeatureCode: string | null = null;
 
   // Filter & Search controls
   searchQuery = '';
   selectedSuite = '';
   availabilityFilter: 'all' | 'available' | 'coming_soon' = 'all';
+  statusFilter: 'all' | 'active' | 'not_active' | 'coming_soon' = 'all';
   tierFilter: 'all' | 'compulsory' | 'optional' = 'all';
 
   // Snapshot data from MasterCatalogDbContext via /api/billing/features
   snapshot: BillingFeaturesSnapshot = this.buildDefaultSnapshot();
+
+  // Payment Methods & Billing Contact State (/billing/paymentmethod)
+  paymentCards: PaymentCard[] = [];
+  billingContact: BillingContactProfile = {
+    companyName: 'Organization Workspace',
+    billingEmail: 'billing@company.com',
+    taxId: '',
+    addressLine1: '',
+    city: '',
+    stateProvince: '',
+    country: '',
+    postalCode: ''
+  };
+  showAddCardModal = false;
+  cardForm = {
+    holderName: '',
+    cardNumber: '',
+    expMonth: 12,
+    expYear: 2028,
+    cvc: '',
+    brand: 'Visa' as 'Visa' | 'Mastercard' | 'Amex' | string,
+    isDefault: true
+  };
+
+  // Subscriptions & Invoices State (/billing/subscriptions)
+  invoices: BillingInvoice[] = [];
+  invoiceStatusFilter: 'all' | 'pending' | 'completed' = 'all';
+  selectedInvoice: BillingInvoice | null = null;
+  showInvoiceModal = false;
 
   // Feature Details Modal
   selectedFeatureDetail: (BillingFeatureItem & { serialNo?: number; suiteLetter?: string }) | null = null;
@@ -83,7 +124,14 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.resolveActivePageFromRoute();
+    this.routeSub = this.route.data.subscribe(data => {
+      this.resolveActivePageFromRoute(data?.['tab']);
+    });
+
+    this.loadPaymentMethods();
     this.loadSnapshot();
+    this.loadInvoices();
     this.startRealtimeSocket();
   }
 
@@ -98,8 +146,32 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Resolves which Billing section is active based on the URL or route data.
+   */
+  private resolveActivePageFromRoute(tabData?: string): void {
+    const url = (this.router.url || '').toLowerCase();
+    if (tabData === 'paymentmethod' || tabData === 'payment_methods' || url.includes('/billing/payment')) {
+      this.activePage = 'paymentmethod';
+    } else if (tabData === 'subscriptions' || tabData === 'invoices' || url.includes('/billing/subscriptions') || url.includes('/billing/invoices')) {
+      this.activePage = 'subscriptions';
+    } else {
+      this.activePage = 'features';
+    }
+  }
+
+  /**
+   * Broadcasts the latest feature snapshot to the global window so AdminLayoutComponent
+   * immediately updates the sidebar navigation menu without a page reload.
+   */
+  private broadcastSnapshotToSidebar(snap: BillingFeaturesSnapshot): void {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tenant_features_updated', { detail: snap }));
+    }
+  }
+
+  /**
    * Establishes a real-time SignalR WebSocket connection to /hubs/notifications
-   * so any capability toggled in Master (/centralwks/features) updates the UI automatically.
+   * so any capability or policy toggled in Central (/centralwks/tenants/features) updates the UI and menu automatically.
    */
   private startRealtimeSocket(): void {
     const apiOrigin = environment.apiUrl.startsWith('http')
@@ -125,6 +197,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       this.ngZone.run(() => {
         if (incoming) {
           this.snapshot = incoming;
+          this.broadcastSnapshotToSidebar(incoming);
           if (this.selectedFeatureDetail) {
             const refreshed = this.allOrderedFeatures.find(
               f => f.featureCode === this.selectedFeatureDetail?.featureCode
@@ -136,8 +209,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
             }
           }
           this.toastService.info(
-            'Master Catalog Synchronized',
-            'Published capabilities and availability updated in real time.'
+            'Central Catalog Synchronized',
+            'Capabilities, availability, and menu items updated in real time.'
           );
         }
       });
@@ -179,13 +252,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       next: res => {
         this.isLoading = false;
         if (res && res.success && res.data) {
-          const totalLoaded =
-            (res.data.included?.length || 0) +
-            (res.data.subscribed?.length || 0) +
-            (res.data.available?.length || 0);
-          if (totalLoaded > 0) {
-            this.snapshot = res.data;
-          }
+          this.snapshot = res.data;
+          this.broadcastSnapshotToSidebar(res.data);
         }
       },
       error: err => {
@@ -193,6 +261,182 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         console.warn('Using resilient Master Feature Catalog snapshot:', err);
       }
     });
+  }
+
+  /**
+   * Installs/activates or deactivates a capability for this tenant workspace.
+   * Immediately updates Central MasterCatalogDbContext and refreshes the sidebar menu.
+   */
+  toggleFeatureInstall(feat: BillingFeatureItem, targetActive?: boolean): void {
+    if (!feat.isAvailableForUse && targetActive !== false) {
+      this.toastService.warning(
+        'Coming Soon',
+        `'${feat.name}' is Coming Soon and not yet available for installation.`
+      );
+      return;
+    }
+
+    const desiredState = targetActive !== undefined ? targetActive : !feat.isActive;
+    this.togglingFeatureCode = feat.featureCode;
+
+    this.billingService.toggleFeatureActive(feat.featureId, feat.featureCode, desiredState).subscribe({
+      next: res => {
+        this.togglingFeatureCode = null;
+        if (res && res.success && res.data) {
+          this.snapshot = res.data;
+          this.broadcastSnapshotToSidebar(res.data);
+          if (this.selectedFeatureDetail && this.selectedFeatureDetail.featureCode === feat.featureCode) {
+            const updated = this.allOrderedFeatures.find(x => x.featureCode === feat.featureCode);
+            if (updated) this.selectedFeatureDetail = updated;
+          }
+          if (desiredState) {
+            this.toastService.success(
+              'Capability Installed & Activated',
+              `'${feat.name}' is now Active and visible in your sidebar menu.`
+            );
+          } else {
+            this.toastService.info(
+              'Capability Deactivated',
+              `'${feat.name}' has been deactivated and removed from your sidebar menu.`
+            );
+          }
+        } else {
+          this.toastService.error('Update Failed', res?.message || 'Could not update capability status.');
+        }
+      },
+      error: err => {
+        this.togglingFeatureCode = null;
+        const msg = err?.error?.message || 'Could not synchronize capability activation with Central.';
+        this.toastService.error('Update Failed', msg);
+      }
+    });
+  }
+
+  /**
+   * Toggles auto-renewal for a subscribed capability on /billing/subscriptions.
+   */
+  toggleAutoRenew(feat: BillingFeatureItem): void {
+    if (!feat.subscriptionId) return;
+    this.billingService.toggleAutoRenew(feat.subscriptionId).subscribe({
+      next: res => {
+        if (res && res.success) {
+          feat.autoRenew = res.data;
+          this.toastService.success(
+            'Auto-Renew Updated',
+            `Auto-renew for '${feat.name}' is now ${feat.autoRenew ? 'Enabled' : 'Disabled'}.`
+          );
+        }
+      },
+      error: () => {
+        this.toastService.error('Error', 'Failed to update auto-renew preference.');
+      }
+    });
+  }
+
+  // ── Payment Methods & Billing Contact Actions (/billing/paymentmethod) ──
+  loadPaymentMethods(): void {
+    this.paymentCards = this.billingService.getPaymentCards();
+    this.billingContact = this.billingService.getBillingContact();
+  }
+
+  openAddCardModal(): void {
+    this.cardForm = {
+      holderName: '',
+      cardNumber: '',
+      expMonth: 12,
+      expYear: 2028,
+      cvc: '',
+      brand: 'Visa',
+      isDefault: this.paymentCards.length === 0
+    };
+    this.showAddCardModal = true;
+  }
+
+  closeAddCardModal(): void {
+    this.showAddCardModal = false;
+  }
+
+  saveNewCard(): void {
+    const cleanDigits = (this.cardForm.cardNumber || '').replace(/\D/g, '');
+    if (!this.cardForm.holderName.trim() || cleanDigits.length < 4) {
+      this.toastService.warning('Validation', 'Please enter cardholder title and valid card digits.');
+      return;
+    }
+    const last4 = cleanDigits.slice(-4);
+    this.billingService.addPaymentCard({
+      brand: this.cardForm.brand || 'Visa',
+      last4,
+      expMonth: Number(this.cardForm.expMonth) || 12,
+      expYear: Number(this.cardForm.expYear) || 2028,
+      holderName: this.cardForm.holderName.trim(),
+      isDefault: this.cardForm.isDefault
+    });
+    this.paymentCards = this.billingService.getPaymentCards();
+    this.showAddCardModal = false;
+    this.toastService.success('Card Linked', `Card ending in ${last4} has been saved.`);
+  }
+
+  setDefaultCard(cardId: string): void {
+    this.billingService.setDefaultCard(cardId);
+    this.paymentCards = this.billingService.getPaymentCards();
+    this.toastService.success('Default Updated', 'Primary settlement card updated.');
+  }
+
+  deleteCard(card: PaymentCard): void {
+    this.billingService.deletePaymentCard(card.id);
+    this.paymentCards = this.billingService.getPaymentCards();
+    this.toastService.info('Card Removed', `Card ending in ${card.last4} removed.`);
+  }
+
+  saveContactProfile(): void {
+    this.billingService.saveBillingContact(this.billingContact);
+    this.toastService.success('Billing Profile Saved', 'Organization billing contact details updated.');
+  }
+
+  // ── Invoices & Subscriptions Ledger Actions (/billing/subscriptions) ──
+  loadInvoices(): void {
+    this.billingService.getInvoices().subscribe({
+      next: res => {
+        if (res && res.success && Array.isArray(res.data)) {
+          this.invoices = res.data;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  get activeInstalledFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
+    return this.allOrderedFeatures.filter(f => f.isActive);
+  }
+
+  get filteredInvoices(): BillingInvoice[] {
+    if (this.invoiceStatusFilter === 'pending') {
+      return this.invoices.filter(i => i.status?.toLowerCase() === 'pending');
+    }
+    if (this.invoiceStatusFilter === 'completed') {
+      return this.invoices.filter(i => i.status?.toLowerCase() !== 'pending');
+    }
+    return this.invoices;
+  }
+
+  get pendingInvoicesCount(): number {
+    return this.invoices.filter(i => i.status?.toLowerCase() === 'pending').length;
+  }
+
+  get pendingInvoicedAmount(): number {
+    return this.invoices
+      .filter(i => i.status?.toLowerCase() === 'pending')
+      .reduce((acc, item) => acc + (item.amount || 0), 0);
+  }
+
+  openInvoiceDetail(inv: BillingInvoice): void {
+    this.selectedInvoice = inv;
+    this.showInvoiceModal = true;
+  }
+
+  closeInvoiceDetail(): void {
+    this.showInvoiceModal = false;
+    this.selectedInvoice = null;
   }
 
   /**
@@ -219,7 +463,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * All capabilities combined and ordered in canonical Master sequence with running serial numbers.
+   * All capabilities allowed by Central for this tenant combined and ordered in canonical Master sequence.
+   * When Central has UseCustomAvailability enabled, only capabilities marked Available for this tenant are returned.
    */
   get allOrderedFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
     const combined: BillingFeatureItem[] = [
@@ -228,7 +473,12 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       ...(this.snapshot.available || [])
     ];
 
-    const sorted = combined.sort((a, b) => {
+    // Enforce Central Custom Availability policy: if UseCustomAvailability is true, only show features allowed by Central
+    const allowed = this.snapshot.useCustomAvailability
+      ? combined.filter(f => f.isAvailableForUse)
+      : combined;
+
+    const sorted = allowed.sort((a, b) => {
       const suiteDiff = this.getSuiteOrder(a.category) - this.getSuiteOrder(b.category);
       if (suiteDiff !== 0) return suiteDiff;
       const orderDiff = (a.sortOrder ?? 999) - (b.sortOrder ?? 999);
@@ -266,7 +516,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Filtered capabilities based on search keyword, suite, availability, and tier class.
+   * Filtered capabilities based on search keyword, suite, availability, active status, and tier class.
    */
   get filteredFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
     const term = this.searchQuery.trim().toLowerCase();
@@ -283,6 +533,16 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       }
 
       if (this.selectedSuite && f.category?.toLowerCase() !== this.selectedSuite.toLowerCase()) {
+        return false;
+      }
+
+      if (this.statusFilter === 'active' && !f.isActive) {
+        return false;
+      }
+      if (this.statusFilter === 'not_active' && (f.isActive || !f.isAvailableForUse)) {
+        return false;
+      }
+      if (this.statusFilter === 'coming_soon' && f.isAvailableForUse) {
         return false;
       }
 
@@ -361,6 +621,10 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     return this.allOrderedFeatures.length;
   }
 
+  get activeCapabilitiesCount(): number {
+    return this.allOrderedFeatures.filter(f => f.isActive).length;
+  }
+
   get availableForUseCount(): number {
     return this.allOrderedFeatures.filter(f => f.isAvailableForUse).length;
   }
@@ -378,6 +642,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       this.searchQuery.trim().length > 0 ||
       this.selectedSuite !== '' ||
       this.availabilityFilter !== 'all' ||
+      this.statusFilter !== 'all' ||
       this.tierFilter !== 'all'
     );
   }
@@ -385,10 +650,6 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   // ── UI Filter & Modal Actions ──
   filterByAvailability(filter: 'all' | 'available' | 'coming_soon'): void {
     this.availabilityFilter = this.availabilityFilter === filter ? 'all' : filter;
-  }
-
-  selectAvailabilityTab(tab: 'all' | 'available' | 'coming_soon'): void {
-    this.availabilityFilter = tab;
   }
 
   filterByTier(tier: 'all' | 'compulsory' | 'optional'): void {
@@ -399,6 +660,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     this.searchQuery = '';
     this.selectedSuite = '';
     this.availabilityFilter = 'all';
+    this.statusFilter = 'all';
     this.tierFilter = 'all';
   }
 
@@ -500,17 +762,17 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       description: r.description,
       icon: r.icon || 'extension',
       isCompulsory: true,
-      isSubscribed: true,
-      isActive: true,
+      isSubscribed: false,
+      isActive: false,
       isAvailableForUse: !!r.isAvailableForUse,
       sortOrder: r.sortOrder || i + 1,
       billingType: 'FlatSubscription',
       autoRenew: true,
       billingCadence: 'Included',
-      status: 'Included',
+      status: r.isAvailableForUse ? 'Available' : 'ComingSoon',
       monthlyPrice: 0,
       quarterlyPrice: 0,
-      yearlyPrice: 0.74,
+      yearlyPrice: 0,
       effectivePrice: 0,
       severity: 'None'
     }));
@@ -518,9 +780,9 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     return {
       tenantKey: 'workspace',
       serverTimeUtc: new Date().toISOString(),
-      included: items,
+      included: [],
       subscribed: [],
-      available: [],
+      available: items,
       notices: [],
       totalRecurringMonthly: 0
     };

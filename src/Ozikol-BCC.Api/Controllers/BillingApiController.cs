@@ -44,13 +44,14 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Resolves the current tenant key from the tenant provider, the X-Tenant-Key header, or the host subdomain.
+        /// Resolves the current tenant key from the tenant provider, JWT claims, X-Tenant-Key header, or Origin/Referer/Host subdomain.
         /// </summary>
         /// <returns>Lower-cased tenant key, or null when it cannot be determined.</returns>
         private string? ResolveTenantKey()
         {
             var candidate = _tenantProvider?.CurrentTenant;
-            if (!string.IsNullOrWhiteSpace(candidate)) return candidate.Trim().ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(candidate) && !candidate.Equals("default", StringComparison.OrdinalIgnoreCase))
+                return candidate.Trim().ToLowerInvariant();
 
             var claim = User.FindFirst("tenant_key")?.Value ?? User.FindFirst("tenant")?.Value;
             if (!string.IsNullOrWhiteSpace(claim)) return claim.Trim().ToLowerInvariant();
@@ -58,10 +59,30 @@ namespace Ozikol_BCC.Api.Controllers
             var header = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
             if (!string.IsNullOrWhiteSpace(header)) return header.ToLowerInvariant();
 
-            var parts = HttpContext.Request.Host.Host.ToLowerInvariant().Split('.');
-            if (parts.Length > 1 && !new[] { "localhost", "127", "www", "api", "central", "admin" }.Contains(parts[0]))
-                return parts[0];
-            return null;
+            string? TryExtractSubdomain(string? rawHostOrUrl)
+            {
+                if (string.IsNullOrWhiteSpace(rawHostOrUrl)) return null;
+                var clean = rawHostOrUrl.Trim().ToLowerInvariant()
+                    .Replace("https://", "")
+                    .Replace("http://", "")
+                    .Split('/')[0]
+                    .Split(':')[0];
+                var parts = clean.Split('.');
+                if (parts.Length > 1 && !new[] { "localhost", "127", "www", "api", "central", "admin" }.Contains(parts[0]))
+                    return parts[0];
+                return null;
+            }
+
+            var fromDomainHeader = TryExtractSubdomain(HttpContext.Request.Headers["X-Tenant-Domain"].ToString());
+            if (!string.IsNullOrWhiteSpace(fromDomainHeader)) return fromDomainHeader;
+
+            var fromOrigin = TryExtractSubdomain(HttpContext.Request.Headers["Origin"].ToString());
+            if (!string.IsNullOrWhiteSpace(fromOrigin)) return fromOrigin;
+
+            var fromReferer = TryExtractSubdomain(HttpContext.Request.Headers["Referer"].ToString());
+            if (!string.IsNullOrWhiteSpace(fromReferer)) return fromReferer;
+
+            return TryExtractSubdomain(HttpContext.Request.Host.Host);
         }
 
         /// <summary>
@@ -78,6 +99,149 @@ namespace Ozikol_BCC.Api.Controllers
             if (snapshot == null) return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));
 
             return Ok(ApiResponse<BillingFeaturesSnapshotDto>.SuccessResponse(snapshot, "Billing features retrieved."));
+        }
+
+        /// <summary>
+        /// Installs/activates or deactivates/uninstalls a modular capability for the current tenant workspace.
+        /// Synchronizes immediately with Central MasterCatalogDbContext and broadcasts BillingUpdated over SignalR.
+        /// </summary>
+        /// <param name="request">Feature identifier/code and desired active state.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        [HttpPost("features/toggle-active")]
+        [ProducesResponseType(typeof(ApiResponse<BillingFeaturesSnapshotDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+        public async Task<IActionResult> ToggleFeatureActive([FromBody] ToggleFeatureActiveRequest request, CancellationToken cancellationToken)
+        {
+            var key = ResolveTenantKey();
+            if (string.IsNullOrWhiteSpace(key))
+                return BadRequest(ApiResponse<object>.FailureResponse("Workspace could not be determined."));
+
+            var tenant = await _master.MasterTenantCatalogs
+                .Include(t => t.FeatureSubscriptions)
+                .FirstOrDefaultAsync(t =>
+                    t.TenantKey.ToLower() == key ||
+                    (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                    (t.CustomDomain != null && t.CustomDomain.ToLower() == key),
+                    cancellationToken);
+
+            if (tenant == null)
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found in Central Catalog."));
+
+            MasterFeatureCatalog? feature = null;
+            if (request.FeatureId.HasValue && request.FeatureId.Value != Guid.Empty)
+            {
+                feature = await _master.MasterFeatureCatalogs
+                    .FirstOrDefaultAsync(f => f.Id == request.FeatureId.Value && f.IsActive, cancellationToken);
+            }
+            if (feature == null && !string.IsNullOrWhiteSpace(request.FeatureCode))
+            {
+                var cleanCode = request.FeatureCode.Trim().ToLowerInvariant();
+                feature = await _master.MasterFeatureCatalogs
+                    .FirstOrDefaultAsync(f => f.FeatureCode.ToLower() == cleanCode && f.IsActive, cancellationToken);
+            }
+
+            if (feature == null)
+                return BadRequest(ApiResponse<object>.FailureResponse("Capability was not found in the Master Catalog."));
+
+            var existing = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feature.Id);
+
+            // Check whether this feature is available for use for this tenant (respecting Central Custom Availability)
+            bool anyMasterAvail = await _master.MasterFeatureCatalogs.AnyAsync(f => f.IsActive && f.IsAvailableForUse, cancellationToken);
+            var defaultAvailCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "bcp-community-messenger", "bcp-committees", "bcp-alumni-directory",
+                "bcp-form-builder", "bcp-store-ecommerce", "bcp-ai-smart-assist", "bcp-mass-communication"
+            };
+            bool masterAvail = anyMasterAvail ? feature.IsAvailableForUse : defaultAvailCodes.Contains(feature.FeatureCode);
+            bool effectiveAvail = tenant.UseCustomAvailability
+                ? (existing?.IsAvailableForUseOverride ?? ((existing?.CustomPriceOverride != null || (existing != null && existing.IsActive && !feature.IsCompulsory)) ? true : masterAvail))
+                : masterAvail;
+
+            bool currentlyActive = existing != null
+                && existing.IsActive
+                && !string.Equals(existing.Status, "Suspended", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(existing.Status, "Cancelled", StringComparison.OrdinalIgnoreCase);
+
+            bool targetActive = request.SetActive ?? !currentlyActive;
+
+            if (targetActive && !effectiveAvail)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse($"'{feature.Name}' is Coming Soon and not yet available for installation."));
+            }
+
+            if (!Enum.TryParse<SubscriptionBillingDuration>(request.Cadence, true, out var cadence))
+            {
+                cadence = SubscriptionBillingDuration.Monthly;
+            }
+
+            var now = DateTime.UtcNow;
+            decimal effectiveUsdPrice = (tenant.UseCustomPricing && existing?.CustomPriceOverride != null)
+                ? existing.CustomPriceOverride.Value
+                : feature.MonthlyPrice;
+
+            if (existing != null)
+            {
+                existing.IsActive = targetActive;
+                existing.Status = targetActive ? "Active" : "Suspended";
+                if (targetActive)
+                {
+                    if (existing.ExpiresAtUtc <= now)
+                    {
+                        existing.ExpiresAtUtc = cadence switch
+                        {
+                            SubscriptionBillingDuration.Yearly => now.AddYears(1),
+                            SubscriptionBillingDuration.Quarterly => now.AddMonths(3),
+                            _ => now.AddYears(1)
+                        };
+                    }
+                    if (tenant.UseCustomAvailability)
+                    {
+                        existing.IsAvailableForUseOverride = true;
+                    }
+                }
+            }
+            else
+            {
+                var newSub = new MasterTenantFeatureSubscription
+                {
+                    Id = Guid.NewGuid(),
+                    MasterTenantCatalogId = tenant.Id,
+                    MasterFeatureCatalogId = feature.Id,
+                    DurationType = cadence,
+                    RecurringPrice = effectiveUsdPrice,
+                    StartsAtUtc = now,
+                    ExpiresAtUtc = now.AddYears(1),
+                    AutoRenew = true,
+                    IsActive = targetActive,
+                    Status = targetActive ? "Active" : "Suspended",
+                    IsAvailableForUseOverride = tenant.UseCustomAvailability && targetActive ? true : null,
+                    CreatedUtc = now
+                };
+                _master.MasterTenantFeatureSubscriptions.Add(newSub);
+            }
+
+            _master.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name ?? tenant.AdminEmail,
+                UserName = User.Identity?.Name ?? tenant.AdminEmail,
+                Action = targetActive ? "TenantInstallFeature" : "TenantDeactivateFeature",
+                EntityType = "FeatureSubscription",
+                EntityId = feature.Id.ToString(),
+                Summary = $"Tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) {(targetActive ? "installed & activated" : "deactivated")} '{feature.Name}' ({feature.FeatureCode})",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = now
+            });
+
+            await _master.SaveChangesAsync(cancellationToken);
+            await _snapshots.PublishAsync(tenant.TenantKey, cancellationToken);
+
+            var updatedSnapshot = await _snapshots.BuildAsync(tenant.TenantKey, cancellationToken);
+            return Ok(ApiResponse<BillingFeaturesSnapshotDto>.SuccessResponse(
+                updatedSnapshot!,
+                targetActive
+                    ? $"'{feature.Name}' has been installed and activated. It is now available in your workspace menu."
+                    : $"'{feature.Name}' has been deactivated and removed from your workspace menu."));
         }
 
         /// <summary>

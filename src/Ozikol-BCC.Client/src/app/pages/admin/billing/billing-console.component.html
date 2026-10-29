@@ -1,337 +1,210 @@
 <div class="billing-page-container">
-  <!-- ── Top Material Design Page Header (Matching CMS & Identity Consoles) ── -->
-  <div class="page-header">
-    <div class="header-titles">
-      <div class="breadcrumb">
-        <a routerLink="/dashboard/console">Command Center</a>
-        <span class="sep">/</span>
-        <span>Suite 13: Billing &amp; Subscriptions</span>
-        <span class="sep">/</span>
-        <span class="current">Subscription Plans &amp; Capabilities</span>
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ── PAGE 1: /billing/features (Capabilities Directory: Simple & Detailed) ─ -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  @if (activePage === 'features') {
+    <!-- Top Material Design Page Header -->
+    <div class="page-header">
+      <div class="header-titles">
+        <div class="breadcrumb">
+          <a routerLink="/dashboard/console">Command Center</a>
+          <span class="sep">/</span>
+          <span>Billing &amp; Subscriptions</span>
+          <span class="sep">/</span>
+          <span class="current">Workspace Features &amp; Capabilities</span>
+        </div>
+        <div class="title-row">
+          <h1>Workspace Features &amp; Capabilities</h1>
+          <button
+            type="button"
+            class="info-trigger-btn"
+            (click)="openInfoModal()"
+            title="About Workspace Features & Capabilities"
+          >
+            <span class="material-symbols-outlined">info</span>
+          </button>
+        </div>
+        <p class="subtitle">
+          Install and activate modular capabilities for your workspace. Installed capabilities appear immediately in your sidebar navigation menu and synchronize in real time with Central.
+        </p>
       </div>
-      <div class="title-row">
-        <h1>Subscription Plans &amp; Master Capabilities</h1>
+
+      <div class="header-actions">
+        <span
+          class="badge-pill-md badge-compulsory"
+          title="Workspace Billing Currency Determined from Central"
+        >
+          <span class="material-symbols-outlined">payments</span>
+          <span>{{ currencyCode }} ({{ currencySymbol }})</span>
+        </span>
+
+        <span
+          class="badge-pill-md"
+          [class.badge-available]="isRealtimeConnected"
+          [class.badge-optional]="!isRealtimeConnected"
+          title="Real-time WebSocket connection to Central Master Catalog (/hubs/notifications)"
+        >
+          <span class="dot" [class.bg-green]="isRealtimeConnected" [class.bg-amber]="!isRealtimeConnected"></span>
+          <span>{{ isRealtimeConnected ? 'Live Central Sync' : 'Connecting Socket...' }}</span>
+        </span>
+
         <button
           type="button"
-          class="info-trigger-btn"
-          (click)="openInfoModal()"
-          title="About Subscription Plans & Master Capabilities"
+          class="btn btn-outline"
+          (click)="loadSnapshot()"
+          [disabled]="isLoading"
         >
-          <span class="material-symbols-outlined">info</span>
+          <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+          <span>{{ isLoading ? 'Synchronizing...' : 'Sync Catalog' }}</span>
         </button>
       </div>
-      <p class="subtitle">
-        Complete directory of all modular Business Command Center capabilities from the Master Catalog, organized by canonical suite with real-time availability and pricing posture.
-      </p>
     </div>
 
-    <div class="header-actions">
-      <span
-        class="badge-pill-md badge-compulsory"
-        title="Workspace Billing Currency Determined from Central"
-      >
-        <span class="material-symbols-outlined">payments</span>
-        <span>{{ currencyCode }} ({{ currencySymbol }})</span>
-      </span>
+    <!-- ── Primary 2-Tab Switcher: Simple View vs Detailed View ── -->
+    <div class="features-mode-tabs-bar">
+      <div class="features-mode-tabs-left">
+        <button
+          type="button"
+          class="mode-tab-btn"
+          [class.active]="featuresTab === 'simple'"
+          (click)="featuresTab = 'simple'"
+        >
+          <span class="material-symbols-outlined">checklist</span>
+          <span>Simple View</span>
+          <span class="mode-tab-count">{{ activeCapabilitiesCount }} Active / {{ totalCapabilitiesCount }}</span>
+        </button>
 
-      <span
-        class="badge-pill-md"
-        [class.badge-available]="isRealtimeConnected"
-        [class.badge-optional]="!isRealtimeConnected"
-        title="Real-time WebSocket connection to Master Feature Catalog (/hubs/notifications)"
-      >
-        <span class="dot" [class.bg-green]="isRealtimeConnected" [class.bg-amber]="!isRealtimeConnected"></span>
-        <span>{{ isRealtimeConnected ? 'Live WebSocket Sync' : 'Connecting Socket...' }}</span>
-      </span>
-
-      <button
-        type="button"
-        class="btn btn-outline"
-        (click)="loadSnapshot()"
-        [disabled]="isLoading"
-      >
-        <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
-        <span>{{ isLoading ? 'Synchronizing...' : 'Sync Master Catalog' }}</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- ── 5 Comprehensive Smart KPI Cards Row ── -->
-  <div class="metrics-grid">
-    <!-- Card 1: Canonical Suites -->
-    <div
-      class="metric-card clickable"
-      (click)="resetFilters()"
-      role="button"
-      tabindex="0"
-      title="Click to show all 10 canonical suites"
-    >
-      <div class="card-top">
-        <div class="card-icon bg-blue">
-          <span class="material-symbols-outlined">category</span>
-        </div>
-        <span class="card-chip chip-blue">Suite A – Suite J</span>
+        <button
+          type="button"
+          class="mode-tab-btn"
+          [class.active]="featuresTab === 'detailed'"
+          (click)="featuresTab = 'detailed'"
+        >
+          <span class="material-symbols-outlined">dashboard_customize</span>
+          <span>Detailed View</span>
+          <span class="mode-tab-count">{{ totalSuitesCount }} Suites</span>
+        </button>
       </div>
-      <div class="card-value">{{ totalSuitesCount }}</div>
-      <div class="card-label">Canonical Platform Suites</div>
-      <div class="card-breakdown">
-        <div class="breakdown-row">
-          <span class="text-blue"><span class="dot bg-blue"></span> <strong>100%</strong> Master Sequence</span>
-        </div>
-      </div>
-    </div>
 
-    <!-- Card 2: Total Capabilities -->
-    <div
-      class="metric-card clickable"
-      [class.active-card]="availabilityFilter === 'all' && tierFilter === 'all' && selectedSuite === ''"
-      (click)="resetFilters()"
-      role="button"
-      tabindex="0"
-      title="Show all capabilities"
-    >
-      <div class="card-top">
-        <div class="card-icon bg-purple">
-          <span class="material-symbols-outlined">extension</span>
-        </div>
-        <span class="card-chip chip-purple">Master Catalog</span>
-      </div>
-      <div class="card-value">{{ totalCapabilitiesCount }}</div>
-      <div class="card-label">Total Modular Capabilities</div>
-      <div class="card-breakdown">
-        <div class="breakdown-row">
-          <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ compulsoryCount }}</strong> Compulsory Core</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 3: Available for Use -->
-    <div
-      class="metric-card clickable"
-      [class.active-card]="availabilityFilter === 'available'"
-      (click)="filterByAvailability('available')"
-      role="button"
-      tabindex="0"
-      title="Click to filter capabilities that are Available for Use"
-    >
-      <div class="card-top">
-        <div class="card-icon bg-green">
-          <span class="material-symbols-outlined">verified</span>
-        </div>
-        <span class="card-chip chip-green">Ready Now</span>
-      </div>
-      <div class="card-value text-green">{{ availableForUseCount }}</div>
-      <div class="card-label">Available for Use</div>
-      <div class="card-breakdown">
-        <div class="breakdown-row">
-          <span class="text-green"><span class="dot bg-green"></span> Live &amp; Active in Workspace</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 4: Coming Soon -->
-    <div
-      class="metric-card clickable"
-      [class.active-card]="availabilityFilter === 'coming_soon'"
-      (click)="filterByAvailability('coming_soon')"
-      role="button"
-      tabindex="0"
-      title="Click to filter capabilities marked Coming Soon"
-    >
-      <div class="card-top">
-        <div class="card-icon bg-amber">
-          <span class="material-symbols-outlined">schedule</span>
-        </div>
-        <span class="card-chip chip-amber">In Rollout</span>
-      </div>
-      <div class="card-value text-amber">{{ comingSoonCount }}</div>
-      <div class="card-label">Coming Soon</div>
-      <div class="card-breakdown">
-        <div class="breakdown-row">
-          <span class="text-amber"><span class="dot bg-amber"></span> Scheduled Platform Release</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 5: Sovereign Baseline Plan -->
-    <div
-      class="metric-card clickable"
-      [class.active-card]="tierFilter === 'compulsory'"
-      (click)="filterByTier('compulsory')"
-      role="button"
-      tabindex="0"
-      title="Click to filter Compulsory Baseline Core (Included Free) capabilities"
-    >
-      <div class="card-top">
-        <div class="card-icon bg-teal">
-          <span class="material-symbols-outlined">workspace_premium</span>
-        </div>
-        <span class="card-chip chip-teal">{{ currencyCode }} ({{ currencySymbol }})</span>
-      </div>
-      <div class="card-value">{{ formatAmount(snapshot.totalRecurringMonthly) }}<span class="unit-sm">/mo</span></div>
-      <div class="card-label">Active Recurring Spend</div>
-      <div class="card-breakdown">
-        <div class="breakdown-row">
-          <span class="text-green"><span class="dot bg-green"></span> <strong>{{ compulsoryCount }}</strong> Baseline Core Included Free</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Search, Suite Filter & View Switcher Toolbar Card ── -->
-  <div class="toolbar-card">
-    <div class="toolbar-row">
-      <div class="toolbar-filters">
-        <!-- Search Box -->
-        <div class="search-box">
-          <span class="material-symbols-outlined search-icon">search</span>
-          <input
-            type="text"
-            [(ngModel)]="searchQuery"
-            class="search-input"
-            placeholder="Search by name, code..."
-            autocomplete="off"
-          />
-          @if (searchQuery) {
-            <button type="button" class="clear-search-btn" (click)="searchQuery = ''" title="Clear search">
-              <span class="material-symbols-outlined">close</span>
-            </button>
-          }
-        </div>
-
-        <!-- Suite Selector -->
-        <select [(ngModel)]="selectedSuite" class="filter-select select-suite">
-          <option value="" [textContent]="'All Suites (' + canonicalSuiteOptions.length + ')'"></option>
-          @for (s of canonicalSuiteOptions; track s.name) {
-            <option [value]="s.name" [textContent]="'Suite ' + s.letter + ': ' + s.name + ' (' + s.count + ')'"></option>
-          }
-        </select>
-
-        <!-- Availability Selector -->
-        <select [(ngModel)]="availabilityFilter" class="filter-select select-availability">
-          <option value="all" [textContent]="'All Availability (' + totalCapabilitiesCount + ')'"></option>
-          <option value="available" [textContent]="'Available for Use (' + availableForUseCount + ')'"></option>
-          <option value="coming_soon" [textContent]="'Coming Soon (' + comingSoonCount + ')'"></option>
-        </select>
-
-        <!-- Tier Selector -->
-        <select [(ngModel)]="tierFilter" class="filter-select select-tier">
-          <option value="all">All Tier Classes</option>
-          <option value="compulsory">Compulsory Core</option>
-          <option value="optional">Optional Add-on</option>
-        </select>
-
-        @if (hasActiveFilters) {
-          <button type="button" class="btn btn-outline btn-reset" (click)="resetFilters()">
-            <span class="material-symbols-outlined">filter_alt_off</span>
-            <span>Reset</span>
-          </button>
+      <div class="features-mode-tabs-right">
+        @if (snapshot.useCustomAvailability) {
+          <span class="badge-pill-md badge-available" title="Central Custom Availability policy is active for this workspace">
+            <span class="material-symbols-outlined">verified</span>
+            <span>Custom Workspace Catalog ({{ totalCapabilitiesCount }} Assigned by Central)</span>
+          </span>
+        }
+        @if (snapshot.useCustomPricing) {
+          <span class="badge-pill-md badge-compulsory" title="Central Custom Pricing policy is active for this workspace">
+            <span class="material-symbols-outlined">sell</span>
+            <span>Custom Workspace Pricing</span>
+          </span>
         }
       </div>
-
-      <div class="toolbar-right">
-        <div class="counter-pill">
-          <span class="material-symbols-outlined">format_list_bulleted</span>
-          <span>Showing <strong>{{ filteredFeatures.length }}</strong> of <strong>{{ totalCapabilitiesCount }}</strong> capabilities</span>
-        </div>
-
-        <!-- View Mode Switcher: Cards vs Table -->
-        <div class="view-mode-toggle">
-          <button
-            type="button"
-            class="btn-view-toggle"
-            [class.active]="viewMode === 'cards'"
-            (click)="viewMode = 'cards'"
-            title="Suite Cards View (Matching Master)"
-          >
-            <span class="material-symbols-outlined">grid_view</span>
-            <span>Cards</span>
-          </button>
-          <button
-            type="button"
-            class="btn-view-toggle"
-            [class.active]="viewMode === 'table'"
-            (click)="viewMode = 'table'"
-            title="Compact Data Table View"
-          >
-            <span class="material-symbols-outlined">table_rows</span>
-            <span>Table</span>
-          </button>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <!-- ══════════════════════════════════════════════════════════════════════════ -->
-  <!-- ── VIEW MODE A: SUITE CARDS VIEW (Matching Master /centralwks/features) ── -->
-  <!-- ══════════════════════════════════════════════════════════════════════════ -->
-  @if (viewMode === 'cards') {
-    @if (groupedSuites.length > 0) {
-      <div class="suites-container">
-        @for (group of groupedSuites; track group.suiteName) {
-          <section class="suite-group-section">
-            <!-- Suite Header Bar -->
-            <div class="suite-header-bar">
-              <div class="suite-header-left">
-                <span class="suite-letter-badge">Suite {{ group.suiteLetter }}</span>
-                <h2 class="suite-title-text">{{ group.suiteName }}</h2>
-              </div>
-
-              <div class="suite-header-right">
-                @if (group.availableCount > 0) {
-                  <span class="suite-meta-pill pill-available">
-                    <span class="material-symbols-outlined">verified</span>
-                    <span>{{ group.availableCount }} Available for Use</span>
-                  </span>
-                }
-                @if (group.comingSoonCount > 0) {
-                  <span class="suite-meta-pill pill-soon">
-                    <span class="material-symbols-outlined">schedule</span>
-                    <span>{{ group.comingSoonCount }} Coming Soon</span>
-                  </span>
-                }
-                <span class="suite-meta-pill pill-total">
-                  <span class="material-symbols-outlined">layers</span>
-                  <span>{{ group.features.length }} Capabilities</span>
-                </span>
-              </div>
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <!-- ── TAB 1: SIMPLE VIEW (S/N, Feature Title, Suite, Status, Install) ───── -->
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    @if (featuresTab === 'simple') {
+      <div class="toolbar-card" style="margin-bottom: 16px;">
+        <div class="toolbar-row">
+          <div class="toolbar-filters">
+            <div class="search-box">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input
+                type="text"
+                [(ngModel)]="searchQuery"
+                class="search-input"
+                placeholder="Search feature title or suite..."
+                autocomplete="off"
+              />
+              @if (searchQuery) {
+                <button type="button" class="clear-search-btn" (click)="searchQuery = ''" title="Clear search">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              }
             </div>
 
-            <!-- Responsive 3-Column Feature Cards Grid -->
-            <div class="suite-feature-grid">
-              @for (feat of group.features; track feat.featureCode) {
-                <div
-                  class="feature-card"
-                  [class.card-available]="feat.isAvailableForUse"
-                  [class.card-coming-soon]="!feat.isAvailableForUse"
-                >
-                  <div>
-                    <!-- Top Row: Icon + Serial # + Title + Code -->
-                    <div class="feature-card-top">
-                      <div class="feature-icon-box" [class.icon-available]="feat.isAvailableForUse">
-                        <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
-                      </div>
+            <select [(ngModel)]="selectedSuite" class="filter-select select-suite">
+              <option value="" [textContent]="'All Suites (' + canonicalSuiteOptions.length + ')'"></option>
+              @for (s of canonicalSuiteOptions; track s.name) {
+                <option [value]="s.name" [textContent]="'Suite ' + s.letter + ': ' + s.name + ' (' + s.count + ')'"></option>
+              }
+            </select>
 
-                      <div class="feature-title-block">
-                        <div class="title-line">
-                          <span class="serial-badge">#{{ feat.serialNo }}</span>
-                          <h3 class="feature-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</h3>
+            <select [(ngModel)]="statusFilter" class="filter-select select-availability">
+              <option value="all" [textContent]="'All Status (' + totalCapabilitiesCount + ')'"></option>
+              <option value="active" [textContent]="'Active / Installed (' + activeCapabilitiesCount + ')'"></option>
+              <option value="not_active" [textContent]="'Available to Install (' + (availableForUseCount - activeCapabilitiesCount) + ')'"></option>
+              @if (!snapshot.useCustomAvailability && comingSoonCount > 0) {
+                <option value="coming_soon" [textContent]="'Coming Soon (' + comingSoonCount + ')'"></option>
+              }
+            </select>
+
+            @if (hasActiveFilters) {
+              <button type="button" class="btn btn-outline btn-reset" (click)="resetFilters()">
+                <span class="material-symbols-outlined">filter_alt_off</span>
+                <span>Reset</span>
+              </button>
+            }
+          </div>
+
+          <div class="toolbar-right">
+            <div class="counter-pill">
+              <span class="material-symbols-outlined">check_circle</span>
+              <span><strong>{{ activeCapabilitiesCount }}</strong> Active in Menu &bull; Showing <strong>{{ filteredFeatures.length }}</strong> of <strong>{{ totalCapabilitiesCount }}</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        @if (filteredFeatures.length > 0) {
+          <div class="table-responsive">
+            <table class="bcp-table">
+              <thead>
+                <tr>
+                  <th style="width: 68px;">S/N</th>
+                  <th>FEATURE</th>
+                  <th>SUITE</th>
+                  <th>STATUS</th>
+                  <th style="text-align: right; width: 220px;">ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (feat of filteredFeatures; track feat.featureCode) {
+                  <tr [class.row-coming-soon]="!feat.isAvailableForUse">
+                    <td>
+                      <span class="sn-pill">{{ feat.serialNo }}</span>
+                    </td>
+                    <td>
+                      <div class="table-feat-cell">
+                        <div class="table-feat-icon" [class.icon-available]="feat.isActive || feat.isAvailableForUse">
+                          <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
                         </div>
-                        <code class="feature-code-pill">{{ feat.featureCode }}</code>
+                        <div>
+                          <div class="table-feat-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</div>
+                          @if (feat.monthlyPrice > 0) {
+                            <span style="font-size: 11.5px; color: #0050e5; font-weight: 700;">{{ formatAmount(feat.monthlyPrice) }}/mo</span>
+                          }
+                        </div>
                       </div>
-                    </div>
-
-                    <!-- Description -->
-                    <p class="feature-desc">
-                      {{ feat.description || 'Core sovereign capability for enterprise workspace operations.' }}
-                    </p>
-
-                    <!-- Meta Badges Row: Available for Use vs Coming Soon + Compulsory Core + Billing Model -->
-                    <div class="feature-badges-row">
-                      @if (feat.isAvailableForUse) {
+                    </td>
+                    <td>
+                      <span class="suite-table-label">
+                        <strong>Suite {{ feat.suiteLetter }}:</strong> {{ feat.category }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (feat.isActive) {
                         <span class="badge-pill-md badge-available">
-                          <span class="material-symbols-outlined">verified</span>
-                          <span>Available for Use</span>
+                          <span class="material-symbols-outlined">check_circle</span>
+                          <span>Active</span>
+                        </span>
+                      } @else if (feat.isAvailableForUse) {
+                        <span class="badge-pill-md badge-optional">
+                          <span class="material-symbols-outlined">radio_button_unchecked</span>
+                          <span>Not Active</span>
                         </span>
                       } @else {
                         <span class="badge-pill-md badge-coming-soon">
@@ -339,101 +212,718 @@
                           <span>Coming Soon</span>
                         </span>
                       }
-
-                      @if (feat.isCompulsory) {
-                        <span class="badge-pill-md badge-compulsory">
-                          <span class="material-symbols-outlined">lock</span>
-                          <span>Compulsory Core</span>
-                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                      @if (feat.isActive) {
+                        <button
+                          type="button"
+                          class="btn btn-outline btn-sm-action"
+                          [disabled]="togglingFeatureCode === feat.featureCode"
+                          (click)="toggleFeatureInstall(feat, false)"
+                          title="Deactivate and remove from sidebar menu"
+                        >
+                          <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode">
+                            {{ togglingFeatureCode === feat.featureCode ? 'sync' : 'toggle_off' }}
+                          </span>
+                          <span>{{ togglingFeatureCode === feat.featureCode ? 'Updating...' : 'Deactivate' }}</span>
+                        </button>
+                      } @else if (feat.isAvailableForUse) {
+                        <button
+                          type="button"
+                          class="btn btn-primary btn-sm-action"
+                          [disabled]="togglingFeatureCode === feat.featureCode"
+                          (click)="toggleFeatureInstall(feat, true)"
+                          title="Install and make active in sidebar menu"
+                        >
+                          <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode">
+                            {{ togglingFeatureCode === feat.featureCode ? 'sync' : 'download_done' }}
+                          </span>
+                          <span>{{ togglingFeatureCode === feat.featureCode ? 'Installing...' : 'Install & Activate' }}</span>
+                        </button>
                       } @else {
-                        <span class="badge-pill-md badge-optional">
-                          <span>Optional Add-on</span>
+                        <span class="badge-pill-md badge-coming-soon" style="opacity: 0.75;">
+                          <span class="material-symbols-outlined">lock_clock</span>
+                          <span>Coming Soon</span>
                         </span>
                       }
-
-                      <span class="badge-pill-md badge-billing">
-                        {{ feat.billingType === 'PayAsYouGo' ? 'Pay As You Go' : 'Flat Subscription' }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <!-- Bottom Card Footer -->
-                  <div class="feature-card-footer">
-                    <div class="price-tag">
-                      @if (feat.monthlyPrice > 0) {
-                        <span class="price-paid">{{ formatAmount(feat.monthlyPrice) }}/mo</span>
-                      } @else {
-                        <span class="price-included">
-                          <span class="material-symbols-outlined">check_circle</span>
-                          <span>Included Free</span>
-                        </span>
-                      }
-                    </div>
-
-                    <div class="card-actions">
-                      <button
-                        type="button"
-                        class="btn-details"
-                        (click)="openFeatureDetail(feat)"
-                        title="Inspect Capability Specification"
-                      >
-                        <span class="material-symbols-outlined">visibility</span>
-                        <span>Details</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
-          </section>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="empty-catalog-card">
+            <span class="material-symbols-outlined empty-icon">search_off</span>
+            <h3>No Matching Features Found</h3>
+            <p>No capabilities match your current search or filter criteria.</p>
+            <button type="button" class="btn btn-primary" (click)="resetFilters()">Reset Filters</button>
+          </div>
         }
       </div>
-    } @else {
-      <div class="empty-catalog-card">
-        <span class="material-symbols-outlined empty-icon">search_off</span>
-        <h3>No Matching Capabilities Found</h3>
-        <p>No platform capabilities match your current search or filter criteria.</p>
-        <button type="button" class="btn btn-primary" (click)="resetFilters()">
-          <span class="material-symbols-outlined">refresh</span>
-          <span>Reset All Filters</span>
-        </button>
+    }
+
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <!-- ── TAB 2: DETAILED VIEW (5 KPI Cards + Suite Cards + Full Table) ──────── -->
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    @if (featuresTab === 'detailed') {
+      <!-- 5 Comprehensive Smart KPI Cards Row -->
+      <div class="metrics-grid">
+        <!-- Card 1: Canonical Suites -->
+        <div
+          class="metric-card clickable"
+          (click)="resetFilters()"
+          role="button"
+          tabindex="0"
+          title="Click to show all suites"
+        >
+          <div class="card-top">
+            <div class="card-icon bg-blue">
+              <span class="material-symbols-outlined">category</span>
+            </div>
+            <span class="card-chip chip-blue">Suite A – Suite J</span>
+          </div>
+          <div class="card-value">{{ totalSuitesCount }}</div>
+          <div class="card-label">Canonical Platform Suites</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ activeCapabilitiesCount }}</strong> Installed &amp; Active</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Total Capabilities -->
+        <div
+          class="metric-card clickable"
+          [class.active-card]="availabilityFilter === 'all' && tierFilter === 'all' && selectedSuite === ''"
+          (click)="resetFilters()"
+          role="button"
+          tabindex="0"
+          title="Show all capabilities"
+        >
+          <div class="card-top">
+            <div class="card-icon bg-purple">
+              <span class="material-symbols-outlined">extension</span>
+            </div>
+            <span class="card-chip chip-purple">{{ snapshot.useCustomAvailability ? 'Custom Catalog' : 'Master Catalog' }}</span>
+          </div>
+          <div class="card-value">{{ totalCapabilitiesCount }}</div>
+          <div class="card-label">Total Modular Capabilities</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ compulsoryCount }}</strong> Compulsory Core</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Available for Use -->
+        <div
+          class="metric-card clickable"
+          [class.active-card]="availabilityFilter === 'available'"
+          (click)="filterByAvailability('available')"
+          role="button"
+          tabindex="0"
+          title="Click to filter capabilities that are Available for Use"
+        >
+          <div class="card-top">
+            <div class="card-icon bg-green">
+              <span class="material-symbols-outlined">verified</span>
+            </div>
+            <span class="card-chip chip-green">Ready Now</span>
+          </div>
+          <div class="card-value text-green">{{ availableForUseCount }}</div>
+          <div class="card-label">Available for Use</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ activeCapabilitiesCount }}</strong> Active in Menu</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Coming Soon -->
+        <div
+          class="metric-card clickable"
+          [class.active-card]="availabilityFilter === 'coming_soon'"
+          (click)="filterByAvailability('coming_soon')"
+          role="button"
+          tabindex="0"
+          title="Click to filter capabilities marked Coming Soon"
+        >
+          <div class="card-top">
+            <div class="card-icon bg-amber">
+              <span class="material-symbols-outlined">schedule</span>
+            </div>
+            <span class="card-chip chip-amber">In Rollout</span>
+          </div>
+          <div class="card-value text-amber">{{ comingSoonCount }}</div>
+          <div class="card-label">Coming Soon</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-amber"><span class="dot bg-amber"></span> Scheduled Platform Release</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 5: Active Recurring Spend -->
+        <div
+          class="metric-card clickable"
+          [class.active-card]="tierFilter === 'compulsory'"
+          (click)="filterByTier('compulsory')"
+          role="button"
+          tabindex="0"
+          title="Click to filter Compulsory Baseline Core capabilities"
+        >
+          <div class="card-top">
+            <div class="card-icon bg-teal">
+              <span class="material-symbols-outlined">workspace_premium</span>
+            </div>
+            <span class="card-chip chip-teal">{{ currencyCode }} ({{ currencySymbol }})</span>
+          </div>
+          <div class="card-value">{{ formatAmount(snapshot.totalRecurringMonthly) }}<span class="unit-sm">/mo</span></div>
+          <div class="card-label">Active Recurring Spend</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ compulsoryCount }}</strong> Baseline Core Included Free</span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- Search, Suite Filter & View Switcher Toolbar Card -->
+      <div class="toolbar-card">
+        <div class="toolbar-row">
+          <div class="toolbar-filters">
+            <div class="search-box">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input
+                type="text"
+                [(ngModel)]="searchQuery"
+                class="search-input"
+                placeholder="Search by name, code..."
+                autocomplete="off"
+              />
+              @if (searchQuery) {
+                <button type="button" class="clear-search-btn" (click)="searchQuery = ''" title="Clear search">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              }
+            </div>
+
+            <select [(ngModel)]="selectedSuite" class="filter-select select-suite">
+              <option value="" [textContent]="'All Suites (' + canonicalSuiteOptions.length + ')'"></option>
+              @for (s of canonicalSuiteOptions; track s.name) {
+                <option [value]="s.name" [textContent]="'Suite ' + s.letter + ': ' + s.name + ' (' + s.count + ')'"></option>
+              }
+            </select>
+
+            <select [(ngModel)]="availabilityFilter" class="filter-select select-availability">
+              <option value="all" [textContent]="'All Availability (' + totalCapabilitiesCount + ')'"></option>
+              <option value="available" [textContent]="'Available for Use (' + availableForUseCount + ')'"></option>
+              @if (!snapshot.useCustomAvailability) {
+                <option value="coming_soon" [textContent]="'Coming Soon (' + comingSoonCount + ')'"></option>
+              }
+            </select>
+
+            <select [(ngModel)]="tierFilter" class="filter-select select-tier">
+              <option value="all">All Tier Classes</option>
+              <option value="compulsory">Compulsory Core</option>
+              <option value="optional">Optional Add-on</option>
+            </select>
+
+            @if (hasActiveFilters) {
+              <button type="button" class="btn btn-outline btn-reset" (click)="resetFilters()">
+                <span class="material-symbols-outlined">filter_alt_off</span>
+                <span>Reset</span>
+              </button>
+            }
+          </div>
+
+          <div class="toolbar-right">
+            <div class="counter-pill">
+              <span class="material-symbols-outlined">format_list_bulleted</span>
+              <span>Showing <strong>{{ filteredFeatures.length }}</strong> of <strong>{{ totalCapabilitiesCount }}</strong> capabilities</span>
+            </div>
+
+            <div class="view-mode-toggle">
+              <button
+                type="button"
+                class="btn-view-toggle"
+                [class.active]="viewMode === 'cards'"
+                (click)="viewMode = 'cards'"
+                title="Suite Cards View"
+              >
+                <span class="material-symbols-outlined">grid_view</span>
+                <span>Cards</span>
+              </button>
+              <button
+                type="button"
+                class="btn-view-toggle"
+                [class.active]="viewMode === 'table'"
+                (click)="viewMode = 'table'"
+                title="Compact Data Table View"
+              >
+                <span class="material-symbols-outlined">table_rows</span>
+                <span>Table</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW MODE A: SUITE CARDS VIEW -->
+      @if (viewMode === 'cards') {
+        @if (groupedSuites.length > 0) {
+          <div class="suites-container">
+            @for (group of groupedSuites; track group.suiteName) {
+              <section class="suite-group-section">
+                <div class="suite-header-bar">
+                  <div class="suite-header-left">
+                    <span class="suite-letter-badge">Suite {{ group.suiteLetter }}</span>
+                    <h2 class="suite-title-text">{{ group.suiteName }}</h2>
+                  </div>
+
+                  <div class="suite-header-right">
+                    @if (group.availableCount > 0) {
+                      <span class="suite-meta-pill pill-available">
+                        <span class="material-symbols-outlined">verified</span>
+                        <span>{{ group.availableCount }} Available for Use</span>
+                      </span>
+                    }
+                    @if (group.comingSoonCount > 0) {
+                      <span class="suite-meta-pill pill-soon">
+                        <span class="material-symbols-outlined">schedule</span>
+                        <span>{{ group.comingSoonCount }} Coming Soon</span>
+                      </span>
+                    }
+                    <span class="suite-meta-pill pill-total">
+                      <span class="material-symbols-outlined">layers</span>
+                      <span>{{ group.features.length }} Capabilities</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="suite-feature-grid">
+                  @for (feat of group.features; track feat.featureCode) {
+                    <div
+                      class="feature-card"
+                      [class.card-available]="feat.isAvailableForUse"
+                      [class.card-coming-soon]="!feat.isAvailableForUse"
+                    >
+                      <div>
+                        <div class="feature-card-top">
+                          <div class="feature-icon-box" [class.icon-available]="feat.isAvailableForUse">
+                            <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
+                          </div>
+
+                          <div class="feature-title-block">
+                            <div class="title-line">
+                              <span class="serial-badge">#{{ feat.serialNo }}</span>
+                              <h3 class="feature-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</h3>
+                            </div>
+                            <code class="feature-code-pill">{{ feat.featureCode }}</code>
+                          </div>
+                        </div>
+
+                        <p class="feature-desc">
+                          {{ feat.description || 'Core sovereign capability for enterprise workspace operations.' }}
+                        </p>
+
+                        <div class="feature-badges-row">
+                          @if (feat.isActive) {
+                            <span class="badge-pill-md badge-available">
+                              <span class="material-symbols-outlined">check_circle</span>
+                              <span>Active in Menu</span>
+                            </span>
+                          } @else if (feat.isAvailableForUse) {
+                            <span class="badge-pill-md badge-optional">
+                              <span class="material-symbols-outlined">verified</span>
+                              <span>Available for Use</span>
+                            </span>
+                          } @else {
+                            <span class="badge-pill-md badge-coming-soon">
+                              <span class="material-symbols-outlined">schedule</span>
+                              <span>Coming Soon</span>
+                            </span>
+                          }
+
+                          @if (feat.isCompulsory) {
+                            <span class="badge-pill-md badge-compulsory">
+                              <span class="material-symbols-outlined">lock</span>
+                              <span>Compulsory Core</span>
+                            </span>
+                          } @else {
+                            <span class="badge-pill-md badge-optional">
+                              <span>Optional Add-on</span>
+                            </span>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="feature-card-footer">
+                        <div class="price-tag">
+                          @if (feat.monthlyPrice > 0) {
+                            <span class="price-paid">{{ formatAmount(feat.monthlyPrice) }}/mo</span>
+                          } @else {
+                            <span class="price-included">
+                              <span class="material-symbols-outlined">check_circle</span>
+                              <span>Included Free</span>
+                            </span>
+                          }
+                        </div>
+
+                        <div class="card-actions" style="display: flex; align-items: center; gap: 6px;">
+                          @if (feat.isActive) {
+                            <button
+                              type="button"
+                              class="btn btn-outline btn-sm-action"
+                              [disabled]="togglingFeatureCode === feat.featureCode"
+                              (click)="toggleFeatureInstall(feat, false)"
+                            >
+                              <span class="material-symbols-outlined">toggle_off</span>
+                              <span>Deactivate</span>
+                            </button>
+                          } @else if (feat.isAvailableForUse) {
+                            <button
+                              type="button"
+                              class="btn btn-primary btn-sm-action"
+                              [disabled]="togglingFeatureCode === feat.featureCode"
+                              (click)="toggleFeatureInstall(feat, true)"
+                            >
+                              <span class="material-symbols-outlined">download_done</span>
+                              <span>Install</span>
+                            </button>
+                          }
+                          <button
+                            type="button"
+                            class="btn-details"
+                            (click)="openFeatureDetail(feat)"
+                            title="Inspect Capability Specification"
+                          >
+                            <span class="material-symbols-outlined">visibility</span>
+                            <span>Details</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </section>
+            }
+          </div>
+        } @else {
+          <div class="empty-catalog-card">
+            <span class="material-symbols-outlined empty-icon">search_off</span>
+            <h3>No Matching Capabilities Found</h3>
+            <p>No platform capabilities match your current search or filter criteria.</p>
+            <button type="button" class="btn btn-primary" (click)="resetFilters()">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>Reset All Filters</span>
+            </button>
+          </div>
+        }
+      }
+
+      <!-- VIEW MODE B: DETAILED TABLE VIEW -->
+      @if (viewMode === 'table') {
+        <div class="table-card">
+          @if (filteredFeatures.length > 0) {
+            <div class="table-responsive">
+              <table class="bcp-table">
+                <thead>
+                  <tr>
+                    <th style="width: 64px;">S/N</th>
+                    <th>CAPABILITY</th>
+                    <th>SUITE</th>
+                    <th>STATUS</th>
+                    <th>TIER CLASS</th>
+                    <th>RATE</th>
+                    <th style="text-align: right;">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (feat of filteredFeatures; track feat.featureCode) {
+                    <tr [class.row-coming-soon]="!feat.isAvailableForUse">
+                      <td>
+                        <span class="sn-pill">{{ feat.serialNo }}</span>
+                      </td>
+                      <td>
+                        <div class="table-feat-cell">
+                          <div class="table-feat-icon" [class.icon-available]="feat.isAvailableForUse">
+                            <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
+                          </div>
+                          <div>
+                            <div class="table-feat-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</div>
+                            <code class="feature-code-pill">{{ feat.featureCode }}</code>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="suite-table-label">
+                          <strong>Suite {{ feat.suiteLetter }}:</strong> {{ feat.category }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (feat.isActive) {
+                          <span class="badge-pill-md badge-available">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            <span>Active</span>
+                          </span>
+                        } @else if (feat.isAvailableForUse) {
+                          <span class="badge-pill-md badge-optional">
+                            <span class="material-symbols-outlined">verified</span>
+                            <span>Available (Not Active)</span>
+                          </span>
+                        } @else {
+                          <span class="badge-pill-md badge-coming-soon">
+                            <span class="material-symbols-outlined">schedule</span>
+                            <span>Coming Soon</span>
+                          </span>
+                        }
+                      </td>
+                      <td>
+                        @if (feat.isCompulsory) {
+                          <span class="badge-pill-md badge-compulsory">
+                            <span class="material-symbols-outlined">lock</span>
+                            <span>Compulsory Core</span>
+                          </span>
+                        } @else {
+                          <span class="badge-pill-md badge-optional">Optional Add-on</span>
+                        }
+                      </td>
+                      <td>
+                        @if (feat.monthlyPrice > 0) {
+                          <strong style="color: #0f172a;">{{ formatAmount(feat.monthlyPrice) }}/mo</strong>
+                        } @else {
+                          <span class="price-included">Included</span>
+                        }
+                      </td>
+                      <td style="text-align: right;">
+                        <div style="display: inline-flex; align-items: center; gap: 6px;">
+                          @if (feat.isActive) {
+                            <button
+                              type="button"
+                              class="btn btn-outline btn-sm-action"
+                              [disabled]="togglingFeatureCode === feat.featureCode"
+                              (click)="toggleFeatureInstall(feat, false)"
+                            >
+                              <span>Deactivate</span>
+                            </button>
+                          } @else if (feat.isAvailableForUse) {
+                            <button
+                              type="button"
+                              class="btn btn-primary btn-sm-action"
+                              [disabled]="togglingFeatureCode === feat.featureCode"
+                              (click)="toggleFeatureInstall(feat, true)"
+                            >
+                              <span>Install &amp; Activate</span>
+                            </button>
+                          }
+                          <button type="button" class="btn-details" (click)="openFeatureDetail(feat)">
+                            <span class="material-symbols-outlined">visibility</span>
+                            <span>Details</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-catalog-card">
+              <span class="material-symbols-outlined empty-icon">search_off</span>
+              <h3>No Matching Capabilities Found</h3>
+              <p>Try clearing your search filter or selecting a different suite.</p>
+              <button type="button" class="btn btn-primary" (click)="resetFilters()">Reset Filters</button>
+            </div>
+          }
+        </div>
+      }
     }
   }
 
   <!-- ══════════════════════════════════════════════════════════════════════════ -->
-  <!-- ── VIEW MODE B: COMPACT DATA TABLE VIEW ────────────────────────────────── -->
+  <!-- ── PAGE 2: /billing/paymentmethod (Saved Payment Cards & Billing Contact)  -->
   <!-- ══════════════════════════════════════════════════════════════════════════ -->
-  @if (viewMode === 'table') {
-    <div class="table-card">
-      @if (filteredFeatures.length > 0) {
+  @if (activePage === 'paymentmethod') {
+    <div class="page-header">
+      <div class="header-titles">
+        <div class="breadcrumb">
+          <a routerLink="/dashboard/console">Command Center</a>
+          <span class="sep">/</span>
+          <span>Billing &amp; Subscriptions</span>
+          <span class="sep">/</span>
+          <span class="current">Payment Methods &amp; Contacts</span>
+        </div>
+        <div class="title-row">
+          <h1>Payment Methods &amp; Billing Contacts</h1>
+        </div>
+        <p class="subtitle">
+          Link corporate credit or debit cards for automated monthly settlements and manage your organization's billing contact profile.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="btn btn-primary" (click)="openAddCardModal()">
+          <span class="material-symbols-outlined">add_card</span>
+          <span>Link New Card</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Saved Cards Section -->
+    <div class="table-card" style="padding: 22px; margin-bottom: 24px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <div>
+          <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a;">Saved Settlement Cards</h3>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">Cards linked for recurring subscription renewals in {{ currencyCode }} ({{ currencySymbol }}).</p>
+        </div>
+        <span class="badge-pill-md badge-compulsory">{{ paymentCards.length }} Active</span>
+      </div>
+
+      @if (paymentCards.length > 0) {
+        <div class="suite-feature-grid">
+          @for (card of paymentCards; track card.id) {
+            <div class="feature-card" [class.card-available]="card.isDefault">
+              <div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: #0050e5;">credit_card</span>
+                    <strong style="font-size: 15px; color: #0f172a;">{{ card.brand }}</strong>
+                  </div>
+                  @if (card.isDefault) {
+                    <span class="badge-pill-md badge-available">Default Card</span>
+                  }
+                </div>
+                <div style="font-size: 19px; font-family: monospace; letter-spacing: 1.5px; color: #0f172a; margin-bottom: 14px;">
+                  •••• •••• •••• <strong>{{ card.last4 }}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b;">
+                  <span>Cardholder: <strong style="color: #334155;">{{ card.holderName }}</strong></span>
+                  <span>Expires: <strong style="color: #334155;">{{ card.expMonth }}/{{ card.expYear }}</strong></span>
+                </div>
+              </div>
+              <div class="feature-card-footer" style="margin-top: 16px;">
+                @if (!card.isDefault) {
+                  <button type="button" class="btn btn-outline btn-sm-action" (click)="setDefaultCard(card.id)">
+                    <span>Make Default</span>
+                  </button>
+                } @else {
+                  <span style="font-size: 12px; color: #059669; font-weight: 700;">Primary Settlement Method</span>
+                }
+                <button type="button" class="btn-details" (click)="deleteCard(card)" title="Remove Card">
+                  <span class="material-symbols-outlined" style="color: #dc2626;">delete</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-catalog-card">
+          <span class="material-symbols-outlined empty-icon">credit_card_off</span>
+          <h3>No Payment Cards Linked</h3>
+          <p>Add a payment card to enable automated renewals for paid modular capabilities.</p>
+          <button type="button" class="btn btn-primary" (click)="openAddCardModal()">Link New Card</button>
+        </div>
+      }
+    </div>
+
+    <!-- Billing Contact Profile Form -->
+    <div class="table-card" style="padding: 22px;">
+      <h3 style="margin: 0 0 4px; font-size: 16px; font-weight: 800; color: #0f172a;">Organization Billing &amp; Tax Profile</h3>
+      <p style="margin: 0 0 18px; font-size: 13px; color: #64748b;">Appears on all official subscription invoices and receipts.</p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+        <div>
+          <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 6px;">Organization Name</label>
+          <input type="text" [(ngModel)]="billingContact.companyName" class="search-input" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px;" placeholder="e.g. Your Organization Name" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 6px;">Billing Email Address</label>
+          <input type="email" [(ngModel)]="billingContact.billingEmail" class="search-input" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px;" placeholder="billing@company.com" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 6px;">Tax / VAT Registration ID</label>
+          <input type="text" [(ngModel)]="billingContact.taxId" class="search-input" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px;" placeholder="e.g. TAX-000000" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 6px;">Street Address</label>
+          <input type="text" [(ngModel)]="billingContact.addressLine1" class="search-input" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px;" placeholder="e.g. Suite 100, Business District" />
+        </div>
+      </div>
+
+      <div style="margin-top: 18px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-primary" (click)="saveContactProfile()">
+          <span class="material-symbols-outlined">save</span>
+          <span>Save Billing Profile</span>
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ── PAGE 3: /billing/subscriptions (Active Subscriptions & Invoices) ──── -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  @if (activePage === 'subscriptions') {
+    <div class="page-header">
+      <div class="header-titles">
+        <div class="breadcrumb">
+          <a routerLink="/dashboard/console">Command Center</a>
+          <span class="sep">/</span>
+          <span>Billing &amp; Subscriptions</span>
+          <span class="sep">/</span>
+          <span class="current">Subscriptions &amp; Invoices</span>
+        </div>
+        <div class="title-row">
+          <h1>Active Subscriptions &amp; Billing Invoices</h1>
+        </div>
+        <p class="subtitle">
+          Review your currently installed workspace capabilities, auto-renewal preferences, and historical billing invoices.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <a routerLink="/billing/features" class="btn btn-primary" style="text-decoration: none;">
+          <span class="material-symbols-outlined">add_circle</span>
+          <span>Install More Features</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Active Installed Capabilities Table -->
+    <div class="table-card" style="margin-bottom: 24px;">
+      <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">Installed &amp; Active Capabilities ({{ activeInstalledFeatures.length }})</h3>
+          <p style="margin: 3px 0 0; font-size: 12.5px; color: #64748b;">Capabilities currently active and displayed in your workspace navigation menu.</p>
+        </div>
+        <span class="badge-pill-md badge-available">Monthly Spend: {{ formatAmount(snapshot.totalRecurringMonthly) }}/mo</span>
+      </div>
+
+      @if (activeInstalledFeatures.length > 0) {
         <div class="table-responsive">
           <table class="bcp-table">
             <thead>
               <tr>
                 <th style="width: 64px;">S/N</th>
-                <th>CAPABILITY</th>
+                <th>FEATURE</th>
                 <th>SUITE</th>
-                <th>AVAILABILITY</th>
-                <th>TIER CLASS</th>
-                <th>BILLING MODEL</th>
                 <th>RATE</th>
+                <th>STATUS</th>
                 <th style="text-align: right;">ACTION</th>
               </tr>
             </thead>
             <tbody>
-              @for (feat of filteredFeatures; track feat.featureCode) {
-                <tr [class.row-coming-soon]="!feat.isAvailableForUse">
-                  <td>
-                    <span class="sn-pill">{{ feat.serialNo }}</span>
-                  </td>
+              @for (feat of activeInstalledFeatures; track feat.featureCode; let i = $index) {
+                <tr>
+                  <td><span class="sn-pill">{{ i + 1 }}</span></td>
                   <td>
                     <div class="table-feat-cell">
-                      <div class="table-feat-icon" [class.icon-available]="feat.isAvailableForUse">
+                      <div class="table-feat-icon icon-available">
                         <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
                       </div>
                       <div>
-                        <div class="table-feat-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</div>
+                        <div class="table-feat-name">{{ feat.name }}</div>
                         <code class="feature-code-pill">{{ feat.featureCode }}</code>
                       </div>
                     </div>
@@ -444,44 +934,27 @@
                     </span>
                   </td>
                   <td>
-                    @if (feat.isAvailableForUse) {
-                      <span class="badge-pill-md badge-available">
-                        <span class="material-symbols-outlined">verified</span>
-                        <span>Available for Use</span>
-                      </span>
+                    @if (feat.monthlyPrice > 0) {
+                      <strong>{{ formatAmount(feat.monthlyPrice) }}/mo</strong>
                     } @else {
-                      <span class="badge-pill-md badge-coming-soon">
-                        <span class="material-symbols-outlined">schedule</span>
-                        <span>Coming Soon</span>
-                      </span>
+                      <span class="price-included">Free / Included</span>
                     }
                   </td>
                   <td>
-                    @if (feat.isCompulsory) {
-                      <span class="badge-pill-md badge-compulsory">
-                        <span class="material-symbols-outlined">lock</span>
-                        <span>Compulsory Core</span>
-                      </span>
-                    } @else {
-                      <span class="badge-pill-md badge-optional">Optional Add-on</span>
-                    }
-                  </td>
-                  <td>
-                    <span class="badge-pill-md badge-billing">
-                      {{ feat.billingType === 'PayAsYouGo' ? 'Pay As You Go' : 'Flat Subscription' }}
+                    <span class="badge-pill-md badge-available">
+                      <span class="material-symbols-outlined">check_circle</span>
+                      <span>Active</span>
                     </span>
                   </td>
-                  <td>
-                    @if (feat.monthlyPrice > 0) {
-                      <strong style="color: #0f172a;">{{ formatAmount(feat.monthlyPrice) }}/mo</strong>
-                    } @else {
-                      <span class="price-included">Included</span>
-                    }
-                  </td>
                   <td style="text-align: right;">
-                    <button type="button" class="btn-details" (click)="openFeatureDetail(feat)">
-                      <span class="material-symbols-outlined">visibility</span>
-                      <span>Details</span>
+                    <button
+                      type="button"
+                      class="btn btn-outline btn-sm-action"
+                      [disabled]="togglingFeatureCode === feat.featureCode"
+                      (click)="toggleFeatureInstall(feat, false)"
+                    >
+                      <span class="material-symbols-outlined">toggle_off</span>
+                      <span>Deactivate</span>
                     </button>
                   </td>
                 </tr>
@@ -491,15 +964,123 @@
         </div>
       } @else {
         <div class="empty-catalog-card">
-          <span class="material-symbols-outlined empty-icon">search_off</span>
-          <h3>No Matching Capabilities Found</h3>
-          <p>Try clearing your search filter or selecting a different suite.</p>
-          <button type="button" class="btn btn-primary" (click)="resetFilters()">Reset Filters</button>
+          <span class="material-symbols-outlined empty-icon">layers</span>
+          <h3>No Modular Capabilities Installed Yet</h3>
+          <p>Go to the Features directory to install and activate capabilities for your workspace menu.</p>
+          <a routerLink="/billing/features" class="btn btn-primary" style="text-decoration: none;">Browse &amp; Install Features</a>
+        </div>
+      }
+    </div>
+
+    <!-- Invoices Ledger Table -->
+    <div class="table-card">
+      <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">Billing Invoices &amp; Receipts ({{ invoices.length }})</h3>
+          <p style="margin: 3px 0 0; font-size: 12.5px; color: #64748b;">Historical invoice ledger for your workspace subscriptions.</p>
+        </div>
+        <button type="button" class="btn btn-outline" (click)="loadInvoices()">
+          <span class="material-symbols-outlined">refresh</span>
+          <span>Refresh Invoices</span>
+        </button>
+      </div>
+
+      @if (filteredInvoices.length > 0) {
+        <div class="table-responsive">
+          <table class="bcp-table">
+            <thead>
+              <tr>
+                <th>INVOICE #</th>
+                <th>DESCRIPTION</th>
+                <th>AMOUNT</th>
+                <th>STATUS</th>
+                <th>DATE</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (inv of filteredInvoices; track inv.id) {
+                <tr>
+                  <td><code>{{ inv.invoiceNumber || inv.id }}</code></td>
+                  <td><strong>{{ inv.description }}</strong></td>
+                  <td><strong>{{ formatAmount(inv.amount) }}</strong></td>
+                  <td>
+                    <span class="badge-pill-md" [class.badge-available]="inv.status === 'Completed'" [class.badge-coming-soon]="inv.status !== 'Completed'">
+                      {{ inv.status }}
+                    </span>
+                  </td>
+                  <td>{{ inv.createdUtc | date:'mediumDate' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-catalog-card">
+          <span class="material-symbols-outlined empty-icon">receipt_long</span>
+          <h3>No Billing Invoices Yet</h3>
+          <p>Invoices generated for paid add-on subscriptions will appear here.</p>
         </div>
       }
     </div>
   }
 </div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- ── MODAL: LINK NEW PAYMENT CARD ────────────────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+@if (showAddCardModal) {
+  <div class="modal-backdrop-custom" (click)="closeAddCardModal()">
+    <div class="modal-card-custom" (click)="$event.stopPropagation()">
+      <div class="modal-header-custom">
+        <div class="modal-title-row">
+          <div class="feature-icon-box icon-available">
+            <span class="material-symbols-outlined">add_card</span>
+          </div>
+          <h3 class="modal-title-custom">Link New Payment Card</h3>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeAddCardModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body-custom">
+        <div style="display: grid; gap: 14px;">
+          <div>
+            <label style="display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px;">Cardholder Title / Role</label>
+            <input type="text" [(ngModel)]="cardForm.holderName" class="search-input" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px;" placeholder="e.g. First Last" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px;">Card Number</label>
+            <input type="text" [(ngModel)]="cardForm.cardNumber" class="search-input" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px;" placeholder="0000 0000 0000 0000" maxlength="19" />
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px;">Brand</label>
+              <select [(ngModel)]="cardForm.brand" class="filter-select" style="width: 100%;">
+                <option value="Visa">Visa</option>
+                <option value="Mastercard">Mastercard</option>
+                <option value="Amex">Amex</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px;">Exp Month</label>
+              <input type="number" [(ngModel)]="cardForm.expMonth" class="search-input" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px;" min="1" max="12" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px;">Exp Year</label>
+              <input type="number" [(ngModel)]="cardForm.expYear" class="search-input" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px;" min="2026" max="2040" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer-custom">
+        <button type="button" class="btn btn-outline" (click)="closeAddCardModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" (click)="saveNewCard()">Save Card</button>
+      </div>
+    </div>
+  </div>
+}
 
 <!-- ══════════════════════════════════════════════════════════════════════════ -->
 <!-- ── MODAL: CAPABILITY SPECIFICATION DETAILS ─────────────────────────────── -->
@@ -529,25 +1110,21 @@
 
       <div class="modal-body-custom">
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
-          @if (selectedFeatureDetail.isAvailableForUse) {
+          @if (selectedFeatureDetail.isActive) {
             <span class="badge-pill-md badge-available">
+              <span class="material-symbols-outlined">check_circle</span>
+              <span>Active in Workspace Menu</span>
+            </span>
+          } @else if (selectedFeatureDetail.isAvailableForUse) {
+            <span class="badge-pill-md badge-optional">
               <span class="material-symbols-outlined">verified</span>
-              <span>Available for Use</span>
+              <span>Available to Install</span>
             </span>
           } @else {
             <span class="badge-pill-md badge-coming-soon">
               <span class="material-symbols-outlined">schedule</span>
               <span>Coming Soon</span>
             </span>
-          }
-
-          @if (selectedFeatureDetail.isCompulsory) {
-            <span class="badge-pill-md badge-compulsory">
-              <span class="material-symbols-outlined">lock</span>
-              <span>Compulsory Core</span>
-            </span>
-          } @else {
-            <span class="badge-pill-md badge-optional">Optional Add-on</span>
           }
 
           <span class="badge-pill-md badge-billing">
@@ -573,22 +1150,45 @@
             </span>
           </div>
           <div class="spec-box">
-            <span class="spec-label">Workspace Rollout Status</span>
-            <span class="spec-val" [style.color]="selectedFeatureDetail.isAvailableForUse ? '#059669' : '#d97706'">
-              {{ selectedFeatureDetail.isAvailableForUse ? 'Live & Ready for Use' : 'Coming Soon (In Engineering)' }}
+            <span class="spec-label">Menu Visibility Status</span>
+            <span class="spec-val" [style.color]="selectedFeatureDetail.isActive ? '#059669' : '#64748b'">
+              {{ selectedFeatureDetail.isActive ? 'Installed & Visible in Sidebar' : (selectedFeatureDetail.isAvailableForUse ? 'Not Installed' : 'Coming Soon') }}
             </span>
           </div>
           <div class="spec-box">
-            <span class="spec-label">Entitlement Posture</span>
+            <span class="spec-label">Central Sync Posture</span>
             <span class="spec-val">
-              {{ selectedFeatureDetail.isCompulsory ? 'Included in Sovereign Base Plan' : 'Modular Capability' }}
+              {{ snapshot.useCustomAvailability ? 'Custom Workspace Catalog' : 'General Master Catalog' }}
             </span>
           </div>
         </div>
       </div>
 
-      <div class="modal-footer-custom">
-        <button type="button" class="btn btn-primary" (click)="closeFeatureDetail()">
+      <div class="modal-footer-custom" style="display: flex; justify-content: space-between; align-items: center;">
+        @if (selectedFeatureDetail.isActive) {
+          <button
+            type="button"
+            class="btn btn-outline"
+            [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode"
+            (click)="toggleFeatureInstall(selectedFeatureDetail, false)"
+          >
+            <span class="material-symbols-outlined">toggle_off</span>
+            <span>Deactivate from Menu</span>
+          </button>
+        } @else if (selectedFeatureDetail.isAvailableForUse) {
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode"
+            (click)="toggleFeatureInstall(selectedFeatureDetail, true)"
+          >
+            <span class="material-symbols-outlined">download_done</span>
+            <span>Install &amp; Activate in Menu</span>
+          </button>
+        } @else {
+          <span></span>
+        }
+        <button type="button" class="btn btn-outline" (click)="closeFeatureDetail()">
           <span>Close</span>
         </button>
       </div>
@@ -605,7 +1205,7 @@
           <div class="feature-icon-box icon-available">
             <span class="material-symbols-outlined">info</span>
           </div>
-          <h3 class="modal-title-custom">About Master Capabilities &amp; Availability</h3>
+          <h3 class="modal-title-custom">About Workspace Features &amp; Central Sync</h3>
         </div>
         <button type="button" class="btn-close-modal" (click)="closeInfoModal()">
           <span class="material-symbols-outlined">close</span>
@@ -614,10 +1214,10 @@
 
       <div class="modal-body-custom" style="font-size: 13.5px; line-height: 1.6; color: #334155;">
         <p style="margin: 0 0 12px;">
-          <strong>1. Synchronized with Master Catalog DB:</strong> All capabilities and suites on this screen come directly from <code>MasterFeatureCatalogs</code> in the central database and follow the canonical <code>Suite A – Suite J</code> sequence.
+          <strong>1. Simple View vs. Detailed View:</strong> Use <strong>Simple View</strong> to quickly browse features by S/N, Title, Suite, and Status, and click <strong>Install &amp; Activate</strong> to add any available capability directly into your workspace navigation menu.
         </p>
         <p style="margin: 0 0 12px;">
-          <strong>2. Available for Use vs. Coming Soon:</strong> Capabilities marked <strong style="color: #059669;">Available for Use</strong> are live and active inside your workspace right now. Capabilities marked <strong style="color: #d97706;">Coming Soon</strong> are part of your sovereign plan and unlock automatically as engineering rollout completes.
+          <strong>2. Synchronized with Central:</strong> Your available feature list, custom pricing, and running currency are governed in real time from Central (<code>/centralwks/tenants/features</code>).
         </p>
       </div>
 

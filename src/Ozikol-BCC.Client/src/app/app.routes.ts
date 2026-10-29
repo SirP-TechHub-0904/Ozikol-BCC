@@ -314,14 +314,15 @@ export const routes: Routes = [
       { path: 'products/console/orders/details/:id', component: ProductOrderDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },
       { path: 'products/console/transactions', component: ProductTransactionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },
 
-      // 7. Suite 13: Billing, Plans, Payment Methods & Invoice Ledger (Console Only)
-      { path: 'billing/console', component: BillingConsoleComponent, data: { roles: ['SuperAdmin', 'Admin'] } },
-      { path: 'billing/plans', component: BillingConsoleComponent, data: { tab: 'overview', roles: ['SuperAdmin', 'Admin'] } },
-      { path: 'billing/payment-methods', component: BillingConsoleComponent, data: { tab: 'payment_methods', roles: ['SuperAdmin', 'Admin'] } },
-      { path: 'billing/features', redirectTo: 'billing/payment-methods', pathMatch: 'full' },
-      { path: 'billing/invoices', component: BillingConsoleComponent, data: { tab: 'invoices', roles: ['SuperAdmin', 'Admin'] } },
-      { path: 'billing/calculator', component: BillingConsoleComponent, data: { tab: 'calculator', roles: ['SuperAdmin', 'Admin'] } },
-      { path: 'billing', redirectTo: 'billing/console', pathMatch: 'full' },
+      // 7. Suite 13: Billing, Features, Payment Methods & Subscriptions (Console Only)
+      { path: 'billing/features', component: BillingConsoleComponent, data: { tab: 'features', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/paymentmethod', component: BillingConsoleComponent, data: { tab: 'paymentmethod', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/subscriptions', component: BillingConsoleComponent, data: { tab: 'subscriptions', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/plans', redirectTo: 'billing/features', pathMatch: 'full' },
+      { path: 'billing/console', redirectTo: 'billing/features', pathMatch: 'full' },
+      { path: 'billing/payment-methods', redirectTo: 'billing/paymentmethod', pathMatch: 'full' },
+      { path: 'billing/invoices', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
+      { path: 'billing', redirectTo: 'billing/features', pathMatch: 'full' },
 
       // 8. Backwards Compatibility Redirects for legacy /admin routes
       { path: 'admin/products', redirectTo: 'products/console', pathMatch: 'full' },

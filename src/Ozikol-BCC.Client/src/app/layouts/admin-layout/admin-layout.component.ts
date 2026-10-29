@@ -481,15 +481,15 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
 
-          <!-- Suite 3: People & Community -->
-          <ng-container *ngIf="canAccessSuite('people_community')">
+          <!-- Suite 3: People & Community (Dynamic Installed Capabilities) -->
+          <ng-container *ngIf="canAccessSuite('people_community') && isAnyFeatureActive(['bcp-committees', 'bcp-alumni-directory', 'bcp-community-messenger', 'bcp-whistleblowing'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.people_community' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('people_community', $event)" [title]="'adm.people_community_overview' | translate:'People & Community Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('groups')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('groups')" *ngIf="isFeatureActive('bcp-committees')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/groups/console') || isParentActive('/admin/groups')" (click)="toggleMenu('groups')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">diversity_3</span>
@@ -525,7 +525,7 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('alumni')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('alumni')" *ngIf="isFeatureActive('bcp-alumni-directory')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/admin/alumni') || isParentActive('/users/workspace/alumni')" (click)="toggleMenu('alumni')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">school</span>
@@ -564,7 +564,7 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item">
+          <div class="nav-item" *ngIf="isFeatureActive('bcp-community-messenger')">
             <a routerLink="/admin/messenger" [class.active]="isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">chat</span>
@@ -576,20 +576,21 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
-          <span class="nav-link disabled">
+          <span class="nav-link disabled" *ngIf="isFeatureActive('bcp-whistleblowing')">
             <span class="nav-link-content"><span class="material-symbols-outlined">feedback</span><span>{{ 'nav.whistleblowing' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
           </ng-container>
 
-          <!-- Suite 4: Workforce & Shifts -->
+          <!-- Suite 4: Workforce & Shifts (Dynamic Installed Capabilities) -->
+          <ng-container *ngIf="isAnyFeatureActive(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.workforce_shifts' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('workforce_shifts', $event)" [title]="'adm.workforce_shifts_overview' | translate:'Workforce & Shifts Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('workforce')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('workforce')" *ngIf="isAnyFeatureActive(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking'])">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('workforce')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">calendar_month</span>
@@ -606,7 +607,7 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li>
+              <li *ngIf="isFeatureActive('bcp-staff-rota')">
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event_note</span>{{ 'adm.staff_volunteer_rota' | translate:'Staff & Volunteer Rota' }}</span>
@@ -614,7 +615,7 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li>
+              <li *ngIf="isFeatureActive('bcp-shift-swaps')">
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">swap_horiz</span>{{ 'adm.shift_swaps_leave' | translate:'Shift Swaps & Leave' }}</span>
@@ -622,7 +623,7 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li>
+              <li *ngIf="isFeatureActive('bcp-attendance-tracking')">
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">timer</span>{{ 'adm.attendance_clock_in' | translate:'Attendance & Clock-In' }}</span>
@@ -640,12 +641,14 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled">
+          <span class="nav-link disabled" *ngIf="isFeatureActive('bcp-calendar-followups')">
             <span class="nav-link-content"><span class="material-symbols-outlined">event_repeat</span><span>{{ 'nav.calendar_followups' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
+          </ng-container>
 
-          <!-- Suite 5: Events & Ticketing -->
+          <!-- Suite 5: Events & Ticketing (Dynamic Installed Capabilities) -->
+          <ng-container *ngIf="isAnyFeatureActive(['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.events_ticketing' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('events_ticketing', $event)" [title]="'adm.events_ticketing_overview' | translate:'Events & Ticketing Overview'">
@@ -669,7 +672,7 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li>
+              <li *ngIf="isFeatureActive('bcp-event-ticketing')">
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event</span>{{ 'adm.manage_events_passes' | translate:'Manage Events & Passes' }}</span>
@@ -677,7 +680,7 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li>
+              <li *ngIf="isFeatureActive('bcp-speaker-sessions')">
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mic</span>{{ 'adm.speaker_session_tracks' | translate:'Speaker & Session Tracks' }}</span>
@@ -685,7 +688,7 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li>
+              <li *ngIf="isFeatureActive('bcp-attendee-management')">
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">how_to_reg</span>{{ 'adm.attendee_management_check_in' | translate:'Attendee Management & Check-In' }}</span>
@@ -703,8 +706,10 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
+          </ng-container>
 
-          <!-- Suite 6: Commerce & Store -->
+          <!-- Suite 6: Commerce & Store (Dynamic Installed Capabilities) -->
+          <ng-container *ngIf="isFeatureActive('bcp-store-ecommerce')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.commerce_store' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('commerce_store', $event)" [title]="'adm.commerce_store_overview' | translate:'Commerce & Store Overview'">
@@ -785,15 +790,17 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
+          </ng-container>
 
-          <!-- Suite 7: Finance & Banking -->
+          <!-- Suite 7: Finance & Banking (Dynamic Installed Capabilities) -->
+          <ng-container *ngIf="isAnyFeatureActive(['bcp-invoicing-dues', 'bcp-embedded-banking', 'bcp-grant-ledger', 'bcp-proposal-pipeline'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.finance_banking' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('finance_banking', $event)" [title]="'adm.finance_banking_overview' | translate:'Finance & Banking Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('invoicing')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('invoicing')" *ngIf="isFeatureActive('bcp-invoicing-dues')">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('invoicing')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">account_balance_wallet</span>
@@ -828,7 +835,7 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('banking')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('banking')" *ngIf="isFeatureActive('bcp-embedded-banking')">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('banking')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">account_balance</span>
@@ -855,11 +862,11 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled">
+          <span class="nav-link disabled" *ngIf="isFeatureActive('bcp-grant-ledger')">
             <span class="nav-link-content"><span class="material-symbols-outlined">request_quote</span><span>{{ 'nav.grant_ledger' | translate }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
-          <div class="nav-item">
+          <div class="nav-item" *ngIf="isAnyFeatureActive(['bcp-invoicing-dues', 'bcp-embedded-banking', 'bcp-grant-ledger', 'bcp-proposal-pipeline'])">
             <a routerLink="/products/console/transactions" [class.active]="isCurrentRoute('/products/console/transactions')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">receipt_long</span>
@@ -870,15 +877,17 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
+          </ng-container>
 
-          <!-- Suite 8: Communication & Support -->
+          <!-- Suite 8: Communication & Support (Dynamic Installed Capabilities) -->
+          <ng-container *ngIf="isAnyFeatureActive(['bcp-mass-communication', 'bcp-helpdesk-support', 'bcp-bio-link', 'bcp-ai-smart-assist', 'bcp-live-chat', 'bcp-social-media', 'bcp-gocall-ai'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.communication_support' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('communication_support', $event)" [title]="'adm.communication_support_overview' | translate:'Communication & Support Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('notifications')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('notifications')" *ngIf="isFeatureActive('bcp-mass-communication')">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/users/console/notifications')" (click)="toggleMenu('notifications')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">campaign</span>
@@ -922,7 +931,7 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('helpdesk')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('helpdesk')" *ngIf="isAnyFeatureActive(['bcp-helpdesk-support', 'bcp-live-chat'])">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('helpdesk')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">support_agent</span>
@@ -939,7 +948,7 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li>
+              <li *ngIf="isFeatureActive('bcp-helpdesk-support')">
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">confirmation_number</span>{{ 'adm.manage_tickets' | translate:'Manage Tickets' }}</span>
@@ -947,7 +956,7 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li>
+              <li *ngIf="isFeatureActive('bcp-live-chat')">
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">chat_bubble</span>{{ 'adm.live_chat_widget_control' | translate:'Live Chat Widget Control' }}</span>
@@ -965,19 +974,21 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled">
+          <span class="nav-link disabled" *ngIf="isFeatureActive('bcp-bio-link')">
             <span class="nav-link-content"><span class="material-symbols-outlined">link</span><span>{{ 'adm.bio_link_tree_builder' | translate:'Bio Link-Tree Builder' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
+          </ng-container>
 
-          <!-- Suite 9: Forms & Intelligence -->
+          <!-- Suite 9: Forms & Intelligence (Dynamic Installed Capabilities) -->
+          <ng-container *ngIf="isAnyFeatureActive(['bcp-form-builder', 'bcp-survey-analytics', 'bcp-interval-reporting', 'bcp-reference-forms'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.forms_intelligence' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('forms_intelligence', $event)" [title]="'adm.forms_intelligence_overview' | translate:'Forms & Intelligence Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('forms')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('forms')" *ngIf="isAnyFeatureActive(['bcp-form-builder', 'bcp-reference-forms'])">
             <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/content/console/forms')" (click)="toggleMenu('forms')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">dynamic_form</span>
@@ -1021,19 +1032,21 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled">
+          <span class="nav-link disabled" *ngIf="isAnyFeatureActive(['bcp-survey-analytics', 'bcp-interval-reporting'])">
             <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>{{ 'adm.survey_analytics_reports' | translate:'Survey Analytics & Reports' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
+          </ng-container>
 
-          <!-- Suite 10: Academy & Training -->
+          <!-- Suite 10: Academy & Training (Dynamic Installed Capabilities) -->
+          <ng-container *ngIf="isAnyFeatureActive(['bcp-learning-management', 'bcp-certificate-verification'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.academy_training' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('academy_training', $event)" [title]="'adm.academy_training_overview' | translate:'Academy & Training Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('lms')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('lms')" *ngIf="isFeatureActive('bcp-learning-management')">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('lms')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">school</span>
@@ -1076,7 +1089,7 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('certificates')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('certificates')" *ngIf="isFeatureActive('bcp-certificate-verification')">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('certificates')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">verified</span>
@@ -1119,15 +1132,17 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
+          </ng-container>
 
-          <!-- Suite 11: Compliance & Governance -->
+          <!-- Suite 11: Compliance & Governance (Dynamic Installed Capabilities) -->
+          <ng-container *ngIf="isAnyFeatureActive(['bcp-document-management', 'bcp-kyc-verification', 'bcp-visitor-gate'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.compliance_governance' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('compliance_governance', $event)" [title]="'adm.compliance_governance_overview' | translate:'Compliance & Governance Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('vault')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('vault')" *ngIf="isFeatureActive('bcp-document-management')">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('vault')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">folder_zip</span>
@@ -1162,7 +1177,7 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('kyc')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('kyc')" *ngIf="isFeatureActive('bcp-kyc-verification')">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('kyc')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">badge</span>
@@ -1189,7 +1204,7 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('visitor')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('visitor')" *ngIf="isFeatureActive('bcp-visitor-gate')">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('visitor')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">door_front</span>
@@ -1216,15 +1231,17 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
+          </ng-container>
 
-          <!-- Suite 12: Demographics & Census -->
+          <!-- Suite 12: Demographics & Census (Dynamic Installed Capabilities) -->
+          <ng-container *ngIf="isAnyFeatureActive(['bcp-community-census', 'bcp-field-surveyor', 'bcp-resident-id-cards', 'bcp-demographic-analytics'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.demographics_census' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('demographics_census', $event)" [title]="'adm.demographics_census_overview' | translate:'Demographics & Census Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('census')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('census')" *ngIf="isAnyFeatureActive(['bcp-community-census', 'bcp-field-surveyor'])">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('census')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">map</span>
@@ -1259,7 +1276,7 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('resident_id')">
+          <div class="nav-item has-sub" [class.open]="isMenuOpen('resident_id')" *ngIf="isFeatureActive('bcp-resident-id-cards')">
             <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('resident_id')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">badge</span>
@@ -1294,12 +1311,13 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled">
+          <span class="nav-link disabled" *ngIf="isFeatureActive('bcp-demographic-analytics')">
             <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>{{ 'adm.demographic_analytics' | translate:'Demographic Analytics' }}</span></span>
             <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
           </span>
+          </ng-container>
 
-          <!-- Suite 13: Billing & Subscriptions (Platform Governance) -->
+          <!-- Suite 13: Billing & Subscriptions (Fixed System Menu at Bottom) -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.billing_subscriptions' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('billing_subscriptions', $event)" [title]="'adm.billing_subscriptions_overview' | translate:'Billing & Subscriptions Overview'">
@@ -1307,47 +1325,36 @@ export interface SuiteInfoDetail {
             </button>
           </div>
           <div class="nav-item">
-            <a routerLink="/billing/plans" [class.active]="isCurrentRoute('/billing/plans') || isCurrentRoute('/billing/console')" class="nav-link">
+            <a routerLink="/billing/features" [class.active]="isCurrentRoute('/billing/features') || isCurrentRoute('/billing/plans') || isCurrentRoute('/billing/console')" class="nav-link">
               <div class="nav-link-content">
-                <span class="material-symbols-outlined">credit_card</span>
-                <span>{{ 'adm.subscription_plans' | translate:'Subscription Plans' }}</span>
+                <span class="material-symbols-outlined">extension</span>
+                <span>{{ 'adm.subscription_plans' | translate:'Features & Capabilities' }}</span>
                 <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/plans')" (click)="togglePin('Subscription Plans', '/billing/plans', 'credit_card'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/plans') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/billing/plans') ? 'keep_off' : 'push_pin' }}</span>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/features')" (click)="togglePin('Features & Capabilities', '/billing/features', 'extension'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/features') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/billing/features') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
           <div class="nav-item">
-            <a routerLink="/billing/payment-methods" [class.active]="isCurrentRoute('/billing/payment-methods')" class="nav-link">
+            <a routerLink="/billing/paymentmethod" [class.active]="isCurrentRoute('/billing/paymentmethod') || isCurrentRoute('/billing/payment-methods')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">account_balance_wallet</span>
                 <span>{{ 'adm.payment_methods_contacts' | translate:'Payment Methods & Contacts' }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/payment-methods')" (click)="togglePin('Payment Methods', '/billing/payment-methods', 'account_balance_wallet'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/payment-methods') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/billing/payment-methods') ? 'keep_off' : 'push_pin' }}</span>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/paymentmethod')" (click)="togglePin('Payment Methods', '/billing/paymentmethod', 'account_balance_wallet'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/paymentmethod') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/billing/paymentmethod') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
           <div class="nav-item">
-            <a routerLink="/billing/invoices" [class.active]="isCurrentRoute('/billing/invoices')" class="nav-link">
+            <a routerLink="/billing/subscriptions" [class.active]="isCurrentRoute('/billing/subscriptions') || isCurrentRoute('/billing/invoices')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">receipt_long</span>
-                <span>{{ 'adm.invoices_receipts' | translate:'Invoices & Receipts' }}</span>
+                <span>{{ 'adm.invoices_receipts' | translate:'Subscriptions & Invoices' }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/invoices')" (click)="togglePin('Invoices & Receipts', '/billing/invoices', 'receipt_long'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/invoices') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/billing/invoices') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
-          <div class="nav-item">
-            <a routerLink="/billing/calculator" [class.active]="isCurrentRoute('/billing/calculator')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">calculate</span>
-                <span>{{ 'adm.usage_bill_calculator' | translate:'Usage Bill Calculator' }}</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/calculator')" (click)="togglePin('Usage Calculator', '/billing/calculator', 'calculate'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/calculator') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/billing/calculator') ? 'keep_off' : 'push_pin' }}</span>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/subscriptions')" (click)="togglePin('Subscriptions & Invoices', '/billing/subscriptions', 'receipt_long'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/subscriptions') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/billing/subscriptions') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
@@ -4082,11 +4089,29 @@ export class AdminLayoutComponent implements OnInit {
     this.loadTenantInfo();
     this.loadNotificationFeed();
     this.loadSidebarForms();
+    this.loadActiveBillingFeatures();
     this.checkFirstRunSetupStatus();
 
     if (this.isAdmin) {
       this.loadFeatureExpirations();
     }
+
+    // Listen for real-time SignalR billing/feature updates from Central or tenant billing console
+    this.signalR.billingUpdated$.subscribe(() => {
+      this.loadActiveBillingFeatures();
+    });
+
+    // Listen for instant feature activation/deactivation from /billing/features
+    window.addEventListener('tenant_features_updated', (e: any) => {
+      if (e?.detail?.activeFeatureCodes && Array.isArray(e.detail.activeFeatureCodes)) {
+        this.activeFeatureCodes = new Set<string>(
+          e.detail.activeFeatureCodes.map((c: string) => (c || '').toLowerCase())
+        );
+        localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(this.activeFeatureCodes)));
+      } else {
+        this.loadActiveBillingFeatures();
+      }
+    });
 
     // Listen for live brand settings updates from the Settings page
     window.addEventListener('brand_settings_updated', () => {
@@ -4109,6 +4134,70 @@ export class AdminLayoutComponent implements OnInit {
     window.addEventListener('forms_updated', () => {
       this.loadSidebarForms();
     });
+  }
+
+  /// <summary>
+  /// Set of lowercase FeatureCodes that are currently installed and active for the tenant workspace.
+  /// Initialized from localStorage for zero-flicker rendering and refreshed from /api/billing/features.
+  /// </summary>
+  activeFeatureCodes: Set<string> = new Set<string>(
+    (() => {
+      try {
+        const raw = localStorage.getItem('bcp_active_feature_codes');
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    })()
+  );
+
+  /// <summary>
+  /// Fetches the tenant's active installed features from the Master Catalog billing snapshot
+  /// and updates the sidebar navigation visibility in real time.
+  /// </summary>
+  loadActiveBillingFeatures(): void {
+    this.api.get<any>('billing/features').subscribe({
+      next: (res) => {
+        if (res && res.isSuccess && res.data) {
+          const d = res.data;
+          const all = [
+            ...(d.included || []),
+            ...(d.subscribed || []),
+            ...(d.available || [])
+          ];
+          const codes = new Set<string>();
+          for (const item of all) {
+            if (item && item.isActive && item.featureCode) {
+              codes.add(String(item.featureCode).toLowerCase());
+            }
+          }
+          this.activeFeatureCodes = codes;
+          localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(codes)));
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  /// <summary>
+  /// Checks whether a specific modular capability code is currently installed and active for the tenant.
+  /// </summary>
+  /// <param name="featureCode">Canonical feature code (e.g. 'bcp-committees').</param>
+  /// <returns>True when the feature is active for the tenant.</returns>
+  isFeatureActive(featureCode: string): boolean {
+    if (!featureCode) return false;
+    return this.activeFeatureCodes.has(featureCode.toLowerCase());
+  }
+
+  /// <summary>
+  /// Checks whether at least one of the specified modular capability codes is installed and active.
+  /// Used to show or hide parent suite headers in the sidebar.
+  /// </summary>
+  /// <param name="featureCodes">Array of canonical feature codes belonging to the suite.</param>
+  /// <returns>True when one or more features in the list are active.</returns>
+  isAnyFeatureActive(featureCodes: string[]): boolean {
+    if (!featureCodes || featureCodes.length === 0) return false;
+    return featureCodes.some(code => this.isFeatureActive(code));
   }
 
   loadSidebarForms(): void {
@@ -4537,6 +4626,9 @@ export class AdminLayoutComponent implements OnInit {
     else if (url.includes('/users/workspace/profile/biography')) { tabTitle = 'My CV Biography'; tabIcon = 'assignment_ind'; }
     else if (url.includes('/users/workspace/profile')) { tabTitle = 'My Account'; tabIcon = 'account_circle'; }
     else if (url.includes('/groups')) { tabTitle = 'Group Channels'; tabIcon = 'diversity_3'; }
+    else if (url.includes('/billing/features') || url.includes('/billing/plans') || url.includes('/billing/console')) { tabTitle = 'Features & Capabilities'; tabIcon = 'extension'; }
+    else if (url.includes('/billing/paymentmethod') || url.includes('/billing/payment-methods')) { tabTitle = 'Payment Methods'; tabIcon = 'account_balance_wallet'; }
+    else if (url.includes('/billing/subscriptions') || url.includes('/billing/invoices')) { tabTitle = 'Subscriptions & Invoices'; tabIcon = 'receipt_long'; }
     else if (url.includes('/settings')) { tabTitle = 'Brand Settings'; tabIcon = 'palette'; }
 
     const exists = this.openTabs.some(t => t.url === url);

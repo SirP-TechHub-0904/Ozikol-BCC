@@ -322,6 +322,8 @@ namespace Ozikol_BCC.Api.Services
                 CurrencyCode = currCode,
                 CurrencySymbol = currSymbol,
                 ExchangeRateFromUsd = currRate,
+                UseCustomPricing = tenant?.UseCustomPricing ?? false,
+                UseCustomAvailability = tenant?.UseCustomAvailability ?? false,
                 ServerTimeUtc = now
             };
 
@@ -341,16 +343,23 @@ namespace Ozikol_BCC.Api.Services
                     ? (sub?.IsAvailableForUseOverride ?? ((sub?.CustomPriceOverride != null || (sub != null && sub.IsActive && !f.IsCompulsory)) ? true : masterAvailForUse))
                     : masterAvailForUse;
 
+                // When Central has enabled Custom Availability for this tenant, only include features marked Available for this tenant
+                if (tenant?.UseCustomAvailability == true && !isAvailForUse)
+                {
+                    continue;
+                }
+
                 // Apply per-tenant custom monthly price override when tenant policy is set to Custom Pricing
-                decimal effectiveMonthlyUsd = (tenant?.UseCustomPricing == true && sub?.CustomPriceOverride != null)
-                    ? sub.CustomPriceOverride.Value
+                bool hasCustomPrice = tenant?.UseCustomPricing == true && sub?.CustomPriceOverride != null;
+                decimal effectiveMonthlyUsd = hasCustomPrice
+                    ? sub!.CustomPriceOverride!.Value
                     : f.MonthlyPrice;
 
                 decimal effectiveMonthly = Math.Round(effectiveMonthlyUsd * currRate, 2);
-                decimal quarterlyUsd = (tenant?.UseCustomPricing == true && sub?.CustomPriceOverride != null)
+                decimal quarterlyUsd = hasCustomPrice
                     ? Math.Round(effectiveMonthlyUsd * 3m * 0.9m, 2)
                     : (f.QuarterlyPrice > 0 ? f.QuarterlyPrice : Math.Round(f.MonthlyPrice * 3m * 0.9m, 2));
-                decimal yearlyUsd = (tenant?.UseCustomPricing == true && sub?.CustomPriceOverride != null)
+                decimal yearlyUsd = hasCustomPrice
                     ? Math.Round(effectiveMonthlyUsd * 10m, 2)
                     : (f.YearlyPrice > 0 ? f.YearlyPrice : f.MonthlyPrice * 10m);
 
@@ -366,6 +375,8 @@ namespace Ozikol_BCC.Api.Services
                     IsCompulsory = f.IsCompulsory,
                     IsAvailableForUse = isAvailForUse,
                     IsInBeta = f.IsInBeta,
+                    HasCustomPriceOverride = sub?.CustomPriceOverride != null,
+                    HasCustomAvailabilityOverride = sub?.IsAvailableForUseOverride != null,
                     SortOrder = f.SortOrder,
                     BillingType = f.BillingType.ToString(),
                     MonthlyPrice = effectiveMonthly,
@@ -373,43 +384,45 @@ namespace Ozikol_BCC.Api.Services
                     YearlyPrice = Math.Round(yearlyUsd * currRate, 2)
                 };
 
-                if (f.IsCompulsory)
+                if (!isAvailForUse)
                 {
-                    bool compActive = sub == null || sub.IsActive;
-                    item.IsSubscribed = compActive;
-                    item.IsActive = compActive;
-                    item.Status = compActive ? "Included" : "Suspended";
-                    item.BillingCadence = "Included";
+                    item.IsSubscribed = false;
+                    item.IsActive = false;
+                    item.Status = "ComingSoon";
+                    item.BillingCadence = f.IsCompulsory ? "Included" : "Monthly";
                     item.EffectivePrice = effectiveMonthly;
-                    if (compActive && effectiveMonthly > 0)
-                    {
-                        snapshot.TotalRecurringMonthly += effectiveMonthly;
-                    }
-                    snapshot.Included.Add(item);
+                    snapshot.Available.Add(item);
                     continue;
                 }
 
                 if (sub == null)
                 {
+                    item.IsSubscribed = false;
+                    item.IsActive = false;
                     item.Status = "Available";
-                    item.BillingCadence = "Monthly";
+                    item.BillingCadence = f.IsCompulsory ? "Included" : "Monthly";
+                    item.EffectivePrice = effectiveMonthly;
                     snapshot.Available.Add(item);
                     continue;
                 }
 
                 var days = (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays);
+                bool notSuspended = !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase)
+                                    && !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase);
                 var live = sub.IsActive
-                           && string.Equals(sub.Status, "Active", StringComparison.OrdinalIgnoreCase)
-                           && sub.ExpiresAtUtc > now;
+                           && notSuspended
+                           && (f.IsCompulsory || sub.ExpiresAtUtc > now);
                 // A lapsed subscription is reported as Expired regardless of the stored status string
-                var status = !live && sub.IsActive && sub.ExpiresAtUtc <= now ? "Expired" : sub.Status;
+                var status = !live && sub.IsActive && !f.IsCompulsory && sub.ExpiresAtUtc <= now
+                    ? "Expired"
+                    : (live ? "Active" : sub.Status);
 
                 decimal subEffectiveUsd = (tenant?.UseCustomPricing == true && sub.CustomPriceOverride != null)
                     ? sub.CustomPriceOverride.Value
                     : (sub.RecurringPrice > 0 ? sub.RecurringPrice : f.MonthlyPrice);
 
                 item.SubscriptionId = sub.Id;
-                item.IsSubscribed = true;
+                item.IsSubscribed = live;
                 item.IsActive = live;
                 item.AutoRenew = sub.AutoRenew;
                 item.Status = status;
@@ -417,11 +430,22 @@ namespace Ozikol_BCC.Api.Services
                 item.EffectivePrice = Math.Round(subEffectiveUsd * currRate, 2);
                 item.ExpiresAtUtc = sub.ExpiresAtUtc;
                 item.DaysRemaining = days;
-                item.Severity = sub.IsActive && !string.Equals(sub.Status, "Pending", StringComparison.OrdinalIgnoreCase)
+                item.Severity = live && !f.IsCompulsory && !string.Equals(sub.Status, "Pending", StringComparison.OrdinalIgnoreCase)
                     ? SeverityFor(days)
                     : "None";
 
-                snapshot.Subscribed.Add(item);
+                if (live && f.IsCompulsory && item.EffectivePrice <= 0)
+                {
+                    snapshot.Included.Add(item);
+                }
+                else if (live)
+                {
+                    snapshot.Subscribed.Add(item);
+                }
+                else
+                {
+                    snapshot.Available.Add(item);
+                }
 
                 if (item.Severity != "None")
                 {

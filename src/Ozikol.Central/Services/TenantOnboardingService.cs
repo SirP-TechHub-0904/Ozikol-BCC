@@ -512,34 +512,9 @@ public class TenantOnboardingService : ITenantOnboardingService
                 }
             }
 
-            // Step F: Automatically Provision Compulsory Core Feature Subscriptions ($0 / Annual Base Plan)
-            var compulsoryFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
-                .AsNoTracking()
-                .Where(f => f.IsCompulsory && f.IsActive)
-                .ToListAsync(cancellationToken);
-
-            foreach (var coreFeature in compulsoryFeatures)
-            {
-                _masterCatalogDbContext.MasterTenantFeatureSubscriptions.Add(new MasterTenantFeatureSubscription
-                {
-                    Id = Guid.NewGuid(),
-                    MasterTenantCatalogId = catalogEntry.Id,
-                    MasterFeatureCatalogId = coreFeature.Id,
-                    DurationType = SubscriptionBillingDuration.Yearly,
-                    RecurringPrice = 0.00m,
-                    StartsAtUtc = now,
-                    ExpiresAtUtc = trialOffsetDate.AddYears(1), // 1-Year maximum annual renewal
-                    AutoRenew = true,
-                    IsActive = true,
-                    Status = "Active",
-                    CreatedUtc = now
-                });
-            }
-
-            // Step G: Provision Optional Add-on Features Selected by Tenant with Per-Feature Cadence & Single Line-Item Pricing
+            // Step F & G: Provision Only Explicitly Selected Modular Features (Tenants can install/activate additional capabilities from /billing/features at any time)
             var selectedFeatureGuids = (request.SelectedFeatureIds ?? new List<Guid>())
                 .Distinct()
-                .Where(id => compulsoryFeatures.All(c => c.Id != id))
                 .ToList();
 
             if (selectedFeatureGuids.Count > 0)
