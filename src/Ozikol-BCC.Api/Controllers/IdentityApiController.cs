@@ -911,6 +911,320 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<object>.SuccessResponse(parsedLogs, "Login audit logs retrieved."));
         }
 
+        /// <summary>
+        /// Retrieves the unified workspace-wide activity and login audit stream across all users (no 30-day restriction).
+        /// Supports server-side pagination, search, module filtering, and SuperAdmin shielding.
+        /// </summary>
+        /// <param name="page">1-based page number.</param>
+        /// <param name="pageSize">Records per page.</param>
+        /// <param name="search">Optional search term (user name, email, action, description, IP).</param>
+        /// <param name="module">Optional module filter.</param>
+        /// <returns>Paged collection of unified activity and authentication audit logs.</returns>
+        [HttpGet("security-audit")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+        public async Task<IActionResult> GetWorkspaceSecurityAuditLogs(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 25,
+            [FromQuery] string? search = null,
+            [FromQuery] string? module = null)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 200) pageSize = 200;
+
+            var isSuperAdmin = User.IsInRole("SuperAdmin") ||
+                               User.Claims.Any(c => (c.Type == ClaimTypes.Role || c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role") &&
+                                                    string.Equals(c.Value, "SuperAdmin", StringComparison.OrdinalIgnoreCase));
+
+            var superAdminUserIds = new List<string>();
+            var superAdminEmails = new List<string>();
+
+            if (!isSuperAdmin)
+            {
+                var superAdminRole = await _dbContext.Roles
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Name == "SuperAdmin" || r.NormalizedName == "SUPERADMIN");
+
+                if (superAdminRole != null)
+                {
+                    superAdminUserIds = await _dbContext.UserRoles
+                        .AsNoTracking()
+                        .Where(ur => ur.RoleId == superAdminRole.Id)
+                        .Select(ur => ur.UserId)
+                        .ToListAsync();
+
+                    if (superAdminUserIds.Count > 0)
+                    {
+                        superAdminEmails = await _dbContext.Users
+                            .AsNoTracking()
+                            .Where(u => superAdminUserIds.Contains(u.Id) && !string.IsNullOrEmpty(u.Email))
+                            .Select(u => u.Email!)
+                            .ToListAsync();
+                    }
+                }
+            }
+
+            var emailFilterSet = new HashSet<string>(superAdminEmails, StringComparer.OrdinalIgnoreCase);
+            var idFilterSet = new HashSet<string>(superAdminUserIds, StringComparer.OrdinalIgnoreCase);
+
+            // Load user directory map to enrich logs with FullName
+            var usersMap = await _dbContext.Users
+                .AsNoTracking()
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Email,
+                    FullName = ((u.FirstName ?? "") + " " + (u.LastName ?? "")).Trim()
+                })
+                .ToListAsync();
+
+            var nameByEmail = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var nameById = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var u in usersMap)
+            {
+                if (!string.IsNullOrWhiteSpace(u.Id) && !string.IsNullOrWhiteSpace(u.FullName))
+                    nameById[u.Id] = u.FullName;
+                if (!string.IsNullOrWhiteSpace(u.Email) && !string.IsNullOrWhiteSpace(u.FullName))
+                    nameByEmail[u.Email] = u.FullName;
+            }
+
+            // 1. Fetch all operational activity logs across the workspace
+            var rawActivities = await _dbContext.BcpActivityLogs
+                .AsNoTracking()
+                .OrderByDescending(a => a.Date)
+                .Take(2000)
+                .ToListAsync();
+
+            // 2. Fetch all login authentication logs across the workspace
+            var rawLogins = await _dbContext.BcpLoginAuditLogs
+                .AsNoTracking()
+                .OrderByDescending(l => l.Timestamp)
+                .Take(2000)
+                .ToListAsync();
+
+            var unified = new List<(
+                Guid Id,
+                string LogSource,
+                string? UserId,
+                string FullName,
+                string Email,
+                string ActionType,
+                string Description,
+                string Module,
+                string IpAddress,
+                string UserAgent,
+                DateTime Timestamp)>();
+
+            foreach (var a in rawActivities)
+            {
+                if (!isSuperAdmin)
+                {
+                    if (!string.IsNullOrEmpty(a.PerformedByProfileId) && idFilterSet.Contains(a.PerformedByProfileId))
+                        continue;
+                    if (!string.IsNullOrEmpty(a.PerformedByUserEmail) && (emailFilterSet.Contains(a.PerformedByUserEmail) || a.PerformedByUserEmail.Contains("superadmin", StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                }
+
+                var email = a.PerformedByUserEmail ?? "";
+                var fullName = a.PerformedByFullName;
+                if (string.IsNullOrWhiteSpace(fullName) && !string.IsNullOrWhiteSpace(a.PerformedByProfileId) && nameById.TryGetValue(a.PerformedByProfileId, out var resolvedById))
+                    fullName = resolvedById;
+                if (string.IsNullOrWhiteSpace(fullName) && !string.IsNullOrWhiteSpace(email) && nameByEmail.TryGetValue(email, out var resolvedByEmail))
+                    fullName = resolvedByEmail;
+
+                unified.Add((
+                    a.Id,
+                    "activity",
+                    a.PerformedByProfileId,
+                    !string.IsNullOrWhiteSpace(fullName) ? fullName : (!string.IsNullOrWhiteSpace(email) ? email : "System"),
+                    !string.IsNullOrWhiteSpace(email) ? email : "system@workspace.local",
+                    a.ActionType ?? "OPERATIONAL_TASK",
+                    a.Description ?? a.ActionType ?? "Operational activity",
+                    !string.IsNullOrWhiteSpace(a.Module) ? a.Module : "System",
+                    a.IpAddress ?? "127.0.0.1",
+                    a.UserAgent ?? "Web Browser",
+                    a.Date
+                ));
+            }
+
+            foreach (var l in rawLogins)
+            {
+                if (!isSuperAdmin)
+                {
+                    if (!string.IsNullOrEmpty(l.UserId) && idFilterSet.Contains(l.UserId))
+                        continue;
+                    if (!string.IsNullOrEmpty(l.Email) && (emailFilterSet.Contains(l.Email) || l.Email.Contains("superadmin", StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                }
+
+                var email = l.Email ?? "";
+                string? fullName = null;
+                if (!string.IsNullOrWhiteSpace(l.UserId) && nameById.TryGetValue(l.UserId, out var resolvedById))
+                    fullName = resolvedById;
+                if (string.IsNullOrWhiteSpace(fullName) && !string.IsNullOrWhiteSpace(email) && nameByEmail.TryGetValue(email, out var resolvedByEmail))
+                    fullName = resolvedByEmail;
+
+                var desc = l.Status != null && l.Status.Contains("Success", StringComparison.OrdinalIgnoreCase)
+                    ? "Successful authentication sign-in"
+                    : (l.Status ?? "Authentication event");
+
+                unified.Add((
+                    l.Id,
+                    "login",
+                    l.UserId,
+                    !string.IsNullOrWhiteSpace(fullName) ? fullName : (!string.IsNullOrWhiteSpace(email) ? email : "Member"),
+                    !string.IsNullOrWhiteSpace(email) ? email : "account@domain.com",
+                    l.Status ?? "Sign-in",
+                    desc,
+                    "Authentication",
+                    l.IpAddress ?? "127.0.0.1",
+                    l.UserAgent ?? "Web Browser",
+                    l.Timestamp
+                ));
+            }
+
+            // Collect distinct modules for filter dropdown
+            var modules = unified
+                .Select(x => x.Module)
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(m => m)
+                .ToList();
+
+            // Apply module filter
+            if (!string.IsNullOrWhiteSpace(module) && !string.Equals(module, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                var cleanMod = module.Trim();
+                unified = unified
+                    .Where(x => string.Equals(x.Module, cleanMod, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            // Apply search filter
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                unified = unified
+                    .Where(x =>
+                        x.FullName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.Email.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.ActionType.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.Description.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.Module.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.IpAddress.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            var ordered = unified
+                .OrderByDescending(x => x.Timestamp)
+                .ToList();
+
+            var totalCount = ordered.Count;
+            var paged = ordered
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(h =>
+                {
+                    var parsed = UserAgentParser.Parse(h.UserAgent);
+                    return new
+                    {
+                        Id = h.Id.ToString(),
+                        h.LogSource,
+                        h.UserId,
+                        h.FullName,
+                        h.Email,
+                        h.ActionType,
+                        Status = h.ActionType,
+                        h.Description,
+                        h.Module,
+                        h.IpAddress,
+                        h.UserAgent,
+                        Device = parsed.FriendlyDeviceTitle,
+                        Browser = parsed.FriendlyBrowserDetails,
+                        BrowserName = parsed.BrowserName,
+                        ClientType = parsed.ClientType,
+                        Icon = parsed.Icon,
+                        IsTrusted = h.ActionType != null && h.ActionType.Contains("Trusted", StringComparison.OrdinalIgnoreCase),
+                        Date = h.Timestamp,
+                        h.Timestamp
+                    };
+                })
+                .ToList();
+
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            if (totalPages < 1) totalPages = 1;
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                items = paged,
+                totalCount,
+                page,
+                pageSize,
+                totalPages,
+                modules
+            }, "Workspace security audit logs retrieved."));
+        }
+
+        /// <summary>
+        /// Deletes a single audit log entry (from either <c>BcpActivityLogs</c> or <c>BcpLoginAuditLogs</c>) when requested by an administrator.
+        /// </summary>
+        /// <param name="id">Audit log GUID.</param>
+        /// <returns>Deletion result.</returns>
+        [HttpDelete("security-audit/{id:guid}")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+        public async Task<IActionResult> DeleteSecurityAuditLog(Guid id)
+        {
+            var activity = await _dbContext.BcpActivityLogs.FirstOrDefaultAsync(a => a.Id == id);
+            if (activity != null)
+            {
+                _dbContext.BcpActivityLogs.Remove(activity);
+                await _dbContext.SaveChangesAsync();
+                return Ok(ApiResponse<object>.SuccessResponse(null, "Audit log record deleted."));
+            }
+
+            var loginLog = await _dbContext.BcpLoginAuditLogs.FirstOrDefaultAsync(l => l.Id == id);
+            if (loginLog != null)
+            {
+                _dbContext.BcpLoginAuditLogs.Remove(loginLog);
+                await _dbContext.SaveChangesAsync();
+                return Ok(ApiResponse<object>.SuccessResponse(null, "Login audit record deleted."));
+            }
+
+            return NotFound(ApiResponse<object>.FailureResponse("Audit log record not found."));
+        }
+
+        /// <summary>
+        /// Deletes multiple selected audit log entries in bulk when requested by an administrator.
+        /// </summary>
+        /// <param name="ids">List of audit log GUIDs to delete.</param>
+        /// <returns>Bulk deletion result.</returns>
+        [HttpPost("security-audit/bulk-delete")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+        public async Task<IActionResult> BulkDeleteSecurityAuditLogs([FromBody] List<Guid> ids)
+        {
+            if (ids == null || ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No log IDs specified for deletion."));
+            }
+
+            var activities = await _dbContext.BcpActivityLogs.Where(a => ids.Contains(a.Id)).ToListAsync();
+            var logins = await _dbContext.BcpLoginAuditLogs.Where(l => ids.Contains(l.Id)).ToListAsync();
+
+            if (activities.Count > 0)
+            {
+                _dbContext.BcpActivityLogs.RemoveRange(activities);
+            }
+            if (logins.Count > 0)
+            {
+                _dbContext.BcpLoginAuditLogs.RemoveRange(logins);
+            }
+
+            var deletedCount = activities.Count + logins.Count;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new { deletedCount }, $"Deleted {deletedCount} audit log record(s)."));
+        }
+
         [HttpGet("password-policy")]
         [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
         public async Task<IActionResult> GetPasswordPolicy()

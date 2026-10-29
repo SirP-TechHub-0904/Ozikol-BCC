@@ -473,7 +473,7 @@ export interface SuiteInfoDetail {
                   <a routerLink="/identity/console/account" [queryParams]="{ tab: 'activity' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'activity')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history</span>{{ 'nav.login_history' | translate }}</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account?tab=activity')" (click)="togglePin('Login History', '/identity/console/account?tab=activity', 'history')" [title]="isPinned('/identity/console/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account?tab=activity')" (click)="togglePin('Log Activity', '/identity/console/account?tab=activity', 'history')" [title]="isPinned('/identity/console/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/identity/console/account?tab=activity') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
@@ -1206,7 +1206,7 @@ export interface SuiteInfoDetail {
                   <a routerLink="/users/workspace/account" [queryParams]="{ tab: 'activity' }" [class.active]="isCurrentRouteWithQuery('/users/workspace/account', 'activity')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history</span>{{ 'nav.login_history' | translate }}</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=activity')" (click)="togglePin('Login History', '/users/workspace/account?tab=activity', 'history')" [title]="isPinned('/users/workspace/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=activity')" (click)="togglePin('Log Activity', '/users/workspace/account?tab=activity', 'history')" [title]="isPinned('/users/workspace/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account?tab=activity') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>

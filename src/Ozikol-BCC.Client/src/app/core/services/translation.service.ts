@@ -272,7 +272,7 @@ export class TranslationService {
       'nav.change_password': 'Change Password',
       'nav.mfa_security': '2FA Security',
       'nav.manage_devices': 'Manage Devices',
-      'nav.login_history': 'Login Activity',
+      'nav.login_history': 'Log Activity',
       'nav.account_hub': 'Account Hub',
       'account.title': 'Account & Security Management',
       'account.subtitle': 'Manage your credentials, two-factor authentication, active devices, and login activity.',
