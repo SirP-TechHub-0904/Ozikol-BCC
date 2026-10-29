@@ -212,10 +212,14 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             TenantId = tenant.Id;
             Tenant = tenant;
 
-            // Default Tab: if Custom Availability is ON (or by default), show "available" tab first unless specified
-            if (string.IsNullOrWhiteSpace(Tab))
+            // Tab filtering only applies when UseCustomAvailability is enabled
+            if (!tenant.UseCustomAvailability)
             {
-                ActiveTab = tenant.UseCustomAvailability ? "available" : "all";
+                ActiveTab = "all";
+            }
+            else if (string.IsNullOrWhiteSpace(Tab))
+            {
+                ActiveTab = "available";
             }
             else
             {
@@ -412,14 +416,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             // Apply Search, Suite, Tab, and Status filters
             var filtered = allItems.AsEnumerable();
 
-            // Filter by Active Tab ("available" vs "not_available" vs "all")
-            if (ActiveTab == "available")
+            // Filter by Active Tab ("available" vs "not_available" vs "all") ONLY when UseCustomAvailability is true
+            if (tenant.UseCustomAvailability)
             {
-                filtered = filtered.Where(x => x.EffectiveAvailableForUse);
-            }
-            else if (ActiveTab == "not_available")
-            {
-                filtered = filtered.Where(x => !x.EffectiveAvailableForUse);
+                if (ActiveTab == "available")
+                {
+                    filtered = filtered.Where(x => x.EffectiveAvailableForUse);
+                }
+                else if (ActiveTab == "not_available")
+                {
+                    filtered = filtered.Where(x => !x.EffectiveAvailableForUse);
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(Search))

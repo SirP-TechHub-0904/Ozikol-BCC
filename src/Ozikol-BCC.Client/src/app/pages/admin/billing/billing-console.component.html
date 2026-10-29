@@ -178,54 +178,6 @@
     </div>
   </div>
 
-  <!-- ── Availability Tabs Bar (Available for Tenant vs Not Available / Coming Soon vs All) ── -->
-  <div class="availability-tabs-bar">
-    <div class="availability-tabs-left">
-      <button
-        type="button"
-        class="avail-tab-btn"
-        [class.active-avail]="availabilityFilter === 'available'"
-        (click)="selectAvailabilityTab('available')"
-      >
-        <span class="material-symbols-outlined">verified</span>
-        <span>Available for Workspace</span>
-        <span class="avail-tab-count">{{ availableForUseCount }}</span>
-      </button>
-
-      <button
-        type="button"
-        class="avail-tab-btn"
-        [class.active-soon]="availabilityFilter === 'coming_soon'"
-        (click)="selectAvailabilityTab('coming_soon')"
-      >
-        <span class="material-symbols-outlined">schedule</span>
-        <span>Not Available (Coming Soon)</span>
-        <span class="avail-tab-count">{{ comingSoonCount }}</span>
-      </button>
-
-      <button
-        type="button"
-        class="avail-tab-btn"
-        [class.active-all]="availabilityFilter === 'all'"
-        (click)="selectAvailabilityTab('all')"
-      >
-        <span class="material-symbols-outlined">grid_view</span>
-        <span>All Capabilities</span>
-        <span class="avail-tab-count">{{ totalCapabilitiesCount }}</span>
-      </button>
-    </div>
-
-    <div class="availability-tabs-hint">
-      @if (availabilityFilter === 'available') {
-        <span>Showing only capabilities attached &amp; ready for use in this workspace.</span>
-      } @else if (availabilityFilter === 'coming_soon') {
-        <span>Showing capabilities not yet available for this workspace (blurred).</span>
-      } @else {
-        <span>Showing all capabilities (unavailable capabilities are dimmed).</span>
-      }
-    </div>
-  </div>
-
   <!-- ── Search, Suite Filter & View Switcher Toolbar Card ── -->
   <div class="toolbar-card">
     <div class="toolbar-row">
