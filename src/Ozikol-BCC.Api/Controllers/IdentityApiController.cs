@@ -2016,6 +2016,12 @@ namespace Ozikol_BCC.Api.Controllers
                 return true;
             }
 
+            // Filter out passive WebPage / Blog ViewCount-only increment updates (e.g. Updated Web Page 'Home': [ViewCount: '1' -> '2'])
+            if (desc.Contains("[ViewCount:", StringComparison.OrdinalIgnoreCase) && !desc.Contains(", ", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
             return false;
         }
 

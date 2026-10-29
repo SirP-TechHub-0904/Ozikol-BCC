@@ -228,7 +228,10 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         "NormalizedUserName",
         "LastLogin",
         "UpdatedAt",
-        "AccessFailedCount"
+        "AccessFailedCount",
+        "ViewCount",
+        "Views",
+        "LastViewedAt"
     };
 
     /// <summary>

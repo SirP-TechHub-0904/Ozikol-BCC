@@ -2086,14 +2086,20 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.loadingLogs = false;
         if (Array.isArray(res?.data)) {
-          this.loginLogs = res.data;
-          this.loginTotalCount = res.data.length;
+          this.loginLogs = res.data.filter((item: any) => {
+            const desc = String(item?.description || '').trim();
+            return !(desc.toLowerCase().includes('[viewcount:') && !desc.includes(', '));
+          });
+          this.loginTotalCount = this.loginLogs.length;
           this.loginPage = 1;
           this.loginTotalPages = 1;
           this.hasOlderRecords = false;
         } else if (res?.data?.items) {
-          this.loginLogs = res.data.items;
-          this.loginTotalCount = res.data.totalCount ?? this.loginLogs.length;
+          this.loginLogs = res.data.items.filter((item: any) => {
+            const desc = String(item?.description || '').trim();
+            return !(desc.toLowerCase().includes('[viewcount:') && !desc.includes(', '));
+          });
+          this.loginTotalCount = Math.max(0, (res.data.totalCount ?? res.data.items.length) - (res.data.items.length - this.loginLogs.length));
           this.loginPage = res.data.page ?? page;
           this.loginPageSize = res.data.pageSize ?? this.loginPageSize;
           this.loginTotalPages = res.data.totalPages ?? Math.max(1, Math.ceil(this.loginTotalCount / this.loginPageSize));

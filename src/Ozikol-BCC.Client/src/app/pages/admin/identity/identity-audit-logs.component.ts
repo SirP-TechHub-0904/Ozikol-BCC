@@ -721,8 +721,14 @@ export class IdentityAuditLogsComponent implements OnInit {
         this.isLoading = false;
         const data = res?.data;
         if (data && Array.isArray(data.items)) {
-          this.logs = data.items;
-          this.totalCount = Number(data.totalCount || data.items.length);
+          this.logs = data.items.filter((item: WorkspaceAuditLogItem) => {
+            const desc = (item?.description || '').trim();
+            if (desc.toLowerCase().includes('[viewcount:') && !desc.includes(', ')) {
+              return false;
+            }
+            return true;
+          });
+          this.totalCount = Math.max(0, Number(data.totalCount || data.items.length) - (data.items.length - this.logs.length));
           this.page = Number(data.page || 1);
           this.pageSize = Number(data.pageSize || 25);
           this.totalPages = Number(data.totalPages || 1);
