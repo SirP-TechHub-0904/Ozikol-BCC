@@ -298,6 +298,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                         IsSuspended = t.IsSuspended,
                         UseCustomPricing = false,
                         UseCustomAvailability = false,
+                        DefaultCurrencyCode = "USD",
                         CreatedUtc = t.CreatedUtc,
                         LastAccessedUtc = t.LastAccessedUtc,
                         FeatureSubscriptions = t.FeatureSubscriptions.Select(s => new MasterTenantFeatureSubscription
@@ -376,6 +377,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             ComingSoonCount = TotalCapabilities - AvailableForUseCount;
 
             Categories = CanonicalSuites.Select(s => s.Name).ToList();
+
+            // Load currency exchange rates for tenant default currency resolution
+            Dictionary<string, MasterCurrencyRate> currencyLookup;
+            try
+            {
+                var rates = await _dbContext.MasterCurrencyRates.AsNoTracking().ToListAsync();
+                currencyLookup = rates
+                    .GroupBy(r => r.CurrencyCode.ToUpperInvariant())
+                    .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                currencyLookup = new Dictionary<string, MasterCurrencyRate>(StringComparer.OrdinalIgnoreCase);
+            }
 
             // 1. Build All Tenants & Feature Usage Matrix
             var matrixList = new List<TenantFeatureUsageSummaryDto>();
@@ -475,6 +490,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 var totalActiveCount = activeCompulsoryCount + activeAddonCount;
                 var adoptionPercent = TotalCapabilities > 0 ? ((double)totalActiveCount / TotalCapabilities) * 100.0 : 0.0;
 
+                var tenantCurrCode = string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode) ? "USD" : tenant.DefaultCurrencyCode.Trim().ToUpperInvariant();
+                string tenantCurrSymbol = "$";
+                decimal tenantCurrRate = 1.0m;
+                if (currencyLookup.TryGetValue(tenantCurrCode, out var matchedRate))
+                {
+                    tenantCurrSymbol = matchedRate.CurrencySymbol;
+                    tenantCurrRate = matchedRate.RateFromUsd > 0 ? matchedRate.RateFromUsd : 1.0m;
+                }
+
                 matrixList.Add(new TenantFeatureUsageSummaryDto
                 {
                     TenantId = tenant.Id,
@@ -488,6 +512,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                     CustomPricedFeaturesCount = customPriceCount,
                     UseCustomAvailability = tenant.UseCustomAvailability || customAvailCount > 0,
                     CustomAvailabilityFeaturesCount = customAvailCount,
+                    DefaultCurrencyCode = tenantCurrCode,
+                    CurrencySymbol = tenantCurrSymbol,
+                    ExchangeRateFromUsd = tenantCurrRate,
                     CreatedUtc = tenant.CreatedUtc,
                     LastAccessedUtc = tenant.LastAccessedUtc,
                     LastUsedDisplay = relativeTime,
@@ -713,6 +740,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             public int CustomPricedFeaturesCount { get; set; }
             public bool UseCustomAvailability { get; set; }
             public int CustomAvailabilityFeaturesCount { get; set; }
+            public string DefaultCurrencyCode { get; set; } = "USD";
+            public string CurrencySymbol { get; set; } = "$";
+            public decimal ExchangeRateFromUsd { get; set; } = 1.0m;
             public DateTime CreatedUtc { get; set; }
             public DateTime? LastAccessedUtc { get; set; }
             public string LastUsedDisplay { get; set; } = "Never";

@@ -299,7 +299,7 @@
                                     <div style="font-size: 12px; font-weight: 800; color: #0f172a;">
                                         @if (feat.MonthlyPrice > 0)
                                         {
-                                            <span>$@feat.MonthlyPrice.ToString("F2")/mo</span>
+                                            <span data-usd-amount="@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix="/mo">$@feat.MonthlyPrice.ToString("F2")/mo</span>
                                         }
                                         else
                                         {

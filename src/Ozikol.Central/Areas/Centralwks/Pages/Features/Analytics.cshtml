@@ -490,7 +490,7 @@
                 <span class="tfa-kpi-label">Monthly Feature Revenue (MRR)</span>
                 <div class="tfa-kpi-dual">
                     <a href="/centralwks/features/analytics?activeTab=tenants&policyFilter=PaidTier" style="text-decoration: none;">
-                        <span class="tfa-kpi-num" style="color: #0050E5;">$@Model.TotalSubscriptionMrr.ToString("N2")<span style="font-size: 12px; font-weight: 600; color: #64748b;">/mo</span></span>
+                        <span class="tfa-kpi-num" style="color: #0050E5;" data-usd-amount="@Model.TotalSubscriptionMrr.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix="/mo">$@Model.TotalSubscriptionMrr.ToString("N2")<span style="font-size: 12px; font-weight: 600; color: #64748b;">/mo</span></span>
                     </a>
                 </div>
                 <div class="tfa-kpi-sub">
@@ -636,20 +636,26 @@
                                     </td>
                                     <td>
                                         <div class="tfa-policy-stack">
-                                            @if (t.UseCustomPricing)
-                                            {
-                                                <span class="tfa-pill tfa-pill-custom-price" title="Tenant uses custom feature pricing">
-                                                    <span class="material-symbols-outlined" style="font-size: 13px;">sell</span>
-                                                    Custom Pricing @(t.CustomPricedFeaturesCount > 0 ? $"({t.CustomPricedFeaturesCount})" : "")
+                                            <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+                                                @if (t.UseCustomPricing)
+                                                {
+                                                    <span class="tfa-pill tfa-pill-custom-price" title="Tenant uses custom feature pricing">
+                                                        <span class="material-symbols-outlined" style="font-size: 13px;">sell</span>
+                                                        Custom Pricing @(t.CustomPricedFeaturesCount > 0 ? $"({t.CustomPricedFeaturesCount})" : "")
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="tfa-pill tfa-pill-general" title="Inherits Master Catalog pricing">
+                                                        <span class="material-symbols-outlined" style="font-size: 13px;">public</span>
+                                                        General Pricing
+                                                    </span>
+                                                }
+                                                <span class="tfa-pill" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.28);" title="Tenant Default Currency">
+                                                    <span class="material-symbols-outlined" style="font-size: 12px;">currency_exchange</span>
+                                                    @t.DefaultCurrencyCode (@t.CurrencySymbol)
                                                 </span>
-                                            }
-                                            else
-                                            {
-                                                <span class="tfa-pill tfa-pill-general" title="Inherits Master Catalog pricing">
-                                                    <span class="material-symbols-outlined" style="font-size: 13px;">public</span>
-                                                    General Pricing
-                                                </span>
-                                            }
+                                            </div>
 
                                             @if (t.UseCustomAvailability)
                                             {
@@ -681,9 +687,15 @@
                                     <td>
                                         @if (t.MonthlyRevenueMrr > 0)
                                         {
-                                            <div style="font-size: 13.5px; font-weight: 800; color: #0f172a;">
+                                            <div style="font-size: 13.5px; font-weight: 800; color: #0f172a;" data-usd-amount="@t.MonthlyRevenueMrr.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix=" /mo">
                                                 $@t.MonthlyRevenueMrr.ToString("N2") <span style="font-size: 11px; font-weight: 500; color: #64748b;">/mo</span>
                                             </div>
+                                            @if (t.DefaultCurrencyCode != "USD")
+                                            {
+                                                <div style="font-size: 11px; font-weight: 700; color: #0284c7;">
+                                                    @t.CurrencySymbol@((t.MonthlyRevenueMrr * t.ExchangeRateFromUsd).ToString("N2")) @t.DefaultCurrencyCode
+                                                </div>
+                                            }
                                             @if (t.UseCustomPricing)
                                             {
                                                 <div style="font-size: 10.5px; font-weight: 700; color: #0050E5;">Custom Rate Active</div>
@@ -692,7 +704,7 @@
                                         else
                                         {
                                             <div style="font-size: 13px; font-weight: 700; color: #64748b;">
-                                                $0.00 <span style="font-size: 10px; padding: 2px 6px; background: #ecfdf5; color: #059669; border-radius: 4px; font-weight: 700;">Free Tier</span>
+                                                <span data-usd-amount="0.00">$0.00</span> <span style="font-size: 10px; padding: 2px 6px; background: #ecfdf5; color: #059669; border-radius: 4px; font-weight: 700;">Free Tier</span>
                                             </div>
                                         }
                                     </td>

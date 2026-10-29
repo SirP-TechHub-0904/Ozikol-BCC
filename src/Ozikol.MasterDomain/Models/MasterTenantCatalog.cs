@@ -169,5 +169,12 @@ public class MasterTenantCatalog
     /// </summary>
     public bool UseCustomAvailability { get; set; } = false;
 
+    /// <summary>
+    /// Default billing and display currency ISO 4217 code for this tenant organization (e.g. "USD", "NGN", "GBP", "EUR").
+    /// Defaults to "USD".
+    /// </summary>
+    [MaxLength(10)]
+    public string DefaultCurrencyCode { get; set; } = "USD";
+
     public ICollection<MasterTenantFeatureSubscription> FeatureSubscriptions { get; set; } = new List<MasterTenantFeatureSubscription>();
 }

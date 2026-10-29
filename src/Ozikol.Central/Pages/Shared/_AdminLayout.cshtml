@@ -49,6 +49,7 @@
                 <div class="topbar-right">
 @inject Ozikol.Central.Services.Notifications.ICentralNotificationService NotificationService
 @inject Microsoft.AspNetCore.Identity.UserManager<Ozikol.MasterDomain.Models.CentralUser> UserManager
+@inject Ozikol.MasterPersistence.EF.MasterSQL.MasterCatalogDbContext MasterDb
 @{
     var topbarUserId = UserManager.GetUserId(User);
     var topbarUnreadCount = 0;
@@ -63,6 +64,30 @@
         }
         catch { }
     }
+
+    List<Ozikol.MasterDomain.Models.MasterCurrencyRate> topbarCurrencies = new();
+    try
+    {
+        topbarCurrencies = Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AsNoTracking(MasterDb.MasterCurrencyRates)
+            .Where(c => c.IsActive)
+            .OrderByDescending(c => c.IsBaseCurrency)
+            .ThenBy(c => c.SortOrder)
+            .ThenBy(c => c.CurrencyCode)
+            .ToList();
+    }
+    catch { }
+
+    if (!topbarCurrencies.Any())
+    {
+        topbarCurrencies = new List<Ozikol.MasterDomain.Models.MasterCurrencyRate>
+        {
+            new() { CurrencyCode = "USD", CurrencySymbol = "$", DisplayName = "US Dollar", RateFromUsd = 1.0000m, IsBaseCurrency = true, IsActive = true },
+            new() { CurrencyCode = "NGN", CurrencySymbol = "₦", DisplayName = "Nigerian Naira", RateFromUsd = 1600.0000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "GBP", CurrencySymbol = "£", DisplayName = "British Pound", RateFromUsd = 0.7900m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "EUR", CurrencySymbol = "€", DisplayName = "Euro", RateFromUsd = 0.9200m, IsBaseCurrency = false, IsActive = true }
+        };
+    }
+    var baseTopbarCurr = topbarCurrencies.FirstOrDefault(c => c.IsBaseCurrency) ?? topbarCurrencies.First();
 }
 
                     <div class="topbar-search">
@@ -70,6 +95,83 @@
                             <span class="material-symbols-outlined">search</span>
                         </span>
                         <input type="text" placeholder="Quick search... (Press /)" aria-label="Search" />
+                    </div>
+
+                    @* ── Topbar System Currency Switcher & Live Converter ── *@
+                    <div class="topbar-currency" style="position: relative;">
+                        <button type="button" id="topbarCurrencyBtn" onclick="toggleTopbarCurrencyMenu(event)" title="System Currency &amp; Live Exchange Rate Converter"
+                                style="height: 36px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--admin-border, #e2e8f0); background: var(--admin-bg-surface-elevated, #f8fafc); color: var(--admin-text, #0f172a); font-size: 12.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <span class="material-symbols-outlined" style="font-size: 16px; color: #0050E5;">currency_exchange</span>
+                            <span id="topbarActiveCurrencyLabel">@baseTopbarCurr.CurrencyCode (@baseTopbarCurr.CurrencySymbol)</span>
+                            <span class="material-symbols-outlined" style="font-size: 15px; color: #64748b;">expand_more</span>
+                        </button>
+
+                        <div id="topbarCurrencyMenu" style="display: none; position: absolute; right: 0; top: calc(100% + 10px); width: 320px; background: var(--admin-bg-surface, #ffffff); border: 1px solid var(--admin-border, #e2e8f0); border-radius: 14px; box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16); z-index: 1060; overflow: hidden;">
+                            <div style="padding: 12px 16px; border-bottom: 1px solid var(--admin-border, #e2e8f0); background: var(--admin-bg-surface-elevated, #f8fafc); display: flex; align-items: center; justify-content: space-between;">
+                                <div style="font-size: 12.5px; font-weight: 800; color: var(--admin-text, #0f172a); display: flex; align-items: center; gap: 6px;">
+                                    <span class="material-symbols-outlined" style="font-size: 17px; color: #0050E5;">currency_exchange</span>
+                                    Display Currency &amp; FX Converter
+                                </div>
+                                <span style="font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: #eff6ff; color: #0050E5;">Base: USD ($)</span>
+                            </div>
+
+                            @* Currency Selector List *@
+                            <div style="max-height: 210px; overflow-y: auto; padding: 6px;">
+                                @foreach (var c in topbarCurrencies)
+                                {
+                                    <button type="button"
+                                            class="topbar-curr-item"
+                                            data-code="@c.CurrencyCode"
+                                            data-symbol="@c.CurrencySymbol"
+                                            data-rate="@c.RateFromUsd.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)"
+                                            onclick="selectTopbarCurrency('@c.CurrencyCode', '@Html.Raw(c.CurrencySymbol.Replace("'", "\\'"))', @c.RateFromUsd.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture))"
+                                            style="width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border: none; background: transparent; border-radius: 8px; cursor: pointer; text-align: left; font-family: inherit;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="width: 28px; height: 28px; border-radius: 7px; background: #eff6ff; color: #0050E5; font-weight: 800; font-size: 12px; display: inline-flex; align-items: center; justify-content: center;">@c.CurrencySymbol</span>
+                                            <div>
+                                                <div style="font-size: 12.5px; font-weight: 700; color: var(--admin-text, #0f172a);">
+                                                    @c.CurrencyCode — @c.DisplayName
+                                                </div>
+                                                <div style="font-size: 11px; color: #64748b;">
+                                                    @(c.IsBaseCurrency ? "Default Base Currency (1.00 USD)" : $"1 USD ($) = {c.CurrencySymbol}{c.RateFromUsd:N2} {c.CurrencyCode}")
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if (c.IsBaseCurrency)
+                                        {
+                                            <span style="font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: #fef3c7; color: #d97706;">DEFAULT</span>
+                                        }
+                                    </button>
+                                }
+                            </div>
+
+                            @* Quick USD <-> Currency Calculator *@
+                            <div style="padding: 12px 14px; border-top: 1px solid var(--admin-border, #e2e8f0); background: #f8fafc;">
+                                <div style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">Quick Converter (to Selected Currency)</div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="flex: 1; position: relative;">
+                                        <span style="position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 700; color: #64748b;">$</span>
+                                        <input type="number" id="topbarConvUsdInput" value="10" min="0" step="1" oninput="updateTopbarQuickConverter()"
+                                               style="width: 100%; height: 32px; padding: 0 8px 0 22px; border-radius: 7px; border: 1px solid #cbd5e1; font-size: 12.5px; font-weight: 700; box-sizing: border-box;" />
+                                    </div>
+                                    <span style="color: #64748b; font-weight: 700;">=</span>
+                                    <div id="topbarConvResultBox" style="flex: 1.2; height: 32px; padding: 0 10px; border-radius: 7px; background: #eff6ff; border: 1px solid #bfdbfe; color: #0050E5; font-size: 12.5px; font-weight: 800; display: flex; align-items: center; justify-content: flex-end; overflow: hidden; white-space: nowrap;">
+                                        $10.00 USD
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="padding: 10px 14px; border-top: 1px solid var(--admin-border, #e2e8f0); display: flex; justify-content: space-between; align-items: center; background: #ffffff;">
+                                <a href="/centralwks/currencies" style="font-size: 12px; font-weight: 700; color: #0050E5; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                                    <span class="material-symbols-outlined" style="font-size: 15px;">settings</span>
+                                    Manage Currencies
+                                </a>
+                                <a href="/centralwks/currencies/create" style="font-size: 12px; font-weight: 700; color: #059669; text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
+                                    <span class="material-symbols-outlined" style="font-size: 15px;">add</span>
+                                    Add Currency
+                                </a>
+                            </div>
+                        </div>
                     </div>
 
                     <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle dark/light theme" aria-label="Toggle Theme">
@@ -415,6 +517,90 @@
 
     <!-- Global Floating Toast Notification Container -->
     <div id="ozToastContainer" class="oz-toast-container" aria-live="polite"></div>
+
+    <script>
+        (function () {
+            window.OzikolCurrencyState = {
+                code: localStorage.getItem('ozikol_central_curr_code') || '@baseTopbarCurr.CurrencyCode',
+                symbol: localStorage.getItem('ozikol_central_curr_symbol') || '@Html.Raw(baseTopbarCurr.CurrencySymbol.Replace("'", "\\'"))',
+                rate: parseFloat(localStorage.getItem('ozikol_central_curr_rate') || '@baseTopbarCurr.RateFromUsd.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)') || 1
+            };
+
+            window.toggleTopbarCurrencyMenu = function (e) {
+                e.stopPropagation();
+                const menu = document.getElementById('topbarCurrencyMenu');
+                if (!menu) return;
+                menu.style.display = (menu.style.display === 'none' || !menu.style.display) ? 'block' : 'none';
+                window.updateTopbarQuickConverter();
+            };
+
+            window.updateTopbarQuickConverter = function () {
+                const input = document.getElementById('topbarConvUsdInput');
+                const out = document.getElementById('topbarConvResultBox');
+                if (!input || !out) return;
+                const usd = parseFloat(input.value) || 0;
+                const st = window.OzikolCurrencyState;
+                const converted = usd * (st.rate || 1);
+                out.textContent = st.symbol + converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + st.code;
+            };
+
+            window.selectTopbarCurrency = function (code, symbol, rate) {
+                window.OzikolCurrencyState = { code: code, symbol: symbol, rate: parseFloat(rate) || 1 };
+                localStorage.setItem('ozikol_central_curr_code', code);
+                localStorage.setItem('ozikol_central_curr_symbol', symbol);
+                localStorage.setItem('ozikol_central_curr_rate', String(window.OzikolCurrencyState.rate));
+
+                const lbl = document.getElementById('topbarActiveCurrencyLabel');
+                if (lbl) lbl.textContent = code + ' (' + symbol + ')';
+
+                window.updateTopbarQuickConverter();
+                window.applyCentralCurrencyConversion();
+            };
+
+            window.applyCentralCurrencyConversion = function () {
+                const st = window.OzikolCurrencyState;
+                const lbl = document.getElementById('topbarActiveCurrencyLabel');
+                if (lbl) lbl.textContent = st.code + ' (' + st.symbol + ')';
+
+                // Highlight selected currency button in dropdown
+                document.querySelectorAll('.topbar-curr-item').forEach(btn => {
+                    const isMatch = btn.getAttribute('data-code') === st.code;
+                    btn.style.background = isMatch ? '#eff6ff' : 'transparent';
+                });
+
+                // Convert elements marked with data-usd-amount
+                document.querySelectorAll('[data-usd-amount]').forEach(el => {
+                    const usd = parseFloat(el.getAttribute('data-usd-amount'));
+                    if (isNaN(usd)) return;
+                    const suffix = el.getAttribute('data-usd-suffix') || '';
+                    if (st.code === 'USD' || Math.abs(st.rate - 1) < 0.0001) {
+                        el.textContent = '$' + usd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix;
+                    } else {
+                        const conv = usd * st.rate;
+                        el.textContent = st.symbol + conv.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix + ' ($' + usd.toFixed(2) + ')';
+                    }
+                });
+            };
+
+            document.addEventListener('click', function (e) {
+                const menu = document.getElementById('topbarCurrencyMenu');
+                if (menu && !menu.contains(e.target)) {
+                    menu.style.display = 'none';
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                // Sync with latest rate from server if matching currency exists in DOM
+                const matchBtn = document.querySelector('.topbar-curr-item[data-code="' + window.OzikolCurrencyState.code + '"]');
+                if (matchBtn) {
+                    window.OzikolCurrencyState.symbol = matchBtn.getAttribute('data-symbol') || window.OzikolCurrencyState.symbol;
+                    window.OzikolCurrencyState.rate = parseFloat(matchBtn.getAttribute('data-rate')) || 1;
+                }
+                window.updateTopbarQuickConverter();
+                window.applyCentralCurrencyConversion();
+            });
+        })();
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

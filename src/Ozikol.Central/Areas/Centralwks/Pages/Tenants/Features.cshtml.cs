@@ -96,6 +96,26 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// </summary>
         public List<FeatureItemDto> AvailableFeatures { get; set; } = new();
 
+        /// <summary>
+        /// Active currencies from MasterCurrencyRates for selecting the tenant's default currency.
+        /// </summary>
+        public List<MasterCurrencyRate> AvailableCurrencies { get; set; } = new();
+
+        /// <summary>
+        /// Effective currency code for this tenant (defaults to USD).
+        /// </summary>
+        public string TenantCurrencyCode { get; set; } = "USD";
+
+        /// <summary>
+        /// Symbol for the tenant's default currency (e.g. $, ₦, £, €).
+        /// </summary>
+        public string TenantCurrencySymbol { get; set; } = "$";
+
+        /// <summary>
+        /// Exchange rate of the tenant's default currency per 1.00 USD.
+        /// </summary>
+        public decimal TenantCurrencyRateFromUsd { get; set; } = 1.0m;
+
         // ── Tenant KPI Counters ──
         public int SuitesCount { get; set; }
         public int TotalCount { get; set; }
@@ -165,6 +185,47 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             Id = tenant.Id;
             TenantId = tenant.Id;
             Tenant = tenant;
+
+            // Load active platform currencies for tenant default currency governance
+            try
+            {
+                AvailableCurrencies = await _dbContext.MasterCurrencyRates
+                    .AsNoTracking()
+                    .Where(c => c.IsActive)
+                    .OrderByDescending(c => c.IsBaseCurrency)
+                    .ThenBy(c => c.SortOrder)
+                    .ThenBy(c => c.CurrencyCode)
+                    .ToListAsync();
+            }
+            catch
+            {
+                AvailableCurrencies = new List<MasterCurrencyRate>();
+            }
+
+            if (AvailableCurrencies.Count == 0)
+            {
+                AvailableCurrencies = new List<MasterCurrencyRate>
+                {
+                    new() { CurrencyCode = "USD", CurrencySymbol = "$", DisplayName = "US Dollar", RateFromUsd = 1.0000m, IsBaseCurrency = true, IsActive = true },
+                    new() { CurrencyCode = "NGN", CurrencySymbol = "₦", DisplayName = "Nigerian Naira", RateFromUsd = 1600.0000m, IsBaseCurrency = false, IsActive = true },
+                    new() { CurrencyCode = "GBP", CurrencySymbol = "£", DisplayName = "British Pound", RateFromUsd = 0.7900m, IsBaseCurrency = false, IsActive = true },
+                    new() { CurrencyCode = "EUR", CurrencySymbol = "€", DisplayName = "Euro", RateFromUsd = 0.9200m, IsBaseCurrency = false, IsActive = true }
+                };
+            }
+
+            TenantCurrencyCode = string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode) ? "USD" : tenant.DefaultCurrencyCode.Trim().ToUpperInvariant();
+            var matchedCurr = AvailableCurrencies.FirstOrDefault(c => c.CurrencyCode.Equals(TenantCurrencyCode, StringComparison.OrdinalIgnoreCase));
+            if (matchedCurr != null)
+            {
+                TenantCurrencySymbol = matchedCurr.CurrencySymbol;
+                TenantCurrencyRateFromUsd = matchedCurr.RateFromUsd > 0 ? matchedCurr.RateFromUsd : 1.0m;
+            }
+            else
+            {
+                TenantCurrencyCode = "USD";
+                TenantCurrencySymbol = "$";
+                TenantCurrencyRateFromUsd = 1.0m;
+            }
 
             List<MasterFeatureCatalog> allFeatures;
             try
@@ -397,6 +458,42 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             await _dbContext.SaveChangesAsync();
             TempData["Success"] = $"Availability mode for {tenant.OrganizationName} set to {(tenant.UseCustomAvailability ? "Custom Tenant Availability" : "General Master Availability")}.";
+
+            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
+        }
+
+        /// <summary>
+        /// Sets the default billing/display currency for this specific tenant organization.
+        /// </summary>
+        public async Task<IActionResult> OnPostSetTenantCurrencyAsync(Guid tenantId, string currencyCode)
+        {
+            var targetId = tenantId != Guid.Empty ? tenantId : (Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty));
+            var tenant = await _dbContext.MasterTenantCatalogs.FindAsync(targetId);
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant not found.";
+                return RedirectToPage("/Features/Analytics");
+            }
+
+            var normalizedCode = string.IsNullOrWhiteSpace(currencyCode) ? "USD" : currencyCode.Trim().ToUpperInvariant();
+            tenant.DefaultCurrencyCode = normalizedCode;
+            tenant.UpdatedUtc = DateTime.UtcNow;
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = "SetTenantDefaultCurrency",
+                EntityType = "Tenant",
+                EntityId = tenant.Id.ToString(),
+                Summary = $"Updated default currency for tenant '{tenant.OrganizationName}' to {normalizedCode}",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+            TempData["Success"] = $"Default currency for {tenant.OrganizationName} set to {normalizedCode}.";
 
             return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
         }

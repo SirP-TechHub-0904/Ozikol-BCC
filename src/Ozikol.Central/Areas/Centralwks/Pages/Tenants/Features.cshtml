@@ -38,8 +38,8 @@
     </div>
 </div>
 
-@* ── 2 Tenant Policy Switches Banner: Pricing Mode & Availability Mode ── *@
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-bottom: 20px;">
+@* ── 3 Tenant Policy Switches Banner: Pricing Mode, Availability Mode & Tenant Default Currency ── *@
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 16px; margin-bottom: 20px;">
     @* Switch 1: Pricing Policy (General vs Custom Pricing) *@
     <div class="admin-card" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#e2e8f0"); background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.03)" : "#ffffff");">
         <div style="display: flex; align-items: flex-start; gap: 12px;">
@@ -47,7 +47,7 @@
                 <span class="material-symbols-outlined" style="font-size: 22px;">payments</span>
             </div>
             <div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Pricing Policy</span>
                     @if (Model.Tenant.UseCustomPricing)
                     {
@@ -83,7 +83,7 @@
                 <span class="material-symbols-outlined" style="font-size: 22px;">verified</span>
             </div>
             <div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                     <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Availability Policy</span>
                     @if (Model.Tenant.UseCustomAvailability)
                     {
@@ -109,6 +109,46 @@
                 <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomAvailability ? "public" : "tune")</span>
                 <span>@(Model.Tenant.UseCustomAvailability ? "Use General Availability" : "Use Custom Availability")</span>
             </button>
+        </form>
+    </div>
+
+    @* Switch 3: Tenant Default Currency *@
+    <div class="admin-card" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1.5px solid #cbd5e1; background: #ffffff;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(14, 165, 233, 0.12); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="font-size: 22px;">currency_exchange</span>
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Default Currency</span>
+                    <span class="badge" style="background: rgba(14, 165, 233, 0.14); color: #0284c7; font-size: 10.5px; font-weight: 800;">
+                        @Model.TenantCurrencyCode (@Model.TenantCurrencySymbol)
+                    </span>
+                </div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 3px;">
+                    @if (Model.TenantCurrencyCode == "USD")
+                    {
+                        <span>Using base USD ($1.00) pricing. <a href="/centralwks/currencies" style="color: #0050e5; font-weight: 600; text-decoration: none;">Manage rates →</a></span>
+                    }
+                    else
+                    {
+                        <span>Rate: <strong>$1.00 USD = @Model.TenantCurrencySymbol@Model.TenantCurrencyRateFromUsd.ToString("N2") @Model.TenantCurrencyCode</strong> • <a href="/centralwks/currencies" style="color: #0050e5; font-weight: 600; text-decoration: none;">Rates →</a></span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <form method="post" asp-page-handler="SetTenantCurrency" style="margin: 0; display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+            <select name="currencyCode" class="form-select" style="height: 34px; padding: 4px 10px; font-size: 12.5px; font-weight: 700; min-width: 115px;" onchange="this.form.submit()">
+                @foreach (var curr in Model.AvailableCurrencies)
+                {
+                    <option value="@curr.CurrencyCode" selected="@(string.Equals(curr.CurrencyCode, Model.TenantCurrencyCode, StringComparison.OrdinalIgnoreCase))">
+                        @curr.CurrencyCode (@curr.CurrencySymbol)
+                    </option>
+                }
+            </select>
         </form>
     </div>
 </div>
@@ -210,11 +250,17 @@
         </div>
         <div class="stat-details" style="flex: 1; min-width: 0;">
             <span class="stat-label">Tenant Monthly Spend</span>
-            <div style="display: flex; align-items: baseline; gap: 4px; margin-top: 3px;">
-                <span class="stat-value" style="font-size: 21px; color: #0f172a;">$@Model.TotalMonthlyMrr.ToString("N2")<span style="font-size: 12px; font-weight: 600; color: #64748b;">/mo</span></span>
+            <div style="display: flex; align-items: baseline; gap: 6px; margin-top: 3px; flex-wrap: wrap;">
+                <span class="stat-value" style="font-size: 21px; color: #0f172a;" data-usd-amount="@Model.TotalMonthlyMrr.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix="/mo">$@Model.TotalMonthlyMrr.ToString("N2")<span style="font-size: 12px; font-weight: 600; color: #64748b;">/mo</span></span>
+                @if (Model.TenantCurrencyCode != "USD" && Model.TotalMonthlyMrr > 0)
+                {
+                    <span style="font-size: 11.5px; font-weight: 700; color: #0284c7; background: rgba(14, 165, 233, 0.1); padding: 2px 6px; border-radius: 5px;">
+                        @Model.TenantCurrencySymbol@((Model.TotalMonthlyMrr * Model.TenantCurrencyRateFromUsd).ToString("N2"))
+                    </span>
+                }
             </div>
             <div style="font-size: 11px; color: #64748b; margin-top: 3px; font-weight: 600;">
-                From <strong>@Model.SubscribedAddonCount</strong> Subscribed Add-ons
+                From <strong>@Model.SubscribedAddonCount</strong> Subscribed • Default: <strong>@Model.TenantCurrencyCode</strong>
             </div>
         </div>
     </div>
@@ -412,7 +458,11 @@
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                         @if (item.EffectiveMonthlyPrice > 0)
                                         {
-                                            <span style="font-size: 13px; font-weight: 800; color: #0f172a;">$@item.EffectiveMonthlyPrice.ToString("F2")/mo</span>
+                                            <span style="font-size: 13px; font-weight: 800; color: #0f172a;" data-usd-amount="@item.EffectiveMonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix="/mo">$@item.EffectiveMonthlyPrice.ToString("F2")/mo</span>
+                                            @if (Model.TenantCurrencyCode != "USD")
+                                            {
+                                                <span style="font-size: 11px; font-weight: 700; color: #0284c7;">(@Model.TenantCurrencySymbol@((item.EffectiveMonthlyPrice * Model.TenantCurrencyRateFromUsd).ToString("N2")))</span>
+                                            }
                                         }
                                         else
                                         {
@@ -583,10 +633,14 @@ else
                                 }
                             </td>
                             <td>
-                                <div style="display: flex; align-items: center; gap: 6px;">
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                     @if (item.EffectiveMonthlyPrice > 0)
                                     {
-                                        <strong style="font-size: 13px; color: #0f172a;">$@item.EffectiveMonthlyPrice.ToString("F2")/mo</strong>
+                                        <strong style="font-size: 13px; color: #0f172a;" data-usd-amount="@item.EffectiveMonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix="/mo">$@item.EffectiveMonthlyPrice.ToString("F2")/mo</strong>
+                                        @if (Model.TenantCurrencyCode != "USD")
+                                        {
+                                            <span style="font-size: 11px; font-weight: 700; color: #0284c7;">(@Model.TenantCurrencySymbol@((item.EffectiveMonthlyPrice * Model.TenantCurrencyRateFromUsd).ToString("N2")))</span>
+                                        }
                                     }
                                     else
                                     {
