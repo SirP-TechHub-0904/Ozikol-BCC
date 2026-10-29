@@ -241,15 +241,27 @@ namespace Ozikol.Central.Pages
                 TrialDays = 14;
             }
 
-            // 3. Query active catalog features ordered by canonical platform suite sequence, sort order, and name
-            var rawFeatures = await _dbContext.MasterFeatureCatalogs
-                .AsNoTracking()
-                .Where(f => f.IsActive)
-                .ToListAsync();
+            // 3. Query active catalog features ordered by suite SortOrder, feature SortOrder, and name
+            List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> rawFeatures;
+            try
+            {
+                rawFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Include(f => f.Suite)
+                    .Where(f => f.IsActive)
+                    .ToListAsync();
+            }
+            catch
+            {
+                rawFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .ToListAsync();
+            }
 
-            // Display-only list aligned with CentralWorks canonical suite order
+            // Display-only list aligned with MasterFeatureSuites.SortOrder and MasterFeatureCatalogs.SortOrder
             AllFeatures = rawFeatures
-                .OrderBy(f => GetSuiteOrder(f.Category))
+                .OrderBy(f => f.Suite?.SortOrder ?? GetSuiteOrder(f.Category))
                 .ThenBy(f => f.SortOrder)
                 .ThenBy(f => f.Name)
                 .ToList();

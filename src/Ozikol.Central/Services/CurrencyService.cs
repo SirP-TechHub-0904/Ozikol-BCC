@@ -156,6 +156,13 @@ public interface ICurrencyService
     int GetCompulsoryFeaturesCount();
 
     /// <summary>
+    /// Retrieves all active capability suites and their active modular capabilities from the Master Catalog,
+    /// strictly ordered by <see cref="MasterFeatureSuite.SortOrder"/> and <see cref="MasterFeatureCatalog.SortOrder"/>.
+    /// </summary>
+    /// <returns>Ordered read-only list of suites with their child features.</returns>
+    IReadOnlyList<PublicCatalogSuiteDto> GetActiveSuitesWithFeatures();
+
+    /// <summary>
     /// Invalidates all cached currency rates and dynamic pricing sums so administrative changes reflect immediately.
     /// </summary>
     void InvalidatePricingCache();
@@ -168,6 +175,81 @@ public interface ICurrencyService
     /// <param name="compact">If true, omits fractional cents/kobo if zero.</param>
     /// <returns>Formatted currency string.</returns>
     string FormatUsdConverted(decimal usdAmount, string? currencyCode, bool compact = false);
+}
+
+/// <summary>
+/// Represents an active capability suite and its ordered child features for public website rendering.
+/// </summary>
+public sealed class PublicCatalogSuiteDto
+{
+    /// <summary>Gets or sets the unique suite ID.</summary>
+    public Guid Id { get; set; }
+
+    /// <summary>Gets or sets the canonical suite code (e.g. SUITE-A).</summary>
+    public string SuiteCode { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the full suite display name.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the concise navigation/menu title.</summary>
+    public string MenuTitle { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the suite description.</summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the Material icon identifier.</summary>
+    public string Icon { get; set; } = "folder_special";
+
+    /// <summary>Gets or sets the sort order.</summary>
+    public int SortOrder { get; set; }
+
+    /// <summary>Gets or sets the HTML anchor slug (e.g. suite-people).</summary>
+    public string AnchorId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the ordered active features belonging to this suite.</summary>
+    public IReadOnlyList<PublicCatalogFeatureDto> Features { get; set; } = Array.Empty<PublicCatalogFeatureDto>();
+}
+
+/// <summary>
+/// Represents an active modular capability for public website mega-menu and catalog rendering.
+/// </summary>
+public sealed class PublicCatalogFeatureDto
+{
+    /// <summary>Gets or sets the unique feature ID.</summary>
+    public Guid Id { get; set; }
+
+    /// <summary>Gets or sets the canonical feature code (e.g. bcp-community-messenger).</summary>
+    public string FeatureCode { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the full feature name.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the concise sidebar menu title.</summary>
+    public string MenuTitle { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the concise one-line summary for mega-menus.</summary>
+    public string ShortSummary { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the full marketing description.</summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the 3 highlight bullet points for feature cards.</summary>
+    public IReadOnlyList<string> BulletPoints { get; set; } = Array.Empty<string>();
+
+    /// <summary>Gets or sets the public route slug under /features/{PublicSlug}.</summary>
+    public string PublicSlug { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the CSS icon color modifier class.</summary>
+    public string IconColorClass { get; set; } = "oz-feat-card-icon--indigo";
+
+    /// <summary>Gets or sets the sort order.</summary>
+    public int SortOrder { get; set; }
+
+    /// <summary>Gets or sets whether the capability is live or Coming Soon.</summary>
+    public bool IsAvailableForUse { get; set; }
+
+    /// <summary>Gets or sets whether the capability is included in Compulsory Core.</summary>
+    public bool IsCompulsory { get; set; }
 }
 
 /// <summary>
@@ -274,6 +356,17 @@ public class CurrencyService : ICurrencyService
     private const string ActiveFeaturesCountCacheKey = "Ozikol_ActiveFeaturesCount_V1";
     private const string ActiveSuitesCountCacheKey = "Ozikol_ActiveSuitesCount_V1";
     private const string CompulsoryCountCacheKey = "Ozikol_CompulsoryCount_V1";
+    private const string ActiveSuitesWithFeaturesCacheKey = "Ozikol_ActiveSuitesWithFeatures_V1";
+
+    private static readonly string[] IconColorClasses =
+    {
+        "oz-feat-card-icon--crimson",
+        "oz-feat-card-icon--indigo",
+        "oz-feat-card-icon--emerald",
+        "oz-feat-card-icon--amber",
+        "oz-feat-card-icon--sky",
+        "oz-feat-card-icon--violet"
+    };
 
     /// <inheritdoc />
     public int GetActiveFeaturesCount()
@@ -294,7 +387,7 @@ public class CurrencyService : ICurrencyService
             {
                 _logger.LogWarning(ex, "Unable to query active features count from database.");
             }
-            return 40;
+            return 46;
         });
     }
 
@@ -310,6 +403,9 @@ public class CurrencyService : ICurrencyService
                 var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
                 if (dbContext != null && dbContext.Database.CanConnect())
                 {
+                    var suiteCount = dbContext.MasterFeatureSuites.AsNoTracking().Count(s => s.IsActive);
+                    if (suiteCount > 0) return suiteCount;
+
                     return dbContext.MasterFeatureCatalogs
                         .AsNoTracking()
                         .Where(f => f.IsActive && !string.IsNullOrEmpty(f.Category))
@@ -322,7 +418,7 @@ public class CurrencyService : ICurrencyService
             {
                 _logger.LogWarning(ex, "Unable to query active suites count from database.");
             }
-            return 10;
+            return 11;
         });
     }
 
@@ -350,12 +446,202 @@ public class CurrencyService : ICurrencyService
     }
 
     /// <inheritdoc />
+    public IReadOnlyList<PublicCatalogSuiteDto> GetActiveSuitesWithFeatures()
+    {
+        return _cache.GetOrCreate(ActiveSuitesWithFeaturesCacheKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CompulsoryPriceCacheDuration;
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetService<MasterCatalogDbContext>();
+                if (dbContext != null && dbContext.Database.CanConnect())
+                {
+                    var suites = dbContext.MasterFeatureSuites
+                        .AsNoTracking()
+                        .Where(s => s.IsActive)
+                        .OrderBy(s => s.SortOrder)
+                        .ThenBy(s => s.Name)
+                        .ToList();
+
+                    var features = dbContext.MasterFeatureCatalogs
+                        .AsNoTracking()
+                        .Where(f => f.IsActive)
+                        .OrderBy(f => f.SortOrder)
+                        .ThenBy(f => f.Name)
+                        .ToList();
+
+                    var result = new List<PublicCatalogSuiteDto>();
+                    var assignedFeatureIds = new HashSet<Guid>();
+                    int colorIndex = 0;
+
+                    foreach (var s in suites)
+                    {
+                        var childFeatures = features
+                            .Where(f => (f.MasterFeatureSuiteId != null && f.MasterFeatureSuiteId == s.Id)
+                                     || (f.MasterFeatureSuiteId == null && string.Equals(f.Category?.Trim(), s.Name.Trim(), StringComparison.OrdinalIgnoreCase)))
+                            .OrderBy(f => f.SortOrder)
+                            .ThenBy(f => f.Name)
+                            .ToList();
+
+                        var mappedFeatures = new List<PublicCatalogFeatureDto>();
+                        foreach (var f in childFeatures)
+                        {
+                            assignedFeatureIds.Add(f.Id);
+                            mappedFeatures.Add(MapFeatureDto(f, colorIndex++));
+                        }
+
+                        // Only include active suites that have at least one active feature (or all active suites)
+                        if (mappedFeatures.Count > 0 || s.IsActive)
+                        {
+                            result.Add(new PublicCatalogSuiteDto
+                            {
+                                Id = s.Id,
+                                SuiteCode = s.SuiteCode,
+                                Name = s.Name,
+                                MenuTitle = !string.IsNullOrWhiteSpace(s.MenuTitle) ? s.MenuTitle : s.Name,
+                                Description = !string.IsNullOrWhiteSpace(s.Description) ? s.Description : $"Modular capabilities under {s.Name}.",
+                                Icon = !string.IsNullOrWhiteSpace(s.Icon) ? s.Icon : "folder_special",
+                                SortOrder = s.SortOrder,
+                                AnchorId = ResolveSuiteAnchorId(s.SuiteCode, s.Name),
+                                Features = mappedFeatures
+                            });
+                        }
+                    }
+
+                    // Group any active features whose Category was not yet linked to a MasterFeatureSuite row
+                    var ungrouped = features
+                        .Where(f => !assignedFeatureIds.Contains(f.Id))
+                        .GroupBy(f => !string.IsNullOrWhiteSpace(f.Category) ? f.Category.Trim() : "General Capabilities", StringComparer.OrdinalIgnoreCase);
+
+                    int fallbackOrder = (suites.LastOrDefault()?.SortOrder ?? 10) + 1;
+                    foreach (var grp in ungrouped)
+                    {
+                        var mapped = grp
+                            .OrderBy(f => f.SortOrder)
+                            .ThenBy(f => f.Name)
+                            .Select(f => MapFeatureDto(f, colorIndex++))
+                            .ToList();
+
+                        result.Add(new PublicCatalogSuiteDto
+                        {
+                            Id = Guid.NewGuid(),
+                            SuiteCode = $"SUITE-{fallbackOrder}",
+                            Name = grp.Key,
+                            MenuTitle = grp.Key,
+                            Description = $"Modular capabilities under {grp.Key}.",
+                            Icon = "folder_special",
+                            SortOrder = fallbackOrder++,
+                            AnchorId = ResolveSuiteAnchorId("", grp.Key),
+                            Features = mapped
+                        });
+                    }
+
+                    return (IReadOnlyList<PublicCatalogSuiteDto>)result
+                        .OrderBy(s => s.SortOrder)
+                        .ThenBy(s => s.Name)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Unable to query active suites and features from database.");
+            }
+
+            return Array.Empty<PublicCatalogSuiteDto>();
+        }) ?? Array.Empty<PublicCatalogSuiteDto>();
+    }
+
+    private static PublicCatalogFeatureDto MapFeatureDto(MasterFeatureCatalog f, int colorIdx)
+    {
+        var rawCode = (f.FeatureCode ?? string.Empty).Trim().ToLowerInvariant();
+        var slug = rawCode.StartsWith("bcp-", StringComparison.OrdinalIgnoreCase)
+            ? rawCode.Substring(4)
+            : rawCode;
+
+        var desc = (f.Description ?? string.Empty).Trim();
+        var shortSummary = desc.Length > 105 ? desc.Substring(0, 102).TrimEnd() + "..." : desc;
+
+        // Extract or synthesize 3 concise bullet points from the feature description
+        var bullets = ExtractFeatureBulletPoints(f.Name, desc);
+
+        return new PublicCatalogFeatureDto
+        {
+            Id = f.Id,
+            FeatureCode = f.FeatureCode ?? string.Empty,
+            Name = f.Name,
+            MenuTitle = !string.IsNullOrWhiteSpace(f.MenuTitle) ? f.MenuTitle : f.Name,
+            ShortSummary = shortSummary,
+            Description = desc,
+            BulletPoints = bullets,
+            PublicSlug = slug,
+            IconColorClass = IconColorClasses[colorIdx % IconColorClasses.Length],
+            SortOrder = f.SortOrder,
+            IsAvailableForUse = f.IsAvailableForUse,
+            IsCompulsory = f.IsCompulsory
+        };
+    }
+
+    private static IReadOnlyList<string> ExtractFeatureBulletPoints(string featureName, string description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            return new[]
+            {
+                $"Centralized {featureName} workspace controls",
+                "Role-based access permissions and real-time audit trail",
+                "Seamless synchronization across web, desktop, and mobile"
+            };
+        }
+
+        // Split description on commas/semicolons/periods to create 3 clean capability highlights
+        var segments = description
+            .Replace(" and ", ", ", StringComparison.OrdinalIgnoreCase)
+            .Split(new[] { ',', ';', '.' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(s => s.Length >= 8)
+            .Select(s => char.ToUpperInvariant(s[0]) + s.Substring(1))
+            .Take(3)
+            .ToList();
+
+        while (segments.Count < 3)
+        {
+            if (segments.Count == 1)
+                segments.Add("Role-based permissions & real-time telemetry");
+            else
+                segments.Add("Unified Web, Desktop & Mobile synchronization");
+        }
+
+        return segments;
+    }
+
+    private static string ResolveSuiteAnchorId(string? suiteCode, string suiteName)
+    {
+        var n = (suiteName ?? string.Empty).ToLowerInvariant();
+        if (n.Contains("people")) return "suite-people";
+        if (n.Contains("workforce") || n.Contains("rota")) return "suite-workforce";
+        if (n.Contains("report") || n.Contains("form")) return "suite-reports";
+        if (n.Contains("event") && !n.Contains("life")) return "suite-events";
+        if (n.Contains("finance") || n.Contains("commercial")) return "suite-finance";
+        if (n.Contains("operation") || n.Contains("workflow")) return "suite-operations";
+        if (n.Contains("communication") || n.Contains("ai")) return "suite-communication";
+        if (n.Contains("compliance") || n.Contains("learning")) return "suite-compliance";
+        if (n.Contains("demographic") || n.Contains("census")) return "suite-demographics";
+        if (n.Contains("life") || n.Contains("publication")) return "life-events-publications";
+        if (n.Contains("workspace")) return "suite-workspace";
+
+        var slug = new string(n.Select(ch => char.IsLetterOrDigit(ch) ? ch : '-').ToArray()).Trim('-');
+        while (slug.Contains("--")) slug = slug.Replace("--", "-");
+        return string.IsNullOrWhiteSpace(slug) ? "suite-general" : $"suite-{slug}";
+    }
+
+    /// <inheritdoc />
     public void InvalidatePricingCache()
     {
         _cache.Remove(CompulsoryPriceCacheKey);
         _cache.Remove(ActiveFeaturesCountCacheKey);
         _cache.Remove(ActiveSuitesCountCacheKey);
         _cache.Remove(CompulsoryCountCacheKey);
+        _cache.Remove(ActiveSuitesWithFeaturesCacheKey);
         _cache.Remove(CacheKey);
         _cache.Remove(DefaultCurrencyCacheKey);
     }

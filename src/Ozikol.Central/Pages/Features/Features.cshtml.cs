@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Ozikol.Central.Services;
 
@@ -7,7 +9,7 @@ namespace Ozikol.Central.Pages;
 
 /// <summary>
 /// Page model for the master Features Catalog hub page (/features).
-/// Dynamically queries active modular capabilities and distinct suites,
+/// Dynamically queries active modular capabilities and distinct suites ordered by SortOrder,
 /// providing localized routing and direct onboarding access.
 /// </summary>
 public class FeaturesModel : PageModel
@@ -39,15 +41,21 @@ public class FeaturesModel : PageModel
     public int TotalSuitesCount { get; private set; }
 
     /// <summary>
-    /// Handles GET requests to the features catalog hub, resolving active culture and dynamic catalog stats.
+    /// All active suites and their active child capabilities, strictly ordered by SortOrder.
+    /// </summary>
+    public IReadOnlyList<PublicCatalogSuiteDto> Suites { get; private set; } = Array.Empty<PublicCatalogSuiteDto>();
+
+    /// <summary>
+    /// Handles GET requests to the features catalog hub, resolving active culture and dynamic catalog suites/features.
     /// </summary>
     public void OnGet()
     {
         var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
         CurrentCulture = culture is "en" or "fr" or "es" or "de" ? culture : "en";
 
-        TotalFeaturesCount = _currencyService.GetActiveFeaturesCount();
-        TotalSuitesCount = _currencyService.GetActiveSuitesCount();
+        Suites = _currencyService.GetActiveSuitesWithFeatures();
+        TotalFeaturesCount = Suites.Count > 0 ? Suites.Sum(s => s.Features.Count) : _currencyService.GetActiveFeaturesCount();
+        TotalSuitesCount = Suites.Count > 0 ? Suites.Count : _currencyService.GetActiveSuitesCount();
     }
 }
 

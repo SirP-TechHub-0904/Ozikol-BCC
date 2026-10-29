@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
@@ -17,6 +18,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
     public class IndexModel : PageModel
     {
         private readonly MasterCatalogDbContext _dbContext;
+        private readonly ICurrencyService? _currencyService;
 
         /// <summary>
         /// Canonical ordering of the 11 platform suites matching the public showcase (/en/features).
@@ -40,9 +42,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// Initializes a new instance of the <see cref="IndexModel"/> class.
         /// </summary>
         /// <param name="dbContext">Master catalog database context.</param>
-        public IndexModel(MasterCatalogDbContext dbContext)
+        /// <param name="currencyService">Optional currency and catalog cache service.</param>
+        public IndexModel(MasterCatalogDbContext dbContext, ICurrencyService? currencyService = null)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _currencyService = currencyService;
         }
 
         /// <summary>
@@ -241,19 +245,42 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             AvailableForUseCount = allFeatures.Count(f => f.IsAvailableForUse);
             ComingSoonCount = allFeatures.Count(f => !f.IsAvailableForUse);
 
-            // Populate suites in canonical sequence
+            // Build dynamic suite sort map from MasterFeatureSuites (strictly ordered by SortOrder)
+            var suiteSortMap = Suites
+                .GroupBy(s => s.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().SortOrder, StringComparer.OrdinalIgnoreCase);
+
+            int ResolveDynamicSuiteSort(MasterFeatureCatalog f)
+            {
+                if (f.MasterFeatureSuiteId.HasValue)
+                {
+                    var matchedSuite = Suites.FirstOrDefault(s => s.Id == f.MasterFeatureSuiteId.Value);
+                    if (matchedSuite != null) return matchedSuite.SortOrder;
+                }
+                if (!string.IsNullOrWhiteSpace(f.Category) && suiteSortMap.TryGetValue(f.Category.Trim(), out var order))
+                    return order;
+                return GetSuiteOrder(f.Category) + 100;
+            }
+
+            // Populate suites ordered strictly by SortOrder
             var distinctDbCategories = allFeatures
                 .Select(f => f.Category)
                 .Where(c => !string.IsNullOrWhiteSpace(c))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            Categories = CanonicalSuites
-                .Where(s => distinctDbCategories.Contains(s, StringComparer.OrdinalIgnoreCase))
-                .Concat(distinctDbCategories.Where(c => !CanonicalSuites.Contains(c, StringComparer.OrdinalIgnoreCase)).OrderBy(c => c))
+            var orderedSuiteNames = Suites
+                .OrderBy(s => s.SortOrder)
+                .ThenBy(s => s.Name)
+                .Select(s => s.Name)
                 .ToList();
 
-            SuitesCount = Categories.Count;
+            Categories = orderedSuiteNames
+                .Where(s => distinctDbCategories.Contains(s, StringComparer.OrdinalIgnoreCase))
+                .Concat(distinctDbCategories.Where(c => !orderedSuiteNames.Contains(c, StringComparer.OrdinalIgnoreCase)).OrderBy(c => c))
+                .ToList();
+
+            SuitesCount = Suites.Count > 0 ? Suites.Count : Categories.Count;
 
             // Apply in-memory or query filtering
             var filtered = allFeatures.AsEnumerable();
@@ -305,8 +332,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
                 case "suite":
                     filtered = isDesc
-                        ? filtered.OrderByDescending(f => GetSuiteOrder(f.Category)).ThenBy(f => f.SortOrder)
-                        : filtered.OrderBy(f => GetSuiteOrder(f.Category)).ThenBy(f => f.SortOrder);
+                        ? filtered.OrderByDescending(f => ResolveDynamicSuiteSort(f)).ThenBy(f => f.SortOrder)
+                        : filtered.OrderBy(f => ResolveDynamicSuiteSort(f)).ThenBy(f => f.SortOrder);
                     break;
 
                 case "billing":
@@ -324,9 +351,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                     break;
 
                 default:
-                    // Default canonical suite sequence
+                    // Default strictly respects Suite SortOrder then Feature SortOrder
                     filtered = filtered
-                        .OrderBy(f => GetSuiteOrder(f.Category))
+                        .OrderBy(f => ResolveDynamicSuiteSort(f))
                         .ThenBy(f => f.SortOrder)
                         .ThenBy(f => f.Name);
                     break;
@@ -401,6 +428,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             });
 
             await _dbContext.SaveChangesAsync();
+            _currencyService?.InvalidatePricingCache();
             var msg = $"'{feature.Name}' is now {(newActive ? "Published (Visible to Tenants)" : "Unpublished (Hidden from Tenants)")}.";
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
@@ -465,6 +493,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             });
 
             await _dbContext.SaveChangesAsync();
+            _currencyService?.InvalidatePricingCache();
             var msg = $"'{feature.Name}' marked as {(newAvailable ? "Available for Use" : "Coming Soon")}.";
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
@@ -519,6 +548,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
                 suite.Name = name.Trim();
                 suite.MenuTitle = menuTitle.Trim();
+                if (sortOrder > 0)
+                {
+                    suite.SortOrder = sortOrder;
+                }
                 if (!string.IsNullOrWhiteSpace(description))
                 {
                     suite.Description = description.Trim();
@@ -549,6 +582,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 });
 
                 await _dbContext.SaveChangesAsync();
+                _currencyService?.InvalidatePricingCache();
                 TempData["Success"] = $"Suite '{suite.Name}' (Sidebar Menu Title: '{suite.MenuTitle}') updated successfully.";
             }
             catch (Exception ex)

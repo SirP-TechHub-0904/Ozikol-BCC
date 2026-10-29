@@ -1,0 +1,105 @@
+@page "/features/workspace"
+@model Ozikol.Central.Pages.Features.WorkspaceModel
+@{
+    ViewData["Title"] = "Workspace (Desktop only) - Ozikol BCC Feature";
+}
+
+<div class="feature-detail-page">
+    <!-- Breadcrumb Bar -->
+    <div class="oz-breadcrumb-bar">
+        <div class="oz-breadcrumb-wrap">
+            <div class="oz-breadcrumb-trail">
+                <a href="/features">Features</a>
+                <span>&rsaquo;</span>
+                <a href="/features#suite-workspace">Workspace</a>
+                <span>&rsaquo;</span>
+                <span class="oz-breadcrumb-current">Workspace (Desktop only)</span>
+            </div>
+            <partial name="_BackToFeaturesLink" />
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="oz-feat-hero">
+        <div class="oz-feat-hero-container">
+            <div class="oz-feat-hero-content">
+                <div class="oz-feat-suite-pill">
+                    Workspace Suite
+                </div>
+                <h1 class="oz-feat-title">
+                    Workspace (Desktop only)
+                </h1>
+                <p class="oz-feat-lead">
+                    Desktop workplace management environment enabled from the web and admin console for managing organizational workplace operations, desktop stations, and unified command controls.
+                </p>
+                <div class="oz-feat-actions">
+                    <a href="/@Model.CurrentCulture/register" class="oz-btn-primary-hero">
+                        <span>Start Free Trial</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                    <a href="#capabilities" class="oz-btn-outline-hero">
+                        <span>Explore Capabilities</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="oz-feat-body">
+        <section class="oz-feat-overview-card">
+            <h2>Dedicated Desktop Workplace Management, Controlled Centrally from the Web</h2>
+            <p>
+                Ozikol's Workspace (Desktop only) capability empowers administrators to activate and govern desktop workplace environments directly from the web command console while providing dedicated native desktop execution for workplace stations and teams.
+            </p>
+        </section>
+
+        <!-- Key Capabilities Grid -->
+        <section id="capabilities" class="oz-feat-section">
+            <h2 class="oz-feat-section-title">Core Capabilities</h2>
+
+            <div class="oz-feat-grid">
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    </div>
+                    <h3>Native Desktop Workplace Execution</h3>
+                    <p>Run dedicated desktop workplace operations with native performance, local station awareness, and real-time synchronization to your cloud workspace.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </div>
+                    <h3>Web & Admin Console Activation</h3>
+                    <p>Enable, configure, and govern desktop workplace access directly from the web-based Business Command Center and Central Administration portal.</p>
+                </div>
+
+                <div class="oz-feat-card">
+                    <div class="oz-feat-card-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    <h3>Role-Based Workplace Security</h3>
+                    <p>Assign granular workplace permissions, track active desktop sessions in real time, and audit every operational action from a single unified log.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="oz-feat-cta">
+            <h2>Ready to Manage Your Workplace with Ozikol BCC?</h2>
+            <p>Activate Workspace (Desktop only) from your web console and unify your desktop workplace operations today.</p>
+            <div class="oz-feat-cta-buttons">
+                <a href="/@Model.CurrentCulture/register" class="oz-btn-cta-white">Get Started Free</a>
+                <a href="/features" class="oz-btn-cta-ghost">Explore All Features</a>
+            </div>
+        </section>
+    </main>
+</div>
+

@@ -210,9 +210,9 @@ namespace Ozikol_BCC.Api.Services
                     .ToListAsync(cancellationToken);
             }
 
-            // Order strictly by Canonical Suite Sequence -> SortOrder -> Name (matching Master /centralwks/features)
+            // Order strictly by Suite SortOrder -> Feature SortOrder -> Name (matching Master /centralwks/features)
             var features = rawFeatures
-                .OrderBy(f => GetSuiteOrder(f.Category))
+                .OrderBy(f => f.Suite?.SortOrder ?? GetSuiteOrder(f.Category))
                 .ThenBy(f => f.SortOrder)
                 .ThenBy(f => f.Name)
                 .ToList();
