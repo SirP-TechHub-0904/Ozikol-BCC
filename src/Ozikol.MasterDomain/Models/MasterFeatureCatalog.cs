@@ -97,6 +97,13 @@ namespace Ozikol.MasterDomain.Models
 
         public bool IsActive { get; set; } = true;
         public bool IsInBeta { get; set; } = false;
+
+        /// <summary>
+        /// Indicates whether the capability is fully implemented and available for immediate use in tenant workspaces
+        /// (true = Available for Use, false = Coming Soon while in active engineering).
+        /// </summary>
+        public bool IsAvailableForUse { get; set; } = false;
+
         public int SortOrder { get; set; } = 0;
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 

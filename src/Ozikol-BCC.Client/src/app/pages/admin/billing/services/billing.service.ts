@@ -12,9 +12,14 @@ export interface BillingFeatureItem {
   category: string;
   description?: string;
   icon?: string;
+  routePrefix?: string;
   isCompulsory: boolean;
   isSubscribed: boolean;
   isActive: boolean;
+  isAvailableForUse: boolean;
+  isInBeta?: boolean;
+  sortOrder?: number;
+  billingType?: string;
   autoRenew: boolean;
   billingCadence: string;
   status: string;

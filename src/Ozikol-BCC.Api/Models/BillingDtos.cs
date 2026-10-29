@@ -38,6 +38,21 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>True when the feature is currently usable by the tenant.</summary>
         public bool IsActive { get; set; }
 
+        /// <summary>True when the feature is fully built and available for immediate use in tenant workspaces (false = Coming Soon).</summary>
+        public bool IsAvailableForUse { get; set; }
+
+        /// <summary>True when the feature is currently under beta/maintenance.</summary>
+        public bool IsInBeta { get; set; }
+
+        /// <summary>Canonical sort order within the catalog.</summary>
+        public int SortOrder { get; set; }
+
+        /// <summary>Billing model classification (FlatSubscription, PayAsYouGo, Hybrid, CustomEnterprise).</summary>
+        public string BillingType { get; set; } = "FlatSubscription";
+
+        /// <summary>Frontend route prefix for the feature.</summary>
+        public string? RoutePrefix { get; set; }
+
         /// <summary>Whether the subscription renews automatically.</summary>
         public bool AutoRenew { get; set; }
 

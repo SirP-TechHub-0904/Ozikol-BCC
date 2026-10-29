@@ -1464,6 +1464,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsAvailableForUse")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsCompulsory")
                         .HasColumnType("bit");
 

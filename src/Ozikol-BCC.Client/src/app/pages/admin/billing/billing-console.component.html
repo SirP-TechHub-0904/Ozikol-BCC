@@ -1,499 +1,456 @@
 <div class="billing-page-container">
-  <!--  ── Header Area ──  -->
-  <div class="admin-header">
-    <div>
-      <div class="admin-title-row">
-        <h1 class="admin-title">Billing & Subscriptions</h1>
-        <button type="button" class="btn-info-icon" (click)="openSuiteInfo('overview')" title="Learn more about billing">
+  <!-- ── Top Material Design Page Header (Matching CMS & Identity Consoles) ── -->
+  <div class="page-header">
+    <div class="header-titles">
+      <div class="breadcrumb">
+        <a routerLink="/dashboard/console">Command Center</a>
+        <span class="sep">/</span>
+        <span>Suite 13: Billing &amp; Subscriptions</span>
+        <span class="sep">/</span>
+        <span class="current">Subscription Plans &amp; Capabilities</span>
+      </div>
+      <div class="title-row">
+        <h1>Subscription Plans &amp; Master Capabilities</h1>
+        <button
+          type="button"
+          class="info-trigger-btn"
+          (click)="openInfoModal()"
+          title="About Subscription Plans & Master Capabilities"
+        >
           <span class="material-symbols-outlined">info</span>
         </button>
       </div>
-      <p class="admin-subtitle">
-        Manage sovereign Business Command Center plans, payment methods, auto-renewal schedules, and invoice settlements.
+      <p class="subtitle">
+        Complete directory of all modular Business Command Center capabilities from the Master Catalog, organized by canonical suite with real-time availability and pricing posture.
       </p>
     </div>
-  </div>
 
-  <!--  ── Navigation Tabs ──  -->
-  <div class="billing-tabs-wrapper">
-    <nav class="billing-nav-tabs">
+    <div class="header-actions">
       <button
         type="button"
-        class="tab-btn"
-        [class.active]="activeTab === 'overview'"
-        (click)="switchTab('overview')"
+        class="btn btn-outline"
+        (click)="loadSnapshot()"
+        [disabled]="isLoading"
       >
-        <span class="material-symbols-outlined">credit_card</span>
-        <span>Subscription Plans</span>
+        <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+        <span>{{ isLoading ? 'Synchronizing...' : 'Sync Master Catalog' }}</span>
       </button>
-
-      <button
-        type="button"
-        class="tab-btn"
-        [class.active]="activeTab === 'payment_methods'"
-        (click)="switchTab('payment_methods')"
-      >
-        <span class="material-symbols-outlined">account_balance_wallet</span>
-        <span>Payment Methods</span>
-        @if (paymentCards.length > 0) {
-          <span class="tab-badge badge-neutral">{{ paymentCards.length }}</span>
-        }
-      </button>
-
-      <button
-        type="button"
-        class="tab-btn"
-        [class.active]="activeTab === 'invoices'"
-        (click)="switchTab('invoices')"
-      >
-        <span class="material-symbols-outlined">receipt_long</span>
-        <span>Invoices & Receipts</span>
-        @if (pendingInvoicesCount > 0) {
-          <span class="tab-badge badge-warning">{{ pendingInvoicesCount }}</span>
-        }
-      </button>
-
-      <button
-        type="button"
-        class="tab-btn"
-        [class.active]="activeTab === 'calculator'"
-        (click)="switchTab('calculator')"
-      >
-        <span class="material-symbols-outlined">calculate</span>
-        <span>Usage Bill Calculator</span>
-      </button>
-    </nav>
-  </div>
-
-  <!--  ── Loading Indicator ──  -->
-  @if (isLoading) {
-    <div class="billing-loading-container">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading billing posture...</span>
-      </div>
-      <p class="loading-text">Synchronizing workspace billing posture...</p>
     </div>
-  }
+  </div>
 
-  <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  <!--  ── TAB 1: OVERVIEW & ACTIVE PLANS ───────────────────────────────────────  -->
-  <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  @if (activeTab === 'overview') {
-    
-    <!--  Renewal Alerts / Expiration Notices Banner  -->
-    @if (snapshot.notices && snapshot.notices.length > 0) {
-      <div class="notices-container">
-        @for (notice of snapshot.notices; track notice.featureCode) {
-          <div class="notice-card" [class.notice-critical]="notice.severity === 'Critical'" [class.notice-warning]="notice.severity !== 'Critical'">
-            <div class="notice-icon">
-              <span class="material-symbols-outlined">{{ notice.severity === 'Critical' ? 'error' : 'warning' }}</span>
-            </div>
-            <div class="notice-content">
-              <strong>{{ notice.featureName }}</strong>
-              <span>{{ notice.message }}</span>
-            </div>
-            <button type="button" class="btn-admin btn-admin-sm btn-admin-primary" (click)="switchTab('payment_methods')">
-              Update Payment
+  <!-- ── 5 Comprehensive Smart KPI Cards Row ── -->
+  <div class="metrics-grid">
+    <!-- Card 1: Canonical Suites -->
+    <div class="metric-card" (click)="resetFilters()" role="button" tabindex="0" title="Click to show all suites">
+      <div class="card-top">
+        <div class="card-icon bg-blue">
+          <span class="material-symbols-outlined">category</span>
+        </div>
+        <span class="card-chip chip-blue">Suite A – Suite J</span>
+      </div>
+      <div class="card-value">{{ totalSuitesCount }}</div>
+      <div class="card-label">Canonical Platform Suites</div>
+      <div class="card-breakdown">
+        <div class="breakdown-row">
+          <span class="text-blue"><span class="dot bg-blue"></span> <strong>100%</strong> Master Sequence</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Total Capabilities -->
+    <div
+      class="metric-card clickable"
+      [class.active-card]="availabilityFilter === 'all' && selectedSuite === ''"
+      (click)="resetFilters()"
+      role="button"
+      tabindex="0"
+      title="Show all capabilities"
+    >
+      <div class="card-top">
+        <div class="card-icon bg-purple">
+          <span class="material-symbols-outlined">extension</span>
+        </div>
+        <span class="card-chip chip-purple">Master Catalog</span>
+      </div>
+      <div class="card-value">{{ totalCapabilitiesCount }}</div>
+      <div class="card-label">Total Modular Capabilities</div>
+      <div class="card-breakdown">
+        <div class="breakdown-row">
+          <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ compulsoryCount }}</strong> Compulsory Core</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: Available for Use -->
+    <div
+      class="metric-card clickable"
+      [class.active-card]="availabilityFilter === 'available'"
+      (click)="filterByAvailability('available')"
+      role="button"
+      tabindex="0"
+      title="Click to filter capabilities that are Available for Use"
+    >
+      <div class="card-top">
+        <div class="card-icon bg-green">
+          <span class="material-symbols-outlined">verified</span>
+        </div>
+        <span class="card-chip chip-green">Ready Now</span>
+      </div>
+      <div class="card-value text-green">{{ availableForUseCount }}</div>
+      <div class="card-label">Available for Use</div>
+      <div class="card-breakdown">
+        <div class="breakdown-row">
+          <span class="text-green"><span class="dot bg-green"></span> Live &amp; Active in Workspace</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Coming Soon -->
+    <div
+      class="metric-card clickable"
+      [class.active-card]="availabilityFilter === 'coming_soon'"
+      (click)="filterByAvailability('coming_soon')"
+      role="button"
+      tabindex="0"
+      title="Click to filter capabilities marked Coming Soon"
+    >
+      <div class="card-top">
+        <div class="card-icon bg-amber">
+          <span class="material-symbols-outlined">schedule</span>
+        </div>
+        <span class="card-chip chip-amber">In Rollout</span>
+      </div>
+      <div class="card-value text-amber">{{ comingSoonCount }}</div>
+      <div class="card-label">Coming Soon</div>
+      <div class="card-breakdown">
+        <div class="breakdown-row">
+          <span class="text-amber"><span class="dot bg-amber"></span> Scheduled Platform Release</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5: Sovereign Baseline Plan -->
+    <div class="metric-card">
+      <div class="card-top">
+        <div class="card-icon bg-teal">
+          <span class="material-symbols-outlined">workspace_premium</span>
+        </div>
+        <span class="card-chip chip-teal">Sovereign Tier</span>
+      </div>
+      <div class="card-value">${{ snapshot.totalRecurringMonthly.toFixed(2) }}<span class="unit-sm">/mo</span></div>
+      <div class="card-label">Active Recurring Spend</div>
+      <div class="card-breakdown">
+        <div class="breakdown-row">
+          <span class="text-green"><span class="dot bg-green"></span> Baseline Core Included Free</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Search, Suite Filter & View Switcher Toolbar Card ── -->
+  <div class="toolbar-card">
+    <div class="toolbar-row">
+      <div class="toolbar-filters">
+        <!-- Search Box -->
+        <div class="search-box">
+          <span class="material-symbols-outlined search-icon">search</span>
+          <input
+            type="text"
+            [(ngModel)]="searchQuery"
+            class="search-input"
+            placeholder="Search by capability name, code, suite..."
+            autocomplete="off"
+          />
+          @if (searchQuery) {
+            <button type="button" class="clear-search-btn" (click)="searchQuery = ''" title="Clear search">
+              <span class="material-symbols-outlined">close</span>
             </button>
-          </div>
+          }
+        </div>
+
+        <!-- Suite Selector -->
+        <select [(ngModel)]="selectedSuite" class="filter-select">
+          <option value="" [textContent]="'All Suites (' + canonicalSuiteOptions.length + ')'"></option>
+          @for (s of canonicalSuiteOptions; track s.name) {
+            <option [value]="s.name" [textContent]="'Suite ' + s.letter + ': ' + s.name + ' (' + s.count + ')'"></option>
+          }
+        </select>
+
+        <!-- Availability Selector -->
+        <select [(ngModel)]="availabilityFilter" class="filter-select">
+          <option value="all" [textContent]="'All Availability (' + totalCapabilitiesCount + ')'"></option>
+          <option value="available" [textContent]="'Available for Use (' + availableForUseCount + ')'"></option>
+          <option value="coming_soon" [textContent]="'Coming Soon (' + comingSoonCount + ')'"></option>
+        </select>
+
+        <!-- Tier Selector -->
+        <select [(ngModel)]="tierFilter" class="filter-select">
+          <option value="all">All Tier Classes</option>
+          <option value="compulsory">Compulsory Core</option>
+          <option value="optional">Optional Add-on</option>
+        </select>
+
+        @if (hasActiveFilters) {
+          <button type="button" class="btn btn-outline btn-reset" (click)="resetFilters()">
+            <span class="material-symbols-outlined">filter_alt_off</span>
+            <span>Reset</span>
+          </button>
         }
+      </div>
+
+      <div class="toolbar-right">
+        <div class="counter-pill">
+          <span class="material-symbols-outlined">format_list_bulleted</span>
+          <span>Showing <strong>{{ filteredFeatures.length }}</strong> of <strong>{{ totalCapabilitiesCount }}</strong> capabilities</span>
+        </div>
+
+        <!-- View Mode Switcher: Cards vs Table -->
+        <div class="view-mode-toggle">
+          <button
+            type="button"
+            class="btn-view-toggle"
+            [class.active]="viewMode === 'cards'"
+            (click)="viewMode = 'cards'"
+            title="Suite Cards View (Matching Master)"
+          >
+            <span class="material-symbols-outlined">grid_view</span>
+            <span>Cards</span>
+          </button>
+          <button
+            type="button"
+            class="btn-view-toggle"
+            [class.active]="viewMode === 'table'"
+            (click)="viewMode = 'table'"
+            title="Compact Data Table View"
+          >
+            <span class="material-symbols-outlined">table_rows</span>
+            <span>Table</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ── VIEW MODE A: SUITE CARDS VIEW (Matching Master /centralwks/features) ── -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  @if (viewMode === 'cards') {
+    @if (groupedSuites.length > 0) {
+      <div class="suites-container">
+        @for (group of groupedSuites; track group.suiteName) {
+          <section class="suite-group-section">
+            <!-- Suite Header Bar -->
+            <div class="suite-header-bar">
+              <div class="suite-header-left">
+                <span class="suite-letter-badge">Suite {{ group.suiteLetter }}</span>
+                <h2 class="suite-title-text">{{ group.suiteName }}</h2>
+              </div>
+
+              <div class="suite-header-right">
+                @if (group.availableCount > 0) {
+                  <span class="suite-meta-pill pill-available">
+                    <span class="material-symbols-outlined">verified</span>
+                    <span>{{ group.availableCount }} Available for Use</span>
+                  </span>
+                }
+                @if (group.comingSoonCount > 0) {
+                  <span class="suite-meta-pill pill-soon">
+                    <span class="material-symbols-outlined">schedule</span>
+                    <span>{{ group.comingSoonCount }} Coming Soon</span>
+                  </span>
+                }
+                <span class="suite-meta-pill pill-total">
+                  <span class="material-symbols-outlined">layers</span>
+                  <span>{{ group.features.length }} Capabilities</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Responsive 3-Column Feature Cards Grid -->
+            <div class="suite-feature-grid">
+              @for (feat of group.features; track feat.featureCode) {
+                <div
+                  class="feature-card"
+                  [class.card-available]="feat.isAvailableForUse"
+                  [class.card-coming-soon]="!feat.isAvailableForUse"
+                >
+                  <div>
+                    <!-- Top Row: Icon + Serial # + Title + Code -->
+                    <div class="feature-card-top">
+                      <div class="feature-icon-box" [class.icon-available]="feat.isAvailableForUse">
+                        <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
+                      </div>
+
+                      <div class="feature-title-block">
+                        <div class="title-line">
+                          <span class="serial-badge">#{{ feat.serialNo }}</span>
+                          <h3 class="feature-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</h3>
+                        </div>
+                        <code class="feature-code-pill">{{ feat.featureCode }}</code>
+                      </div>
+                    </div>
+
+                    <!-- Description -->
+                    <p class="feature-desc">
+                      {{ feat.description || 'Core sovereign capability for enterprise workspace operations.' }}
+                    </p>
+
+                    <!-- Meta Badges Row: Available for Use vs Coming Soon + Compulsory Core + Billing Model -->
+                    <div class="feature-badges-row">
+                      @if (feat.isAvailableForUse) {
+                        <span class="badge-pill-md badge-available">
+                          <span class="material-symbols-outlined">verified</span>
+                          <span>Available for Use</span>
+                        </span>
+                      } @else {
+                        <span class="badge-pill-md badge-coming-soon">
+                          <span class="material-symbols-outlined">schedule</span>
+                          <span>Coming Soon</span>
+                        </span>
+                      }
+
+                      @if (feat.isCompulsory) {
+                        <span class="badge-pill-md badge-compulsory">
+                          <span class="material-symbols-outlined">lock</span>
+                          <span>Compulsory Core</span>
+                        </span>
+                      } @else {
+                        <span class="badge-pill-md badge-optional">
+                          <span>Optional Add-on</span>
+                        </span>
+                      }
+
+                      <span class="badge-pill-md badge-billing">
+                        {{ feat.billingType === 'PayAsYouGo' ? 'Pay As You Go' : 'Flat Subscription' }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Bottom Card Footer -->
+                  <div class="feature-card-footer">
+                    <div class="price-tag">
+                      @if (feat.monthlyPrice > 0) {
+                        <span class="price-paid">${{ feat.monthlyPrice.toFixed(2) }}/mo</span>
+                      } @else {
+                        <span class="price-included">
+                          <span class="material-symbols-outlined">check_circle</span>
+                          <span>Included Free</span>
+                        </span>
+                      }
+                    </div>
+
+                    <div class="card-actions">
+                      <button
+                        type="button"
+                        class="btn-details"
+                        (click)="openFeatureDetail(feat)"
+                        title="Inspect Capability Specification"
+                      >
+                        <span class="material-symbols-outlined">visibility</span>
+                        <span>Details</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    } @else {
+      <div class="empty-catalog-card">
+        <span class="material-symbols-outlined empty-icon">search_off</span>
+        <h3>No Matching Capabilities Found</h3>
+        <p>No platform capabilities match your current search or filter criteria.</p>
+        <button type="button" class="btn btn-primary" (click)="resetFilters()">
+          <span class="material-symbols-outlined">refresh</span>
+          <span>Reset All Filters</span>
+        </button>
       </div>
     }
+  }
 
-    <!--  Sovereign Plan Hero Card  -->
-    <div class="plan-hero-card">
-      <div class="hero-left">
-        <div class="plan-badge-pill">
-          <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
-          <span>Sovereign Cloud Environment</span>
-        </div>
-        <h2 class="plan-hero-title">Ozikol Business Command Center</h2>
-        <p class="plan-hero-desc">
-          Your organization is running dedicated enterprise infrastructure with isolated tenant databases, end-to-end audit security, and unlimited staff seats.
-        </p>
-        <div class="hero-meta-items">
-          <div class="meta-item">
-            <span class="meta-label">Total Capabilities</span>
-            <span class="meta-val">{{ (snapshot.included.length + snapshot.subscribed.length) }} Active</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Sovereign Domain</span>
-            <span class="meta-val">{{ snapshot.tenantKey }}.localhost:4200</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Baseline Plan Cost</span>
-            <span class="meta-val text-success">Included Free ($0.00)</span>
-          </div>
-        </div>
-      </div>
-      <div class="hero-right">
-        <div class="recurring-cost-box">
-          <span class="rc-label">Active Recurring Spend</span>
-          <div class="rc-amount">
-            <span class="rc-curr">$</span>
-            <span class="rc-val">{{ snapshot.totalRecurringMonthly.toFixed(2) }}</span>
-            <span class="rc-period">/mo</span>
-          </div>
-          <p class="rc-subtext">Zero hidden charges. Predictable flat-tier invoicing.</p>
-          <div class="rc-actions">
-            <button type="button" class="btn-admin btn-admin-sm btn-admin-secondary" (click)="switchTab('payment_methods')">
-              <span class="material-symbols-outlined">credit_card</span>
-              <span>Manage Payment Cards</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!--  Active Subscribed Add-ons Section  -->
-    <div class="admin-card" style="margin-top: 24px;">
-      <div class="card-header-row">
-        <div class="title-with-info">
-          <h3 class="card-title">Subscribed Add-ons & Extended Capabilities</h3>
-          <span class="badge badge-info">{{ snapshot.subscribed.length }} Subscribed</span>
-        </div>
-      </div>
-
-      @if (snapshot.subscribed.length > 0) {
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ── VIEW MODE B: COMPACT DATA TABLE VIEW ────────────────────────────────── -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  @if (viewMode === 'table') {
+    <div class="table-card">
+      @if (filteredFeatures.length > 0) {
         <div class="table-responsive">
-          <table class="admin-table">
+          <table class="bcp-table">
             <thead>
               <tr>
-                <th>FEATURE / CAPABILITY</th>
-                <th>CATEGORY</th>
-                <th>BILLING CADENCE</th>
+                <th style="width: 64px;">S/N</th>
+                <th>CAPABILITY</th>
+                <th>SUITE</th>
+                <th>AVAILABILITY</th>
+                <th>TIER CLASS</th>
+                <th>BILLING MODEL</th>
                 <th>RATE</th>
-                <th>EXPIRATION</th>
-                <th>AUTO-RENEW</th>
+                <th style="text-align: right;">ACTION</th>
               </tr>
             </thead>
             <tbody>
-              @for (sub of snapshot.subscribed; track sub.featureId) {
+              @for (feat of filteredFeatures; track feat.featureCode) {
                 <tr>
                   <td>
-                    <div class="feature-cell">
-                      <span class="material-symbols-outlined feature-icon">{{ sub.icon || 'extension' }}</span>
+                    <span class="sn-pill">{{ feat.serialNo }}</span>
+                  </td>
+                  <td>
+                    <div class="table-feat-cell">
+                      <div class="table-feat-icon" [class.icon-available]="feat.isAvailableForUse">
+                        <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
+                      </div>
                       <div>
-                        <strong>{{ sub.name }}</strong>
-                        <span class="feature-code">{{ sub.featureCode }}</span>
+                        <div class="table-feat-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</div>
+                        <code class="feature-code-pill">{{ feat.featureCode }}</code>
                       </div>
                     </div>
                   </td>
-                  <td><span class="badge badge-neutral">{{ sub.category }}</span></td>
-                  <td>{{ sub.billingCadence }}</td>
                   <td>
-                    <strong style="color: #0f172a;">${{ sub.effectivePrice.toFixed(2) }}</strong>
-                  </td>
-                  <td>
-                    @if (sub.daysRemaining !== null && sub.daysRemaining !== undefined) {
-                      <span [class]="'badge-expiry ' + sub.severity.toLowerCase()">
-                        {{ sub.daysRemaining <= 0 ? 'Expired' : sub.daysRemaining + ' days left' }}
-                      </span>
-                    } @else {
-                      <span class="text-muted">Ongoing</span>
-                    }
-                  </td>
-                  <td>
-                    <label class="switch-toggle" [title]="sub.autoRenew ? 'Auto-renew is active' : 'Auto-renew is disabled'">
-                      <input
-                        type="checkbox"
-                        [checked]="sub.autoRenew"
-                        (change)="toggleAutoRenew(sub)"
-                      />
-                      <span class="slider"></span>
-                    </label>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      } @else {
-        <div class="empty-state-box">
-          <span class="material-symbols-outlined empty-icon">layers</span>
-          <h4>No Paid Add-ons Active</h4>
-          <p>Your workspace is running entirely on the included sovereign core features without recurring fees.</p>
-        </div>
-      }
-    </div>
-
-    <!--  Included Baseline Core Features Accordion / Summary  -->
-    <div class="admin-card" style="margin-top: 24px;">
-      <div class="card-header-row">
-        <div>
-          <h3 class="card-title">Included Baseline Core Capabilities</h3>
-          <p class="card-subtitle">Permanent, unmetered tools included in your sovereign Business Command Center plan.</p>
-        </div>
-        <span class="badge badge-success">{{ snapshot.included.length }} Built-in</span>
-      </div>
-
-      <div class="included-features-grid">
-        @for (core of snapshot.included; track core.featureId) {
-          <div class="core-feature-pill">
-            <span class="material-symbols-outlined core-icon">check_circle</span>
-            <div class="core-text">
-              <strong>{{ core.name }}</strong>
-              <span class="core-cat">{{ core.category }}</span>
-            </div>
-          </div>
-        }
-      </div>
-    </div>
-
-  }
-
-  <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  <!--  ── TAB 2: PAYMENT METHODS & CONTACTS ────────────────────────────────────  -->
-  <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  @if (activeTab === 'payment_methods') {
-    <div class="tab-section-header">
-      <div>
-        <h2 class="section-title">Payment Methods & Billing Contacts</h2>
-        <p class="section-subtitle">Link credit/debit cards for automated monthly settlements and manage your organization's tax profile.</p>
-      </div>
-      <button type="button" class="btn-admin btn-admin-primary" (click)="openAddCardModal()">
-        <span class="material-symbols-outlined">add_card</span>
-        <span>Link New Card</span>
-      </button>
-    </div>
-
-    <!--  Saved Cards Grid  -->
-    <div class="admin-card" style="margin-bottom: 24px;">
-      <div class="card-header-row">
-        <h3 class="card-title">Saved Payment Cards</h3>
-        <span class="badge badge-info">{{ paymentCards.length }} Active</span>
-      </div>
-
-      @if (paymentCards.length > 0) {
-        <div class="cards-grid">
-          @for (card of paymentCards; track card.id) {
-            <div class="payment-card-tile" [class.is-default]="card.isDefault">
-              <div class="card-tile-top">
-                <div class="card-chip-wrap">
-                  <span class="material-symbols-outlined card-brand-icon">credit_card</span>
-                  <span class="card-brand-name">{{ card.brand }}</span>
-                </div>
-                @if (card.isDefault) {
-                  <span class="badge badge-primary">Default</span>
-                }
-              </div>
-
-              <div class="card-tile-number">
-                •••• •••• •••• <strong>{{ card.last4 }}</strong>
-              </div>
-
-              <div class="card-tile-meta">
-                <div>
-                  <span class="meta-tiny-label">CARDHOLDER</span>
-                  <span class="meta-tiny-val">{{ card.holderName }}</span>
-                </div>
-                <div>
-                  <span class="meta-tiny-label">EXPIRES</span>
-                  <span class="meta-tiny-val">{{ card.expMonth }}/{{ card.expYear }}</span>
-                </div>
-              </div>
-
-              <div class="card-tile-actions">
-                @if (!card.isDefault) {
-                  <button type="button" class="btn-tile-action" (click)="setDefaultCard(card.id)">
-                    Make Default
-                  </button>
-                }
-                <button type="button" class="btn-tile-delete" (click)="deleteCard(card)" title="Remove card">
-                  <span class="material-symbols-outlined">delete</span>
-                </button>
-              </div>
-            </div>
-          }
-        </div>
-      } @else {
-        <div class="empty-state-box">
-          <span class="material-symbols-outlined empty-icon">credit_card_off</span>
-          <h4>No Payment Methods Linked</h4>
-          <p>Link a credit or debit card to enable automatic subscription renewals and avoid account interruptions.</p>
-          <button type="button" class="btn-admin btn-admin-primary btn-admin-sm" (click)="openAddCardModal()" style="margin-top: 12px;">
-            Link First Card
-          </button>
-        </div>
-      }
-    </div>
-
-    <!--  Corporate Billing Profile & Address  -->
-    <div class="admin-card">
-      <div class="card-header-row">
-        <div>
-          <h3 class="card-title">Corporate Billing Profile & Address</h3>
-          <p class="card-subtitle">These details are rendered onto your downloadable monthly invoices and receipts.</p>
-        </div>
-      </div>
-
-      <div class="billing-form-grid">
-        <div class="form-group">
-          <label class="form-label">Legal Organization Name</label>
-          <input type="text" [(ngModel)]="billingContact.companyName" class="form-control" placeholder="e.g. Your Organization Name" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Billing & Invoicing Email</label>
-          <input type="email" [(ngModel)]="billingContact.billingEmail" class="form-control" placeholder="billing@company.com" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Tax ID / VAT Registration Number</label>
-          <input type="text" [(ngModel)]="billingContact.taxId" class="form-control" placeholder="e.g. US-TAX-123456" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Phone Number (Optional)</label>
-          <input type="text" [(ngModel)]="billingContact.phoneNumber" class="form-control" placeholder="e.g. +0 (000) 000-0000" />
-        </div>
-
-        <div class="form-group span-2">
-          <label class="form-label">Billing Street Address</label>
-          <input type="text" [(ngModel)]="billingContact.addressLine1" class="form-control" placeholder="Suite 400, Enterprise Boulevard" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">City</label>
-          <input type="text" [(ngModel)]="billingContact.city" class="form-control" placeholder="San Francisco" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">State / Province</label>
-          <input type="text" [(ngModel)]="billingContact.stateProvince" class="form-control" placeholder="CA" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Postal / ZIP Code</label>
-          <input type="text" [(ngModel)]="billingContact.postalCode" class="form-control" placeholder="94103" />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Country</label>
-          <input type="text" [(ngModel)]="billingContact.country" class="form-control" placeholder="United States" />
-        </div>
-      </div>
-
-      <div class="form-actions-bar">
-        <button type="button" class="btn-admin btn-admin-primary" (click)="saveBillingProfile()">
-          <span class="material-symbols-outlined">save</span>
-          <span>Save Billing Profile</span>
-        </button>
-      </div>
-    </div>
-  }
-
-  <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  <!--  ── TAB 3: INVOICES & SETTLEMENT LEDGER ──────────────────────────────────  -->
-  <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  @if (activeTab === 'invoices') {
-    <!--  Invoices KPI summary row  -->
-    <div class="billing-stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon-wrap bg-blue-subtle text-primary">
-          <span class="material-symbols-outlined">receipt</span>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Total Invoices</span>
-          <span class="stat-value">{{ invoices.length }}</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon-wrap bg-yellow-subtle text-warning">
-          <span class="material-symbols-outlined">pending_actions</span>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Pending Settlement</span>
-          <span class="stat-value text-warning">{{ pendingInvoicesCount }} (${{ pendingInvoicedAmount.toFixed(2) }})</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon-wrap bg-green-subtle text-success">
-          <span class="material-symbols-outlined">task_alt</span>
-        </div>
-        <div class="stat-content">
-          <span class="stat-label">Settled & Completed</span>
-          <span class="stat-value text-success">{{ (invoices.length - pendingInvoicesCount) }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!--  Pending Settlement Notice Box  -->
-    @if (pendingInvoicesCount > 0) {
-      <div class="pending-flow-banner">
-        <div class="banner-icon">
-          <span class="material-symbols-outlined">account_balance</span>
-        </div>
-        <div class="banner-body">
-          <h4 class="banner-title">Invoices Awaiting Settlement</h4>
-          <p class="banner-desc">
-            You have <strong>{{ pendingInvoicesCount }} pending invoice(s)</strong> totaling <strong>${{ pendingInvoicedAmount.toFixed(2) }}</strong>. 
-            Once your payment method is processed, your subscription posture will be updated automatically.
-          </p>
-        </div>
-      </div>
-    }
-
-    <!--  Invoices Ledger Table  -->
-    <div class="admin-card">
-      <div class="table-toolbar" style="padding: 14px 20px;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 13px; font-weight: 700; color: #475569;">Filter by Status:</span>
-          <select [(ngModel)]="invoiceStatusFilter" class="form-select" style="height: 36px; font-size: 12.5px; width: auto;">
-            <option value="all" [textContent]="'All Invoices (' + invoices.length + ')'"></option>
-            <option value="pending" [textContent]="'Pending Settlement (' + pendingInvoicesCount + ')'"></option>
-            <option value="completed" [textContent]="'Completed / Settled (' + (invoices.length - pendingInvoicesCount) + ')'"></option>
-          </select>
-        </div>
-
-        <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" (click)="loadInvoices()">
-          <span class="material-symbols-outlined">refresh</span>
-          <span>Refresh</span>
-        </button>
-      </div>
-
-      @if (filteredInvoices.length > 0) {
-        <div class="table-responsive">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>INVOICE #</th>
-                <th>DESCRIPTION</th>
-                <th>AMOUNT</th>
-                <th>STATUS</th>
-                <th>ISSUED DATE</th>
-                <th style="text-align: right;">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (inv of filteredInvoices; track inv.id) {
-                <tr>
-                  <td>
-                    <strong style="color: #0f172a; font-family: monospace;">{{ inv.invoiceNumber || inv.id }}</strong>
-                  </td>
-                  <td>
-                    <span style="font-weight: 600; color: #334155;">{{ inv.description }}</span>
-                    @if (inv.reference) {
-                      <div style="font-size: 11px; color: #94a3b8; font-family: monospace;">Ref: {{ inv.reference }}</div>
-                    }
-                  </td>
-                  <td>
-                    <strong style="color: #0f172a;">${{ inv.amount.toFixed(2) }} {{ inv.currency }}</strong>
-                  </td>
-                  <td>
-                    <span [class]="'badge-status ' + (inv.status.toLowerCase() === 'completed' ? 'status-completed' : 'status-pending')">
-                      {{ inv.status === 'Completed' ? 'Paid & Settled' : 'Awaiting Settlement' }}
+                    <span class="suite-table-label">
+                      <strong>Suite {{ feat.suiteLetter }}:</strong> {{ feat.category }}
                     </span>
                   </td>
                   <td>
-                    <span style="color: #64748b; font-size: 12.5px;">{{ inv.createdUtc | date:'mediumDate' }}</span>
+                    @if (feat.isAvailableForUse) {
+                      <span class="badge-pill-md badge-available">
+                        <span class="material-symbols-outlined">verified</span>
+                        <span>Available for Use</span>
+                      </span>
+                    } @else {
+                      <span class="badge-pill-md badge-coming-soon">
+                        <span class="material-symbols-outlined">schedule</span>
+                        <span>Coming Soon</span>
+                      </span>
+                    }
+                  </td>
+                  <td>
+                    @if (feat.isCompulsory) {
+                      <span class="badge-pill-md badge-compulsory">
+                        <span class="material-symbols-outlined">lock</span>
+                        <span>Compulsory Core</span>
+                      </span>
+                    } @else {
+                      <span class="badge-pill-md badge-optional">Optional Add-on</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="badge-pill-md badge-billing">
+                      {{ feat.billingType === 'PayAsYouGo' ? 'Pay As You Go' : 'Flat Subscription' }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (feat.monthlyPrice > 0) {
+                      <strong style="color: #0f172a;">${{ feat.monthlyPrice.toFixed(2) }}/mo</strong>
+                    } @else {
+                      <span class="price-included">Included</span>
+                    }
                   </td>
                   <td style="text-align: right;">
-                    <button type="button" class="btn-admin btn-admin-sm btn-admin-secondary" (click)="viewInvoice(inv)">
+                    <button type="button" class="btn-details" (click)="openFeatureDetail(feat)">
                       <span class="material-symbols-outlined">visibility</span>
-                      <span>View Receipt</span>
+                      <span>Details</span>
                     </button>
                   </td>
                 </tr>
@@ -502,343 +459,139 @@
           </table>
         </div>
       } @else {
-        <div class="empty-state-box">
-          <span class="material-symbols-outlined empty-icon">receipt_long</span>
-          <h4>No Invoices Found</h4>
-          <p>No billing invoices match your current filter selection.</p>
+        <div class="empty-catalog-card">
+          <span class="material-symbols-outlined empty-icon">search_off</span>
+          <h3>No Matching Capabilities Found</h3>
+          <p>Try clearing your search filter or selecting a different suite.</p>
+          <button type="button" class="btn btn-primary" (click)="resetFilters()">Reset Filters</button>
         </div>
       }
     </div>
   }
-
-  <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  <!--  ── TAB 4: USAGE BILL CALCULATOR ─────────────────────────────────────────  -->
-  <!--  ══════════════════════════════════════════════════════════════════════════  -->
-  @if (activeTab === 'calculator') {
-    <div class="admin-card" style="margin-bottom: 24px;">
-      <div class="card-header-row">
-        <div>
-          <h3 class="card-title">Interactive Workspace Budget Simulator</h3>
-          <p class="card-subtitle">Estimate future infrastructure and member expansion costs transparently with zero commitments.</p>
-        </div>
-
-        <div class="cadence-switcher">
-          <button
-            type="button"
-            class="cadence-btn"
-            [class.active]="calculatorCadence === 'Monthly'"
-            (click)="calculatorCadence = 'Monthly'"
-          >
-            Monthly
-          </button>
-          <button
-            type="button"
-            class="cadence-btn"
-            [class.active]="calculatorCadence === 'Yearly'"
-            (click)="calculatorCadence = 'Yearly'"
-          >
-            Annual (2 Months Free)
-          </button>
-        </div>
-      </div>
-
-      <div class="calc-grid">
-        <div class="calc-config-col">
-          <div class="calc-group">
-            <div class="calc-label-row">
-              <label class="form-label">Team & Staff Seats</label>
-              <strong class="calc-val-badge">{{ teamSeatsCount }} Members</strong>
-            </div>
-            <input type="range" [(ngModel)]="teamSeatsCount" min="1" max="250" step="1" class="calc-slider" />
-            <span class="calc-hint">First 10 members included free. Additional seats at $4.50/user/mo.</span>
-          </div>
-
-          <div class="calc-group">
-            <div class="calc-label-row">
-              <label class="form-label">Encrypted Document Storage</label>
-              <strong class="calc-val-badge">{{ storageGb }} GB</strong>
-            </div>
-            <input type="range" [(ngModel)]="storageGb" min="5" max="500" step="5" class="calc-slider" />
-            <span class="calc-hint">First 25 GB storage included free. Overages at $0.20/GB/mo.</span>
-          </div>
-        </div>
-
-        <div class="calc-summary-col">
-          <div class="calc-summary-box">
-            <h4 class="cs-title">Estimated Commitment</h4>
-            <div class="cs-price">
-              <span class="cs-curr">$</span>
-              <span class="cs-val">
-                {{ (calculatorCadence === 'Yearly' ? calculatedYearlyEstimate : calculatedMonthlyEstimate).toFixed(2) }}
-              </span>
-              <span class="cs-per">/ {{ calculatorCadence === 'Yearly' ? 'yr' : 'mo' }}</span>
-            </div>
-
-            <div class="cs-breakdown">
-              <div class="cs-line">
-                <span>Base Sovereign Plan</span>
-                <span class="text-success">Free ($0.00)</span>
-              </div>
-              <div class="cs-line">
-                <span>Active Subscribed Add-ons</span>
-                <span>${{ snapshot.totalRecurringMonthly.toFixed(2) }}/mo</span>
-              </div>
-              <div class="cs-line">
-                <span>Staff Seats ({{ teamSeatsCount }})</span>
-                <span>${{ (Math.max(0, teamSeatsCount - 10) * 4.5).toFixed(2) }}/mo</span>
-              </div>
-              <div class="cs-line">
-                <span>Encrypted Storage ({{ storageGb }} GB)</span>
-                <span>${{ (Math.max(0, storageGb - 25) * 0.20).toFixed(2) }}/mo</span>
-              </div>
-            </div>
-
-            <p class="cs-note">
-              Billed transparently to your default linked card. Zero surprises or overage penalties.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  }
 </div>
 
-<!--  ══════════════════════════════════════════════════════════════════════════  -->
-<!--  ── MODAL: LINK PAYMENT CARD ─────────────────────────────────────────────  -->
-<!--  ══════════════════════════════════════════════════════════════════════════  -->
-@if (showAddCardModal) {
-  <div class="modal-backdrop-custom" (click)="closeAddCardModal()">
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- ── MODAL: CAPABILITY SPECIFICATION DETAILS ─────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+@if (showFeatureDetailModal && selectedFeatureDetail) {
+  <div class="modal-backdrop-custom" (click)="closeFeatureDetail()">
     <div class="modal-card-custom" (click)="$event.stopPropagation()">
       <div class="modal-header-custom">
-        <div class="title-with-info">
-          <span class="material-symbols-outlined text-primary" style="font-size: 24px;">add_card</span>
-          <h3 class="modal-title-custom">Link New Payment Card</h3>
+        <div class="modal-title-row">
+          <div class="feature-icon-box" [class.icon-available]="selectedFeatureDetail.isAvailableForUse">
+            <span class="material-symbols-outlined">{{ selectedFeatureDetail.icon || 'extension' }}</span>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              @if (selectedFeatureDetail.serialNo) {
+                <span class="serial-badge">#{{ selectedFeatureDetail.serialNo }}</span>
+              }
+              <h3 class="modal-title-custom">{{ selectedFeatureDetail.name }}</h3>
+            </div>
+            <code class="feature-code-pill">{{ selectedFeatureDetail.featureCode }}</code>
+          </div>
         </div>
-        <button type="button" class="btn-close-modal" (click)="closeAddCardModal()">
+        <button type="button" class="btn-close-modal" (click)="closeFeatureDetail()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
 
       <div class="modal-body-custom">
-        <p style="font-size: 13px; color: #64748b; margin-top: 0; margin-bottom: 20px;">
-          Cards are securely tokenized with end-to-end encryption. Your card is not charged until an invoice is settled.
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+          @if (selectedFeatureDetail.isAvailableForUse) {
+            <span class="badge-pill-md badge-available">
+              <span class="material-symbols-outlined">verified</span>
+              <span>Available for Use</span>
+            </span>
+          } @else {
+            <span class="badge-pill-md badge-coming-soon">
+              <span class="material-symbols-outlined">schedule</span>
+              <span>Coming Soon</span>
+            </span>
+          }
+
+          @if (selectedFeatureDetail.isCompulsory) {
+            <span class="badge-pill-md badge-compulsory">
+              <span class="material-symbols-outlined">lock</span>
+              <span>Compulsory Core</span>
+            </span>
+          } @else {
+            <span class="badge-pill-md badge-optional">Optional Add-on</span>
+          }
+
+          <span class="badge-pill-md badge-billing">
+            Suite {{ selectedFeatureDetail.suiteLetter || getSuiteLetter(selectedFeatureDetail.category) }}: {{ selectedFeatureDetail.category }}
+          </span>
+        </div>
+
+        <p style="font-size: 14px; color: #334155; line-height: 1.6; margin: 0 0 20px;">
+          {{ selectedFeatureDetail.description }}
         </p>
 
-        <div class="form-group" style="margin-bottom: 16px;">
-          <label class="form-label">Name on Card</label>
-          <input type="text" [(ngModel)]="cardForm.holderName" class="form-control" placeholder="e.g. First Last" />
-        </div>
-
-        <div class="form-group" style="margin-bottom: 16px;">
-          <label class="form-label">Card Number</label>
-          <div class="input-icon-wrap">
-            <span class="material-symbols-outlined input-prefix-icon">credit_card</span>
-            <input type="text" [(ngModel)]="cardForm.cardNumber" class="form-control" placeholder="4242 •••• •••• 4242" maxlength="19" />
+        <div class="detail-spec-grid">
+          <div class="spec-box">
+            <span class="spec-label">Monthly Rate</span>
+            <span class="spec-val">
+              {{ selectedFeatureDetail.monthlyPrice > 0 ? ('$' + selectedFeatureDetail.monthlyPrice.toFixed(2) + '/mo') : 'Included Free ($0.00)' }}
+            </span>
+          </div>
+          <div class="spec-box">
+            <span class="spec-label">Annual Rate</span>
+            <span class="spec-val">
+              {{ selectedFeatureDetail.yearlyPrice > 0 ? ('$' + selectedFeatureDetail.yearlyPrice.toFixed(2) + '/yr') : 'Included Free ($0.00)' }}
+            </span>
+          </div>
+          <div class="spec-box">
+            <span class="spec-label">Workspace Rollout Status</span>
+            <span class="spec-val" [style.color]="selectedFeatureDetail.isAvailableForUse ? '#059669' : '#d97706'">
+              {{ selectedFeatureDetail.isAvailableForUse ? 'Live & Ready for Use' : 'Coming Soon (In Engineering)' }}
+            </span>
+          </div>
+          <div class="spec-box">
+            <span class="spec-label">Entitlement Posture</span>
+            <span class="spec-val">
+              {{ selectedFeatureDetail.isCompulsory ? 'Included in Sovereign Base Plan' : 'Modular Capability' }}
+            </span>
           </div>
         </div>
-
-        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-          <div class="form-group">
-            <label class="form-label">Expiration Month</label>
-            <select [(ngModel)]="cardForm.expMonth" class="form-select">
-              <option [value]="1">01 - Jan</option>
-              <option [value]="2">02 - Feb</option>
-              <option [value]="3">03 - Mar</option>
-              <option [value]="4">04 - Apr</option>
-              <option [value]="5">05 - May</option>
-              <option [value]="6">06 - Jun</option>
-              <option [value]="7">07 - Jul</option>
-              <option [value]="8">08 - Aug</option>
-              <option [value]="9">09 - Sep</option>
-              <option [value]="10">10 - Oct</option>
-              <option [value]="11">11 - Nov</option>
-              <option [value]="12">12 - Dec</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Expiration Year</label>
-            <select [(ngModel)]="cardForm.expYear" class="form-select">
-              <option [value]="2026">2026</option>
-              <option [value]="2027">2027</option>
-              <option [value]="2028">2028</option>
-              <option [value]="2029">2029</option>
-              <option [value]="2030">2030</option>
-              <option [value]="2031">2031</option>
-              <option [value]="2032">2032</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label class="form-label">Security Code (CVV / CVC)</label>
-          <input type="password" [(ngModel)]="cardForm.cvc" class="form-control" placeholder="•••" maxlength="4" style="max-width: 120px;" />
-        </div>
-
-        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #475569; cursor: pointer;">
-          <input type="checkbox" [(ngModel)]="cardForm.isDefault" />
-          <span>Set this card as the default payment method for all future settlements</span>
-        </label>
       </div>
 
       <div class="modal-footer-custom">
-        <button type="button" class="btn-admin btn-admin-secondary" (click)="closeAddCardModal()">
-          Cancel
-        </button>
-        <button type="button" class="btn-admin btn-admin-primary" (click)="saveCard()">
-          <span class="material-symbols-outlined">check</span>
-          <span>Save & Link Card</span>
+        <button type="button" class="btn btn-primary" (click)="closeFeatureDetail()">
+          <span>Close</span>
         </button>
       </div>
     </div>
   </div>
 }
 
-<!--  ══════════════════════════════════════════════════════════════════════════  -->
-<!--  ── MODAL: INVOICE RECEIPT & PRINTABLE DESIGN ────────────────────────────  -->
-<!--  ══════════════════════════════════════════════════════════════════════════  -->
-@if (showInvoiceModal && selectedInvoice) {
-  <div class="modal-backdrop-custom" (click)="closeInvoiceModal()">
-    <div class="modal-card-custom modal-card-lg printable-invoice-card" (click)="$event.stopPropagation()">
-      <div class="modal-header-custom no-print">
-        <div class="title-with-info">
-          <span class="material-symbols-outlined text-primary" style="font-size: 24px;">receipt_long</span>
-          <h3 class="modal-title-custom">Invoice Receipt #{{ selectedInvoice.invoiceNumber || selectedInvoice.id }}</h3>
-        </div>
-        <div style="display: flex; gap: 8px;">
-          <button type="button" class="btn-admin btn-admin-sm btn-admin-primary" (click)="printInvoice()">
-            <span class="material-symbols-outlined">print</span>
-            <span>Print Receipt</span>
-          </button>
-          <button type="button" class="btn-close-modal" (click)="closeInvoiceModal()">
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        </div>
-      </div>
-
-      <div class="invoice-printable-body">
-        <div class="inv-doc-header">
-          <div>
-            <div class="inv-brand-logo">
-              <span class="material-symbols-outlined" style="font-size: 32px; color: #0050e5;">verified</span>
-              <span style="font-size: 20px; font-weight: 800; color: #0f172a;">Ozikol BCC</span>
-            </div>
-            <p style="font-size: 12.5px; color: #64748b; margin: 4px 0 0;">
-              Sovereign Business Command Center Infrastructure<br />
-              Cloud Platform Governance & Licensing
-            </p>
-          </div>
-
-          <div style="text-align: right;">
-            <h2 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 4px;">OFFICIAL RECEIPT</h2>
-            <div style="font-family: monospace; font-size: 13px; color: #0050e5; font-weight: 700;">
-              #{{ selectedInvoice.invoiceNumber || selectedInvoice.id }}
-            </div>
-            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
-              Date: {{ selectedInvoice.createdUtc | date:'mediumDate' }}
-            </div>
-          </div>
-        </div>
-
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
-
-        <div class="inv-parties-grid">
-          <div>
-            <span class="inv-party-label">BILLED TO:</span>
-            <h4 class="inv-party-name">{{ billingContact.companyName }}</h4>
-            <div class="inv-party-details">
-              {{ billingContact.billingEmail }}<br />
-              {{ billingContact.addressLine1 }}<br />
-              {{ billingContact.city }}, {{ billingContact.stateProvince }} {{ billingContact.postalCode }} {{ billingContact.country }}<br />
-              @if (billingContact.taxId) {
-                <span>Tax ID: {{ billingContact.taxId }}</span>
-              }
-            </div>
-          </div>
-
-          <div style="text-align: right;">
-            <span class="inv-party-label">PAYMENT STATUS:</span>
-            <div>
-              <span [class]="'badge-status ' + (selectedInvoice.status.toLowerCase() === 'completed' ? 'status-completed' : 'status-pending')" style="display: inline-block; margin-top: 6px;">
-                {{ selectedInvoice.status === 'Completed' ? 'PAID & SETTLED' : 'AWAITING SETTLEMENT' }}
-              </span>
-            </div>
-            @if (selectedInvoice.reference) {
-              <div style="font-size: 12px; color: #64748b; margin-top: 6px;">
-                Reference: <code style="color: #0f172a;">{{ selectedInvoice.reference }}</code>
-              </div>
-            }
-          </div>
-        </div>
-
-        <table class="inv-items-table">
-          <thead>
-            <tr>
-              <th>ITEM DESCRIPTION</th>
-              <th style="text-align: right;">AMOUNT</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <strong>{{ selectedInvoice.description }}</strong>
-                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
-                  Sovereign capability allocation and dedicated database provisioning
-                </div>
-              </td>
-              <td style="text-align: right; vertical-align: top;">
-                <strong>${{ selectedInvoice.amount.toFixed(2) }}</strong>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr>
-              <td style="text-align: right; font-weight: 700; color: #475569;">Total Amount:</td>
-              <td style="text-align: right; font-weight: 800; font-size: 16px; color: #0050e5;">
-                ${{ selectedInvoice.amount.toFixed(2) }} USD
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-
-        <div class="inv-doc-footer">
-          <p>Thank you for choosing Ozikol Business Command Center. For billing inquiries, contact support at billing&#64;ozikol.cloud.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-}
-
-<!--  ── Contextual Info Popover Modal ──  -->
+<!-- ── Contextual Info Modal ── -->
 @if (showInfoModal) {
   <div class="modal-backdrop-custom" (click)="closeInfoModal()">
     <div class="modal-card-custom" (click)="$event.stopPropagation()">
       <div class="modal-header-custom">
-        <div class="title-with-info">
-          <span class="material-symbols-outlined text-primary" style="font-size: 22px;">info</span>
-          <h3 class="modal-title-custom">About Suite 13: Billing & Subscriptions</h3>
+        <div class="modal-title-row">
+          <div class="feature-icon-box icon-available">
+            <span class="material-symbols-outlined">info</span>
+          </div>
+          <h3 class="modal-title-custom">About Master Capabilities &amp; Availability</h3>
         </div>
         <button type="button" class="btn-close-modal" (click)="closeInfoModal()">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
 
-      <div class="modal-body-custom" style="line-height: 1.6; font-size: 13.5px; color: #334155;">
-        <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0 0 6px;">How Billing Works</h4>
-        <p style="margin: 0 0 14px;">
-          Your sovereign Business Command Center comes with an all-inclusive baseline core tier ($0.00) providing identity management, CMS, forms, and database isolation.
+      <div class="modal-body-custom" style="font-size: 13.5px; line-height: 1.6; color: #334155;">
+        <p style="margin: 0 0 12px;">
+          <strong>1. Synchronized with Master Catalog DB:</strong> All capabilities and suites on this screen come directly from <code>MasterFeatureCatalogs</code> in the central database and follow the canonical <code>Suite A – Suite J</code> sequence.
         </p>
-
-        <h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0 0 6px;">Payment Methods & Invoices</h4>
-        <p style="margin: 0 0 14px;">
-          Link your credit/debit card to automate renewals. All generated invoices appear in your ledger with full printable receipts for your accounting and tax filing.
+        <p style="margin: 0 0 12px;">
+          <strong>2. Available for Use vs. Coming Soon:</strong> Capabilities marked <strong style="color: #059669;">Available for Use</strong> are live and active inside your workspace right now. Capabilities marked <strong style="color: #d97706;">Coming Soon</strong> are part of your sovereign plan and unlock automatically as engineering rollout completes.
         </p>
       </div>
 
       <div class="modal-footer-custom">
-        <button type="button" class="btn-admin btn-admin-primary" (click)="closeInfoModal()">
-          Got It
-        </button>
+        <button type="button" class="btn btn-primary" (click)="closeInfoModal()">Got It</button>
       </div>
     </div>
   </div>

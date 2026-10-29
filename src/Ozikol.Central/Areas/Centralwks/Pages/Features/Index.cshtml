@@ -247,6 +247,22 @@
 
                                     @* Meta Badges Row *@
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
+                                        @* Availability for Use Badge *@
+                                        @if (feat.IsAvailableForUse)
+                                        {
+                                            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
+                                                <span class="material-symbols-outlined" style="font-size: 12px;">verified</span>
+                                                Available for Use
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(245, 158, 11, 0.25);">
+                                                <span class="material-symbols-outlined" style="font-size: 12px;">schedule</span>
+                                                Coming Soon
+                                            </span>
+                                        }
+
                                         @* Tier Badge *@
                                         @if (feat.IsCompulsory)
                                         {
@@ -318,6 +334,15 @@
                                     </div>
 
                                     <div style="display: inline-flex; align-items: center; gap: 6px;">
+                                        <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@feat.Id" style="display: inline; margin: 0;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm"
+                                                    style="color: @(feat.IsAvailableForUse ? "#d97706" : "#059669");"
+                                                    title="@(feat.IsAvailableForUse ? "Mark as Coming Soon" : "Mark as Available for Use")">
+                                                <span class="material-symbols-outlined" style="font-size: 14px;">@(feat.IsAvailableForUse ? "schedule" : "verified")</span>
+                                                <span>@(feat.IsAvailableForUse ? "Soon" : "Live")</span>
+                                            </button>
+                                        </form>
                                         <a href="/centralwks/features/details?id=@feat.Id" class="btn-admin btn-admin-secondary btn-admin-sm" title="View Feature Details">
                                             <span class="material-symbols-outlined" style="font-size: 14px;">visibility</span>
                                             <span>Details</span>

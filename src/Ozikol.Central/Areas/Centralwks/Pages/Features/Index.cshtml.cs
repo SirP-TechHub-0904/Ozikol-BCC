@@ -106,6 +106,16 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public int MaintenanceCount { get; set; }
 
         /// <summary>
+        /// Total capabilities marked as available for immediate use in tenant workspaces.
+        /// </summary>
+        public int AvailableForUseCount { get; set; }
+
+        /// <summary>
+        /// Total capabilities marked as coming soon while under development.
+        /// </summary>
+        public int ComingSoonCount { get; set; }
+
+        /// <summary>
         /// Available category list arranged in canonical order.
         /// </summary>
         public List<string> Categories { get; set; } = new();
@@ -120,13 +130,44 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// </summary>
         public async Task OnGetAsync()
         {
-            // Load all features for accurate stat cards calculations
-            var allFeatures = await _dbContext.MasterFeatureCatalogs.AsNoTracking().ToListAsync();
+            // Load all features for accurate stat cards calculations (with fallback if migration not yet applied)
+            List<MasterFeatureCatalog> allFeatures;
+            try
+            {
+                allFeatures = await _dbContext.MasterFeatureCatalogs.AsNoTracking().ToListAsync();
+            }
+            catch
+            {
+                allFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Select(f => new MasterFeatureCatalog
+                    {
+                        Id = f.Id,
+                        FeatureCode = f.FeatureCode,
+                        Name = f.Name,
+                        Category = f.Category,
+                        Description = f.Description,
+                        Icon = f.Icon,
+                        RoutePrefix = f.RoutePrefix,
+                        IsCompulsory = f.IsCompulsory,
+                        BillingType = f.BillingType,
+                        MonthlyPrice = f.MonthlyPrice,
+                        QuarterlyPrice = f.QuarterlyPrice,
+                        YearlyPrice = f.YearlyPrice,
+                        IsMetered = f.IsMetered,
+                        IsActive = f.IsActive,
+                        IsInBeta = f.IsInBeta,
+                        SortOrder = f.SortOrder
+                    })
+                    .ToListAsync();
+            }
 
             TotalCount = allFeatures.Count;
             ActiveCount = allFeatures.Count(f => f.IsActive && !f.IsInBeta);
             InactiveCount = allFeatures.Count(f => !f.IsActive && !f.IsInBeta);
             MaintenanceCount = allFeatures.Count(f => f.IsInBeta);
+            AvailableForUseCount = allFeatures.Count(f => f.IsAvailableForUse);
+            ComingSoonCount = allFeatures.Count(f => !f.IsAvailableForUse);
 
             // Populate suites in canonical sequence
             var distinctDbCategories = allFeatures
@@ -257,6 +298,41 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
             await _dbContext.SaveChangesAsync();
             TempData["Success"] = $"Feature status updated to {(feature.IsActive ? "Active" : "Inactive")}.";
+
+            return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to toggle whether a feature is Available for Use or Coming Soon in tenant workspaces.
+        /// </summary>
+        /// <param name="id">The identifier of the feature to toggle.</param>
+        /// <returns>A redirect back to the feature directory.</returns>
+        public async Task<IActionResult> OnPostToggleAvailabilityAsync(Guid id)
+        {
+            var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(id);
+            if (feature == null)
+            {
+                TempData["Error"] = "Feature not found.";
+                return RedirectToPage();
+            }
+
+            feature.IsAvailableForUse = !feature.IsAvailableForUse;
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = feature.IsAvailableForUse ? "MarkAvailableForUse" : "MarkComingSoon",
+                EntityType = "Feature",
+                EntityId = feature.Id.ToString(),
+                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) marked as {(feature.IsAvailableForUse ? "Available for Use" : "Coming Soon")}",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = DateTime.UtcNow
+            });
+
+            await _dbContext.SaveChangesAsync();
+            TempData["Success"] = $"'{feature.Name}' marked as {(feature.IsAvailableForUse ? "Available for Use" : "Coming Soon")}.";
 
             return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
         }

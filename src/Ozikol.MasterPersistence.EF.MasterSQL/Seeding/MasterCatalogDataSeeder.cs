@@ -1533,7 +1533,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 1,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -1550,7 +1551,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 2,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -1567,7 +1569,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 3,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -1711,7 +1714,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 11,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -1838,7 +1842,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 18,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -1999,7 +2004,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 27,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -2016,7 +2022,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 28,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {

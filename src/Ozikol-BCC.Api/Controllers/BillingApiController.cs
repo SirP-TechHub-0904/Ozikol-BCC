@@ -72,8 +72,7 @@ namespace Ozikol_BCC.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), 404)]
         public async Task<IActionResult> GetFeatures(CancellationToken cancellationToken)
         {
-            var key = ResolveTenantKey();
-            if (key == null) return BadRequest(ApiResponse<object>.FailureResponse("Workspace could not be determined."));
+            var key = ResolveTenantKey() ?? "workspace";
 
             var snapshot = await _snapshots.BuildAsync(key, cancellationToken);
             if (snapshot == null) return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));

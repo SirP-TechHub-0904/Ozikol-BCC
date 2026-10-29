@@ -44,6 +44,49 @@ namespace Ozikol_BCC.Api.Services
         /// <summary>Socket event carrying the full <see cref="BillingFeaturesSnapshotDto"/>.</summary>
         public const string BillingUpdatedEvent = "BillingUpdated";
 
+        /// <summary>
+        /// Canonical ordering of the 10 platform suites matching the Master Feature Catalog (/centralwks/features).
+        /// </summary>
+        public static readonly string[] CanonicalSuites = new[]
+        {
+            "People, Community & Collaboration",
+            "Workforce, Rota & Scheduling",
+            "Reports, Forms & Analytics",
+            "Events & Training Management",
+            "Finance & Commercial Revenue",
+            "Operations & Workflows",
+            "Communication, AI & Support",
+            "Compliance, Learning & Certification",
+            "Demographics & Civic Census",
+            "Life Events & Publications"
+        };
+
+        /// <summary>
+        /// Feature codes that are built and live for immediate use in tenant workspaces by default.
+        /// </summary>
+        private static readonly HashSet<string> DefaultAvailableCodes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "bcp-community-messenger",
+            "bcp-committees",
+            "bcp-alumni-directory",
+            "bcp-form-builder",
+            "bcp-store-ecommerce",
+            "bcp-ai-smart-assist",
+            "bcp-mass-communication"
+        };
+
+        /// <summary>
+        /// Resolves the canonical sequence index for a given suite name.
+        /// </summary>
+        /// <param name="category">Suite / category name.</param>
+        /// <returns>Zero-based suite order index.</returns>
+        public static int GetSuiteOrder(string? category)
+        {
+            if (string.IsNullOrWhiteSpace(category)) return 999;
+            var idx = Array.FindIndex(CanonicalSuites, s => s.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase));
+            return idx >= 0 ? idx : 500;
+        }
+
         private readonly MasterCatalogDbContext _master;
         private readonly IMemoryCache _cache;
         private readonly IHubContext<NotificationHub> _hub;
@@ -85,31 +128,83 @@ namespace Ozikol_BCC.Api.Services
         /// <inheritdoc />
         public async Task<BillingFeaturesSnapshotDto?> BuildAsync(string tenantKey, CancellationToken cancellationToken = default)
         {
-            var key = tenantKey.Trim().ToLowerInvariant();
+            var key = (tenantKey ?? "workspace").Trim().ToLowerInvariant();
 
             // Read straight from the database (no entitlement cache) so the snapshot is always current
             var tenant = await _master.MasterTenantCatalogs
                 .AsNoTracking()
                 .Include(t => t.FeatureSubscriptions)
-                .FirstOrDefaultAsync(t => t.TenantKey.ToLower() == key, cancellationToken);
-            if (tenant == null) return null;
+                .FirstOrDefaultAsync(t =>
+                    t.TenantKey.ToLower() == key ||
+                    (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                    (t.CustomDomain != null && t.CustomDomain.ToLower() == key),
+                    cancellationToken);
 
-            var features = await _master.MasterFeatureCatalogs
-                .AsNoTracking()
-                .Where(f => f.IsActive)
-                .OrderBy(f => f.SortOrder).ThenBy(f => f.Name)
-                .ToListAsync(cancellationToken);
+            List<MasterFeatureCatalog> rawFeatures;
+            try
+            {
+                rawFeatures = await _master.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .ToListAsync(cancellationToken);
+            }
+            catch
+            {
+                // Graceful fallback if the IsAvailableForUse migration has not yet been applied to SQL Server
+                rawFeatures = await _master.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .Select(f => new MasterFeatureCatalog
+                    {
+                        Id = f.Id,
+                        FeatureCode = f.FeatureCode,
+                        Name = f.Name,
+                        Category = f.Category,
+                        Description = f.Description,
+                        Icon = f.Icon,
+                        RoutePrefix = f.RoutePrefix,
+                        IsCompulsory = f.IsCompulsory,
+                        BillingType = f.BillingType,
+                        MonthlyPrice = f.MonthlyPrice,
+                        QuarterlyPrice = f.QuarterlyPrice,
+                        YearlyPrice = f.YearlyPrice,
+                        IsMetered = f.IsMetered,
+                        IsActive = f.IsActive,
+                        IsInBeta = f.IsInBeta,
+                        SortOrder = f.SortOrder
+                    })
+                    .ToListAsync(cancellationToken);
+            }
+
+            // Order strictly by Canonical Suite Sequence -> SortOrder -> Name (matching Master /centralwks/features)
+            var features = rawFeatures
+                .OrderBy(f => GetSuiteOrder(f.Category))
+                .ThenBy(f => f.SortOrder)
+                .ThenBy(f => f.Name)
+                .ToList();
+
+            bool anyDbAvailableFlagSet = features.Any(f => f.IsAvailableForUse);
 
             var now = DateTime.UtcNow;
-            var subsByFeature = tenant.FeatureSubscriptions
-                .GroupBy(s => s.MasterFeatureCatalogId)
-                .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.ExpiresAtUtc).First());
+            var subsByFeature = tenant != null
+                ? tenant.FeatureSubscriptions
+                    .GroupBy(s => s.MasterFeatureCatalogId)
+                    .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.ExpiresAtUtc).First())
+                : new Dictionary<Guid, MasterTenantFeatureSubscription>();
 
-            var snapshot = new BillingFeaturesSnapshotDto { TenantKey = key, ServerTimeUtc = now };
+            var snapshot = new BillingFeaturesSnapshotDto
+            {
+                TenantKey = tenant?.TenantKey ?? key,
+                ServerTimeUtc = now
+            };
 
             foreach (var f in features)
             {
                 subsByFeature.TryGetValue(f.Id, out var sub);
+
+                bool isAvailForUse = anyDbAvailableFlagSet
+                    ? f.IsAvailableForUse
+                    : DefaultAvailableCodes.Contains(f.FeatureCode);
 
                 var item = new BillingFeatureItemDto
                 {
@@ -119,7 +214,12 @@ namespace Ozikol_BCC.Api.Services
                     Category = f.Category,
                     Description = f.Description,
                     Icon = f.Icon,
+                    RoutePrefix = f.RoutePrefix,
                     IsCompulsory = f.IsCompulsory,
+                    IsAvailableForUse = isAvailForUse,
+                    IsInBeta = f.IsInBeta,
+                    SortOrder = f.SortOrder,
+                    BillingType = f.BillingType.ToString(),
                     MonthlyPrice = f.MonthlyPrice,
                     QuarterlyPrice = f.QuarterlyPrice > 0 ? f.QuarterlyPrice : Math.Round(f.MonthlyPrice * 3m * 0.9m, 2),
                     YearlyPrice = f.YearlyPrice > 0 ? f.YearlyPrice : f.MonthlyPrice * 10m
