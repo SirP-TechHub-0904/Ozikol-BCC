@@ -174,13 +174,18 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
 
             TotalCount = allFeatures.Count;
-            ActiveCount = allFeatures.Count(f => f.IsActive && !f.IsInBeta);
-            InactiveCount = allFeatures.Count(f => !f.IsActive && !f.IsInBeta);
+            // In Master Catalog, IsActive represents whether the capability is Published (visible) or Unpublished (hidden)
+            foreach (var f in allFeatures)
+            {
+                f.IsPublished = f.IsActive;
+            }
+            PublishedCount = allFeatures.Count(f => f.IsActive);
+            UnpublishedCount = allFeatures.Count(f => !f.IsActive);
+            ActiveCount = PublishedCount;
+            InactiveCount = UnpublishedCount;
             MaintenanceCount = allFeatures.Count(f => f.IsInBeta);
             AvailableForUseCount = allFeatures.Count(f => f.IsAvailableForUse);
             ComingSoonCount = allFeatures.Count(f => !f.IsAvailableForUse);
-            PublishedCount = allFeatures.Count(f => f.IsPublished);
-            UnpublishedCount = allFeatures.Count(f => !f.IsPublished);
 
             // Populate suites in canonical sequence
             var distinctDbCategories = allFeatures
@@ -217,21 +222,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             if (!string.IsNullOrWhiteSpace(Status))
             {
                 var statusNorm = Status.Trim().ToLowerInvariant();
-                if (statusNorm == "active")
+                if (statusNorm == "published" || statusNorm == "active")
                 {
-                    filtered = filtered.Where(f => f.IsActive && !f.IsInBeta);
+                    filtered = filtered.Where(f => f.IsActive);
                 }
-                else if (statusNorm == "inactive" || statusNorm == "deactivated")
+                else if (statusNorm == "unpublished" || statusNorm == "inactive")
                 {
-                    filtered = filtered.Where(f => !f.IsActive && !f.IsInBeta);
-                }
-                else if (statusNorm == "published")
-                {
-                    filtered = filtered.Where(f => f.IsPublished);
-                }
-                else if (statusNorm == "unpublished")
-                {
-                    filtered = filtered.Where(f => !f.IsPublished);
+                    filtered = filtered.Where(f => !f.IsActive);
                 }
                 else if (statusNorm == "available")
                 {
@@ -240,10 +237,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 else if (statusNorm == "coming_soon")
                 {
                     filtered = filtered.Where(f => !f.IsAvailableForUse);
-                }
-                else if (statusNorm == "maintenance" || statusNorm == "beta")
-                {
-                    filtered = filtered.Where(f => f.IsInBeta);
                 }
             }
 
@@ -345,23 +338,24 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 return RedirectToPage();
             }
 
-            feature.IsPublished = !feature.IsPublished;
+            feature.IsActive = !feature.IsActive;
+            feature.IsPublished = feature.IsActive;
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
                 UserId = User.Identity?.Name,
                 UserName = User.Identity?.Name,
-                Action = feature.IsPublished ? "Publish" : "Unpublish",
+                Action = feature.IsActive ? "Publish" : "Unpublish",
                 EntityType = "Feature",
                 EntityId = feature.Id.ToString(),
-                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) was {(feature.IsPublished ? "published" : "unpublished")}",
+                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) was {(feature.IsActive ? "published" : "unpublished")}",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"'{feature.Name}' visibility set to {(feature.IsPublished ? "Published (Visible to Tenants)" : "Unpublished (Hidden from Tenants)")}.";
+            TempData["Success"] = $"'{feature.Name}' is now {(feature.IsActive ? "Published (Visible to Tenants)" : "Unpublished (Hidden from Tenants)")}.";
 
             return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
         }

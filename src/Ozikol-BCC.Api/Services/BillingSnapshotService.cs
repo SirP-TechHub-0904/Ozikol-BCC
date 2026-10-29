@@ -149,7 +149,7 @@ namespace Ozikol_BCC.Api.Services
             {
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => f.IsActive && f.IsPublished)
+                    .Where(f => f.IsActive)
                     .ToListAsync(cancellationToken);
             }
             catch
