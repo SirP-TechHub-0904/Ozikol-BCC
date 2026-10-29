@@ -158,7 +158,7 @@
             type="text"
             [(ngModel)]="searchQuery"
             class="search-input"
-            placeholder="Search by capability name, code, suite..."
+            placeholder="Search by name, code..."
             autocomplete="off"
           />
           @if (searchQuery) {
@@ -169,7 +169,7 @@
         </div>
 
         <!-- Suite Selector -->
-        <select [(ngModel)]="selectedSuite" class="filter-select">
+        <select [(ngModel)]="selectedSuite" class="filter-select select-suite">
           <option value="" [textContent]="'All Suites (' + canonicalSuiteOptions.length + ')'"></option>
           @for (s of canonicalSuiteOptions; track s.name) {
             <option [value]="s.name" [textContent]="'Suite ' + s.letter + ': ' + s.name + ' (' + s.count + ')'"></option>
@@ -177,14 +177,14 @@
         </select>
 
         <!-- Availability Selector -->
-        <select [(ngModel)]="availabilityFilter" class="filter-select">
+        <select [(ngModel)]="availabilityFilter" class="filter-select select-availability">
           <option value="all" [textContent]="'All Availability (' + totalCapabilitiesCount + ')'"></option>
           <option value="available" [textContent]="'Available for Use (' + availableForUseCount + ')'"></option>
           <option value="coming_soon" [textContent]="'Coming Soon (' + comingSoonCount + ')'"></option>
         </select>
 
         <!-- Tier Selector -->
-        <select [(ngModel)]="tierFilter" class="filter-select">
+        <select [(ngModel)]="tierFilter" class="filter-select select-tier">
           <option value="all">All Tier Classes</option>
           <option value="compulsory">Compulsory Core</option>
           <option value="optional">Optional Add-on</option>
