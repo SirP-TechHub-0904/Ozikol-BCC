@@ -19,7 +19,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         private readonly MasterCatalogDbContext _dbContext;
 
         /// <summary>
-        /// Canonical ordering of the 10 platform suites matching the public showcase (/en/features).
+        /// Canonical ordering of the 11 platform suites matching the public showcase (/en/features).
         /// </summary>
         public static readonly string[] CanonicalSuites = new[]
         {
@@ -32,7 +32,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             "Communication, AI & Support",
             "Compliance, Learning & Certification",
             "Demographics & Civic Census",
-            "Life Events & Publications"
+            "Life Events & Publications",
+            "Workspace"
         };
 
         /// <summary>
@@ -170,29 +171,95 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
             catch
             {
-                allFeatures = await _dbContext.MasterFeatureCatalogs
-                    .AsNoTracking()
-                    .Select(f => new MasterFeatureCatalog
-                    {
-                        Id = f.Id,
-                        FeatureCode = f.FeatureCode,
-                        Name = f.Name,
-                        Category = f.Category,
-                        Description = f.Description,
-                        Icon = f.Icon,
-                        RoutePrefix = f.RoutePrefix,
-                        IsCompulsory = f.IsCompulsory,
-                        BillingType = f.BillingType,
-                        MonthlyPrice = f.MonthlyPrice,
-                        QuarterlyPrice = f.QuarterlyPrice,
-                        YearlyPrice = f.YearlyPrice,
-                        IsMetered = f.IsMetered,
-                        IsActive = f.IsActive,
-                        IsPublished = true,
-                        IsInBeta = f.IsInBeta,
-                        SortOrder = f.SortOrder
-                    })
-                    .ToListAsync();
+                try
+                {
+                    allFeatures = await _dbContext.MasterFeatureCatalogs
+                        .AsNoTracking()
+                        .Select(f => new MasterFeatureCatalog
+                        {
+                            Id = f.Id,
+                            FeatureCode = f.FeatureCode,
+                            Name = f.Name,
+                            Category = f.Category,
+                            Description = f.Description,
+                            Icon = f.Icon,
+                            RoutePrefix = f.RoutePrefix,
+                            IsCompulsory = f.IsCompulsory,
+                            BillingType = f.BillingType,
+                            MonthlyPrice = f.MonthlyPrice,
+                            QuarterlyPrice = f.QuarterlyPrice,
+                            YearlyPrice = f.YearlyPrice,
+                            IsMetered = f.IsMetered,
+                            IsActive = f.IsActive,
+                            IsPublished = f.IsPublished,
+                            IsAvailableForUse = f.IsAvailableForUse,
+                            IsInBeta = f.IsInBeta,
+                            SortOrder = f.SortOrder
+                        })
+                        .ToListAsync();
+                }
+                catch
+                {
+                    allFeatures = await _dbContext.MasterFeatureCatalogs
+                        .AsNoTracking()
+                        .Select(f => new MasterFeatureCatalog
+                        {
+                            Id = f.Id,
+                            FeatureCode = f.FeatureCode,
+                            Name = f.Name,
+                            Category = f.Category,
+                            Description = f.Description,
+                            Icon = f.Icon,
+                            RoutePrefix = f.RoutePrefix,
+                            IsCompulsory = f.IsCompulsory,
+                            BillingType = f.BillingType,
+                            MonthlyPrice = f.MonthlyPrice,
+                            QuarterlyPrice = f.QuarterlyPrice,
+                            YearlyPrice = f.YearlyPrice,
+                            IsMetered = f.IsMetered,
+                            IsActive = f.IsActive,
+                            IsPublished = true,
+                            IsInBeta = f.IsInBeta,
+                            SortOrder = f.SortOrder
+                        })
+                        .ToListAsync();
+                }
+            }
+
+            // Ensure Suite K (Workspace) and Feature #46 (bcp-workspace) are present even before migration is applied
+            if (!Suites.Any(s => string.Equals(s.SuiteCode, "suite-workspace", StringComparison.OrdinalIgnoreCase) || string.Equals(s.Name, "Workspace", StringComparison.OrdinalIgnoreCase)))
+            {
+                var defaultWorkspaceSuite = MasterFeatureSuiteDefaults.GetDefaultSuites().FirstOrDefault(s => s.Id == MasterFeatureSuiteDefaults.SuiteKId);
+                if (defaultWorkspaceSuite != null)
+                {
+                    Suites.Add(defaultWorkspaceSuite);
+                }
+            }
+
+            if (!allFeatures.Any(f => string.Equals(f.FeatureCode, "bcp-workspace", StringComparison.OrdinalIgnoreCase)))
+            {
+                allFeatures.Add(new MasterFeatureCatalog
+                {
+                    Id = Guid.Parse("a1000000-0000-0000-0000-000000000046"),
+                    FeatureCode = "bcp-workspace",
+                    Name = "Workspace (Desktop only)",
+                    MenuTitle = "Workspace (Desktop only)",
+                    Category = "Workspace",
+                    MasterFeatureSuiteId = MasterFeatureSuiteDefaults.SuiteKId,
+                    Description = "Manage workplace operations, desktop app access, and connected workspace stations.",
+                    Icon = "desktop_windows",
+                    RoutePrefix = "/workspace/console",
+                    IsCompulsory = false,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    IsActive = true,
+                    IsPublished = true,
+                    IsAvailableForUse = false,
+                    SortOrder = 460
+                });
             }
 
             TotalCount = allFeatures.Count;

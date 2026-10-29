@@ -45,7 +45,7 @@ namespace Ozikol_BCC.Api.Services
         public const string BillingUpdatedEvent = "BillingUpdated";
 
         /// <summary>
-        /// Canonical ordering of the 10 platform suites matching the Master Feature Catalog (/centralwks/features).
+        /// Canonical ordering of the 11 platform suites matching the Master Feature Catalog (/centralwks/features).
         /// </summary>
         public static readonly string[] CanonicalSuites = new[]
         {
@@ -58,7 +58,8 @@ namespace Ozikol_BCC.Api.Services
             "Communication, AI & Support",
             "Compliance, Learning & Certification",
             "Demographics & Civic Census",
-            "Life Events & Publications"
+            "Life Events & Publications",
+            "Workspace"
         };
 
         /// <summary>
@@ -196,32 +197,89 @@ namespace Ozikol_BCC.Api.Services
             }
             catch
             {
-                usedFallbackQuery = true;
                 // Graceful fallback if the MasterFeatureSuites / MenuTitle migration has not yet been applied to SQL Server
-                rawFeatures = await _master.MasterFeatureCatalogs
-                    .AsNoTracking()
-                    .Where(f => f.IsActive)
-                    .Select(f => new MasterFeatureCatalog
-                    {
-                        Id = f.Id,
-                        FeatureCode = f.FeatureCode,
-                        Name = f.Name,
-                        Category = f.Category,
-                        Description = f.Description,
-                        Icon = f.Icon,
-                        RoutePrefix = f.RoutePrefix,
-                        IsCompulsory = f.IsCompulsory,
-                        BillingType = f.BillingType,
-                        MonthlyPrice = f.MonthlyPrice,
-                        QuarterlyPrice = f.QuarterlyPrice,
-                        YearlyPrice = f.YearlyPrice,
-                        IsMetered = f.IsMetered,
-                        IsActive = f.IsActive,
-                        IsPublished = true,
-                        IsInBeta = f.IsInBeta,
-                        SortOrder = f.SortOrder
-                    })
-                    .ToListAsync(cancellationToken);
+                try
+                {
+                    rawFeatures = await _master.MasterFeatureCatalogs
+                        .AsNoTracking()
+                        .Where(f => f.IsActive)
+                        .Select(f => new MasterFeatureCatalog
+                        {
+                            Id = f.Id,
+                            FeatureCode = f.FeatureCode,
+                            Name = f.Name,
+                            Category = f.Category,
+                            Description = f.Description,
+                            Icon = f.Icon,
+                            RoutePrefix = f.RoutePrefix,
+                            IsCompulsory = f.IsCompulsory,
+                            BillingType = f.BillingType,
+                            MonthlyPrice = f.MonthlyPrice,
+                            QuarterlyPrice = f.QuarterlyPrice,
+                            YearlyPrice = f.YearlyPrice,
+                            IsMetered = f.IsMetered,
+                            IsActive = f.IsActive,
+                            IsPublished = f.IsPublished,
+                            IsAvailableForUse = f.IsAvailableForUse,
+                            IsInBeta = f.IsInBeta,
+                            SortOrder = f.SortOrder
+                        })
+                        .ToListAsync(cancellationToken);
+                }
+                catch
+                {
+                    usedFallbackQuery = true;
+                    rawFeatures = await _master.MasterFeatureCatalogs
+                        .AsNoTracking()
+                        .Where(f => f.IsActive)
+                        .Select(f => new MasterFeatureCatalog
+                        {
+                            Id = f.Id,
+                            FeatureCode = f.FeatureCode,
+                            Name = f.Name,
+                            Category = f.Category,
+                            Description = f.Description,
+                            Icon = f.Icon,
+                            RoutePrefix = f.RoutePrefix,
+                            IsCompulsory = f.IsCompulsory,
+                            BillingType = f.BillingType,
+                            MonthlyPrice = f.MonthlyPrice,
+                            QuarterlyPrice = f.QuarterlyPrice,
+                            YearlyPrice = f.YearlyPrice,
+                            IsMetered = f.IsMetered,
+                            IsActive = f.IsActive,
+                            IsPublished = true,
+                            IsInBeta = f.IsInBeta,
+                            SortOrder = f.SortOrder
+                        })
+                        .ToListAsync(cancellationToken);
+                }
+            }
+
+            if (!rawFeatures.Any(f => string.Equals(f.FeatureCode, "bcp-workspace", StringComparison.OrdinalIgnoreCase)))
+            {
+                rawFeatures.Add(new MasterFeatureCatalog
+                {
+                    Id = Guid.Parse("a1000000-0000-0000-0000-000000000046"),
+                    FeatureCode = "bcp-workspace",
+                    Name = "Workspace (Desktop only)",
+                    MenuTitle = "Workspace (Desktop only)",
+                    Category = "Workspace",
+                    MasterFeatureSuiteId = MasterFeatureSuiteDefaults.SuiteKId,
+                    Description = "Manage workplace operations, desktop app access, and connected workspace stations.",
+                    Icon = "desktop_windows",
+                    RoutePrefix = "/workspace/console",
+                    IsCompulsory = false,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    IsActive = true,
+                    IsPublished = true,
+                    IsAvailableForUse = false,
+                    SortOrder = 460
+                });
             }
 
             // Order strictly by Canonical Suite Sequence -> SortOrder -> Name (matching Master /centralwks/features)

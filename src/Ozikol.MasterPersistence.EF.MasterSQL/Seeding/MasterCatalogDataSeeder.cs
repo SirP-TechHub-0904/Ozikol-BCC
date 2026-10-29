@@ -2325,6 +2325,31 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     IsMetered = false,
                     SortOrder = 45,
                     IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 11: Workspace
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-workspace",
+                    Name = "Workspace (Desktop only)",
+                    MenuTitle = "Workspace (Desktop only)",
+                    Category = "Workspace",
+                    MasterFeatureSuiteId = MasterFeatureSuiteDefaults.SuiteKId,
+                    Description = "Manage workplace operations, desktop app access, and connected workspace stations.",
+                    Icon = "desktop_windows",
+                    RoutePrefix = "/workspace/console",
+                    IsCompulsory = false,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 46,
+                    IsActive = true,
+                    IsPublished = true,
+                    IsAvailableForUse = false
                 }
             };
 

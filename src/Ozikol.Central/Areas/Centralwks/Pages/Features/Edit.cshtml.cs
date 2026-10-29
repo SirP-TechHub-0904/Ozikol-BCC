@@ -22,7 +22,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         private readonly ICurrencyService _currencyService;
 
         /// <summary>
-        /// The 10 canonical official Feature Suites of the Ozikol platform.
+        /// The 11 canonical official Feature Suites of the Ozikol platform.
         /// </summary>
         public static readonly string[] CanonicalSuites = new[]
         {
@@ -35,7 +35,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             "Communication, AI & Support",
             "Compliance, Learning & Certification",
             "Demographics & Civic Census",
-            "Life Events & Publications"
+            "Life Events & Publications",
+            "Workspace"
         };
 
         /// <summary>

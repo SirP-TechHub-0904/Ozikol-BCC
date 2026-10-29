@@ -34,7 +34,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             "Communication, AI & Support",
             "Compliance, Learning & Certification",
             "Demographics & Civic Census",
-            "Life Events & Publications"
+            "Life Events & Publications",
+            "Workspace"
         };
 
         /// <summary>

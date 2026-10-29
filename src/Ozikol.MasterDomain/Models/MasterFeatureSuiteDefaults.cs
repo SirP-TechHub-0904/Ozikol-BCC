@@ -4,13 +4,13 @@ using System.Collections.Generic;
 namespace Ozikol.MasterDomain.Models
 {
     /// <summary>
-    /// Canonical default definitions for the 10 platform suites and 45 modular features,
+    /// Canonical default definitions for the 11 platform suites and 46 modular features,
     /// providing deterministic Suite IDs, Full Titles, and concise Sidebar Menu Titles.
     /// </summary>
     public static class MasterFeatureSuiteDefaults
     {
         /// <summary>
-        /// Deterministic GUIDs for the 10 canonical platform suites.
+        /// Deterministic GUIDs for the 11 canonical platform suites.
         /// </summary>
         public static readonly Guid SuiteAId = Guid.Parse("11111111-0001-0000-0000-000000000001");
         public static readonly Guid SuiteBId = Guid.Parse("11111111-0002-0000-0000-000000000002");
@@ -22,9 +22,10 @@ namespace Ozikol.MasterDomain.Models
         public static readonly Guid SuiteHId = Guid.Parse("11111111-0008-0000-0000-000000000008");
         public static readonly Guid SuiteIId = Guid.Parse("11111111-0009-0000-0000-000000000009");
         public static readonly Guid SuiteJId = Guid.Parse("11111111-0010-0000-0000-000000000010");
+        public static readonly Guid SuiteKId = Guid.Parse("11111111-0011-0000-0000-000000000011");
 
         /// <summary>
-        /// Returns the 10 canonical <see cref="MasterFeatureSuite"/> records.
+        /// Returns the 11 canonical <see cref="MasterFeatureSuite"/> records.
         /// </summary>
         /// <returns>List of canonical suites.</returns>
         public static List<MasterFeatureSuite> GetDefaultSuites()
@@ -41,7 +42,8 @@ namespace Ozikol.MasterDomain.Models
                 new() { Id = SuiteGId, SuiteCode = "suite-communication-ai", SuiteLetter = "G", Name = "Communication, AI & Support", MenuTitle = "Communication & AI", Description = "Ozi AI Studio assistant, bulk SMS/Email broadcast studio, helpdesk ticketing, live chat, and video rooms.", Icon = "campaign", SortOrder = 7, IsPublished = true, IsActive = true, CreatedUtc = created },
                 new() { Id = SuiteHId, SuiteCode = "suite-compliance-learning", SuiteLetter = "H", Name = "Compliance, Learning & Certification", MenuTitle = "Compliance & Learning", Description = "Encrypted document vaults, LMS training courses, verifiable certificates, visitor gate passes, and KYC vetting.", Icon = "verified_user", SortOrder = 8, IsPublished = true, IsActive = true, CreatedUtc = created },
                 new() { Id = SuiteIId, SuiteCode = "suite-demographics-census", SuiteLetter = "I", Name = "Demographics & Civic Census", MenuTitle = "Demographics & Census", Description = "Household census registries, offline field enumeration, printable digital ID cards, and population intelligence.", Icon = "map", SortOrder = 9, IsPublished = true, IsActive = true, CreatedUtc = created },
-                new() { Id = SuiteJId, SuiteCode = "suite-life-events", SuiteLetter = "J", Name = "Life Events & Publications", MenuTitle = "Life Events & Media", Description = "Digital memorials, wedding and celebration RSVP portals, and interactive 3D page-flip brochures.", Icon = "celebration", SortOrder = 10, IsPublished = true, IsActive = true, CreatedUtc = created }
+                new() { Id = SuiteJId, SuiteCode = "suite-life-events", SuiteLetter = "J", Name = "Life Events & Publications", MenuTitle = "Life Events & Media", Description = "Digital memorials, wedding and celebration RSVP portals, and interactive 3D page-flip brochures.", Icon = "celebration", SortOrder = 10, IsPublished = true, IsActive = true, CreatedUtc = created },
+                new() { Id = SuiteKId, SuiteCode = "suite-workspace", SuiteLetter = "K", Name = "Workspace", MenuTitle = "Workspace", Description = "Desktop application workspace and workplace management suite.", Icon = "desktop_windows", SortOrder = 11, IsPublished = true, IsActive = true, CreatedUtc = created }
             };
         }
 
@@ -59,7 +61,8 @@ namespace Ozikol.MasterDomain.Models
             ["Communication, AI & Support"] = SuiteGId,
             ["Compliance, Learning & Certification"] = SuiteHId,
             ["Demographics & Civic Census"] = SuiteIId,
-            ["Life Events & Publications"] = SuiteJId
+            ["Life Events & Publications"] = SuiteJId,
+            ["Workspace"] = SuiteKId
         };
 
         /// <summary>
@@ -76,7 +79,8 @@ namespace Ozikol.MasterDomain.Models
             ["Communication, AI & Support"] = "Communication & AI",
             ["Compliance, Learning & Certification"] = "Compliance & Learning",
             ["Demographics & Civic Census"] = "Demographics & Census",
-            ["Life Events & Publications"] = "Life Events & Media"
+            ["Life Events & Publications"] = "Life Events & Media",
+            ["Workspace"] = "Workspace"
         };
 
         /// <summary>
@@ -147,7 +151,10 @@ namespace Ozikol.MasterDomain.Models
             // Suite J: Life Events & Publications
             ["bcp-digital-memorials"] = "Digital Memorials",
             ["bcp-wedding-portals"] = "Wedding Portals",
-            ["bcp-digital-brochures"] = "Digital Brochures"
+            ["bcp-digital-brochures"] = "Digital Brochures",
+
+            // Suite K: Workspace
+            ["bcp-workspace"] = "Workspace (Desktop only)"
         };
 
         /// <summary>

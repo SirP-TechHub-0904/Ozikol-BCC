@@ -42,7 +42,7 @@ export type BillingPageSection = 'features' | 'paymentmethod' | 'subscriptions';
 })
 export class BillingConsoleComponent implements OnInit, OnDestroy {
   /**
-   * Canonical ordering of the 10 platform suites matching the Master Feature Catalog (/centralwks/features).
+   * Canonical ordering of the 11 platform suites matching the Master Feature Catalog (/centralwks/features).
    */
   static readonly CanonicalSuites: string[] = [
     'People, Community & Collaboration',
@@ -54,7 +54,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     'Communication, AI & Support',
     'Compliance, Learning & Certification',
     'Demographics & Civic Census',
-    'Life Events & Publications'
+    'Life Events & Publications',
+    'Workspace'
   ];
 
   activePage: BillingPageSection = 'features';
@@ -797,6 +798,12 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         'Validate messages in real time with built-in anti-spam deliverability checks.',
         'Track delivery logs, open rates, and multi-channel dispatch queues (MX Mails & MX SMS).',
         'Use reusable branded templates for organization-wide announcements.'
+      ],
+      'bcp-workspace': [
+        'Enable and govern native Desktop Workspace access from your web Command Center.',
+        'Manage connected workplace stations, reception desks, and offline-capable desktop terminals.',
+        'Configure workplace-level operational access, station policies, and local peripheral sync.',
+        'Synchronize desktop workplace activities seamlessly with your cloud organization workspace.'
       ]
     };
 
@@ -889,7 +896,10 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       // Suite J: Life Events & Publications
       { featureCode: 'bcp-digital-memorials', name: 'Digital Memorials & Funeral Tributes', menuTitle: 'Digital Memorials', category: 'Life Events & Publications', suiteMenuTitle: 'Life Events & Media', icon: 'local_fire_department', isAvailableForUse: false, sortOrder: 43, description: 'Online memorial portals, virtual tributes, biography galleries, eulogy streams, and printable booklets.' },
       { featureCode: 'bcp-wedding-portals', name: 'Weddings & Celebration Portals', menuTitle: 'Wedding Portals', category: 'Life Events & Publications', suiteMenuTitle: 'Life Events & Media', icon: 'celebration', isAvailableForUse: false, sortOrder: 44, description: 'Digital celebration invitations, RSVP registry, order of service flipbook, and guest photo sharing.' },
-      { featureCode: 'bcp-digital-brochures', name: 'Digital Brochures & Magazine Publishing', menuTitle: 'Digital Brochures', category: 'Life Events & Publications', suiteMenuTitle: 'Life Events & Media', icon: 'auto_stories', isAvailableForUse: false, sortOrder: 45, description: 'Interactive 3D page-flip brochures, anniversary magazines, souvenir programmes, and PDF downloads.' }
+      { featureCode: 'bcp-digital-brochures', name: 'Digital Brochures & Magazine Publishing', menuTitle: 'Digital Brochures', category: 'Life Events & Publications', suiteMenuTitle: 'Life Events & Media', icon: 'auto_stories', isAvailableForUse: false, sortOrder: 45, description: 'Interactive 3D page-flip brochures, anniversary magazines, souvenir programmes, and PDF downloads.' },
+
+      // Suite K: Workspace
+      { featureCode: 'bcp-workspace', name: 'Workspace (Desktop only)', menuTitle: 'Workspace (Desktop only)', category: 'Workspace', suiteMenuTitle: 'Workspace', icon: 'desktop_windows', isAvailableForUse: false, sortOrder: 46, description: 'Manage workplace operations, desktop app access, and connected workspace stations.' }
     ];
 
     const items: BillingFeatureItem[] = raw.map((r, i) => ({

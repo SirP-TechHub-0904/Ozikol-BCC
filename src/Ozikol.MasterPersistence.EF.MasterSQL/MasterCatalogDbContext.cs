@@ -302,6 +302,20 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
                     IsPublished = true,
                     IsActive = true,
                     CreatedUtc = suiteSeedCreatedUtc
+                },
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0011-0000-0000-000000000011"),
+                    SuiteCode = "suite-workspace",
+                    SuiteLetter = "K",
+                    Name = "Workspace",
+                    MenuTitle = "Workspace",
+                    Description = "Desktop application workspace and workplace management suite.",
+                    Icon = "desktop_windows",
+                    SortOrder = 11,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
                 }
             );
         });
