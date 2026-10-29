@@ -38,6 +38,7 @@ BEGIN
         [Id], [FeatureCode], [Name], [MenuTitle], [Category], [MasterFeatureSuiteId],
         [Description], [Icon], [RoutePrefix], [IsCompulsory], [BillingType],
         [MonthlyPrice], [QuarterlyPrice], [YearlyPrice], [IsMetered],
+        [MeterUnitPrice], [MeterBlockSize], [IncludedFreeUnits],
         [IsActive], [IsPublished], [IsAvailableForUse], [IsInBeta], [SortOrder], [CreatedUtc]
     )
     VALUES
@@ -52,10 +53,13 @@ BEGIN
         'desktop_windows',
         '/workspace/console',
         0,
-        0,
+        1,
         0.00,
         0.00,
         0.74,
+        0,
+        0.0000,
+        1,
         0,
         1,
         1,
