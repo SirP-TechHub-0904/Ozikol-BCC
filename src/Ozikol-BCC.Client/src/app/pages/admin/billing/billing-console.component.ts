@@ -371,6 +371,10 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     this.availabilityFilter = this.availabilityFilter === filter ? 'all' : filter;
   }
 
+  filterByTier(tier: 'all' | 'compulsory' | 'optional'): void {
+    this.tierFilter = this.tierFilter === tier ? 'all' : tier;
+  }
+
   resetFilters(): void {
     this.searchQuery = '';
     this.selectedSuite = '';

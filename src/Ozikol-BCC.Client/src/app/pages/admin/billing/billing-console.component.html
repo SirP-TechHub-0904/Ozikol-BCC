@@ -51,7 +51,13 @@
   <!-- ── 5 Comprehensive Smart KPI Cards Row ── -->
   <div class="metrics-grid">
     <!-- Card 1: Canonical Suites -->
-    <div class="metric-card" (click)="resetFilters()" role="button" tabindex="0" title="Click to show all suites">
+    <div
+      class="metric-card clickable"
+      (click)="resetFilters()"
+      role="button"
+      tabindex="0"
+      title="Click to show all 10 canonical suites"
+    >
       <div class="card-top">
         <div class="card-icon bg-blue">
           <span class="material-symbols-outlined">category</span>
@@ -70,7 +76,7 @@
     <!-- Card 2: Total Capabilities -->
     <div
       class="metric-card clickable"
-      [class.active-card]="availabilityFilter === 'all' && selectedSuite === ''"
+      [class.active-card]="availabilityFilter === 'all' && tierFilter === 'all' && selectedSuite === ''"
       (click)="resetFilters()"
       role="button"
       tabindex="0"
@@ -140,7 +146,14 @@
     </div>
 
     <!-- Card 5: Sovereign Baseline Plan -->
-    <div class="metric-card">
+    <div
+      class="metric-card clickable"
+      [class.active-card]="tierFilter === 'compulsory'"
+      (click)="filterByTier('compulsory')"
+      role="button"
+      tabindex="0"
+      title="Click to filter Compulsory Baseline Core (Included Free) capabilities"
+    >
       <div class="card-top">
         <div class="card-icon bg-teal">
           <span class="material-symbols-outlined">workspace_premium</span>
@@ -151,7 +164,7 @@
       <div class="card-label">Active Recurring Spend</div>
       <div class="card-breakdown">
         <div class="breakdown-row">
-          <span class="text-green"><span class="dot bg-green"></span> Baseline Core Included Free</span>
+          <span class="text-green"><span class="dot bg-green"></span> <strong>{{ compulsoryCount }}</strong> Baseline Core Included Free</span>
         </div>
       </div>
     </div>
