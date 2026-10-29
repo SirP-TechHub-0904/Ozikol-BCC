@@ -17,6 +17,7 @@ export interface BillingFeatureItem {
   isSubscribed: boolean;
   isActive: boolean;
   isAvailableForUse: boolean;
+  isPublished?: boolean;
   isInBeta?: boolean;
   hasCustomPriceOverride?: boolean;
   hasCustomAvailabilityOverride?: boolean;

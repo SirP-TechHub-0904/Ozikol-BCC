@@ -103,9 +103,10 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   selectedInvoice: BillingInvoice | null = null;
   showInvoiceModal = false;
 
-  // Feature Details Modal
+  // Feature Details Page / Modal
   selectedFeatureDetail: (BillingFeatureItem & { serialNo?: number; suiteLetter?: string }) | null = null;
   showFeatureDetailModal = false;
+  pendingDetailFeatureCode: string | null = null;
 
   // Contextual Suite Info Modal
   showInfoModal = false;
@@ -114,6 +115,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   isRealtimeConnected = false;
   private hubConnection: signalR.HubConnection | null = null;
   private routeSub: Subscription | null = null;
+  private queryParamSub: Subscription | null = null;
 
   constructor(
     private billingService: BillingService,
@@ -129,6 +131,19 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       this.resolveActivePageFromRoute(data?.['tab']);
     });
 
+    this.queryParamSub = this.route.queryParamMap.subscribe(params => {
+      const code = params.get('feature');
+      if (code && code.trim()) {
+        this.activePage = 'features';
+        this.pendingDetailFeatureCode = code.trim().toLowerCase();
+        this.resolveSelectedFeatureFromCode(this.pendingDetailFeatureCode);
+      } else {
+        this.pendingDetailFeatureCode = null;
+        this.selectedFeatureDetail = null;
+        this.showFeatureDetailModal = false;
+      }
+    });
+
     this.loadPaymentMethods();
     this.loadSnapshot();
     this.loadInvoices();
@@ -138,6 +153,9 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.routeSub) {
       this.routeSub.unsubscribe();
+    }
+    if (this.queryParamSub) {
+      this.queryParamSub.unsubscribe();
     }
     if (this.hubConnection) {
       this.hubConnection.stop().catch(() => {});
@@ -254,6 +272,11 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         if (res && res.success && res.data) {
           this.snapshot = res.data;
           this.broadcastSnapshotToSidebar(res.data);
+          if (this.pendingDetailFeatureCode) {
+            this.resolveSelectedFeatureFromCode(this.pendingDetailFeatureCode);
+          } else if (this.selectedFeatureDetail) {
+            this.resolveSelectedFeatureFromCode(this.selectedFeatureDetail.featureCode);
+          }
         }
       },
       error: err => {
@@ -261,6 +284,19 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         console.warn('Using resilient Master Feature Catalog snapshot:', err);
       }
     });
+  }
+
+  /**
+   * Resolves and opens the Feature Details view for a specific featureCode.
+   */
+  private resolveSelectedFeatureFromCode(code: string): void {
+    if (!code) return;
+    const clean = code.trim().toLowerCase();
+    const matched = this.allOrderedFeatures.find(f => f.featureCode?.toLowerCase() === clean);
+    if (matched) {
+      this.selectedFeatureDetail = matched;
+      this.showFeatureDetailModal = false;
+    }
   }
 
   /**
@@ -463,8 +499,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * All capabilities allowed by Central for this tenant combined and ordered in canonical Master sequence.
-   * When Central has UseCustomAvailability enabled, only capabilities marked Available for this tenant are returned.
+   * All published capabilities from Central for this tenant combined and ordered in canonical Master sequence.
+   * Includes both Available (isAvailableForUse == true) and Coming Soon (isAvailableForUse == false) capabilities.
    */
   get allOrderedFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
     const combined: BillingFeatureItem[] = [
@@ -473,12 +509,9 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       ...(this.snapshot.available || [])
     ];
 
-    // Enforce Central Custom Availability policy: if UseCustomAvailability is true, only show features allowed by Central
-    const allowed = this.snapshot.useCustomAvailability
-      ? combined.filter(f => f.isAvailableForUse)
-      : combined;
+    const published = combined.filter(f => f.isPublished !== false);
 
-    const sorted = allowed.sort((a, b) => {
+    const sorted = published.sort((a, b) => {
       const suiteDiff = this.getSuiteOrder(a.category) - this.getSuiteOrder(b.category);
       if (suiteDiff !== 0) return suiteDiff;
       const orderDiff = (a.sortOrder ?? 999) - (b.sortOrder ?? 999);
@@ -666,12 +699,84 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
   openFeatureDetail(feat: BillingFeatureItem & { serialNo?: number; suiteLetter?: string }): void {
     this.selectedFeatureDetail = feat;
-    this.showFeatureDetailModal = true;
+    this.showFeatureDetailModal = false;
+    this.router.navigate(['/billing/features'], {
+      queryParams: { feature: feat.featureCode },
+      queryParamsHandling: 'merge'
+    });
   }
 
   closeFeatureDetail(): void {
     this.showFeatureDetailModal = false;
     this.selectedFeatureDetail = null;
+    this.pendingDetailFeatureCode = null;
+    this.router.navigate(['/billing/features'], {
+      queryParams: { feature: null },
+      queryParamsHandling: 'merge'
+    });
+  }
+
+  /**
+   * Returns a structured list of key capabilities and actions showing what the tenant can do with a feature.
+   */
+  getFeatureCapabilitiesList(feat: BillingFeatureItem): string[] {
+    if (!feat) return [];
+    const code = (feat.featureCode || '').toLowerCase();
+    const specificMap: Record<string, string[]> = {
+      'bcp-community-messenger': [
+        'Launch real-time 1-to-1 direct messages and group channels across your workspace.',
+        'Share files, announcements, and media with end-to-end encrypted delivery.',
+        'Engage members via the floating quick-chat dock from any workspace screen.',
+        'Manage channel moderation, pinned messages, and read receipts.'
+      ],
+      'bcp-committees': [
+        'Create and manage committees, sub-groups, chapters, and working taskforces.',
+        'Assign committee leadership roles (Chair, Secretary, Treasurer) and member rosters.',
+        'Schedule committee meetings, record minutes, and track voting resolutions.',
+        'Run dedicated group announcement feeds and restricted document sharing.'
+      ],
+      'bcp-alumni-directory': [
+        'Maintain a searchable alumni and cohort directory with profile verification.',
+        'Organize graduating classes, induction cohorts, and regional chapters.',
+        'Enable career networking, mentorship matching, and alumni achievement spotlights.',
+        'Track alumni engagement metrics and cohort participation.'
+      ],
+      'bcp-form-builder': [
+        'Build custom dynamic forms with drag-and-drop fields and conditional validation.',
+        'Embed forms directly on your public website or share standalone submission links.',
+        'Collect file uploads, structured registrations, and automated lead notifications.',
+        'Export form submissions to CSV/Excel and review real-time lead analytics.'
+      ],
+      'bcp-store-ecommerce': [
+        'Publish physical merchandise, digital downloads, and publications in an online storefront.',
+        'Organize product categories, SKU inventory levels, and promotional pricing.',
+        'Process customer orders, fulfillment statuses, and automated digital receipts.',
+        'Monitor store revenue and settlement transactions from a unified ledger.'
+      ],
+      'bcp-ai-smart-assist': [
+        'Use the docked Ozi AI Studio Assistant across CMS, forms, and communications.',
+        'Generate and refine page sections, email templates, and executive summaries.',
+        'Automate intelligent responses and content translation across workspace modules.',
+        'Access Central-managed AI provider pools with zero setup overhead.'
+      ],
+      'bcp-mass-communication': [
+        'Compose and broadcast bulk Email and SMS campaigns to targeted user segments.',
+        'Validate messages in real time with built-in anti-spam deliverability checks.',
+        'Track delivery logs, open rates, and multi-channel dispatch queues (MX Mails & MX SMS).',
+        'Use reusable branded templates for organization-wide announcements.'
+      ]
+    };
+
+    if (specificMap[code]) {
+      return specificMap[code];
+    }
+
+    return [
+      `Configure and manage ${feat.name} workflows directly from your Command Center sidebar.`,
+      `Assign role-based permissions to control which administrators and members can access ${feat.name}.`,
+      `View real-time operational telemetry, activity logs, and exportable reports under Suite ${this.getSuiteLetter(feat.category)} (${feat.category}).`,
+      `Synchronize seamlessly with your organization's member directory, notifications pool, and audit trail.`
+    ];
   }
 
   openInfoModal(): void {

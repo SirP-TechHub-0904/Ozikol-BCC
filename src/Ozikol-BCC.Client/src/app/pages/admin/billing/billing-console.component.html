@@ -60,7 +60,181 @@
       </div>
     </div>
 
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <!-- ── DEDICATED FEATURE DETAILS VIEW (/billing/features?feature=<code>) ── -->
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    @if (selectedFeatureDetail) {
+      <div class="toolbar-card" style="margin-bottom: 18px; padding: 14px 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <button
+            type="button"
+            class="btn btn-outline"
+            (click)="closeFeatureDetail()"
+            style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700;"
+          >
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to All Features</span>
+          </button>
+
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span class="badge-pill-md badge-billing">
+              <span class="material-symbols-outlined">category</span>
+              <span>Suite {{ selectedFeatureDetail.suiteLetter || getSuiteLetter(selectedFeatureDetail.category) }}: {{ selectedFeatureDetail.category }}</span>
+            </span>
+
+            @if (selectedFeatureDetail.isActive) {
+              <span class="badge-pill-md badge-available">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span>Active in Workspace Menu</span>
+              </span>
+            } @else if (selectedFeatureDetail.isAvailableForUse) {
+              <span class="badge-pill-md badge-optional">
+                <span class="material-symbols-outlined">lock</span>
+                <span>Available — Not Active (Locked in Menu)</span>
+              </span>
+            } @else {
+              <span class="badge-pill-md badge-coming-soon">
+                <span class="material-symbols-outlined">schedule</span>
+                <span>Coming Soon</span>
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card" style="padding: 28px; margin-bottom: 24px;">
+        <!-- Top Hero Row: Icon, Title, Suite, Price & Primary Install Button -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0;">
+          <div style="display: flex; align-items: flex-start; gap: 18px; max-width: 720px;">
+            <div
+              class="feature-icon-box"
+              [class.icon-available]="selectedFeatureDetail.isAvailableForUse"
+              style="width: 60px; height: 60px; border-radius: 16px; flex-shrink: 0;"
+            >
+              <span class="material-symbols-outlined" style="font-size: 30px;">{{ selectedFeatureDetail.icon || 'extension' }}</span>
+            </div>
+
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
+                @if (selectedFeatureDetail.serialNo) {
+                  <span class="serial-badge">#{{ selectedFeatureDetail.serialNo }}</span>
+                }
+                <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">
+                  {{ selectedFeatureDetail.name }}
+                </h2>
+                <code class="feature-code-pill">{{ selectedFeatureDetail.featureCode }}</code>
+              </div>
+
+              <div style="font-size: 13.5px; font-weight: 700; color: #0050e5; margin-bottom: 10px;">
+                Suite {{ selectedFeatureDetail.suiteLetter || getSuiteLetter(selectedFeatureDetail.category) }} &bull; {{ selectedFeatureDetail.category }}
+              </div>
+
+              <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #334155;">
+                {{ selectedFeatureDetail.description }}
+              </p>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; min-width: 220px;">
+            <div style="text-align: right;">
+              <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                Subscription Rate ({{ currencyCode }})
+              </div>
+              <div style="font-size: 22px; font-weight: 800; color: #0f172a;">
+                {{ selectedFeatureDetail.monthlyPrice > 0 ? (formatAmount(selectedFeatureDetail.monthlyPrice) + '/mo') : 'Included Free' }}
+              </div>
+            </div>
+
+            @if (selectedFeatureDetail.isActive) {
+              <button
+                type="button"
+                class="btn btn-outline"
+                style="width: 100%; justify-content: center; padding: 11px 18px; font-weight: 700;"
+                [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode"
+                (click)="toggleFeatureInstall(selectedFeatureDetail, false)"
+              >
+                <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === selectedFeatureDetail.featureCode">
+                  {{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'toggle_off' }}
+                </span>
+                <span>{{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Updating...' : 'Deactivate Feature' }}</span>
+              </button>
+            } @else if (selectedFeatureDetail.isAvailableForUse) {
+              <button
+                type="button"
+                class="btn btn-primary"
+                style="width: 100%; justify-content: center; padding: 11px 20px; font-weight: 700; font-size: 14px;"
+                [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode"
+                (click)="toggleFeatureInstall(selectedFeatureDetail, true)"
+              >
+                <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === selectedFeatureDetail.featureCode">
+                  {{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'download_done' }}
+                </span>
+                <span>{{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Installing...' : 'Install & Activate Now' }}</span>
+              </button>
+            } @else {
+              <span class="badge-pill-md badge-coming-soon" style="padding: 9px 16px; font-size: 13px;">
+                <span class="material-symbols-outlined">schedule</span>
+                <span>Coming Soon — In Platform Rollout</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <!-- Middle Section: What You Can Do With This Capability -->
+        <div style="padding: 24px 0; border-bottom: 1px solid #e2e8f0;">
+          <h3 style="margin: 0 0 14px; font-size: 16px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="color: #0050e5; font-size: 20px;">verified</span>
+            <span>What You Can Do With {{ selectedFeatureDetail.name }}</span>
+          </h3>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px;">
+            @for (point of getFeatureCapabilitiesList(selectedFeatureDetail); track point) {
+              <div style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+                <span class="material-symbols-outlined" style="color: #0050e5; font-size: 20px; margin-top: 1px; flex-shrink: 0;">check_circle</span>
+                <span style="font-size: 13.5px; line-height: 1.55; color: #1e293b; font-weight: 500;">{{ point }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Bottom Specification Grid -->
+        <div style="padding-top: 24px;">
+          <h3 style="margin: 0 0 14px; font-size: 15px; font-weight: 800; color: #0f172a;">
+            Capability Specification &amp; Workspace Posture
+          </h3>
+
+          <div class="detail-spec-grid">
+            <div class="spec-box">
+              <span class="spec-label">Platform Suite</span>
+              <span class="spec-val">
+                Suite {{ selectedFeatureDetail.suiteLetter || getSuiteLetter(selectedFeatureDetail.category) }}: {{ selectedFeatureDetail.category }}
+              </span>
+            </div>
+            <div class="spec-box">
+              <span class="spec-label">Monthly Rate ({{ currencyCode }})</span>
+              <span class="spec-val">
+                {{ selectedFeatureDetail.monthlyPrice > 0 ? (formatAmount(selectedFeatureDetail.monthlyPrice) + '/mo') : ('Included Free (' + formatAmount(0) + ')') }}
+              </span>
+            </div>
+            <div class="spec-box">
+              <span class="spec-label">Annual Rate ({{ currencyCode }})</span>
+              <span class="spec-val">
+                {{ selectedFeatureDetail.yearlyPrice > 0 ? (formatAmount(selectedFeatureDetail.yearlyPrice) + '/yr') : ('Included Free (' + formatAmount(0) + ')') }}
+              </span>
+            </div>
+            <div class="spec-box">
+              <span class="spec-label">Sidebar Menu Status</span>
+              <span class="spec-val" [style.color]="selectedFeatureDetail.isActive ? '#059669' : (selectedFeatureDetail.isAvailableForUse ? '#d97706' : '#64748b')">
+                {{ selectedFeatureDetail.isActive ? 'Unlocked & Active in Sidebar' : (selectedFeatureDetail.isAvailableForUse ? 'Locked in Sidebar (Click Install to Unlock)' : 'Coming Soon Badge in Sidebar') }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- ── Primary 2-Tab Switcher: Simple View vs Detailed View ── -->
+    @if (!selectedFeatureDetail) {
     <div class="features-mode-tabs-bar">
       <div class="features-mode-tabs-left">
         <button
@@ -90,7 +264,7 @@
         @if (snapshot.useCustomAvailability) {
           <span class="badge-pill-md badge-available" title="Central Custom Availability policy is active for this workspace">
             <span class="material-symbols-outlined">verified</span>
-            <span>Custom Workspace Catalog ({{ totalCapabilitiesCount }} Assigned by Central)</span>
+            <span>Custom Workspace Availability ({{ availableForUseCount }} Available)</span>
           </span>
         }
         @if (snapshot.useCustomPricing) {
@@ -101,11 +275,12 @@
         }
       </div>
     </div>
+    }
 
     <!-- ════════════════════════════════════════════════════════════════════════ -->
     <!-- ── TAB 1: SIMPLE VIEW (S/N, Feature Title, Suite, Status, Install) ───── -->
     <!-- ════════════════════════════════════════════════════════════════════════ -->
-    @if (featuresTab === 'simple') {
+    @if (!selectedFeatureDetail && featuresTab === 'simple') {
       <div class="toolbar-card" style="margin-bottom: 16px;">
         <div class="toolbar-row">
           <div class="toolbar-filters">
@@ -135,8 +310,8 @@
             <select [(ngModel)]="statusFilter" class="filter-select select-availability">
               <option value="all" [textContent]="'All Status (' + totalCapabilitiesCount + ')'"></option>
               <option value="active" [textContent]="'Active / Installed (' + activeCapabilitiesCount + ')'"></option>
-              <option value="not_active" [textContent]="'Available to Install (' + (availableForUseCount - activeCapabilitiesCount) + ')'"></option>
-              @if (!snapshot.useCustomAvailability && comingSoonCount > 0) {
+              <option value="not_active" [textContent]="'Available — Not Active (' + (availableForUseCount - activeCapabilitiesCount) + ')'"></option>
+              @if (comingSoonCount > 0) {
                 <option value="coming_soon" [textContent]="'Coming Soon (' + comingSoonCount + ')'"></option>
               }
             </select>
@@ -168,7 +343,7 @@
                   <th>FEATURE</th>
                   <th>SUITE</th>
                   <th>STATUS</th>
-                  <th style="text-align: right; width: 220px;">ACTION</th>
+                  <th style="text-align: right; width: 290px;">ACTION</th>
                 </tr>
               </thead>
               <tbody>
@@ -203,7 +378,7 @@
                         </span>
                       } @else if (feat.isAvailableForUse) {
                         <span class="badge-pill-md badge-optional">
-                          <span class="material-symbols-outlined">radio_button_unchecked</span>
+                          <span class="material-symbols-outlined">lock</span>
                           <span>Not Active</span>
                         </span>
                       } @else {
@@ -214,38 +389,50 @@
                       }
                     </td>
                     <td style="text-align: right;">
-                      @if (feat.isActive) {
+                      <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px;">
                         <button
                           type="button"
-                          class="btn btn-outline btn-sm-action"
-                          [disabled]="togglingFeatureCode === feat.featureCode"
-                          (click)="toggleFeatureInstall(feat, false)"
-                          title="Deactivate and remove from sidebar menu"
+                          class="btn-details"
+                          (click)="openFeatureDetail(feat)"
+                          title="View Feature Details, Suite & Capabilities"
                         >
-                          <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode">
-                            {{ togglingFeatureCode === feat.featureCode ? 'sync' : 'toggle_off' }}
-                          </span>
-                          <span>{{ togglingFeatureCode === feat.featureCode ? 'Updating...' : 'Deactivate' }}</span>
+                          <span class="material-symbols-outlined">visibility</span>
+                          <span>Details</span>
                         </button>
-                      } @else if (feat.isAvailableForUse) {
-                        <button
-                          type="button"
-                          class="btn btn-primary btn-sm-action"
-                          [disabled]="togglingFeatureCode === feat.featureCode"
-                          (click)="toggleFeatureInstall(feat, true)"
-                          title="Install and make active in sidebar menu"
-                        >
-                          <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode">
-                            {{ togglingFeatureCode === feat.featureCode ? 'sync' : 'download_done' }}
+
+                        @if (feat.isActive) {
+                          <button
+                            type="button"
+                            class="btn btn-outline btn-sm-action"
+                            [disabled]="togglingFeatureCode === feat.featureCode"
+                            (click)="toggleFeatureInstall(feat, false)"
+                            title="Deactivate and lock in sidebar menu"
+                          >
+                            <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode">
+                              {{ togglingFeatureCode === feat.featureCode ? 'sync' : 'toggle_off' }}
+                            </span>
+                            <span>{{ togglingFeatureCode === feat.featureCode ? 'Updating...' : 'Deactivate' }}</span>
+                          </button>
+                        } @else if (feat.isAvailableForUse) {
+                          <button
+                            type="button"
+                            class="btn btn-primary btn-sm-action"
+                            [disabled]="togglingFeatureCode === feat.featureCode"
+                            (click)="toggleFeatureInstall(feat, true)"
+                            title="Install and unlock in sidebar menu"
+                          >
+                            <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode">
+                              {{ togglingFeatureCode === feat.featureCode ? 'sync' : 'download_done' }}
+                            </span>
+                            <span>{{ togglingFeatureCode === feat.featureCode ? 'Installing...' : 'Install & Activate' }}</span>
+                          </button>
+                        } @else {
+                          <span class="badge-pill-md badge-coming-soon" style="opacity: 0.75;">
+                            <span class="material-symbols-outlined">lock_clock</span>
+                            <span>Coming Soon</span>
                           </span>
-                          <span>{{ togglingFeatureCode === feat.featureCode ? 'Installing...' : 'Install & Activate' }}</span>
-                        </button>
-                      } @else {
-                        <span class="badge-pill-md badge-coming-soon" style="opacity: 0.75;">
-                          <span class="material-symbols-outlined">lock_clock</span>
-                          <span>Coming Soon</span>
-                        </span>
-                      }
+                        }
+                      </div>
                     </td>
                   </tr>
                 }
@@ -266,7 +453,7 @@
     <!-- ════════════════════════════════════════════════════════════════════════ -->
     <!-- ── TAB 2: DETAILED VIEW (5 KPI Cards + Suite Cards + Full Table) ──────── -->
     <!-- ════════════════════════════════════════════════════════════════════════ -->
-    @if (featuresTab === 'detailed') {
+    @if (!selectedFeatureDetail && featuresTab === 'detailed') {
       <!-- 5 Comprehensive Smart KPI Cards Row -->
       <div class="metrics-grid">
         <!-- Card 1: Canonical Suites -->

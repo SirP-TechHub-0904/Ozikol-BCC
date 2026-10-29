@@ -338,16 +338,12 @@ namespace Ozikol_BCC.Api.Services
                     : DefaultAvailableCodes.Contains(f.FeatureCode);
 
                 // Apply per-tenant availability override when tenant policy is set to Custom Availability,
-                // automatically syncing features that have a custom price or active subscription
+                // automatically syncing features that have a custom price or active subscription.
+                // Both Available (isAvailForUse == true) and Coming Soon (isAvailForUse == false) published features
+                // are returned so the tenant sidebar and catalog can display Locked (Available, Not Active) vs Coming Soon.
                 bool isAvailForUse = (tenant?.UseCustomAvailability == true)
                     ? (sub?.IsAvailableForUseOverride ?? ((sub?.CustomPriceOverride != null || (sub != null && sub.IsActive && !f.IsCompulsory)) ? true : masterAvailForUse))
                     : masterAvailForUse;
-
-                // When Central has enabled Custom Availability for this tenant, only include features marked Available for this tenant
-                if (tenant?.UseCustomAvailability == true && !isAvailForUse)
-                {
-                    continue;
-                }
 
                 // Apply per-tenant custom monthly price override when tenant policy is set to Custom Pricing
                 bool hasCustomPrice = tenant?.UseCustomPricing == true && sub?.CustomPriceOverride != null;
