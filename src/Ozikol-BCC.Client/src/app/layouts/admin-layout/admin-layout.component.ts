@@ -314,9 +314,9 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/categories" [class.active]="isUserCategoriesActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">category</span>{{ categoryAlias || 'User Categories' }}</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">category</span>{{ 'nav.user_categories' | translate:'User Categories' }}</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/categories')" (click)="togglePin(categoryAlias || 'User Categories', '/users/console/categories', 'category')" [title]="isPinned('/users/console/categories') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/categories')" (click)="togglePin('User Categories', '/users/console/categories', 'category')" [title]="isPinned('/users/console/categories') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/console/categories') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
