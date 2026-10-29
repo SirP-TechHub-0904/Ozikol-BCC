@@ -1103,17 +1103,6 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <div class="nav-item">
-            <a routerLink="/billing/paymentmethod" [class.active]="isCurrentRoute('/billing/paymentmethod') || isCurrentRoute('/billing/payment-methods')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">account_balance_wallet</span>
-                <span>{{ 'adm.payment_methods_contacts' | translate:'Payment Methods & Contacts' }}</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/paymentmethod')" (click)="togglePin('Payment Methods', '/billing/paymentmethod', 'account_balance_wallet'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/paymentmethod') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/billing/paymentmethod') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
-            </a>
-          </div>
-          <div class="nav-item">
             <a routerLink="/billing/subscriptions" [class.active]="isCurrentRoute('/billing/subscriptions') || isCurrentRoute('/billing/invoices')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">receipt_long</span>

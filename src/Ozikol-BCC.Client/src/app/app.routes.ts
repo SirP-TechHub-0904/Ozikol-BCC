@@ -314,13 +314,13 @@ export const routes: Routes = [
       { path: 'products/console/orders/details/:id', component: ProductOrderDetailsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },
       { path: 'products/console/transactions', component: ProductTransactionsComponent, data: { roles: ['SuperAdmin', 'Admin', 'CommerceManager', 'CmsManager'] } },
 
-      // 7. Suite 13: Billing, Features, Payment Methods & Subscriptions (Console Only)
+      // 7. Suite 13: Billing, Features & Subscriptions (Console Only)
       { path: 'billing/features', component: BillingConsoleComponent, data: { tab: 'features', roles: ['SuperAdmin', 'Admin'] } },
-      { path: 'billing/paymentmethod', component: BillingConsoleComponent, data: { tab: 'paymentmethod', roles: ['SuperAdmin', 'Admin'] } },
       { path: 'billing/subscriptions', component: BillingConsoleComponent, data: { tab: 'subscriptions', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/paymentmethod', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
+      { path: 'billing/payment-methods', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
       { path: 'billing/plans', redirectTo: 'billing/features', pathMatch: 'full' },
       { path: 'billing/console', redirectTo: 'billing/features', pathMatch: 'full' },
-      { path: 'billing/payment-methods', redirectTo: 'billing/paymentmethod', pathMatch: 'full' },
       { path: 'billing/invoices', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
       { path: 'billing', redirectTo: 'billing/features', pathMatch: 'full' },
 

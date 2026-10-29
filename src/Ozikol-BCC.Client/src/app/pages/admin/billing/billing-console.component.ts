@@ -9,9 +9,7 @@ import {
   BillingService,
   BillingFeaturesSnapshot,
   BillingFeatureItem,
-  BillingInvoice,
-  PaymentCard,
-  BillingContactProfile
+  BillingInvoice
 } from './services/billing.service';
 import { ToastService } from '../../../core/services/toast.service';
 
@@ -24,13 +22,12 @@ export interface SuiteFeatureGroup {
   comingSoonCount: number;
 }
 
-export type BillingPageSection = 'features' | 'paymentmethod' | 'subscriptions';
+export type BillingPageSection = 'features' | 'subscriptions';
 
 /**
- * Billing, Features, Payment Methods & Subscriptions Console (Suite 13).
+ * Billing, Features & Subscriptions Console (Suite 13).
  * Supports:
  * - /billing/features (with Simple Tab and Detailed Tab, one-click Install/Activate synced with Central)
- * - /billing/paymentmethod (Saved Payment Cards & Corporate Billing Contact Profile)
  * - /billing/subscriptions (Active Installed Capabilities & Invoices Ledger)
  */
 @Component({
@@ -87,29 +84,6 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     totalRecurringMonthly: 0
   };
 
-  // Payment Methods & Billing Contact State (/billing/paymentmethod)
-  paymentCards: PaymentCard[] = [];
-  billingContact: BillingContactProfile = {
-    companyName: 'Organization Workspace',
-    billingEmail: 'billing@company.com',
-    taxId: '',
-    addressLine1: '',
-    city: '',
-    stateProvince: '',
-    country: '',
-    postalCode: ''
-  };
-  showAddCardModal = false;
-  cardForm = {
-    holderName: '',
-    cardNumber: '',
-    expMonth: 12,
-    expYear: 2028,
-    cvc: '',
-    brand: 'Visa' as 'Visa' | 'Mastercard' | 'Amex' | string,
-    isDefault: true
-  };
-
   // Subscriptions & Invoices State (/billing/subscriptions)
   invoices: BillingInvoice[] = [];
   invoiceStatusFilter: 'all' | 'pending' | 'completed' = 'all';
@@ -157,7 +131,6 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.loadPaymentMethods();
     this.loadSnapshot();
     this.loadInvoices();
     this.startRealtimeSocket();
@@ -181,9 +154,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    */
   private resolveActivePageFromRoute(tabData?: string): void {
     const url = (this.router.url || '').toLowerCase();
-    if (tabData === 'paymentmethod' || tabData === 'payment_methods' || url.includes('/billing/payment')) {
-      this.activePage = 'paymentmethod';
-    } else if (tabData === 'subscriptions' || tabData === 'invoices' || url.includes('/billing/subscriptions') || url.includes('/billing/invoices')) {
+    if (tabData === 'subscriptions' || tabData === 'invoices' || url.includes('/billing/subscriptions') || url.includes('/billing/invoices')) {
       this.activePage = 'subscriptions';
     } else {
       this.activePage = 'features';
@@ -380,66 +351,6 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         this.toastService.error('Error', 'Failed to update auto-renew preference.');
       }
     });
-  }
-
-  // ── Payment Methods & Billing Contact Actions (/billing/paymentmethod) ──
-  loadPaymentMethods(): void {
-    this.paymentCards = this.billingService.getPaymentCards();
-    this.billingContact = this.billingService.getBillingContact();
-  }
-
-  openAddCardModal(): void {
-    this.cardForm = {
-      holderName: '',
-      cardNumber: '',
-      expMonth: 12,
-      expYear: 2028,
-      cvc: '',
-      brand: 'Visa',
-      isDefault: this.paymentCards.length === 0
-    };
-    this.showAddCardModal = true;
-  }
-
-  closeAddCardModal(): void {
-    this.showAddCardModal = false;
-  }
-
-  saveNewCard(): void {
-    const cleanDigits = (this.cardForm.cardNumber || '').replace(/\D/g, '');
-    if (!this.cardForm.holderName.trim() || cleanDigits.length < 4) {
-      this.toastService.warning('Validation', 'Please enter cardholder title and valid card digits.');
-      return;
-    }
-    const last4 = cleanDigits.slice(-4);
-    this.billingService.addPaymentCard({
-      brand: this.cardForm.brand || 'Visa',
-      last4,
-      expMonth: Number(this.cardForm.expMonth) || 12,
-      expYear: Number(this.cardForm.expYear) || 2028,
-      holderName: this.cardForm.holderName.trim(),
-      isDefault: this.cardForm.isDefault
-    });
-    this.paymentCards = this.billingService.getPaymentCards();
-    this.showAddCardModal = false;
-    this.toastService.success('Card Linked', `Card ending in ${last4} has been saved.`);
-  }
-
-  setDefaultCard(cardId: string): void {
-    this.billingService.setDefaultCard(cardId);
-    this.paymentCards = this.billingService.getPaymentCards();
-    this.toastService.success('Default Updated', 'Primary settlement card updated.');
-  }
-
-  deleteCard(card: PaymentCard): void {
-    this.billingService.deletePaymentCard(card.id);
-    this.paymentCards = this.billingService.getPaymentCards();
-    this.toastService.info('Card Removed', `Card ending in ${card.last4} removed.`);
-  }
-
-  saveContactProfile(): void {
-    this.billingService.saveBillingContact(this.billingContact);
-    this.toastService.success('Billing Profile Saved', 'Organization billing contact details updated.');
   }
 
   // ── Invoices & Subscriptions Ledger Actions (/billing/subscriptions) ──
