@@ -38,6 +38,7 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     public DbSet<MasterFooterColumn> MasterFooterColumns { get; set; } = null!;
     public DbSet<MasterFooterLink> MasterFooterLinks { get; set; } = null!;
 
+    public DbSet<MasterFeatureSuite> MasterFeatureSuites { get; set; } = null!;
     public DbSet<MasterFeatureCatalog> MasterFeatureCatalogs { get; set; } = null!;
     public DbSet<MasterTenantFeatureSubscription> MasterTenantFeatureSubscriptions { get; set; } = null!;
     public DbSet<MasterEmailLog> MasterEmailLogs { get; set; } = null!;
@@ -151,9 +152,164 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.IsDeleted);
         });
 
+        var suiteSeedCreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        modelBuilder.Entity<MasterFeatureSuite>(entity =>
+        {
+            entity.ToTable("MasterFeatureSuites");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.SuiteCode).IsUnique();
+            entity.HasIndex(e => e.SortOrder);
+            entity.HasIndex(e => e.IsPublished);
+            entity.HasIndex(e => e.IsActive);
+
+            entity.HasData(
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0001-0000-0000-000000000001"),
+                    SuiteCode = "suite-people-community",
+                    SuiteLetter = "A",
+                    Name = "People, Community & Collaboration",
+                    MenuTitle = "People & Community",
+                    Description = "Real-time team messaging, committees, sub-groups, alumni directories, and confidential whistleblowing channels.",
+                    Icon = "groups",
+                    SortOrder = 1,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
+                },
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0002-0000-0000-000000000002"),
+                    SuiteCode = "suite-workforce-rota",
+                    SuiteLetter = "B",
+                    Name = "Workforce, Rota & Scheduling",
+                    MenuTitle = "Workforce & Shifts",
+                    Description = "Staff and volunteer shift scheduling, shift swaps, leave approvals, biometric/QR attendance, and appointment booking.",
+                    Icon = "calendar_month",
+                    SortOrder = 2,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
+                },
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0003-0000-0000-000000000003"),
+                    SuiteCode = "suite-reports-forms",
+                    SuiteLetter = "C",
+                    Name = "Reports, Forms & Analytics",
+                    MenuTitle = "Reports & Forms",
+                    Description = "Dynamic form builders, periodic operational reports, opinion poll surveys, and confidential referee verification.",
+                    Icon = "assessment",
+                    SortOrder = 3,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
+                },
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0004-0000-0000-000000000004"),
+                    SuiteCode = "suite-events-training",
+                    SuiteLetter = "D",
+                    Name = "Events & Training Management",
+                    MenuTitle = "Events & Ticketing",
+                    Description = "Event registration, multi-tier ticketing, speaker session tracks, and QR badge check-in kiosks.",
+                    Icon = "confirmation_number",
+                    SortOrder = 4,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
+                },
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0005-0000-0000-000000000005"),
+                    SuiteCode = "suite-finance-revenue",
+                    SuiteLetter = "E",
+                    Name = "Finance & Commercial Revenue",
+                    MenuTitle = "Finance & Commerce",
+                    Description = "Membership dues, e-commerce storefront, commercial proposals, grant ledgers, and virtual treasury wallets.",
+                    Icon = "account_balance_wallet",
+                    SortOrder = 5,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
+                },
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0006-0000-0000-000000000006"),
+                    SuiteCode = "suite-operations-workflows",
+                    SuiteLetter = "F",
+                    Name = "Operations & Workflows",
+                    MenuTitle = "Operations & Workflows",
+                    Description = "Applicant tracking, tamper-evident e-voting, equipment logistics, asset inventory, and project Kanban boards.",
+                    Icon = "work",
+                    SortOrder = 6,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
+                },
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0007-0000-0000-000000000007"),
+                    SuiteCode = "suite-communication-ai",
+                    SuiteLetter = "G",
+                    Name = "Communication, AI & Support",
+                    MenuTitle = "Communication & AI",
+                    Description = "Ozi AI Studio assistant, bulk SMS/Email broadcast studio, helpdesk ticketing, live chat, and video rooms.",
+                    Icon = "campaign",
+                    SortOrder = 7,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
+                },
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0008-0000-0000-000000000008"),
+                    SuiteCode = "suite-compliance-learning",
+                    SuiteLetter = "H",
+                    Name = "Compliance, Learning & Certification",
+                    MenuTitle = "Compliance & Learning",
+                    Description = "Encrypted document vaults, LMS training courses, verifiable certificates, visitor gate passes, and KYC vetting.",
+                    Icon = "verified_user",
+                    SortOrder = 8,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
+                },
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0009-0000-0000-000000000009"),
+                    SuiteCode = "suite-demographics-census",
+                    SuiteLetter = "I",
+                    Name = "Demographics & Civic Census",
+                    MenuTitle = "Demographics & Census",
+                    Description = "Household census registries, offline field enumeration, printable digital ID cards, and population intelligence.",
+                    Icon = "map",
+                    SortOrder = 9,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
+                },
+                new MasterFeatureSuite
+                {
+                    Id = Guid.Parse("11111111-0010-0000-0000-000000000010"),
+                    SuiteCode = "suite-life-events",
+                    SuiteLetter = "J",
+                    Name = "Life Events & Publications",
+                    MenuTitle = "Life Events & Media",
+                    Description = "Digital memorials, wedding and celebration RSVP portals, and interactive 3D page-flip brochures.",
+                    Icon = "celebration",
+                    SortOrder = 10,
+                    IsPublished = true,
+                    IsActive = true,
+                    CreatedUtc = suiteSeedCreatedUtc
+                }
+            );
+        });
+
         modelBuilder.Entity<MasterFeatureCatalog>(entity =>
         {
             entity.HasIndex(e => e.FeatureCode).IsUnique();
+            entity.HasIndex(e => e.MasterFeatureSuiteId);
             entity.HasIndex(e => e.Category);
             entity.HasIndex(e => e.IsCompulsory);
             entity.HasIndex(e => e.IsActive);
@@ -161,6 +317,10 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.QuarterlyPrice).HasPrecision(18, 2);
             entity.Property(e => e.YearlyPrice).HasPrecision(18, 2);
             entity.Property(e => e.MeterUnitPrice).HasPrecision(18, 4);
+            entity.HasOne(e => e.Suite)
+                .WithMany(s => s.Features)
+                .HasForeignKey(e => e.MasterFeatureSuiteId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<MasterTenantFeatureSubscription>(entity =>

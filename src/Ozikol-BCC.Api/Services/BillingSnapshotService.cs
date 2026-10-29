@@ -190,13 +190,14 @@ namespace Ozikol_BCC.Api.Services
             {
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
+                    .Include(f => f.Suite)
                     .Where(f => f.IsActive && f.IsPublished)
                     .ToListAsync(cancellationToken);
             }
             catch
             {
                 usedFallbackQuery = true;
-                // Graceful fallback if the IsAvailableForUse / IsPublished migration has not yet been applied to SQL Server
+                // Graceful fallback if the MasterFeatureSuites / MenuTitle migration has not yet been applied to SQL Server
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
                     .Where(f => f.IsActive)
@@ -359,12 +360,19 @@ namespace Ozikol_BCC.Api.Services
                     ? Math.Round(effectiveMonthlyUsd * 10m, 2)
                     : (f.YearlyPrice > 0 ? f.YearlyPrice : f.MonthlyPrice * 10m);
 
+                var suiteFullTitle = f.Suite?.Name ?? f.Category;
+                var suiteMenuTitle = MasterFeatureSuiteDefaults.ResolveSuiteMenuTitle(suiteFullTitle, f.Suite?.MenuTitle);
+                var featureMenuTitle = MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(f.FeatureCode, f.MenuTitle, f.Name);
+
                 var item = new BillingFeatureItemDto
                 {
                     FeatureId = f.Id,
                     FeatureCode = f.FeatureCode,
                     Name = f.Name,
-                    Category = f.Category,
+                    MenuTitle = featureMenuTitle,
+                    SuiteId = f.MasterFeatureSuiteId ?? MasterFeatureSuiteDefaults.ResolveSuiteId(suiteFullTitle),
+                    Category = suiteFullTitle,
+                    SuiteMenuTitle = suiteMenuTitle,
                     Description = f.Description,
                     Icon = f.Icon,
                     RoutePrefix = f.RoutePrefix,

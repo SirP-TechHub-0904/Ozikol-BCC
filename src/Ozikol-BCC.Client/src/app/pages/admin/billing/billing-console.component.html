@@ -205,9 +205,15 @@
 
           <div class="detail-spec-grid">
             <div class="spec-box">
-              <span class="spec-label">Platform Suite</span>
+              <span class="spec-label">Platform Suite (Full Title)</span>
               <span class="spec-val">
                 Suite {{ selectedFeatureDetail.suiteLetter || getSuiteLetter(selectedFeatureDetail.category) }}: {{ selectedFeatureDetail.category }}
+              </span>
+            </div>
+            <div class="spec-box">
+              <span class="spec-label">Sidebar Menu Label</span>
+              <span class="spec-val" style="color: #0050e5; font-weight: 700;">
+                {{ selectedFeatureDetail.menuTitle || selectedFeatureDetail.name }}
               </span>
             </div>
             <div class="spec-box">

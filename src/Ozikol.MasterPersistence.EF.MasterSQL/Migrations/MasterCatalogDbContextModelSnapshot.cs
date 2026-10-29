@@ -1479,6 +1479,14 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<bool>("IsPublished")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("MasterFeatureSuiteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MenuTitle")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
                     b.Property<int>("MeterBlockSize")
                         .HasColumnType("int");
 
@@ -1525,7 +1533,211 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
                     b.HasIndex("IsCompulsory");
 
+                    b.HasIndex("MasterFeatureSuiteId");
+
                     b.ToTable("MasterFeatureCatalogs");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFeatureSuite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MenuTitle")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SuiteCode")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("SuiteLetter")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsPublished");
+
+                    b.HasIndex("SortOrder");
+
+                    b.HasIndex("SuiteCode")
+                        .IsUnique();
+
+                    b.ToTable("MasterFeatureSuites", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-0001-0000-0000-000000000001"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Real-time team messaging, committees, sub-groups, alumni directories, and confidential whistleblowing channels.",
+                            Icon = "groups",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "People & Community",
+                            Name = "People, Community & Collaboration",
+                            SortOrder = 1,
+                            SuiteCode = "suite-people-community",
+                            SuiteLetter = "A"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0002-0000-0000-000000000002"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Staff and volunteer shift scheduling, shift swaps, leave approvals, biometric/QR attendance, and appointment booking.",
+                            Icon = "calendar_month",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Workforce & Shifts",
+                            Name = "Workforce, Rota & Scheduling",
+                            SortOrder = 2,
+                            SuiteCode = "suite-workforce-rota",
+                            SuiteLetter = "B"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0003-0000-0000-000000000003"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Dynamic form builders, periodic operational reports, opinion poll surveys, and confidential referee verification.",
+                            Icon = "assessment",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Reports & Forms",
+                            Name = "Reports, Forms & Analytics",
+                            SortOrder = 3,
+                            SuiteCode = "suite-reports-forms",
+                            SuiteLetter = "C"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0004-0000-0000-000000000004"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Event registration, multi-tier ticketing, speaker session tracks, and QR badge check-in kiosks.",
+                            Icon = "confirmation_number",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Events & Ticketing",
+                            Name = "Events & Training Management",
+                            SortOrder = 4,
+                            SuiteCode = "suite-events-training",
+                            SuiteLetter = "D"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0005-0000-0000-000000000005"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Membership dues, e-commerce storefront, commercial proposals, grant ledgers, and virtual treasury wallets.",
+                            Icon = "account_balance_wallet",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Finance & Commerce",
+                            Name = "Finance & Commercial Revenue",
+                            SortOrder = 5,
+                            SuiteCode = "suite-finance-revenue",
+                            SuiteLetter = "E"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0006-0000-0000-000000000006"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Applicant tracking, tamper-evident e-voting, equipment logistics, asset inventory, and project Kanban boards.",
+                            Icon = "work",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Operations & Workflows",
+                            Name = "Operations & Workflows",
+                            SortOrder = 6,
+                            SuiteCode = "suite-operations-workflows",
+                            SuiteLetter = "F"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0007-0000-0000-000000000007"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Ozi AI Studio assistant, bulk SMS/Email broadcast studio, helpdesk ticketing, live chat, and video rooms.",
+                            Icon = "campaign",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Communication & AI",
+                            Name = "Communication, AI & Support",
+                            SortOrder = 7,
+                            SuiteCode = "suite-communication-ai",
+                            SuiteLetter = "G"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0008-0000-0000-000000000008"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Encrypted document vaults, LMS training courses, verifiable certificates, visitor gate passes, and KYC vetting.",
+                            Icon = "verified_user",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Compliance & Learning",
+                            Name = "Compliance, Learning & Certification",
+                            SortOrder = 8,
+                            SuiteCode = "suite-compliance-learning",
+                            SuiteLetter = "H"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0009-0000-0000-000000000009"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Household census registries, offline field enumeration, printable digital ID cards, and population intelligence.",
+                            Icon = "map",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Demographics & Census",
+                            Name = "Demographics & Civic Census",
+                            SortOrder = 9,
+                            SuiteCode = "suite-demographics-census",
+                            SuiteLetter = "I"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0010-0000-0000-000000000010"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Digital memorials, wedding and celebration RSVP portals, and interactive 3D page-flip brochures.",
+                            Icon = "celebration",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Life Events & Media",
+                            Name = "Life Events & Publications",
+                            SortOrder = 10,
+                            SuiteCode = "suite-life-events",
+                            SuiteLetter = "J"
+                        });
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFooterColumn", b =>
@@ -3920,6 +4132,16 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Navigation("MasterTenantCatalog");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFeatureCatalog", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterFeatureSuite", "Suite")
+                        .WithMany("Features")
+                        .HasForeignKey("MasterFeatureSuiteId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Suite");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFooterColumn", b =>
                 {
                     b.HasOne("Ozikol.MasterDomain.Models.MasterFooterContent", "FooterContent")
@@ -4160,6 +4382,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFeatureCatalog", b =>
                 {
                     b.Navigation("Subscriptions");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFeatureSuite", b =>
+                {
+                    b.Navigation("Features");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFooterColumn", b =>

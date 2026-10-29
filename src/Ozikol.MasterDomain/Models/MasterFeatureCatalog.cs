@@ -30,10 +30,34 @@ namespace Ozikol.MasterDomain.Models
         [MaxLength(60)]
         public string FeatureCode { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Full descriptive title of the feature displayed in tables, cards, modals, and the Feature Details page.
+        /// </summary>
         [Required]
         [MaxLength(120)]
         public string Name { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Concise title displayed in the tenant sidebar navigation menu so it never truncates with ellipsis
+        /// (e.g. "Whistleblowing" for "Anonymous Whistleblowing & Feedback").
+        /// </summary>
+        [MaxLength(60)]
+        public string MenuTitle { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Optional foreign key linking this feature to its parent <see cref="MasterFeatureSuite"/> in MasterFeatureSuites.
+        /// </summary>
+        public Guid? MasterFeatureSuiteId { get; set; }
+
+        /// <summary>
+        /// Navigation property to the parent <see cref="MasterFeatureSuite"/>.
+        /// </summary>
+        [ForeignKey(nameof(MasterFeatureSuiteId))]
+        public MasterFeatureSuite? Suite { get; set; }
+
+        /// <summary>
+        /// Full suite name synchronized with <see cref="MasterFeatureSuite.Name"/> for backward compatibility.
+        /// </summary>
         [MaxLength(60)]
         public string Category { get; set; } = "Operations";
 

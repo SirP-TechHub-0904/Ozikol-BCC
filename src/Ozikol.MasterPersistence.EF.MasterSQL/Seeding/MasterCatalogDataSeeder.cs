@@ -2328,8 +2328,24 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 }
             };
 
+            // 1. Ensure all 10 canonical MasterFeatureSuites exist
+            foreach (var suite in MasterFeatureSuiteDefaults.GetDefaultSuites())
+            {
+                var existingSuite = await dbContext.MasterFeatureSuites
+                    .FirstOrDefaultAsync(s => s.Id == suite.Id || s.SuiteCode == suite.SuiteCode, ct);
+                if (existingSuite == null)
+                {
+                    dbContext.MasterFeatureSuites.Add(suite);
+                }
+            }
+            await dbContext.SaveChangesAsync(ct);
+
+            // 2. Ensure all 45 canonical MasterFeatureCatalogs exist and have MenuTitle + MasterFeatureSuiteId linked
             foreach (var feat in defaultFeatures)
             {
+                feat.MenuTitle = MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(feat.FeatureCode, feat.MenuTitle, feat.Name);
+                feat.MasterFeatureSuiteId = MasterFeatureSuiteDefaults.ResolveSuiteId(feat.Category);
+
                 var existing = await dbContext.MasterFeatureCatalogs
                     .FirstOrDefaultAsync(f => f.FeatureCode == feat.FeatureCode, ct);
 
@@ -2337,8 +2353,17 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 {
                     dbContext.MasterFeatureCatalogs.Add(feat);
                 }
-                // If existing, do not overwrite database configuration (IsCompulsory, custom pricing, etc.)
-                // to preserve tenant/database customization without runtime drift.
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(existing.MenuTitle))
+                    {
+                        existing.MenuTitle = feat.MenuTitle;
+                    }
+                    if (existing.MasterFeatureSuiteId == null)
+                    {
+                        existing.MasterFeatureSuiteId = feat.MasterFeatureSuiteId;
+                    }
+                }
             }
 
             await dbContext.SaveChangesAsync(ct);

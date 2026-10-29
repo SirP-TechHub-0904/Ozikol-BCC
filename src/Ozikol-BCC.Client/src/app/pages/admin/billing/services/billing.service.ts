@@ -9,7 +9,10 @@ export interface BillingFeatureItem {
   featureId: string;
   featureCode: string;
   name: string;
+  menuTitle?: string;
+  suiteId?: string;
   category: string;
+  suiteMenuTitle?: string;
   description?: string;
   icon?: string;
   routePrefix?: string;

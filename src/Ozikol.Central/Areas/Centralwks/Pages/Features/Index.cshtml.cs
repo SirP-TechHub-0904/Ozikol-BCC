@@ -131,15 +131,37 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public List<string> Categories { get; set; } = new();
 
         /// <summary>
+        /// Master feature suites loaded from <see cref="MasterFeatureSuites"/> (with fallback to canonical defaults).
+        /// </summary>
+        public List<MasterFeatureSuite> Suites { get; set; } = new();
+
+        /// <summary>
         /// Filtered and sorted capability catalog list.
         /// </summary>
         public List<MasterFeatureCatalog> Features { get; set; } = new();
 
         /// <summary>
-        /// Handles HTTP GET requests to load catalog statistics, filters, and features.
+        /// Handles HTTP GET requests to load catalog statistics, filters, suites, and features.
         /// </summary>
         public async Task OnGetAsync()
         {
+            // Load Suites from MasterFeatureSuites (with fallback if migration not yet applied)
+            try
+            {
+                Suites = await _dbContext.MasterFeatureSuites
+                    .AsNoTracking()
+                    .OrderBy(s => s.SortOrder)
+                    .ToListAsync();
+                if (Suites.Count == 0)
+                {
+                    Suites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+                }
+            }
+            catch
+            {
+                Suites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+            }
+
             // Load all features for accurate stat cards calculations (with fallback if migration not yet applied)
             List<MasterFeatureCatalog> allFeatures;
             try
@@ -178,6 +200,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             foreach (var f in allFeatures)
             {
                 f.IsPublished = f.IsActive;
+                f.MenuTitle = MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(f.FeatureCode, f.MenuTitle, f.Name);
             }
             PublishedCount = allFeatures.Count(f => f.IsActive);
             UnpublishedCount = allFeatures.Count(f => !f.IsActive);
@@ -391,6 +414,81 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
             await _dbContext.SaveChangesAsync();
             TempData["Success"] = $"'{feature.Name}' marked as {(feature.IsAvailableForUse ? "Available for Use" : "Coming Soon")}.";
+
+            return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+        }
+
+        /// <summary>
+        /// Handles HTTP POST requests to update a Suite's Full Title (<see cref="MasterFeatureSuite.Name"/>)
+        /// and concise Sidebar Menu Title (<see cref="MasterFeatureSuite.MenuTitle"/>) in <c>MasterFeatureSuites</c>,
+        /// synchronizing linked <c>MasterFeatureCatalogs</c>.
+        /// </summary>
+        public async Task<IActionResult> OnPostUpdateSuiteAsync(Guid suiteId, string name, string menuTitle, string? description, int sortOrder = 1)
+        {
+            if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(menuTitle))
+            {
+                TempData["Error"] = "Both Suite Full Title and Suite Menu Title are required.";
+                return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+            }
+
+            try
+            {
+                var suite = await _dbContext.MasterFeatureSuites.FirstOrDefaultAsync(s => s.Id == suiteId);
+                var oldName = suite?.Name;
+
+                if (suite == null)
+                {
+                    var defaults = MasterFeatureSuiteDefaults.GetDefaultSuites();
+                    var def = defaults.FirstOrDefault(s => s.Id == suiteId);
+                    oldName = def?.Name;
+                    suite = def ?? new MasterFeatureSuite
+                    {
+                        Id = suiteId == Guid.Empty ? Guid.NewGuid() : suiteId,
+                        SuiteCode = $"suite-{sortOrder}",
+                        SuiteLetter = ((char)('A' + Math.Max(0, sortOrder - 1))).ToString(),
+                        SortOrder = sortOrder
+                    };
+                    _dbContext.MasterFeatureSuites.Add(suite);
+                }
+
+                suite.Name = name.Trim();
+                suite.MenuTitle = menuTitle.Trim();
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    suite.Description = description.Trim();
+                }
+
+                // Synchronize Category and MasterFeatureSuiteId on all features belonging to this suite
+                var matchingFeatures = await _dbContext.MasterFeatureCatalogs
+                    .Where(f => f.MasterFeatureSuiteId == suite.Id || (oldName != null && f.Category == oldName))
+                    .ToListAsync();
+
+                foreach (var feat in matchingFeatures)
+                {
+                    feat.MasterFeatureSuiteId = suite.Id;
+                    feat.Category = suite.Name;
+                }
+
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.Identity?.Name,
+                    UserName = User.Identity?.Name,
+                    Action = "UpdateSuite",
+                    EntityType = "FeatureSuite",
+                    EntityId = suite.Id.ToString(),
+                    Summary = $"Updated Suite {suite.SuiteLetter} Full Title to '{suite.Name}' and Sidebar Menu Title to '{suite.MenuTitle}'",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers["User-Agent"].ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+
+                await _dbContext.SaveChangesAsync();
+                TempData["Success"] = $"Suite '{suite.Name}' (Sidebar Menu Title: '{suite.MenuTitle}') updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Could not update suite (please ensure the latest database migration is applied): {ex.Message}";
+            }
 
             return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
         }

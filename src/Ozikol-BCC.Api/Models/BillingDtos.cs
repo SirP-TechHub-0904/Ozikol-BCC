@@ -17,11 +17,20 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>Stable canonical feature code (e.g. "bcp-store-ecommerce").</summary>
         public string FeatureCode { get; set; } = string.Empty;
 
-        /// <summary>Display name of the feature.</summary>
+        /// <summary>Full descriptive title of the feature (used in Tables, Cards, and Details page).</summary>
         public string Name { get; set; } = string.Empty;
 
-        /// <summary>Category / suite classification.</summary>
+        /// <summary>Concise sidebar navigation menu label (so sidebar items never truncate).</summary>
+        public string MenuTitle { get; set; } = string.Empty;
+
+        /// <summary>Optional MasterFeatureSuite identifier.</summary>
+        public Guid? SuiteId { get; set; }
+
+        /// <summary>Full descriptive title of the parent suite (e.g. "People, Community &amp; Collaboration").</summary>
         public string Category { get; set; } = string.Empty;
+
+        /// <summary>Concise sidebar header title of the parent suite (e.g. "PEOPLE &amp; COMMUNITY").</summary>
+        public string SuiteMenuTitle { get; set; } = string.Empty;
 
         /// <summary>Short marketing description.</summary>
         public string? Description { get; set; }

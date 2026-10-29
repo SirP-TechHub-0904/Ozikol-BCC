@@ -36,27 +36,46 @@
                 <div class="admin-card-body">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group">
-                            <label asp-for="Input.Name" class="form-label">Display Name <span class="required">*</span></label>
-                            <input asp-for="Input.Name" class="form-control" />
+                            <label asp-for="Input.Name" class="form-label">Full Feature Title (Details &amp; Table) <span class="required">*</span></label>
+                            <input asp-for="Input.Name" class="form-control" placeholder="e.g. Community Messenger &amp; Team Chat" />
                             <span asp-validation-for="Input.Name" class="field-validation-error"></span>
                         </div>
 
                         <div class="form-group">
+                            <label asp-for="Input.MenuTitle" class="form-label">Sidebar Menu Title (Short Label) <span class="required">*</span></label>
+                            <input asp-for="Input.MenuTitle" class="form-control" maxlength="60" placeholder="e.g. Chat Messenger" />
+                            <small style="display:block;font-size:11px;color:var(--admin-text-muted);margin-top:3px;">Concise label shown in the tenant left sidebar so it never truncates.</small>
+                            <span asp-validation-for="Input.MenuTitle" class="field-validation-error"></span>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
                             <label asp-for="Input.Category" class="form-label">Feature Suite <span class="required">*</span></label>
                             <select asp-for="Input.Category" class="form-select">
-                                @foreach (var suite in EditModel.CanonicalSuites)
+                                @if (Model.Suites.Any())
                                 {
-                                    <option value="@suite" selected="@(Model.Input.Category == suite)">@suite</option>
+                                    foreach (var suite in Model.Suites)
+                                    {
+                                        <option value="@suite.Name" selected="@(Model.Input.Category == suite.Name || Model.Input.SuiteId == suite.Id)">@suite.Name (Menu: @suite.MenuTitle)</option>
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (var suite in EditModel.CanonicalSuites)
+                                    {
+                                        <option value="@suite" selected="@(Model.Input.Category == suite)">@suite</option>
+                                    }
                                 }
                             </select>
                             <span asp-validation-for="Input.Category" class="field-validation-error"></span>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label asp-for="Input.Icon" class="form-label">Material Icon Identifier</label>
-                        <input asp-for="Input.Icon" class="form-control" placeholder="e.g. chat, groups, payments" />
-                        <span asp-validation-for="Input.Icon" class="field-validation-error"></span>
+                        <div class="form-group">
+                            <label asp-for="Input.Icon" class="form-label">Material Icon Identifier</label>
+                            <input asp-for="Input.Icon" class="form-control" placeholder="e.g. chat, groups, payments" />
+                            <span asp-validation-for="Input.Icon" class="field-validation-error"></span>
+                        </div>
                     </div>
 
                     <div class="form-group">

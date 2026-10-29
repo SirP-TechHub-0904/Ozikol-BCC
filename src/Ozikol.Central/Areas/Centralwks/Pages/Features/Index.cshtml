@@ -39,7 +39,11 @@
         <h1 class="admin-title">Feature Directory &amp; Pricing</h1>
         <p class="admin-subtitle">Govern modular Business Command Center capabilities, monthly/yearly subscription tiers, metered unit rates, and platform core tools.</p>
     </div>
-    <div class="admin-actions">
+    <div class="admin-actions" style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" class="btn-admin btn-admin-secondary" onclick="document.getElementById('manageSuitesModal').style.display='flex'">
+            <span class="material-symbols-outlined" style="font-size: 16px;">category</span>
+            Manage Suites (@Model.Suites.Count)
+        </button>
         <a href="/centralwks/features/create" class="btn-admin btn-admin-primary">
             <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
             New Capability
@@ -184,23 +188,34 @@
         <div id="suiteCardsContainer">
             @foreach (var group in suiteGroups)
             {
-                var letter = suiteLetterMap.TryGetValue(group.Key, out var l) ? l : '•';
+                var matchedSuite = Model.Suites.FirstOrDefault(s => string.Equals(s.Name, group.Key, StringComparison.OrdinalIgnoreCase));
+                var letter = matchedSuite != null && !string.IsNullOrEmpty(matchedSuite.SuiteLetter) ? matchedSuite.SuiteLetter[0] : (suiteLetterMap.TryGetValue(group.Key, out var l) ? l : '•');
+                var suiteMenuLabel = matchedSuite?.MenuTitle ?? Ozikol.MasterDomain.Models.MasterFeatureSuiteDefaults.ResolveSuiteMenuTitle(group.Key, null);
                 var groupFeatures = group.OrderBy(f => f.SortOrder).ThenBy(f => f.Name).ToList();
 
                 <div class="suite-group-section" data-suite-name="@group.Key.ToLowerInvariant()" style="margin-bottom: 32px;">
                     @* Suite Section Header *@
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 16px; flex-wrap: wrap;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                             <span style="background: var(--ozikol-primary, #0050e5); color: #ffffff; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 6px; letter-spacing: 0.05em; text-transform: uppercase;">
                                 Suite @letter
                             </span>
                             <h2 style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; text-transform: uppercase; letter-spacing: 0.03em;">
                                 @group.Key
                             </h2>
+                            <span style="font-size: 11.5px; font-weight: 700; color: #0050e5; background: rgba(0, 80, 229, 0.08); border: 1px solid rgba(0, 80, 229, 0.2); padding: 2px 9px; border-radius: 6px;">
+                                Menu Title: @suiteMenuLabel
+                            </span>
                         </div>
-                        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #64748b; background: #ffffff; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 9999px;">
-                            <span class="material-symbols-outlined" style="font-size: 14px; color: var(--ozikol-primary, #0050e5);">check_circle</span>
-                            <span>@groupFeatures.Count Capabilities</span>
+                        <div style="display: inline-flex; align-items: center; gap: 8px;">
+                            <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="document.getElementById('manageSuitesModal').style.display='flex'" title="Edit Suite Full Title &amp; Menu Title">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">edit</span>
+                                <span>Edit Suite</span>
+                            </button>
+                            <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #64748b; background: #ffffff; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 9999px;">
+                                <span class="material-symbols-outlined" style="font-size: 14px; color: var(--ozikol-primary, #0050e5);">check_circle</span>
+                                <span>@groupFeatures.Count Capabilities</span>
+                            </div>
                         </div>
                     </div>
 
@@ -231,8 +246,9 @@
                                                         @feat.Name
                                                     </a>
                                                 </div>
-                                                <div style="font-size: 11px; color: #64748b;">
+                                                <div style="font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                                     <code style="font-size: 11px; background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0;">@feat.FeatureCode</code>
+                                                    <span style="font-size: 11px; font-weight: 700; color: #0050e5; background: rgba(0, 80, 229, 0.07); padding: 1px 7px; border-radius: 4px;">Menu: @feat.MenuTitle</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -443,14 +459,22 @@ else
                                             <a href="/centralwks/features/details?id=@feat.Id" style="font-weight: 600; color: var(--admin-text); text-decoration: none; font-size: 13.5px;" class="feature-name-link">
                                                 @feat.Name
                                             </a>
-                                            <div style="font-size: 11px; color: var(--admin-text-dim);">
+                                            <div style="font-size: 11px; color: var(--admin-text-dim); display: flex; align-items: center; gap: 6px; margin-top: 2px;">
                                                 <code>@feat.FeatureCode</code>
+                                                <span style="color: #0050e5; font-weight: 700;">• Menu: @feat.MenuTitle</span>
                                             </div>
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge badge-neutral" style="font-size: 11.5px; font-weight: 500;">@feat.Category</span>
+                                    @{
+                                        var rowSuite = Model.Suites.FirstOrDefault(s => string.Equals(s.Name, feat.Category, StringComparison.OrdinalIgnoreCase));
+                                        var rowSuiteMenu = rowSuite?.MenuTitle ?? Ozikol.MasterDomain.Models.MasterFeatureSuiteDefaults.ResolveSuiteMenuTitle(feat.Category, null);
+                                    }
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span class="badge badge-neutral" style="font-size: 11.5px; font-weight: 600;">@feat.Category</span>
+                                        <span style="font-size: 11px; color: #64748b;">Menu: <strong>@rowSuiteMenu</strong></span>
+                                    </div>
                                 </td>
                                 <td>
                                     @switch (feat.BillingType)
@@ -735,3 +759,50 @@ else
         }
     </script>
 }
+
+@* ── Manage Feature Suites Modal (Edit Full Title & Menu Title for all 10 Suites) ── *@
+<div id="manageSuitesModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 9999; align-items: center; justify-content: center; padding: 24px;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 920px; width: 100%; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.25); overflow: hidden;">
+        <div style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0;">Manage Platform Feature Suites (MasterFeatureSuites)</h2>
+                <p style="font-size: 12.5px; color: #64748b; margin: 4px 0 0;">Edit both the <strong>Suite Full Title</strong> (shown in Tables &amp; Details) and the <strong>Suite Menu Title</strong> (short header shown in the Tenant Sidebar).</p>
+            </div>
+            <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="document.getElementById('manageSuitesModal').style.display='none'">
+                <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+                <span>Close</span>
+            </button>
+        </div>
+        <div style="padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+            @foreach (var s in Model.Suites.OrderBy(x => x.SortOrder))
+            {
+                <form method="post" asp-page-handler="UpdateSuite" style="display: grid; grid-template-columns: 70px 1.4fr 1fr auto; gap: 12px; align-items: end; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="suiteId" value="@s.Id" />
+                    <input type="hidden" name="sortOrder" value="@s.SortOrder" />
+                    <input type="hidden" name="description" value="@s.Description" />
+                    <div>
+                        <label style="display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 4px;">SUITE</label>
+                        <span style="display: inline-flex; align-items: center; justify-content: center; height: 36px; padding: 0 12px; background: #0050e5; color: #fff; font-weight: 800; font-size: 12px; border-radius: 6px;">
+                            Suite @s.SuiteLetter
+                        </span>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 11px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Suite Full Title (Table &amp; Details Page)</label>
+                        <input type="text" name="name" value="@s.Name" class="form-control" style="height: 36px; font-size: 13px;" required />
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 11px; font-weight: 700; color: #0050e5; margin-bottom: 4px;">Suite Menu Title (Sidebar Header)</label>
+                        <input type="text" name="menuTitle" value="@s.MenuTitle" class="form-control" maxlength="30" style="height: 36px; font-size: 13px;" required />
+                    </div>
+                    <div>
+                        <button type="submit" class="btn-admin btn-admin-primary" style="height: 36px; padding: 0 14px; font-size: 12.5px;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">save</span>
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+</div>

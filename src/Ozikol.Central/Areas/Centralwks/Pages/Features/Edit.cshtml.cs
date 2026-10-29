@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,7 +13,8 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 {
     /// <summary>
-    /// PageModel modifying modular capability configurations, pricing tiers in USD base currency, and metering models.
+    /// PageModel modifying modular capability configurations, Full Title, Sidebar Menu Title, Suite assignment,
+    /// pricing tiers in USD base currency, and metering models.
     /// </summary>
     public class EditModel : PageModel
     {
@@ -59,6 +61,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public MasterFeatureCatalog Feature { get; set; } = null!;
 
         /// <summary>
+        /// Available suites loaded from <see cref="MasterFeatureSuites"/>.
+        /// </summary>
+        public List<MasterFeatureSuite> Suites { get; set; } = new();
+
+        /// <summary>
         /// Exchange rate multipliers for live client-side currency conversion.
         /// </summary>
         public decimal NgnRate => _currencyService.GetExchangeRate("NGN");
@@ -72,6 +79,28 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public FeatureEditInputModel Input { get; set; } = new();
 
         /// <summary>
+        /// Loads all suites from MasterFeatureSuites with fallback to canonical defaults.
+        /// </summary>
+        private async Task LoadSuitesAsync()
+        {
+            try
+            {
+                Suites = await _dbContext.MasterFeatureSuites
+                    .AsNoTracking()
+                    .OrderBy(s => s.SortOrder)
+                    .ToListAsync();
+                if (Suites.Count == 0)
+                {
+                    Suites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+                }
+            }
+            catch
+            {
+                Suites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+            }
+        }
+
+        /// <summary>
         /// Converts a USD amount to formatted regional currency for preview.
         /// </summary>
         public string FormatPreview(decimal usdAmount, string currencyCode) => _currencyService.FormatUsdConverted(usdAmount, currencyCode);
@@ -81,6 +110,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// </summary>
         public async Task<IActionResult> OnGetAsync()
         {
+            await LoadSuitesAsync();
             var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(Id);
             if (feature == null)
             {
@@ -109,7 +139,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             Input = new FeatureEditInputModel
             {
                 Name = feature.Name,
+                MenuTitle = MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(feature.FeatureCode, feature.MenuTitle, feature.Name),
                 Category = feature.Category,
+                MasterFeatureSuiteId = feature.MasterFeatureSuiteId ?? MasterFeatureSuiteDefaults.ResolveSuiteId(feature.Category),
                 Description = feature.Description,
                 Icon = feature.Icon,
                 BillingType = (int)feature.BillingType,
@@ -139,6 +171,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// </summary>
         public async Task<IActionResult> OnPostAsync()
         {
+            await LoadSuitesAsync();
             var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(Id);
             if (feature == null)
             {
@@ -154,7 +187,25 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
 
             feature.Name = Input.Name.Trim();
-            feature.Category = Input.Category.Trim();
+            feature.MenuTitle = !string.IsNullOrWhiteSpace(Input.MenuTitle)
+                ? Input.MenuTitle.Trim()
+                : MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(feature.FeatureCode, null, feature.Name);
+
+            var matchedSuite = Suites.FirstOrDefault(s =>
+                (Input.MasterFeatureSuiteId.HasValue && s.Id == Input.MasterFeatureSuiteId.Value) ||
+                string.Equals(s.Name, Input.Category?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (matchedSuite != null)
+            {
+                feature.MasterFeatureSuiteId = matchedSuite.Id;
+                feature.Category = matchedSuite.Name;
+            }
+            else
+            {
+                feature.Category = Input.Category.Trim();
+                feature.MasterFeatureSuiteId = MasterFeatureSuiteDefaults.ResolveSuiteId(feature.Category);
+            }
+
             feature.Description = Input.Description?.Trim();
             feature.Icon = Input.Icon?.Trim();
             feature.BillingType = (FeatureBillingType)Input.BillingType;
@@ -168,7 +219,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
             else
             {
-                // Monthly recurring with calculated percentage discounts
                 var monthly = Math.Max(0m, Input.MonthlyPrice);
                 var qDisc = Math.Clamp(Input.QuarterlyDiscountPercent, 0, 100);
                 var yDisc = Math.Clamp(Input.YearlyDiscountPercent, 0, 100);
@@ -195,7 +245,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 Action = "Update",
                 EntityType = "Feature",
                 EntityId = feature.Id.ToString(),
-                Summary = $"Updated capability '{feature.Name}' ({feature.FeatureCode}) specifications and pricing",
+                Summary = $"Updated capability '{feature.Name}' (Menu: '{feature.MenuTitle}', Code: {feature.FeatureCode})",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
@@ -204,7 +254,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             await _dbContext.SaveChangesAsync();
             _currencyService.InvalidatePricingCache();
 
-            TempData["Success"] = $"Capability '{feature.Name}' updated successfully.";
+            TempData["Success"] = $"Capability '{feature.Name}' (Menu Title: '{feature.MenuTitle}') updated successfully.";
             return RedirectToPage("/Features/Details", new { id = feature.Id });
         }
 
@@ -213,9 +263,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// </summary>
         public class FeatureEditInputModel
         {
-            [Required(ErrorMessage = "Capability name is required.")]
+            [Required(ErrorMessage = "Capability full title is required.")]
             [StringLength(120)]
             public string Name { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Sidebar Menu Title is required.")]
+            [StringLength(60)]
+            public string MenuTitle { get; set; } = string.Empty;
+
+            public Guid? MasterFeatureSuiteId { get; set; }
 
             [Required(ErrorMessage = "Category is required.")]
             [StringLength(60)]
@@ -229,9 +285,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
             public int BillingType { get; set; } = 1;
 
-            /// <summary>
-            /// Billing cadence: "Yearly" (Annual fixed subscription) or "Monthly".
-            /// </summary>
             public string BillingCadence { get; set; } = "Yearly";
 
             [Range(0, 100000)]
