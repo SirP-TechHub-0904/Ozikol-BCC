@@ -85,13 +85,19 @@
             @if (selectedFeatureDetail.isActive) {
               <span class="badge-pill-md badge-available">
                 <span class="material-symbols-outlined">check_circle</span>
-                <span>Active in Workspace Menu</span>
+                <span>{{ selectedFeatureDetail.isTrialPeriod ? ('Active in Menu (Free Trial — ' + (selectedFeatureDetail.daysRemaining || selectedFeatureDetail.effectiveFreeTrialDays || 14) + 'd left)') : 'Active in Workspace Menu' }}</span>
               </span>
             } @else if (selectedFeatureDetail.isAvailableForUse) {
               <span class="badge-pill-md badge-optional">
                 <span class="material-symbols-outlined">lock</span>
                 <span>Available — Not Active (Locked in Menu)</span>
               </span>
+              @if (selectedFeatureDetail.isEligibleForFreeTrial && (selectedFeatureDetail.effectiveFreeTrialDays || 0) > 0) {
+                <span class="badge-pill-md" style="background: rgba(124, 58, 237, 0.12); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
+                  <span class="material-symbols-outlined">redeem</span>
+                  <span>{{ selectedFeatureDetail.effectiveFreeTrialDays }} Days Free Trial Before Payment</span>
+                </span>
+              }
             } @else {
               <span class="badge-pill-md badge-coming-soon">
                 <span class="material-symbols-outlined">schedule</span>
@@ -143,6 +149,18 @@
               <div style="font-size: 22px; font-weight: 800; color: #0f172a;">
                 {{ selectedFeatureDetail.monthlyPrice > 0 ? (formatAmount(selectedFeatureDetail.monthlyPrice) + '/mo') : 'Included Free' }}
               </div>
+              @if (!selectedFeatureDetail.isCompulsory && (selectedFeatureDetail.effectiveFreeTrialDays || 0) > 0) {
+                <div style="font-size: 12px; font-weight: 700; color: #6d28d9; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px;">
+                  <span class="material-symbols-outlined" style="font-size: 14px;">redeem</span>
+                  @if (selectedFeatureDetail.isTrialPeriod) {
+                    <span>Free Trial Active ({{ selectedFeatureDetail.daysRemaining || selectedFeatureDetail.effectiveFreeTrialDays }} days left)</span>
+                  } @else if (selectedFeatureDetail.isEligibleForFreeTrial) {
+                    <span>{{ selectedFeatureDetail.effectiveFreeTrialDays }} Days Free First-Time Test</span>
+                  } @else {
+                    <span>{{ selectedFeatureDetail.effectiveFreeTrialDays }}d Free Trial (Already Used)</span>
+                  }
+                </div>
+              }
             </div>
 
             @if (selectedFeatureDetail.isActive) {
@@ -167,9 +185,9 @@
                 (click)="toggleFeatureInstall(selectedFeatureDetail, true)"
               >
                 <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === selectedFeatureDetail.featureCode">
-                  {{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'download_done' }}
+                  {{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : (selectedFeatureDetail.isEligibleForFreeTrial ? 'redeem' : 'download_done') }}
                 </span>
-                <span>{{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Installing...' : 'Install & Activate Now' }}</span>
+                <span>{{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Installing...' : (selectedFeatureDetail.isEligibleForFreeTrial ? ('Start ' + selectedFeatureDetail.effectiveFreeTrialDays + '-Day Free Trial & Activate') : 'Install & Activate Now') }}</span>
               </button>
             } @else {
               <span class="badge-pill-md badge-coming-soon" style="padding: 9px 16px; font-size: 13px;">
@@ -226,6 +244,18 @@
               <span class="spec-label">Annual Rate ({{ currencyCode }})</span>
               <span class="spec-val">
                 {{ selectedFeatureDetail.yearlyPrice > 0 ? (formatAmount(selectedFeatureDetail.yearlyPrice) + '/yr') : ('Included Free (' + formatAmount(0) + ')') }}
+              </span>
+            </div>
+            <div class="spec-box">
+              <span class="spec-label">First-Time Free Trial</span>
+              <span class="spec-val" style="color: #6d28d9; font-weight: 700;">
+                @if (selectedFeatureDetail.isCompulsory) {
+                  <span>Always Included Free</span>
+                } @else if ((selectedFeatureDetail.effectiveFreeTrialDays || 0) > 0) {
+                  <span>{{ selectedFeatureDetail.effectiveFreeTrialDays }} Days Free Before Payment ({{ selectedFeatureDetail.hasCustomFreeTrialOverride ? 'Custom Mode' : 'General Mode' }})</span>
+                } @else {
+                  <span>0 Days (Immediate Payment)</span>
+                }
               </span>
             </div>
             <div class="spec-box">
@@ -425,13 +455,19 @@
                       @if (feat.isActive) {
                         <span class="badge-pill-md badge-available">
                           <span class="material-symbols-outlined">check_circle</span>
-                          <span>Active</span>
+                          <span>{{ feat.isTrialPeriod ? ('Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 14) + 'd left)') : 'Active' }}</span>
                         </span>
                       } @else if (feat.isAvailableForUse) {
                         <span class="badge-pill-md badge-optional">
                           <span class="material-symbols-outlined">lock</span>
                           <span>Not Active</span>
                         </span>
+                        @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0) {
+                          <span class="badge-pill-md" style="margin-left: 6px; background: rgba(124, 58, 237, 0.1); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
+                            <span class="material-symbols-outlined">redeem</span>
+                            <span>{{ feat.effectiveFreeTrialDays }}d Free Trial</span>
+                          </span>
+                        }
                       } @else {
                         <span class="badge-pill-md badge-coming-soon">
                           <span class="material-symbols-outlined">schedule</span>
@@ -473,9 +509,9 @@
                             title="Install and unlock in sidebar menu"
                           >
                             <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode">
-                              {{ togglingFeatureCode === feat.featureCode ? 'sync' : 'download_done' }}
+                              {{ togglingFeatureCode === feat.featureCode ? 'sync' : (feat.isEligibleForFreeTrial ? 'redeem' : 'download_done') }}
                             </span>
-                            <span>{{ togglingFeatureCode === feat.featureCode ? 'Installing...' : 'Install & Activate' }}</span>
+                            <span>{{ togglingFeatureCode === feat.featureCode ? 'Installing...' : (feat.isEligibleForFreeTrial ? ('Start ' + feat.effectiveFreeTrialDays + 'd Free Trial') : 'Install & Activate') }}</span>
                           </button>
                         } @else {
                           <span class="badge-pill-md badge-coming-soon" style="opacity: 0.75;">
@@ -770,7 +806,7 @@
                           @if (feat.isActive) {
                             <span class="badge-pill-md badge-available">
                               <span class="material-symbols-outlined">check_circle</span>
-                              <span>Active in Menu</span>
+                              <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 14) + 'd left)') : 'Active in Menu' }}</span>
                             </span>
                           } @else if (feat.isAvailableForUse) {
                             <span class="badge-pill-md badge-optional">
@@ -793,6 +829,12 @@
                             <span class="badge-pill-md badge-optional">
                               <span>Optional Add-on</span>
                             </span>
+                            @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0) {
+                              <span class="badge-pill-md" style="background: rgba(124, 58, 237, 0.1); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
+                                <span class="material-symbols-outlined">redeem</span>
+                                <span>{{ feat.effectiveFreeTrialDays }}d Free Trial</span>
+                              </span>
+                            }
                           }
                         </div>
                       </div>
@@ -827,8 +869,8 @@
                               [disabled]="togglingFeatureCode === feat.featureCode"
                               (click)="toggleFeatureInstall(feat, true)"
                             >
-                              <span class="material-symbols-outlined">download_done</span>
-                              <span>Install</span>
+                              <span class="material-symbols-outlined">{{ feat.isEligibleForFreeTrial ? 'redeem' : 'download_done' }}</span>
+                              <span>{{ feat.isEligibleForFreeTrial ? ('Start ' + feat.effectiveFreeTrialDays + 'd Trial') : 'Install' }}</span>
                             </button>
                           }
                           <button

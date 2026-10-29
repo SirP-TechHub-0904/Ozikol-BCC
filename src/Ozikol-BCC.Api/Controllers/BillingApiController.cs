@@ -183,25 +183,49 @@ namespace Ozikol_BCC.Api.Controllers
                 ? existing.CustomPriceOverride.Value
                 : feature.MonthlyPrice;
 
+            int catalogTrialDays = feature.FreeTrialDays > 0 ? feature.FreeTrialDays : 0;
+            int effectiveFreeTrialDays = ((tenant.UseCustomPricing || tenant.UseCustomAvailability) && existing?.CustomFreeTrialDaysOverride != null)
+                ? Math.Max(0, existing.CustomFreeTrialDaysOverride.Value)
+                : catalogTrialDays;
+            bool hasUsedFreeTrial = existing?.HasUsedFreeTrial ?? false;
+            bool startFirstTimeTrial = targetActive && !feature.IsCompulsory && effectiveFreeTrialDays > 0 && !hasUsedFreeTrial;
+
             if (existing != null)
             {
                 existing.IsActive = targetActive;
-                existing.Status = targetActive ? "Active" : "Suspended";
                 if (targetActive)
                 {
-                    if (existing.ExpiresAtUtc <= now)
+                    if (startFirstTimeTrial)
                     {
-                        existing.ExpiresAtUtc = cadence switch
-                        {
-                            SubscriptionBillingDuration.Yearly => now.AddYears(1),
-                            SubscriptionBillingDuration.Quarterly => now.AddMonths(3),
-                            _ => now.AddYears(1)
-                        };
+                        existing.StartsAtUtc = now;
+                        existing.ExpiresAtUtc = now.AddDays(effectiveFreeTrialDays);
+                        existing.HasUsedFreeTrial = true;
+                        existing.IsTrialPeriod = true;
+                        existing.Status = "Trial";
                     }
+                    else
+                    {
+                        existing.Status = "Active";
+                        if (existing.ExpiresAtUtc <= now)
+                        {
+                            existing.IsTrialPeriod = false;
+                            existing.ExpiresAtUtc = cadence switch
+                            {
+                                SubscriptionBillingDuration.Yearly => now.AddYears(1),
+                                SubscriptionBillingDuration.Quarterly => now.AddMonths(3),
+                                _ => now.AddMonths(1)
+                            };
+                        }
+                    }
+
                     if (tenant.UseCustomAvailability)
                     {
                         existing.IsAvailableForUseOverride = true;
                     }
+                }
+                else
+                {
+                    existing.Status = "Suspended";
                 }
             }
             else
@@ -214,10 +238,14 @@ namespace Ozikol_BCC.Api.Controllers
                     DurationType = cadence,
                     RecurringPrice = effectiveUsdPrice,
                     StartsAtUtc = now,
-                    ExpiresAtUtc = now.AddYears(1),
+                    ExpiresAtUtc = startFirstTimeTrial
+                        ? now.AddDays(effectiveFreeTrialDays)
+                        : (cadence == SubscriptionBillingDuration.Yearly ? now.AddYears(1) : (cadence == SubscriptionBillingDuration.Quarterly ? now.AddMonths(3) : now.AddMonths(1))),
                     AutoRenew = true,
                     IsActive = targetActive,
-                    Status = targetActive ? "Active" : "Suspended",
+                    Status = targetActive ? (startFirstTimeTrial ? "Trial" : "Active") : "Suspended",
+                    HasUsedFreeTrial = startFirstTimeTrial,
+                    IsTrialPeriod = startFirstTimeTrial,
                     IsAvailableForUseOverride = tenant.UseCustomAvailability && targetActive ? true : null,
                     CreatedUtc = now
                 };
@@ -228,10 +256,12 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 UserId = User.Identity?.Name ?? tenant.AdminEmail,
                 UserName = User.Identity?.Name ?? tenant.AdminEmail,
-                Action = targetActive ? "TenantInstallFeature" : "TenantDeactivateFeature",
+                Action = targetActive ? (startFirstTimeTrial ? "TenantStartFeatureTrial" : "TenantInstallFeature") : "TenantDeactivateFeature",
                 EntityType = "FeatureSubscription",
                 EntityId = feature.Id.ToString(),
-                Summary = $"Tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) {(targetActive ? "installed & activated" : "deactivated")} '{feature.Name}' ({feature.FeatureCode})",
+                Summary = startFirstTimeTrial
+                    ? $"Tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) started {effectiveFreeTrialDays}-day first-time free trial on '{feature.Name}' ({feature.FeatureCode})"
+                    : $"Tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) {(targetActive ? "installed & activated" : "deactivated")} '{feature.Name}' ({feature.FeatureCode})",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = now
@@ -241,9 +271,11 @@ namespace Ozikol_BCC.Api.Controllers
 
             // Also record the feature installation or deactivation in the tenant's own BcpActivityLogs
             await LogTenantFeatureActivityAsync(
-                targetActive ? "Feature Installed" : "Feature Deactivated",
+                targetActive ? (startFirstTimeTrial ? "Feature Free Trial Started" : "Feature Installed") : "Feature Deactivated",
                 targetActive
-                    ? $"Installed and activated capability '{feature.Name}' ({feature.FeatureCode})."
+                    ? (startFirstTimeTrial
+                        ? $"Started {effectiveFreeTrialDays}-day first-time free trial and activated capability '{feature.Name}' ({feature.FeatureCode})."
+                        : $"Installed and activated capability '{feature.Name}' ({feature.FeatureCode}).")
                     : $"Deactivated capability '{feature.Name}' ({feature.FeatureCode}).",
                 cancellationToken);
 
@@ -253,7 +285,9 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(ApiResponse<BillingFeaturesSnapshotDto>.SuccessResponse(
                 updatedSnapshot!,
                 targetActive
-                    ? $"'{feature.Name}' has been installed and activated. It is now available in your workspace menu."
+                    ? (startFirstTimeTrial
+                        ? $"'{feature.Name}' is now active on your {effectiveFreeTrialDays}-Day Free Trial! Test all capabilities before payment is required."
+                        : $"'{feature.Name}' has been installed and activated. It is now available in your workspace menu.")
                     : $"'{feature.Name}' has been deactivated and removed from your workspace menu."));
         }
 

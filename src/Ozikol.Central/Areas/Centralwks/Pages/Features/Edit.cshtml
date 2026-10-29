@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model Ozikol.Central.Areas.Centralwks.Pages.Features.EditModel
 @{
     ViewData["Title"] = $"Edit {Model.Feature.Name}";
@@ -283,6 +283,21 @@
                                 <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 2px;">Auto-provisioned on all tenant databases at $0.</div>
                             </div>
                         </label>
+                    </div>
+
+                    @* 4. First-Time Free Trial Days Before Payment (General Mode) *@
+                    <div class="form-group" style="margin: 0; padding: 12px; background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(124, 58, 237, 0.22); border-radius: 10px;">
+                        <label asp-for="Input.FreeTrialDays" class="form-label" style="font-weight: 700; color: #6d28d9; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">redeem</span>
+                            <span>First-Time Free Trial Days (Before Payment)</span>
+                        </label>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <input asp-for="Input.FreeTrialDays" type="number" min="0" max="365" class="form-control" style="font-weight: 700;" placeholder="e.g. 14" />
+                            <span style="font-size: 12px; font-weight: 700; color: var(--admin-text-muted); white-space: nowrap;">Days Free</span>
+                        </div>
+                        <span class="form-help" style="font-size: 11.5px; display: block; margin-top: 4px;">
+                            General Mode default free days granted the <strong>first time</strong> a tenant activates &amp; tests this capability before payment is required (0 = immediate payment required).
+                        </span>
                     </div>
 
                     <div class="form-group">

@@ -53,6 +53,23 @@ namespace Ozikol.MasterDomain.Models
         /// </summary>
         public bool? IsAvailableForUseOverride { get; set; }
 
+        /// <summary>
+        /// Optional tenant-specific override for the number of first-time free trial days before payment
+        /// when Custom Mode is active. Null inherits from <see cref="MasterFeatureCatalog.FreeTrialDays"/>.
+        /// </summary>
+        public int? CustomFreeTrialDaysOverride { get; set; }
+
+        /// <summary>
+        /// Indicates whether this tenant has already consumed their first-time free trial for this capability.
+        /// Once true, subsequent activations require payment unless reset by a Central administrator.
+        /// </summary>
+        public bool HasUsedFreeTrial { get; set; } = false;
+
+        /// <summary>
+        /// Indicates whether the current active subscription period is running as a free trial test period before payment.
+        /// </summary>
+        public bool IsTrialPeriod { get; set; } = false;
+
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
         public DateTime? LastRenewedUtc { get; set; }
     }

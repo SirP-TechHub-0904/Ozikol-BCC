@@ -798,5 +798,50 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
             return await OnPostUpdateSuiteAsync(targetSuite.Id, targetSuite.Name, targetSuite.MenuTitle, targetSuite.Description, newSortOrder);
         }
+
+        /// <summary>
+        /// Updates the General Mode first-time free trial days (<see cref="MasterFeatureCatalog.FreeTrialDays"/>)
+        /// granted before payment is required when a tenant tests this capability for the first time.
+        /// </summary>
+        /// <param name="featureId">The identifier of the feature to update.</param>
+        /// <param name="freeTrialDays">Number of free trial days (0–365).</param>
+        public async Task<IActionResult> OnPostUpdateFreeTrialDaysAsync(Guid featureId, int freeTrialDays)
+        {
+            var clampedDays = Math.Clamp(freeTrialDays, 0, 365);
+            try
+            {
+                var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(featureId);
+                if (feature == null)
+                {
+                    TempData["Error"] = "Capability not found.";
+                    return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+                }
+
+                feature.FreeTrialDays = clampedDays;
+
+                _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+                {
+                    UserId = User.Identity?.Name,
+                    UserName = User.Identity?.Name,
+                    Action = "UpdateFreeTrialDays",
+                    EntityType = "Feature",
+                    EntityId = feature.Id.ToString(),
+                    Summary = $"Set General Mode First-Time Free Trial to {clampedDays} days on capability '{feature.Name}' ({feature.FeatureCode})",
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    UserAgent = Request.Headers["User-Agent"].ToString(),
+                    CreatedUtc = DateTime.UtcNow
+                });
+
+                await _dbContext.SaveChangesAsync();
+                _currencyService?.InvalidatePricingCache();
+                TempData["Success"] = $"First-time free trial for '{feature.Name}' set to {clampedDays} day(s) before payment (General Mode).";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Could not update free trial days (ensure latest migration is applied): {ex.Message}";
+            }
+
+            return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+        }
     }
 }

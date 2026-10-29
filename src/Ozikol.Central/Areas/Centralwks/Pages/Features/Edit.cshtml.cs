@@ -157,6 +157,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 MeterUnitName = feature.MeterUnitName,
                 MeterUnitPrice = feature.MeterUnitPrice,
                 MeterBatchSize = feature.MeterBlockSize,
+                FreeTrialDays = feature.FreeTrialDays,
                 DisplayOrder = feature.SortOrder,
                 IsActive = feature.IsActive,
                 IsPublished = feature.IsActive,
@@ -234,6 +235,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             feature.MeterUnitName = Input.IsMetered ? Input.MeterUnitName?.Trim() : null;
             feature.MeterUnitPrice = Input.IsMetered ? Input.MeterUnitPrice : 0m;
             feature.MeterBlockSize = Input.IsMetered && Input.MeterBatchSize > 0 ? Input.MeterBatchSize : 1;
+            feature.FreeTrialDays = Math.Clamp(Input.FreeTrialDays, 0, 365);
             var previousOrder = feature.SortOrder;
             feature.SortOrder = Input.DisplayOrder;
             feature.IsActive = Input.IsPublished;
@@ -357,6 +359,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             public decimal MeterUnitPrice { get; set; }
 
             public int MeterBatchSize { get; set; } = 1;
+
+            /// <summary>
+            /// Number of free trial days granted to a tenant the first time they activate and test this capability before payment (General Mode).
+            /// </summary>
+            [Range(0, 365)]
+            public int FreeTrialDays { get; set; } = 14;
 
             public int DisplayOrder { get; set; }
 

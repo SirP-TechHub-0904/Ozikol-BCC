@@ -119,6 +119,12 @@ namespace Ozikol.MasterDomain.Models
         /// </summary>
         public int IncludedFreeUnits { get; set; } = 0;
 
+        /// <summary>
+        /// Number of free trial days granted to a tenant the first time they activate and test this capability
+        /// before recurring payment is required (General Mode default, e.g. 14 days; 0 = no free trial).
+        /// </summary>
+        public int FreeTrialDays { get; set; } = 14;
+
         public bool IsActive { get; set; } = true;
         public bool IsInBeta { get; set; } = false;
 

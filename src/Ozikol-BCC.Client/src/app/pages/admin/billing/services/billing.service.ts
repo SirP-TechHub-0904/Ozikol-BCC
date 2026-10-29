@@ -25,6 +25,12 @@ export interface BillingFeatureItem {
   isInBeta?: boolean;
   hasCustomPriceOverride?: boolean;
   hasCustomAvailabilityOverride?: boolean;
+  freeTrialDays?: number;
+  effectiveFreeTrialDays?: number;
+  hasCustomFreeTrialOverride?: boolean;
+  hasUsedFreeTrial?: boolean;
+  isTrialPeriod?: boolean;
+  isEligibleForFreeTrial?: boolean;
   sortOrder?: number;
   billingType?: string;
   autoRenew: boolean;
@@ -130,7 +136,8 @@ export interface BillingContactProfile {
  * Standard API envelope wrapper.
  */
 export interface ApiResponse<T> {
-  success: boolean;
+  success?: boolean;
+  isSuccess?: boolean;
   message?: string;
   data: T;
   errors?: string[];

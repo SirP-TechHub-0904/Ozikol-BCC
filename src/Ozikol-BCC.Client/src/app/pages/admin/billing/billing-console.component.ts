@@ -255,7 +255,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     this.billingService.getFeaturesSnapshot().subscribe({
       next: res => {
         this.isLoading = false;
-        if (res && res.success && res.data) {
+        const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
+        if (ok) {
           this.snapshot = res.data;
           this.broadcastSnapshotToSidebar(res.data);
           if (this.pendingDetailFeatureCode) {
@@ -304,7 +305,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     this.billingService.toggleFeatureActive(feat.featureId, feat.featureCode, desiredState).subscribe({
       next: res => {
         this.togglingFeatureCode = null;
-        if (res && res.success && res.data) {
+        const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
+        if (ok) {
           this.snapshot = res.data;
           this.broadcastSnapshotToSidebar(res.data);
           if (this.selectedFeatureDetail && this.selectedFeatureDetail.featureCode === feat.featureCode) {
@@ -313,8 +315,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
           }
           if (desiredState) {
             this.toastService.success(
-              'Capability Installed & Activated',
-              `'${feat.name}' is now Active and visible in your sidebar menu.`
+              feat.isEligibleForFreeTrial ? 'Free Trial Started & Activated' : 'Capability Installed & Activated',
+              res.message || `'${feat.name}' is now Active and visible in your sidebar menu.`
             );
           } else {
             this.toastService.info(
@@ -341,7 +343,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     if (!feat.subscriptionId) return;
     this.billingService.toggleAutoRenew(feat.subscriptionId).subscribe({
       next: res => {
-        if (res && res.success) {
+        if (res && (res.success || res.isSuccess)) {
           feat.autoRenew = res.data;
           this.toastService.success(
             'Auto-Renew Updated',
@@ -359,7 +361,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   loadInvoices(): void {
     this.billingService.getInvoices().subscribe({
       next: res => {
-        if (res && res.success && Array.isArray(res.data)) {
+        if (res && (res.success || res.isSuccess) && Array.isArray(res.data)) {
           this.invoices = res.data;
         }
       },

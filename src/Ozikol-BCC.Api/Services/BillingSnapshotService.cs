@@ -387,6 +387,15 @@ namespace Ozikol_BCC.Api.Services
                 var featureMenuTitle = MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(f.FeatureCode, f.MenuTitle, f.Name);
                 var suiteSortOrder = matchedSuite?.SortOrder ?? (GetSuiteOrder(suiteFullTitle) + 1);
 
+                bool hasCustomTrial = sub?.CustomFreeTrialDaysOverride != null;
+                int catalogTrialDays = f.FreeTrialDays > 0 ? f.FreeTrialDays : 0;
+                int effectiveTrialDays = ((tenant?.UseCustomPricing == true || tenant?.UseCustomAvailability == true) && hasCustomTrial)
+                    ? Math.Max(0, sub!.CustomFreeTrialDaysOverride!.Value)
+                    : catalogTrialDays;
+                bool hasUsedTrial = sub?.HasUsedFreeTrial ?? false;
+                bool isTrialPeriod = (sub?.IsTrialPeriod ?? false) && (sub?.ExpiresAtUtc > now);
+                bool isEligibleForFreeTrial = !f.IsCompulsory && effectiveTrialDays > 0 && !hasUsedTrial;
+
                 var item = new BillingFeatureItemDto
                 {
                     FeatureId = f.Id,
@@ -405,6 +414,12 @@ namespace Ozikol_BCC.Api.Services
                     IsInBeta = f.IsInBeta,
                     HasCustomPriceOverride = sub?.CustomPriceOverride != null,
                     HasCustomAvailabilityOverride = sub?.IsAvailableForUseOverride != null,
+                    FreeTrialDays = catalogTrialDays,
+                    EffectiveFreeTrialDays = effectiveTrialDays,
+                    HasCustomFreeTrialOverride = hasCustomTrial,
+                    HasUsedFreeTrial = hasUsedTrial,
+                    IsTrialPeriod = isTrialPeriod,
+                    IsEligibleForFreeTrial = isEligibleForFreeTrial,
                     SortOrder = f.SortOrder,
                     BillingType = f.BillingType.ToString(),
                     MonthlyPrice = effectiveMonthly,

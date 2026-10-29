@@ -59,6 +59,24 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>True when a custom availability override is set for this tenant in Central.</summary>
         public bool HasCustomAvailabilityOverride { get; set; }
 
+        /// <summary>General catalog first-time free trial days before payment (e.g. 14 days).</summary>
+        public int FreeTrialDays { get; set; } = 14;
+
+        /// <summary>Effective first-time free trial days for this tenant (respecting General vs Custom mode).</summary>
+        public int EffectiveFreeTrialDays { get; set; } = 14;
+
+        /// <summary>True when a custom free trial days override is set for this tenant in Central.</summary>
+        public bool HasCustomFreeTrialOverride { get; set; }
+
+        /// <summary>True when this tenant has already consumed their first-time free trial for this capability.</summary>
+        public bool HasUsedFreeTrial { get; set; }
+
+        /// <summary>True when the current active subscription is running in its free trial period before payment.</summary>
+        public bool IsTrialPeriod { get; set; }
+
+        /// <summary>True when the tenant can activate and test this capability for <see cref="EffectiveFreeTrialDays"/> free days before payment.</summary>
+        public bool IsEligibleForFreeTrial { get; set; }
+
         /// <summary>Canonical sort order of the parent suite (1..11).</summary>
         public int SuiteSortOrder { get; set; }
 
