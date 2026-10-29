@@ -3962,9 +3962,10 @@ export class AdminLayoutComponent implements OnInit {
    * @returns Concise sidebar menu label.
    */
   getFeatureMenuTitle(featureCode: string, fallback: string = ''): string {
-    if (!featureCode) return fallback;
+    if (!featureCode) return this.translation.translateDynamic(fallback);
     const key = featureCode.toLowerCase();
-    return this.featureMenuTitles[key] || AdminLayoutComponent.DEFAULT_FEATURE_MENU_TITLES[key] || fallback;
+    const raw = this.featureMenuTitles[key] || AdminLayoutComponent.DEFAULT_FEATURE_MENU_TITLES[key] || fallback;
+    return this.translation.translateDynamic(raw);
   }
 
   /**
@@ -3974,9 +3975,10 @@ export class AdminLayoutComponent implements OnInit {
    * @returns Full descriptive capability title.
    */
   getFeatureFullTitle(featureCode: string, fallback: string = ''): string {
-    if (!featureCode) return fallback;
+    if (!featureCode) return this.translation.translateDynamic(fallback);
     const key = featureCode.toLowerCase();
-    return this.featureFullTitles[key] || fallback;
+    const raw = this.featureFullTitles[key] || fallback;
+    return this.translation.translateDynamic(raw);
   }
 
   /**
@@ -3986,8 +3988,9 @@ export class AdminLayoutComponent implements OnInit {
    * @returns Concise sidebar section header label.
    */
   getSuiteMenuTitle(suiteFullTitle: string, fallback: string = ''): string {
-    if (!suiteFullTitle) return fallback;
-    return this.suiteMenuTitles[suiteFullTitle] || AdminLayoutComponent.DEFAULT_SUITE_MENU_TITLES[suiteFullTitle] || fallback;
+    if (!suiteFullTitle) return this.translation.translateDynamic(fallback);
+    const raw = this.suiteMenuTitles[suiteFullTitle] || AdminLayoutComponent.DEFAULT_SUITE_MENU_TITLES[suiteFullTitle] || fallback;
+    return this.translation.translateDynamic(raw);
   }
 
   /**
@@ -4213,18 +4216,32 @@ export class AdminLayoutComponent implements OnInit {
       defaultMetaByCat.set(def.categoryName.toLowerCase(), def);
     }
 
+    const dynamicTexts: string[] = [
+      ...Object.values(AdminLayoutComponent.DEFAULT_FEATURE_MENU_TITLES),
+      ...Object.values(AdminLayoutComponent.DEFAULT_SUITE_MENU_TITLES)
+    ];
+
     for (const item of all) {
       if (!item || !item.featureCode) continue;
       const code = String(item.featureCode).toLowerCase();
       if (item.menuTitle) {
         this.featureMenuTitles[code] = String(item.menuTitle);
+        dynamicTexts.push(String(item.menuTitle));
       }
       if (item.name) {
         this.featureFullTitles[code] = String(item.name);
+        dynamicTexts.push(String(item.name));
+      }
+      if (item.description) {
+        dynamicTexts.push(String(item.description));
       }
       const catName = String(item.category || 'Operations').trim();
+      if (catName) {
+        dynamicTexts.push(catName);
+      }
       if (catName && item.suiteMenuTitle) {
         this.suiteMenuTitles[catName] = String(item.suiteMenuTitle);
+        dynamicTexts.push(String(item.suiteMenuTitle));
       }
       if (item.isPublished === false) {
         continue;
@@ -4293,6 +4310,7 @@ export class AdminLayoutComponent implements OnInit {
     localStorage.setItem('bcp_visible_feature_codes_v4', JSON.stringify(Array.from(visible)));
     localStorage.setItem('bcp_available_feature_codes_v4', JSON.stringify(Array.from(available)));
     localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
+    this.translation.registerDynamicCatalogStrings(dynamicTexts);
   }
 
   /**

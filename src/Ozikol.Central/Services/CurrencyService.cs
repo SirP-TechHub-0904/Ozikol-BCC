@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -448,6 +451,171 @@ public class CurrencyService : ICurrencyService
     /// <inheritdoc />
     public IReadOnlyList<PublicCatalogSuiteDto> GetActiveSuitesWithFeatures()
     {
+        var lang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
+        if (lang != "fr" && lang != "es" && lang != "de")
+        {
+            return GetBaseEnglishSuitesWithFeatures();
+        }
+
+        return _cache.GetOrCreate($"{ActiveSuitesWithFeaturesCacheKey}_{lang}", entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(6);
+            var englishSuites = GetBaseEnglishSuitesWithFeatures();
+            if (englishSuites.Count == 0)
+            {
+                return englishSuites;
+            }
+
+            try
+            {
+                // Collect all unique English strings across Suites & Features to translate in batch via Google Translator
+                var uniqueStrings = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var s in englishSuites)
+                {
+                    if (!string.IsNullOrWhiteSpace(s.Name)) uniqueStrings.Add(s.Name);
+                    if (!string.IsNullOrWhiteSpace(s.MenuTitle)) uniqueStrings.Add(s.MenuTitle);
+                    if (!string.IsNullOrWhiteSpace(s.Description)) uniqueStrings.Add(s.Description);
+                    foreach (var f in s.Features)
+                    {
+                        if (!string.IsNullOrWhiteSpace(f.Name)) uniqueStrings.Add(f.Name);
+                        if (!string.IsNullOrWhiteSpace(f.MenuTitle)) uniqueStrings.Add(f.MenuTitle);
+                        if (!string.IsNullOrWhiteSpace(f.ShortSummary)) uniqueStrings.Add(f.ShortSummary);
+                        if (!string.IsNullOrWhiteSpace(f.Description)) uniqueStrings.Add(f.Description);
+                        foreach (var bp in f.BulletPoints)
+                        {
+                            if (!string.IsNullOrWhiteSpace(bp)) uniqueStrings.Add(bp);
+                        }
+                    }
+                }
+
+                var translatedMap = TranslateBatchWithGoogle(uniqueStrings.ToList(), lang);
+                string Tr(string text) => !string.IsNullOrWhiteSpace(text) && translatedMap.TryGetValue(text, out var val) && !string.IsNullOrWhiteSpace(val) ? val : text;
+
+                var localizedSuites = englishSuites.Select(s => new PublicCatalogSuiteDto
+                {
+                    Id = s.Id,
+                    SuiteCode = s.SuiteCode,
+                    Name = Tr(s.Name),
+                    MenuTitle = Tr(s.MenuTitle),
+                    Description = Tr(s.Description),
+                    Icon = s.Icon,
+                    SortOrder = s.SortOrder,
+                    AnchorId = s.AnchorId,
+                    Features = s.Features.Select(f => new PublicCatalogFeatureDto
+                    {
+                        Id = f.Id,
+                        FeatureCode = f.FeatureCode,
+                        Name = Tr(f.Name),
+                        MenuTitle = Tr(f.MenuTitle),
+                        ShortSummary = Tr(f.ShortSummary),
+                        Description = Tr(f.Description),
+                        BulletPoints = f.BulletPoints.Select(Tr).ToList(),
+                        PublicSlug = f.PublicSlug,
+                        IconColorClass = f.IconColorClass,
+                        SortOrder = f.SortOrder,
+                        IsAvailableForUse = f.IsAvailableForUse,
+                        IsCompulsory = f.IsCompulsory
+                    }).ToList()
+                }).ToList();
+
+                return (IReadOnlyList<PublicCatalogSuiteDto>)localizedSuites;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Google Translator batch failed for language {Lang}; falling back to English catalog.", lang);
+                return englishSuites;
+            }
+        }) ?? GetBaseEnglishSuitesWithFeatures();
+    }
+
+    private static readonly HttpClient SharedTranslationHttpClient = new()
+    {
+        Timeout = TimeSpan.FromSeconds(6)
+    };
+
+    private static readonly ConcurrentDictionary<string, string> PersistentGoogleTxCache = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Translates a batch of English strings into the target ISO language code using Google Translator (GTX endpoint)
+    /// and caches every individual string in memory so subsequent requests are 0ms.
+    /// </summary>
+    private static Dictionary<string, string> TranslateBatchWithGoogle(List<string> texts, string targetLang)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        var missing = new List<string>();
+
+        foreach (var t in texts)
+        {
+            var cacheKey = $"{targetLang}:{t}";
+            if (PersistentGoogleTxCache.TryGetValue(cacheKey, out var cached))
+            {
+                result[t] = cached;
+            }
+            else
+            {
+                missing.Add(t);
+            }
+        }
+
+        if (missing.Count == 0)
+        {
+            return result;
+        }
+
+        // Batch in chunks of 20 strings separated by newline to minimize HTTP round-trips
+        const int chunkSize = 20;
+        for (int i = 0; i < missing.Count; i += chunkSize)
+        {
+            var chunk = missing.Skip(i).Take(chunkSize).ToList();
+            var joined = string.Join("\n", chunk.Select(c => c.Replace("\r", " ").Replace("\n", " ")));
+            var url = $"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl={Uri.EscapeDataString(targetLang)}&dt=t&q={Uri.EscapeDataString(joined)}";
+
+            try
+            {
+                using var response = SharedTranslationHttpClient.GetAsync(url).GetAwaiter().GetResult();
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                    using var doc = JsonDocument.Parse(json);
+                    if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0)
+                    {
+                        var sentences = doc.RootElement[0];
+                        if (sentences.ValueKind == JsonValueKind.Array)
+                        {
+                            var sb = new System.Text.StringBuilder();
+                            foreach (var seg in sentences.EnumerateArray())
+                            {
+                                if (seg.ValueKind == JsonValueKind.Array && seg.GetArrayLength() > 0 && seg[0].ValueKind == JsonValueKind.String)
+                                {
+                                    sb.Append(seg[0].GetString());
+                                }
+                            }
+
+                            var translatedLines = sb.ToString().Split('\n');
+                            for (int j = 0; j < chunk.Count; j++)
+                            {
+                                var orig = chunk[j];
+                                var trans = j < translatedLines.Length && !string.IsNullOrWhiteSpace(translatedLines[j])
+                                    ? translatedLines[j].Trim()
+                                    : orig;
+                                result[orig] = trans;
+                                PersistentGoogleTxCache[$"{targetLang}:{orig}"] = trans;
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore transient network errors and retain original English fallback for this chunk
+            }
+        }
+
+        return result;
+    }
+
+    private IReadOnlyList<PublicCatalogSuiteDto> GetBaseEnglishSuitesWithFeatures()
+    {
         return _cache.GetOrCreate(ActiveSuitesWithFeaturesCacheKey, entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = CompulsoryPriceCacheDuration;
@@ -642,6 +810,9 @@ public class CurrencyService : ICurrencyService
         _cache.Remove(ActiveSuitesCountCacheKey);
         _cache.Remove(CompulsoryCountCacheKey);
         _cache.Remove(ActiveSuitesWithFeaturesCacheKey);
+        _cache.Remove($"{ActiveSuitesWithFeaturesCacheKey}_fr");
+        _cache.Remove($"{ActiveSuitesWithFeaturesCacheKey}_es");
+        _cache.Remove($"{ActiveSuitesWithFeaturesCacheKey}_de");
         _cache.Remove(CacheKey);
         _cache.Remove(DefaultCurrencyCacheKey);
     }

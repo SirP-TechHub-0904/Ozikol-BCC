@@ -12,6 +12,7 @@ import {
   BillingInvoice
 } from './services/billing.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { TranslationService } from '../../../core/services/translation.service';
 
 export interface SuiteFeatureGroup {
   suiteName: string;
@@ -107,6 +108,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   constructor(
     private billingService: BillingService,
     private toastService: ToastService,
+    public translationService: TranslationService,
     private route: ActivatedRoute,
     private router: Router,
     private ngZone: NgZone
@@ -410,12 +412,17 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       ...(this.snapshot.subscribed || []),
       ...(this.snapshot.available || [])
     ];
-    const matched = combined.find(f => f && f.category && f.category.trim().toLowerCase() === clean && f.suiteSortOrder !== undefined && f.suiteSortOrder > 0);
+    const matched = combined.find(f => {
+      if (!f || !f.category || f.suiteSortOrder === undefined || f.suiteSortOrder <= 0) return false;
+      const rawCat = f.category.trim().toLowerCase();
+      const transCat = this.translationService.translateDynamic(f.category).trim().toLowerCase();
+      return rawCat === clean || transCat === clean;
+    });
     if (matched && matched.suiteSortOrder !== undefined) {
       return matched.suiteSortOrder - 1;
     }
     const idx = BillingConsoleComponent.CanonicalSuites.findIndex(
-      s => s.toLowerCase() === clean
+      s => s.toLowerCase() === clean || this.translationService.translateDynamic(s).toLowerCase() === clean
     );
     return idx >= 0 ? idx : 500;
   }
@@ -466,6 +473,11 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
     return sorted.map((item, idx) => ({
       ...item,
+      name: this.translationService.translateDynamic(item.name || ''),
+      menuTitle: this.translationService.translateDynamic(item.menuTitle || item.name || ''),
+      description: this.translationService.translateDynamic(item.description || ''),
+      category: this.translationService.translateDynamic(item.category || 'Operations'),
+      suiteMenuTitle: item.suiteMenuTitle ? this.translationService.translateDynamic(item.suiteMenuTitle) : undefined,
       serialNo: (item.sortOrder && item.sortOrder > 0) ? item.sortOrder : (idx + 1),
       suiteLetter: this.getSuiteLetter(item.category)
     }));

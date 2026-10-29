@@ -4235,11 +4235,186 @@ export class TranslationService {
     return SUPPORTED_LANGUAGES;
   }
 
+  /**
+   * Persistent cache of Google-translated dynamic database strings (Suites & Features) per target language.
+   */
+  private dynamicCache: Record<SupportedLanguage, Record<string, string>> = {
+    en: {},
+    fr: this.loadDynamicCache('fr'),
+    es: this.loadDynamicCache('es'),
+    de: this.loadDynamicCache('de')
+  };
+
+  /**
+   * Set of all known dynamic English strings from the Master Feature & Suite Catalog
+   * so switching language pre-translates them via Google Translator before rendering.
+   */
+  private registeredDynamicTexts = new Set<string>();
+
+  /**
+   * Pending strings queued for micro-batch Google translation per language.
+   */
+  private pendingQueue: Record<SupportedLanguage, Set<string>> = {
+    en: new Set(),
+    fr: new Set(),
+    es: new Set(),
+    de: new Set()
+  };
+
+  private batchTimer: any = null;
+
+  /**
+   * Switches the active workspace language. When switching to a non-English language,
+   * translates any uncached dynamic Suite & Feature strings via Google Translator before rendering.
+   * @param lang Target language code ('en' | 'fr' | 'es' | 'de').
+   */
   public setLanguage(lang: SupportedLanguage): void {
     if (this.currentLangSubject.value === lang) return;
-    this.currentLangSubject.next(lang);
     try {
       localStorage.setItem(this.STORAGE_KEY, lang);
+    } catch {}
+
+    if (lang !== 'en' && this.registeredDynamicTexts.size > 0) {
+      this.preloadGoogleTranslations(Array.from(this.registeredDynamicTexts), lang).finally(() => {
+        this.currentLangSubject.next(lang);
+      });
+    } else {
+      this.currentLangSubject.next(lang);
+    }
+  }
+
+  /**
+   * Registers dynamic English strings (e.g. Suite titles, Feature titles, descriptions from DB)
+   * and immediately preloads their Google translation if the current language is non-English.
+   * @param texts Array of English database strings.
+   */
+  public registerDynamicCatalogStrings(texts: string[]): void {
+    const valid: string[] = [];
+    for (const t of texts) {
+      if (t && t.trim()) {
+        const clean = t.trim();
+        this.registeredDynamicTexts.add(clean);
+        valid.push(clean);
+      }
+    }
+    const lang = this.currentLangSubject.value;
+    if (lang !== 'en' && valid.length > 0) {
+      this.preloadGoogleTranslations(valid, lang).then(didTranslate => {
+        if (didTranslate) {
+          this.currentLangSubject.next(this.currentLangSubject.value);
+        }
+      });
+    }
+  }
+
+  /**
+   * Translates a dynamic database string (such as a Suite or Feature name/menuTitle/description)
+   * using the smart Google Translator cache, automatically queueing any cache miss for real-time translation.
+   * @param text Raw English text from the database.
+   * @returns Translated text for the active language.
+   */
+  public translateDynamic(text: string): string {
+    if (!text) return '';
+    const clean = text.trim();
+    if (!clean) return text;
+    this.registeredDynamicTexts.add(clean);
+
+    const lang = this.currentLangSubject.value;
+    if (lang === 'en') return text;
+
+    const cached = this.dynamicCache[lang]?.[clean];
+    if (cached) {
+      return cached;
+    }
+
+    // Queue for real-time micro-batch Google translation
+    this.pendingQueue[lang].add(clean);
+    this.scheduleBatchFlush(lang);
+    return text;
+  }
+
+  /**
+   * Batch-translates an array of English strings into the target language using Google Translator (GTX endpoint)
+   * and stores the results in memory and localStorage.
+   * @param texts English strings to translate.
+   * @param targetLang Target language ('fr' | 'es' | 'de').
+   * @returns True if new translations were fetched and cached.
+   */
+  public async preloadGoogleTranslations(texts: string[], targetLang?: SupportedLanguage): Promise<boolean> {
+    const lang = targetLang || this.currentLangSubject.value;
+    if (lang === 'en') return false;
+
+    if (!this.dynamicCache[lang]) {
+      this.dynamicCache[lang] = {};
+    }
+
+    const missing = Array.from(new Set(texts.map(t => (t || '').trim()).filter(t => t && !this.dynamicCache[lang][t])));
+    if (missing.length === 0) return false;
+
+    const chunkSize = 20;
+    let updated = false;
+
+    for (let i = 0; i < missing.length; i += chunkSize) {
+      const chunk = missing.slice(i, i + chunkSize);
+      const joined = chunk.map(c => c.replace(/\r?\n/g, ' ')).join('\n');
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${encodeURIComponent(lang)}&dt=t&q=${encodeURIComponent(joined)}`;
+
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && Array.isArray(data[0])) {
+            const fullText = data[0].map((seg: any) => (Array.isArray(seg) && seg[0] ? String(seg[0]) : '')).join('');
+            const lines = fullText.split('\n');
+            for (let j = 0; j < chunk.length; j++) {
+              const orig = chunk[j];
+              const trans = (lines[j] || '').trim() || orig;
+              this.dynamicCache[lang][orig] = trans;
+              updated = true;
+            }
+          }
+        }
+      } catch {
+        // Retain English fallback on offline/network error
+      }
+    }
+
+    if (updated) {
+      this.saveDynamicCache(lang);
+    }
+    return updated;
+  }
+
+  private scheduleBatchFlush(lang: SupportedLanguage): void {
+    if (this.batchTimer) return;
+    this.batchTimer = setTimeout(() => {
+      this.batchTimer = null;
+      const items = Array.from(this.pendingQueue[lang]);
+      this.pendingQueue[lang].clear();
+      if (items.length > 0) {
+        this.preloadGoogleTranslations(items, lang).then(didUpdate => {
+          if (didUpdate) {
+            this.currentLangSubject.next(this.currentLangSubject.value);
+          }
+        });
+      }
+    }, 25);
+  }
+
+  private loadDynamicCache(lang: SupportedLanguage): Record<string, string> {
+    try {
+      const raw = localStorage.getItem(`bcp_google_tx_cache_${lang}_v1`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch {}
+    return {};
+  }
+
+  private saveDynamicCache(lang: SupportedLanguage): void {
+    try {
+      localStorage.setItem(`bcp_google_tx_cache_${lang}_v1`, JSON.stringify(this.dynamicCache[lang] || {}));
     } catch {}
   }
 
