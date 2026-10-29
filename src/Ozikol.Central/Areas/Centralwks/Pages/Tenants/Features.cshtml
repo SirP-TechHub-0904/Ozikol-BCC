@@ -54,17 +54,22 @@
                     <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Pricing Policy</span>
                     @if (Model.Tenant.UseCustomPricing)
                     {
-                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10.5px; font-weight: 700;">Custom Tenant Pricing</span>
+                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10.5px; font-weight: 700;">● Selected: Custom Pricing is Active</span>
                     }
                     else
                     {
-                        <span class="badge badge-neutral" style="font-size: 10.5px; font-weight: 700;">General Master Pricing</span>
+                        <span class="badge badge-neutral" style="font-size: 10.5px; font-weight: 700;">● Selected: General Pricing is Active</span>
                     }
                 </div>
-                <div style="font-size: 12px; color: #64748b; margin-top: 3px;">
-                    @(Model.Tenant.UseCustomPricing
-                        ? "Custom per-feature price overrides are active and synced to the tenant workspace."
-                        : "Inheriting standard global prices from the Master Feature Catalog.")
+                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                    @if (Model.Tenant.UseCustomPricing)
+                    {
+                        <span><strong style="color: #0050e5;">Note:</strong> Custom Pricing is active. Click <em>Disable Custom Pricing</em> to revert to General Pricing.</span>
+                    }
+                    else
+                    {
+                        <span><strong style="color: #0f172a;">Note:</strong> General Pricing is active (inheriting standard Master Catalog prices).</span>
+                    }
                 </div>
             </div>
         </div>
@@ -74,8 +79,8 @@
             <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
             <input type="hidden" name="tab" value="@Model.ActiveTab" />
             <button type="submit" class="btn-admin @(Model.Tenant.UseCustomPricing ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm">
-                <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomPricing ? "public" : "tune")</span>
-                <span>@(Model.Tenant.UseCustomPricing ? "Use General Pricing" : "Use Custom Pricing")</span>
+                <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomPricing ? "toggle_off" : "tune")</span>
+                <span>@(Model.Tenant.UseCustomPricing ? "Disable Custom Pricing" : "Enable Custom Pricing")</span>
             </button>
         </form>
     </div>
@@ -91,17 +96,22 @@
                     <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Availability Policy</span>
                     @if (Model.Tenant.UseCustomAvailability)
                     {
-                        <span class="badge" style="background: rgba(16, 185, 129, 0.14); color: #059669; font-size: 10.5px; font-weight: 700;">Custom Tenant Availability</span>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.14); color: #059669; font-size: 10.5px; font-weight: 700;">● Selected: Custom Availability is Active</span>
                     }
                     else
                     {
-                        <span class="badge badge-neutral" style="font-size: 10.5px; font-weight: 700;">General Master Availability</span>
+                        <span class="badge badge-neutral" style="font-size: 10.5px; font-weight: 700;">● Selected: General Availability is Active</span>
                     }
                 </div>
-                <div style="font-size: 12px; color: #64748b; margin-top: 3px;">
-                    @(Model.Tenant.UseCustomAvailability
-                        ? $"Showing {Model.AvailableForUseCount} Available features attached to this tenant ({Model.ComingSoonCount} in Not Available tab)."
-                        : "Inheriting Available for Use / Coming Soon status from the Master Feature Catalog.")
+                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
+                    @if (Model.Tenant.UseCustomAvailability)
+                    {
+                        <span><strong style="color: #059669;">Note:</strong> Custom Availability is active (@Model.AvailableForUseCount Available / @Model.ComingSoonCount Not Available). Click <em>Disable Custom Availability</em> to revert to General Availability.</span>
+                    }
+                    else
+                    {
+                        <span><strong style="color: #0f172a;">Note:</strong> General Availability is active (inheriting Master Catalog availability).</span>
+                    }
                 </div>
             </div>
         </div>
@@ -110,8 +120,8 @@
             @Html.AntiForgeryToken()
             <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
             <button type="submit" class="btn-admin @(Model.Tenant.UseCustomAvailability ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm">
-                <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomAvailability ? "public" : "tune")</span>
-                <span>@(Model.Tenant.UseCustomAvailability ? "Use General Availability" : "Use Custom Availability")</span>
+                <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomAvailability ? "toggle_off" : "tune")</span>
+                <span>@(Model.Tenant.UseCustomAvailability ? "Disable Custom Availability" : "Enable Custom Availability")</span>
             </button>
         </form>
     </div>
