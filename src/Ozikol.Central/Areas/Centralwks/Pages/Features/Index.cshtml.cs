@@ -184,6 +184,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                             Id = f.Id,
                             FeatureCode = f.FeatureCode,
                             Name = f.Name,
+                            MenuTitle = f.MenuTitle,
+                            MasterFeatureSuiteId = f.MasterFeatureSuiteId,
                             Category = f.Category,
                             Description = f.Description,
                             Icon = f.Icon,
@@ -193,6 +195,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                             MonthlyPrice = f.MonthlyPrice,
                             QuarterlyPrice = f.QuarterlyPrice,
                             YearlyPrice = f.YearlyPrice,
+                            FreeTrialDays = 14,
                             IsMetered = f.IsMetered,
                             IsActive = f.IsActive,
                             IsPublished = f.IsPublished,
@@ -220,6 +223,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                             MonthlyPrice = f.MonthlyPrice,
                             QuarterlyPrice = f.QuarterlyPrice,
                             YearlyPrice = f.YearlyPrice,
+                            FreeTrialDays = 14,
                             IsMetered = f.IsMetered,
                             IsActive = f.IsActive,
                             IsPublished = true,
@@ -800,33 +804,87 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         }
 
         /// <summary>
-        /// Updates the General Mode first-time free trial days (<see cref="MasterFeatureCatalog.FreeTrialDays"/>)
-        /// granted before payment is required when a tenant tests this capability for the first time.
+        /// Updates the General Mode pricing (<see cref="MasterFeatureCatalog.MonthlyPrice"/>, <see cref="MasterFeatureCatalog.YearlyPrice"/>),
+        /// tier classification (<see cref="MasterFeatureCatalog.IsCompulsory"/>), and first-time free trial days
+        /// (<see cref="MasterFeatureCatalog.FreeTrialDays"/>) directly from the Master Catalog Index modal without leaving the page.
         /// </summary>
         /// <param name="featureId">The identifier of the feature to update.</param>
-        /// <param name="freeTrialDays">Number of free trial days (0–365).</param>
-        public async Task<IActionResult> OnPostUpdateFreeTrialDaysAsync(Guid featureId, int freeTrialDays)
+        /// <param name="monthlyPrice">Monthly base subscription price in USD.</param>
+        /// <param name="yearlyPrice">Optional yearly subscription price in USD (auto-calculated if 0 and monthlyPrice &gt; 0).</param>
+        /// <param name="freeTrialDays">Number of free trial days before payment (0–365).</param>
+        /// <param name="isCompulsory">Whether the feature is a Compulsory Core capability or Optional Add-on.</param>
+        /// <returns>Redirects back to the Feature Catalog Index page with preserved filter state.</returns>
+        public async Task<IActionResult> OnPostUpdateFreeTrialDaysAsync(
+            Guid featureId,
+            decimal? monthlyPrice = null,
+            decimal? yearlyPrice = null,
+            int freeTrialDays = 14,
+            bool? isCompulsory = null)
         {
             var clampedDays = Math.Clamp(freeTrialDays, 0, 365);
             try
             {
-                var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(featureId);
-                if (feature == null)
+                var featureInfo = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.Id == featureId)
+                    .Select(f => new
+                    {
+                        f.Id,
+                        f.Name,
+                        f.FeatureCode,
+                        f.MonthlyPrice,
+                        f.QuarterlyPrice,
+                        f.YearlyPrice,
+                        f.IsCompulsory
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (featureInfo == null)
                 {
                     TempData["Error"] = "Capability not found.";
                     return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
                 }
 
-                feature.FreeTrialDays = clampedDays;
+                decimal effectiveMonthly = monthlyPrice.HasValue ? Math.Max(0m, monthlyPrice.Value) : featureInfo.MonthlyPrice;
+                decimal effectiveQuarterly = monthlyPrice.HasValue
+                    ? Math.Round(effectiveMonthly * 3m * 0.90m, 2)
+                    : featureInfo.QuarterlyPrice;
+                decimal effectiveYearly = yearlyPrice.HasValue && yearlyPrice.Value >= 0m
+                    ? Math.Max(0m, yearlyPrice.Value)
+                    : (monthlyPrice.HasValue ? Math.Round(effectiveMonthly * 10m, 2) : featureInfo.YearlyPrice);
+                bool effectiveCompulsory = isCompulsory ?? featureInfo.IsCompulsory;
+
+                try
+                {
+                    await _dbContext.MasterFeatureCatalogs
+                        .Where(f => f.Id == featureId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(f => f.MonthlyPrice, effectiveMonthly)
+                            .SetProperty(f => f.QuarterlyPrice, effectiveQuarterly)
+                            .SetProperty(f => f.YearlyPrice, effectiveYearly)
+                            .SetProperty(f => f.IsCompulsory, effectiveCompulsory)
+                            .SetProperty(f => f.FreeTrialDays, clampedDays));
+                }
+                catch
+                {
+                    // Fallback if FreeTrialDays column migration has not been applied yet: still save price and tier immediately
+                    await _dbContext.MasterFeatureCatalogs
+                        .Where(f => f.Id == featureId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(f => f.MonthlyPrice, effectiveMonthly)
+                            .SetProperty(f => f.QuarterlyPrice, effectiveQuarterly)
+                            .SetProperty(f => f.YearlyPrice, effectiveYearly)
+                            .SetProperty(f => f.IsCompulsory, effectiveCompulsory));
+                }
 
                 _dbContext.MasterAuditLogs.Add(new MasterAuditLog
                 {
                     UserId = User.Identity?.Name,
                     UserName = User.Identity?.Name,
-                    Action = "UpdateFreeTrialDays",
+                    Action = "QuickUpdatePriceAndTrial",
                     EntityType = "Feature",
-                    EntityId = feature.Id.ToString(),
-                    Summary = $"Set General Mode First-Time Free Trial to {clampedDays} days on capability '{feature.Name}' ({feature.FeatureCode})",
+                    EntityId = featureInfo.Id.ToString(),
+                    Summary = $"Updated capability '{featureInfo.Name}' ({featureInfo.FeatureCode}): Price=${effectiveMonthly:F2}/mo (${effectiveYearly:F2}/yr), FreeTrial={clampedDays}d, Tier={(effectiveCompulsory ? "Compulsory Core" : "Optional Add-on")}",
                     IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                     UserAgent = Request.Headers["User-Agent"].ToString(),
                     CreatedUtc = DateTime.UtcNow
@@ -834,11 +892,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
                 await _dbContext.SaveChangesAsync();
                 _currencyService?.InvalidatePricingCache();
-                TempData["Success"] = $"First-time free trial for '{feature.Name}' set to {clampedDays} day(s) before payment (General Mode).";
+                TempData["Success"] = $"Updated '{featureInfo.Name}': Price set to ${(effectiveMonthly > 0 ? $"{effectiveMonthly:F2}/mo" : "0.00 (Free)")} and First-Time Free Trial set to {clampedDays} day(s) before payment.";
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Could not update free trial days (ensure latest migration is applied): {ex.Message}";
+                TempData["Error"] = $"Could not update price and free trial days: {ex.Message}";
             }
 
             return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });

@@ -41,9 +41,9 @@
     </div>
 </div>
 
-@* ── 2 Tenant Policy Switches Banner (50% / 50%): Pricing Mode & Availability Mode ── *@
+@* ── 2 Tenant Policy Switches Banner (50% / 50%): Pricing + Free Trial Mode & Availability Mode ── *@
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 16px; margin-bottom: 20px;">
-    @* Switch 1: Pricing Policy (General vs Custom Pricing) *@
+    @* Switch 1: Pricing & Free Trial Policy (General vs Custom Pricing & Custom Free Trial Override) *@
     <div class="admin-card" style="padding: 18px 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1.5px solid @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#e2e8f0"); background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.03)" : "#ffffff");">
         <div style="display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1;">
             <div style="width: 40px; height: 40px; border-radius: 10px; background: @(Model.Tenant.UseCustomPricing ? "rgba(0, 80, 229, 0.12)" : "#f1f5f9"); color: @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#475569"); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -51,24 +51,24 @@
             </div>
             <div style="min-width: 0; flex: 1;">
                 <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Pricing Policy</span>
+                    <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">Tenant Pricing &amp; Free Trial Policy</span>
                     @if (Model.Tenant.UseCustomPricing)
                     {
-                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10.5px; font-weight: 700;">● Selected: Custom Pricing is Active</span>
+                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10.5px; font-weight: 700;">● Selected: Custom Price &amp; Free Trial Active</span>
                     }
                     else
                     {
-                        <span class="badge badge-neutral" style="font-size: 10.5px; font-weight: 700;">● Selected: General Pricing is Active</span>
+                        <span class="badge badge-neutral" style="font-size: 10.5px; font-weight: 700;">● Selected: General Price &amp; Free Trial Active</span>
                     }
                 </div>
                 <div style="font-size: 12px; color: #64748b; margin-top: 4px;">
                     @if (Model.Tenant.UseCustomPricing)
                     {
-                        <span><strong style="color: #0050e5;">Note:</strong> Custom Pricing is active. Click <em>Disable Custom Pricing</em> to revert to General Pricing.</span>
+                        <span><strong style="color: #0050e5;">Note:</strong> Custom Pricing &amp; Custom Free Trial overrides are active for this tenant (overrides General Catalog prices and general free trial days).</span>
                     }
                     else
                     {
-                        <span><strong style="color: #0f172a;">Note:</strong> General Pricing is active (inheriting standard Master Catalog prices).</span>
+                        <span><strong style="color: #0f172a;">Note:</strong> General Pricing &amp; Free Trial is active (inheriting Master Catalog prices and general free trial days).</span>
                     }
                 </div>
             </div>
@@ -80,7 +80,7 @@
             <input type="hidden" name="tab" value="@Model.ActiveTab" />
             <button type="submit" class="btn-admin @(Model.Tenant.UseCustomPricing ? "btn-admin-secondary" : "btn-admin-primary") btn-admin-sm" style="white-space: nowrap;">
                 <span class="material-symbols-outlined" style="font-size: 15px;">@(Model.Tenant.UseCustomPricing ? "toggle_off" : "tune")</span>
-                <span>@(Model.Tenant.UseCustomPricing ? "Disable Custom Pricing" : "Enable Custom Pricing")</span>
+                <span>@(Model.Tenant.UseCustomPricing ? "Disable Custom Price & Trial" : "Enable Custom Price & Trial")</span>
             </button>
         </form>
     </div>
@@ -191,20 +191,20 @@
         </div>
     </div>
 
-    @* Card 4: Custom Pricing / General Pricing *@
+    @* Card 4: Custom Price & Free Trial Overrides *@
     <div class="stat-card" style="padding: 16px 18px;">
         <div class="stat-icon-wrapper" style="background: rgba(0, 80, 229, 0.12); color: #0050e5;">
             <span class="material-symbols-outlined">sell</span>
         </div>
         <div class="stat-details" style="flex: 1; min-width: 0;">
-            <span class="stat-label">Custom / General Pricing</span>
+            <span class="stat-label">Custom Price &amp; Free Trial</span>
             <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 3px;">
-                <span class="stat-value" style="font-size: 21px; color: #0050e5;">@Model.CustomPricingFeaturesCount</span>
-                <span style="font-size: 15px; color: #cbd5e1; font-weight: 700;">/</span>
-                <span class="stat-value" style="font-size: 21px; color: #475569;">@Model.GeneralPricingFeaturesCount</span>
+                <span class="stat-value" style="font-size: 21px; color: #0050e5;" title="Custom Price Overrides">@Model.CustomPricingFeaturesCount</span>
+                <span style="font-size: 15px; color: #cbd5e1; font-weight: 700;">•</span>
+                <span class="stat-value" style="font-size: 21px; color: #6d28d9;" title="Custom Free Trial Overrides">@Model.CustomFreeTrialFeaturesCount</span>
             </div>
             <div style="font-size: 11px; color: #64748b; margin-top: 3px; font-weight: 600;">
-                Policy: <strong style="color: @(Model.Tenant.UseCustomPricing ? "#0050e5" : "#475569");">@(Model.Tenant.UseCustomPricing ? "Custom Pricing" : "General Pricing")</strong>
+                <span style="color: #0050e5;">@Model.CustomPricingFeaturesCount Custom Price</span> • <span style="color: #6d28d9;">@Model.CustomFreeTrialFeaturesCount Custom Trial</span>
             </div>
         </div>
     </div>
@@ -488,44 +488,57 @@
                                             <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 600; font-size: 11px;">
                                                 Optional Add-on
                                             </span>
-                                            <span class="badge"
-                                                  style="background: @(item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.1)" : "#f1f5f9"); color: @(item.EffectiveFreeTrialDays > 0 ? "#6d28d9" : "#64748b"); font-weight: 700; font-size: 11px; border: 1px solid @(item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.25)" : "#e2e8f0"); display: inline-flex; align-items: center; gap: 4px;"
-                                                  title="First-Time Free Trial Days before payment (@(item.HasCustomFreeTrialOverride ? "Custom Override" : "General Catalog Default"))">
-                                                <span class="material-symbols-outlined" style="font-size: 12px;">redeem</span>
-                                                @if (item.IsTrialPeriod)
-                                                {
-                                                    <span>Active Free Trial (@(item.EffectiveFreeTrialDays)d)</span>
-                                                }
-                                                else if (item.HasUsedFreeTrial)
-                                                {
-                                                    <span>Trial Used (@(item.EffectiveFreeTrialDays)d @(item.HasCustomFreeTrialOverride ? "Custom" : "General"))</span>
-                                                }
-                                                else if (item.EffectiveFreeTrialDays > 0)
-                                                {
-                                                    <span>@(item.EffectiveFreeTrialDays)d Free Trial @(item.HasCustomFreeTrialOverride ? "(Custom)" : "(General)")</span>
-                                                }
-                                                else
-                                                {
-                                                    <span>0d Trial (Paid Immediately)</span>
-                                                }
-                                            </span>
                                         }
+
+                                        <button type="button"
+                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                                class="badge"
+                                                style="background: @(item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.08)" : "#f1f5f9")); color: @(item.EffectiveFreeTrialDays > 0 || item.HasCustomFreeTrialOverride ? "#6d28d9" : "#64748b"); font-weight: 700; font-size: 11px; border: 1px solid @(item.HasCustomFreeTrialOverride ? "#7c3aed" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.25)" : "#e2e8f0")); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
+                                                title="Click to configure Custom Free Trial Days for @Model.Tenant.OrganizationName (overrides General @(feat.FreeTrialDays)d trial)">
+                                            <span class="material-symbols-outlined" style="font-size: 12px;">redeem</span>
+                                            @if (item.IsTrialPeriod)
+                                            {
+                                                <span>Active Free Trial (@(item.EffectiveFreeTrialDays)d)</span>
+                                            }
+                                            else if (item.HasUsedFreeTrial)
+                                            {
+                                                <span>Trial Used (@(item.EffectiveFreeTrialDays)d @(item.HasCustomFreeTrialOverride ? "Custom" : "General"))</span>
+                                            }
+                                            else if (item.HasCustomFreeTrialOverride)
+                                            {
+                                                <span>@(item.EffectiveFreeTrialDays)d Custom Trial (Overrides @(feat.FreeTrialDays)d)</span>
+                                            }
+                                            else if (item.EffectiveFreeTrialDays > 0)
+                                            {
+                                                <span>@(item.EffectiveFreeTrialDays)d Free Trial (General)</span>
+                                            }
+                                            else
+                                            {
+                                                <span>0d Trial (Paid Immediately)</span>
+                                            }
+                                        </button>
                                     </div>
                                 </div>
 
                                 @* Bottom Footer: Effective Tenant Price (in Tenant Currency) + Actions *@
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid #e2e8f0; flex-wrap: wrap;">
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                                        @if (item.EffectiveMonthlyPrice > 0)
-                                        {
-                                            <span style="font-size: 13.5px; font-weight: 800; color: #0f172a;">
-                                                @Model.TenantCurrencySymbol@item.EffectiveTenantCurrencyPrice.ToString("N2")/mo
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span style="font-size: 12.5px; font-weight: 800; color: #059669;">Included Free</span>
-                                        }
+                                        <button type="button"
+                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                                style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-family: inherit;"
+                                                title="Click to set Custom Price &amp; Custom Free Trial Days for @Model.Tenant.OrganizationName">
+                                            @if (item.EffectiveMonthlyPrice > 0)
+                                            {
+                                                <span style="font-size: 13px; font-weight: 800; color: #0f172a;">
+                                                    @Model.TenantCurrencySymbol@item.EffectiveTenantCurrencyPrice.ToString("N2")/mo
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span style="font-size: 12.5px; font-weight: 800; color: #059669;">Included Free</span>
+                                            }
+                                            <span class="material-symbols-outlined" style="font-size: 13px; color: #0050e5;">edit</span>
+                                        </button>
 
                                         @if (item.HasCustomPriceOverride)
                                         {
@@ -545,7 +558,7 @@
                                             <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                                 <button type="button"
                                                         class="btn-admin btn-admin-secondary btn-admin-sm"
-                                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"))"
+                                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
                                                         title="Set Custom Price &amp; Free Trial Days for @Model.Tenant.OrganizationName">
                                                     <span class="material-symbols-outlined" style="font-size: 14px;">payments</span>
                                                     <span>Price / Trial</span>
@@ -599,7 +612,7 @@
                                         <div style="display: inline-flex; align-items: center; gap: 6px; position: relative;">
                                             <button type="button"
                                                     class="btn-admin btn-admin-secondary btn-admin-sm"
-                                                    onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"))"
+                                                    onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
                                                     title="Set Custom Price &amp; Free Trial Days for @Model.Tenant.OrganizationName">
                                                 <span class="material-symbols-outlined" style="font-size: 14px;">attach_money</span>
                                                 <span>Price / Trial</span>
@@ -640,7 +653,7 @@
                                                     <div style="height: 1px; background: #e2e8f0; margin: 4px 0;"></div>
 
                                                     <button type="button"
-                                                            onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"))"
+                                                            onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
                                                             class="dropdown-item-btn"
                                                             style="width: 100%; text-align: left; padding: 8px 10px; border: none; background: transparent; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #0050e5; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                                                         <span class="material-symbols-outlined" style="font-size: 16px;">payments</span>
@@ -683,6 +696,7 @@ else
                         <th>TENANT STATUS</th>
                         <th>TENANT AVAILABILITY</th>
                         <th>PRICE (@Model.TenantCurrencyCode)</th>
+                        <th>FREE TRIAL DAYS</th>
                         <th style="text-align: right; width: 260px;">ACTIONS</th>
                     </tr>
                 </thead>
@@ -737,18 +751,41 @@ else
                                 }
                             </td>
                             <td>
-                                @if (item.EffectiveMonthlyPrice > 0)
-                                {
-                                    <strong style="font-size: 13px; color: #0f172a;">@Model.TenantCurrencySymbol@item.EffectiveTenantCurrencyPrice.ToString("N2")/mo</strong>
-                                    @if (item.HasCustomPriceOverride)
+                                <button type="button"
+                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                        style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 9px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-family: inherit;"
+                                        title="Click to update Custom Price &amp; Free Trial Days">
+                                    @if (item.EffectiveMonthlyPrice > 0)
                                     {
-                                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 10px; margin-left: 4px;">Custom</span>
+                                        <strong style="font-size: 12.5px; color: #0f172a;">@Model.TenantCurrencySymbol@item.EffectiveTenantCurrencyPrice.ToString("N2")/mo</strong>
+                                        @if (item.HasCustomPriceOverride)
+                                        {
+                                            <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 9.5px;">Custom</span>
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    <strong style="font-size: 12.5px; color: #059669;">Included Free</strong>
-                                }
+                                    else
+                                    {
+                                        <strong style="font-size: 12px; color: #059669;">Included Free</strong>
+                                    }
+                                    <span class="material-symbols-outlined" style="font-size: 12px; color: #0050e5;">edit</span>
+                                </button>
+                            </td>
+                            <td>
+                                <button type="button"
+                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                        class="badge"
+                                        style="background: @(item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : "rgba(124, 58, 237, 0.08)"); color: #6d28d9; font-weight: 700; font-size: 11px; border: 1px solid @(item.HasCustomFreeTrialOverride ? "#7c3aed" : "rgba(124, 58, 237, 0.25)"); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
+                                        title="Click to set Custom Free Trial Days for @Model.Tenant.OrganizationName">
+                                    <span class="material-symbols-outlined" style="font-size: 12px;">redeem</span>
+                                    @if (item.HasCustomFreeTrialOverride)
+                                    {
+                                        <span>@(item.EffectiveFreeTrialDays)d Custom (Overrides @(feat.FreeTrialDays)d)</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@(item.EffectiveFreeTrialDays)d Free Trial (General)</span>
+                                    }
+                                </button>
                             </td>
                             <td style="text-align: right;">
                                 @if (isAvail)
@@ -756,7 +793,7 @@ else
                                     <div style="display: inline-flex; align-items: center; gap: 6px;">
                                         <button type="button"
                                                 class="btn-admin btn-admin-secondary btn-admin-sm"
-                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"))">
+                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))">
                                             Price / Trial
                                         </button>
                                         <form method="post" asp-page-handler="ToggleTenantActive" style="margin: 0;">
@@ -803,11 +840,11 @@ else
 
 @* ── Custom Tenant Price & First-Time Free Trial Modal ── *@
 <div id="customPriceModalBackdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #ffffff; border-radius: 16px; max-width: 480px; width: 100%; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2); overflow: hidden;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 500px; width: 100%; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2); overflow: hidden;">
         <div style="padding: 18px 22px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span class="material-symbols-outlined" style="color: #0050e5;">payments</span>
-                <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">Custom Tenant Price &amp; Free Trial Days</h3>
+                <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">Custom Tenant Price &amp; Free Trial Override</h3>
             </div>
             <button type="button" onclick="closeCustomPriceModal()" style="background: none; border: none; cursor: pointer; color: #64748b;">
                 <span class="material-symbols-outlined">close</span>
@@ -821,7 +858,7 @@ else
             <input type="hidden" name="featureId" id="modalFeatureId" />
 
             <div style="margin-bottom: 14px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
-                <div style="font-size: 11.5px; color: #64748b;">Capability</div>
+                <div style="font-size: 11.5px; color: #64748b;">Capability for <strong>@Model.Tenant.OrganizationName</strong></div>
                 <div id="modalFeatureName" style="font-size: 14.5px; font-weight: 800; color: #0f172a; margin-top: 2px;"></div>
                 <div style="font-size: 12px; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                     <span>General Price: <strong id="modalMasterPrice" style="color: #0f172a;"></strong>/mo</span>
@@ -838,18 +875,21 @@ else
                 </span>
             </div>
 
-            <div class="form-group" style="margin-bottom: 16px; padding: 12px 14px; background: rgba(124, 58, 237, 0.04); border: 1px solid rgba(124, 58, 237, 0.2); border-radius: 10px;">
-                <label class="form-label" style="font-weight: 700; font-size: 12.5px; color: #6d28d9; display: flex; align-items: center; gap: 6px;">
+            <div class="form-group" style="margin-bottom: 16px; padding: 14px; background: rgba(124, 58, 237, 0.05); border: 1.5px solid rgba(124, 58, 237, 0.25); border-radius: 10px;">
+                <label style="display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 12.5px; color: #6d28d9; cursor: pointer; margin-bottom: 10px;">
+                    <input type="checkbox" name="enableCustomFreeTrial" value="true" id="modalEnableCustomTrialCheckbox" checked onchange="onToggleCustomTrialCheckbox()" />
                     <span class="material-symbols-outlined" style="font-size: 16px;">redeem</span>
-                    <span>First-Time Free Trial Days Before Payment (Custom Mode)</span>
+                    <span>Enable Custom Free Trial Override (Overrides General Free Trial)</span>
                 </label>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="number" min="0" max="365" name="customFreeTrialDays" id="modalCustomTrialDaysInput" class="form-control" placeholder="e.g. 14" />
+
+                <div id="modalCustomTrialInputGroup" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="number" min="0" max="365" name="customFreeTrialDays" id="modalCustomTrialDaysInput" class="form-control" placeholder="e.g. 30" oninput="updateCustomTrialOverrideNote()" />
                     <span style="font-size: 12px; font-weight: 700; color: #475569; white-space: nowrap;">Days Free</span>
                 </div>
-                <span class="form-help" style="font-size: 11.5px; color: #64748b; display: block; margin-top: 4px;">
-                    Number of free days @Model.Tenant.OrganizationName gets to test this capability before payment is required (`0` = immediate payment).
-                </span>
+
+                <div id="modalTrialOverrideSummary" style="font-size: 11.5px; color: #5b21b6; background: rgba(124, 58, 237, 0.1); padding: 6px 10px; border-radius: 6px; margin-top: 8px; font-weight: 600;">
+                    Custom Free Trial will override General Free Trial for @Model.Tenant.OrganizationName.
+                </div>
 
                 <label style="display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; font-weight: 600; color: #0f172a; cursor: pointer;">
                     <input type="checkbox" name="resetFreeTrialUsed" value="true" id="modalResetTrialCheckbox" />
@@ -857,12 +897,18 @@ else
                 </label>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                <button type="button" class="btn-admin btn-admin-secondary" onclick="closeCustomPriceModal()">Cancel</button>
-                <button type="submit" class="btn-admin btn-admin-primary">
-                    <span class="material-symbols-outlined" style="font-size: 16px;">save</span>
-                    <span>Save &amp; Sync</span>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                <button type="submit" name="resetToGeneral" value="true" class="btn-admin btn-admin-secondary" style="color: #dc2626;" title="Clear custom price and custom free trial override and revert to General Catalog defaults">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">restart_alt</span>
+                    <span>Reset to General</span>
                 </button>
+                <div style="display: flex; gap: 8px; margin-left: auto;">
+                    <button type="button" class="btn-admin btn-admin-secondary" onclick="closeCustomPriceModal()">Cancel</button>
+                    <button type="submit" class="btn-admin btn-admin-primary">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">save</span>
+                        <span>Save &amp; Override</span>
+                    </button>
+                </div>
             </div>
         </form>
     </div>
@@ -941,6 +987,8 @@ else
 
 @section Scripts {
     <script>
+        var currentModalGeneralTrialDays = 14;
+
         function toggleActionMenu(btn) {
             var menu = btn.nextElementSibling;
             var isOpen = menu && menu.style.display === 'block';
@@ -960,18 +1008,54 @@ else
             }
         });
 
-        function openCustomPriceModal(featureId, featureName, masterPrice, currentPrice, masterTrialDays, currentTrialDays, hasUsedTrial) {
+        function openCustomPriceModal(featureId, featureName, masterPrice, currentPrice, masterTrialDays, currentTrialDays, hasUsedTrial, hasCustomTrialOverride) {
+            currentModalGeneralTrialDays = (masterTrialDays !== undefined && masterTrialDays !== null) ? masterTrialDays : 14;
             document.getElementById('modalFeatureId').value = featureId;
             document.getElementById('modalFeatureName').textContent = featureName;
             document.getElementById('modalMasterPrice').textContent = '$' + masterPrice;
             document.getElementById('modalCustomPriceInput').value = currentPrice;
             var masterTrialEl = document.getElementById('modalMasterTrialDays');
-            if (masterTrialEl) masterTrialEl.textContent = (masterTrialDays !== undefined ? masterTrialDays : 14) + ' days';
+            if (masterTrialEl) masterTrialEl.textContent = currentModalGeneralTrialDays + ' days';
             var customTrialEl = document.getElementById('modalCustomTrialDaysInput');
-            if (customTrialEl) customTrialEl.value = (currentTrialDays !== undefined ? currentTrialDays : 14);
+            if (customTrialEl) customTrialEl.value = (currentTrialDays !== undefined && currentTrialDays !== null) ? currentTrialDays : currentModalGeneralTrialDays;
+            var enableChk = document.getElementById('modalEnableCustomTrialCheckbox');
+            if (enableChk) enableChk.checked = true;
             var resetTrialChk = document.getElementById('modalResetTrialCheckbox');
             if (resetTrialChk) resetTrialChk.checked = false;
+            onToggleCustomTrialCheckbox();
             document.getElementById('customPriceModalBackdrop').style.display = 'flex';
+        }
+
+        function onToggleCustomTrialCheckbox() {
+            var enableChk = document.getElementById('modalEnableCustomTrialCheckbox');
+            var inputGroup = document.getElementById('modalCustomTrialInputGroup');
+            var customInput = document.getElementById('modalCustomTrialDaysInput');
+            var isEnabled = !enableChk || enableChk.checked;
+            if (inputGroup) {
+                inputGroup.style.opacity = isEnabled ? '1' : '0.5';
+            }
+            if (customInput) {
+                customInput.disabled = !isEnabled;
+            }
+            updateCustomTrialOverrideNote();
+        }
+
+        function updateCustomTrialOverrideNote() {
+            var enableChk = document.getElementById('modalEnableCustomTrialCheckbox');
+            var customInput = document.getElementById('modalCustomTrialDaysInput');
+            var summaryEl = document.getElementById('modalTrialOverrideSummary');
+            if (!summaryEl) return;
+            var isEnabled = !enableChk || enableChk.checked;
+            var customDays = customInput ? (parseInt(customInput.value, 10) || 0) : currentModalGeneralTrialDays;
+            if (isEnabled) {
+                summaryEl.textContent = 'Custom Free Trial (' + customDays + ' days) will override General Free Trial (' + currentModalGeneralTrialDays + ' days) for this tenant.';
+                summaryEl.style.color = '#5b21b6';
+                summaryEl.style.background = 'rgba(124, 58, 237, 0.1)';
+            } else {
+                summaryEl.textContent = 'Using General Free Trial (' + currentModalGeneralTrialDays + ' days) from Master Catalog.';
+                summaryEl.style.color = '#475569';
+                summaryEl.style.background = '#f1f5f9';
+            }
         }
 
         function closeCustomPriceModal() {

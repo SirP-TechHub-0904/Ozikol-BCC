@@ -150,6 +150,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public int GeneralAvailableFeaturesCount { get; set; }
         public int CustomPricingFeaturesCount { get; set; }
         public int GeneralPricingFeaturesCount { get; set; }
+        public int CustomFreeTrialFeaturesCount { get; set; }
+        public int GeneralFreeTrialFeaturesCount { get; set; }
         public decimal TotalMonthlyMrr { get; set; }
 
         /// <summary>
@@ -188,18 +190,63 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             }
             catch
             {
-                tenant = await _dbContext.MasterTenantCatalogs
-                    .AsNoTracking()
-                    .Select(t => new MasterTenantCatalog
+                try
+                {
+                    tenant = await _dbContext.MasterTenantCatalogs
+                        .AsNoTracking()
+                        .Select(t => new MasterTenantCatalog
+                        {
+                            Id = t.Id,
+                            TenantKey = t.TenantKey,
+                            OrganizationName = t.OrganizationName,
+                            PrimaryDomain = t.PrimaryDomain,
+                            CustomDomain = t.CustomDomain,
+                            IsActive = t.IsActive,
+                            UseCustomPricing = t.UseCustomPricing,
+                            UseCustomAvailability = t.UseCustomAvailability,
+                            DefaultCurrencyCode = t.DefaultCurrencyCode
+                        })
+                        .FirstOrDefaultAsync(t => t.Id == targetId);
+
+                    if (tenant != null)
                     {
-                        Id = t.Id,
-                        TenantKey = t.TenantKey,
-                        OrganizationName = t.OrganizationName,
-                        PrimaryDomain = t.PrimaryDomain,
-                        CustomDomain = t.CustomDomain,
-                        IsActive = t.IsActive
-                    })
-                    .FirstOrDefaultAsync(t => t.Id == targetId);
+                        tenant.FeatureSubscriptions = await _dbContext.MasterTenantFeatureSubscriptions
+                            .AsNoTracking()
+                            .Where(s => s.MasterTenantCatalogId == tenant.Id)
+                            .Select(s => new MasterTenantFeatureSubscription
+                            {
+                                Id = s.Id,
+                                MasterTenantCatalogId = s.MasterTenantCatalogId,
+                                MasterFeatureCatalogId = s.MasterFeatureCatalogId,
+                                DurationType = s.DurationType,
+                                RecurringPrice = s.RecurringPrice,
+                                CustomPriceOverride = s.CustomPriceOverride,
+                                IsAvailableForUseOverride = s.IsAvailableForUseOverride,
+                                StartsAtUtc = s.StartsAtUtc,
+                                ExpiresAtUtc = s.ExpiresAtUtc,
+                                AutoRenew = s.AutoRenew,
+                                IsActive = s.IsActive,
+                                Status = s.Status,
+                                CreatedUtc = s.CreatedUtc
+                            })
+                            .ToListAsync();
+                    }
+                }
+                catch
+                {
+                    tenant = await _dbContext.MasterTenantCatalogs
+                        .AsNoTracking()
+                        .Select(t => new MasterTenantCatalog
+                        {
+                            Id = t.Id,
+                            TenantKey = t.TenantKey,
+                            OrganizationName = t.OrganizationName,
+                            PrimaryDomain = t.PrimaryDomain,
+                            CustomDomain = t.CustomDomain,
+                            IsActive = t.IsActive
+                        })
+                        .FirstOrDefaultAsync(t => t.Id == targetId);
+                }
             }
 
             if (tenant == null)
@@ -277,27 +324,57 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             }
             catch
             {
-                allFeatures = await _dbContext.MasterFeatureCatalogs
-                    .AsNoTracking()
-                    .Where(f => f.IsActive)
-                    .Select(f => new MasterFeatureCatalog
-                    {
-                        Id = f.Id,
-                        FeatureCode = f.FeatureCode,
-                        Name = f.Name,
-                        Category = f.Category,
-                        Description = f.Description,
-                        Icon = f.Icon,
-                        IsCompulsory = f.IsCompulsory,
-                        BillingType = f.BillingType,
-                        MonthlyPrice = f.MonthlyPrice,
-                        QuarterlyPrice = f.QuarterlyPrice,
-                        YearlyPrice = f.YearlyPrice,
-                        IsActive = f.IsActive,
-                        IsPublished = true,
-                        SortOrder = f.SortOrder
-                    })
-                    .ToListAsync();
+                try
+                {
+                    allFeatures = await _dbContext.MasterFeatureCatalogs
+                        .AsNoTracking()
+                        .Where(f => f.IsActive && f.IsPublished)
+                        .Select(f => new MasterFeatureCatalog
+                        {
+                            Id = f.Id,
+                            FeatureCode = f.FeatureCode,
+                            Name = f.Name,
+                            Category = f.Category,
+                            Description = f.Description,
+                            Icon = f.Icon,
+                            IsCompulsory = f.IsCompulsory,
+                            BillingType = f.BillingType,
+                            MonthlyPrice = f.MonthlyPrice,
+                            QuarterlyPrice = f.QuarterlyPrice,
+                            YearlyPrice = f.YearlyPrice,
+                            FreeTrialDays = 14,
+                            IsActive = f.IsActive,
+                            IsPublished = f.IsPublished,
+                            IsAvailableForUse = f.IsAvailableForUse,
+                            SortOrder = f.SortOrder
+                        })
+                        .ToListAsync();
+                }
+                catch
+                {
+                    allFeatures = await _dbContext.MasterFeatureCatalogs
+                        .AsNoTracking()
+                        .Where(f => f.IsActive)
+                        .Select(f => new MasterFeatureCatalog
+                        {
+                            Id = f.Id,
+                            FeatureCode = f.FeatureCode,
+                            Name = f.Name,
+                            Category = f.Category,
+                            Description = f.Description,
+                            Icon = f.Icon,
+                            IsCompulsory = f.IsCompulsory,
+                            BillingType = f.BillingType,
+                            MonthlyPrice = f.MonthlyPrice,
+                            QuarterlyPrice = f.QuarterlyPrice,
+                            YearlyPrice = f.YearlyPrice,
+                            FreeTrialDays = 14,
+                            IsActive = f.IsActive,
+                            IsPublished = true,
+                            SortOrder = f.SortOrder
+                        })
+                        .ToListAsync();
+                }
             }
 
             // Harmonize with BillingSnapshotService: if no MasterFeatureCatalog row has IsAvailableForUse == true yet, fall back to DefaultAvailableCodes
@@ -331,15 +408,16 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     : f.MonthlyPrice;
 
                 // Determine effective First-Time Free Trial Days before payment (General Mode vs Custom Mode)
+                // When Custom Free Trial is enabled/set for this tenant, it overrides the General Free Trial Days.
                 bool hasCustomFreeTrialOverride = sub?.CustomFreeTrialDaysOverride != null;
                 int generalFreeTrialDays = f.FreeTrialDays > 0 ? f.FreeTrialDays : 0;
-                int effectiveFreeTrialDays = ((tenant.UseCustomPricing || tenant.UseCustomAvailability) && hasCustomFreeTrialOverride)
+                int effectiveFreeTrialDays = ((tenant.UseCustomPricing || tenant.UseCustomAvailability || hasCustomFreeTrialOverride) && hasCustomFreeTrialOverride)
                     ? Math.Max(0, sub!.CustomFreeTrialDaysOverride!.Value)
                     : generalFreeTrialDays;
                 bool hasUsedFreeTrial = sub?.HasUsedFreeTrial ?? false;
                 bool isTrialPeriod = (sub?.IsTrialPeriod ?? false) && (sub?.ExpiresAtUtc > now);
 
-                // Determine effective Availability for this tenant (Synced with Custom Price & Active overrides)
+                // Determine effective Availability for this tenant (Synced with Custom Price, Custom Trial & Active overrides)
                 bool hasCustomAvailOverride = sub?.IsAvailableForUseOverride != null;
                 bool effectiveAvailableForUse;
                 if (tenant.UseCustomAvailability)
@@ -348,9 +426,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     {
                         effectiveAvailableForUse = sub!.IsAvailableForUseOverride!.Value;
                     }
-                    else if (hasCustomPriceOverride || (sub != null && sub.IsActive && !f.IsCompulsory))
+                    else if (hasCustomPriceOverride || hasCustomFreeTrialOverride || (sub != null && sub.IsActive && !f.IsCompulsory))
                     {
-                        // Sync: any feature given a custom price or explicitly subscribed for this tenant is automatically Available
+                        // Sync: any feature given a custom price, custom free trial, or explicitly subscribed for this tenant is automatically Available
                         effectiveAvailableForUse = true;
                     }
                     else
@@ -415,6 +493,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             GeneralAvailableFeaturesCount = TotalCount - CustomAvailableFeaturesCount;
             CustomPricingFeaturesCount = allItems.Count(x => x.HasCustomPriceOverride);
             GeneralPricingFeaturesCount = TotalCount - CustomPricingFeaturesCount;
+            CustomFreeTrialFeaturesCount = allItems.Count(x => x.HasCustomFreeTrialOverride);
+            GeneralFreeTrialFeaturesCount = TotalCount - CustomFreeTrialFeaturesCount;
             TotalMonthlyMrr = allItems
                 .Where(x => x.IsSubscribed && x.EffectiveMonthlyPrice > 0)
                 .Sum(x => x.EffectiveMonthlyPrice);
@@ -482,6 +562,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     filtered = filtered.Where(x => !x.HasCustomAvailabilityOverride);
                 else if (st == "custom_price")
                     filtered = filtered.Where(x => x.HasCustomPriceOverride);
+                else if (st == "custom_trial")
+                    filtered = filtered.Where(x => x.HasCustomFreeTrialOverride);
                 else if (st == "general_price")
                     filtered = filtered.Where(x => !x.HasCustomPriceOverride);
             }
@@ -802,6 +884,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
         /// <summary>
         /// Sets or resets a custom monthly price override and custom first-time free trial days override for a specific capability on this tenant.
+        /// When Custom Free Trial is enabled and days are specified, it overrides the General Master Catalog Free Trial Days for this tenant.
         /// Syncs with Custom Availability by automatically marking the capability Available for this tenant when a custom price or trial is set.
         /// </summary>
         public async Task<IActionResult> OnPostSetCustomPriceAsync(
@@ -809,6 +892,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             Guid featureId,
             decimal? customPrice,
             int? customFreeTrialDays = null,
+            bool enableCustomFreeTrial = true,
             bool resetFreeTrialUsed = false,
             bool resetToGeneral = false)
         {
@@ -837,7 +921,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             var existing = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == featureId);
             decimal? effectiveOverride = resetToGeneral ? null : Math.Max(0m, customPrice ?? 0m);
-            int? effectiveTrialOverride = resetToGeneral
+            int? effectiveTrialOverride = (resetToGeneral || !enableCustomFreeTrial)
                 ? null
                 : (customFreeTrialDays.HasValue ? Math.Clamp(customFreeTrialDays.Value, 0, 365) : null);
 
@@ -881,12 +965,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             {
                 UserId = User.Identity?.Name,
                 UserName = User.Identity?.Name,
-                Action = resetToGeneral ? "ResetTenantCustomPrice" : "SetTenantCustomPrice",
+                Action = resetToGeneral ? "ResetTenantCustomPrice" : "SetTenantCustomPriceAndTrial",
                 EntityType = "FeatureSubscription",
                 EntityId = feature.Id.ToString(),
                 Summary = resetToGeneral
                     ? $"Reset '{feature.Name}' to General Master Price (${feature.MonthlyPrice:F2}/mo, {feature.FreeTrialDays}d Free Trial) for tenant '{tenant.OrganizationName}'"
-                    : $"Set custom price ${effectiveOverride:F2}/mo and free trial {(effectiveTrialOverride ?? feature.FreeTrialDays)}d on '{feature.Name}' for tenant '{tenant.OrganizationName}'",
+                    : $"Set custom price ${effectiveOverride:F2}/mo and {(effectiveTrialOverride.HasValue ? $"Custom Free Trial {effectiveTrialOverride.Value}d (overrides {feature.FreeTrialDays}d General)" : $"General Free Trial ({feature.FreeTrialDays}d)")} on '{feature.Name}' for tenant '{tenant.OrganizationName}'",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
@@ -894,8 +978,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             await _dbContext.SaveChangesAsync();
             TempData["Success"] = resetToGeneral
-                ? $"'{feature.Name}' reset to General Master Price (${feature.MonthlyPrice:F2}/mo, {feature.FreeTrialDays}d Free Trial) for {tenant.OrganizationName}."
-                : $"Custom price (${effectiveOverride:F2}/mo) and Free Trial ({(effectiveTrialOverride ?? feature.FreeTrialDays)} days before payment) saved for {tenant.OrganizationName}.";
+                ? $"'{feature.Name}' reset to General Master Price (${feature.MonthlyPrice:F2}/mo) and General Free Trial ({feature.FreeTrialDays} days) for {tenant.OrganizationName}."
+                : $"Saved for {tenant.OrganizationName}: Custom Price (${effectiveOverride:F2}/mo) and {(effectiveTrialOverride.HasValue ? $"Custom Free Trial ({effectiveTrialOverride.Value} days — overrides General {feature.FreeTrialDays} days)" : $"General Free Trial ({feature.FreeTrialDays} days)")}.";
 
             return RedirectToPage(new { tenantId = tenant.Id, tab = Tab, search = Search, category = Category, status = Status, viewMode = ViewMode });
         }

@@ -200,6 +200,7 @@ namespace Ozikol_BCC.Api.Services
                         MonthlyPrice = f.MonthlyPrice,
                         QuarterlyPrice = f.QuarterlyPrice,
                         YearlyPrice = f.YearlyPrice,
+                        FreeTrialDays = 14,
                         IsMetered = f.IsMetered,
                         IsActive = f.IsActive,
                         IsPublished = f.IsActive,
@@ -389,12 +390,12 @@ namespace Ozikol_BCC.Api.Services
 
                 bool hasCustomTrial = sub?.CustomFreeTrialDaysOverride != null;
                 int catalogTrialDays = f.FreeTrialDays > 0 ? f.FreeTrialDays : 0;
-                int effectiveTrialDays = ((tenant?.UseCustomPricing == true || tenant?.UseCustomAvailability == true) && hasCustomTrial)
+                int effectiveTrialDays = ((tenant?.UseCustomPricing == true || tenant?.UseCustomAvailability == true || hasCustomTrial) && hasCustomTrial)
                     ? Math.Max(0, sub!.CustomFreeTrialDaysOverride!.Value)
                     : catalogTrialDays;
                 bool hasUsedTrial = sub?.HasUsedFreeTrial ?? false;
                 bool isTrialPeriod = (sub?.IsTrialPeriod ?? false) && (sub?.ExpiresAtUtc > now);
-                bool isEligibleForFreeTrial = !f.IsCompulsory && effectiveTrialDays > 0 && !hasUsedTrial;
+                bool isEligibleForFreeTrial = effectiveTrialDays > 0 && !hasUsedTrial;
 
                 var item = new BillingFeatureItemDto
                 {
