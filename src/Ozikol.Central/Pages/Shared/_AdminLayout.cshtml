@@ -82,12 +82,34 @@
         topbarCurrencies = new List<Ozikol.MasterDomain.Models.MasterCurrencyRate>
         {
             new() { CurrencyCode = "USD", CurrencySymbol = "$", DisplayName = "US Dollar", RateFromUsd = 1.0000m, IsBaseCurrency = true, IsActive = true },
-            new() { CurrencyCode = "NGN", CurrencySymbol = "₦", DisplayName = "Nigerian Naira", RateFromUsd = 1600.0000m, IsBaseCurrency = false, IsActive = true },
-            new() { CurrencyCode = "GBP", CurrencySymbol = "£", DisplayName = "British Pound", RateFromUsd = 0.7900m, IsBaseCurrency = false, IsActive = true },
-            new() { CurrencyCode = "EUR", CurrencySymbol = "€", DisplayName = "Euro", RateFromUsd = 0.9200m, IsBaseCurrency = false, IsActive = true }
+            new() { CurrencyCode = "NGN", CurrencySymbol = "₦", DisplayName = "Nigerian Naira", RateFromUsd = 1350.0000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "GBP", CurrencySymbol = "£", DisplayName = "British Pound", RateFromUsd = 0.8000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "EUR", CurrencySymbol = "€", DisplayName = "Euro", RateFromUsd = 0.9200m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "GHS", CurrencySymbol = "GH₵", DisplayName = "Ghanaian Cedi", RateFromUsd = 14.0000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "KES", CurrencySymbol = "KSh", DisplayName = "Kenyan Shilling", RateFromUsd = 130.0000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "ZAR", CurrencySymbol = "R", DisplayName = "South African Rand", RateFromUsd = 18.0000m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "CAD", CurrencySymbol = "CA$", DisplayName = "Canadian Dollar", RateFromUsd = 1.3600m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "AED", CurrencySymbol = "AED", DisplayName = "UAE Dirham", RateFromUsd = 3.6700m, IsBaseCurrency = false, IsActive = true },
+            new() { CurrencyCode = "INR", CurrencySymbol = "₹", DisplayName = "Indian Rupee", RateFromUsd = 84.0000m, IsBaseCurrency = false, IsActive = true }
         };
     }
-    var baseTopbarCurr = topbarCurrencies.FirstOrDefault(c => c.IsBaseCurrency) ?? topbarCurrencies.First();
+
+    string configuredDefaultCurrencyCode = "USD";
+    try
+    {
+        var platformSettingsRow = Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AsNoTracking(MasterDb.MasterPlatformSettings)
+            .FirstOrDefault(s => s.Id == 1);
+        if (!string.IsNullOrWhiteSpace(platformSettingsRow?.DefaultCurrencyCode))
+        {
+            configuredDefaultCurrencyCode = platformSettingsRow.DefaultCurrencyCode.Trim().ToUpperInvariant();
+        }
+    }
+    catch { }
+
+    var baseTopbarCurr = topbarCurrencies.FirstOrDefault(c => c.CurrencyCode.Equals(configuredDefaultCurrencyCode, StringComparison.OrdinalIgnoreCase))
+                         ?? topbarCurrencies.FirstOrDefault(c => c.IsBaseCurrency)
+                         ?? topbarCurrencies.First();
+    var forcedSwitchCode = TempData["SwitchCentralCurrencyCode"]?.ToString();
 }
 
                     <div class="topbar-search">
@@ -520,10 +542,24 @@
 
     <script>
         (function () {
+            const serverDefaultCode = '@baseTopbarCurr.CurrencyCode';
+            const serverDefaultSymbol = '@Html.Raw(baseTopbarCurr.CurrencySymbol.Replace("'", "\\'"))';
+            const serverDefaultRate = parseFloat('@baseTopbarCurr.RateFromUsd.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)') || 1;
+            const forcedSwitch = '@(forcedSwitchCode ?? "")';
+
+            // If Default System Currency was just updated in Settings or Manage Currencies, sync browser state immediately
+            const prevServerDefault = localStorage.getItem('ozikol_central_server_default_code');
+            if (forcedSwitch || prevServerDefault !== serverDefaultCode) {
+                localStorage.setItem('ozikol_central_server_default_code', serverDefaultCode);
+                localStorage.setItem('ozikol_central_curr_code', serverDefaultCode);
+                localStorage.setItem('ozikol_central_curr_symbol', serverDefaultSymbol);
+                localStorage.setItem('ozikol_central_curr_rate', String(serverDefaultRate));
+            }
+
             window.OzikolCurrencyState = {
-                code: localStorage.getItem('ozikol_central_curr_code') || '@baseTopbarCurr.CurrencyCode',
-                symbol: localStorage.getItem('ozikol_central_curr_symbol') || '@Html.Raw(baseTopbarCurr.CurrencySymbol.Replace("'", "\\'"))',
-                rate: parseFloat(localStorage.getItem('ozikol_central_curr_rate') || '@baseTopbarCurr.RateFromUsd.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)') || 1
+                code: localStorage.getItem('ozikol_central_curr_code') || serverDefaultCode,
+                symbol: localStorage.getItem('ozikol_central_curr_symbol') || serverDefaultSymbol,
+                rate: parseFloat(localStorage.getItem('ozikol_central_curr_rate') || String(serverDefaultRate)) || 1
             };
 
             window.toggleTopbarCurrencyMenu = function (e) {

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Ozikol.Central.Services;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 
@@ -12,19 +13,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
 {
     /// <summary>
     /// PageModel displaying supported platform currencies, exchange rate multipliers relative to 1.00 USD ($),
-    /// quick inline exchange rate updates, default/base currency selection, and quick currency creation.
+    /// quick inline exchange rate updates, Default System Display Currency selection, and quick currency creation.
     /// </summary>
     public class IndexModel : PageModel
     {
         private readonly MasterCatalogDbContext _dbContext;
+        private readonly ICurrencyService _currencyService;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexModel"/> class.
         /// </summary>
         /// <param name="dbContext">Master catalog database context.</param>
-        public IndexModel(MasterCatalogDbContext dbContext)
+        /// <param name="currencyService">Central currency conversion service.</param>
+        public IndexModel(MasterCatalogDbContext dbContext, ICurrencyService currencyService)
         {
             _dbContext = dbContext;
+            _currencyService = currencyService;
         }
 
         /// <summary>
@@ -60,14 +64,29 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
         public int InactiveCount { get; set; }
 
         /// <summary>
-        /// The current global base/default currency code (usually USD).
+        /// The base exchange rate reference currency code (always USD = 1.0000).
         /// </summary>
         public string BaseCurrencyCode { get; set; } = "USD";
 
         /// <summary>
-        /// The current global base currency symbol (usually $).
+        /// The base exchange rate reference currency symbol ($).
         /// </summary>
         public string BaseCurrencySymbol { get; set; } = "$";
+
+        /// <summary>
+        /// The Default System Currency code displayed across all amount places on the Central website (e.g. USD or NGN).
+        /// </summary>
+        public string DefaultDisplayCurrencyCode { get; set; } = "USD";
+
+        /// <summary>
+        /// The Default System Currency symbol displayed across all amount places on the Central website (e.g. $ or ₦).
+        /// </summary>
+        public string DefaultDisplayCurrencySymbol { get; set; } = "$";
+
+        /// <summary>
+        /// The exchange rate of the Default System Currency relative to 1.00 USD.
+        /// </summary>
+        public decimal DefaultDisplayCurrencyRate { get; set; } = 1.0000m;
 
         /// <summary>
         /// Status message from previous action.
@@ -91,6 +110,18 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
             {
                 BaseCurrencyCode = baseCurr.CurrencyCode;
                 BaseCurrencySymbol = baseCurr.CurrencySymbol;
+            }
+
+            var platformSetting = await _dbContext.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
+            DefaultDisplayCurrencyCode = !string.IsNullOrWhiteSpace(platformSetting?.DefaultCurrencyCode)
+                ? platformSetting!.DefaultCurrencyCode.Trim().ToUpperInvariant()
+                : "USD";
+
+            var defaultDisplayCurr = await query.FirstOrDefaultAsync(c => c.CurrencyCode.ToUpper() == DefaultDisplayCurrencyCode);
+            if (defaultDisplayCurr != null)
+            {
+                DefaultDisplayCurrencySymbol = defaultDisplayCurr.CurrencySymbol;
+                DefaultDisplayCurrencyRate = defaultDisplayCurr.RateFromUsd;
             }
 
             if (!string.IsNullOrWhiteSpace(Search))
@@ -177,6 +208,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
 
             _dbContext.MasterCurrencyRates.Add(newCurr);
             await _dbContext.SaveChangesAsync();
+            _currencyService.InvalidatePricingCache();
 
             TempData["Success"] = $"Currency {cleanCode} ({newCurr.CurrencySymbol}) created with exchange rate 1 USD = {newCurr.RateFromUsd:N4} {cleanCode}.";
             return RedirectToPage();
@@ -196,20 +228,61 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
             if (currency.IsBaseCurrency)
             {
                 currency.RateFromUsd = 1.0000m;
-                TempData["Info"] = $"{currency.CurrencyCode} is the Default Base Currency (locked at 1.0000).";
+                TempData["Info"] = $"{currency.CurrencyCode} is the Default Exchange Rate Base (locked at 1.0000 USD).";
                 return RedirectToPage();
             }
 
             currency.RateFromUsd = Math.Max(0.0001m, rateFromUsd);
             currency.UpdatedAtUtc = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
+            _currencyService.InvalidatePricingCache();
 
             TempData["Success"] = $"Exchange rate for {currency.CurrencyCode} ({currency.CurrencySymbol}) updated: 1 USD ($) = {currency.CurrencySymbol}{currency.RateFromUsd:N4} {currency.CurrencyCode}.";
             return RedirectToPage();
         }
 
         /// <summary>
-        /// Sets the specified currency as the Default / Base Currency.
+        /// Sets the specified currency as the Default System Display Currency across the Central website
+        /// (without altering the USD = 1.0000 Base Exchange Rate).
+        /// </summary>
+        public async Task<IActionResult> OnPostSetDefaultCurrencyAsync(int id)
+        {
+            var target = await _dbContext.MasterCurrencyRates.FindAsync(id);
+            if (target == null)
+            {
+                return NotFound();
+            }
+
+            target.IsActive = true;
+            var settings = await _dbContext.MasterPlatformSettings.FirstOrDefaultAsync(s => s.Id == 1);
+            if (settings == null)
+            {
+                settings = new MasterPlatformSetting
+                {
+                    Id = 1,
+                    PlatformName = "Ozikol",
+                    DefaultCurrencyCode = target.CurrencyCode.ToUpperInvariant(),
+                    DefaultTrialDays = 14,
+                    UpdatedUtc = DateTime.UtcNow
+                };
+                _dbContext.MasterPlatformSettings.Add(settings);
+            }
+            else
+            {
+                settings.DefaultCurrencyCode = target.CurrencyCode.ToUpperInvariant();
+                settings.UpdatedUtc = DateTime.UtcNow;
+            }
+
+            await _dbContext.SaveChangesAsync();
+            _currencyService.InvalidatePricingCache();
+
+            TempData["SwitchCentralCurrencyCode"] = target.CurrencyCode.ToUpperInvariant();
+            TempData["Success"] = $"{target.CurrencyCode} ({target.CurrencySymbol}) is now set as the Default System Currency. All amount places in Central will display in {target.CurrencyCode} ({target.CurrencySymbol}) using exchange rate 1 USD = {target.CurrencySymbol}{target.RateFromUsd:N2}.";
+            return RedirectToPage();
+        }
+
+        /// <summary>
+        /// Sets the specified currency as the Base Exchange Rate Reference (1.0000).
         /// </summary>
         public async Task<IActionResult> OnPostSetBaseCurrencyAsync(int id)
         {
@@ -237,7 +310,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
             }
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"{target.CurrencyCode} ({target.CurrencySymbol}) is now set as the Default Base Currency.";
+            _currencyService.InvalidatePricingCache();
+            TempData["Success"] = $"{target.CurrencyCode} ({target.CurrencySymbol}) is now set as the Base Exchange Rate Reference (1.0000).";
             return RedirectToPage();
         }
 

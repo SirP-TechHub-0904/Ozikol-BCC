@@ -30,8 +30,8 @@
     </div>
 }
 
-@* ── 3 Combined Currency KPI Cards ── *@
-<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 24px;">
+@* ── 4 Currency & Exchange Governance KPI Cards ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
     <div class="stat-card" style="padding: 18px 20px;">
         <div class="stat-icon-wrapper stat-icon-primary">
             <span class="material-symbols-outlined">currency_exchange</span>
@@ -39,7 +39,7 @@
         <div class="stat-details">
             <span class="stat-label">Total Configured Currencies</span>
             <span class="stat-value">@Model.TotalCount</span>
-            <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">Available for tenants &amp; checkout</span>
+            <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">Available for Central &amp; Tenants</span>
         </div>
     </div>
 
@@ -59,13 +59,24 @@
     </div>
 
     <div class="stat-card" style="padding: 18px 20px;">
-        <div class="stat-icon-wrapper stat-icon-warning">
-            <span class="material-symbols-outlined">star</span>
+        <div class="stat-icon-wrapper" style="background: rgba(0, 80, 229, 0.12); color: #0050E5;">
+            <span class="material-symbols-outlined">payments</span>
         </div>
         <div class="stat-details">
-            <span class="stat-label">Default Base Currency</span>
-            <span class="stat-value" style="color: #0050E5;">@Model.BaseCurrencyCode (@Model.BaseCurrencySymbol)</span>
-            <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">Base Anchor: 1.00 @Model.BaseCurrencyCode = 1.0000</span>
+            <span class="stat-label">Default System Currency (Website)</span>
+            <span class="stat-value" style="color: #0050E5;">@Model.DefaultDisplayCurrencyCode (@Model.DefaultDisplayCurrencySymbol)</span>
+            <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">Shows in all Central amount places</span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px 20px;">
+        <div class="stat-icon-wrapper stat-icon-warning">
+            <span class="material-symbols-outlined">anchor</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Default Exchange Rate Base</span>
+            <span class="stat-value" style="color: #d97706;">@Model.BaseCurrencyCode (@Model.BaseCurrencySymbol) = 1.00</span>
+            <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">All exchange rates convert from 1 @Model.BaseCurrencyCode</span>
         </div>
     </div>
 </div>
@@ -174,22 +185,32 @@
                                 </div>
                             </td>
                             <td>
-                                @if (c.IsBaseCurrency)
-                                {
-                                    <span class="badge" style="background: #fef3c7; color: #d97706; border: 1px solid #fde68a; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
-                                        <span class="material-symbols-outlined" style="font-size: 13px;">star</span>
-                                        Default Base Currency
-                                    </span>
-                                }
-                                else
-                                {
-                                    <form method="post" asp-page-handler="SetBaseCurrency" asp-route-id="@c.Id" style="margin: 0; display: inline;">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="font-size: 11px; padding: 3px 9px;" title="Make @c.CurrencyCode the Default Base Currency">
-                                            Set as Default
-                                        </button>
-                                    </form>
-                                }
+                                <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-start;">
+                                    @if (string.Equals(c.CurrencyCode, Model.DefaultDisplayCurrencyCode, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050E5; border: 1px solid rgba(0, 80, 229, 0.28); font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span>
+                                            Default System Currency
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <form method="post" asp-page-handler="SetDefaultCurrency" asp-route-id="@c.Id" style="margin: 0; display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #0050E5;" title="Display all amounts across Central in @c.CurrencyCode (@c.CurrencySymbol) by default">
+                                                Set as Default Currency
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @if (c.IsBaseCurrency)
+                                    {
+                                        <span class="badge" style="background: #fef3c7; color: #d97706; border: 1px solid #fde68a; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 12px;">anchor</span>
+                                            Default Exchange Rate (1.00)
+                                        </span>
+                                    }
+                                </div>
                             </td>
                             <td>
                                 @if (c.IsActive)

@@ -500,6 +500,8 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.SupportContactEmail).HasMaxLength(150);
             entity.Property(e => e.DefaultFromEmail).HasMaxLength(150);
             entity.Property(e => e.SupportCategories).HasMaxLength(1000);
+            entity.Property(e => e.DefaultCurrencyCode).HasMaxLength(10).HasDefaultValue("USD");
+            entity.Property(e => e.DefaultExchangeRateCurrencyCode).HasMaxLength(10).HasDefaultValue("USD");
         });
 
         modelBuilder.Entity<MasterHelpdeskArticle>(entity =>

@@ -52,6 +52,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
         public string? StatusMessage { get; set; }
 
         /// <summary>
+        /// Active currencies loaded from MasterCurrencyRates for the Default System Currency selector.
+        /// </summary>
+        public System.Collections.Generic.List<MasterCurrencyRate> AvailableCurrencies { get; set; } = new();
+
+        /// <summary>
         /// Form input model for global platform settings.
         /// </summary>
         public class SettingsInputModel
@@ -223,6 +228,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 MaintenanceMessage = settings.MaintenanceMessage,
                 MinimumAppVersion = !string.IsNullOrWhiteSpace(settings.MinimumAppVersion) ? settings.MinimumAppVersion : "1.0.0"
             };
+
+            try
+            {
+                AvailableCurrencies = await _context.MasterCurrencyRates
+                    .AsNoTracking()
+                    .Where(c => c.IsActive)
+                    .OrderByDescending(c => c.IsBaseCurrency)
+                    .ThenBy(c => c.SortOrder)
+                    .ThenBy(c => c.CurrencyCode)
+                    .ToListAsync();
+            }
+            catch
+            {
+                AvailableCurrencies = new System.Collections.Generic.List<MasterCurrencyRate>();
+            }
         }
 
         /// <summary>
@@ -256,6 +276,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             settings.EnableTicketAutoClose = Input.EnableTicketAutoClose;
             settings.DefaultTrialDays = Input.DefaultTrialDays;
             settings.DefaultCurrencyCode = Input.DefaultCurrencyCode?.Trim().ToUpperInvariant() ?? "USD";
+            TempData["SwitchCentralCurrencyCode"] = settings.DefaultCurrencyCode;
             settings.SupportCategories = Input.SupportCategories.Trim();
 
             // Guard against accidental secret wipeouts when re-submitting settings

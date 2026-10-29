@@ -93,11 +93,18 @@ namespace Ozikol.MasterDomain.Models
         public int DefaultTrialDays { get; set; } = 14;
 
         /// <summary>
-        /// Gets or sets the global default fallback 3-letter currency code (e.g. "USD", "NGN", "GBP")
-        /// when country detection yields no specific regional match.
+        /// Gets or sets the global default system display 3-letter currency code (e.g. "USD", "NGN", "GBP")
+        /// shown across all amount places on the Central website and used as the fallback currency.
         /// </summary>
         [MaxLength(10)]
         public string DefaultCurrencyCode { get; set; } = "USD";
+
+        /// <summary>
+        /// Gets or sets the 3-letter ISO currency code used as the Default Exchange Rate Base (1.0000).
+        /// Defaults to "USD" (US Dollar). All other currencies store their exchange rate relative to 1.00 of this currency.
+        /// </summary>
+        [MaxLength(10)]
+        public string DefaultExchangeRateCurrencyCode { get; set; } = "USD";
 
         /// <summary>
         /// Gets or sets the comma-separated list of support inquiry categories available on the public contact form and enterprise inquiries.

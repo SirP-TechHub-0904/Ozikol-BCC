@@ -2790,8 +2790,17 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
                     b.Property<string>("DefaultCurrencyCode")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("USD");
+
+                    b.Property<string>("DefaultExchangeRateCurrencyCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("USD");
 
                     b.Property<string>("DefaultFromEmail")
                         .HasMaxLength(150)
