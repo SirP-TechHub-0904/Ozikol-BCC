@@ -272,7 +272,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             {
                 allFeatures = await _dbContext.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => f.IsActive)
+                    .Where(f => f.IsActive && f.IsPublished)
                     .ToListAsync();
             }
             catch
@@ -294,6 +294,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                         QuarterlyPrice = f.QuarterlyPrice,
                         YearlyPrice = f.YearlyPrice,
                         IsActive = f.IsActive,
+                        IsPublished = true,
                         SortOrder = f.SortOrder
                     })
                     .ToListAsync();

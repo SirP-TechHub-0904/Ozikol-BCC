@@ -481,23 +481,26 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
 
-          <!-- Suite 3: People & Community (Dynamic Installed Capabilities) -->
-          <ng-container *ngIf="canAccessSuite('people_community') && isAnyFeatureActive(['bcp-committees', 'bcp-alumni-directory', 'bcp-community-messenger', 'bcp-whistleblowing'])">
+          <!-- Suite 3: People & Community (Visible when Published & in Custom/Standard Catalog; Lock Key when Not Active) -->
+          <ng-container *ngIf="canAccessSuite('people_community') && isAnyFeatureVisible(['bcp-committees', 'bcp-alumni-directory', 'bcp-community-messenger', 'bcp-whistleblowing'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.people_community' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('people_community', $event)" [title]="'adm.people_community_overview' | translate:'People & Community Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('groups')" *ngIf="isFeatureActive('bcp-committees')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/groups/console') || isParentActive('/admin/groups')" (click)="toggleMenu('groups')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-committees') && isMenuOpen('groups')" *ngIf="isFeatureVisible('bcp-committees')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-committees') && (isParentActive('/groups/console') || isParentActive('/admin/groups'))" [class.feature-locked]="!isFeatureActive('bcp-committees')" (click)="onFeatureMenuClick('bcp-committees', groupAlias || 'Groups & Committees', $event, 'groups')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">diversity_3</span>
                 <span>{{ groupAlias || 'Groups & Committees' }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-committees')" title="Not Active — Click to view">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-committees')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('groups')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-committees') && isMenuOpen('groups')">
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/groups/console" [class.active]="isParentActive('/groups/console')" class="sub-nav-item">
@@ -525,15 +528,18 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('alumni')" *ngIf="isFeatureActive('bcp-alumni-directory')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/admin/alumni') || isParentActive('/users/workspace/alumni')" (click)="toggleMenu('alumni')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-alumni-directory') && isMenuOpen('alumni')" *ngIf="isFeatureVisible('bcp-alumni-directory')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-alumni-directory') && (isParentActive('/admin/alumni') || isParentActive('/users/workspace/alumni'))" [class.feature-locked]="!isFeatureActive('bcp-alumni-directory')" (click)="onFeatureMenuClick('bcp-alumni-directory', alumniAlias || 'Alumni Network', $event, 'alumni')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">school</span>
                 <span>{{ alumniAlias || 'Alumni Network' }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-alumni-directory')" title="Not Active — Click to view">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-alumni-directory')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('alumni')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-alumni-directory') && isMenuOpen('alumni')">
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/admin/alumni" [class.active]="isCurrentRoute('/admin/alumni')" class="sub-nav-item">
@@ -564,41 +570,55 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item" *ngIf="isFeatureActive('bcp-community-messenger')">
-            <a routerLink="/admin/messenger" [class.active]="isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat')" class="nav-link">
+          <div class="nav-item" *ngIf="isFeatureVisible('bcp-community-messenger')">
+            <a [routerLink]="isFeatureActive('bcp-community-messenger') ? '/admin/messenger' : null" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-community-messenger') && (isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat'))" [class.feature-locked]="!isFeatureActive('bcp-community-messenger')" (click)="onFeatureMenuClick('bcp-community-messenger', 'Chat Messenger', $event)" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">chat</span>
                 <span>{{ 'nav.chat_messenger' | translate }}</span>
-                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
+                <span class="badge-pill badge-hot" *ngIf="isFeatureActive('bcp-community-messenger')">{{ 'adm.live' | translate:'Live' }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-community-messenger')" title="Not Active — Click to view">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <button *ngIf="isFeatureActive('bcp-community-messenger')" type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/admin/messenger') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
-          <span class="nav-link disabled" *ngIf="isFeatureActive('bcp-whistleblowing')">
-            <span class="nav-link-content"><span class="material-symbols-outlined">feedback</span><span>{{ 'nav.whistleblowing' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item" *ngIf="isFeatureVisible('bcp-whistleblowing')">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-whistleblowing')" (click)="onFeatureMenuClick('bcp-whistleblowing', 'Anonymous Whistleblowing & Feedback', $event)">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">feedback</span>
+                <span>{{ 'nav.whistleblowing' | translate }}</span>
+              </div>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-whistleblowing')" title="Not Active — Click to view">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-whistleblowing')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
           </ng-container>
 
-          <!-- Suite 4: Workforce & Shifts (Dynamic Installed Capabilities) -->
-          <ng-container *ngIf="isAnyFeatureActive(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups'])">
+          <!-- Suite 4: Workforce & Shifts (Visible when Published & in Custom/Standard Catalog; Lock Key when Not Active) -->
+          <ng-container *ngIf="isAnyFeatureVisible(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.workforce_shifts' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('workforce_shifts', $event)" [title]="'adm.workforce_shifts_overview' | translate:'Workforce & Shifts Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('workforce')" *ngIf="isAnyFeatureActive(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking'])">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('workforce')">
+          <div class="nav-item has-sub" [class.open]="isAnyFeatureActive(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking']) && isMenuOpen('workforce')" *ngIf="isAnyFeatureVisible(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking'])">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isAnyFeatureActive(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking'])" (click)="onFeatureGroupMenuClick(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking'], 'Workforce & Shifts', $event, 'workforce')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">calendar_month</span>
                 <span>{{ 'adm.workforce_shifts' | translate:'Workforce & Shifts' }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isAnyFeatureActive(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking'])" title="Not Active — Click to view">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isAnyFeatureActive(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking'])">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('workforce')">
+            <ul class="nav-submenu" *ngIf="isAnyFeatureActive(['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking']) && isMenuOpen('workforce')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -607,28 +627,31 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li *ngIf="isFeatureActive('bcp-staff-rota')">
+              <li *ngIf="isFeatureVisible('bcp-staff-rota')">
                 <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
+                  <a href="javascript:void(0)" class="sub-nav-item" [class.feature-locked]="!isFeatureActive('bcp-staff-rota')" (click)="onFeatureMenuClick('bcp-staff-rota', 'Staff & Volunteer Rota', $event)">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event_note</span>{{ 'adm.staff_volunteer_rota' | translate:'Staff & Volunteer Rota' }}</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
+                    <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-staff-rota')"><span class="material-symbols-outlined">lock</span></span>
+                    <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-staff-rota')">{{ 'badge.soon' | translate }}</span>
+                  </a>
                 </div>
               </li>
-              <li *ngIf="isFeatureActive('bcp-shift-swaps')">
+              <li *ngIf="isFeatureVisible('bcp-shift-swaps')">
                 <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
+                  <a href="javascript:void(0)" class="sub-nav-item" [class.feature-locked]="!isFeatureActive('bcp-shift-swaps')" (click)="onFeatureMenuClick('bcp-shift-swaps', 'Shift Swaps & Leave', $event)">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">swap_horiz</span>{{ 'adm.shift_swaps_leave' | translate:'Shift Swaps & Leave' }}</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
+                    <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-shift-swaps')"><span class="material-symbols-outlined">lock</span></span>
+                    <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-shift-swaps')">{{ 'badge.soon' | translate }}</span>
+                  </a>
                 </div>
               </li>
-              <li *ngIf="isFeatureActive('bcp-attendance-tracking')">
+              <li *ngIf="isFeatureVisible('bcp-attendance-tracking')">
                 <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
+                  <a href="javascript:void(0)" class="sub-nav-item" [class.feature-locked]="!isFeatureActive('bcp-attendance-tracking')" (click)="onFeatureMenuClick('bcp-attendance-tracking', 'Attendance & Clock-In', $event)">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">timer</span>{{ 'adm.attendance_clock_in' | translate:'Attendance & Clock-In' }}</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
+                    <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-attendance-tracking')"><span class="material-symbols-outlined">lock</span></span>
+                    <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-attendance-tracking')">{{ 'badge.soon' | translate }}</span>
+                  </a>
                 </div>
               </li>
               <li>
@@ -641,29 +664,35 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled" *ngIf="isFeatureActive('bcp-calendar-followups')">
-            <span class="nav-link-content"><span class="material-symbols-outlined">event_repeat</span><span>{{ 'nav.calendar_followups' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item" *ngIf="isFeatureVisible('bcp-calendar-followups')">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-calendar-followups')" (click)="onFeatureMenuClick('bcp-calendar-followups', 'Calendar & Follow-Ups', $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">event_repeat</span><span>{{ 'nav.calendar_followups' | translate }}</span></div>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-calendar-followups')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-calendar-followups')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
           </ng-container>
 
-          <!-- Suite 5: Events & Ticketing (Dynamic Installed Capabilities) -->
-          <ng-container *ngIf="isAnyFeatureActive(['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management'])">
+          <!-- Suite 5: Events & Ticketing (Visible when Published & in Custom/Standard Catalog; Lock Key when Not Active) -->
+          <ng-container *ngIf="isAnyFeatureVisible(['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.events_ticketing' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('events_ticketing', $event)" [title]="'adm.events_ticketing_overview' | translate:'Events & Ticketing Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('events')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('events')">
+          <div class="nav-item has-sub" [class.open]="isAnyFeatureActive(['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management']) && isMenuOpen('events')">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isAnyFeatureActive(['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management'])" (click)="onFeatureGroupMenuClick(['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management'], 'Events & Ticketing', $event, 'events')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">confirmation_number</span>
                 <span>{{ 'adm.events_ticketing' | translate:'Events & Ticketing' }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isAnyFeatureActive(['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management'])" title="Not Active — Click to view">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isAnyFeatureActive(['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management'])">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('events')">
+            <ul class="nav-submenu" *ngIf="isAnyFeatureActive(['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management']) && isMenuOpen('events')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -672,28 +701,31 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li *ngIf="isFeatureActive('bcp-event-ticketing')">
+              <li *ngIf="isFeatureVisible('bcp-event-ticketing')">
                 <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
+                  <a href="javascript:void(0)" class="sub-nav-item" [class.feature-locked]="!isFeatureActive('bcp-event-ticketing')" (click)="onFeatureMenuClick('bcp-event-ticketing', 'Events & Ticketing Passes', $event)">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event</span>{{ 'adm.manage_events_passes' | translate:'Manage Events & Passes' }}</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
+                    <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-event-ticketing')"><span class="material-symbols-outlined">lock</span></span>
+                    <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-event-ticketing')">{{ 'badge.soon' | translate }}</span>
+                  </a>
                 </div>
               </li>
-              <li *ngIf="isFeatureActive('bcp-speaker-sessions')">
+              <li *ngIf="isFeatureVisible('bcp-speaker-sessions')">
                 <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
+                  <a href="javascript:void(0)" class="sub-nav-item" [class.feature-locked]="!isFeatureActive('bcp-speaker-sessions')" (click)="onFeatureMenuClick('bcp-speaker-sessions', 'Speaker & Session Tracks', $event)">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mic</span>{{ 'adm.speaker_session_tracks' | translate:'Speaker & Session Tracks' }}</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
+                    <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-speaker-sessions')"><span class="material-symbols-outlined">lock</span></span>
+                    <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-speaker-sessions')">{{ 'badge.soon' | translate }}</span>
+                  </a>
                 </div>
               </li>
-              <li *ngIf="isFeatureActive('bcp-attendee-management')">
+              <li *ngIf="isFeatureVisible('bcp-attendee-management')">
                 <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
+                  <a href="javascript:void(0)" class="sub-nav-item" [class.feature-locked]="!isFeatureActive('bcp-attendee-management')" (click)="onFeatureMenuClick('bcp-attendee-management', 'Attendee Management & Check-In', $event)">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">how_to_reg</span>{{ 'adm.attendee_management_check_in' | translate:'Attendee Management & Check-In' }}</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
+                    <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-attendee-management')"><span class="material-symbols-outlined">lock</span></span>
+                    <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-attendee-management')">{{ 'badge.soon' | translate }}</span>
+                  </a>
                 </div>
               </li>
               <li>
@@ -708,24 +740,27 @@ export interface SuiteInfoDetail {
           </div>
           </ng-container>
 
-          <!-- Suite 6: Commerce & Store (Dynamic Installed Capabilities) -->
-          <ng-container *ngIf="isFeatureActive('bcp-store-ecommerce')">
+          <!-- Suite 6: Commerce & Store (Visible when Published & in Custom/Standard Catalog; Lock Key when Not Active) -->
+          <ng-container *ngIf="isFeatureVisible('bcp-store-ecommerce')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.commerce_store' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('commerce_store', $event)" [title]="'adm.commerce_store_overview' | translate:'Commerce & Store Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('commerce')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/products/console')" (click)="toggleMenu('commerce')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-store-ecommerce') && isMenuOpen('commerce')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-store-ecommerce') && isParentActive('/products/console')" [class.feature-locked]="!isFeatureActive('bcp-store-ecommerce')" (click)="onFeatureMenuClick('bcp-store-ecommerce', 'Commerce & Store Studio', $event, 'commerce')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">storefront</span>
                 <span>{{ 'nav.commerce_studio' | translate }}</span>
-                <span class="badge-pill badge-new">{{ 'adm.new' | translate:'New' }}</span>
+                <span class="badge-pill badge-new" *ngIf="isFeatureActive('bcp-store-ecommerce')">{{ 'adm.new' | translate:'New' }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-store-ecommerce')" title="Not Active — Click to view">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-store-ecommerce')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('commerce')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-store-ecommerce') && isMenuOpen('commerce')">
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console" [class.active]="isCurrentRoute('/products/console')" class="sub-nav-item">
@@ -792,23 +827,24 @@ export interface SuiteInfoDetail {
           </div>
           </ng-container>
 
-          <!-- Suite 7: Finance & Banking (Dynamic Installed Capabilities) -->
-          <ng-container *ngIf="isAnyFeatureActive(['bcp-invoicing-dues', 'bcp-embedded-banking', 'bcp-grant-ledger', 'bcp-proposal-pipeline'])">
+          <!-- Suite 7: Finance & Banking (Visible when Published & in Custom/Standard Catalog; Lock Key when Not Active) -->
+          <ng-container *ngIf="isAnyFeatureVisible(['bcp-invoicing-dues', 'bcp-embedded-banking', 'bcp-grant-ledger', 'bcp-proposal-pipeline'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.finance_banking' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('finance_banking', $event)" [title]="'adm.finance_banking_overview' | translate:'Finance & Banking Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('invoicing')" *ngIf="isFeatureActive('bcp-invoicing-dues')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('invoicing')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-invoicing-dues') && isMenuOpen('invoicing')" *ngIf="isFeatureVisible('bcp-invoicing-dues')">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isFeatureActive('bcp-invoicing-dues')" (click)="onFeatureMenuClick('bcp-invoicing-dues', 'Invoicing & Membership Dues', $event, 'invoicing')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">account_balance_wallet</span>
                 <span>{{ 'nav.invoicing_dues' | translate }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-invoicing-dues')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-invoicing-dues')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('invoicing')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-invoicing-dues') && isMenuOpen('invoicing')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -835,15 +871,16 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('banking')" *ngIf="isFeatureActive('bcp-embedded-banking')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('banking')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-embedded-banking') && isMenuOpen('banking')" *ngIf="isFeatureVisible('bcp-embedded-banking')">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isFeatureActive('bcp-embedded-banking')" (click)="onFeatureMenuClick('bcp-embedded-banking', 'Embedded Banking & Payouts', $event, 'banking')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">account_balance</span>
                 <span>{{ 'nav.embedded_banking' | translate }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-embedded-banking')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-embedded-banking')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('banking')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-embedded-banking') && isMenuOpen('banking')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -862,40 +899,45 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled" *ngIf="isFeatureActive('bcp-grant-ledger')">
-            <span class="nav-link-content"><span class="material-symbols-outlined">request_quote</span><span>{{ 'nav.grant_ledger' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <div class="nav-item" *ngIf="isAnyFeatureActive(['bcp-invoicing-dues', 'bcp-embedded-banking', 'bcp-grant-ledger', 'bcp-proposal-pipeline'])">
-            <a routerLink="/products/console/transactions" [class.active]="isCurrentRoute('/products/console/transactions')" class="nav-link">
+          <div class="nav-item" *ngIf="isFeatureVisible('bcp-grant-ledger')">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-grant-ledger')" (click)="onFeatureMenuClick('bcp-grant-ledger', 'Grant & Donor Ledger', $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">request_quote</span><span>{{ 'nav.grant_ledger' | translate }}</span></div>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-grant-ledger')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-grant-ledger')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngIf="isFeatureVisible('bcp-proposal-pipeline')">
+            <a [routerLink]="isFeatureActive('bcp-proposal-pipeline') ? '/products/console/transactions' : null" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-proposal-pipeline') && isCurrentRoute('/products/console/transactions')" [class.feature-locked]="!isFeatureActive('bcp-proposal-pipeline')" (click)="onFeatureMenuClick('bcp-proposal-pipeline', 'Financial Ledger & Proposals', $event)" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">receipt_long</span>
                 <span>{{ 'adm.financial_ledger' | translate:'Financial Ledger' }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/transactions')" (click)="togglePin('Financial Ledger', '/products/console/transactions', 'receipt_long')" [title]="isPinned('/products/console/transactions') ? 'Unpin Task' : 'Pin Task'">
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-proposal-pipeline')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <button *ngIf="isFeatureActive('bcp-proposal-pipeline')" type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/transactions')" (click)="togglePin('Financial Ledger', '/products/console/transactions', 'receipt_long')" [title]="isPinned('/products/console/transactions') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/products/console/transactions') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
           </ng-container>
 
-          <!-- Suite 8: Communication & Support (Dynamic Installed Capabilities) -->
-          <ng-container *ngIf="isAnyFeatureActive(['bcp-mass-communication', 'bcp-helpdesk-support', 'bcp-bio-link', 'bcp-ai-smart-assist', 'bcp-live-chat', 'bcp-social-media', 'bcp-gocall-ai'])">
+          <!-- Suite 8: Communication & Support (Visible when Published & in Custom/Standard Catalog; Lock Key when Not Active) -->
+          <ng-container *ngIf="isAnyFeatureVisible(['bcp-mass-communication', 'bcp-helpdesk-support', 'bcp-bio-link', 'bcp-ai-smart-assist', 'bcp-live-chat', 'bcp-social-media', 'bcp-gocall-ai'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.communication_support' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('communication_support', $event)" [title]="'adm.communication_support_overview' | translate:'Communication & Support Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('notifications')" *ngIf="isFeatureActive('bcp-mass-communication')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/users/console/notifications')" (click)="toggleMenu('notifications')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-mass-communication') && isMenuOpen('notifications')" *ngIf="isFeatureVisible('bcp-mass-communication')">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-mass-communication') && isCurrentRoute('/users/console/notifications')" [class.feature-locked]="!isFeatureActive('bcp-mass-communication')" (click)="onFeatureMenuClick('bcp-mass-communication', 'Notification Studio & Mass Broadcasts', $event, 'notifications')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">campaign</span>
                 <span>{{ 'nav.notification_studio' | translate }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-mass-communication')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-mass-communication')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('notifications')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-mass-communication') && isMenuOpen('notifications')">
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/notifications" [class.active]="isCurrentRoute('/users/console/notifications')" class="sub-nav-item">
@@ -931,15 +973,16 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('helpdesk')" *ngIf="isAnyFeatureActive(['bcp-helpdesk-support', 'bcp-live-chat'])">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('helpdesk')">
+          <div class="nav-item has-sub" [class.open]="isAnyFeatureActive(['bcp-helpdesk-support', 'bcp-live-chat']) && isMenuOpen('helpdesk')" *ngIf="isAnyFeatureVisible(['bcp-helpdesk-support', 'bcp-live-chat'])">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isAnyFeatureActive(['bcp-helpdesk-support', 'bcp-live-chat'])" (click)="onFeatureGroupMenuClick(['bcp-helpdesk-support', 'bcp-live-chat'], 'Helpdesk & Support', $event, 'helpdesk')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">support_agent</span>
                 <span>{{ 'nav.helpdesk_support' | translate }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isAnyFeatureActive(['bcp-helpdesk-support', 'bcp-live-chat'])" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isAnyFeatureActive(['bcp-helpdesk-support', 'bcp-live-chat'])">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('helpdesk')">
+            <ul class="nav-submenu" *ngIf="isAnyFeatureActive(['bcp-helpdesk-support', 'bcp-live-chat']) && isMenuOpen('helpdesk')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -948,20 +991,22 @@ export interface SuiteInfoDetail {
                   </span>
                 </div>
               </li>
-              <li *ngIf="isFeatureActive('bcp-helpdesk-support')">
+              <li *ngIf="isFeatureVisible('bcp-helpdesk-support')">
                 <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
+                  <a href="javascript:void(0)" class="sub-nav-item" [class.feature-locked]="!isFeatureActive('bcp-helpdesk-support')" (click)="onFeatureMenuClick('bcp-helpdesk-support', 'Helpdesk Ticketing', $event)">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">confirmation_number</span>{{ 'adm.manage_tickets' | translate:'Manage Tickets' }}</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
+                    <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-helpdesk-support')"><span class="material-symbols-outlined">lock</span></span>
+                    <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-helpdesk-support')">{{ 'badge.soon' | translate }}</span>
+                  </a>
                 </div>
               </li>
-              <li *ngIf="isFeatureActive('bcp-live-chat')">
+              <li *ngIf="isFeatureVisible('bcp-live-chat')">
                 <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
+                  <a href="javascript:void(0)" class="sub-nav-item" [class.feature-locked]="!isFeatureActive('bcp-live-chat')" (click)="onFeatureMenuClick('bcp-live-chat', 'Live Chat Widget Control', $event)">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">chat_bubble</span>{{ 'adm.live_chat_widget_control' | translate:'Live Chat Widget Control' }}</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
+                    <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-live-chat')"><span class="material-symbols-outlined">lock</span></span>
+                    <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-live-chat')">{{ 'badge.soon' | translate }}</span>
+                  </a>
                 </div>
               </li>
               <li>
@@ -974,29 +1019,33 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled" *ngIf="isFeatureActive('bcp-bio-link')">
-            <span class="nav-link-content"><span class="material-symbols-outlined">link</span><span>{{ 'adm.bio_link_tree_builder' | translate:'Bio Link-Tree Builder' }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item" *ngIf="isFeatureVisible('bcp-bio-link')">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-bio-link')" (click)="onFeatureMenuClick('bcp-bio-link', 'Bio Link-Tree Builder', $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">link</span><span>{{ 'adm.bio_link_tree_builder' | translate:'Bio Link-Tree Builder' }}</span></div>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-bio-link')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-bio-link')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
           </ng-container>
 
-          <!-- Suite 9: Forms & Intelligence (Dynamic Installed Capabilities) -->
-          <ng-container *ngIf="isAnyFeatureActive(['bcp-form-builder', 'bcp-survey-analytics', 'bcp-interval-reporting', 'bcp-reference-forms'])">
+          <!-- Suite 9: Forms & Intelligence (Visible when Published & in Custom/Standard Catalog; Lock Key when Not Active) -->
+          <ng-container *ngIf="isAnyFeatureVisible(['bcp-form-builder', 'bcp-survey-analytics', 'bcp-interval-reporting', 'bcp-reference-forms'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.forms_intelligence' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('forms_intelligence', $event)" [title]="'adm.forms_intelligence_overview' | translate:'Forms & Intelligence Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('forms')" *ngIf="isAnyFeatureActive(['bcp-form-builder', 'bcp-reference-forms'])">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/content/console/forms')" (click)="toggleMenu('forms')">
+          <div class="nav-item has-sub" [class.open]="isAnyFeatureActive(['bcp-form-builder', 'bcp-reference-forms']) && isMenuOpen('forms')" *ngIf="isAnyFeatureVisible(['bcp-form-builder', 'bcp-reference-forms'])">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isAnyFeatureActive(['bcp-form-builder', 'bcp-reference-forms']) && isCurrentRoute('/content/console/forms')" [class.feature-locked]="!isAnyFeatureActive(['bcp-form-builder', 'bcp-reference-forms'])" (click)="onFeatureGroupMenuClick(['bcp-form-builder', 'bcp-reference-forms'], 'Forms & Surveys Builder', $event, 'forms')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">dynamic_form</span>
                 <span>{{ 'nav.forms_surveys' | translate }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isAnyFeatureActive(['bcp-form-builder', 'bcp-reference-forms'])" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isAnyFeatureActive(['bcp-form-builder', 'bcp-reference-forms'])">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('forms')">
+            <ul class="nav-submenu" *ngIf="isAnyFeatureActive(['bcp-form-builder', 'bcp-reference-forms']) && isMenuOpen('forms')">
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/content/console/forms" [class.active]="isCurrentRoute('/content/console/forms')" class="sub-nav-item">
@@ -1032,29 +1081,33 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled" *ngIf="isAnyFeatureActive(['bcp-survey-analytics', 'bcp-interval-reporting'])">
-            <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>{{ 'adm.survey_analytics_reports' | translate:'Survey Analytics & Reports' }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item" *ngIf="isAnyFeatureVisible(['bcp-survey-analytics', 'bcp-interval-reporting'])">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isAnyFeatureActive(['bcp-survey-analytics', 'bcp-interval-reporting'])" (click)="onFeatureGroupMenuClick(['bcp-survey-analytics', 'bcp-interval-reporting'], 'Survey Analytics & Reports', $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>{{ 'adm.survey_analytics_reports' | translate:'Survey Analytics & Reports' }}</span></div>
+              <span class="feature-lock-pill" *ngIf="!isAnyFeatureActive(['bcp-survey-analytics', 'bcp-interval-reporting'])" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="isAnyFeatureActive(['bcp-survey-analytics', 'bcp-interval-reporting'])">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
           </ng-container>
 
-          <!-- Suite 10: Academy & Training (Dynamic Installed Capabilities) -->
-          <ng-container *ngIf="isAnyFeatureActive(['bcp-learning-management', 'bcp-certificate-verification'])">
+          <!-- Suite 10: Academy & Training (Visible when Published & in Custom/Standard Catalog; Lock Key when Not Active) -->
+          <ng-container *ngIf="isAnyFeatureVisible(['bcp-learning-management', 'bcp-certificate-verification'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.academy_training' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('academy_training', $event)" [title]="'adm.academy_training_overview' | translate:'Academy & Training Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('lms')" *ngIf="isFeatureActive('bcp-learning-management')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('lms')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-learning-management') && isMenuOpen('lms')" *ngIf="isFeatureVisible('bcp-learning-management')">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isFeatureActive('bcp-learning-management')" (click)="onFeatureMenuClick('bcp-learning-management', 'LMS & Training Courses', $event, 'lms')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">school</span>
                 <span>{{ 'nav.lms_training' | translate }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-learning-management')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-learning-management')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('lms')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-learning-management') && isMenuOpen('lms')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -1089,15 +1142,16 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('certificates')" *ngIf="isFeatureActive('bcp-certificate-verification')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('certificates')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-certificate-verification') && isMenuOpen('certificates')" *ngIf="isFeatureVisible('bcp-certificate-verification')">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isFeatureActive('bcp-certificate-verification')" (click)="onFeatureMenuClick('bcp-certificate-verification', 'Certificate Verification & Credentials', $event, 'certificates')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">verified</span>
                 <span>{{ 'nav.certificate_verification' | translate }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-certificate-verification')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-certificate-verification')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('certificates')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-certificate-verification') && isMenuOpen('certificates')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -1134,23 +1188,24 @@ export interface SuiteInfoDetail {
           </div>
           </ng-container>
 
-          <!-- Suite 11: Compliance & Governance (Dynamic Installed Capabilities) -->
-          <ng-container *ngIf="isAnyFeatureActive(['bcp-document-management', 'bcp-kyc-verification', 'bcp-visitor-gate'])">
+          <!-- Suite 11: Compliance & Governance (Visible when Published & in Custom/Standard Catalog; Lock Key when Not Active) -->
+          <ng-container *ngIf="isAnyFeatureVisible(['bcp-document-management', 'bcp-kyc-verification', 'bcp-visitor-gate'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.compliance_governance' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('compliance_governance', $event)" [title]="'adm.compliance_governance_overview' | translate:'Compliance & Governance Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('vault')" *ngIf="isFeatureActive('bcp-document-management')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('vault')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-document-management') && isMenuOpen('vault')" *ngIf="isFeatureVisible('bcp-document-management')">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isFeatureActive('bcp-document-management')" (click)="onFeatureMenuClick('bcp-document-management', 'Document Vault & Archive', $event, 'vault')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">folder_zip</span>
                 <span>{{ 'nav.document_vault' | translate }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-document-management')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-document-management')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('vault')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-document-management') && isMenuOpen('vault')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -1177,15 +1232,16 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('kyc')" *ngIf="isFeatureActive('bcp-kyc-verification')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('kyc')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-kyc-verification') && isMenuOpen('kyc')" *ngIf="isFeatureVisible('bcp-kyc-verification')">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isFeatureActive('bcp-kyc-verification')" (click)="onFeatureMenuClick('bcp-kyc-verification', 'KYC & Identity Verification', $event, 'kyc')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">badge</span>
                 <span>{{ 'nav.kyc_verification' | translate }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-kyc-verification')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-kyc-verification')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('kyc')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-kyc-verification') && isMenuOpen('kyc')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -1204,15 +1260,16 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('visitor')" *ngIf="isFeatureActive('bcp-visitor-gate')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('visitor')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-visitor-gate') && isMenuOpen('visitor')" *ngIf="isFeatureVisible('bcp-visitor-gate')">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isFeatureActive('bcp-visitor-gate')" (click)="onFeatureMenuClick('bcp-visitor-gate', 'Visitor & Gate Passes', $event, 'visitor')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">door_front</span>
                 <span>{{ 'adm.visitor_gate_passes' | translate:'Visitor & Gate Passes' }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-visitor-gate')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-visitor-gate')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('visitor')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-visitor-gate') && isMenuOpen('visitor')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -1233,23 +1290,24 @@ export interface SuiteInfoDetail {
           </div>
           </ng-container>
 
-          <!-- Suite 12: Demographics & Census (Dynamic Installed Capabilities) -->
-          <ng-container *ngIf="isAnyFeatureActive(['bcp-community-census', 'bcp-field-surveyor', 'bcp-resident-id-cards', 'bcp-demographic-analytics'])">
+          <!-- Suite 12: Demographics & Census (Visible when Published & in Custom/Standard Catalog; Lock Key when Not Active) -->
+          <ng-container *ngIf="isAnyFeatureVisible(['bcp-community-census', 'bcp-field-surveyor', 'bcp-resident-id-cards', 'bcp-demographic-analytics'])">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.demographics_census' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('demographics_census', $event)" [title]="'adm.demographics_census_overview' | translate:'Demographics & Census Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('census')" *ngIf="isAnyFeatureActive(['bcp-community-census', 'bcp-field-surveyor'])">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('census')">
+          <div class="nav-item has-sub" [class.open]="isAnyFeatureActive(['bcp-community-census', 'bcp-field-surveyor']) && isMenuOpen('census')" *ngIf="isAnyFeatureVisible(['bcp-community-census', 'bcp-field-surveyor'])">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isAnyFeatureActive(['bcp-community-census', 'bcp-field-surveyor'])" (click)="onFeatureGroupMenuClick(['bcp-community-census', 'bcp-field-surveyor'], 'Community Census & Mapping', $event, 'census')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">map</span>
                 <span>{{ 'nav.community_census' | translate }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isAnyFeatureActive(['bcp-community-census', 'bcp-field-surveyor'])" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isAnyFeatureActive(['bcp-community-census', 'bcp-field-surveyor'])">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('census')">
+            <ul class="nav-submenu" *ngIf="isAnyFeatureActive(['bcp-community-census', 'bcp-field-surveyor']) && isMenuOpen('census')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -1276,15 +1334,16 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('resident_id')" *ngIf="isFeatureActive('bcp-resident-id-cards')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('resident_id')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-resident-id-cards') && isMenuOpen('resident_id')" *ngIf="isFeatureVisible('bcp-resident-id-cards')">
+            <a class="nav-link" href="javascript:void(0)" [class.feature-locked]="!isFeatureActive('bcp-resident-id-cards')" (click)="onFeatureMenuClick('bcp-resident-id-cards', 'Digital Resident IDs', $event, 'resident_id')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">badge</span>
                 <span>{{ 'adm.digital_resident_ids' | translate:'Digital Resident IDs' }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-resident-id-cards')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-resident-id-cards')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('resident_id')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-resident-id-cards') && isMenuOpen('resident_id')">
               <li>
                 <div class="sub-nav-wrapper">
                   <span class="sub-nav-item disabled">
@@ -1311,10 +1370,13 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-          <span class="nav-link disabled" *ngIf="isFeatureActive('bcp-demographic-analytics')">
-            <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>{{ 'adm.demographic_analytics' | translate:'Demographic Analytics' }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item" *ngIf="isFeatureVisible('bcp-demographic-analytics')">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-demographic-analytics')" (click)="onFeatureMenuClick('bcp-demographic-analytics', 'Demographic Analytics', $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>{{ 'adm.demographic_analytics' | translate:'Demographic Analytics' }}</span></div>
+              <span class="feature-lock-pill" *ngIf="!isFeatureActive('bcp-demographic-analytics')" title="Not Active — Click to view"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="isFeatureActive('bcp-demographic-analytics')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
           </ng-container>
 
           <!-- Suite 13: Billing & Subscriptions (Fixed System Menu at Bottom) -->
@@ -2001,8 +2063,48 @@ export interface SuiteInfoDetail {
         </div>
       </div>
     </div>
+
+    <!-- Feature Not Active (Locked Capability) Modal -->
+    <div class="modal-backdrop oz-lang-modal-backdrop" *ngIf="showLockedFeatureModal" (click)="closeLockedFeatureModal()">
+      <div class="oz-lang-modal-card" (click)="$event.stopPropagation()">
+        <div class="oz-lang-modal-icon-wrap" style="background: rgba(245, 158, 11, 0.12); color: #d97706;">
+          <span class="material-symbols-outlined">lock</span>
+        </div>
+        <h3 class="oz-lang-modal-title">{{ lockedFeatureTitle || 'Feature' }} is Not Active</h3>
+        <p class="oz-lang-modal-desc">
+          This modular capability is currently <strong>Not Active</strong> in your workspace. Install and activate it from <strong>Billing &rarr; Features &amp; Capabilities</strong> to unlock full access.
+        </p>
+        <div class="oz-lang-modal-actions" style="margin-top: 18px;">
+          <button type="button" class="btn-lang-modal-cancel" (click)="closeLockedFeatureModal()">
+            Dismiss
+          </button>
+          <button type="button" class="btn-lang-modal-confirm" (click)="goToActivateFeature()">
+            <span class="material-symbols-outlined">bolt</span>
+            <span>Install &amp; Activate</span>
+          </button>
+        </div>
+      </div>
+    </div>
   `,
   styles: [`
+    .feature-locked {
+      opacity: 0.78;
+    }
+    .feature-lock-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: rgba(100, 116, 139, 0.12);
+      color: #64748b;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .feature-lock-pill .material-symbols-outlined {
+      font-size: 14px !important;
+    }
     :host {
       display: flex;
       width: 100vw;
@@ -4097,17 +4199,18 @@ export class AdminLayoutComponent implements OnInit {
     }
 
     // Listen for real-time SignalR billing/feature updates from Central or tenant billing console
-    this.signalR.billingUpdated$.subscribe(() => {
-      this.loadActiveBillingFeatures();
+    this.signalR.billingUpdated$.subscribe((incoming: any) => {
+      if (incoming && (incoming.included || incoming.subscribed || incoming.available)) {
+        this.applyBillingSnapshot(incoming);
+      } else {
+        this.loadActiveBillingFeatures();
+      }
     });
 
     // Listen for instant feature activation/deactivation from /billing/features
     window.addEventListener('tenant_features_updated', (e: any) => {
-      if (e?.detail?.activeFeatureCodes && Array.isArray(e.detail.activeFeatureCodes)) {
-        this.activeFeatureCodes = new Set<string>(
-          e.detail.activeFeatureCodes.map((c: string) => (c || '').toLowerCase())
-        );
-        localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(this.activeFeatureCodes)));
+      if (e?.detail && (e.detail.included || e.detail.subscribed || e.detail.available)) {
+        this.applyBillingSnapshot(e.detail);
       } else {
         this.loadActiveBillingFeatures();
       }
@@ -4137,8 +4240,21 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   /// <summary>
+  /// Set of lowercase FeatureCodes that are visible to the tenant (Published in Central, and if UseCustomAvailability is enabled, included in the tenant's Custom Features list).
+  /// </summary>
+  visibleFeatureCodes: Set<string> = new Set<string>(
+    (() => {
+      try {
+        const raw = localStorage.getItem('bcp_visible_feature_codes');
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    })()
+  );
+
+  /// <summary>
   /// Set of lowercase FeatureCodes that are currently installed and active for the tenant workspace.
-  /// Initialized from localStorage for zero-flicker rendering and refreshed from /api/billing/features.
   /// </summary>
   activeFeatureCodes: Set<string> = new Set<string>(
     (() => {
@@ -4152,31 +4268,73 @@ export class AdminLayoutComponent implements OnInit {
   );
 
   /// <summary>
-  /// Fetches the tenant's active installed features from the Master Catalog billing snapshot
-  /// and updates the sidebar navigation visibility in real time.
+  /// Controls the "Feature Not Active" modal when a user clicks a locked capability in the sidebar.
+  /// </summary>
+  showLockedFeatureModal = false;
+  lockedFeatureCode = '';
+  lockedFeatureTitle = '';
+
+  /// <summary>
+  /// Applies a BillingFeaturesSnapshot payload to update both visibleFeatureCodes and activeFeatureCodes.
+  /// </summary>
+  /// <param name="d">BillingFeaturesSnapshot payload.</param>
+  applyBillingSnapshot(d: any): void {
+    if (!d) return;
+    const all = [
+      ...(d.included || []),
+      ...(d.subscribed || []),
+      ...(d.available || [])
+    ];
+    const visible = new Set<string>();
+    const active = new Set<string>();
+    for (const item of all) {
+      if (item && item.featureCode && item.isPublished !== false) {
+        const code = String(item.featureCode).toLowerCase();
+        visible.add(code);
+        if (item.isActive) {
+          active.add(code);
+        }
+      }
+    }
+    this.visibleFeatureCodes = visible;
+    this.activeFeatureCodes = active;
+    localStorage.setItem('bcp_visible_feature_codes', JSON.stringify(Array.from(visible)));
+    localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
+  }
+
+  /// <summary>
+  /// Fetches the tenant's published and custom-filtered features from the Master Catalog billing snapshot
+  /// and updates sidebar visibility and lock states in real time.
   /// </summary>
   loadActiveBillingFeatures(): void {
     this.api.get<any>('billing/features').subscribe({
       next: (res) => {
         if (res && res.isSuccess && res.data) {
-          const d = res.data;
-          const all = [
-            ...(d.included || []),
-            ...(d.subscribed || []),
-            ...(d.available || [])
-          ];
-          const codes = new Set<string>();
-          for (const item of all) {
-            if (item && item.isActive && item.featureCode) {
-              codes.add(String(item.featureCode).toLowerCase());
-            }
-          }
-          this.activeFeatureCodes = codes;
-          localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(codes)));
+          this.applyBillingSnapshot(res.data);
         }
       },
       error: () => {}
     });
+  }
+
+  /// <summary>
+  /// Checks whether a modular capability is visible to the tenant (Published in Central, and if UseCustomAvailability is enabled, assigned to the tenant).
+  /// </summary>
+  /// <param name="featureCode">Canonical feature code (e.g. 'bcp-committees').</param>
+  /// <returns>True when the feature should appear in the sidebar.</returns>
+  isFeatureVisible(featureCode: string): boolean {
+    if (!featureCode) return false;
+    return this.visibleFeatureCodes.has(featureCode.toLowerCase());
+  }
+
+  /// <summary>
+  /// Checks whether at least one of the specified modular capability codes is visible to the tenant.
+  /// </summary>
+  /// <param name="featureCodes">Array of canonical feature codes belonging to the suite.</param>
+  /// <returns>True when one or more features in the list are visible.</returns>
+  isAnyFeatureVisible(featureCodes: string[]): boolean {
+    if (!featureCodes || featureCodes.length === 0) return false;
+    return featureCodes.some(code => this.isFeatureVisible(code));
   }
 
   /// <summary>
@@ -4191,13 +4349,73 @@ export class AdminLayoutComponent implements OnInit {
 
   /// <summary>
   /// Checks whether at least one of the specified modular capability codes is installed and active.
-  /// Used to show or hide parent suite headers in the sidebar.
   /// </summary>
   /// <param name="featureCodes">Array of canonical feature codes belonging to the suite.</param>
   /// <returns>True when one or more features in the list are active.</returns>
   isAnyFeatureActive(featureCodes: string[]): boolean {
     if (!featureCodes || featureCodes.length === 0) return false;
     return featureCodes.some(code => this.isFeatureActive(code));
+  }
+
+  /// <summary>
+  /// Handles clicking a modular capability menu item in the sidebar.
+  /// If the capability is Not Active, prevents navigation and opens the "Feature Not Active" modal.
+  /// </summary>
+  /// <param name="featureCode">Canonical feature code.</param>
+  /// <param name="featureTitle">Human-readable title of the capability.</param>
+  /// <param name="event">DOM click event.</param>
+  /// <param name="menuKeyToToggle">Optional submenu key to toggle when the capability is active.</param>
+  onFeatureMenuClick(featureCode: string, featureTitle: string, event: Event, menuKeyToToggle?: string): void {
+    if (!this.isFeatureActive(featureCode)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.lockedFeatureCode = featureCode;
+      this.lockedFeatureTitle = featureTitle;
+      this.showLockedFeatureModal = true;
+      return;
+    }
+    if (menuKeyToToggle) {
+      this.toggleMenu(menuKeyToToggle);
+    }
+  }
+
+  /// <summary>
+  /// Handles clicking a grouped parent submenu item in the sidebar.
+  /// If none of the group's capabilities are active, opens the "Feature Not Active" modal.
+  /// </summary>
+  /// <param name="featureCodes">Array of canonical feature codes in the group.</param>
+  /// <param name="groupTitle">Human-readable group title.</param>
+  /// <param name="event">DOM click event.</param>
+  /// <param name="menuKeyToToggle">Optional submenu key to toggle when at least one capability is active.</param>
+  onFeatureGroupMenuClick(featureCodes: string[], groupTitle: string, event: Event, menuKeyToToggle?: string): void {
+    if (!this.isAnyFeatureActive(featureCodes)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.lockedFeatureCode = featureCodes[0] || '';
+      this.lockedFeatureTitle = groupTitle;
+      this.showLockedFeatureModal = true;
+      return;
+    }
+    if (menuKeyToToggle) {
+      this.toggleMenu(menuKeyToToggle);
+    }
+  }
+
+  /// <summary>
+  /// Closes the "Feature Not Active" modal.
+  /// </summary>
+  closeLockedFeatureModal(): void {
+    this.showLockedFeatureModal = false;
+    this.lockedFeatureCode = '';
+    this.lockedFeatureTitle = '';
+  }
+
+  /// <summary>
+  /// Navigates the administrator to /billing/features to install and activate the locked capability.
+  /// </summary>
+  goToActivateFeature(): void {
+    this.closeLockedFeatureModal();
+    this.router.navigate(['/billing/features']);
   }
 
   loadSidebarForms(): void {
