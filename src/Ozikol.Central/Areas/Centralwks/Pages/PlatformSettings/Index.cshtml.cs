@@ -106,11 +106,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             [Range(1, 365, ErrorMessage = "Trial period must be between 1 and 365 days.")]
             public int DefaultTrialDays { get; set; } = 14;
 
-            /// <summary>Gets or sets the global fallback currency code.</summary>
-            [Required(ErrorMessage = "Default currency code is required.")]
-            [MaxLength(10)]
-            public string DefaultCurrencyCode { get; set; } = "USD";
-
             /// <summary>Gets or sets comma-separated support category list.</summary>
             public string SupportCategories { get; set; } = "Support, Sales, Billing, Partnership, Enterprise, General";
 
@@ -213,7 +208,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 TicketAutoCloseHours = settings.TicketAutoCloseHours,
                 EnableTicketAutoClose = settings.EnableTicketAutoClose,
                 DefaultTrialDays = settings.DefaultTrialDays > 0 ? settings.DefaultTrialDays : 14,
-                DefaultCurrencyCode = !string.IsNullOrWhiteSpace(settings.DefaultCurrencyCode) ? settings.DefaultCurrencyCode : "USD",
                 SupportCategories = settings.SupportCategories,
                 MongoLogsConnectionString = settings.MongoLogsConnectionString,
                 MongoLogsDatabaseName = !string.IsNullOrWhiteSpace(settings.MongoLogsDatabaseName) ? settings.MongoLogsDatabaseName : "OzikolLogsDb",
@@ -228,21 +222,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 MaintenanceMessage = settings.MaintenanceMessage,
                 MinimumAppVersion = !string.IsNullOrWhiteSpace(settings.MinimumAppVersion) ? settings.MinimumAppVersion : "1.0.0"
             };
-
-            try
-            {
-                AvailableCurrencies = await _context.MasterCurrencyRates
-                    .AsNoTracking()
-                    .Where(c => c.IsActive)
-                    .OrderByDescending(c => c.IsBaseCurrency)
-                    .ThenBy(c => c.SortOrder)
-                    .ThenBy(c => c.CurrencyCode)
-                    .ToListAsync();
-            }
-            catch
-            {
-                AvailableCurrencies = new System.Collections.Generic.List<MasterCurrencyRate>();
-            }
         }
 
         /// <summary>
@@ -275,8 +254,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             settings.TicketAutoCloseHours = Input.TicketAutoCloseHours;
             settings.EnableTicketAutoClose = Input.EnableTicketAutoClose;
             settings.DefaultTrialDays = Input.DefaultTrialDays;
-            settings.DefaultCurrencyCode = Input.DefaultCurrencyCode?.Trim().ToUpperInvariant() ?? "USD";
-            TempData["SwitchCentralCurrencyCode"] = settings.DefaultCurrencyCode;
             settings.SupportCategories = Input.SupportCategories.Trim();
 
             // Guard against accidental secret wipeouts when re-submitting settings
