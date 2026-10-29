@@ -50,6 +50,9 @@ export interface FeatureExpirationNotice {
  */
 export interface BillingFeaturesSnapshot {
   tenantKey: string;
+  currencyCode?: string;
+  currencySymbol?: string;
+  exchangeRateFromUsd?: number;
   serverTimeUtc: string;
   included: BillingFeatureItem[];
   subscribed: BillingFeatureItem[];

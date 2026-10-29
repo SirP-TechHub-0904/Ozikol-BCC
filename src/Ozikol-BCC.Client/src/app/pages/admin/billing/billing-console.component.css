@@ -658,6 +658,115 @@
   border-left: 3.5px solid #10b981;
 }
 
+.feature-card.card-coming-soon {
+  opacity: 0.66;
+  filter: grayscale(22%);
+  background: #f8fafc;
+  border-style: dashed;
+  border-color: #cbd5e1;
+}
+
+.feature-card.card-coming-soon:hover {
+  opacity: 0.94;
+  filter: none;
+  background: #ffffff;
+  border-style: solid;
+}
+
+.row-coming-soon {
+  opacity: 0.65;
+  background: #f8fafc;
+}
+
+.row-coming-soon:hover {
+  opacity: 1;
+}
+
+/* ── Availability Tabs Bar ── */
+.availability-tabs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.availability-tabs-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.avail-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  font-family: inherit;
+}
+
+.avail-tab-btn .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.avail-tab-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.avail-tab-btn.active-avail {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.avail-tab-btn.active-soon {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.avail-tab-btn.active-all {
+  background: rgba(0, 80, 229, 0.08);
+  color: #0050e5;
+  border-color: rgba(0, 80, 229, 0.3);
+}
+
+.avail-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(15, 23, 42, 0.07);
+  color: inherit;
+}
+
+.availability-tabs-hint {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
 .feature-card-top {
   display: flex;
   align-items: flex-start;

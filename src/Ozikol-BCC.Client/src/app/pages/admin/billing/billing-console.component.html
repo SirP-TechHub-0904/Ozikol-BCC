@@ -27,6 +27,14 @@
 
     <div class="header-actions">
       <span
+        class="badge-pill-md badge-compulsory"
+        title="Workspace Billing Currency Determined from Central"
+      >
+        <span class="material-symbols-outlined">payments</span>
+        <span>{{ currencyCode }} ({{ currencySymbol }})</span>
+      </span>
+
+      <span
         class="badge-pill-md"
         [class.badge-available]="isRealtimeConnected"
         [class.badge-optional]="!isRealtimeConnected"
@@ -158,15 +166,63 @@
         <div class="card-icon bg-teal">
           <span class="material-symbols-outlined">workspace_premium</span>
         </div>
-        <span class="card-chip chip-teal">Sovereign Tier</span>
+        <span class="card-chip chip-teal">{{ currencyCode }} ({{ currencySymbol }})</span>
       </div>
-      <div class="card-value">${{ snapshot.totalRecurringMonthly.toFixed(2) }}<span class="unit-sm">/mo</span></div>
+      <div class="card-value">{{ formatAmount(snapshot.totalRecurringMonthly) }}<span class="unit-sm">/mo</span></div>
       <div class="card-label">Active Recurring Spend</div>
       <div class="card-breakdown">
         <div class="breakdown-row">
           <span class="text-green"><span class="dot bg-green"></span> <strong>{{ compulsoryCount }}</strong> Baseline Core Included Free</span>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ── Availability Tabs Bar (Available for Tenant vs Not Available / Coming Soon vs All) ── -->
+  <div class="availability-tabs-bar">
+    <div class="availability-tabs-left">
+      <button
+        type="button"
+        class="avail-tab-btn"
+        [class.active-avail]="availabilityFilter === 'available'"
+        (click)="selectAvailabilityTab('available')"
+      >
+        <span class="material-symbols-outlined">verified</span>
+        <span>Available for Workspace</span>
+        <span class="avail-tab-count">{{ availableForUseCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="avail-tab-btn"
+        [class.active-soon]="availabilityFilter === 'coming_soon'"
+        (click)="selectAvailabilityTab('coming_soon')"
+      >
+        <span class="material-symbols-outlined">schedule</span>
+        <span>Not Available (Coming Soon)</span>
+        <span class="avail-tab-count">{{ comingSoonCount }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="avail-tab-btn"
+        [class.active-all]="availabilityFilter === 'all'"
+        (click)="selectAvailabilityTab('all')"
+      >
+        <span class="material-symbols-outlined">grid_view</span>
+        <span>All Capabilities</span>
+        <span class="avail-tab-count">{{ totalCapabilitiesCount }}</span>
+      </button>
+    </div>
+
+    <div class="availability-tabs-hint">
+      @if (availabilityFilter === 'available') {
+        <span>Showing only capabilities attached &amp; ready for use in this workspace.</span>
+      } @else if (availabilityFilter === 'coming_soon') {
+        <span>Showing capabilities not yet available for this workspace (blurred).</span>
+      } @else {
+        <span>Showing all capabilities (unavailable capabilities are dimmed).</span>
+      }
     </div>
   </div>
 
@@ -353,7 +409,7 @@
                   <div class="feature-card-footer">
                     <div class="price-tag">
                       @if (feat.monthlyPrice > 0) {
-                        <span class="price-paid">${{ feat.monthlyPrice.toFixed(2) }}/mo</span>
+                        <span class="price-paid">{{ formatAmount(feat.monthlyPrice) }}/mo</span>
                       } @else {
                         <span class="price-included">
                           <span class="material-symbols-outlined">check_circle</span>
@@ -415,7 +471,7 @@
             </thead>
             <tbody>
               @for (feat of filteredFeatures; track feat.featureCode) {
-                <tr>
+                <tr [class.row-coming-soon]="!feat.isAvailableForUse">
                   <td>
                     <span class="sn-pill">{{ feat.serialNo }}</span>
                   </td>
@@ -465,7 +521,7 @@
                   </td>
                   <td>
                     @if (feat.monthlyPrice > 0) {
-                      <strong style="color: #0f172a;">${{ feat.monthlyPrice.toFixed(2) }}/mo</strong>
+                      <strong style="color: #0f172a;">{{ formatAmount(feat.monthlyPrice) }}/mo</strong>
                     } @else {
                       <span class="price-included">Included</span>
                     }
@@ -553,15 +609,15 @@
 
         <div class="detail-spec-grid">
           <div class="spec-box">
-            <span class="spec-label">Monthly Rate</span>
+            <span class="spec-label">Monthly Rate ({{ currencyCode }})</span>
             <span class="spec-val">
-              {{ selectedFeatureDetail.monthlyPrice > 0 ? ('$' + selectedFeatureDetail.monthlyPrice.toFixed(2) + '/mo') : 'Included Free ($0.00)' }}
+              {{ selectedFeatureDetail.monthlyPrice > 0 ? (formatAmount(selectedFeatureDetail.monthlyPrice) + '/mo') : ('Included Free (' + formatAmount(0) + ')') }}
             </span>
           </div>
           <div class="spec-box">
-            <span class="spec-label">Annual Rate</span>
+            <span class="spec-label">Annual Rate ({{ currencyCode }})</span>
             <span class="spec-val">
-              {{ selectedFeatureDetail.yearlyPrice > 0 ? ('$' + selectedFeatureDetail.yearlyPrice.toFixed(2) + '/yr') : 'Included Free ($0.00)' }}
+              {{ selectedFeatureDetail.yearlyPrice > 0 ? (formatAmount(selectedFeatureDetail.yearlyPrice) + '/yr') : ('Included Free (' + formatAmount(0) + ')') }}
             </span>
           </div>
           <div class="spec-box">

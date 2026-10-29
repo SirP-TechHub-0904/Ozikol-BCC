@@ -336,7 +336,23 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ── KPI Summary Counters ──
+  // ── KPI Summary Counters & Currency Helpers ──
+  get currencySymbol(): string {
+    return this.snapshot?.currencySymbol || '$';
+  }
+
+  get currencyCode(): string {
+    return this.snapshot?.currencyCode || 'USD';
+  }
+
+  /**
+   * Formats a numeric amount in the tenant's running currency determined from Central.
+   */
+  formatAmount(amount?: number): string {
+    const val = Number(amount || 0);
+    return `${this.currencySymbol}${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
   get totalSuitesCount(): number {
     return this.canonicalSuiteOptions.length;
   }
@@ -369,6 +385,10 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   // ── UI Filter & Modal Actions ──
   filterByAvailability(filter: 'all' | 'available' | 'coming_soon'): void {
     this.availabilityFilter = this.availabilityFilter === filter ? 'all' : filter;
+  }
+
+  selectAvailabilityTab(tab: 'all' | 'available' | 'coming_soon'): void {
+    this.availabilityFilter = tab;
   }
 
   filterByTier(tier: 'all' | 'compulsory' | 'optional'): void {

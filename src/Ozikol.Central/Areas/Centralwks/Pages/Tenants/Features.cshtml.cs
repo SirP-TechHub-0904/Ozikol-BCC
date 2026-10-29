@@ -12,7 +12,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 {
     /// <summary>
     /// PageModel enabling super-administrators to govern per-tenant capability activations (Active / Not Active),
-    /// General vs. Custom Pricing overrides, and General vs. Custom Availability (Available for Use / Coming Soon)
+    /// General vs. Custom Pricing overrides, and General vs. Custom Availability (Available for Tenant vs. Not Available)
     /// for a specific tenant workspace in real time.
     /// </summary>
     public class FeaturesModel : PageModel
@@ -34,6 +34,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             "Compliance, Learning & Certification",
             "Demographics & Civic Census",
             "Life Events & Publications"
+        };
+
+        /// <summary>
+        /// Default available feature codes matching the tenant workspace baseline when MasterFeatureCatalog.IsAvailableForUse is uninitialized.
+        /// </summary>
+        private static readonly HashSet<string> DefaultAvailableCodes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "bcp-community-messenger",
+            "bcp-committees",
+            "bcp-alumni-directory",
+            "bcp-form-builder",
+            "bcp-store-ecommerce",
+            "bcp-ai-smart-assist",
+            "bcp-mass-communication"
         };
 
         /// <summary>
@@ -76,6 +90,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public string? Status { get; set; }
 
         /// <summary>
+        /// Active Availability Tab ("available", "not_available", or "all").
+        /// When Custom Availability is enabled on the tenant, defaults to "available" so only attached features show first.
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public string? Tab { get; set; }
+
+        /// <summary>
         /// Display layout mode ("cards" or "table"). Defaults to "cards".
         /// </summary>
         [BindProperty(SupportsGet = true)]
@@ -92,7 +113,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public List<string> Categories { get; set; } = new();
 
         /// <summary>
-        /// Filtered and sorted capability items for this tenant.
+        /// Filtered and sorted capability items for the active tab/filter.
         /// </summary>
         public List<FeatureItemDto> AvailableFeatures { get; set; } = new();
 
@@ -130,6 +151,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public int CustomPricingFeaturesCount { get; set; }
         public int GeneralPricingFeaturesCount { get; set; }
         public decimal TotalMonthlyMrr { get; set; }
+
+        /// <summary>
+        /// Resolved active tab ("available", "not_available", or "all").
+        /// </summary>
+        public string ActiveTab { get; set; } = "available";
 
         /// <summary>
         /// Resolves the canonical 0-based suite index for a given category name.
@@ -185,6 +211,16 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             Id = tenant.Id;
             TenantId = tenant.Id;
             Tenant = tenant;
+
+            // Default Tab: if Custom Availability is ON (or by default), show "available" tab first unless specified
+            if (string.IsNullOrWhiteSpace(Tab))
+            {
+                ActiveTab = tenant.UseCustomAvailability ? "available" : "all";
+            }
+            else
+            {
+                ActiveTab = Tab.Trim().ToLowerInvariant();
+            }
 
             // Load active platform currencies for tenant default currency governance
             try
@@ -259,6 +295,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     .ToListAsync();
             }
 
+            // Harmonize with BillingSnapshotService: if no MasterFeatureCatalog row has IsAvailableForUse == true yet, fall back to DefaultAvailableCodes
+            bool anyMasterAvail = allFeatures.Any(f => f.IsAvailableForUse);
+
             var orderedFeatures = allFeatures
                 .OrderBy(f => GetSuiteOrder(f.Category))
                 .ThenBy(f => f.SortOrder)
@@ -276,6 +315,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             {
                 subsByFeature.TryGetValue(f.Id, out var sub);
 
+                bool generalAvailable = anyMasterAvail
+                    ? f.IsAvailableForUse
+                    : DefaultAvailableCodes.Contains(f.FeatureCode);
+
                 // Determine whether capability is Active or Not Active for this specific tenant
                 bool isActiveForTenant;
                 if (sub != null)
@@ -287,21 +330,38 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 }
                 else
                 {
-                    // Compulsory core modules are active by default unless explicitly deactivated for this tenant
                     isActiveForTenant = f.IsCompulsory;
                 }
-
-                // Determine effective Availability (Available for Use vs Coming Soon) for this tenant
-                bool hasCustomAvailOverride = sub?.IsAvailableForUseOverride != null;
-                bool effectiveAvailableForUse = (tenant.UseCustomAvailability && hasCustomAvailOverride)
-                    ? sub!.IsAvailableForUseOverride!.Value
-                    : f.IsAvailableForUse;
 
                 // Determine effective Monthly Price for this tenant
                 bool hasCustomPriceOverride = sub?.CustomPriceOverride != null;
                 decimal effectiveMonthlyPrice = (tenant.UseCustomPricing && hasCustomPriceOverride)
                     ? sub!.CustomPriceOverride!.Value
                     : f.MonthlyPrice;
+
+                // Determine effective Availability for this tenant (Synced with Custom Price & Active overrides)
+                bool hasCustomAvailOverride = sub?.IsAvailableForUseOverride != null;
+                bool effectiveAvailableForUse;
+                if (tenant.UseCustomAvailability)
+                {
+                    if (hasCustomAvailOverride)
+                    {
+                        effectiveAvailableForUse = sub!.IsAvailableForUseOverride!.Value;
+                    }
+                    else if (hasCustomPriceOverride || (sub != null && sub.IsActive && !f.IsCompulsory))
+                    {
+                        // Sync: any feature given a custom price or explicitly subscribed for this tenant is automatically Available
+                        effectiveAvailableForUse = true;
+                    }
+                    else
+                    {
+                        effectiveAvailableForUse = generalAvailable;
+                    }
+                }
+                else
+                {
+                    effectiveAvailableForUse = generalAvailable;
+                }
 
                 bool isPaidSubscribed = isActiveForTenant && (!f.IsCompulsory || effectiveMonthlyPrice > 0);
 
@@ -314,6 +374,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     EffectiveAvailableForUse = effectiveAvailableForUse,
                     HasCustomAvailabilityOverride = hasCustomAvailOverride,
                     EffectiveMonthlyPrice = effectiveMonthlyPrice,
+                    EffectiveTenantCurrencyPrice = Math.Round(effectiveMonthlyPrice * TenantCurrencyRateFromUsd, 2),
+                    MasterTenantCurrencyPrice = Math.Round(f.MonthlyPrice * TenantCurrencyRateFromUsd, 2),
                     HasCustomPriceOverride = hasCustomPriceOverride
                 });
             }
@@ -347,8 +409,18 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             SuitesCount = Categories.Count;
 
-            // Apply Search, Suite, and Status filters
+            // Apply Search, Suite, Tab, and Status filters
             var filtered = allItems.AsEnumerable();
+
+            // Filter by Active Tab ("available" vs "not_available" vs "all")
+            if (ActiveTab == "available")
+            {
+                filtered = filtered.Where(x => x.EffectiveAvailableForUse);
+            }
+            else if (ActiveTab == "not_available")
+            {
+                filtered = filtered.Where(x => !x.EffectiveAvailableForUse);
+            }
 
             if (!string.IsNullOrWhiteSpace(Search))
             {
@@ -424,16 +496,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             await _dbContext.SaveChangesAsync();
             TempData["Success"] = $"Pricing mode for {tenant.OrganizationName} set to {(tenant.UseCustomPricing ? "Custom Tenant Pricing" : "General Master Pricing")}.";
 
-            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
+            return RedirectToPage(new { tenantId = tenant.Id, tab = Tab, search = Search, category = Category, status = Status, viewMode = ViewMode });
         }
 
         /// <summary>
         /// Toggles whether this tenant uses General Master Availability or Custom Tenant Availability.
+        /// When enabling Custom Tenant Availability, automatically switches to the "Available for Tenant" tab.
         /// </summary>
         public async Task<IActionResult> OnPostToggleAvailabilityPolicyAsync(Guid tenantId)
         {
             var targetId = tenantId != Guid.Empty ? tenantId : (Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty));
-            var tenant = await _dbContext.MasterTenantCatalogs.FindAsync(targetId);
+            var tenant = await _dbContext.MasterTenantCatalogs
+                .Include(t => t.FeatureSubscriptions)
+                .FirstOrDefaultAsync(t => t.Id == targetId);
+
             if (tenant == null)
             {
                 TempData["Error"] = "Tenant not found.";
@@ -442,6 +518,41 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             tenant.UseCustomAvailability = !tenant.UseCustomAvailability;
             tenant.UpdatedUtc = DateTime.UtcNow;
+
+            // If turning ON Custom Availability and no overrides exist yet, seed the baseline 7 available features as Available for this tenant
+            if (tenant.UseCustomAvailability && !tenant.FeatureSubscriptions.Any(s => s.IsAvailableForUseOverride != null))
+            {
+                var allFeatures = await _dbContext.MasterFeatureCatalogs.Where(f => f.IsActive).ToListAsync();
+                bool anyMasterAvail = allFeatures.Any(f => f.IsAvailableForUse);
+
+                foreach (var f in allFeatures)
+                {
+                    bool defaultAvail = anyMasterAvail ? f.IsAvailableForUse : DefaultAvailableCodes.Contains(f.FeatureCode);
+                    var sub = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == f.Id);
+                    if (sub != null)
+                    {
+                        sub.IsAvailableForUseOverride = defaultAvail || sub.CustomPriceOverride != null;
+                    }
+                    else if (defaultAvail)
+                    {
+                        _dbContext.MasterTenantFeatureSubscriptions.Add(new MasterTenantFeatureSubscription
+                        {
+                            Id = Guid.NewGuid(),
+                            MasterTenantCatalogId = tenant.Id,
+                            MasterFeatureCatalogId = f.Id,
+                            DurationType = SubscriptionBillingDuration.Monthly,
+                            RecurringPrice = f.MonthlyPrice,
+                            StartsAtUtc = DateTime.UtcNow,
+                            ExpiresAtUtc = DateTime.UtcNow.AddYears(1),
+                            AutoRenew = true,
+                            IsActive = f.IsCompulsory,
+                            Status = f.IsCompulsory ? "Active" : "Suspended",
+                            IsAvailableForUseOverride = true,
+                            CreatedUtc = DateTime.UtcNow
+                        });
+                    }
+                }
+            }
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
@@ -457,9 +568,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"Availability mode for {tenant.OrganizationName} set to {(tenant.UseCustomAvailability ? "Custom Tenant Availability" : "General Master Availability")}.";
+            TempData["Success"] = $"Availability mode for {tenant.OrganizationName} set to {(tenant.UseCustomAvailability ? "Custom Tenant Availability (showing Available for Tenant tab)" : "General Master Availability")}.";
 
-            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
+            var nextTab = tenant.UseCustomAvailability ? "available" : "all";
+            return RedirectToPage(new { tenantId = tenant.Id, tab = nextTab, search = Search, category = Category, status = Status, viewMode = ViewMode });
         }
 
         /// <summary>
@@ -495,11 +607,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             await _dbContext.SaveChangesAsync();
             TempData["Success"] = $"Default currency for {tenant.OrganizationName} set to {normalizedCode}.";
 
-            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
+            return RedirectToPage(new { tenantId = tenant.Id, tab = Tab, search = Search, category = Category, status = Status, viewMode = ViewMode });
         }
 
         /// <summary>
-        /// Toggles whether a specific capability is Active or Not Active for this tenant.
+        /// Toggles whether a specific capability is Active (Subscribed) or Not Active for this tenant.
+        /// When activating a feature, also marks it Available for this tenant so Custom Availability stays synced.
         /// </summary>
         public async Task<IActionResult> OnPostToggleTenantActiveAsync(Guid tenantId, Guid featureId, int durationType = 1)
         {
@@ -531,19 +644,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 nowActive = !currentlyActive;
                 existing.IsActive = nowActive;
                 existing.Status = nowActive ? "Active" : "Suspended";
-                if (nowActive && existing.ExpiresAtUtc <= DateTime.UtcNow)
+                if (nowActive)
                 {
-                    existing.ExpiresAtUtc = duration switch
+                    existing.IsAvailableForUseOverride = true;
+                    if (existing.ExpiresAtUtc <= DateTime.UtcNow)
                     {
-                        SubscriptionBillingDuration.Yearly => DateTime.UtcNow.AddYears(1),
-                        SubscriptionBillingDuration.Quarterly => DateTime.UtcNow.AddMonths(3),
-                        _ => DateTime.UtcNow.AddMonths(1)
-                    };
+                        existing.ExpiresAtUtc = duration switch
+                        {
+                            SubscriptionBillingDuration.Yearly => DateTime.UtcNow.AddYears(1),
+                            SubscriptionBillingDuration.Quarterly => DateTime.UtcNow.AddMonths(3),
+                            _ => DateTime.UtcNow.AddMonths(1)
+                        };
+                    }
                 }
             }
             else
             {
-                // If no subscription row existed yet: if Compulsory, clicking toggle deactivates it; if Optional, clicking activates it
                 nowActive = !feature.IsCompulsory;
                 var newSub = new MasterTenantFeatureSubscription
                 {
@@ -557,6 +673,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     AutoRenew = true,
                     IsActive = nowActive,
                     Status = nowActive ? "Active" : "Suspended",
+                    IsAvailableForUseOverride = nowActive ? true : null,
                     CreatedUtc = DateTime.UtcNow
                 };
                 _dbContext.MasterTenantFeatureSubscriptions.Add(newSub);
@@ -576,13 +693,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"'{feature.Name}' is now {(nowActive ? "Active" : "Not Active")} for {tenant.OrganizationName}.";
+            TempData["Success"] = $"'{feature.Name}' is now {(nowActive ? "Active (Subscribed)" : "Not Active")} for {tenant.OrganizationName}.";
 
-            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
+            return RedirectToPage(new { tenantId = tenant.Id, tab = Tab, search = Search, category = Category, status = Status, viewMode = ViewMode });
         }
 
         /// <summary>
-        /// Toggles whether a specific capability is Available for Use or Coming Soon specifically for this tenant.
+        /// Toggles whether a specific capability is Available for Tenant or Not Available (Coming Soon) specifically for this tenant.
         /// </summary>
         public async Task<IActionResult> OnPostToggleTenantAvailabilityAsync(Guid tenantId, Guid featureId)
         {
@@ -607,18 +724,19 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             // Ensure Custom Tenant Availability mode is enabled when setting a tenant-level availability override
             tenant.UseCustomAvailability = true;
 
+            bool defaultAvail = feature.IsAvailableForUse || DefaultAvailableCodes.Contains(feature.FeatureCode);
             var existing = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == featureId);
             bool newAvailability;
 
             if (existing != null)
             {
-                bool current = existing.IsAvailableForUseOverride ?? feature.IsAvailableForUse;
+                bool current = existing.IsAvailableForUseOverride ?? defaultAvail;
                 newAvailability = !current;
                 existing.IsAvailableForUseOverride = newAvailability;
             }
             else
             {
-                newAvailability = !feature.IsAvailableForUse;
+                newAvailability = !defaultAvail;
                 var newSub = new MasterTenantFeatureSubscription
                 {
                     Id = Guid.NewGuid(),
@@ -644,20 +762,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 Action = "ToggleTenantFeatureAvailability",
                 EntityType = "FeatureSubscription",
                 EntityId = feature.Id.ToString(),
-                Summary = $"Set '{feature.Name}' availability to {(newAvailability ? "Available for Use" : "Coming Soon")} for tenant '{tenant.OrganizationName}'",
+                Summary = $"Set '{feature.Name}' availability to {(newAvailability ? "Available for Tenant" : "Not Available for Tenant")} for '{tenant.OrganizationName}'",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"'{feature.Name}' marked as {(newAvailability ? "Available for Use" : "Coming Soon")} for {tenant.OrganizationName}.";
+            TempData["Success"] = $"'{feature.Name}' is now {(newAvailability ? "Available for " + tenant.OrganizationName : "Not Available (Moved to Not Available Tab)")}.";
 
-            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
+            return RedirectToPage(new { tenantId = tenant.Id, tab = Tab, search = Search, category = Category, status = Status, viewMode = ViewMode });
         }
 
         /// <summary>
         /// Sets or resets a custom monthly price override for a specific capability on this tenant.
+        /// Syncs with Custom Availability by automatically marking the capability Available for this tenant when a custom price is set.
         /// </summary>
         public async Task<IActionResult> OnPostSetCustomPriceAsync(Guid tenantId, Guid featureId, decimal? customPrice, bool resetToGeneral = false)
         {
@@ -690,6 +809,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             if (existing != null)
             {
                 existing.CustomPriceOverride = effectiveOverride;
+                if (!resetToGeneral)
+                {
+                    existing.IsAvailableForUseOverride = true;
+                }
             }
             else if (!resetToGeneral)
             {
@@ -701,6 +824,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     DurationType = SubscriptionBillingDuration.Monthly,
                     RecurringPrice = feature.MonthlyPrice,
                     CustomPriceOverride = effectiveOverride,
+                    IsAvailableForUseOverride = true,
                     StartsAtUtc = DateTime.UtcNow,
                     ExpiresAtUtc = DateTime.UtcNow.AddMonths(1),
                     AutoRenew = true,
@@ -720,7 +844,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 EntityId = feature.Id.ToString(),
                 Summary = resetToGeneral
                     ? $"Reset '{feature.Name}' to General Master Price (${feature.MonthlyPrice:F2}/mo) for tenant '{tenant.OrganizationName}'"
-                    : $"Set custom price ${effectiveOverride:F2}/mo on '{feature.Name}' for tenant '{tenant.OrganizationName}'",
+                    : $"Set custom price ${effectiveOverride:F2}/mo on '{feature.Name}' and marked Available for tenant '{tenant.OrganizationName}'",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
@@ -729,9 +853,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             await _dbContext.SaveChangesAsync();
             TempData["Success"] = resetToGeneral
                 ? $"'{feature.Name}' reset to General Master Price (${feature.MonthlyPrice:F2}/mo) for {tenant.OrganizationName}."
-                : $"Custom price for '{feature.Name}' set to ${effectiveOverride:F2}/mo for {tenant.OrganizationName}.";
+                : $"Custom price for '{feature.Name}' set to ${effectiveOverride:F2}/mo and synced as Available for {tenant.OrganizationName}.";
 
-            return RedirectToPage(new { tenantId = tenant.Id, search = Search, category = Category, status = Status, viewMode = ViewMode });
+            return RedirectToPage(new { tenantId = tenant.Id, tab = Tab, search = Search, category = Category, status = Status, viewMode = ViewMode });
         }
 
         /// <summary>
@@ -746,6 +870,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             public bool EffectiveAvailableForUse { get; set; }
             public bool HasCustomAvailabilityOverride { get; set; }
             public decimal EffectiveMonthlyPrice { get; set; }
+            public decimal EffectiveTenantCurrencyPrice { get; set; }
+            public decimal MasterTenantCurrencyPrice { get; set; }
             public bool HasCustomPriceOverride { get; set; }
         }
     }
