@@ -72,6 +72,10 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   statusFilter: 'all' | 'active' | 'not_active' | 'coming_soon' = 'all';
   tierFilter: 'all' | 'compulsory' | 'optional' = 'all';
 
+  // Table Sorting controls
+  sortColumn: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status' | 'tier' = 'serialNo';
+  sortDirection: 'asc' | 'desc' = 'asc';
+
   // Snapshot data from MasterCatalogDbContext via /api/billing/features
   snapshot: BillingFeaturesSnapshot = {
     tenantKey: 'workspace',
@@ -568,12 +572,13 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Filtered capabilities based on search keyword, suite, availability, active status, and tier class.
+   * Filtered capabilities based on search keyword, suite, availability, active status, and tier class,
+   * sorted by the active table column and direction.
    */
   get filteredFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
     const term = this.searchQuery.trim().toLowerCase();
 
-    return this.allOrderedFeatures.filter(f => {
+    const filtered = this.allOrderedFeatures.filter(f => {
       if (term) {
         const matchName = f.name?.toLowerCase().includes(term);
         const matchCode = f.featureCode?.toLowerCase().includes(term);
@@ -614,6 +619,107 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
       return true;
     });
+
+    const dir = this.sortDirection === 'asc' ? 1 : -1;
+    return filtered.sort((a, b) => {
+      let cmp = 0;
+      switch (this.sortColumn) {
+        case 'serialNo':
+          cmp = (a.serialNo || 0) - (b.serialNo || 0);
+          break;
+        case 'name':
+          cmp = (a.name || '').localeCompare(b.name || '');
+          break;
+        case 'suite':
+          cmp = this.getSuiteOrder(a.category) - this.getSuiteOrder(b.category);
+          if (cmp === 0) cmp = (a.serialNo || 0) - (b.serialNo || 0);
+          break;
+        case 'amount':
+          cmp = this.getFeatureDisplayAmount(a) - this.getFeatureDisplayAmount(b);
+          if (cmp === 0) cmp = (a.serialNo || 0) - (b.serialNo || 0);
+          break;
+        case 'duration':
+          cmp = this.getFeatureDurationLabel(a).localeCompare(this.getFeatureDurationLabel(b));
+          if (cmp === 0) cmp = (a.serialNo || 0) - (b.serialNo || 0);
+          break;
+        case 'status':
+          cmp = this.getFeatureStatusRank(a) - this.getFeatureStatusRank(b);
+          if (cmp === 0) cmp = (a.serialNo || 0) - (b.serialNo || 0);
+          break;
+        case 'tier':
+          cmp = (a.isCompulsory === b.isCompulsory) ? 0 : (a.isCompulsory ? -1 : 1);
+          if (cmp === 0) cmp = (a.serialNo || 0) - (b.serialNo || 0);
+          break;
+      }
+      return cmp * dir;
+    });
+  }
+
+  /**
+   * Toggles table sorting by the specified column.
+   */
+  toggleSort(column: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status' | 'tier'): void {
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = column;
+      this.sortDirection = 'asc';
+    }
+  }
+
+  /**
+   * Returns the Material icon name for a sortable column header.
+   */
+  getSortIcon(column: 'serialNo' | 'name' | 'suite' | 'amount' | 'duration' | 'status' | 'tier'): string {
+    if (this.sortColumn !== column) {
+      return 'unfold_more';
+    }
+    return this.sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward';
+  }
+
+  /**
+   * Resolves the numeric subscription amount for a feature in the tenant's active currency.
+   */
+  getFeatureDisplayAmount(feat: BillingFeatureItem): number {
+    if (!feat) return 0;
+    if (feat.effectivePrice && feat.effectivePrice > 0) {
+      return Number(feat.effectivePrice);
+    }
+    if (feat.monthlyPrice && feat.monthlyPrice > 0) {
+      return Number(feat.monthlyPrice);
+    }
+    if (feat.yearlyPrice && feat.yearlyPrice > 0) {
+      return Number(feat.yearlyPrice);
+    }
+    return 0;
+  }
+
+  /**
+   * Resolves the human-readable billing duration / cadence label for a feature.
+   */
+  getFeatureDurationLabel(feat: BillingFeatureItem): string {
+    if (!feat) return 'Monthly';
+    const amt = this.getFeatureDisplayAmount(feat);
+    if (amt <= 0) {
+      return 'Lifetime / Free';
+    }
+    const cadence = (feat.billingCadence || '').trim().toLowerCase();
+    if (cadence === 'yearly' || (feat.monthlyPrice <= 0 && feat.yearlyPrice > 0)) {
+      return 'Yearly';
+    }
+    if (cadence === 'quarterly') {
+      return 'Quarterly';
+    }
+    return 'Monthly';
+  }
+
+  /**
+   * Resolves a numeric rank for sorting by feature status (1 = Active, 2 = Not Active / Available, 3 = Coming Soon).
+   */
+  private getFeatureStatusRank(feat: BillingFeatureItem): number {
+    if (feat.isActive) return 1;
+    if (feat.isAvailableForUse) return 2;
+    return 3;
   }
 
   /**
@@ -695,7 +801,9 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       this.selectedSuite !== '' ||
       this.availabilityFilter !== 'all' ||
       this.statusFilter !== 'all' ||
-      this.tierFilter !== 'all'
+      this.tierFilter !== 'all' ||
+      this.sortColumn !== 'serialNo' ||
+      this.sortDirection !== 'asc'
     );
   }
 
@@ -714,6 +822,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     this.availabilityFilter = 'all';
     this.statusFilter = 'all';
     this.tierFilter = 'all';
+    this.sortColumn = 'serialNo';
+    this.sortDirection = 'asc';
   }
 
   openFeatureDetail(feat: BillingFeatureItem & { serialNo?: number; suiteLetter?: string }): void {

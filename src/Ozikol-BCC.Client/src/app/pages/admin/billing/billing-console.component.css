@@ -885,6 +885,34 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1.5px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.bcp-table th.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.bcp-table th.sortable-th:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.th-sort-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sort-icon {
+  font-size: 14px;
+  color: #94a3b8;
+  transition: color 0.15s ease;
+}
+
+.sort-icon.active {
+  color: #0050e5;
 }
 
 .bcp-table td {

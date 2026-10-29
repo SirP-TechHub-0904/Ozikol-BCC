@@ -345,11 +345,43 @@
             <table class="bcp-table">
               <thead>
                 <tr>
-                  <th style="width: 68px;">S/N</th>
-                  <th>FEATURE</th>
-                  <th>SUITE</th>
-                  <th>STATUS</th>
-                  <th style="text-align: right; width: 290px;">ACTION</th>
+                  <th style="width: 72px;" class="sortable-th" (click)="toggleSort('serialNo')">
+                    <span class="th-sort-wrap">
+                      <span>S/N</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'serialNo'">{{ getSortIcon('serialNo') }}</span>
+                    </span>
+                  </th>
+                  <th class="sortable-th" (click)="toggleSort('name')">
+                    <span class="th-sort-wrap">
+                      <span>FEATURE</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'name'">{{ getSortIcon('name') }}</span>
+                    </span>
+                  </th>
+                  <th class="sortable-th" (click)="toggleSort('suite')">
+                    <span class="th-sort-wrap">
+                      <span>SUITE</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'suite'">{{ getSortIcon('suite') }}</span>
+                    </span>
+                  </th>
+                  <th class="sortable-th" (click)="toggleSort('amount')">
+                    <span class="th-sort-wrap">
+                      <span>AMOUNT</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'amount'">{{ getSortIcon('amount') }}</span>
+                    </span>
+                  </th>
+                  <th class="sortable-th" (click)="toggleSort('duration')">
+                    <span class="th-sort-wrap">
+                      <span>DURATION</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'duration'">{{ getSortIcon('duration') }}</span>
+                    </span>
+                  </th>
+                  <th class="sortable-th" (click)="toggleSort('status')">
+                    <span class="th-sort-wrap">
+                      <span>STATUS</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'status'">{{ getSortIcon('status') }}</span>
+                    </span>
+                  </th>
+                  <th style="text-align: right; width: 280px;">ACTION</th>
                 </tr>
               </thead>
               <tbody>
@@ -365,15 +397,28 @@
                         </div>
                         <div>
                           <div class="table-feat-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</div>
-                          @if (feat.monthlyPrice > 0) {
-                            <span style="font-size: 11.5px; color: #0050e5; font-weight: 700;">{{ formatAmount(feat.monthlyPrice) }}/mo</span>
-                          }
                         </div>
                       </div>
                     </td>
                     <td>
                       <span class="suite-table-label">
                         <strong>Suite {{ feat.suiteLetter }}:</strong> {{ feat.category }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (getFeatureDisplayAmount(feat) > 0) {
+                        <strong style="color: #0f172a; font-weight: 800;">{{ formatAmount(getFeatureDisplayAmount(feat)) }}</strong>
+                      } @else {
+                        <span class="price-included">
+                          <span class="material-symbols-outlined">check_circle</span>
+                          <span>Included Free</span>
+                        </span>
+                      }
+                    </td>
+                    <td>
+                      <span class="badge-pill-md badge-billing">
+                        <span class="material-symbols-outlined">event_repeat</span>
+                        <span>{{ getFeatureDurationLabel(feat) }}</span>
                       </span>
                     </td>
                     <td>
@@ -824,12 +869,48 @@
               <table class="bcp-table">
                 <thead>
                   <tr>
-                    <th style="width: 64px;">S/N</th>
-                    <th>CAPABILITY</th>
-                    <th>SUITE</th>
-                    <th>STATUS</th>
-                    <th>TIER CLASS</th>
-                    <th>RATE</th>
+                    <th style="width: 72px;" class="sortable-th" (click)="toggleSort('serialNo')">
+                      <span class="th-sort-wrap">
+                        <span>S/N</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'serialNo'">{{ getSortIcon('serialNo') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('name')">
+                      <span class="th-sort-wrap">
+                        <span>CAPABILITY</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'name'">{{ getSortIcon('name') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('suite')">
+                      <span class="th-sort-wrap">
+                        <span>SUITE</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'suite'">{{ getSortIcon('suite') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('status')">
+                      <span class="th-sort-wrap">
+                        <span>STATUS</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'status'">{{ getSortIcon('status') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('tier')">
+                      <span class="th-sort-wrap">
+                        <span>TIER CLASS</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'tier'">{{ getSortIcon('tier') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('amount')">
+                      <span class="th-sort-wrap">
+                        <span>AMOUNT</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'amount'">{{ getSortIcon('amount') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('duration')">
+                      <span class="th-sort-wrap">
+                        <span>DURATION</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'duration'">{{ getSortIcon('duration') }}</span>
+                      </span>
+                    </th>
                     <th style="text-align: right;">ACTION</th>
                   </tr>
                 </thead>
@@ -884,11 +965,20 @@
                         }
                       </td>
                       <td>
-                        @if (feat.monthlyPrice > 0) {
-                          <strong style="color: #0f172a;">{{ formatAmount(feat.monthlyPrice) }}/mo</strong>
+                        @if (getFeatureDisplayAmount(feat) > 0) {
+                          <strong style="color: #0f172a; font-weight: 800;">{{ formatAmount(getFeatureDisplayAmount(feat)) }}</strong>
                         } @else {
-                          <span class="price-included">Included</span>
+                          <span class="price-included">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            <span>Included Free</span>
+                          </span>
                         }
+                      </td>
+                      <td>
+                        <span class="badge-pill-md badge-billing">
+                          <span class="material-symbols-outlined">event_repeat</span>
+                          <span>{{ getFeatureDurationLabel(feat) }}</span>
+                        </span>
                       </td>
                       <td style="text-align: right;">
                         <div style="display: inline-flex; align-items: center; gap: 6px;">
