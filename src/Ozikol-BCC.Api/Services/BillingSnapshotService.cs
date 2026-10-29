@@ -63,20 +63,6 @@ namespace Ozikol_BCC.Api.Services
         };
 
         /// <summary>
-        /// Feature codes that are built and live for immediate use in tenant workspaces by default.
-        /// </summary>
-        private static readonly HashSet<string> DefaultAvailableCodes = new(StringComparer.OrdinalIgnoreCase)
-        {
-            "bcp-community-messenger",
-            "bcp-committees",
-            "bcp-alumni-directory",
-            "bcp-form-builder",
-            "bcp-store-ecommerce",
-            "bcp-ai-smart-assist",
-            "bcp-mass-communication"
-        };
-
-        /// <summary>
         /// Resolves the canonical sequence index for a given suite name.
         /// </summary>
         /// <param name="category">Suite / category name.</param>
@@ -186,100 +172,42 @@ namespace Ozikol_BCC.Api.Services
             }
 
             List<MasterFeatureCatalog> rawFeatures;
-            bool usedFallbackQuery = false;
             try
             {
                 rawFeatures = await _master.MasterFeatureCatalogs
                     .AsNoTracking()
                     .Include(f => f.Suite)
-                    .Where(f => f.IsActive && f.IsPublished)
+                    .Where(f => f.IsActive)
                     .ToListAsync(cancellationToken);
             }
             catch
             {
                 // Graceful fallback if the MasterFeatureSuites / MenuTitle migration has not yet been applied to SQL Server
-                try
-                {
-                    rawFeatures = await _master.MasterFeatureCatalogs
-                        .AsNoTracking()
-                        .Where(f => f.IsActive)
-                        .Select(f => new MasterFeatureCatalog
-                        {
-                            Id = f.Id,
-                            FeatureCode = f.FeatureCode,
-                            Name = f.Name,
-                            Category = f.Category,
-                            Description = f.Description,
-                            Icon = f.Icon,
-                            RoutePrefix = f.RoutePrefix,
-                            IsCompulsory = f.IsCompulsory,
-                            BillingType = f.BillingType,
-                            MonthlyPrice = f.MonthlyPrice,
-                            QuarterlyPrice = f.QuarterlyPrice,
-                            YearlyPrice = f.YearlyPrice,
-                            IsMetered = f.IsMetered,
-                            IsActive = f.IsActive,
-                            IsPublished = f.IsPublished,
-                            IsAvailableForUse = f.IsAvailableForUse,
-                            IsInBeta = f.IsInBeta,
-                            SortOrder = f.SortOrder
-                        })
-                        .ToListAsync(cancellationToken);
-                }
-                catch
-                {
-                    usedFallbackQuery = true;
-                    rawFeatures = await _master.MasterFeatureCatalogs
-                        .AsNoTracking()
-                        .Where(f => f.IsActive)
-                        .Select(f => new MasterFeatureCatalog
-                        {
-                            Id = f.Id,
-                            FeatureCode = f.FeatureCode,
-                            Name = f.Name,
-                            Category = f.Category,
-                            Description = f.Description,
-                            Icon = f.Icon,
-                            RoutePrefix = f.RoutePrefix,
-                            IsCompulsory = f.IsCompulsory,
-                            BillingType = f.BillingType,
-                            MonthlyPrice = f.MonthlyPrice,
-                            QuarterlyPrice = f.QuarterlyPrice,
-                            YearlyPrice = f.YearlyPrice,
-                            IsMetered = f.IsMetered,
-                            IsActive = f.IsActive,
-                            IsPublished = true,
-                            IsInBeta = f.IsInBeta,
-                            SortOrder = f.SortOrder
-                        })
-                        .ToListAsync(cancellationToken);
-                }
-            }
-
-            if (!rawFeatures.Any(f => string.Equals(f.FeatureCode, "bcp-workspace", StringComparison.OrdinalIgnoreCase)))
-            {
-                rawFeatures.Add(new MasterFeatureCatalog
-                {
-                    Id = Guid.Parse("a1000000-0000-0000-0000-000000000046"),
-                    FeatureCode = "bcp-workspace",
-                    Name = "Workspace (Desktop only)",
-                    MenuTitle = "Workspace (Desktop only)",
-                    Category = "Workspace",
-                    MasterFeatureSuiteId = MasterFeatureSuiteDefaults.SuiteKId,
-                    Description = "Manage workplace operations, desktop app access, and connected workspace stations.",
-                    Icon = "desktop_windows",
-                    RoutePrefix = "/workspace/console",
-                    IsCompulsory = false,
-                    BillingType = FeatureBillingType.FlatSubscription,
-                    MonthlyPrice = 0.00m,
-                    QuarterlyPrice = 0.00m,
-                    YearlyPrice = 0.74m,
-                    IsMetered = false,
-                    IsActive = true,
-                    IsPublished = true,
-                    IsAvailableForUse = false,
-                    SortOrder = 460
-                });
+                rawFeatures = await _master.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .Select(f => new MasterFeatureCatalog
+                    {
+                        Id = f.Id,
+                        FeatureCode = f.FeatureCode,
+                        Name = f.Name,
+                        Category = f.Category,
+                        Description = f.Description,
+                        Icon = f.Icon,
+                        RoutePrefix = f.RoutePrefix,
+                        IsCompulsory = f.IsCompulsory,
+                        BillingType = f.BillingType,
+                        MonthlyPrice = f.MonthlyPrice,
+                        QuarterlyPrice = f.QuarterlyPrice,
+                        YearlyPrice = f.YearlyPrice,
+                        IsMetered = f.IsMetered,
+                        IsActive = f.IsActive,
+                        IsPublished = f.IsActive,
+                        IsAvailableForUse = f.IsAvailableForUse,
+                        IsInBeta = f.IsInBeta,
+                        SortOrder = f.SortOrder
+                    })
+                    .ToListAsync(cancellationToken);
             }
 
             // Order strictly by Canonical Suite Sequence -> SortOrder -> Name (matching Master /centralwks/features)
@@ -386,15 +314,11 @@ namespace Ozikol_BCC.Api.Services
                 ServerTimeUtc = now
             };
 
-            bool anyMasterAvail = !usedFallbackQuery && features.Any(x => x.IsAvailableForUse);
-
             foreach (var f in features)
             {
                 subsByFeature.TryGetValue(f.Id, out var sub);
 
-                bool masterAvailForUse = anyMasterAvail
-                    ? f.IsAvailableForUse
-                    : DefaultAvailableCodes.Contains(f.FeatureCode);
+                bool masterAvailForUse = f.IsAvailableForUse;
 
                 // Apply per-tenant availability override when tenant policy is set to Custom Availability,
                 // automatically syncing features that have a custom price or active subscription.

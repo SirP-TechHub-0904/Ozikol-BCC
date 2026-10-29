@@ -226,42 +226,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 }
             }
 
-            // Ensure Suite K (Workspace) and Feature #46 (bcp-workspace) are present even before migration is applied
-            if (!Suites.Any(s => string.Equals(s.SuiteCode, "suite-workspace", StringComparison.OrdinalIgnoreCase) || string.Equals(s.Name, "Workspace", StringComparison.OrdinalIgnoreCase)))
-            {
-                var defaultWorkspaceSuite = MasterFeatureSuiteDefaults.GetDefaultSuites().FirstOrDefault(s => s.Id == MasterFeatureSuiteDefaults.SuiteKId);
-                if (defaultWorkspaceSuite != null)
-                {
-                    Suites.Add(defaultWorkspaceSuite);
-                }
-            }
-
-            if (!allFeatures.Any(f => string.Equals(f.FeatureCode, "bcp-workspace", StringComparison.OrdinalIgnoreCase)))
-            {
-                allFeatures.Add(new MasterFeatureCatalog
-                {
-                    Id = Guid.Parse("a1000000-0000-0000-0000-000000000046"),
-                    FeatureCode = "bcp-workspace",
-                    Name = "Workspace (Desktop only)",
-                    MenuTitle = "Workspace (Desktop only)",
-                    Category = "Workspace",
-                    MasterFeatureSuiteId = MasterFeatureSuiteDefaults.SuiteKId,
-                    Description = "Manage workplace operations, desktop app access, and connected workspace stations.",
-                    Icon = "desktop_windows",
-                    RoutePrefix = "/workspace/console",
-                    IsCompulsory = false,
-                    BillingType = FeatureBillingType.FlatSubscription,
-                    MonthlyPrice = 0.00m,
-                    QuarterlyPrice = 0.00m,
-                    YearlyPrice = 0.74m,
-                    IsMetered = false,
-                    IsActive = true,
-                    IsPublished = true,
-                    IsAvailableForUse = false,
-                    SortOrder = 460
-                });
-            }
-
             TotalCount = allFeatures.Count;
             // In Master Catalog, IsActive represents whether the capability is Published (visible) or Unpublished (hidden)
             foreach (var f in allFeatures)

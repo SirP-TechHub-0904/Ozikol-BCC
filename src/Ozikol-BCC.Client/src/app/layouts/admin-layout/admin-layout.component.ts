@@ -3982,10 +3982,7 @@ export class AdminLayoutComponent implements OnInit {
   /**
    * Baseline available capability codes before the first billing snapshot sync completes.
    */
-  private static readonly DEFAULT_AVAILABLE_FEATURE_CODES: string[] = [
-    'bcp-community-messenger', 'bcp-committees', 'bcp-alumni-directory',
-    'bcp-form-builder', 'bcp-store-ecommerce', 'bcp-ai-smart-assist', 'bcp-mass-communication'
-  ];
+  private static readonly DEFAULT_AVAILABLE_FEATURE_CODES: string[] = [];
 
   /**
    * Canonical short sidebar MenuTitle lookup by FeatureCode (matching MasterFeatureCatalogs.MenuTitle).
@@ -4112,10 +4109,10 @@ export class AdminLayoutComponent implements OnInit {
   visibleFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_visible_feature_codes_v3');
+        const raw = localStorage.getItem('bcp_visible_feature_codes_v4');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) return parsed;
         }
         return AdminLayoutComponent.DEFAULT_PUBLISHED_FEATURE_CODES;
       } catch {
@@ -4131,10 +4128,10 @@ export class AdminLayoutComponent implements OnInit {
   availableFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_available_feature_codes_v3');
+        const raw = localStorage.getItem('bcp_available_feature_codes_v4');
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) return parsed;
         }
         return AdminLayoutComponent.DEFAULT_AVAILABLE_FEATURE_CODES;
       } catch {
@@ -4167,7 +4164,7 @@ export class AdminLayoutComponent implements OnInit {
 
   /**
    * Applies a BillingFeaturesSnapshot payload to update visibleFeatureCodes, availableFeatureCodes, activeFeatureCodes,
-   * and dynamic sidebar MenuTitles for both Suites and Features.
+   * and dynamic sidebar MenuTitles for both Suites and Features strictly from Central Master DB.
    * @param d BillingFeaturesSnapshot payload.
    */
   applyBillingSnapshot(d: any): void {
@@ -4180,7 +4177,6 @@ export class AdminLayoutComponent implements OnInit {
     const visible = new Set<string>();
     const available = new Set<string>();
     const active = new Set<string>();
-    const explicitlyUnpublished = new Set<string>();
 
     for (const item of all) {
       if (!item || !item.featureCode) continue;
@@ -4195,40 +4191,22 @@ export class AdminLayoutComponent implements OnInit {
         this.suiteMenuTitles[String(item.category)] = String(item.suiteMenuTitle);
       }
       if (item.isPublished === false) {
-        explicitlyUnpublished.add(code);
         continue;
       }
       visible.add(code);
-      if (item.isAvailableForUse !== false) {
+      if (item.isAvailableForUse === true) {
         available.add(code);
       }
-      if (item.isActive && item.isAvailableForUse !== false) {
+      if (item.isActive && item.isAvailableForUse === true) {
         active.add(code);
-      }
-    }
-
-    // Ensure all 46 published canonical features remain visible in the sidebar (as Coming Soon if not in available)
-    // unless explicitly unpublished in Central.
-    for (const defaultCode of AdminLayoutComponent.DEFAULT_PUBLISHED_FEATURE_CODES) {
-      if (!explicitlyUnpublished.has(defaultCode)) {
-        visible.add(defaultCode);
-      }
-    }
-
-    // Preserve baseline available features if the snapshot returned 0 available items (e.g. before backend restart)
-    if (available.size === 0) {
-      for (const defaultAvail of AdminLayoutComponent.DEFAULT_AVAILABLE_FEATURE_CODES) {
-        if (!explicitlyUnpublished.has(defaultAvail)) {
-          available.add(defaultAvail);
-        }
       }
     }
 
     this.visibleFeatureCodes = visible;
     this.availableFeatureCodes = available;
     this.activeFeatureCodes = active;
-    localStorage.setItem('bcp_visible_feature_codes_v3', JSON.stringify(Array.from(visible)));
-    localStorage.setItem('bcp_available_feature_codes_v3', JSON.stringify(Array.from(available)));
+    localStorage.setItem('bcp_visible_feature_codes_v4', JSON.stringify(Array.from(visible)));
+    localStorage.setItem('bcp_available_feature_codes_v4', JSON.stringify(Array.from(available)));
     localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
   }
 
