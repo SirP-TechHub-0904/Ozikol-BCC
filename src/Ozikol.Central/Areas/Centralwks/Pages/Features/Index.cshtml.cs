@@ -317,104 +317,139 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// <summary>
         /// Handles HTTP POST requests to toggle feature active/inactive status with audit logging.
         /// </summary>
+        /// <param name="id">The identifier of the feature to toggle.</param>
+        /// <returns>A JSON response for AJAX requests or a redirect back to the feature directory.</returns>
         public async Task<IActionResult> OnPostToggleStatusAsync(Guid id)
         {
-            var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(id);
-            if (feature == null)
-            {
-                TempData["Error"] = "Feature not found.";
-                return RedirectToPage();
-            }
-
-            feature.IsActive = !feature.IsActive;
-
-            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
-            {
-                UserId = User.Identity?.Name,
-                UserName = User.Identity?.Name,
-                Action = feature.IsActive ? "Activate" : "Deactivate",
-                EntityType = "Feature",
-                EntityId = feature.Id.ToString(),
-                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) was {(feature.IsActive ? "activated" : "deactivated")}",
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
-                UserAgent = Request.Headers["User-Agent"].ToString(),
-                CreatedUtc = DateTime.UtcNow
-            });
-
-            await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"'{feature.Name}' operational status updated to {(feature.IsActive ? "Active" : "Deactivated")}.";
-
-            return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
+            return await OnPostTogglePublishAsync(id);
         }
 
         /// <summary>
         /// Handles HTTP POST requests to toggle whether a feature is Published (visible to tenants) or Unpublished (hidden).
+        /// Supports instant AJAX toggle switching without full page reload.
         /// </summary>
         /// <param name="id">The identifier of the feature to toggle.</param>
-        /// <returns>A redirect back to the feature directory.</returns>
+        /// <returns>A JSON response for AJAX requests or a redirect back to the feature directory.</returns>
         public async Task<IActionResult> OnPostTogglePublishAsync(Guid id)
         {
-            var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(id);
+            var feature = await _dbContext.MasterFeatureCatalogs
+                .AsNoTracking()
+                .Where(f => f.Id == id)
+                .Select(f => new { f.Id, f.Name, f.FeatureCode, f.IsActive, f.IsAvailableForUse })
+                .FirstOrDefaultAsync();
+
             if (feature == null)
             {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return new JsonResult(new { success = false, message = "Feature not found." }) { StatusCode = 404 };
+                }
                 TempData["Error"] = "Feature not found.";
                 return RedirectToPage();
             }
 
-            feature.IsActive = !feature.IsActive;
-            feature.IsPublished = feature.IsActive;
+            var newActive = !feature.IsActive;
+
+            await _dbContext.MasterFeatureCatalogs
+                .Where(f => f.Id == id)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(f => f.IsActive, newActive)
+                    .SetProperty(f => f.IsPublished, newActive));
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
                 UserId = User.Identity?.Name,
                 UserName = User.Identity?.Name,
-                Action = feature.IsActive ? "Publish" : "Unpublish",
+                Action = newActive ? "Publish" : "Unpublish",
                 EntityType = "Feature",
                 EntityId = feature.Id.ToString(),
-                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) was {(feature.IsActive ? "published" : "unpublished")}",
+                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) was {(newActive ? "published" : "unpublished")}",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"'{feature.Name}' is now {(feature.IsActive ? "Published (Visible to Tenants)" : "Unpublished (Hidden from Tenants)")}.";
+            var msg = $"'{feature.Name}' is now {(newActive ? "Published (Visible to Tenants)" : "Unpublished (Hidden from Tenants)")}.";
 
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return new JsonResult(new
+                {
+                    success = true,
+                    id = feature.Id,
+                    isActive = newActive,
+                    isPublished = newActive,
+                    isAvailableForUse = feature.IsAvailableForUse,
+                    message = msg
+                });
+            }
+
+            TempData["Success"] = msg;
             return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
         }
 
         /// <summary>
         /// Handles HTTP POST requests to toggle whether a feature is Available for Use or Coming Soon in tenant workspaces.
+        /// Supports instant AJAX toggle switching without full page reload.
         /// </summary>
         /// <param name="id">The identifier of the feature to toggle.</param>
-        /// <returns>A redirect back to the feature directory.</returns>
+        /// <returns>A JSON response for AJAX requests or a redirect back to the feature directory.</returns>
         public async Task<IActionResult> OnPostToggleAvailabilityAsync(Guid id)
         {
-            var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(id);
+            var feature = await _dbContext.MasterFeatureCatalogs
+                .AsNoTracking()
+                .Where(f => f.Id == id)
+                .Select(f => new { f.Id, f.Name, f.FeatureCode, f.IsActive, f.IsAvailableForUse })
+                .FirstOrDefaultAsync();
+
             if (feature == null)
             {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return new JsonResult(new { success = false, message = "Feature not found." }) { StatusCode = 404 };
+                }
                 TempData["Error"] = "Feature not found.";
                 return RedirectToPage();
             }
 
-            feature.IsAvailableForUse = !feature.IsAvailableForUse;
+            var newAvailable = !feature.IsAvailableForUse;
+
+            await _dbContext.MasterFeatureCatalogs
+                .Where(f => f.Id == id)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(f => f.IsAvailableForUse, newAvailable));
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
                 UserId = User.Identity?.Name,
                 UserName = User.Identity?.Name,
-                Action = feature.IsAvailableForUse ? "MarkAvailableForUse" : "MarkComingSoon",
+                Action = newAvailable ? "MarkAvailableForUse" : "MarkComingSoon",
                 EntityType = "Feature",
                 EntityId = feature.Id.ToString(),
-                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) marked as {(feature.IsAvailableForUse ? "Available for Use" : "Coming Soon")}",
+                Summary = $"Feature '{feature.Name}' ({feature.FeatureCode}) marked as {(newAvailable ? "Available for Use" : "Coming Soon")}",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
             });
 
             await _dbContext.SaveChangesAsync();
-            TempData["Success"] = $"'{feature.Name}' marked as {(feature.IsAvailableForUse ? "Available for Use" : "Coming Soon")}.";
+            var msg = $"'{feature.Name}' marked as {(newAvailable ? "Available for Use" : "Coming Soon")}.";
 
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return new JsonResult(new
+                {
+                    success = true,
+                    id = feature.Id,
+                    isActive = feature.IsActive,
+                    isPublished = feature.IsActive,
+                    isAvailableForUse = newAvailable,
+                    message = msg
+                });
+            }
+
+            TempData["Success"] = msg;
             return RedirectToPage(new { search = Search, category = Category, status = Status, sortBy = SortBy, sortDir = SortDir, viewMode = ViewMode });
         }
 

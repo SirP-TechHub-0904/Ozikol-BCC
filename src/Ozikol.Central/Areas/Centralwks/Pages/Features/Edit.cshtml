@@ -57,7 +57,7 @@
                                 {
                                     foreach (var suite in Model.Suites)
                                     {
-                                        <option value="@suite.Name" selected="@(Model.Input.Category == suite.Name || Model.Input.SuiteId == suite.Id)">@suite.Name (Menu: @suite.MenuTitle)</option>
+                                        <option value="@suite.Name" selected="@(Model.Input.Category == suite.Name || Model.Input.MasterFeatureSuiteId == suite.Id)">@suite.Name (Menu: @suite.MenuTitle)</option>
                                     }
                                 }
                                 else

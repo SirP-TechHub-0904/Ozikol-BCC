@@ -83,9 +83,9 @@
         <div class="stat-details" style="flex: 1;">
             <span class="stat-label">Published / Unpublished</span>
             <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 2px;">
-                <span class="stat-value" style="color: var(--admin-success);" title="Published (Visible to Tenants)">@Model.PublishedCount.ToString("N0")</span>
+                <span id="kpiPublishedCount" class="stat-value" style="color: var(--admin-success);" title="Published (Visible to Tenants)">@Model.PublishedCount.ToString("N0")</span>
                 <span style="font-size: 16px; color: #cbd5e1; font-weight: 700;">/</span>
-                <span class="stat-value" style="color: var(--admin-danger);" title="Unpublished (Hidden from Tenants)">@Model.UnpublishedCount.ToString("N0")</span>
+                <span id="kpiUnpublishedCount" class="stat-value" style="color: var(--admin-danger);" title="Unpublished (Hidden from Tenants)">@Model.UnpublishedCount.ToString("N0")</span>
             </div>
         </div>
     </div>
@@ -98,9 +98,9 @@
         <div class="stat-details" style="flex: 1;">
             <span class="stat-label">Available / Coming Soon</span>
             <div style="display: flex; align-items: baseline; gap: 10px; margin-top: 2px;">
-                <span class="stat-value" style="color: #059669;" title="Available for Use">@Model.AvailableForUseCount.ToString("N0")</span>
+                <span id="kpiAvailableCount" class="stat-value" style="color: #059669;" title="Available for Use">@Model.AvailableForUseCount.ToString("N0")</span>
                 <span style="font-size: 16px; color: #cbd5e1; font-weight: 700;">/</span>
-                <span class="stat-value" style="color: var(--admin-warning);" title="Coming Soon">@Model.ComingSoonCount.ToString("N0")</span>
+                <span id="kpiComingSoonCount" class="stat-value" style="color: var(--admin-warning);" title="Coming Soon">@Model.ComingSoonCount.ToString("N0")</span>
             </div>
         </div>
     </div>
@@ -259,39 +259,37 @@
                                         @(string.IsNullOrWhiteSpace(feat.Description) ? "Core sovereign capabilities and operations." : feat.Description)
                                     </p>
 
-                                    @* Meta Badges Row *@
+                                    @* Meta Badges Row (Instant Clickable Toggles for Publish & Availability) *@
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;">
-                                        @* 1. Visibility Badge: Published vs Unpublished *@
-                                        @if (feat.IsActive)
-                                        {
-                                            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
-                                                <span class="material-symbols-outlined" style="font-size: 12px;">public</span>
-                                                Published
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(239, 68, 68, 0.25);">
-                                                <span class="material-symbols-outlined" style="font-size: 12px;">visibility_off</span>
-                                                Unpublished
-                                            </span>
-                                        }
+                                        @* 1. Visibility Toggle: Published vs Unpublished *@
+                                        <form method="post" asp-page-handler="TogglePublish" asp-route-id="@feat.Id" style="display: inline-block; margin: 0;" onsubmit="return instantToggleFeature(event, this, 'publish', '@feat.Id', '@feat.Name.Replace("'", "\\'")')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit"
+                                                    class="status-toggle-pill @(feat.IsActive ? "pill-published" : "pill-unpublished")"
+                                                    data-feature-id="@feat.Id"
+                                                    data-toggle-kind="publish"
+                                                    data-state="@(feat.IsActive ? "true" : "false")"
+                                                    title="Click to switch instantly between Published and Unpublished">
+                                                <span class="material-symbols-outlined toggle-pill-icon">@(feat.IsActive ? "public" : "visibility_off")</span>
+                                                <span class="toggle-pill-label">@(feat.IsActive ? "Published" : "Unpublished")</span>
+                                                <span class="mini-switch"><span class="mini-knob"></span></span>
+                                            </button>
+                                        </form>
 
-                                        @* 2. Readiness Badge: Available for Use vs Coming Soon *@
-                                        @if (feat.IsAvailableForUse)
-                                        {
-                                            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
-                                                <span class="material-symbols-outlined" style="font-size: 12px;">verified</span>
-                                                Available for Use
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(245, 158, 11, 0.25);">
-                                                <span class="material-symbols-outlined" style="font-size: 12px;">schedule</span>
-                                                Coming Soon
-                                            </span>
-                                        }
+                                        @* 2. Readiness Toggle: Available for Use vs Coming Soon *@
+                                        <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@feat.Id" style="display: inline-block; margin: 0;" onsubmit="return instantToggleFeature(event, this, 'availability', '@feat.Id', '@feat.Name.Replace("'", "\\'")')">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit"
+                                                    class="status-toggle-pill @(feat.IsAvailableForUse ? "pill-available" : "pill-coming-soon")"
+                                                    data-feature-id="@feat.Id"
+                                                    data-toggle-kind="availability"
+                                                    data-state="@(feat.IsAvailableForUse ? "true" : "false")"
+                                                    title="Click to switch instantly between Available for Use and Coming Soon">
+                                                <span class="material-symbols-outlined toggle-pill-icon">@(feat.IsAvailableForUse ? "verified" : "schedule")</span>
+                                                <span class="toggle-pill-label">@(feat.IsAvailableForUse ? "Available for Use" : "Coming Soon")</span>
+                                                <span class="mini-switch"><span class="mini-knob"></span></span>
+                                            </button>
+                                        </form>
 
                                         @* 3. Tier Badge *@
                                         @if (feat.IsCompulsory)
@@ -510,36 +508,34 @@ else
                                     }
                                 </td>
                                 <td>
-                                    @if (feat.IsAvailableForUse)
-                                    {
-                                        <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
-                                            <span class="material-symbols-outlined" style="font-size: 12px;">verified</span>
-                                            Available for Use
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(245, 158, 11, 0.25);">
-                                            <span class="material-symbols-outlined" style="font-size: 12px;">schedule</span>
-                                            Coming Soon
-                                        </span>
-                                    }
+                                    <form method="post" asp-page-handler="ToggleAvailability" asp-route-id="@feat.Id" style="display: inline-block; margin: 0;" onsubmit="return instantToggleFeature(event, this, 'availability', '@feat.Id', '@feat.Name.Replace("'", "\\'")')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit"
+                                                class="status-toggle-pill @(feat.IsAvailableForUse ? "pill-available" : "pill-coming-soon")"
+                                                data-feature-id="@feat.Id"
+                                                data-toggle-kind="availability"
+                                                data-state="@(feat.IsAvailableForUse ? "true" : "false")"
+                                                title="Click to switch instantly between Available for Use and Coming Soon">
+                                            <span class="material-symbols-outlined toggle-pill-icon">@(feat.IsAvailableForUse ? "verified" : "schedule")</span>
+                                            <span class="toggle-pill-label">@(feat.IsAvailableForUse ? "Available for Use" : "Coming Soon")</span>
+                                            <span class="mini-switch"><span class="mini-knob"></span></span>
+                                        </button>
+                                    </form>
                                 </td>
                                 <td>
-                                    @if (feat.IsActive)
-                                    {
-                                        <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(16, 185, 129, 0.25);">
-                                            <span class="material-symbols-outlined" style="font-size: 12px;">public</span>
-                                            Published
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(239, 68, 68, 0.25);">
-                                            <span class="material-symbols-outlined" style="font-size: 12px;">visibility_off</span>
-                                            Unpublished
-                                        </span>
-                                    }
+                                    <form method="post" asp-page-handler="TogglePublish" asp-route-id="@feat.Id" style="display: inline-block; margin: 0;" onsubmit="return instantToggleFeature(event, this, 'publish', '@feat.Id', '@feat.Name.Replace("'", "\\'")')">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit"
+                                                class="status-toggle-pill @(feat.IsActive ? "pill-published" : "pill-unpublished")"
+                                                data-feature-id="@feat.Id"
+                                                data-toggle-kind="publish"
+                                                data-state="@(feat.IsActive ? "true" : "false")"
+                                                title="Click to switch instantly between Published and Unpublished">
+                                            <span class="material-symbols-outlined toggle-pill-icon">@(feat.IsActive ? "public" : "visibility_off")</span>
+                                            <span class="toggle-pill-label">@(feat.IsActive ? "Published" : "Unpublished")</span>
+                                            <span class="mini-switch"><span class="mini-knob"></span></span>
+                                        </button>
+                                    </form>
                                 </td>
                                 <td style="text-align: right;">
                                     <div style="display: inline-flex; align-items: center; gap: 6px; position: relative;">
@@ -699,10 +695,214 @@ else
     background: #e2e8f0;
     margin: 5px 0;
 }
+/* ── Instant Clickable Status & Availability Toggle Pills ── */
+.status-toggle-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px 4px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    user-select: none;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+.status-toggle-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.1);
+}
+.status-toggle-pill:active {
+    transform: translateY(0);
+}
+.status-toggle-pill .toggle-pill-icon {
+    font-size: 13px;
+    flex-shrink: 0;
+}
+.status-toggle-pill .mini-switch {
+    position: relative;
+    width: 24px;
+    height: 14px;
+    border-radius: 9999px;
+    transition: background 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    box-sizing: border-box;
+    margin-left: 2px;
+}
+.status-toggle-pill .mini-knob {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Available for Use (Green ON) */
+.status-toggle-pill.pill-available {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.status-toggle-pill.pill-available .mini-switch {
+    background: #10b981;
+}
+.status-toggle-pill.pill-available .mini-knob {
+    transform: translateX(10px);
+}
+/* Coming Soon (Amber OFF) */
+.status-toggle-pill.pill-coming-soon {
+    background: rgba(245, 158, 11, 0.12);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.status-toggle-pill.pill-coming-soon .mini-switch {
+    background: #f59e0b;
+}
+.status-toggle-pill.pill-coming-soon .mini-knob {
+    transform: translateX(0);
+}
+/* Published (Green ON) */
+.status-toggle-pill.pill-published {
+    background: rgba(16, 185, 129, 0.12);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.status-toggle-pill.pill-published .mini-switch {
+    background: #10b981;
+}
+.status-toggle-pill.pill-published .mini-knob {
+    transform: translateX(10px);
+}
+/* Unpublished (Red OFF) */
+.status-toggle-pill.pill-unpublished {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.status-toggle-pill.pill-unpublished .mini-switch {
+    background: #ef4444;
+}
+.status-toggle-pill.pill-unpublished .mini-knob {
+    transform: translateX(0);
+}
+.status-toggle-pill.is-saving {
+    opacity: 0.72;
+    pointer-events: none;
+}
 </style>
+
+<div id="instantToggleToast" style="display: none; position: fixed; bottom: 24px; right: 24px; z-index: 10000; background: #0f172a; color: #ffffff; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25); align-items: center; gap: 10px; border: 1px solid rgba(255,255,255,0.12);">
+    <span id="instantToggleToastIcon" class="material-symbols-outlined" style="font-size: 18px; color: #10b981;">check_circle</span>
+    <span id="instantToggleToastText">Updated</span>
+</div>
 
 @section Scripts {
     <script>
+        let toastTimer = null;
+        function showInstantToast(message, isSuccess = true) {
+            const toast = document.getElementById('instantToggleToast');
+            const icon = document.getElementById('instantToggleToastIcon');
+            const text = document.getElementById('instantToggleToastText');
+            if (!toast || !text) return;
+            text.textContent = message;
+            if (icon) {
+                icon.textContent = isSuccess ? 'check_circle' : 'error';
+                icon.style.color = isSuccess ? '#10b981' : '#ef4444';
+            }
+            toast.style.display = 'inline-flex';
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2800);
+        }
+
+        function updateKpiDelta(positiveId, negativeId, turnedOn) {
+            const posEl = document.getElementById(positiveId);
+            const negEl = document.getElementById(negativeId);
+            if (posEl && negEl) {
+                const posVal = parseInt((posEl.textContent || '0').replace(/,/g, ''), 10) || 0;
+                const negVal = parseInt((negEl.textContent || '0').replace(/,/g, ''), 10) || 0;
+                posEl.textContent = Math.max(0, posVal + (turnedOn ? 1 : -1)).toLocaleString();
+                negEl.textContent = Math.max(0, negVal + (turnedOn ? -1 : 1)).toLocaleString();
+            }
+        }
+
+        function applyPillVisualState(btn, kind, newState) {
+            btn.setAttribute('data-state', newState ? 'true' : 'false');
+            const iconEl = btn.querySelector('.toggle-pill-icon');
+            const labelEl = btn.querySelector('.toggle-pill-label');
+
+            if (kind === 'availability') {
+                btn.classList.toggle('pill-available', newState);
+                btn.classList.toggle('pill-coming-soon', !newState);
+                if (iconEl) iconEl.textContent = newState ? 'verified' : 'schedule';
+                if (labelEl) labelEl.textContent = newState ? 'Available for Use' : 'Coming Soon';
+            } else {
+                btn.classList.toggle('pill-published', newState);
+                btn.classList.toggle('pill-unpublished', !newState);
+                if (iconEl) iconEl.textContent = newState ? 'public' : 'visibility_off';
+                if (labelEl) labelEl.textContent = newState ? 'Published' : 'Unpublished';
+            }
+        }
+
+        function instantToggleFeature(event, form, kind, featureId, featureName) {
+            if (event) event.preventDefault();
+            const btn = form.querySelector('.status-toggle-pill');
+            if (!btn || btn.classList.contains('is-saving')) return false;
+
+            const currentState = btn.getAttribute('data-state') === 'true';
+            const nextState = !currentState;
+
+            // Optimistically flip all matching pills for this feature on the page
+            const allMatchingPills = document.querySelectorAll(`.status-toggle-pill[data-feature-id="${featureId}"][data-toggle-kind="${kind}"]`);
+            allMatchingPills.forEach(p => {
+                p.classList.add('is-saving');
+                applyPillVisualState(p, kind, nextState);
+            });
+
+            if (kind === 'availability') {
+                updateKpiDelta('kpiAvailableCount', 'kpiComingSoonCount', nextState);
+            } else {
+                updateKpiDelta('kpiPublishedCount', 'kpiUnpublishedCount', nextState);
+            }
+
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Request failed');
+                const statusLabel = kind === 'availability'
+                    ? (nextState ? 'Available for Use' : 'Coming Soon')
+                    : (nextState ? 'Published' : 'Unpublished');
+                showInstantToast(`${featureName} switched to ${statusLabel}`, true);
+            })
+            .catch(() => {
+                // Revert optimistic state on failure
+                allMatchingPills.forEach(p => applyPillVisualState(p, kind, currentState));
+                if (kind === 'availability') {
+                    updateKpiDelta('kpiAvailableCount', 'kpiComingSoonCount', currentState);
+                } else {
+                    updateKpiDelta('kpiPublishedCount', 'kpiUnpublishedCount', currentState);
+                }
+                showInstantToast(`Could not update ${featureName}. Please try again.`, false);
+            })
+            .finally(() => {
+                allMatchingPills.forEach(p => p.classList.remove('is-saving'));
+            });
+
+            return false;
+        }
+
         function toggleFeatureActionMenu(event, menuId) {
             event.stopPropagation();
             const allMenus = document.querySelectorAll('.feature-action-dropdown-menu.open');
