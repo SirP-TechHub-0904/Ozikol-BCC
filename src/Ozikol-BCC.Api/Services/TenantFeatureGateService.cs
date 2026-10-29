@@ -66,7 +66,7 @@ namespace Ozikol_BCC.Api.Services
 
             var allActiveFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
                 .AsNoTracking()
-                .Where(f => f.IsActive)
+                .Where(f => f.IsActive && f.IsPublished)
                 .ToListAsync(cancellationToken);
 
             var entitlements = new TenantFeatureEntitlementsDto
@@ -86,27 +86,30 @@ namespace Ozikol_BCC.Api.Services
                 bool isActive = false;
                 DateTime? expiresAt = null;
                 int? daysRemaining = null;
-                string status = "Inactive";
+                string status = "Not Active";
 
-                if (feature.IsCompulsory)
-                {
-                    // Compulsory core platform features are always active and never expire
-                    isActive = true;
-                    status = "Active";
-                }
-                else if (isSubscribed && sub != null)
+                // On setup, no feature is enabled by default. A feature is only active when explicitly activated by the tenant admin or Central operator.
+                if (isSubscribed && sub != null)
                 {
                     expiresAt = sub.ExpiresAtUtc;
                     daysRemaining = (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays);
-                    status = sub.Status;
+                    status = string.IsNullOrWhiteSpace(sub.Status) ? (sub.IsActive ? "Active" : "Not Active") : sub.Status;
 
-                    if (sub.IsActive && string.Equals(sub.Status, "Active", StringComparison.OrdinalIgnoreCase) && sub.ExpiresAtUtc > now)
+                    if (sub.IsActive &&
+                        !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase) &&
+                        (feature.IsCompulsory || sub.ExpiresAtUtc > now))
                     {
                         isActive = true;
+                        status = "Active";
                     }
-                    else if (sub.ExpiresAtUtc <= now)
+                    else if (!feature.IsCompulsory && sub.ExpiresAtUtc <= now)
                     {
                         status = "Expired";
+                    }
+                    else
+                    {
+                        status = "Not Active";
                     }
                 }
 

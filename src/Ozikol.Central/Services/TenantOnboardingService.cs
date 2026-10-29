@@ -512,69 +512,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 }
             }
 
-            // Step F & G: Provision Only Explicitly Selected Modular Features (Tenants can install/activate additional capabilities from /billing/features at any time)
-            var selectedFeatureGuids = (request.SelectedFeatureIds ?? new List<Guid>())
-                .Distinct()
-                .ToList();
-
-            if (selectedFeatureGuids.Count > 0)
-            {
-                var selectedFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
-                    .Where(f => selectedFeatureGuids.Contains(f.Id) && f.IsActive)
-                    .ToListAsync(cancellationToken);
-
-                foreach (var addon in selectedFeatures)
-                {
-                    // Check user-selected billing cadence for this specific feature ("Monthly" vs "Yearly")
-                    bool isYearly = false;
-                    if (request.SelectedFeatureCadences != null &&
-                        request.SelectedFeatureCadences.TryGetValue(addon.Id, out var cadenceStr))
-                    {
-                        isYearly = cadenceStr.Equals("Yearly", StringComparison.OrdinalIgnoreCase);
-                    }
-
-                    var durationType = isYearly ? SubscriptionBillingDuration.Yearly : SubscriptionBillingDuration.Monthly;
-                    var basePrice = isYearly
-                        ? (addon.YearlyPrice > 0 ? addon.YearlyPrice : addon.MonthlyPrice * 10)
-                        : addon.MonthlyPrice;
-
-                    decimal effectivePrice = basePrice;
-
-                    // Evaluate single line-item coupon discount if applicable
-                    if (appliedCoupon != null)
-                    {
-                        bool couponApplies = !appliedCoupon.SpecificFeatureId.HasValue || appliedCoupon.SpecificFeatureId.Value == addon.Id;
-                        if (couponApplies)
-                        {
-                            if (appliedCoupon.IsPercentage)
-                            {
-                                effectivePrice = Math.Max(0.00m, basePrice * (1m - (appliedCoupon.DiscountPercentage / 100m)));
-                            }
-                            else
-                            {
-                                effectivePrice = Math.Max(0.00m, basePrice - appliedCoupon.DiscountAmount);
-                            }
-                        }
-                    }
-
-                    var expiryDate = isYearly ? trialOffsetDate.AddYears(1) : trialOffsetDate.AddMonths(1);
-
-                    _masterCatalogDbContext.MasterTenantFeatureSubscriptions.Add(new MasterTenantFeatureSubscription
-                    {
-                        Id = Guid.NewGuid(),
-                        MasterTenantCatalogId = catalogEntry.Id,
-                        MasterFeatureCatalogId = addon.Id,
-                        DurationType = durationType,
-                        RecurringPrice = effectivePrice,
-                        StartsAtUtc = now,
-                        ExpiresAtUtc = expiryDate,
-                        AutoRenew = true,
-                        IsActive = true,
-                        Status = "Active",
-                        CreatedUtc = now
-                    });
-                }
-            }
+            // Step F & G: On setup, NO feature is enabled by default.
+            // The tenant administrator activates desired modular capabilities directly from /billing/features after setup.
 
             // Step H: Redeem Promotional Coupon if provided
             if (appliedCoupon != null)

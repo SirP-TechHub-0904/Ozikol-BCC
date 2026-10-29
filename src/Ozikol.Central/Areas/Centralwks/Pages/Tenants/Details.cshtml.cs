@@ -98,7 +98,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             // 1. Build Feature Subscriptions Matrix
             var allFeatures = await _dbContext.MasterFeatureCatalogs
-                .Where(f => f.IsActive)
+                .Where(f => f.IsActive && f.IsPublished)
                 .OrderBy(f => f.Category)
                 .ThenBy(f => f.Name)
                 .ToListAsync();

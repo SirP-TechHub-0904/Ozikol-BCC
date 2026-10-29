@@ -364,7 +364,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 {
                     bool notExpired = sub.ExpiresAtUtc > now;
                     bool notSuspended = !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
-                                        !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase);
+                                        !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
+                                        !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase);
                     isActiveForTenant = sub.IsActive && notSuspended && (f.IsCompulsory || notExpired);
                 }
                 else
@@ -531,10 +532,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             tenant.UseCustomAvailability = !tenant.UseCustomAvailability;
             tenant.UpdatedUtc = DateTime.UtcNow;
 
-            // If turning ON Custom Availability and no overrides exist yet, seed the baseline 7 available features as Available for this tenant
+            // If turning ON Custom Availability and no overrides exist yet, seed the baseline available features as Available (but Not Active until activated) for this tenant
             if (tenant.UseCustomAvailability && !tenant.FeatureSubscriptions.Any(s => s.IsAvailableForUseOverride != null))
             {
-                var allFeatures = await _dbContext.MasterFeatureCatalogs.Where(f => f.IsActive).ToListAsync();
+                var allFeatures = await _dbContext.MasterFeatureCatalogs.Where(f => f.IsActive && f.IsPublished).ToListAsync();
                 bool anyMasterAvail = allFeatures.Any(f => f.IsAvailableForUse);
 
                 foreach (var f in allFeatures)
@@ -557,8 +558,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                             StartsAtUtc = DateTime.UtcNow,
                             ExpiresAtUtc = DateTime.UtcNow.AddYears(1),
                             AutoRenew = true,
-                            IsActive = f.IsCompulsory,
-                            Status = f.IsCompulsory ? "Active" : "Suspended",
+                            IsActive = false,
+                            Status = "Inactive",
                             IsAvailableForUseOverride = true,
                             CreatedUtc = DateTime.UtcNow
                         });
@@ -759,8 +760,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     StartsAtUtc = DateTime.UtcNow,
                     ExpiresAtUtc = DateTime.UtcNow.AddMonths(1),
                     AutoRenew = true,
-                    IsActive = feature.IsCompulsory,
-                    Status = feature.IsCompulsory ? "Active" : "Suspended",
+                    IsActive = false,
+                    Status = "Inactive",
                     IsAvailableForUseOverride = newAvailability,
                     CreatedUtc = DateTime.UtcNow
                 };
@@ -840,8 +841,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     StartsAtUtc = DateTime.UtcNow,
                     ExpiresAtUtc = DateTime.UtcNow.AddMonths(1),
                     AutoRenew = true,
-                    IsActive = feature.IsCompulsory,
-                    Status = feature.IsCompulsory ? "Active" : "Suspended",
+                    IsActive = false,
+                    Status = "Inactive",
                     CreatedUtc = DateTime.UtcNow
                 };
                 _dbContext.MasterTenantFeatureSubscriptions.Add(newSub);

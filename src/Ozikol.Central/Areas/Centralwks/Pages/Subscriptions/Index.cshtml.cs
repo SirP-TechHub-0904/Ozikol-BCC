@@ -163,13 +163,13 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
             PageSize = PageSize switch { 10 => 10, 20 => 20, 50 => 50, _ => 10 };
             if (PageNumber < 1) PageNumber = 1;
 
-            // Load active catalog capabilities
+            // Load active and published catalog capabilities
             List<MasterFeatureCatalog> allCatalogFeatures;
             try
             {
                 allCatalogFeatures = await _dbContext.MasterFeatureCatalogs
                     .AsNoTracking()
-                    .Where(f => f.IsActive)
+                    .Where(f => f.IsActive && f.IsPublished)
                     .ToListAsync();
             }
             catch
@@ -185,7 +185,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                         Category = f.Category,
                         IsCompulsory = f.IsCompulsory,
                         MonthlyPrice = f.MonthlyPrice,
-                        IsActive = f.IsActive
+                        IsActive = f.IsActive,
+                        IsPublished = f.IsActive
                     })
                     .ToListAsync();
             }
@@ -357,9 +358,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                 foreach (var f in allCatalogFeatures)
                 {
                     subsByFeatureId.TryGetValue(f.Id, out var sub);
-                    bool isRunning = f.IsCompulsory
-                        ? (sub == null || (sub.IsActive && !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase)))
-                        : (sub != null && sub.IsActive && !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase));
+                    // On setup, no feature is enabled by default. Only explicitly activated subscriptions are running.
+                    bool isRunning = sub != null &&
+                                     sub.IsActive &&
+                                     !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                                     !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase);
 
                     if (sub?.CustomPriceOverride != null)
                     {

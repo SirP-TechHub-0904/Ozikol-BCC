@@ -329,6 +329,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             {
                 rawFeatures = await _dbContext.MasterFeatureCatalogs
                     .AsNoTracking()
+                    .Where(f => f.IsActive && f.IsPublished)
                     .ToListAsync();
             }
             catch
@@ -336,6 +337,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 usedFeatureFallback = true;
                 rawFeatures = await _dbContext.MasterFeatureCatalogs
                     .AsNoTracking()
+                    .Where(f => f.IsActive)
                     .Select(f => new MasterFeatureCatalog
                     {
                         Id = f.Id,
@@ -416,7 +418,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 foreach (var f in allFeatures)
                 {
                     subsByFeatureId.TryGetValue(f.Id, out var sub);
-                    bool isRunning = f.IsCompulsory ? (sub == null || sub.IsActive) : (sub != null && sub.IsActive);
+                    // On setup, no feature is enabled by default. Only explicitly activated subscriptions are running.
+                    bool isRunning = sub != null &&
+                                     sub.IsActive &&
+                                     !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                                     !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase);
 
                     if (sub?.CustomPriceOverride != null) customPriceCount++;
                     if (sub?.IsAvailableForUseOverride != null) customAvailCount++;
@@ -603,7 +609,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 subsByFeature.TryGetValue(feat.Id, out var subs);
                 var subCount = subs?.Count ?? 0;
 
-                var effectiveSubCount = feat.IsCompulsory ? TotalTenants : subCount;
+                var effectiveSubCount = subCount;
                 var adoptionRate = TotalTenants > 0 ? ((double)effectiveSubCount / TotalTenants) * 100.0 : 0.0;
 
                 decimal featureMrr = 0.00m;
