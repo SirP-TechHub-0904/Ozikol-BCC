@@ -52,6 +52,9 @@ namespace Ozikol_BCC.Api.Controllers
             var candidate = _tenantProvider?.CurrentTenant;
             if (!string.IsNullOrWhiteSpace(candidate)) return candidate.Trim().ToLowerInvariant();
 
+            var claim = User.FindFirst("tenant_key")?.Value ?? User.FindFirst("tenant")?.Value;
+            if (!string.IsNullOrWhiteSpace(claim)) return claim.Trim().ToLowerInvariant();
+
             var header = HttpContext.Request.Headers["X-Tenant-Key"].ToString()?.Trim();
             if (!string.IsNullOrWhiteSpace(header)) return header.ToLowerInvariant();
 

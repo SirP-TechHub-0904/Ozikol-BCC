@@ -103,14 +103,14 @@ export class BillingService {
    * Retrieves the current feature billing snapshot for the workspace.
    */
   getFeaturesSnapshot(): Observable<ApiResponse<BillingFeaturesSnapshot>> {
-    return this.api.get<ApiResponse<BillingFeaturesSnapshot>>('api/billing/features');
+    return this.api.get<ApiResponse<BillingFeaturesSnapshot>>('billing/features');
   }
 
   /**
    * Subscribes the workspace to an optional feature add-on.
    */
   subscribeFeature(featureId: string, cadence: 'Monthly' | 'Quarterly' | 'Yearly'): Observable<ApiResponse<SubscribeFeatureResult>> {
-    return this.api.post<ApiResponse<SubscribeFeatureResult>>('api/billing/features/subscribe', {
+    return this.api.post<ApiResponse<SubscribeFeatureResult>>('billing/features/subscribe', {
       featureId,
       cadence
     });
@@ -120,14 +120,14 @@ export class BillingService {
    * Toggles auto-renewal for a subscribed add-on.
    */
   toggleAutoRenew(subscriptionId: string): Observable<ApiResponse<boolean>> {
-    return this.api.post<ApiResponse<boolean>>(`api/billing/features/${subscriptionId}/auto-renew`, {});
+    return this.api.post<ApiResponse<boolean>>(`billing/features/${subscriptionId}/auto-renew`, {});
   }
 
   /**
    * Lists all invoices generated for the tenant workspace.
    */
   getInvoices(): Observable<ApiResponse<BillingInvoice[]>> {
-    return this.api.get<ApiResponse<BillingInvoice[]>>('api/billing/invoices');
+    return this.api.get<ApiResponse<BillingInvoice[]>>('billing/invoices');
   }
 }
 

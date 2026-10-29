@@ -2,6 +2,124 @@
   padding: 0;
 }
 
+/* Header Area */
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.admin-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.admin-subtitle {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 6px 0 0 0;
+  max-width: 720px;
+  line-height: 1.5;
+}
+
+.admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* Buttons */
+.btn-admin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.btn-admin span.material-symbols-outlined {
+  font-size: 19px;
+  line-height: 1;
+  display: inline-block;
+}
+
+.btn-admin-primary {
+  background: #0050e5;
+  color: #ffffff;
+  border-color: #0050e5;
+  box-shadow: 0 1px 2px rgba(0, 80, 229, 0.2);
+}
+
+.btn-admin-primary:hover:not(:disabled) {
+  background: #003ebd;
+  border-color: #003ebd;
+  box-shadow: 0 4px 12px rgba(0, 80, 229, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-admin-secondary {
+  background: #ffffff;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.btn-admin-secondary:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.btn-admin-danger {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.btn-admin-danger:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.btn-admin-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+.btn-admin-sm span.material-symbols-outlined {
+  font-size: 16px;
+}
+
+.btn-admin:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .title-with-info {
   display: flex;
   align-items: center;
