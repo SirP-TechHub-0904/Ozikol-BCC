@@ -13,8 +13,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
 {
     /// <summary>
     /// PageModel displaying and managing the platform-wide tenant subscriptions &amp; multi-horizon renewal command center.
-    /// Captures per-tenant active/not-active capabilities, custom vs. general pricing policies, tenant default currency,
-    /// and multi-feature pending payment amounts across Overdue, &lt;=30 Days, 31-60 Days, and &gt;60 Days windows.
+    /// Displays each tenant's billing posture in the tenant's own running currency (Last Paid, Next Payment, Total Features),
+    /// while housing all Overdue / &lt;=30d / 31-60d / &gt;60d feature horizons and Sent Renewal Emails inside the Inspect modal.
     /// </summary>
     public class IndexModel : PageModel
     {
@@ -192,7 +192,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
 
             int totalCatalogCount = allCatalogFeatures.Count;
 
-            // Load currency rates for tenant default currency badge & conversion
+            // Load currency rates for tenant running currency conversion
             Dictionary<string, MasterCurrencyRate> currencyLookup;
             try
             {
@@ -257,31 +257,75 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
 
             TotalAllTenantsCount = allTenantsList.Count;
 
-            // Preload recent renewal/billing email notification logs for tenant admin emails
+            // Load latest completed billing transaction per tenant for Last Paid display
+            Dictionary<Guid, MasterBillingTransaction> latestTxByTenant;
+            try
+            {
+                var completedTxs = await _dbContext.MasterBillingTransactions
+                    .AsNoTracking()
+                    .Where(tx => tx.Amount > 0 && (tx.Status == "Completed" || tx.Status == "Paid" || tx.Status == "Succeeded"))
+                    .OrderByDescending(tx => tx.CreatedUtc)
+                    .ToListAsync();
+
+                latestTxByTenant = completedTxs
+                    .GroupBy(tx => tx.MasterTenantCatalogId)
+                    .ToDictionary(g => g.Key, g => g.First());
+            }
+            catch
+            {
+                latestTxByTenant = new Dictionary<Guid, MasterBillingTransaction>();
+            }
+
+            // Preload full sent renewal/billing email logs for tenant admin emails so Inspect modal can display the sent emails
             var adminEmails = allTenantsList
                 .Where(t => !string.IsNullOrWhiteSpace(t.AdminEmail))
                 .Select(t => t.AdminEmail!.Trim().ToLower())
                 .Distinct()
                 .ToList();
 
-            var emailLogs = await _dbContext.MasterEmailLogs
-                .AsNoTracking()
-                .Where(e => adminEmails.Contains(e.RecipientEmail.ToLower())
-                         && (e.Subject.Contains("Renewal") || e.Subject.Contains("Subscription") || e.Subject.Contains("Billing"))
-                         && e.Status == "Sent")
-                .GroupBy(e => e.RecipientEmail.ToLower())
-                .Select(g => new
-                {
-                    Email = g.Key,
-                    Count = g.Count(),
-                    LastSent = g.Max(e => e.SentAtUtc)
-                })
-                .ToDictionaryAsync(k => k.Email, v => v);
+            Dictionary<string, List<SentRenewalEmailItemViewModel>> sentEmailsByRecipient;
+            try
+            {
+                var rawEmailLogs = await _dbContext.MasterEmailLogs
+                    .AsNoTracking()
+                    .Where(e => adminEmails.Contains(e.RecipientEmail.ToLower()))
+                    .OrderByDescending(e => e.SentAtUtc)
+                    .Select(e => new SentRenewalEmailItemViewModel
+                    {
+                        Id = e.Id,
+                        RecipientEmail = e.RecipientEmail,
+                        Subject = e.Subject,
+                        BodyHtml = e.BodyHtml,
+                        Provider = e.Provider ?? "Postmark",
+                        Status = e.Status,
+                        SentAtUtc = e.SentAtUtc,
+                        SentFormatted = e.SentAtUtc.ToString("MMM dd, yyyy HH:mm")
+                    })
+                    .ToListAsync();
 
+                sentEmailsByRecipient = rawEmailLogs
+                    .GroupBy(e => e.RecipientEmail.Trim().ToLowerInvariant())
+                    .ToDictionary(g => g.Key, g => g.Take(25).ToList());
+            }
+            catch
+            {
+                sentEmailsByRecipient = new Dictionary<string, List<SentRenewalEmailItemViewModel>>();
+            }
+
+            var jsonOpts = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
             var transformedList = new List<TenantSubscriptionSummaryViewModel>();
 
             foreach (var tenant in allTenantsList)
             {
+                var currCode = string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode) ? "USD" : tenant.DefaultCurrencyCode.Trim().ToUpperInvariant();
+                string currSymbol = "$";
+                decimal currRate = 1.0m;
+                if (currencyLookup.TryGetValue(currCode, out var rateObj))
+                {
+                    currSymbol = rateObj.CurrencySymbol;
+                    currRate = rateObj.RateFromUsd > 0 ? rateObj.RateFromUsd : 1.0m;
+                }
+
                 var subsByFeatureId = (tenant.FeatureSubscriptions ?? new List<MasterTenantFeatureSubscription>())
                     .GroupBy(s => s.MasterFeatureCatalogId)
                     .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.ExpiresAtUtc).First());
@@ -413,6 +457,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                         DurationType = durationType.ToString(),
                         MasterPriceUsd = f.MonthlyPrice,
                         EffectivePriceUsd = effectivePriceUsd,
+                        EffectivePriceTenant = Math.Round(effectivePriceUsd * currRate, 2),
                         HasCustomPrice = tenant.UseCustomPricing && sub?.CustomPriceOverride != null,
                         StartsAtUtc = sub?.StartsAtUtc ?? tenant.CreatedUtc,
                         ExpiresAtUtc = expiresUtc,
@@ -429,26 +474,49 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                 int totalInactive = Math.Max(0, totalCatalogCount - totalActive);
 
                 var paidItems = featureItems.Where(x => !x.IsCorePerpetual && x.EffectivePriceUsd > 0).OrderBy(x => x.ExpiresAtUtc).ToList();
-                DateTime? nextBillingDate = paidItems.Any() ? paidItems.First().ExpiresAtUtc : null;
+                DateTime? nextBillingDate = paidItems.Any() ? paidItems.First().ExpiresAtUtc : (featureItems.Any() ? featureItems.Min(x => x.ExpiresAtUtc) : null);
                 int daysRemaining = nextBillingDate.HasValue ? (int)Math.Ceiling((nextBillingDate.Value - now).TotalDays) : 999;
 
-                // Match renewal email notification count
-                int notificationCount = 0;
-                string notificationStatus = totalActive > 0 ? "No Notice Sent" : "None";
-                if (!string.IsNullOrWhiteSpace(tenant.AdminEmail) && emailLogs.TryGetValue(tenant.AdminEmail.Trim().ToLower(), out var emailInfo))
+                decimal nextBillingUsd = Math.Round(paidItems.Sum(x => x.EffectivePriceUsd), 2);
+                decimal nextPaymentTenantAmount = Math.Round(nextBillingUsd * currRate, 2);
+
+                // Resolve Last Paid amount (in tenant's running currency) and Last Paid Date
+                decimal lastPaidTenantAmount = 0m;
+                DateTime? lastPaidDateUtc = null;
+                if (latestTxByTenant.TryGetValue(tenant.Id, out var latestTx))
                 {
-                    notificationCount = emailInfo.Count;
-                    notificationStatus = $"{emailInfo.Count} sent ({emailInfo.LastSent:MMM dd})";
+                    lastPaidDateUtc = latestTx.CreatedUtc;
+                    if (string.Equals(latestTx.Currency, currCode, StringComparison.OrdinalIgnoreCase))
+                    {
+                        lastPaidTenantAmount = Math.Round(latestTx.Amount, 2);
+                    }
+                    else if (string.Equals(latestTx.Currency, "USD", StringComparison.OrdinalIgnoreCase))
+                    {
+                        lastPaidTenantAmount = Math.Round(latestTx.Amount * currRate, 2);
+                    }
+                    else
+                    {
+                        lastPaidTenantAmount = Math.Round(latestTx.Amount, 2);
+                    }
+                }
+                else if (paidItems.Any())
+                {
+                    lastPaidTenantAmount = nextPaymentTenantAmount;
+                    lastPaidDateUtc = paidItems.Max(x => x.StartsAtUtc);
                 }
 
-                var currCode = string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode) ? "USD" : tenant.DefaultCurrencyCode.Trim().ToUpperInvariant();
-                string currSymbol = "$";
-                decimal currRate = 1.0m;
-                if (currencyLookup.TryGetValue(currCode, out var rateObj))
+                // Match renewal email logs for this tenant
+                var tenantSentEmails = new List<SentRenewalEmailItemViewModel>();
+                if (!string.IsNullOrWhiteSpace(tenant.AdminEmail) &&
+                    sentEmailsByRecipient.TryGetValue(tenant.AdminEmail.Trim().ToLowerInvariant(), out var foundEmails))
                 {
-                    currSymbol = rateObj.CurrencySymbol;
-                    currRate = rateObj.RateFromUsd > 0 ? rateObj.RateFromUsd : 1.0m;
+                    tenantSentEmails = foundEmails;
                 }
+
+                int notificationCount = tenantSentEmails.Count;
+                string notificationStatus = notificationCount > 0
+                    ? $"{notificationCount} sent ({tenantSentEmails.First().SentAtUtc:MMM dd})"
+                    : "0 sent";
 
                 // Order features so paid/expiring features appear first in the Inspect Modal
                 var orderedFeatures = featureItems
@@ -471,7 +539,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                     CurrencySymbol = currSymbol,
                     ExchangeRateFromUsd = currRate,
                     MonthlyMrrUsd = Math.Round(tenantMrr, 2),
-                    NextBillingAmount = Math.Round(paidItems.Sum(x => x.EffectivePriceUsd), 2),
+                    LastPaidTenantAmount = lastPaidTenantAmount,
+                    LastPaidDateUtc = lastPaidDateUtc,
+                    NextBillingAmount = nextBillingUsd,
+                    NextPaymentTenantAmount = nextPaymentTenantAmount,
                     NextBillingDateUtc = nextBillingDate,
                     DaysRemaining = daysRemaining,
                     ActiveFeaturesCount = totalActive,
@@ -481,22 +552,28 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                     CorePerpetualCount = activeCompulsoryCount,
                     OverdueCount = overdueCount,
                     OverdueAmountUsd = Math.Round(overdueAmountUsd, 2),
+                    OverdueTenantAmount = Math.Round(overdueAmountUsd * currRate, 2),
                     EarliestOverdueDateUtc = earliestOverdueDate,
                     Expiring30DaysCount = expiring30Count,
                     Pending30DaysAmountUsd = Math.Round(pending30AmountUsd, 2),
+                    Pending30DaysTenantAmount = Math.Round(pending30AmountUsd * currRate, 2),
                     Earliest30DaysDateUtc = earliest30Date,
                     Latest30DaysDateUtc = latest30Date,
                     Expiring60DaysCount = expiring60Count,
                     Pending60DaysAmountUsd = Math.Round(pending60AmountUsd, 2),
+                    Pending60DaysTenantAmount = Math.Round(pending60AmountUsd * currRate, 2),
                     Earliest60DaysDateUtc = earliest60Date,
                     Latest60DaysDateUtc = latest60Date,
                     HealthyPaidCount = healthyPaidCount,
                     HealthyPaidAmountUsd = Math.Round(healthyPaidAmountUsd, 2),
+                    HealthyPaidTenantAmount = Math.Round(healthyPaidAmountUsd * currRate, 2),
                     Beyond60DaysCount = healthyPaidCount + activeCompulsoryCount,
                     NotificationCount = notificationCount,
                     NotificationStatus = notificationStatus,
                     Features = orderedFeatures,
-                    FeaturesJson = JsonSerializer.Serialize(orderedFeatures, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
+                    FeaturesJson = JsonSerializer.Serialize(orderedFeatures, jsonOpts),
+                    SentEmails = tenantSentEmails,
+                    SentEmailsJson = JsonSerializer.Serialize(tenantSentEmails, jsonOpts)
                 });
             }
 
@@ -594,6 +671,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
 
         /// <summary>
         /// Handles HTTP POST requests to immediately dispatch a renewal reminder notification to the tenant admin email.
+        /// Formats the renewal notice in the tenant's configured running currency.
         /// </summary>
         public async Task<IActionResult> OnPostSendRenewalNoticeAsync(Guid tenantId)
         {
@@ -614,12 +692,33 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                 return RedirectToPage();
             }
 
+            var currCode = string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode) ? "USD" : tenant.DefaultCurrencyCode.Trim().ToUpperInvariant();
+            string currSymbol = "$";
+            decimal currRate = 1.0m;
+            var rateRow = await _dbContext.MasterCurrencyRates.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.CurrencyCode == currCode);
+            if (rateRow != null)
+            {
+                currSymbol = rateRow.CurrencySymbol;
+                currRate = rateRow.RateFromUsd > 0 ? rateRow.RateFromUsd : 1.0m;
+            }
+
             var activeSubs = tenant.FeatureSubscriptions.Where(s => s.IsActive).ToList();
             var paidSubs = activeSubs.Where(s => s.MasterFeatureCatalog != null && !s.MasterFeatureCatalog.IsCompulsory).ToList();
-            var totalAmount = paidSubs.Sum(s => (tenant.UseCustomPricing && s.CustomPriceOverride != null) ? s.CustomPriceOverride.Value : (s.MasterFeatureCatalog?.MonthlyPrice ?? 0m));
+            var totalUsd = paidSubs.Sum(s => (tenant.UseCustomPricing && s.CustomPriceOverride != null) ? s.CustomPriceOverride.Value : (s.MasterFeatureCatalog?.MonthlyPrice ?? 0m));
+            var totalTenantAmount = Math.Round(totalUsd * currRate, 2);
             var earliestExpiry = paidSubs.Any()
                 ? paidSubs.Min(s => s.ExpiresAtUtc).ToString("MMMM dd, yyyy")
                 : (activeSubs.Any() ? activeSubs.Min(s => s.ExpiresAtUtc).ToString("MMMM dd, yyyy") : "N/A");
+
+            var featureListHtml = paidSubs.Any()
+                ? "<ul>" + string.Join("", paidSubs.Select(s =>
+                {
+                    var pUsd = (tenant.UseCustomPricing && s.CustomPriceOverride != null) ? s.CustomPriceOverride.Value : (s.MasterFeatureCatalog?.MonthlyPrice ?? 0m);
+                    var pLocal = Math.Round(pUsd * currRate, 2);
+                    return $"<li><strong>{s.MasterFeatureCatalog?.Name}</strong> — {currSymbol}{pLocal:N2} {currCode} (Due: {s.ExpiresAtUtc:MMM dd, yyyy})</li>";
+                })) + "</ul>"
+                : "<p>Active Core Plan Capabilities ($0.00)</p>";
 
             var emailLog = new MasterEmailLog
             {
@@ -630,8 +729,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                     <p>Dear Administrator,</p>
                     <p>This is an automated notice regarding the upcoming renewal of your active modular feature capabilities on the <strong>{tenant.OrganizationName}</strong> Business Command Center workspace.</p>
                     <p><strong>Earliest Renewal Date:</strong> {earliestExpiry}<br />
-                    <strong>Total Monthly Add-on Amount:</strong> ${totalAmount:N2}<br />
+                    <strong>Next Payment Amount ({currCode}):</strong> {currSymbol}{totalTenantAmount:N2}<br />
                     <strong>Active Subscribed Add-ons:</strong> {paidSubs.Count}</p>
+                    {featureListHtml}
                     <p>Please review your subscription details or settle payment before the expiration date to ensure uninterrupted capability operation.</p>",
                 Provider = "Postmark",
                 Status = "Sent",
@@ -647,7 +747,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                 Action = "SendRenewalNotice",
                 EntityType = "SubscriptionNotification",
                 EntityId = tenant.Id.ToString(),
-                Summary = $"Manual renewal notice dispatched to '{tenant.AdminEmail}' for tenant '{tenant.OrganizationName}' (${totalAmount:N2} due).",
+                Summary = $"Manual renewal notice dispatched to '{tenant.AdminEmail}' for tenant '{tenant.OrganizationName}' ({currSymbol}{totalTenantAmount:N2} {currCode} due).",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
@@ -655,7 +755,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
 
             await _dbContext.SaveChangesAsync();
 
-            TempData["Success"] = $"Renewal reminder notification successfully sent to {tenant.AdminEmail}.";
+            TempData["Success"] = $"Renewal reminder notification successfully sent to {tenant.AdminEmail} ({currSymbol}{totalTenantAmount:N2} {currCode}).";
             return RedirectToPage(new { search = Search, filter = Filter, tierFilter = TierFilter, pageNumber = PageNumber, pageSize = PageSize });
         }
 
@@ -677,7 +777,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
             public decimal ExchangeRateFromUsd { get; set; } = 1.0m;
 
             public decimal MonthlyMrrUsd { get; set; }
+            public decimal LastPaidTenantAmount { get; set; }
+            public DateTime? LastPaidDateUtc { get; set; }
+
             public decimal NextBillingAmount { get; set; }
+            public decimal NextPaymentTenantAmount { get; set; }
             public DateTime? NextBillingDateUtc { get; set; }
             public int DaysRemaining { get; set; }
 
@@ -690,30 +794,37 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
             // ── Window 1: Overdue (< 0 days) ──
             public int OverdueCount { get; set; }
             public decimal OverdueAmountUsd { get; set; }
+            public decimal OverdueTenantAmount { get; set; }
             public DateTime? EarliestOverdueDateUtc { get; set; }
 
             // ── Window 2: Pending in <= 30 Days (0 - 30 days) ──
             public int Expiring30DaysCount { get; set; }
             public decimal Pending30DaysAmountUsd { get; set; }
+            public decimal Pending30DaysTenantAmount { get; set; }
             public DateTime? Earliest30DaysDateUtc { get; set; }
             public DateTime? Latest30DaysDateUtc { get; set; }
 
             // ── Window 3: Pending in 31 - 60 Days ──
             public int Expiring60DaysCount { get; set; }
             public decimal Pending60DaysAmountUsd { get; set; }
+            public decimal Pending60DaysTenantAmount { get; set; }
             public DateTime? Earliest60DaysDateUtc { get; set; }
             public DateTime? Latest60DaysDateUtc { get; set; }
 
             // ── Window 4: Healthy Paid (> 60 Days) ──
             public int HealthyPaidCount { get; set; }
             public decimal HealthyPaidAmountUsd { get; set; }
+            public decimal HealthyPaidTenantAmount { get; set; }
             public int Beyond60DaysCount { get; set; }
 
             public int NotificationCount { get; set; }
-            public string NotificationStatus { get; set; } = "No Notice Sent";
+            public string NotificationStatus { get; set; } = "0 sent";
 
             public List<TenantFeatureItemViewModel> Features { get; set; } = new();
             public string FeaturesJson { get; set; } = "[]";
+
+            public List<SentRenewalEmailItemViewModel> SentEmails { get; set; } = new();
+            public string SentEmailsJson { get; set; } = "[]";
         }
 
         /// <summary>
@@ -729,6 +840,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
             public string DurationType { get; set; } = "Monthly";
             public decimal MasterPriceUsd { get; set; }
             public decimal EffectivePriceUsd { get; set; }
+            public decimal EffectivePriceTenant { get; set; }
             public bool HasCustomPrice { get; set; }
             public DateTime StartsAtUtc { get; set; }
             public DateTime ExpiresAtUtc { get; set; }
@@ -738,6 +850,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
             public bool IsCorePerpetual { get; set; }
             public string HorizonBucket { get; set; } = "Core";
             public string Status { get; set; } = "Active";
+        }
+
+        /// <summary>
+        /// Sent renewal or billing email log entry for a tenant organization.
+        /// </summary>
+        public class SentRenewalEmailItemViewModel
+        {
+            public Guid Id { get; set; }
+            public string RecipientEmail { get; set; } = string.Empty;
+            public string Subject { get; set; } = string.Empty;
+            public string BodyHtml { get; set; } = string.Empty;
+            public string Provider { get; set; } = "Postmark";
+            public string Status { get; set; } = "Sent";
+            public DateTime SentAtUtc { get; set; }
+            public string SentFormatted { get; set; } = string.Empty;
         }
     }
 }
