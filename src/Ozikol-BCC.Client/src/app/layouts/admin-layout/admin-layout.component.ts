@@ -3947,28 +3947,38 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   /**
-   * Canonical list of all 45 published capability codes so the sidebar immediately renders
-   * all published features before the async billing snapshot response returns.
+   * Canonical list of all 45 published capability codes matching MasterCatalogDbContext and the sidebar template
+   * so the sidebar immediately renders all published features before the async billing snapshot response returns.
    */
   private static readonly DEFAULT_PUBLISHED_FEATURE_CODES: string[] = [
-    'bcp-messenger', 'bcp-committees', 'bcp-alumni', 'bcp-whistleblowing',
-    'bcp-rota', 'bcp-shift-swaps', 'bcp-attendance-qr', 'bcp-appointments', 'bcp-follow-ups',
-    'bcp-dues', 'bcp-pledges', 'bcp-wallet', 'bcp-vouchers', 'bcp-grants',
-    'bcp-events', 'bcp-id-cards', 'bcp-elections', 'bcp-certificates',
-    'bcp-cms', 'bcp-forms', 'bcp-ai-studio', 'bcp-newsletter', 'bcp-whatsapp-sms', 'bcp-media-cloud', 'bcp-helpdesk',
-    'bcp-lms', 'bcp-onboarding', 'bcp-wiki', 'bcp-credentials', 'bcp-mentorship',
-    'bcp-projects', 'bcp-okrs', 'bcp-assets', 'bcp-vendors', 'bcp-fleet',
-    'bcp-vault', 'bcp-esign', 'bcp-board-portal', 'bcp-compliance', 'bcp-incidents',
-    'bcp-storefront', 'bcp-marketplace', 'bcp-sponsors', 'bcp-affiliates',
-    'bcp-bi-studio'
+    // Suite A: People, Community & Collaboration
+    'bcp-community-messenger', 'bcp-committees', 'bcp-alumni-directory', 'bcp-whistleblowing',
+    // Suite B: Workforce, Rota & Scheduling
+    'bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups',
+    // Suite C: Reports, Forms & Analytics
+    'bcp-interval-reporting', 'bcp-form-builder', 'bcp-survey-analytics', 'bcp-reference-forms',
+    // Suite D: Events & Training Management
+    'bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management',
+    // Suite E: Finance & Commercial Revenue
+    'bcp-invoicing-dues', 'bcp-store-ecommerce', 'bcp-proposal-pipeline', 'bcp-grant-ledger', 'bcp-embedded-banking',
+    // Suite F: Operations & Workflows
+    'bcp-recruitment-hiring', 'bcp-elections-evoting', 'bcp-equipment-fleet', 'bcp-company-assets', 'bcp-project-tasks',
+    // Suite G: Communication, AI & Support
+    'bcp-ai-smart-assist', 'bcp-mass-communication', 'bcp-helpdesk-support', 'bcp-live-chat', 'bcp-social-media', 'bcp-bio-link', 'bcp-gocall-ai',
+    // Suite H: Compliance, Learning & Certification
+    'bcp-document-management', 'bcp-learning-management', 'bcp-certificate-verification', 'bcp-visitor-gate', 'bcp-kyc-verification',
+    // Suite I: Demographics & Civic Census
+    'bcp-community-census', 'bcp-field-surveyor', 'bcp-resident-id-cards', 'bcp-demographic-analytics',
+    // Suite J: Life Events & Publications
+    'bcp-digital-memorials', 'bcp-wedding-portals', 'bcp-digital-brochures'
   ];
 
   /**
    * Baseline available capability codes before the first billing snapshot sync completes.
    */
   private static readonly DEFAULT_AVAILABLE_FEATURE_CODES: string[] = [
-    'bcp-messenger', 'bcp-committees', 'bcp-alumni',
-    'bcp-cms', 'bcp-forms', 'bcp-ai-studio', 'bcp-newsletter'
+    'bcp-community-messenger', 'bcp-committees', 'bcp-alumni-directory',
+    'bcp-form-builder', 'bcp-store-ecommerce', 'bcp-ai-smart-assist', 'bcp-mass-communication'
   ];
 
   /**
@@ -3977,7 +3987,7 @@ export class AdminLayoutComponent implements OnInit {
   visibleFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_visible_feature_codes');
+        const raw = localStorage.getItem('bcp_visible_feature_codes_v2');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -3996,7 +4006,7 @@ export class AdminLayoutComponent implements OnInit {
   availableFeatureCodes: Set<string> = new Set<string>(
     (() => {
       try {
-        const raw = localStorage.getItem('bcp_available_feature_codes');
+        const raw = localStorage.getItem('bcp_available_feature_codes_v2');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -4044,23 +4054,37 @@ export class AdminLayoutComponent implements OnInit {
     const visible = new Set<string>();
     const available = new Set<string>();
     const active = new Set<string>();
+    const explicitlyUnpublished = new Set<string>();
+
     for (const item of all) {
-      if (item && item.featureCode && item.isPublished !== false) {
-        const code = String(item.featureCode).toLowerCase();
-        visible.add(code);
-        if (item.isAvailableForUse !== false) {
-          available.add(code);
-        }
-        if (item.isActive && item.isAvailableForUse !== false) {
-          active.add(code);
-        }
+      if (!item || !item.featureCode) continue;
+      const code = String(item.featureCode).toLowerCase();
+      if (item.isPublished === false) {
+        explicitlyUnpublished.add(code);
+        continue;
+      }
+      visible.add(code);
+      if (item.isAvailableForUse !== false) {
+        available.add(code);
+      }
+      if (item.isActive && item.isAvailableForUse !== false) {
+        active.add(code);
       }
     }
+
+    // Ensure all 45 published canonical features remain visible in the sidebar (as Coming Soon if not in available)
+    // unless explicitly unpublished in Central.
+    for (const defaultCode of AdminLayoutComponent.DEFAULT_PUBLISHED_FEATURE_CODES) {
+      if (!explicitlyUnpublished.has(defaultCode)) {
+        visible.add(defaultCode);
+      }
+    }
+
     this.visibleFeatureCodes = visible;
     this.availableFeatureCodes = available;
     this.activeFeatureCodes = active;
-    localStorage.setItem('bcp_visible_feature_codes', JSON.stringify(Array.from(visible)));
-    localStorage.setItem('bcp_available_feature_codes', JSON.stringify(Array.from(available)));
+    localStorage.setItem('bcp_visible_feature_codes_v2', JSON.stringify(Array.from(visible)));
+    localStorage.setItem('bcp_available_feature_codes_v2', JSON.stringify(Array.from(available)));
     localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
   }
 
@@ -4071,7 +4095,7 @@ export class AdminLayoutComponent implements OnInit {
   loadActiveBillingFeatures(): void {
     this.api.get<any>('billing/features').subscribe({
       next: (res) => {
-        if (res && res.isSuccess && res.data) {
+        if (res && (res.success || res.isSuccess) && res.data) {
           this.applyBillingSnapshot(res.data);
         }
       },

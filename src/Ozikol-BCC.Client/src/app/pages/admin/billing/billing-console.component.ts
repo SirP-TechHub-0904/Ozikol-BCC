@@ -144,6 +144,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       }
     });
 
+    this.broadcastSnapshotToSidebar(this.snapshot);
     this.loadPaymentMethods();
     this.loadSnapshot();
     this.loadInvoices();
@@ -281,6 +282,10 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.isLoading = false;
+        this.broadcastSnapshotToSidebar(this.snapshot);
+        if (this.pendingDetailFeatureCode) {
+          this.resolveSelectedFeatureFromCode(this.pendingDetailFeatureCode);
+        }
         console.warn('Using resilient Master Feature Catalog snapshot:', err);
       }
     });
@@ -509,7 +514,35 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       ...(this.snapshot.available || [])
     ];
 
-    const published = combined.filter(f => f.isPublished !== false);
+    const byCode = new Map<string, BillingFeatureItem>();
+    const unpublishedCodes = new Set<string>();
+    for (const f of combined) {
+      if (!f || !f.featureCode) continue;
+      const code = f.featureCode.toLowerCase();
+      if (f.isPublished === false) {
+        unpublishedCodes.add(code);
+        continue;
+      }
+      byCode.set(code, f);
+    }
+
+    // Ensure any published feature not yet returned (e.g. before backend restart when custom availability is active)
+    // is still included as Coming Soon so all 45 published features appear consistently.
+    const fallbackItems = this.buildDefaultSnapshot().available || [];
+    for (const defItem of fallbackItems) {
+      const code = defItem.featureCode.toLowerCase();
+      if (!byCode.has(code) && !unpublishedCodes.has(code)) {
+        byCode.set(code, {
+          ...defItem,
+          isAvailableForUse: false,
+          isActive: false,
+          isSubscribed: false,
+          status: 'ComingSoon'
+        });
+      }
+    }
+
+    const published = Array.from(byCode.values());
 
     const sorted = published.sort((a, b) => {
       const suiteDiff = this.getSuiteOrder(a.category) - this.getSuiteOrder(b.category);
