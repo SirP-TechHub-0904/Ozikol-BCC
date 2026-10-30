@@ -1,3 +1,8 @@
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import '../../workstations/presentation/workstation_view.dart';
+import '../../workstations/services/workstation_watcher_service.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -66,6 +71,12 @@ class DashboardShellScreen extends ConsumerStatefulWidget {
 
 class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     with SingleTickerProviderStateMixin {
+  StreamSubscription<ViolationEvent>? _violationSub;
+  ViolationEvent? _activeViolation;
+  Timer? _violationDismissTimer;
+  final TextEditingController _kioskUnlockPinCtrl = TextEditingController();
+  bool _isKioskUnlocking = false;
+  String? _kioskUnlockError;
   final GlobalKey<ScaffoldState> _mobileScaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedNavIndex = 0;
   final List<int> _navHistory = [0];
@@ -245,12 +256,39 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(realtimeSyncServiceProvider).connect();
+
+      // Initialize Workstation Gatekeeper background monitor on Windows Desktop
+      if (!kIsWeb && Platform.isWindows) {
+        final activeWs = ref.read(workspaceStateProvider).activeWorkspace;
+        final watcher = ref.read(workstationWatcherProvider);
+        watcher.initializeAndStart(
+          userId: activeWs?.tenantKey,
+          userName: activeWs?.organizationName,
+          userEmail: activeWs?.tenantKey,
+        );
+        _violationSub = watcher.onViolationIntercepted.listen((event) {
+          if (mounted) {
+            setState(() {
+              _activeViolation = event;
+            });
+            _violationDismissTimer?.cancel();
+            _violationDismissTimer = Timer(const Duration(seconds: 10), () {
+              if (mounted) {
+                setState(() => _activeViolation = null);
+              }
+            });
+          }
+        });
+      }
     });
   }
 
   @override
   void dispose() {
     _refreshAnimController.dispose();
+    _violationSub?.cancel();
+    _violationDismissTimer?.cancel();
+    _kioskUnlockPinCtrl.dispose();
     super.dispose();
   }
 
@@ -331,6 +369,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final isOnline = connStatus == ConnectivityStatus.online;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeWs = state.activeWorkspace;
+    final watcher = ref.watch(workstationWatcherProvider);
     final metrics = metricsAsync.value ?? DashboardMetrics.empty();
     final isTelemetryLoading = metricsAsync.isLoading;
 
@@ -374,6 +413,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               metrics: metrics,
               isLoading: isTelemetryLoading,
               isOnline: isOnline,
+              watcher: watcher,
             );
           }
 
@@ -386,6 +426,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             metrics: metrics,
             isLoading: isTelemetryLoading,
             isOnline: isOnline,
+            watcher: watcher,
           );
         },
       ),
@@ -405,6 +446,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     required DashboardMetrics metrics,
     required bool isLoading,
     required bool isOnline,
+    required WorkstationWatcherService watcher,
   }) {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
@@ -488,6 +530,20 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             child: _buildOziAiFloatingButton(isDark, isMobile: false),
           ),
 
+          // Slide-down Workplace Policy Restriction Intercept Notification Banner
+          if (_activeViolation != null)
+            Positioned(
+              top: 72,
+              right: 24,
+              child: _buildViolationSlideBanner(isDark, _activeViolation!),
+            ),
+
+          // Workstation Remote Force-Lock Full-Screen Kiosk Overlay
+          if (watcher.isLocked)
+            Positioned.fill(
+              child: _buildWorkstationKioskLockOverlay(isDark, watcher),
+            ),
+
           // Full Workspace Refresh Loading Overlay
           if (_isRefreshing)
             Positioned.fill(
@@ -511,6 +567,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     required DashboardMetrics metrics,
     required bool isLoading,
     required bool isOnline,
+    required WorkstationWatcherService watcher,
   }) {
     return Scaffold(
       key: _mobileScaffoldKey,
@@ -727,6 +784,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             bottom: _aiFloatingOffset == null ? 14 : null,
             child: _buildOziAiFloatingButton(isDark, isMobile: true),
           ),
+
+          // Workstation Remote Force-Lock Full-Screen Kiosk Overlay
+          if (watcher.isLocked)
+            Positioned.fill(
+              child: _buildWorkstationKioskLockOverlay(isDark, watcher),
+            ),
 
           // Full Workspace Refresh Loading Overlay
           if (_isRefreshing)
@@ -1915,6 +1978,40 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
         ],
       ),
+
+      // 6. WORKSPACE
+      AppDrawerSection(
+        title: 'WORKSPACE',
+        onInfoTap: () {},
+        infoTooltip: 'Station Enforcement & Background Application Supervisor',
+        items: [
+          AppDrawerItem(
+            icon: Icons.desktop_windows_outlined,
+            title: 'Workspace (Desktop only)',
+            isSelected: _selectedNavIndex == 25,
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'LIVE',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            onTap: () {
+              _navigateToTab(25, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+        ],
+      ),
     ];
   }
 
@@ -1935,6 +2032,17 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             isSelected: memberIndex == 0,
             onTap: () {
               _navigateToTab(0, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+
+          // 2. Workspace Gatekeeper (Desktop Only)
+          AppDrawerItem(
+            icon: Icons.desktop_windows_outlined,
+            title: 'Workspace (Desktop only)',
+            isSelected: memberIndex == 7,
+            onTap: () {
+              _navigateToTab(7, clearHistory: true);
               _closeMobileDrawer();
             },
           ),
@@ -2181,6 +2289,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           return SecurityAuditLogsView(workspace: activeWs);
         case 24:
           return ErrorCodesView(workspace: activeWs);
+        case 25:
+          return WorkstationView(workspace: activeWs);
         default:
           return UserDashboardOverviewView(workspace: activeWs);
       }
@@ -2223,6 +2333,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             workspace: activeWs,
             onSelectTab: _handleAccountTabMember,
           );
+        case 7:
+          return WorkstationView(workspace: activeWs);
         default:
           return WorkspaceHomeView(
             workspace: activeWs,
@@ -3737,6 +3849,314 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       ),
     );
   }
+
+  Widget _buildViolationSlideBanner(bool isDark, ViolationEvent violation) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: 440,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1010) : const Color(0xFFFEF2F2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFEF4444).withValues(alpha: 0.6),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.12),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.gpp_bad_rounded,
+                    size: 18,
+                    color: Color(0xFFEF4444),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Workplace Policy Restriction',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : const Color(0xFF991B1B),
+                        ),
+                      ),
+                      Text(
+                        'Process Intercepted & Closed',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 16),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  splashRadius: 16,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                  onPressed: () {
+                    setState(() => _activeViolation = null);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '${violation.processName} is not authorized on this workstation during office hours. Non-work software is restricted to preserve business focus.',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
+                height: 1.35,
+              ),
+            ),
+            if (violation.windowTitle.isNotEmpty && violation.windowTitle != violation.processName) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Window: "${violation.windowTitle}"',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => setState(() => _activeViolation = null),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: isDark ? Colors.white70 : const Color(0xFF64748B),
+                  ),
+                  child: const Text('Dismiss', style: TextStyle(fontSize: 12)),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    setState(() => _activeViolation = null);
+                    final activeWs = ref.read(workspaceStateProvider).activeWorkspace;
+                    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
+                    final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
+                    _navigateToTab(isAdministration ? 25 : 7, clearHistory: true);
+                  },
+                  icon: const Icon(Icons.shield_rounded, size: 14),
+                  label: const Text('Request Access', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEF4444),
+                    foregroundColor: Colors.white,
+                    visualDensity: VisualDensity.compact,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWorkstationKioskLockOverlay(bool isDark, WorkstationWatcherService watcher) {
+    return Material(
+      color: Colors.transparent,
+      child: Stack(
+        children: [
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              color: const Color(0xFF090D16).withValues(alpha: 0.95),
+            ),
+          ),
+          Center(
+            child: Container(
+              width: 500,
+              padding: const EdgeInsets.all(36),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111827),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.6), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.2),
+                    blurRadius: 36,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                      border: Border.all(color: const Color(0xFFEF4444), width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.lock_rounded,
+                      size: 40,
+                      color: Color(0xFFEF4444),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'WORKSTATION LOCKED',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'This PC has been remotely locked by your IT Administrator.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF334155)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFFF59E0B)),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            watcher.lockReason != null && watcher.lockReason!.isNotEmpty
+                                ? 'Reason: ${watcher.lockReason}'
+                                : 'Administrative policy enforcement active.',
+                            style: const TextStyle(fontSize: 12, color: Color(0xFFE2E8F0)),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (_kioskUnlockError != null) ...[
+                    Text(
+                      _kioskUnlockError!,
+                      style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12.5, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  TextField(
+                    controller: _kioskUnlockPinCtrl,
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white, fontSize: 16, letterSpacing: 3),
+                    textAlign: TextAlign.center,
+                    decoration: InputDecoration(
+                      hintText: 'Enter Admin Unlock PIN',
+                      hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13, letterSpacing: 0),
+                      filled: true,
+                      fillColor: const Color(0xFF1E293B),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF334155)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF334155)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Color(0xFF0050E5), width: 1.8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: _isKioskUnlocking
+                          ? null
+                          : () async {
+                              final pin = _kioskUnlockPinCtrl.text.trim();
+                              if (pin.isEmpty) return;
+                              setState(() {
+                                _isKioskUnlocking = true;
+                                _kioskUnlockError = null;
+                              });
+                              final ok = await watcher.unlockWithPin(pin);
+                              if (mounted) {
+                                setState(() {
+                                  _isKioskUnlocking = false;
+                                  if (!ok) {
+                                    _kioskUnlockError = 'Invalid PIN or unlock rejected by server.';
+                                  } else {
+                                    _kioskUnlockPinCtrl.clear();
+                                  }
+                                });
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0050E5),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: _isKioskUnlocking
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Text('Unlock Workstation', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Station Host: ${Platform.isWindows ? Platform.localHostname : "Workstation"}',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
 
 /// <summary>
