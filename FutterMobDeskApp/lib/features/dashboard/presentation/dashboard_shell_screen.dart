@@ -931,6 +931,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 _buildTopMoreMenuBtn(context, isDark, includeRefresh: true),
               ],
 
+              // AI Assistant Header Trigger (Replaces floating button to prevent blocking content)
+              _buildTopAiAssistantBtn(isDark),
+
               // Theme Mode Toggle Icon
               _buildTopIconBtn(
                 icon: isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
@@ -3663,18 +3666,53 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }
 
   Widget _buildOziAiFloatingButton(bool isDark, {bool isMobile = false}) {
-    return _OziAiAnimatedFab(
-      isMobile: isMobile,
-      isDark: isDark,
-      label: 'btn.ai_assistant'.tr(ref, fallback: 'AI Assistant'),
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('AI Assistant is available in the workspace studio.'),
-            duration: Duration(seconds: 2),
+    // Disabled: Floating overlay removed to prevent blocking table action buttons
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildTopAiAssistantBtn(bool isDark) {
+    return Tooltip(
+      message: 'btn.ai_assistant'.tr(ref, fallback: 'AI Assistant'),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('AI Assistant is available in the workspace studio.'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isDark ? AppColors.outlineDark : const Color(0xFFBFDBFE),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.auto_awesome, size: 15, color: AppColors.primary),
+                const SizedBox(width: 5),
+                Text(
+                  'btn.ai_assistant'.tr(ref, fallback: 'AI Assistant'),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

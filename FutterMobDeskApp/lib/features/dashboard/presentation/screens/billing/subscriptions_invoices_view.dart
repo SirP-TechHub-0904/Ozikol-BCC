@@ -655,7 +655,7 @@ class _SubscriptionsInvoicesViewState extends ConsumerState<SubscriptionsInvoice
                         _buildInstalledCapabilitiesCard(),
                         const SizedBox(height: 24),
                         _buildInvoicesLedCard(),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 80),
                       ],
                     ),
                   ),
@@ -1379,7 +1379,7 @@ class _SubscriptionsInvoicesViewState extends ConsumerState<SubscriptionsInvoice
                       const SizedBox(height: 20),
                       if (_invoiceDetail!['status'] != 'Completed')
                         _buildPaymentMethodsCard(),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 80),
                     ],
                   ),
                 ),
