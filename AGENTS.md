@@ -3,7 +3,7 @@
 This document serves as the permanent memory bank and behavioral guidelines for all AI coding agents working in this repository. These rules apply to every prompt and session.
 
 > [!IMPORTANT]
-> **Active Rule Set**: This master memory bank is also modularized into `.agents/rules/` (`01-architecture-database-ai.md`, `02-translation-localization.md`, `03-ui-ux-design-standards.md`, `04-git-workflow-code-quality.md`, `05-notifications-communications.md`) to guarantee 100% prompt injection with zero byte truncation across all AI agent sessions. Always adhere strictly to all rules in this document and in `.agents/rules/`.
+> **Active Rule Set**: This master memory bank is also modularized into `.agents/rules/` (`01-architecture-database-ai.md`, `02-translation-localization.md`, `03-ui-ux-design-standards.md`, `04-git-workflow-code-quality.md`, `05-notifications-communications.md`, `06-error-codes-handling.md`) to guarantee 100% prompt injection with zero byte truncation across all AI agent sessions. Always adhere strictly to all rules in this document and in `.agents/rules/`.
 
 ---
 
@@ -360,3 +360,25 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * **Angular Client**: Use official Angular Material / Material Symbols / FontAwesome or custom SVG icons.
   * **Flutter Desktop & Mobile**: Use Flutter `Icons.<icon_name>` (e.g. `Icons.rocket_launch`, `Icons.bolt`, `Icons.calendar_month`, `Icons.warning_amber`).
 * **Design Rationale**: Raw Unicode emojis render inconsistently across operating systems (Windows, macOS, iOS, Android, Linux), disrupt typography baselines, and convey an informal/unprofessional appearance incompatible with an enterprise Business Command Center. Vector icons ensure 100% theme color fidelity, responsive scaling, and unified cross-platform aesthetics.
+
+
+---
+
+## 23. Standardized API Error Codes, Custom Error vs. Real Error Isolation (Mandatory)
+* **Strict Client vs. Central Error Separation**:
+  * **Client / Tenant Response Contract**: Every non-success API response (`IsSuccess == false` or `HTTP >= 400`) returned to a client (Angular Web, Flutter Desktop/Mobile) MUST return ONLY:
+    1. **`ErrorCode`**: A standard catalog code (`ERR-XXXX`, e.g., `ERR-3001`).
+    2. **`Message` (Custom Error)**: A simple, clean, translated user-friendly message (e.g., `"Paystack unavailable."`).
+    3. **`TraceId`**: The correlation identifier for support lookup.
+  * **Zero Raw / Real Error Exposure to Clients**: NEVER expose raw gateway messages (e.g., `"Paystack: Integration has been deactivated"`), SQL exception messages, stack traces, internal class names, or third-party HTTP error payloads to the client UI or API response JSON (`[JsonIgnore] public string? RealError { get; set; }`).
+* **Central-Only Real Error Telemetry (`MasterApiErrorLogs`)**:
+  * Whenever any API request fails or returns a non-success response, the backend (`ApiErrorTrackingResultFilter` & `GlobalExceptionHandlingMiddleware`) automatically records the full diagnostic record in `MasterApiErrorLogs`:
+    * `ErrorCode` (`ERR-XXXX`)
+    * `CustomError` (the clean message shown to the client)
+    * `RealError` (the exact underlying error, raw gateway response, or exception message)
+    * `StackTrace`, `Endpoint`, `HttpMethod`, `HttpStatusCode`, `MasterTenantCatalogId`, `TenantKey`, `UserId`, `UserEmail`, `IpAddress`, and `TraceId`.
+  * **Central Inspection (`/centralwks/error-logs` & `/centralwks/tenants/details`)**:
+    * Only Central administrators can view the **Custom Error + Real Error + Error Code**, organized into **By Tenant**, **By Central**, and **All Tenant List** views, as well as inside each individual Tenant's Details page.
+* **Client Admin Error Codes Directory (`/identity/console/error-codes`)**:
+  * Under **Audit Logs** in the Client Admin, provide the **Error Codes** reference page displaying only the **Error Code (`ERR-XXXX`)**, **Category**, **Custom Error**, and **Plain-Language Meaning / Recommended Action** (100% translated via `TranslationService`), never the `RealError`.
+* **Full Catalog Reference**: See `.agents/rules/06-error-codes-handling.md` for the complete `ERR-1000` through `ERR-9999` standard error code registry.

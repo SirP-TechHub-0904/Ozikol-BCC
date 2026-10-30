@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -41,7 +42,7 @@ export interface WorkspaceAuditLogItem {
 @Component({
   selector: 'app-identity-audit-logs',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="audit-page-container">
       <section class="card-section animate-fade">
@@ -59,6 +60,14 @@ export interface WorkspaceAuditLogItem {
 
           <div class="head-actions-wrap">
             <span class="counter-badge" *ngIf="totalCount > 0">{{ totalCount }} {{ 'audit.logs_count' | translate:'Audit Logs' }}</span>
+
+            <a
+              routerLink="/identity/console/error-codes"
+              class="btn-secondary"
+              style="text-decoration: none;">
+              <span class="material-symbols-outlined">menu_book</span>
+              <span>{{ 'nav.error_codes' | translate:'Error Codes' }}</span>
+            </a>
 
             <button
               type="button"

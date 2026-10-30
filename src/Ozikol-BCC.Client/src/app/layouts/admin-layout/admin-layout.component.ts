@@ -1050,6 +1050,17 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
+          <div class="nav-item">
+            <a routerLink="/identity/console/error-codes" [class.active]="isCurrentRoute('/identity/console/error-codes')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">menu_book</span>
+                <span>{{ 'nav.error_codes' | translate:'Error Codes' }}</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/error-codes')" (click)="togglePin('Error Codes', '/identity/console/error-codes', 'menu_book'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/error-codes') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/identity/console/error-codes') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
         </ng-container>
 
         <!-- ============================================== -->

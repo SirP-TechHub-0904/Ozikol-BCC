@@ -492,6 +492,99 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterAiApiKeyUsageLogs");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterApiErrorLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomError")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ErrorCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("HttpMethod")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<int>("HttpStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid?>("MasterTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OrganizationName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("RealError")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SourceScope")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("StackTrace")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TenantKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TraceId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("UserEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedUtc");
+
+                    b.HasIndex("ErrorCode");
+
+                    b.HasIndex("MasterTenantCatalogId");
+
+                    b.HasIndex("SourceScope");
+
+                    b.HasIndex("TenantKey");
+
+                    b.HasIndex("TraceId");
+
+                    b.ToTable("MasterApiErrorLogs");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4103,6 +4196,16 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsRequired();
 
                     b.Navigation("MasterAiApiKey");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterApiErrorLog", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterTenantCatalog", "TenantCatalog")
+                        .WithMany()
+                        .HasForeignKey("MasterTenantCatalogId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("TenantCatalog");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBackgroundJob", b =>

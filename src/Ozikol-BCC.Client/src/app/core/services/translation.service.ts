@@ -1077,6 +1077,15 @@ export class TranslationService {
       'billing.vat': 'VAT',
       'billing.payment_error_title': 'Payment Unavailable',
       'billing.paystack_unavailable': 'Paystack unavailable.',
+      'nav.error_codes': 'Error Codes',
+      'err_ref.title': 'Standard Error Codes & Meanings',
+      'err_ref.subtitle': 'Look up any error code shown in your workspace to understand what it means and how to resolve it.',
+      'err_ref.search_placeholder': 'e.g. ERR-3001 or payment',
+      'err_ref.col_code': 'Error Code',
+      'err_ref.col_category': 'Category',
+      'err_ref.col_custom_error': 'Custom Error',
+      'err_ref.col_meaning': 'Meaning & Recommended Action',
+      'err_ref.no_match': 'No matching error code found.',
     },
 
     fr: {
@@ -2125,6 +2134,15 @@ export class TranslationService {
       'user_settings.kpi_hub_cta': 'Ouvrir le hub KPI & Classement',
       'user_settings.msg_saved_success': 'Paramètres enregistrés avec succès.',
       'user_settings.err_saved_failed': 'Échec de l’enregistrement des paramètres.',
+      'nav.error_codes': 'Codes d’erreur',
+      'err_ref.title': 'Codes d’erreur standards & significations',
+      'err_ref.subtitle': 'Consultez tout code d’erreur affiché dans votre espace pour comprendre sa signification et comment le résoudre.',
+      'err_ref.search_placeholder': 'ex. ERR-3001 ou paiement',
+      'err_ref.col_code': 'Code d’erreur',
+      'err_ref.col_category': 'Catégorie',
+      'err_ref.col_custom_error': 'Erreur personnalisée',
+      'err_ref.col_meaning': 'Signification & action recommandée',
+      'err_ref.no_match': 'Aucun code d’erreur correspondant trouvé.',
     },
 
     es: {
@@ -3173,6 +3191,15 @@ export class TranslationService {
       'user_settings.kpi_hub_cta': 'Abrir centro de KPIs y clasificación',
       'user_settings.msg_saved_success': 'Configuración de gestión de usuarios guardada con éxito.',
       'user_settings.err_saved_failed': 'Error al guardar la configuración.',
+      'nav.error_codes': 'Códigos de error',
+      'err_ref.title': 'Códigos de error estándar y significados',
+      'err_ref.subtitle': 'Busque cualquier código de error mostrado en su espacio para comprender su significado y cómo resolverlo.',
+      'err_ref.search_placeholder': 'ej. ERR-3001 o pago',
+      'err_ref.col_code': 'Código de error',
+      'err_ref.col_category': 'Categoría',
+      'err_ref.col_custom_error': 'Error personalizado',
+      'err_ref.col_meaning': 'Significado y acción recomendada',
+      'err_ref.no_match': 'No se encontró ningún código de error coincidente.',
     },
 
     de: {
@@ -4705,7 +4732,16 @@ export class TranslationService {
       'audit.delete_log': 'Audit-Protokoll löschen',
       'audit.deleted_toast': 'Audit-Protokoll gelöscht.',
       'audit.deleted_title': 'Gelöscht',
-      'audit.archival_sub': 'Archivdatensätze, die älter als 30 Tage sind, werden sicher aufbewahrt.'
+      'audit.archival_sub': 'Archivdatensätze, die älter als 30 Tage sind, werden sicher aufbewahrt.',
+      'nav.error_codes': 'Fehlercodes',
+      'err_ref.title': 'Standard-Fehlercodes & Bedeutungen',
+      'err_ref.subtitle': 'Schlagen Sie jeden im Arbeitsbereich angezeigten Fehlercode nach, um dessen Bedeutung und Lösung zu erfahren.',
+      'err_ref.search_placeholder': 'z. B. ERR-3001 oder Zahlung',
+      'err_ref.col_code': 'Fehlercode',
+      'err_ref.col_category': 'Kategorie',
+      'err_ref.col_custom_error': 'Benutzerdefinierter Fehler',
+      'err_ref.col_meaning': 'Bedeutung & empfohlene Maßnahme',
+      'err_ref.no_match': 'Kein passender Fehlercode gefunden.'
     }
   };
 

@@ -160,7 +160,9 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                 return new PaymentInitResponseDto
                 {
                     IsSuccess = false,
-                    ErrorMessage = "Paystack not enabled."
+                    ErrorCode = "ERR-3006",
+                    ErrorMessage = "Paystack not enabled.",
+                    RealError = $"Paystack integration is disabled in {creds.ScopeLabel}."
                 };
             }
 
@@ -169,7 +171,9 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                 return new PaymentInitResponseDto
                 {
                     IsSuccess = false,
-                    ErrorMessage = "Paystack not enabled."
+                    ErrorCode = "ERR-3006",
+                    ErrorMessage = "Paystack not enabled.",
+                    RealError = $"Paystack Secret Key is not configured in {creds.ScopeLabel}."
                 };
             }
 
@@ -201,10 +205,23 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
+                    string gatewayDetail = $"Paystack HTTP {(int)response.StatusCode}: {bodyText}";
+                    try
+                    {
+                        using var errDoc = JsonDocument.Parse(bodyText);
+                        if (errDoc.RootElement.TryGetProperty("message", out var msgEl) && !string.IsNullOrWhiteSpace(msgEl.GetString()))
+                        {
+                            gatewayDetail = $"Paystack HTTP {(int)response.StatusCode}: {msgEl.GetString()}";
+                        }
+                    }
+                    catch { }
+
                     return new PaymentInitResponseDto
                     {
                         IsSuccess = false,
-                        ErrorMessage = "Paystack unavailable."
+                        ErrorCode = "ERR-3001",
+                        ErrorMessage = "Paystack unavailable.",
+                        RealError = gatewayDetail
                     };
                 }
 
@@ -220,12 +237,14 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                     AuthorizationUrl = data.TryGetProperty("authorization_url", out var au) ? (au.GetString() ?? string.Empty) : string.Empty
                 };
             }
-            catch
+            catch (Exception ex)
             {
                 return new PaymentInitResponseDto
                 {
                     IsSuccess = false,
-                    ErrorMessage = "Paystack unavailable."
+                    ErrorCode = "ERR-3001",
+                    ErrorMessage = "Paystack unavailable.",
+                    RealError = $"Paystack initialization exception: {ex.Message}"
                 };
             }
         }
@@ -241,7 +260,9 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                 return new PaymentVerificationResponseDto
                 {
                     IsSuccess = false,
-                    ErrorMessage = "Transaction reference is required."
+                    ErrorCode = "ERR-2002",
+                    ErrorMessage = "Transaction reference is required.",
+                    RealError = "VerifyPaymentAsync called with empty transactionReference."
                 };
             }
 
@@ -256,7 +277,9 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                 return new PaymentVerificationResponseDto
                 {
                     IsSuccess = false,
-                    ErrorMessage = $"Paystack Secret Key is not configured in {creds.ScopeLabel}."
+                    ErrorCode = "ERR-3006",
+                    ErrorMessage = "Paystack not enabled.",
+                    RealError = $"Paystack Secret Key is not configured in {creds.ScopeLabel}."
                 };
             }
 
@@ -272,37 +295,44 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    string gatewayMsg = "Paystack transaction verification failed.";
+                    string gatewayMsg = $"Paystack HTTP {(int)response.StatusCode}: {bodyText}";
                     try
                     {
                         using var errDoc = JsonDocument.Parse(bodyText);
                         if (errDoc.RootElement.TryGetProperty("message", out var msgEl) && !string.IsNullOrWhiteSpace(msgEl.GetString()))
                         {
-                            gatewayMsg = $"Paystack: {msgEl.GetString()}";
+                            gatewayMsg = $"Paystack HTTP {(int)response.StatusCode}: {msgEl.GetString()}";
                         }
                     }
                     catch { }
 
-                    return new PaymentVerificationResponseDto { IsSuccess = false, ErrorMessage = gatewayMsg };
+                    return new PaymentVerificationResponseDto
+                    {
+                        IsSuccess = false,
+                        ErrorCode = "ERR-3004",
+                        ErrorMessage = "Payment verification failed.",
+                        RealError = gatewayMsg
+                    };
                 }
 
                 using var doc = JsonDocument.Parse(bodyText);
                 var data = doc.RootElement.GetProperty("data");
                 var status = data.TryGetProperty("status", out var st) ? (st.GetString() ?? "failed") : "failed";
                 var amountInSubunit = data.TryGetProperty("amount", out var am) ? am.GetInt64() : 0L;
+                var isOk = status.Equals("success", StringComparison.OrdinalIgnoreCase);
 
                 return new PaymentVerificationResponseDto
                 {
-                    IsSuccess = status.Equals("success", StringComparison.OrdinalIgnoreCase),
+                    IsSuccess = isOk,
                     Status = status,
                     TransactionReference = transactionReference.Trim(),
                     AmountPaid = (decimal)amountInSubunit / 100m,
                     Currency = data.TryGetProperty("currency", out var cu) ? (cu.GetString() ?? "NGN") : "NGN",
                     Channel = data.TryGetProperty("channel", out var ch) ? (ch.GetString() ?? "card") : "card",
                     PaidAt = DateTime.UtcNow,
-                    ErrorMessage = status.Equals("success", StringComparison.OrdinalIgnoreCase)
-                        ? string.Empty
-                        : $"Payment status returned '{status}'."
+                    ErrorCode = isOk ? string.Empty : "ERR-3004",
+                    ErrorMessage = isOk ? string.Empty : "Payment verification failed.",
+                    RealError = isOk ? null : $"Paystack verification returned status '{status}' for reference '{transactionReference}'."
                 };
             }
             catch (Exception ex)
@@ -310,7 +340,9 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                 return new PaymentVerificationResponseDto
                 {
                     IsSuccess = false,
-                    ErrorMessage = $"Paystack verification error: {ex.Message}"
+                    ErrorCode = "ERR-3004",
+                    ErrorMessage = "Payment verification failed.",
+                    RealError = $"Paystack verification exception: {ex.Message}"
                 };
             }
         }

@@ -255,6 +255,8 @@ export const routes: Routes = [
       { path: 'identity/console/invitations', component: IdentityInvitationsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/invitations/create', component: IdentityInvitationCreateComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/audit-logs', component: IdentityAuditLogsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'identity/console/error-codes', loadComponent: () => import('./pages/admin/identity/identity-error-codes.component').then(m => m.IdentityErrorCodesComponent), data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'admin/identity/error-codes', redirectTo: 'identity/console/error-codes', pathMatch: 'full' },
       { path: 'identity/console/policies', component: IdentityPoliciesComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity/console/account', component: IdentityAccountComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'identity', redirectTo: 'identity/console/dashboard', pathMatch: 'full' },

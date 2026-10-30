@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -72,8 +73,15 @@ namespace Ozikol_BCC.Application.Interfaces.Services
         /// <summary>Gets or sets the hosted checkout authorization URL.</summary>
         public string AuthorizationUrl { get; set; } = string.Empty;
 
-        /// <summary>Gets or sets the error message if initialization failed.</summary>
+        /// <summary>Gets or sets the standardized error code (e.g., "ERR-3001").</summary>
+        public string ErrorCode { get; set; } = string.Empty;
+
+        /// <summary>Gets or sets the sanitized custom error message if initialization failed.</summary>
         public string ErrorMessage { get; set; } = string.Empty;
+
+        /// <summary>Gets or sets the internal real error detail for Central logging only.</summary>
+        [JsonIgnore]
+        public string? RealError { get; set; }
     }
 
     /// <summary>
@@ -102,8 +110,15 @@ namespace Ozikol_BCC.Application.Interfaces.Services
         /// <summary>Gets or sets the UTC timestamp when payment was completed.</summary>
         public DateTime PaidAt { get; set; }
 
-        /// <summary>Gets or sets the error message if verification failed.</summary>
+        /// <summary>Gets or sets the standardized error code (e.g., "ERR-3004").</summary>
+        public string ErrorCode { get; set; } = string.Empty;
+
+        /// <summary>Gets or sets the sanitized custom error message if verification failed.</summary>
         public string ErrorMessage { get; set; } = string.Empty;
+
+        /// <summary>Gets or sets the internal real error detail for Central logging only.</summary>
+        [JsonIgnore]
+        public string? RealError { get; set; }
     }
 
     /// <summary>

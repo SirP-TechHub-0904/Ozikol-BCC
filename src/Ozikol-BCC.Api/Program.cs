@@ -241,7 +241,11 @@ namespace Ozikol_BCC.Api
                 options.MultipartBodyLengthLimit = 100 * 1024 * 1024;
             });
 
-            builder.Services.AddControllers()
+            builder.Services.AddScoped<Ozikol_BCC.Api.Filters.ApiErrorTrackingResultFilter>();
+            builder.Services.AddControllers(options =>
+                {
+                    options.Filters.AddService<Ozikol_BCC.Api.Filters.ApiErrorTrackingResultFilter>();
+                })
                 .AddJsonOptions(options =>
                 {
                     // Prevent 500 errors caused by circular EF navigation properties

@@ -520,7 +520,10 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 // Keep the invoice Status as "Pending" (never mark the invoice itself as Failed just because a gateway attempt failed)
                 // so the user can retry or switch payment methods on the same invoice without creating duplicate invoices.
-                return BadRequest(ApiResponse<object>.FailureResponse(initResult.ErrorMessage));
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    initResult.ErrorMessage,
+                    errorCode: initResult.ErrorCode,
+                    realError: initResult.RealError));
             }
 
             return Ok(ApiResponse<InitializeFeaturePaymentResponseDto>.SuccessResponse(new InitializeFeaturePaymentResponseDto
@@ -582,8 +585,10 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 return BadRequest(ApiResponse<object>.FailureResponse(
                     string.IsNullOrWhiteSpace(verification.ErrorMessage)
-                        ? "Payment could not be verified with Paystack."
-                        : verification.ErrorMessage));
+                        ? "Payment verification failed."
+                        : verification.ErrorMessage,
+                    errorCode: verification.ErrorCode,
+                    realError: verification.RealError));
             }
 
             // Anti-tampering check: verify paid amount matches invoice amount
@@ -1407,7 +1412,10 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (!initResult.IsSuccess)
             {
-                return BadRequest(ApiResponse<object>.FailureResponse(initResult.ErrorMessage));
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    initResult.ErrorMessage,
+                    errorCode: initResult.ErrorCode,
+                    realError: initResult.RealError));
             }
 
             return Ok(ApiResponse<InitializeFeaturePaymentResponseDto>.SuccessResponse(new InitializeFeaturePaymentResponseDto

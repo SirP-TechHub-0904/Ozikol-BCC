@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Ozikol_BCC.Api.Filters;
+using Ozikol_BCC.Application.Common.Errors;
 using Ozikol_BCC.EmailServices.Postmark.Interfaces;
 using Ozikol_BCC.EmailServices.Postmark.Models;
 
@@ -83,28 +86,46 @@ public class GlobalExceptionHandlingMiddleware
                     userAgent: clientContext.UserAgent);
             }
 
-            await HandleExceptionAsync(context, ex);
+            var (def, customError, realError) = StandardErrorCodes.ResolveError(
+                path,
+                500,
+                $"{ex.GetType().FullName}: {ex.Message}",
+                StandardErrorCodes.UnexpectedError);
+
+            await ApiErrorTrackingResultFilter.PersistApiErrorLogAsync(
+                context,
+                def.Code,
+                def.Category,
+                customError,
+                realError,
+                ex.ToString(),
+                method,
+                path,
+                500,
+                _logger);
+
+            await HandleExceptionAsync(context, def.Code, customError);
         }
     }
 
     /// <summary>
-    /// Formats a predictable, standardized JSON error envelope for client consumption.
+    /// Formats a predictable, standardized JSON error envelope for client consumption without exposing internal exception details.
     /// </summary>
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private static async Task HandleExceptionAsync(HttpContext context, string errorCode, string customError)
     {
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-        var isDev = context.RequestServices.GetService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>()?.EnvironmentName == "Development";
-
         var responsePayload = new
         {
+            isSuccess = false,
             success = false,
-            message = isDev ? exception.Message : "An unexpected internal server error occurred. Our engineering team has been notified.",
-            details = isDev ? exception.ToString() : null,
+            errorCode,
+            message = customError,
+            errors = new List<string> { customError },
             traceId = context.TraceIdentifier,
             statusCode = 500,
-            occurredAtUtc = DateTime.UtcNow
+            timestamp = DateTime.UtcNow
         };
 
         var json = JsonSerializer.Serialize(responsePayload);

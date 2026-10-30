@@ -618,9 +618,11 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
         if (!ok || !res.data) {
           this.isProcessingGatewayPayment = false;
+          const errCode = (res as any)?.errorCode || 'ERR-3001';
+          const customMsg = this.translationService.translate('billing.paystack_unavailable', 'Paystack unavailable.');
           this.toastService.error(
             this.translationService.translate('billing.payment_error_title', 'Payment Unavailable'),
-            this.translationService.translate('billing.paystack_unavailable', 'Paystack unavailable.')
+            `${customMsg} (${errCode})`
           );
           return;
         }
@@ -670,11 +672,13 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
           );
         }
       },
-      error: () => {
+      error: (err: any) => {
         this.isProcessingGatewayPayment = false;
+        const errCode = err?.error?.errorCode || 'ERR-3001';
+        const customMsg = this.translationService.translate('billing.paystack_unavailable', 'Paystack unavailable.');
         this.toastService.error(
           this.translationService.translate('billing.payment_error_title', 'Payment Unavailable'),
-          this.translationService.translate('billing.paystack_unavailable', 'Paystack unavailable.')
+          `${customMsg} (${errCode})`
         );
       }
     });

@@ -1,0 +1,642 @@
+@page "/centralwks/error-logs"
+@model Ozikol.Central.Areas.Centralwks.Pages.ErrorLogs.IndexModel
+@{
+    ViewData["Title"] = "API Error Logs (Custom vs. Real Error)";
+    ViewData["BreadcrumbSection"] = "System";
+}
+
+<div class="admin-page-header" style="margin-bottom: 20px;">
+    <div class="admin-title-group">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h1 class="admin-title" style="margin: 0;">API Error Telemetry &amp; Diagnostic Center</h1>
+            <span class="badge badge-primary" style="font-size: 11px; font-weight: 700;">Central-Only Real Error Visibility</span>
+        </div>
+        <p class="admin-subtitle" style="margin-top: 6px;">
+            Inspect standardized <code>ERR-XXXX</code> codes, the sanitized <strong>Custom Error</strong> shown to clients, and the internal <strong>Real Error</strong> recorded strictly for Central.
+        </p>
+    </div>
+    <div class="admin-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="/centralwks/error-logs?ViewMode=@Model.ViewMode@(Model.TenantId.HasValue ? $"&TenantId={Model.TenantId}" : "")" class="btn-admin btn-admin-secondary">
+            <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span>
+            Refresh
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="admin-card" style="padding: 12px 18px; margin-bottom: 18px; border-left: 4px solid var(--admin-success); background: rgba(16, 185, 129, 0.08); color: var(--admin-text); font-size: 13px; font-weight: 600;">
+        @TempData["SuccessMessage"]
+    </div>
+}
+
+@* ── KPI Summary Strip ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-bottom: 20px;">
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-primary">
+            <span class="material-symbols-outlined">domain</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Tenants With Errors</span>
+            <span class="stat-value">@Model.AffectedTenantsCount / @Model.TenantSummaries.Count</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-danger">
+            <span class="material-symbols-outlined">bug_report</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Total Tenant Errors</span>
+            <span class="stat-value">@Model.TotalTenantErrorsCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-warning">
+            <span class="material-symbols-outlined">dns</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">By Central Errors</span>
+            <span class="stat-value">@Model.TotalCentralErrorsCount.ToString("N0")</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-info">
+            <span class="material-symbols-outlined">schedule</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Last 24 Hours</span>
+            <span class="stat-value">@Model.Last24HoursTotalCount.ToString("N0")</span>
+        </div>
+    </div>
+</div>
+
+@* ── Primary Navigation Tabs: By Tenant | By Central | All Tenant List | Error Code Catalog ── *@
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; border-bottom: 1px solid var(--admin-border); padding-bottom: 10px;">
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="/centralwks/error-logs?ViewMode=by-tenant"
+           class="btn-admin @(Model.ViewMode == "by-tenant" ? "btn-admin-primary" : "btn-admin-secondary")"
+           style="text-decoration: none;">
+            <span class="material-symbols-outlined" style="font-size: 17px;">domain</span>
+            By Tenant (@Model.TenantSummaries.Count)
+        </a>
+        <a href="/centralwks/error-logs?ViewMode=by-central"
+           class="btn-admin @(Model.ViewMode == "by-central" ? "btn-admin-primary" : "btn-admin-secondary")"
+           style="text-decoration: none;">
+            <span class="material-symbols-outlined" style="font-size: 17px;">hub</span>
+            By Central (@Model.TotalCentralErrorsCount)
+        </a>
+        <a href="/centralwks/error-logs?ViewMode=all-tenants"
+           class="btn-admin @(Model.ViewMode == "all-tenants" ? "btn-admin-primary" : "btn-admin-secondary")"
+           style="text-decoration: none;">
+            <span class="material-symbols-outlined" style="font-size: 17px;">view_list</span>
+            All Tenant List (@Model.TotalTenantErrorsCount)
+        </a>
+        <a href="/centralwks/error-logs?ViewMode=catalog"
+           class="btn-admin @(Model.ViewMode == "catalog" ? "btn-admin-primary" : "btn-admin-secondary")"
+           style="text-decoration: none;">
+            <span class="material-symbols-outlined" style="font-size: 17px;">menu_book</span>
+            Error Code Catalog (@Model.ErrorCatalog.Count)
+        </a>
+    </div>
+
+    @* Search & Code Filter Form *@
+    <form method="get" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0;">
+        <input type="hidden" name="ViewMode" value="@Model.ViewMode" />
+        @if (Model.TenantId.HasValue)
+        {
+            <input type="hidden" name="TenantId" value="@Model.TenantId" />
+        }
+        <select name="CodeFilter" class="form-control" style="height: 36px; min-width: 170px; font-size: 12.5px; padding: 0 10px;" onchange="this.form.submit()">
+            <option value="">All Error Codes</option>
+            @foreach (var code in Model.ErrorCatalog)
+            {
+                <option value="@code.Code" selected="@(Model.CodeFilter == code.Code)">@code.Code — @code.CustomError</option>
+            }
+        </select>
+        <input type="text" name="Search" value="@Model.Search" placeholder="e.g. ERR-3001, TraceId, endpoint..." class="form-control" style="height: 36px; width: 230px; font-size: 12.5px; padding: 0 12px;" />
+        <button type="submit" class="btn-admin btn-admin-secondary" style="height: 36px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">search</span>
+            Filter
+        </button>
+        @if (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.CodeFilter))
+        {
+            <a href="/centralwks/error-logs?ViewMode=@Model.ViewMode@(Model.TenantId.HasValue ? $"&TenantId={Model.TenantId}" : "")" class="btn-admin btn-admin-secondary" style="height: 36px; text-decoration: none;">
+                Reset
+            </a>
+        }
+    </form>
+</div>
+
+@* ══════════════════════════════════════════════════════════════════════════
+   VIEW 1: BY TENANT (Grouped Per Tenant + Single Tenant Drill-Down)
+   ══════════════════════════════════════════════════════════════════════════ *@
+@if (Model.ViewMode == "by-tenant")
+{
+    @if (Model.SelectedTenant != null)
+    {
+        <div class="admin-card" style="margin-bottom: 20px;">
+            <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <a href="/centralwks/error-logs?ViewMode=by-tenant" class="btn-admin btn-admin-secondary" style="padding: 4px 10px; font-size: 12px; text-decoration: none;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span>
+                            All Tenants
+                        </a>
+                        <span style="font-weight: 800; font-size: 16px; color: var(--admin-text);">@Model.SelectedTenant.OrganizationName</span>
+                        <code style="font-size: 12px; padding: 2px 7px; border-radius: 4px; background: var(--admin-bg-surface-elevated); color: var(--admin-primary); font-weight: 700;">@Model.SelectedTenant.TenantKey</code>
+                    </div>
+                    <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px;">
+                        Showing isolated API error logs for <strong>@Model.SelectedTenant.OrganizationName</strong> (@Model.SelectedTenantLogs.Count records)
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <a href="/centralwks/tenants/details?id=@Model.SelectedTenant.Id" class="btn-admin btn-admin-secondary" style="text-decoration: none; font-size: 12px;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">open_in_new</span>
+                        Open Tenant Governance
+                    </a>
+                    @if (Model.SelectedTenantLogs.Any())
+                    {
+                        <form method="post" asp-page-handler="ClearScope" asp-route-tenantId="@Model.SelectedTenant.Id" asp-route-viewMode="by-tenant" style="margin: 0;">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-admin btn-admin-danger" style="font-size: 12px;" onclick="return confirm('Clear all recorded API error logs for @Model.SelectedTenant.OrganizationName?');">
+                                <span class="material-symbols-outlined" style="font-size: 15px;">delete_sweep</span>
+                                Clear Tenant Logs
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 145px;">Timestamp (UTC)</th>
+                            <th style="width: 110px;">Error Code</th>
+                            <th style="width: 220px;">Custom Error (Client Sees)</th>
+                            <th>Real Error (Central Only)</th>
+                            <th style="width: 210px;">Endpoint</th>
+                            <th style="width: 160px;">User &amp; IP</th>
+                            <th style="width: 90px; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.SelectedTenantLogs.Any())
+                        {
+                            @foreach (var log in Model.SelectedTenantLogs)
+                            {
+                                <tr>
+                                    <td style="white-space: nowrap; font-size: 12px;">
+                                        <div style="font-weight: 600;">@log.CreatedUtc.ToString("yyyy-MM-dd")</div>
+                                        <div style="color: var(--admin-text-muted);">@log.CreatedUtc.ToString("HH:mm:ss") UTC</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-danger" style="font-family: monospace; font-size: 12px; font-weight: 800;">@log.ErrorCode</span>
+                                        <div style="font-size: 10.5px; color: var(--admin-text-muted); margin-top: 3px;">HTTP @log.HttpStatusCode</div>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 700; font-size: 13px; color: var(--admin-text);">@log.CustomError</div>
+                                        <div style="font-size: 11px; color: var(--admin-text-dim); margin-top: 2px;">@log.Category</div>
+                                    </td>
+                                    <td>
+                                        <div style="font-family: monospace; font-size: 12px; color: #dc2626; background: rgba(220, 38, 38, 0.06); border: 1px solid rgba(220, 38, 38, 0.18); border-radius: 6px; padding: 6px 8px; word-break: break-word;">
+                                            @log.RealError
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(log.StackTrace))
+                                        {
+                                            <details style="margin-top: 4px; font-size: 11px;">
+                                                <summary style="cursor: pointer; color: var(--admin-primary); font-weight: 600;">View Stack Trace</summary>
+                                                <pre style="margin-top: 6px; padding: 8px; background: #0f172a; color: #e2e8f0; border-radius: 6px; font-size: 11px; max-height: 200px; overflow: auto; white-space: pre-wrap;">@log.StackTrace</pre>
+                                            </details>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(log.TraceId))
+                                        {
+                                            <div style="font-size: 10.5px; color: var(--admin-text-dim); margin-top: 3px;">
+                                                Trace: <code>@log.TraceId</code>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary" style="font-size: 10px; font-weight: 700;">@log.HttpMethod</span>
+                                        <div style="font-family: monospace; font-size: 11.5px; color: var(--admin-text); margin-top: 3px; word-break: break-all;">@log.Endpoint</div>
+                                    </td>
+                                    <td style="font-size: 12px;">
+                                        <div style="font-weight: 600;">@(string.IsNullOrWhiteSpace(log.UserEmail) ? "Anonymous" : log.UserEmail)</div>
+                                        <div style="color: var(--admin-text-dim); font-size: 11px;">@(log.IpAddress ?? "—")</div>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <form method="post" asp-page-handler="DeleteLog" asp-route-id="@log.Id" asp-route-viewMode="by-tenant" asp-route-tenantId="@Model.SelectedTenant.Id" style="display: inline; margin: 0;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 4px 8px;" title="Remove Entry">
+                                                <span class="material-symbols-outlined" style="font-size: 15px; color: var(--admin-danger);">delete</span>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 36px 20px; color: var(--admin-text-muted);">
+                                    No API errors recorded for <strong>@Model.SelectedTenant.OrganizationName</strong>.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="admin-card">
+            <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary);">domain</span>
+                    Errors Grouped By Tenant Workspace
+                </div>
+                <span style="font-size: 12px; color: var(--admin-text-muted);">Select a tenant to inspect its isolated Custom Error vs. Real Error log trail</span>
+            </div>
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Tenant Organization</th>
+                            <th style="width: 115px; text-align: center;">Total Errors</th>
+                            <th style="width: 115px; text-align: center;">Last 24h</th>
+                            <th style="width: 120px;">Latest Code</th>
+                            <th>Latest Custom Error &amp; Real Error</th>
+                            <th style="width: 150px;">Last Occurrence</th>
+                            <th style="width: 170px; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.TenantSummaries.Any())
+                        {
+                            @foreach (var item in Model.TenantSummaries)
+                            {
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 700; font-size: 13.5px; color: var(--admin-text);">@item.OrganizationName</div>
+                                        <div style="font-size: 11.5px; color: var(--admin-text-muted); margin-top: 2px;">
+                                            <code>@item.TenantKey</code>
+                                            @if (!string.IsNullOrWhiteSpace(item.PrimaryDomain))
+                                            {
+                                                <span>• @item.PrimaryDomain</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td style="text-align: center;">
+                                        @if (item.TotalErrorsCount > 0)
+                                        {
+                                            <span class="badge badge-danger" style="font-weight: 800; font-size: 12px;">@item.TotalErrorsCount.ToString("N0")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-success" style="font-size: 11.5px;">0</span>
+                                        }
+                                    </td>
+                                    <td style="text-align: center;">
+                                        @if (item.Last24HoursCount > 0)
+                                        {
+                                            <span class="badge badge-warning" style="font-weight: 700;">@item.Last24HoursCount.ToString("N0")</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="color: var(--admin-text-dim); font-size: 12px;">0</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(item.LatestErrorCode))
+                                        {
+                                            <code style="font-weight: 800; color: var(--admin-danger); font-size: 12px;">@item.LatestErrorCode</code>
+                                        }
+                                        else
+                                        {
+                                            <span style="color: var(--admin-text-dim);">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrWhiteSpace(item.LatestCustomError))
+                                        {
+                                            <div style="font-size: 12.5px; font-weight: 700; color: var(--admin-text);">Custom: @item.LatestCustomError</div>
+                                            <div style="font-size: 11.5px; font-family: monospace; color: #dc2626; margin-top: 2px;">Real: @item.LatestRealError</div>
+                                        }
+                                        else
+                                        {
+                                            <span style="color: var(--admin-text-muted); font-size: 12px;">No errors recorded</span>
+                                        }
+                                    </td>
+                                    <td style="font-size: 12px; white-space: nowrap;">
+                                        @(item.LatestErrorUtc.HasValue ? item.LatestErrorUtc.Value.ToString("yyyy-MM-dd HH:mm") + " UTC" : "—")
+                                    </td>
+                                    <td style="text-align: right; white-space: nowrap;">
+                                        <a href="/centralwks/error-logs?ViewMode=by-tenant&TenantId=@item.TenantId" class="btn-admin btn-admin-primary" style="padding: 5px 11px; font-size: 12px; text-decoration: none;">
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
+                                            View Tenant Logs
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 36px 20px; color: var(--admin-text-muted);">
+                                    No tenant workspaces found.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@* ══════════════════════════════════════════════════════════════════════════
+   VIEW 2: BY CENTRAL (Central / Platform Errors Not Tied to a Tenant)
+   ══════════════════════════════════════════════════════════════════════════ *@
+@if (Model.ViewMode == "by-central")
+{
+    <div class="admin-card">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-warning);">hub</span>
+                    Central &amp; Platform-Level Error Logs (@Model.CentralErrorLogs.Count)
+                </div>
+                <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 3px;">
+                    API errors that occurred on Central endpoints or unauthenticated routes outside any tenant workspace
+                </div>
+            </div>
+            @if (Model.CentralErrorLogs.Any())
+            {
+                <form method="post" asp-page-handler="ClearScope" asp-route-scope="Central" asp-route-viewMode="by-central" style="margin: 0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-admin btn-admin-danger" style="font-size: 12px;" onclick="return confirm('Clear all Central error logs?');">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">delete_sweep</span>
+                        Clear Central Logs
+                    </button>
+                </form>
+            }
+        </div>
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 145px;">Timestamp (UTC)</th>
+                        <th style="width: 110px;">Error Code</th>
+                        <th style="width: 220px;">Custom Error (Client Sees)</th>
+                        <th>Real Error (Central Only)</th>
+                        <th style="width: 210px;">Endpoint</th>
+                        <th style="width: 160px;">User &amp; IP</th>
+                        <th style="width: 80px; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.CentralErrorLogs.Any())
+                    {
+                        @foreach (var log in Model.CentralErrorLogs)
+                        {
+                            <tr>
+                                <td style="white-space: nowrap; font-size: 12px;">
+                                    <div style="font-weight: 600;">@log.CreatedUtc.ToString("yyyy-MM-dd")</div>
+                                    <div style="color: var(--admin-text-muted);">@log.CreatedUtc.ToString("HH:mm:ss") UTC</div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-danger" style="font-family: monospace; font-size: 12px; font-weight: 800;">@log.ErrorCode</span>
+                                    <div style="font-size: 10.5px; color: var(--admin-text-muted); margin-top: 3px;">HTTP @log.HttpStatusCode</div>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 700; font-size: 13px; color: var(--admin-text);">@log.CustomError</div>
+                                    <div style="font-size: 11px; color: var(--admin-text-dim); margin-top: 2px;">@log.Category</div>
+                                </td>
+                                <td>
+                                    <div style="font-family: monospace; font-size: 12px; color: #dc2626; background: rgba(220, 38, 38, 0.06); border: 1px solid rgba(220, 38, 38, 0.18); border-radius: 6px; padding: 6px 8px; word-break: break-word;">
+                                        @log.RealError
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(log.StackTrace))
+                                    {
+                                        <details style="margin-top: 4px; font-size: 11px;">
+                                            <summary style="cursor: pointer; color: var(--admin-primary); font-weight: 600;">View Stack Trace</summary>
+                                            <pre style="margin-top: 6px; padding: 8px; background: #0f172a; color: #e2e8f0; border-radius: 6px; font-size: 11px; max-height: 200px; overflow: auto; white-space: pre-wrap;">@log.StackTrace</pre>
+                                        </details>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(log.TraceId))
+                                    {
+                                        <div style="font-size: 10.5px; color: var(--admin-text-dim); margin-top: 3px;">
+                                            Trace: <code>@log.TraceId</code>
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge badge-secondary" style="font-size: 10px; font-weight: 700;">@log.HttpMethod</span>
+                                    <div style="font-family: monospace; font-size: 11.5px; color: var(--admin-text); margin-top: 3px; word-break: break-all;">@log.Endpoint</div>
+                                </td>
+                                <td style="font-size: 12px;">
+                                    <div style="font-weight: 600;">@(string.IsNullOrWhiteSpace(log.UserEmail) ? "Anonymous" : log.UserEmail)</div>
+                                    <div style="color: var(--admin-text-dim); font-size: 11px;">@(log.IpAddress ?? "—")</div>
+                                </td>
+                                <td style="text-align: right;">
+                                    <form method="post" asp-page-handler="DeleteLog" asp-route-id="@log.Id" asp-route-viewMode="by-central" style="display: inline; margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 4px 8px;" title="Remove Entry">
+                                            <span class="material-symbols-outlined" style="font-size: 15px; color: var(--admin-danger);">delete</span>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 36px 20px; color: var(--admin-text-muted);">
+                                No Central-scoped API errors recorded.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@* ══════════════════════════════════════════════════════════════════════════
+   VIEW 3: ALL TENANT LIST (Chronological Stream Across All Tenants)
+   ══════════════════════════════════════════════════════════════════════════ *@
+@if (Model.ViewMode == "all-tenants")
+{
+    <div class="admin-card">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;">
+                    <span class="material-symbols-outlined" style="color: var(--admin-primary);">view_list</span>
+                    All Tenant Error Logs — Chronological Feed (@Model.AllTenantErrorLogs.Count)
+                </div>
+                <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 3px;">
+                    Combined real-time feed across all tenant workspaces showing Tenant, Error Code, Custom Error, and Real Error
+                </div>
+            </div>
+            @if (Model.AllTenantErrorLogs.Any())
+            {
+                <form method="post" asp-page-handler="ClearScope" asp-route-scope="AllTenants" asp-route-viewMode="all-tenants" style="margin: 0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn-admin btn-admin-danger" style="font-size: 12px;" onclick="return confirm('Clear all tenant error logs across the platform?');">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">delete_sweep</span>
+                        Clear All Tenant Logs
+                    </button>
+                </form>
+            }
+        </div>
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 140px;">Timestamp (UTC)</th>
+                        <th style="width: 170px;">Tenant Workspace</th>
+                        <th style="width: 110px;">Error Code</th>
+                        <th style="width: 210px;">Custom Error (Client Sees)</th>
+                        <th>Real Error (Central Only)</th>
+                        <th style="width: 195px;">Endpoint</th>
+                        <th style="width: 145px;">User &amp; IP</th>
+                        <th style="width: 75px; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.AllTenantErrorLogs.Any())
+                    {
+                        @foreach (var log in Model.AllTenantErrorLogs)
+                        {
+                            <tr>
+                                <td style="white-space: nowrap; font-size: 12px;">
+                                    <div style="font-weight: 600;">@log.CreatedUtc.ToString("yyyy-MM-dd")</div>
+                                    <div style="color: var(--admin-text-muted);">@log.CreatedUtc.ToString("HH:mm:ss") UTC</div>
+                                </td>
+                                <td>
+                                    @if (log.MasterTenantCatalogId.HasValue)
+                                    {
+                                        <a href="/centralwks/error-logs?ViewMode=by-tenant&TenantId=@log.MasterTenantCatalogId" style="font-weight: 700; font-size: 13px; color: var(--admin-primary); text-decoration: none;">
+                                            @(log.OrganizationName ?? log.TenantKey ?? "Tenant")
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <div style="font-weight: 700; font-size: 13px; color: var(--admin-text);">@(log.OrganizationName ?? log.TenantKey ?? "Tenant")</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(log.TenantKey))
+                                    {
+                                        <div><code style="font-size: 11px; color: var(--admin-text-muted);">@log.TenantKey</code></div>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge badge-danger" style="font-family: monospace; font-size: 12px; font-weight: 800;">@log.ErrorCode</span>
+                                    <div style="font-size: 10.5px; color: var(--admin-text-muted); margin-top: 3px;">HTTP @log.HttpStatusCode</div>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 700; font-size: 13px; color: var(--admin-text);">@log.CustomError</div>
+                                    <div style="font-size: 11px; color: var(--admin-text-dim); margin-top: 2px;">@log.Category</div>
+                                </td>
+                                <td>
+                                    <div style="font-family: monospace; font-size: 12px; color: #dc2626; background: rgba(220, 38, 38, 0.06); border: 1px solid rgba(220, 38, 38, 0.18); border-radius: 6px; padding: 6px 8px; word-break: break-word;">
+                                        @log.RealError
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(log.StackTrace))
+                                    {
+                                        <details style="margin-top: 4px; font-size: 11px;">
+                                            <summary style="cursor: pointer; color: var(--admin-primary); font-weight: 600;">View Stack Trace</summary>
+                                            <pre style="margin-top: 6px; padding: 8px; background: #0f172a; color: #e2e8f0; border-radius: 6px; font-size: 11px; max-height: 200px; overflow: auto; white-space: pre-wrap;">@log.StackTrace</pre>
+                                        </details>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(log.TraceId))
+                                    {
+                                        <div style="font-size: 10.5px; color: var(--admin-text-dim); margin-top: 3px;">
+                                            Trace: <code>@log.TraceId</code>
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge badge-secondary" style="font-size: 10px; font-weight: 700;">@log.HttpMethod</span>
+                                    <div style="font-family: monospace; font-size: 11.5px; color: var(--admin-text); margin-top: 3px; word-break: break-all;">@log.Endpoint</div>
+                                </td>
+                                <td style="font-size: 12px;">
+                                    <div style="font-weight: 600;">@(string.IsNullOrWhiteSpace(log.UserEmail) ? "Anonymous" : log.UserEmail)</div>
+                                    <div style="color: var(--admin-text-dim); font-size: 11px;">@(log.IpAddress ?? "—")</div>
+                                </td>
+                                <td style="text-align: right;">
+                                    <form method="post" asp-page-handler="DeleteLog" asp-route-id="@log.Id" asp-route-viewMode="all-tenants" style="display: inline; margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-admin btn-admin-secondary" style="padding: 4px 8px;" title="Remove Entry">
+                                            <span class="material-symbols-outlined" style="font-size: 15px; color: var(--admin-danger);">delete</span>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 36px 20px; color: var(--admin-text-muted);">
+                                No tenant API errors recorded yet.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@* ══════════════════════════════════════════════════════════════════════════
+   VIEW 4: STANDARD ERROR CODE CATALOG (ERR-1000 – ERR-9999)
+   ══════════════════════════════════════════════════════════════════════════ *@
+@if (Model.ViewMode == "catalog")
+{
+    <div class="admin-card">
+        <div class="admin-card-header" style="padding: 16px 20px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;">
+                <span class="material-symbols-outlined" style="color: var(--admin-primary);">menu_book</span>
+                Standardized Error Code Registry (@Model.ErrorCatalog.Count Codes)
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 130px;">Error Code</th>
+                        <th style="width: 210px;">Category</th>
+                        <th style="width: 240px;">Custom Error (Shown to Client)</th>
+                        <th>Client Reference Meaning &amp; Recommended Action</th>
+                        <th style="width: 100px; text-align: center;">Default HTTP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.ErrorCatalog)
+                    {
+                        <tr>
+                            <td>
+                                <code style="font-size: 12.5px; font-weight: 800; color: var(--admin-primary); padding: 3px 8px; border-radius: 5px; background: var(--admin-bg-surface-elevated);">@item.Code</code>
+                            </td>
+                            <td>
+                                <span class="badge badge-secondary" style="font-size: 11.5px;">@item.Category</span>
+                            </td>
+                            <td style="font-weight: 700; font-size: 13px; color: var(--admin-text);">
+                                @item.CustomError
+                            </td>
+                            <td style="font-size: 12.5px; color: var(--admin-text-muted);">
+                                @item.Meaning
+                            </td>
+                            <td style="text-align: center;">
+                                <code>@item.DefaultHttpStatus</code>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+

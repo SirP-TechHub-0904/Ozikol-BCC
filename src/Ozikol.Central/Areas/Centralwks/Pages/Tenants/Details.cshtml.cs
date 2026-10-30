@@ -74,6 +74,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public List<MasterAuditLog> AuditLogs { get; set; } = new();
 
         /// <summary>
+        /// Tenant-isolated API error logs capturing CustomError, RealError, and ErrorCode ("ERR-XXXX").
+        /// </summary>
+        public List<MasterApiErrorLog> ApiErrorLogs { get; set; } = new();
+
+        /// <summary>
         /// Physical database resource consumption and table metrics.
         /// </summary>
         public TenantDatabaseDeepDive? DatabaseDeepDive { get; set; }
@@ -129,6 +134,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 .OrderByDescending(a => a.CreatedUtc)
                 .Take(30)
                 .ToListAsync();
+
+            // 3b. Load Tenant-Isolated API Error Logs (CustomError + RealError + ErrorCode)
+            try
+            {
+                ApiErrorLogs = await _dbContext.MasterApiErrorLogs
+                    .AsNoTracking()
+                    .Where(e => e.MasterTenantCatalogId == Id || e.TenantKey == tenant.TenantKey)
+                    .OrderByDescending(e => e.CreatedUtc)
+                    .Take(50)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "MasterApiErrorLogs table may be pending migration.");
+            }
 
             // 4. Load Real-Time Database Metrics & Table Breakdown
             try

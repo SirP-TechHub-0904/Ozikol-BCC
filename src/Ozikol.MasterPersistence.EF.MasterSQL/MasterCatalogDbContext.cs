@@ -102,6 +102,11 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
     /// </summary>
     public DbSet<MasterAiApiKeyUsageLog> MasterAiApiKeyUsageLogs { get; set; } = null!;
 
+    /// <summary>
+    /// Central diagnostic error logs storing CustomError + RealError + ErrorCode for tenant and platform API failures.
+    /// </summary>
+    public DbSet<MasterApiErrorLog> MasterApiErrorLogs { get; set; } = null!;
+
     public MasterCatalogDbContext(DbContextOptions<MasterCatalogDbContext> options) : base(options)
     {
     }
@@ -823,6 +828,22 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.RequestTimestampUtc);
             entity.HasIndex(e => e.StatusCode);
             entity.HasIndex(e => e.ActionName);
+        });
+
+        modelBuilder.Entity<MasterApiErrorLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.MasterTenantCatalogId);
+            entity.HasIndex(e => e.TenantKey);
+            entity.HasIndex(e => e.SourceScope);
+            entity.HasIndex(e => e.ErrorCode);
+            entity.HasIndex(e => e.CreatedUtc);
+            entity.HasIndex(e => e.TraceId);
+
+            entity.HasOne(e => e.TenantCatalog)
+                .WithMany()
+                .HasForeignKey(e => e.MasterTenantCatalogId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

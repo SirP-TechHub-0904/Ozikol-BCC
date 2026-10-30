@@ -81,6 +81,10 @@
         <span class="material-symbols-outlined" style="font-size: 18px;">history</span>
         Audit &amp; Trace Logs (@Model.AuditLogs.Count)
     </button>
+    <button type="button" class="tab-btn" data-tab="tab-errors" onclick="switchTenantTab('tab-errors', this);">
+        <span class="material-symbols-outlined" style="font-size: 18px;">bug_report</span>
+        API Error Logs (@Model.ApiErrorLogs.Count)
+    </button>
     <button type="button" class="tab-btn" data-tab="tab-consumption" onclick="switchTenantTab('tab-consumption', this);">
         <span class="material-symbols-outlined" style="font-size: 18px;">monitoring</span>
         Resource Consumption
@@ -545,6 +549,87 @@
                         <tr>
                             <td colspan="6" style="text-align: center; padding: 32px 20px; color: var(--admin-text-muted);">
                                 No audit events logged for this tenant yet.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@* ══════════════════════════════════════════════════════════════════════════
+   TAB 5B: TENANT-ISOLATED API ERROR LOGS (Custom Error vs. Real Error)
+   ══════════════════════════════════════════════════════════════════════════ *@
+<div class="tenant-tab-content" id="tab-errors">
+    <div class="admin-card">
+        <div class="admin-card-header" style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px;">
+                <span class="material-symbols-outlined" style="color: var(--admin-danger);">bug_report</span>
+                Tenant API Error Logs — Custom Error vs. Real Error (@Model.ApiErrorLogs.Count)
+            </div>
+            <a href="/centralwks/error-logs?ViewMode=by-tenant&TenantId=@Model.Tenant.Id" class="btn-admin btn-admin-secondary" style="font-size: 12px; text-decoration: none;">
+                <span class="material-symbols-outlined" style="font-size: 15px;">open_in_new</span>
+                Open in Error Telemetry Center
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 145px;">Timestamp (UTC)</th>
+                        <th style="width: 115px;">Error Code</th>
+                        <th style="width: 220px;">Custom Error (Shown to Tenant)</th>
+                        <th>Real Error (Central Only)</th>
+                        <th style="width: 200px;">Endpoint</th>
+                        <th style="width: 150px;">User &amp; IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.ApiErrorLogs.Any())
+                    {
+                        @foreach (var err in Model.ApiErrorLogs)
+                        {
+                            <tr>
+                                <td style="white-space: nowrap; font-size: 12px;">
+                                    <div style="font-weight: 600;">@err.CreatedUtc.ToString("yyyy-MM-dd")</div>
+                                    <div style="color: var(--admin-text-muted);">@err.CreatedUtc.ToString("HH:mm:ss") UTC</div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-danger" style="font-family: monospace; font-size: 12px; font-weight: 800;">@err.ErrorCode</span>
+                                    <div style="font-size: 10.5px; color: var(--admin-text-muted); margin-top: 2px;">HTTP @err.HttpStatusCode</div>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 700; font-size: 13px; color: var(--admin-text);">@err.CustomError</div>
+                                    <div style="font-size: 11px; color: var(--admin-text-dim); margin-top: 2px;">@err.Category</div>
+                                </td>
+                                <td>
+                                    <div style="font-family: monospace; font-size: 12px; color: #dc2626; background: rgba(220, 38, 38, 0.06); border: 1px solid rgba(220, 38, 38, 0.18); border-radius: 6px; padding: 6px 8px; word-break: break-word;">
+                                        @err.RealError
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(err.TraceId))
+                                    {
+                                        <div style="font-size: 10.5px; color: var(--admin-text-dim); margin-top: 3px;">
+                                            Trace: <code>@err.TraceId</code>
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge badge-secondary" style="font-size: 10px; font-weight: 700;">@err.HttpMethod</span>
+                                    <div style="font-family: monospace; font-size: 11.5px; color: var(--admin-text); margin-top: 3px; word-break: break-all;">@err.Endpoint</div>
+                                </td>
+                                <td style="font-size: 12px;">
+                                    <div style="font-weight: 600;">@(string.IsNullOrWhiteSpace(err.UserEmail) ? "Anonymous" : err.UserEmail)</div>
+                                    <div style="color: var(--admin-text-dim); font-size: 11px;">@(err.IpAddress ?? "—")</div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 32px 20px; color: var(--admin-text-muted);">
+                                No API errors logged for this tenant organization.
                             </td>
                         </tr>
                     }
