@@ -837,6 +837,7 @@ class _SecurityAuditLogsViewState extends ConsumerState<SecurityAuditLogsView> {
                       textPrimary: textPrimary,
                       textSecondary: textSecondary,
                     ),
+                  const SizedBox(height: 60),
                 ],
               ),
             ),
@@ -1455,96 +1456,97 @@ class _SecurityAuditLogsViewState extends ConsumerState<SecurityAuditLogsView> {
                         ],
                       ),
 
-                      // Page Number Controls
+                      // Page Number Controls (Horizontal Bar)
                       if (_totalPages > 1)
-                        Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            _buildPageButton(
-                              child: const Icon(
-                                Icons.keyboard_double_arrow_left_rounded,
-                                size: 16,
-                              ),
-                              enabled: _page > 1,
-                              onTap: () => _loadLogs(1),
-                              isDark: isDark,
-                              surfaceColor: surfaceColor,
-                              borderColor: borderColor,
-                              textPrimary: textPrimary,
-                            ),
-                            _buildPageButton(
-                              child: const Icon(
-                                Icons.chevron_left_rounded,
-                                size: 16,
-                              ),
-                              enabled: _page > 1,
-                              onTap: () => _loadLogs(_page - 1),
-                              isDark: isDark,
-                              surfaceColor: surfaceColor,
-                              borderColor: borderColor,
-                              textPrimary: textPrimary,
-                            ),
-                            ..._getVisiblePages().map((p) {
-                              if (p == '...') {
-                                return Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 4),
-                                  child: Text(
-                                    '...',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: textSecondary,
-                                    ),
-                                  ),
-                                );
-                              }
-                              final pageNum = p as int;
-                              final isActive = pageNum == _page;
-                              return _buildPageButton(
-                                child: Text(
-                                  '$pageNum',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: isActive ? Colors.white : textPrimary,
-                                  ),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildPageButton(
+                                child: const Icon(
+                                  Icons.keyboard_double_arrow_left_rounded,
+                                  size: 16,
                                 ),
-                                isActive: isActive,
-                                enabled: true,
-                                onTap: () => _loadLogs(pageNum),
+                                enabled: _page > 1,
+                                onTap: () => _loadLogs(1),
                                 isDark: isDark,
                                 surfaceColor: surfaceColor,
                                 borderColor: borderColor,
                                 textPrimary: textPrimary,
-                              );
-                            }),
-                            _buildPageButton(
-                              child: const Icon(
-                                Icons.chevron_right_rounded,
-                                size: 16,
                               ),
-                              enabled: _page < _totalPages,
-                              onTap: () => _loadLogs(_page + 1),
-                              isDark: isDark,
-                              surfaceColor: surfaceColor,
-                              borderColor: borderColor,
-                              textPrimary: textPrimary,
-                            ),
-                            _buildPageButton(
-                              child: const Icon(
-                                Icons.keyboard_double_arrow_right_rounded,
-                                size: 16,
+                              _buildPageButton(
+                                child: const Icon(
+                                  Icons.chevron_left_rounded,
+                                  size: 16,
+                                ),
+                                enabled: _page > 1,
+                                onTap: () => _loadLogs(_page - 1),
+                                isDark: isDark,
+                                surfaceColor: surfaceColor,
+                                borderColor: borderColor,
+                                textPrimary: textPrimary,
                               ),
-                              enabled: _page < _totalPages,
-                              onTap: () => _loadLogs(_totalPages),
-                              isDark: isDark,
-                              surfaceColor: surfaceColor,
-                              borderColor: borderColor,
-                              textPrimary: textPrimary,
-                            ),
-                          ],
+                              ..._getVisiblePages().map((p) {
+                                if (p == '...') {
+                                  return Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: 4),
+                                    child: Text(
+                                      '...',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: textSecondary,
+                                      ),
+                                    ),
+                                  );
+                                }
+                                final pageNum = p as int;
+                                final isActive = pageNum == _page;
+                                return _buildPageButton(
+                                  child: Text(
+                                    '$pageNum',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: isActive ? Colors.white : textPrimary,
+                                    ),
+                                  ),
+                                  isActive: isActive,
+                                  enabled: true,
+                                  onTap: () => _loadLogs(pageNum),
+                                  isDark: isDark,
+                                  surfaceColor: surfaceColor,
+                                  borderColor: borderColor,
+                                  textPrimary: textPrimary,
+                                );
+                              }),
+                              _buildPageButton(
+                                child: const Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 16,
+                                ),
+                                enabled: _page < _totalPages,
+                                onTap: () => _loadLogs(_page + 1),
+                                isDark: isDark,
+                                surfaceColor: surfaceColor,
+                                borderColor: borderColor,
+                                textPrimary: textPrimary,
+                              ),
+                              _buildPageButton(
+                                child: const Icon(
+                                  Icons.keyboard_double_arrow_right_rounded,
+                                  size: 16,
+                                ),
+                                enabled: _page < _totalPages,
+                                onTap: () => _loadLogs(_totalPages),
+                                isDark: isDark,
+                                surfaceColor: surfaceColor,
+                                borderColor: borderColor,
+                                textPrimary: textPrimary,
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),
@@ -1566,28 +1568,36 @@ class _SecurityAuditLogsViewState extends ConsumerState<SecurityAuditLogsView> {
     required Color textPrimary,
     bool isActive = false,
   }) {
-    return InkWell(
-      onTap: enabled && !isActive ? onTap : null,
-      borderRadius: BorderRadius.circular(6),
-      child: Opacity(
-        opacity: enabled ? 1.0 : 0.4,
-        child: Container(
-          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF0050E5) : surfaceColor,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: isActive ? const Color(0xFF0050E5) : borderColor,
+    return Container(
+      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+      height: 32,
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      decoration: BoxDecoration(
+        color: isActive ? const Color(0xFF0050E5) : surfaceColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isActive ? const Color(0xFF0050E5) : borderColor,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled && !isActive ? onTap : null,
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Opacity(
+              opacity: enabled ? 1.0 : 0.4,
+              child: Center(
+                child: IconTheme(
+                  data: IconThemeData(
+                    color: isActive ? Colors.white : textPrimary,
+                    size: 16,
+                  ),
+                  child: child,
+                ),
+              ),
             ),
-          ),
-          child: IconTheme(
-            data: IconThemeData(
-              color: isActive ? Colors.white : textPrimary,
-              size: 16,
-            ),
-            child: child,
           ),
         ),
       ),
