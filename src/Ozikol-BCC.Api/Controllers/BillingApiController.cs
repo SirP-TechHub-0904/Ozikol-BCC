@@ -1753,12 +1753,12 @@ namespace Ozikol_BCC.Api.Controllers
                 paymentMethods.Add(new BillingPaymentMethodOptionDto
                 {
                     ProviderCode = "Paystack",
-                    Name = "Paystack Inline Checkout",
-                    Description = "Instant payment via Card, Bank Transfer, USSD, or Mobile Money",
+                    Name = "Paystack",
+                    Description = "Card, Bank Transfer, USSD, or Mobile Money",
                     Icon = "credit_card",
                     IsEnabled = true,
                     IsConfigured = paystackConfigured,
-                    StatusBadge = paystackConfigured ? "Available (Instant Activation)" : "Not Available — Gateway Keys Not Configured",
+                    StatusBadge = paystackConfigured ? "Available" : "Not Available — Gateway Keys Not Configured",
                     PublicKey = paystackConfigured ? settings!.PaystackPublicKey : null
                 });
             }
@@ -1772,12 +1772,12 @@ namespace Ozikol_BCC.Api.Controllers
                 paymentMethods.Add(new BillingPaymentMethodOptionDto
                 {
                     ProviderCode = "Flutterwave",
-                    Name = "Flutterwave Checkout",
-                    Description = "Pay with Multi-Currency Cards, Bank Account, M-Pesa, or Mobile Money",
+                    Name = "Flutterwave",
+                    Description = "Multi-Currency Cards, Bank Account, M-Pesa, or Mobile Money",
                     Icon = "payments",
                     IsEnabled = true,
                     IsConfigured = flwConfigured,
-                    StatusBadge = flwConfigured ? "Available (Instant Activation)" : "Not Available — Gateway Keys Not Configured",
+                    StatusBadge = flwConfigured ? "Available" : "Not Available — Gateway Keys Not Configured",
                     PublicKey = flwConfigured ? settings!.FlutterwavePublicKey : null
                 });
             }
@@ -1791,12 +1791,12 @@ namespace Ozikol_BCC.Api.Controllers
                 paymentMethods.Add(new BillingPaymentMethodOptionDto
                 {
                     ProviderCode = "Stripe",
-                    Name = "Stripe Global Card Checkout",
+                    Name = "Stripe",
                     Description = "International Visa, Mastercard, Amex, Apple Pay & Google Pay",
                     Icon = "language",
                     IsEnabled = true,
                     IsConfigured = stripeConfigured,
-                    StatusBadge = stripeConfigured ? "Available (Instant Activation)" : "Not Available — Gateway Keys Not Configured",
+                    StatusBadge = stripeConfigured ? "Available" : "Not Available — Gateway Keys Not Configured",
                     PublicKey = stripeConfigured ? settings!.StripePublishableKey : null
                 });
             }
@@ -1810,12 +1810,12 @@ namespace Ozikol_BCC.Api.Controllers
                 paymentMethods.Add(new BillingPaymentMethodOptionDto
                 {
                     ProviderCode = "BankDeposit",
-                    Name = "Direct Bank Deposit / Wire Transfer",
-                    Description = "Transfer directly to corporate bank account and submit transfer reference",
+                    Name = "Direct Bank Deposit",
+                    Description = "Transfer directly to corporate bank account and submit reference",
                     Icon = "account_balance",
                     IsEnabled = true,
                     IsConfigured = bankConfigured,
-                    StatusBadge = bankConfigured ? "Available (Bank Transfer)" : "Not Available — Bank Account Not Configured",
+                    StatusBadge = bankConfigured ? "Available" : "Not Available — Bank Account Not Configured",
                     BankName = settings?.BankDepositBankName,
                     AccountName = settings?.BankDepositAccountName,
                     AccountNumber = settings?.BankDepositAccountNumber,

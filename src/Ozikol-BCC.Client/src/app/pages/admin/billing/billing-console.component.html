@@ -1573,7 +1573,9 @@
                         <div style="width: 38px; height: 38px; border-radius: 9px; background: rgba(0, 80, 229, 0.08); color: #0050E5; display: flex; align-items: center; justify-content: center;">
                           <span class="material-symbols-outlined">{{ method.icon || 'payments' }}</span>
                         </div>
-                        <strong style="font-size: 14.5px; color: #0f172a;">{{ method.name }}</strong>
+                        <strong style="font-size: 14.5px; color: #0f172a;">
+                          {{ method.providerCode === 'Paystack' ? 'Paystack' : (method.providerCode === 'Flutterwave' ? 'Flutterwave' : (method.providerCode === 'Stripe' ? 'Stripe' : (method.providerCode === 'BankDeposit' ? 'Direct Bank Deposit' : method.name))) }}
+                        </strong>
                       </div>
                       @if (method.isConfigured) {
                         <span class="badge-pill-md badge-available" style="font-size: 10.5px;">
@@ -1663,19 +1665,11 @@
                   </div>
                 </div>
               } @else {
-                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 16px 20px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0;">
-                  <div>
-                    <div style="font-size: 14px; font-weight: 800; color: #0f172a;">
-                      Pay with {{ activeSelectedGateway.name }}
-                    </div>
-                    <div style="font-size: 12.5px; color: #64748b;">
-                      Instant capability activation and receipt generation upon payment confirmation.
-                    </div>
-                  </div>
+                <div style="display: flex; align-items: center; justify-content: flex-end; padding-top: 4px;">
                   <button
                     type="button"
                     class="btn btn-primary"
-                    style="padding: 11px 22px; font-size: 14px; font-weight: 800;"
+                    style="padding: 11px 24px; font-size: 14px; font-weight: 800;"
                     [disabled]="isProcessingGatewayPayment || updatingCadenceFeatureCode !== null"
                     (click)="proceedWithSelectedGatewayPayment()"
                   >
@@ -1683,7 +1677,7 @@
                       {{ isProcessingGatewayPayment ? 'sync' : 'lock' }}
                     </span>
                     <span>
-                      {{ isProcessingGatewayPayment ? 'Opening ' + activeSelectedGateway.name + '...' : ('Pay ' + formatAmount(invoiceDetail.totalAmount) + ' Now with ' + activeSelectedGateway.name) }}
+                      {{ isProcessingGatewayPayment ? ('Opening ' + (activeSelectedGateway.providerCode === 'Paystack' ? 'Paystack' : activeSelectedGateway.name) + '...') : ('Pay with ' + (activeSelectedGateway.providerCode === 'Paystack' ? 'Paystack' : (activeSelectedGateway.providerCode === 'Flutterwave' ? 'Flutterwave' : (activeSelectedGateway.providerCode === 'Stripe' ? 'Stripe' : activeSelectedGateway.name))) + ' (' + formatAmount(invoiceDetail.totalAmount) + ')') }}
                     </span>
                   </button>
                 </div>
