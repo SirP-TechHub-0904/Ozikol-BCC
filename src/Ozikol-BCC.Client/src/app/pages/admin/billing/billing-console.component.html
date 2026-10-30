@@ -1311,24 +1311,24 @@
     <div class="page-header">
       <div class="header-titles">
         <div class="breadcrumb">
-          <a routerLink="/dashboard/console">Command Center</a>
+          <a routerLink="/dashboard/console">{{ 'nav.command_center' | translate:'Command Center' }}</a>
           <span class="sep">/</span>
-          <a routerLink="/billing/subscriptions">Billing &amp; Subscriptions</a>
+          <a routerLink="/billing/subscriptions">{{ 'nav.feature_billing' | translate:'Billing & Subscriptions' }}</a>
           <span class="sep">/</span>
-          <span class="current">Invoice {{ invoiceDetail?.invoiceNumber || activeInvoiceId }}</span>
+          <span class="current">{{ invoiceDetail?.invoiceNumber || activeInvoiceId }}</span>
         </div>
         <div class="title-row">
-          <h1>Invoice &amp; Payment Checkout</h1>
+          <h1>{{ 'billing.invoice_checkout_title' | translate:'Invoice & Payment Checkout' }}</h1>
         </div>
         <p class="subtitle">
-          Review your capability renewal items, adjust billing duration for eligible features, and select a payment method to complete checkout.
+          {{ 'billing.invoice_checkout_subtitle' | translate:'Review your capability renewal items, adjust billing duration, and select a payment method.' }}
         </p>
       </div>
 
       <div class="header-actions">
         <button type="button" class="btn btn-outline" (click)="closeInvoiceDetail()">
           <span class="material-symbols-outlined">arrow_back</span>
-          <span>Back to Subscriptions &amp; Invoices</span>
+          <span>{{ 'billing.back_to_subscriptions' | translate:'Back to Subscriptions & Invoices' }}</span>
         </button>
       </div>
     </div>
@@ -1336,8 +1336,7 @@
     @if (isLoadingInvoiceDetail) {
       <div class="table-card" style="padding: 48px 24px; text-align: center;">
         <span class="material-symbols-outlined spin" style="font-size: 36px; color: #0050E5;">sync</span>
-        <h3 style="margin: 12px 0 4px; font-size: 16px; font-weight: 800; color: #0f172a;">Loading Invoice &amp; Payment Options...</h3>
-        <p style="margin: 0; font-size: 13px; color: #64748b;">Synchronizing capability rates, discounts, and active payment gateways from Central.</p>
+        <h3 style="margin: 12px 0 4px; font-size: 16px; font-weight: 800; color: #0f172a;">{{ translationService.translateDynamic('Loading Invoice...') }}</h3>
       </div>
     } @else if (invoiceDetail) {
       <!-- Invoice Top Summary Card -->
@@ -1345,30 +1344,34 @@
         <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 18px; margin-bottom: 18px;">
           <div>
             <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-              <span style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b;">INVOICE NUMBER</span>
+              <span style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b;">
+                {{ 'billing.invoice_number' | translate:'INVOICE NUMBER' }}
+              </span>
               @if (invoiceDetail.status === 'Completed') {
                 <span class="badge-pill-md badge-available">
                   <span class="material-symbols-outlined">verified</span>
-                  <span>Paid &amp; Activated</span>
+                  <span>{{ 'billing.paid_activated' | translate:'Paid & Activated' }}</span>
                 </span>
               } @else if (invoiceDetail.status === 'AwaitingVerification') {
                 <span class="badge-pill-md" style="background: rgba(245, 158, 11, 0.14); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.35);">
                   <span class="material-symbols-outlined">hourglass_top</span>
-                  <span>Awaiting Bank Verification</span>
+                  <span>{{ 'billing.awaiting_verification' | translate:'Awaiting Bank Verification' }}</span>
                 </span>
               } @else {
                 <span class="badge-pill-md badge-optional">
                   <span class="material-symbols-outlined">pending_actions</span>
-                  <span>Pending Payment</span>
+                  <span>{{ 'billing.pending_payment' | translate:'Pending Payment' }}</span>
                 </span>
               }
             </div>
             <h2 style="margin: 6px 0 4px; font-size: 22px; font-weight: 800; color: #0f172a; font-family: monospace;">{{ invoiceDetail.invoiceNumber }}</h2>
-            <p style="margin: 0; font-size: 13px; color: #475569;">{{ invoiceDetail.notes }}</p>
+            <p style="margin: 0; font-size: 13px; color: #475569;">{{ translationService.translateDynamic(invoiceDetail.notes || '') }}</p>
           </div>
 
           <div style="text-align: right;">
-            <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #64748b;">TOTAL AMOUNT DUE ({{ invoiceDetail.currency }})</div>
+            <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #64748b;">
+              {{ 'billing.total_amount_due' | translate:'TOTAL AMOUNT DUE' }} ({{ invoiceDetail.currency }})
+            </div>
             <div style="font-size: 28px; font-weight: 900; color: #0050E5; line-height: 1.2; margin-top: 2px;">
               {{ formatAmount(invoiceDetail.totalAmount) }}
             </div>
@@ -1376,7 +1379,7 @@
               <div style="margin-top: 4px;">
                 <span class="badge-pill-md badge-available" style="font-size: 11px;">
                   <span class="material-symbols-outlined" style="font-size: 14px;">savings</span>
-                  <span>Total Multi-Month Savings: {{ formatAmount(invoiceDetail.totalSavingsAmount) }}</span>
+                  <span>{{ translationService.translateDynamic('Savings') }}: {{ formatAmount(invoiceDetail.totalSavingsAmount) }}</span>
                 </span>
               </div>
             }
@@ -1385,23 +1388,23 @@
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 13px;">
           <div>
-            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Billed Organization</div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">{{ 'billing.billed_organization' | translate:'Billed Organization' }}</div>
             <div style="font-weight: 700; color: #0f172a; margin-top: 3px;">{{ invoiceDetail.organizationName }}</div>
             <div style="color: #64748b; font-size: 12px;">{{ invoiceDetail.billingEmail }}</div>
           </div>
           <div>
-            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Issue Date</div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">{{ 'billing.issue_date' | translate:'Issue Date' }}</div>
             <div style="font-weight: 700; color: #0f172a; margin-top: 3px;">{{ invoiceDetail.createdUtc | date:'medium' }}</div>
           </div>
           @if (invoiceDetail.status === 'Completed' && invoiceDetail.updatedUtc) {
             <div>
-              <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Paid Date</div>
+              <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">{{ 'billing.paid_date' | translate:'Paid Date' }}</div>
               <div style="font-weight: 700; color: #15803d; margin-top: 3px;">{{ invoiceDetail.updatedUtc | date:'medium' }}</div>
             </div>
           }
           @if (invoiceDetail.reference) {
             <div>
-              <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Payment Reference</div>
+              <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">{{ 'billing.payment_reference' | translate:'Payment Reference' }}</div>
               <div style="font-weight: 700; color: #0f172a; font-family: monospace; margin-top: 3px;">{{ invoiceDetail.reference }}</div>
             </div>
           }
@@ -1413,16 +1416,13 @@
         <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
           <div>
             <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">
-              Itemized Capabilities on this Invoice ({{ invoiceDetail.lineItems.length }})
+              {{ 'billing.itemized_capabilities' | translate:'Itemized Capabilities on this Invoice' }} ({{ invoiceDetail.lineItems.length }})
             </h3>
-            <p style="margin: 3px 0 0; font-size: 12.5px; color: #64748b;">
-              Select your preferred renewal duration per capability. Yearly and Quarterly options automatically apply calculated savings where available.
-            </p>
           </div>
           @if (updatingCadenceFeatureCode !== null) {
             <span class="badge-pill-md badge-compulsory">
               <span class="material-symbols-outlined spin">sync</span>
-              <span>Recalculating Invoice Total...</span>
+              <span>{{ translationService.translateDynamic('Updating...') }}</span>
             </span>
           }
         </div>
@@ -1432,11 +1432,11 @@
             <thead>
               <tr>
                 <th style="width: 56px;">S/N</th>
-                <th>CAPABILITY</th>
-                <th>BASE RATES</th>
-                <th>BILLING DURATION</th>
-                <th>DISCOUNT / SAVINGS</th>
-                <th style="text-align: right;">LINE TOTAL</th>
+                <th>{{ 'billing.capability' | translate:'CAPABILITY' }}</th>
+                <th>{{ 'billing.base_rates' | translate:'BASE RATES' }}</th>
+                <th>{{ 'billing.billing_duration' | translate:'BILLING DURATION' }}</th>
+                <th>{{ 'billing.discount_savings' | translate:'DISCOUNT / SAVINGS' }}</th>
+                <th style="text-align: right;">{{ 'billing.line_total' | translate:'LINE TOTAL' }}</th>
               </tr>
             </thead>
             <tbody>
@@ -1449,10 +1449,10 @@
                         <span class="material-symbols-outlined">{{ line.icon || 'extension' }}</span>
                       </div>
                       <div>
-                        <div class="table-feat-name">{{ line.featureName }}</div>
+                        <div class="table-feat-name">{{ translationService.translateDynamic(line.featureName) }}</div>
                         <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
                           <code class="feature-code-pill">{{ line.featureCode }}</code>
-                          <span style="font-size: 11px; color: #64748b;">{{ line.category }}</span>
+                          <span style="font-size: 11px; color: #64748b;">{{ translationService.translateDynamic(line.category) }}</span>
                         </div>
                       </div>
                     </div>
@@ -1460,14 +1460,14 @@
                   <td>
                     @if (line.isYearlyOnly) {
                       <div style="font-weight: 700; color: #0f172a;">{{ formatAmount(line.yearlyPrice) }}/yr</div>
-                      <span style="font-size: 11px; font-weight: 700; color: #b45309;">Yearly Only Capability</span>
+                      <span style="font-size: 11px; font-weight: 700; color: #b45309;">{{ translationService.translateDynamic('Yearly Only') }}</span>
                     } @else {
                       <div style="font-weight: 700; color: #0f172a;">{{ formatAmount(line.monthlyPrice) }}/mo</div>
                       @if (line.yearlyPrice > 0) {
                         <div style="font-size: 11.5px; color: #64748b;">
-                          or {{ formatAmount(line.yearlyPrice) }}/yr
+                          {{ formatAmount(line.yearlyPrice) }}/yr
                           @if (line.yearlyDiscountPercent > 0) {
-                            <span style="color: #15803d; font-weight: 700;">({{ line.yearlyDiscountPercent }}% off)</span>
+                            <span style="color: #15803d; font-weight: 700;">(-{{ line.yearlyDiscountPercent }}%)</span>
                           }
                         </div>
                       }
@@ -1485,11 +1485,11 @@
                         @for (cad of line.supportedCadences; track cad) {
                           <option [value]="cad">
                             @if (cad === 'Monthly') {
-                              1 Month ({{ formatAmount(line.monthlyPrice) }})
+                              {{ translationService.translateDynamic('1 Month') }} ({{ formatAmount(line.monthlyPrice) }})
                             } @else if (cad === 'Quarterly') {
-                              3 Months — Quarterly ({{ formatAmount(line.quarterlyPrice) }})
+                              {{ translationService.translateDynamic('3 Months') }} ({{ formatAmount(line.quarterlyPrice) }})
                             } @else if (cad === 'Yearly') {
-                              1 Year — Annual ({{ formatAmount(line.yearlyPrice) }}){{ line.yearlyDiscountPercent > 0 ? (' — Save ' + line.yearlyDiscountPercent + '%') : '' }}
+                              {{ translationService.translateDynamic('1 Year') }} ({{ formatAmount(line.yearlyPrice) }}){{ line.yearlyDiscountPercent > 0 ? (' (-' + line.yearlyDiscountPercent + '%)') : '' }}
                             }
                           </option>
                         }
@@ -1499,11 +1499,11 @@
                         <span class="material-symbols-outlined">event_repeat</span>
                         <span>
                           @if (line.isYearlyOnly || line.selectedCadence === 'Yearly') {
-                            1 Year (Annual{{ line.isYearlyOnly ? ' — Yearly Only' : '' }})
+                            {{ translationService.translateDynamic('1 Year') }}
                           } @else if (line.selectedCadence === 'Quarterly') {
-                            3 Months (Quarterly)
+                            {{ translationService.translateDynamic('3 Months') }}
                           } @else {
-                            1 Month (Monthly)
+                            {{ translationService.translateDynamic('1 Month') }}
                           }
                         </span>
                       </span>
@@ -1513,15 +1513,14 @@
                     @if (line.appliedSavingsAmount > 0) {
                       <span class="badge-pill-md badge-available">
                         <span class="material-symbols-outlined">loyalty</span>
-                        <span>Save {{ line.appliedDiscountPercent }}% ({{ formatAmount(line.appliedSavingsAmount) }} off)</span>
+                        <span>-{{ line.appliedDiscountPercent }}% ({{ formatAmount(line.appliedSavingsAmount) }})</span>
                       </span>
                     } @else {
-                      <span style="font-size: 12px; color: #94a3b8;">Standard Rate</span>
+                      <span style="font-size: 12px; color: #94a3b8;">—</span>
                     }
                   </td>
                   <td style="text-align: right;">
                     <strong style="font-size: 15px; color: #0f172a;">{{ formatAmount(line.lineTotal) }}</strong>
-                    <div style="font-size: 11px; color: #64748b;">+{{ line.months === 12 ? 365 : (line.months === 3 ? 90 : 30) }} days access</div>
                   </td>
                 </tr>
               }
@@ -1529,16 +1528,16 @@
             <tfoot>
               @if (invoiceDetail.totalSavingsAmount > 0) {
                 <tr style="background: #f8fafc;">
-                  <td colspan="5" style="text-align: right; font-weight: 700; color: #475569;">Subtotal (Before Annual/Multi-Month Discount):</td>
+                  <td colspan="5" style="text-align: right; font-weight: 700; color: #475569;">{{ translationService.translateDynamic('Subtotal') }}:</td>
                   <td style="text-align: right; font-weight: 700; color: #64748b; text-decoration: line-through;">{{ formatAmount(invoiceDetail.subtotalBeforeDiscount) }}</td>
                 </tr>
                 <tr style="background: #f0fdf4;">
-                  <td colspan="5" style="text-align: right; font-weight: 700; color: #15803d;">Total Discount Savings Applied:</td>
+                  <td colspan="5" style="text-align: right; font-weight: 700; color: #15803d;">{{ translationService.translateDynamic('Discount') }}:</td>
                   <td style="text-align: right; font-weight: 800; color: #15803d;">-{{ formatAmount(invoiceDetail.totalSavingsAmount) }}</td>
                 </tr>
               }
               <tr style="background: #f8fafc; border-top: 2px solid #cbd5e1;">
-                <td colspan="5" style="text-align: right; font-size: 14px; font-weight: 800; color: #0f172a;">TOTAL PAYABLE ({{ invoiceDetail.currency }}):</td>
+                <td colspan="5" style="text-align: right; font-size: 14px; font-weight: 800; color: #0f172a;">{{ 'billing.total_amount_due' | translate:'TOTAL AMOUNT DUE' }} ({{ invoiceDetail.currency }}):</td>
                 <td style="text-align: right; font-size: 18px; font-weight: 900; color: #0050E5;">{{ formatAmount(invoiceDetail.totalAmount) }}</td>
               </tr>
             </tfoot>
@@ -1550,55 +1549,48 @@
       @if (invoiceDetail.status !== 'Completed') {
         <div class="table-card" style="padding: 22px 24px; margin-bottom: 24px;">
           <div style="margin-bottom: 16px;">
-            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a;">Select Payment Method</h3>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a;">
+              {{ 'billing.select_payment_method' | translate:'Select Payment Method' }}
+            </h3>
             <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">
-              Choose from the payment gateways enabled by Central Platform Settings. Gateways without configured keys are automatically marked unavailable.
+              {{ 'billing.select_payment_method_desc' | translate:'Choose a payment method to complete your payment.' }}
             </p>
           </div>
 
           @if (invoiceDetail.paymentMethods.length > 0) {
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px;">
               @for (method of invoiceDetail.paymentMethods; track method.providerCode) {
                 <div
                   (click)="selectPaymentGateway(method)"
                   [style.cursor]="method.isConfigured ? 'pointer' : 'not-allowed'"
-                  [style.opacity]="method.isConfigured ? '1' : '0.62'"
+                  [style.opacity]="method.isConfigured ? '1' : '0.6'"
                   [style.border]="selectedGatewayCode === method.providerCode && method.isConfigured ? '2px solid #0050E5' : '1px solid #cbd5e1'"
                   [style.background]="selectedGatewayCode === method.providerCode && method.isConfigured ? 'rgba(0, 80, 229, 0.04)' : '#ffffff'"
-                  style="border-radius: 12px; padding: 16px; transition: all 0.15s ease; display: flex; flex-direction: column; justify-content: space-between; gap: 10px;"
+                  style="border-radius: 12px; padding: 16px; transition: all 0.15s ease; display: flex; flex-direction: column; justify-content: space-between; gap: 8px;"
                 >
-                  <div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px;">
-                      <div style="display: flex; align-items: center; gap: 10px;">
-                        <div style="width: 38px; height: 38px; border-radius: 9px; background: rgba(0, 80, 229, 0.08); color: #0050E5; display: flex; align-items: center; justify-content: center;">
-                          <span class="material-symbols-outlined">{{ method.icon || 'payments' }}</span>
-                        </div>
-                        <strong style="font-size: 14.5px; color: #0f172a;">
-                          {{ method.providerCode === 'Paystack' ? 'Paystack' : (method.providerCode === 'Flutterwave' ? 'Flutterwave' : (method.providerCode === 'Stripe' ? 'Stripe' : (method.providerCode === 'BankDeposit' ? 'Direct Bank Deposit' : method.name))) }}
-                        </strong>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <div style="width: 38px; height: 38px; border-radius: 9px; background: rgba(0, 80, 229, 0.08); color: #0050E5; display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined">{{ method.icon || 'payments' }}</span>
                       </div>
-                      @if (method.isConfigured) {
-                        <span class="badge-pill-md badge-available" style="font-size: 10.5px;">
-                          <span class="material-symbols-outlined" style="font-size: 13px;">
-                            {{ selectedGatewayCode === method.providerCode ? 'radio_button_checked' : 'check_circle' }}
-                          </span>
-                          <span>{{ selectedGatewayCode === method.providerCode ? 'Selected' : 'Available' }}</span>
-                        </span>
-                      } @else {
-                        <span class="badge-pill-md" style="font-size: 10.5px; background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.25);">
-                          <span class="material-symbols-outlined" style="font-size: 13px;">block</span>
-                          <span>Not Available</span>
-                        </span>
-                      }
+                      <strong style="font-size: 14.5px; color: #0f172a;">
+                        {{ getGatewayCleanName(method) }}
+                      </strong>
                     </div>
-                    <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.45;">{{ method.description }}</p>
+                    @if (method.isConfigured) {
+                      <span class="badge-pill-md badge-available" style="font-size: 10.5px;">
+                        <span class="material-symbols-outlined" style="font-size: 13px;">
+                          {{ selectedGatewayCode === method.providerCode ? 'radio_button_checked' : 'check_circle' }}
+                        </span>
+                        <span>{{ selectedGatewayCode === method.providerCode ? ('billing.selected' | translate:'Selected') : ('billing.available' | translate:'Available') }}</span>
+                      </span>
+                    } @else {
+                      <span class="badge-pill-md" style="font-size: 10.5px; background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.25);">
+                        <span class="material-symbols-outlined" style="font-size: 13px;">block</span>
+                        <span>{{ 'billing.not_enabled_badge' | translate:'Not Enabled' }}</span>
+                      </span>
+                    }
                   </div>
-
-                  @if (!method.isConfigured) {
-                    <div style="padding: 7px 10px; border-radius: 7px; background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 11.5px; font-weight: 700;">
-                      {{ method.statusBadge }}
-                    </div>
-                  }
                 </div>
               }
             </div>
@@ -1609,24 +1601,24 @@
                 <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; background: #f8fafc;">
                   <h4 style="margin: 0 0 12px; font-size: 14.5px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
                     <span class="material-symbols-outlined" style="color: #0050E5;">account_balance</span>
-                    <span>Direct Bank Deposit / Wire Transfer Instructions</span>
+                    <span>{{ 'billing.direct_bank_deposit' | translate:'Direct Bank Deposit' }}</span>
                   </h4>
                   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 14px; background: #ffffff; padding: 14px; border-radius: 9px; border: 1px solid #e2e8f0;">
                     <div>
-                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Bank Name</div>
+                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">{{ translationService.translateDynamic('Bank Name') }}</div>
                       <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ activeSelectedGateway.bankName }}</div>
                     </div>
                     <div>
-                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Account Name</div>
+                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">{{ translationService.translateDynamic('Account Name') }}</div>
                       <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ activeSelectedGateway.accountName }}</div>
                     </div>
                     <div>
-                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Account Number / IBAN</div>
+                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">{{ translationService.translateDynamic('Account Number') }}</div>
                       <div style="font-size: 15px; font-weight: 900; color: #0050E5; font-family: monospace; margin-top: 2px;">{{ activeSelectedGateway.accountNumber }}</div>
                     </div>
                     @if (activeSelectedGateway.sortCodeOrSwift) {
                       <div>
-                        <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Sort Code / SWIFT / BIC</div>
+                        <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">{{ translationService.translateDynamic('Sort Code / SWIFT') }}</div>
                         <div style="font-size: 14px; font-weight: 800; color: #0f172a; font-family: monospace; margin-top: 2px;">{{ activeSelectedGateway.sortCodeOrSwift }}</div>
                       </div>
                     }
@@ -1634,14 +1626,14 @@
 
                   @if (activeSelectedGateway.instructions) {
                     <p style="margin: 0 0 14px; font-size: 12.5px; color: #475569; background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 12px; border-radius: 8px;">
-                      <strong>Note:</strong> {{ activeSelectedGateway.instructions }}
+                      {{ translationService.translateDynamic(activeSelectedGateway.instructions) }}
                     </p>
                   }
 
                   <div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;">
                     <div style="flex: 1 1 280px;">
                       <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 5px;">
-                        Transfer Reference / Teller / Session ID
+                        {{ 'billing.transfer_reference' | translate:'Transfer Reference / Teller / Session ID' }}
                       </label>
                       <input
                         type="text"
@@ -1660,7 +1652,7 @@
                       <span class="material-symbols-outlined" [class.spin]="isProcessingGatewayPayment">
                         {{ isProcessingGatewayPayment ? 'sync' : 'upload_file' }}
                       </span>
-                      <span>{{ isProcessingGatewayPayment ? 'Submitting Proof...' : ('Submit Deposit Proof (' + formatAmount(invoiceDetail.totalAmount) + ')') }}</span>
+                      <span>{{ 'billing.submit_deposit_proof' | translate:'Submit Deposit Proof' }} ({{ formatAmount(invoiceDetail.totalAmount) }})</span>
                     </button>
                   </div>
                 </div>
@@ -1677,35 +1669,28 @@
                       {{ isProcessingGatewayPayment ? 'sync' : 'lock' }}
                     </span>
                     <span>
-                      {{ isProcessingGatewayPayment ? ('Opening ' + (activeSelectedGateway.providerCode === 'Paystack' ? 'Paystack' : activeSelectedGateway.name) + '...') : ('Pay with ' + (activeSelectedGateway.providerCode === 'Paystack' ? 'Paystack' : (activeSelectedGateway.providerCode === 'Flutterwave' ? 'Flutterwave' : (activeSelectedGateway.providerCode === 'Stripe' ? 'Stripe' : activeSelectedGateway.name))) + ' (' + formatAmount(invoiceDetail.totalAmount) + ')') }}
+                      {{ 'billing.pay_with' | translate:'Pay with' }} {{ getGatewayCleanName(activeSelectedGateway) }} ({{ formatAmount(invoiceDetail.totalAmount) }})
                     </span>
                   </button>
                 </div>
               }
             }
-          } @else {
-            <div class="empty-catalog-card" style="padding: 28px;">
-              <span class="material-symbols-outlined empty-icon">payments</span>
-              <h3>No Payment Gateways Enabled in Central Settings</h3>
-              <p>Please enable at least one payment method (Paystack, Flutterwave, Stripe, or Direct Bank Deposit) in Central Platform Settings (/centralwks/platform-settings).</p>
-            </div>
           }
         </div>
       }
     } @else {
       <div class="empty-catalog-card" style="padding: 36px 24px;">
         <span class="material-symbols-outlined empty-icon">receipt_long</span>
-        <h3>Unable to Load Invoice Details</h3>
-        <p>Please ensure the backend API server has been restarted with the latest billing routes and your database migration is applied.</p>
+        <h3>{{ translationService.translateDynamic('Unable to Load Invoice Details') }}</h3>
         <div style="display: inline-flex; gap: 10px; margin-top: 8px;">
           @if (activeInvoiceId) {
             <button type="button" class="btn btn-primary" (click)="loadInvoiceDetailPage(activeInvoiceId)">
               <span class="material-symbols-outlined">refresh</span>
-              <span>Retry Loading Invoice</span>
+              <span>{{ translationService.translateDynamic('Retry') }}</span>
             </button>
           }
           <button type="button" class="btn btn-outline" (click)="closeInvoiceDetail()">
-            <span>Back to Subscriptions</span>
+            <span>{{ 'billing.back_to_subscriptions' | translate:'Back to Subscriptions & Invoices' }}</span>
           </button>
         </div>
       </div>

@@ -16,6 +16,7 @@ import {
 } from './services/billing.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 export interface SuiteFeatureGroup {
   suiteName: string;
@@ -37,7 +38,7 @@ export type BillingPageSection = 'features' | 'subscriptions' | 'invoice-detail'
 @Component({
   selector: 'app-billing-console',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   templateUrl: './billing-console.component.html',
   styleUrls: ['./billing-console.component.css']
 })
@@ -538,13 +539,29 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Resolves the clean display name for a payment gateway option.
+   */
+  getGatewayCleanName(method?: BillingPaymentMethodOption): string {
+    if (!method) return '';
+    if (method.providerCode === 'Paystack') return 'Paystack';
+    if (method.providerCode === 'Flutterwave') return 'Flutterwave';
+    if (method.providerCode === 'Stripe') return 'Stripe';
+    if (method.providerCode === 'BankDeposit') {
+      return this.translationService.translate('billing.direct_bank_deposit', 'Direct Bank Deposit');
+    }
+    return method.name;
+  }
+
+  /**
    * Selects an active, configured payment gateway on the Invoice Page.
    */
   selectPaymentGateway(method: BillingPaymentMethodOption): void {
     if (!method.isConfigured) {
+      const gwName = this.getGatewayCleanName(method);
+      const notEnabledText = this.translationService.translate('billing.not_enabled', 'not enabled');
       this.toastService.warning(
-        'Payment Method Not Available',
-        `${method.name} is enabled in Central Settings, but its API keys / account details are not configured yet.`
+        this.translationService.translate('billing.not_enabled_title', 'Not Enabled'),
+        `${gwName} ${notEnabledText}.`
       );
       return;
     }
@@ -562,9 +579,11 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     if (!this.invoiceDetail) return;
     const method = this.activeSelectedGateway;
     if (!method || !method.isConfigured) {
+      const gwName = this.getGatewayCleanName(method) || 'Payment method';
+      const notEnabledText = this.translationService.translate('billing.not_enabled', 'not enabled');
       this.toastService.warning(
-        'Gateway Not Configured',
-        'Please select an available payment method with configured credentials, or configure the gateway keys in /centralwks/platform-settings.'
+        this.translationService.translate('billing.not_enabled_title', 'Not Enabled'),
+        `${gwName} ${notEnabledText}.`
       );
       return;
     }
