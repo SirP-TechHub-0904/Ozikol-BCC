@@ -146,9 +146,9 @@ namespace Ozikol_BCC.Application.Commands.SetupCommands
 
         private string GenerateJwtToken(Profile user)
         {
-            var jwtKey = _configuration["Jwt:Key"]
-                ?? Environment.GetEnvironmentVariable("Jwt__Key")
+            var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key")
                 ?? Environment.GetEnvironmentVariable("JWT_KEY")
+                ?? _configuration["Jwt:Key"]
                 ?? throw new InvalidOperationException("CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is missing. Configure 'Jwt__Key' in your .env file.");
             var jwtIssuer = _configuration["Jwt:Issuer"] ?? "Ozikol-BCC.Api";
             var jwtAudience = _configuration["Jwt:Audience"] ?? "Ozikol-BCC.Client";

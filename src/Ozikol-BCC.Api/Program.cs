@@ -119,9 +119,9 @@ namespace Ozikol_BCC.Api
             .AddDefaultTokenProviders();
 
             // 3. JWT Bearer Authentication (Fail-Fast Secret Validation - Zero Hardcoded Fallbacks)
-            var jwtKey = builder.Configuration["Jwt:Key"]
-                ?? Environment.GetEnvironmentVariable("Jwt__Key")
-                ?? Environment.GetEnvironmentVariable("JWT_KEY");
+            var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key")
+                ?? Environment.GetEnvironmentVariable("JWT_KEY")
+                ?? builder.Configuration["Jwt:Key"];
             if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
             {
                 throw new InvalidOperationException(

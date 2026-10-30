@@ -81,30 +81,42 @@ export class AuthInterceptor implements HttpInterceptor {
           this.tenantState.setTenantNotFound(true);
         }
 
-        // 401 Unauthorized — token missing, invalid, or expired
+        // 401 Unauthorized — token missing, invalid, or signature rotated on server
         if (error.status === 401) {
           console.warn(`[AuthInterceptor] 401 Unauthorized for:`, request.url);
           localStorage.removeItem('access_token');
+          localStorage.removeItem('user_roles');
+          localStorage.removeItem('user_profile');
           if (!isPublic) {
-            const currentUrl = this.router.url;
-            const isProtectedArea = currentUrl.startsWith('/admin') || 
-                                    currentUrl.startsWith('/dashboard') || 
-                                    currentUrl.startsWith('/workspace') || 
-                                    currentUrl.startsWith('/users') || 
-                                    currentUrl.startsWith('/identity') || 
-                                    currentUrl.startsWith('/content') || 
-                                    currentUrl.startsWith('/settings');
+            const currentUrl = this.router.url || '';
+            const isPublicRoute = currentUrl === '/' ||
+                                  currentUrl.startsWith('/?') ||
+                                  currentUrl.startsWith('/auth') ||
+                                  currentUrl.startsWith('/page/') ||
+                                  currentUrl.startsWith('/p/') ||
+                                  currentUrl.startsWith('/store') ||
+                                  currentUrl.startsWith('/shop');
 
-            if (isProtectedArea) {
+            if (!isPublicRoute) {
               this.router.navigate(['/auth/login'], { queryParams: { returnUrl: currentUrl } });
             }
           }
         }
 
-        // 403 Forbidden — user is authenticated but does not have permission for this specific endpoint
-        // DO NOT wipe tokens or redirect to login. Simply log and pass through to component.
+        // 403 Forbidden — check if Cross-Tenant JWT vs Origin spoofing / mismatch was detected
         else if (error.status === 403) {
-          console.warn(`[AuthInterceptor] 403 Forbidden for:`, request.url);
+          if (error.error?.errorCode === 'CrossTenantAccessDenied') {
+            console.warn(`[AuthInterceptor] 403 CrossTenantAccessDenied — clearing mismatched tenant session:`, request.url);
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user_roles');
+            localStorage.removeItem('user_profile');
+            const currentUrl = this.router.url || '';
+            if (!currentUrl.startsWith('/auth')) {
+              this.router.navigate(['/auth/login']);
+            }
+          } else {
+            console.warn(`[AuthInterceptor] 403 Forbidden for:`, request.url);
+          }
         }
 
         // 0 = Network error

@@ -8,7 +8,7 @@ namespace Ozikol_BCC.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Route("api/Tenants")]
-    [AllowAnonymous]
+    [Authorize(Roles = "SuperAdmin,Admin")]
     [Tags("0. Multi-Tenant Provisioning & Management")]
     public class TenantsApiController : ControllerBase
     {
@@ -47,6 +47,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Matching workspace catalog details if found; otherwise 404.</returns>
         [HttpGet("resolve")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<TenantCatalogDto>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 404)]
         public async Task<IActionResult> ResolveTenant([FromQuery] string? identifier, CancellationToken cancellationToken)

@@ -77,6 +77,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Resolves the tenant's custom Cloudinary storage if configured; otherwise utilizes the platform default Cloudinary.
         /// </summary>
         [HttpPost("upload-asset")]
+        [Authorize]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> UploadAsset([FromForm] BrandAssetUploadRequest request)
@@ -129,6 +130,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves the active media storage provider configuration for this tenant.
         /// </summary>
         [HttpGet("storage-settings")]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<StorageSettingsResponseDto>), 200)]
         public async Task<IActionResult> GetStorageSettings()
         {
