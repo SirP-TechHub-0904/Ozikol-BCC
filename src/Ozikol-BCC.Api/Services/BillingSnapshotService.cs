@@ -172,7 +172,6 @@ namespace Ozikol_BCC.Api.Services
                                 CustomFreeTrialDaysOverride = s.CustomFreeTrialDaysOverride,
                                 HasUsedFreeTrial = s.HasUsedFreeTrial,
                                 IsTrialPeriod = s.IsTrialPeriod,
-                                SubscribedAtUtc = s.SubscribedAtUtc,
                                 ExpiresAtUtc = s.ExpiresAtUtc
                             }).ToList()
                         })

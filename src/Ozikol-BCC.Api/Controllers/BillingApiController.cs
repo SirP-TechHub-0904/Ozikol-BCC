@@ -140,7 +140,7 @@ namespace Ozikol_BCC.Api.Controllers
                     cancellationToken);
 
             if (tenant == null)
-                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found in Central Catalog."));
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));
 
             MasterFeatureCatalog? feature = null;
             if (request.FeatureId.HasValue && request.FeatureId.Value != Guid.Empty)
@@ -156,7 +156,7 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             if (feature == null)
-                return BadRequest(ApiResponse<object>.FailureResponse("Capability was not found in the Master Catalog."));
+                return BadRequest(ApiResponse<object>.FailureResponse("Capability was not found."));
 
             var existing = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feature.Id);
 
@@ -341,7 +341,7 @@ namespace Ozikol_BCC.Api.Controllers
                     cancellationToken);
 
             if (tenant == null)
-                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found in Central Catalog."));
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));
 
             if (!Enum.TryParse<SubscriptionBillingDuration>(request.Cadence, true, out var cadence))
                 cadence = SubscriptionBillingDuration.Monthly;
@@ -575,7 +575,7 @@ namespace Ozikol_BCC.Api.Controllers
                 .FirstOrDefaultAsync(t => t.TransactionRef == cleanRef, cancellationToken);
 
             if (invoice == null || invoice.Tenant == null)
-                return NotFound(ApiResponse<object>.FailureResponse("Billing transaction reference was not found in Central Catalog."));
+                return NotFound(ApiResponse<object>.FailureResponse("Payment reference was not found."));
 
             var tenant = invoice.Tenant;
 
@@ -1046,7 +1046,7 @@ namespace Ozikol_BCC.Api.Controllers
                     cancellationToken);
 
             if (tenant == null)
-                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found in Central Catalog."));
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found."));
 
             var targetCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             if (request.FeatureCodes != null)
@@ -1489,7 +1489,7 @@ namespace Ozikol_BCC.Api.Controllers
             var detail = await BuildFullInvoiceDetailDtoAsync(invoice, invoice.Tenant, cancellationToken);
             return Ok(ApiResponse<BillingInvoiceDetailDto>.SuccessResponse(
                 detail,
-                $"Bank deposit reference '{cleanProof}' recorded for Invoice {invoice.InvoiceNumber}. Awaiting Central confirmation."));
+                $"Bank deposit reference '{cleanProof}' recorded for Invoice {invoice.InvoiceNumber}. Awaiting confirmation."));
         }
 
         private static string FormatCadenceDisplay(string? cadence) =>

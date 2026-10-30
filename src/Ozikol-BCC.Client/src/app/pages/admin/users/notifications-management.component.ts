@@ -175,7 +175,7 @@ import { ApiService } from '../../../core/services/api.service';
                 <div style="display:flex; flex-direction:column; gap:6px;">
                   <label class="checkbox-label">
                     <input type="checkbox" [(ngModel)]="model.sendInApp" name="sendInApp" />
-                    <span>In-App Feed & SignalR Real-Time Socket</span>
+                    <span>In-App Notifications</span>
                   </label>
                   <label class="checkbox-label">
                     <input type="checkbox" [(ngModel)]="model.sendPush" name="sendPush" />

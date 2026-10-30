@@ -33,7 +33,7 @@ interface DnsRecordEntry {
         eyebrow="DOMAIN ROUTING & DNS STUDIO"
         icon="dns"
         title="Custom Domain & DNS Setup"
-        subtitle="Route and connect your custom domain (e.g. www.mycompany.org) to your cloud tenant with automated routing, SSL encryption, and Master Catalog binding."
+        subtitle="Route and connect your custom domain (e.g. www.mycompany.org) to your cloud tenant with automated routing, SSL encryption, and automatic domain verification."
         [buttons]="headerButtons"
       ></app-page-header>
 

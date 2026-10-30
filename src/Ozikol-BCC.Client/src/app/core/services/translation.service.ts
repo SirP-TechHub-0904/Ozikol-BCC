@@ -4308,6 +4308,14 @@ export class TranslationService {
   }
 
   /**
+   * Alias for registerDynamicCatalogStrings to support dynamic audit logs, toasts, and UI strings.
+   * @param texts Array of English dynamic strings.
+   */
+  public registerDynamicTexts(texts: string[]): void {
+    this.registerDynamicCatalogStrings(texts);
+  }
+
+  /**
    * Translates a dynamic database string (such as a Suite or Feature name/menuTitle/description)
    * using the smart Google Translator cache, automatically queueing any cache miss for real-time translation.
    * @param text Raw English text from the database.

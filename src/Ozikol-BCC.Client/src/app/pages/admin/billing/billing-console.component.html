@@ -25,14 +25,14 @@
           </button>
         </div>
         <p class="subtitle">
-          Install and activate modular capabilities for your workspace. Installed capabilities appear immediately in your sidebar navigation menu and synchronize in real time with Central.
+          Install and activate modular capabilities for your workspace. Installed capabilities appear immediately in your sidebar navigation menu.
         </p>
       </div>
 
       <div class="header-actions">
         <span
           class="badge-pill-md badge-compulsory"
-          title="Workspace Billing Currency Determined from Central"
+          title="Workspace Billing Currency"
         >
           <span class="material-symbols-outlined">payments</span>
           <span>{{ currencyCode }} ({{ currencySymbol }})</span>
@@ -312,13 +312,13 @@
 
       <div class="features-mode-tabs-right">
         @if (snapshot.useCustomAvailability) {
-          <span class="badge-pill-md badge-available" title="Central Custom Availability policy is active for this workspace">
+          <span class="badge-pill-md badge-available" title="Custom Availability policy is active for this workspace">
             <span class="material-symbols-outlined">verified</span>
             <span>Custom Workspace Availability ({{ availableForUseCount }} Available)</span>
           </span>
         }
         @if (snapshot.useCustomPricing) {
-          <span class="badge-pill-md badge-compulsory" title="Central Custom Pricing policy is active for this workspace">
+          <span class="badge-pill-md badge-compulsory" title="Custom Pricing policy is active for this workspace">
             <span class="material-symbols-outlined">sell</span>
             <span>Custom Workspace Pricing</span>
           </span>
@@ -630,7 +630,7 @@
             <div class="card-icon bg-purple">
               <span class="material-symbols-outlined">extension</span>
             </div>
-            <span class="card-chip chip-purple">{{ snapshot.useCustomAvailability ? 'Custom Catalog' : 'Master Catalog' }}</span>
+            <span class="card-chip chip-purple">{{ snapshot.useCustomAvailability ? 'Custom Catalog' : 'Standard Catalog' }}</span>
           </div>
           <div class="card-value">{{ totalCapabilitiesCount }}</div>
           <div class="card-label">Total Modular Capabilities</div>
@@ -1889,9 +1889,9 @@
             </span>
           </div>
           <div class="spec-box">
-            <span class="spec-label">Central Sync Posture</span>
+            <span class="spec-label">Catalog Mode</span>
             <span class="spec-val">
-              {{ snapshot.useCustomAvailability ? 'Custom Workspace Catalog' : 'General Master Catalog' }}
+              {{ snapshot.useCustomAvailability ? 'Custom Workspace Catalog' : 'Standard Workspace Catalog' }}
             </span>
           </div>
         </div>
@@ -1951,7 +1951,7 @@
           <div class="feature-icon-box icon-available">
             <span class="material-symbols-outlined">info</span>
           </div>
-          <h3 class="modal-title-custom">About Workspace Features &amp; Central Sync</h3>
+          <h3 class="modal-title-custom">About Workspace Features &amp; Capabilities</h3>
         </div>
         <button type="button" class="btn-close-modal" (click)="closeInfoModal()">
           <span class="material-symbols-outlined">close</span>
@@ -1963,7 +1963,7 @@
           <strong>1. Simple View vs. Detailed View:</strong> Use <strong>Simple View</strong> to quickly browse features by S/N, Title, Suite, and Status, and click <strong>Install &amp; Activate</strong> to add any available capability directly into your workspace navigation menu.
         </p>
         <p style="margin: 0 0 12px;">
-          <strong>2. Synchronized with Central:</strong> Your available feature list, custom pricing, and running currency are governed in real time from Central (<code>/centralwks/tenants/features</code>).
+          <strong>2. Instant Menu Activation:</strong> Installed capabilities appear immediately in your sidebar navigation menu with real-time updates.
         </p>
       </div>
 

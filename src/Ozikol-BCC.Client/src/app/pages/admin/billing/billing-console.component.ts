@@ -266,8 +266,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
             this.suppressNextSocketToast = false;
           } else if (this.activePage !== 'invoice-detail' && prevSig !== '' && prevSig !== nextSig) {
             this.toastService.info(
-              'Central Catalog Synchronized',
-              'Capabilities, availability, and menu items updated in real time.'
+              'Features Updated',
+              'Capabilities, availability, and menu items updated.'
             );
           }
         }
@@ -395,7 +395,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       error: err => {
         this.togglingFeatureCode = null;
         this.suppressNextSocketToast = false;
-        const msg = err?.error?.message || 'Could not synchronize capability activation with Central.';
+        const msg = err?.error?.message || 'Could not update feature status.';
         this.toastService.error('Update Failed', msg);
       }
     });
@@ -654,16 +654,16 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
             window.open(init.authorizationUrl, '_blank', 'noopener,noreferrer');
           } else {
             this.isProcessingGatewayPayment = false;
-            this.toastService.error('Paystack Key Missing', 'Please configure your Central Paystack Public Key in /centralwks/platform-settings.');
+            this.toastService.error('Paystack Key Missing', 'Paystack not enabled.');
           }
         } catch {
           this.isProcessingGatewayPayment = false;
-          this.toastService.error('Paystack Script Error', 'Could not load Paystack Inline script.');
+          this.toastService.error('Paystack Script Error', 'Could not load Paystack checkout script.');
         }
       },
       error: err => {
         this.isProcessingGatewayPayment = false;
-        const msg = err?.error?.message || 'Paystack initialization failed. Please check Central Paystack keys in /centralwks/platform-settings.';
+        const msg = err?.error?.message || 'Paystack initialization failed.';
         this.toastService.error('Paystack Checkout Error', msg);
       }
     });
@@ -1334,7 +1334,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         'Use the docked Ozi AI Studio Assistant across CMS, forms, and communications.',
         'Generate and refine page sections, email templates, and executive summaries.',
         'Automate intelligent responses and content translation across workspace modules.',
-        'Access Central-managed AI provider pools with zero setup overhead.'
+        'Access managed AI provider pools with zero setup overhead.'
       ],
       'bcp-mass-communication': [
         'Compose and broadcast bulk Email and SMS campaigns to targeted user segments.',

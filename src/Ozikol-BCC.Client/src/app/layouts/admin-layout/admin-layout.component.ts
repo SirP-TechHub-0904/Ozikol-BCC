@@ -1697,7 +1697,7 @@ export interface SuiteInfoDetail {
           This modular capability is <strong>Available</strong> for your workspace, but is currently <strong>Not Active</strong> (Locked). Open the Feature Details page to review what it does, its suite, and install &amp; activate it in one click.
         </p>
         <p class="oz-lang-modal-desc" *ngIf="!lockedFeatureIsAvailable">
-          This modular capability is currently in <strong>Coming Soon</strong> status on the Central roadmap. Open the Feature Details page to preview its suite, specification, and capabilities we are building for your workspace.
+          This modular capability is currently in <strong>Coming Soon</strong> status on our product roadmap. Open the Feature Details page to preview its suite, specification, and capabilities we are building for your workspace.
         </p>
         <div class="oz-lang-modal-actions" style="margin-top: 18px;">
           <button type="button" class="btn-lang-modal-cancel" (click)="closeLockedFeatureModal()">
