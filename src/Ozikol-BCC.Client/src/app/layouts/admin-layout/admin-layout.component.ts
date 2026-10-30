@@ -233,6 +233,7 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           </ng-container>
+          <ng-container *ngIf="canAccessSuite('cms') || canAccessSuite('forms_intelligence')">
           <div class="nav-item">
             <a routerLink="/content/console/forms" routerLinkActive="active" class="nav-link">
               <div class="nav-link-content">
@@ -276,6 +277,7 @@ export interface SuiteInfoDetail {
               <span class="material-symbols-outlined nav-external-hint">open_in_new</span>
             </a>
           </div>
+          </ng-container>
 
           <!-- Suite 2: User Management -->
           <ng-container *ngIf="canAccessSuite('user_management')">
@@ -486,7 +488,7 @@ export interface SuiteInfoDetail {
 
           <!-- Dynamic Suites & Capabilities strictly ordered by Suite SortOrder & Feature SortOrder from Central -->
           <ng-container *ngFor="let suite of orderedSidebarSuites">
-            <ng-container *ngIf="(!suite.suiteAccessKey || canAccessSuite(suite.suiteAccessKey)) && isAnyFeatureVisible(suite.featureCodes)">
+            <ng-container *ngIf="canAccessSuite(suite.suiteAccessKey || suite.infoKey || suite.categoryName) && isAnyFeatureVisible(suite.featureCodes)">
               <div class="menu-title suite-header-row">
                 <span class="suite-header-text">{{ getSuiteMenuTitle(suite.categoryName, suite.defaultMenuTitle) }}</span>
                 <button *ngIf="suite.infoKey" type="button" class="suite-info-trigger" (click)="openSuiteInfo(suite.infoKey, $event)" [title]="(suite.infoTitleKey || '') | translate:(suite.infoTitleFallback || '')">
@@ -1004,6 +1006,7 @@ export interface SuiteInfoDetail {
           </ng-container>
 
           <!-- Suite 13: Billing & Subscriptions (Fixed System Menu at Bottom) -->
+          <ng-container *ngIf="canAccessSuite('billing_subscriptions')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.billing_subscriptions' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('billing_subscriptions', $event)" [title]="'adm.billing_subscriptions_overview' | translate:'Billing & Subscriptions Overview'">
@@ -1033,8 +1036,10 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
+          </ng-container>
 
           <!-- Suite 14: Security & Audit (Platform Protection) -->
+          <ng-container *ngIf="canAccessSuite('security_audit')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.security_audit' | translate }}</span>
             <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" [title]="'adm.security_audit_overview' | translate:'Security & Audit Overview'">
@@ -1064,6 +1069,7 @@ export interface SuiteInfoDetail {
               </button>
             </a>
           </div>
+          </ng-container>
         </ng-container>
 
         <!-- ============================================== -->
@@ -3465,40 +3471,67 @@ export class AdminLayoutComponent implements OnInit {
 
   /**
    * Evaluates if the current authenticated user has permission to see and access a management suite.
+   * If the user is not SuperAdmin or Admin (or Global Editor), ONLY the suites matching their
+   * assigned role / feature scope (`BcpUserFeatureRoles`) are visible.
    * 
-   * @param suiteKey - Identifier of the suite ('user_management', 'identity', 'cms', 'settings', 'people_community')
+   * @param suiteKey - Identifier or category name of the suite
    * @returns True if the suite should be visible and accessible in the sidebar
    */
   canAccessSuite(suiteKey: string): boolean {
-    if (this.isGlobalAdmin || isGlobalEditor(this.userRoles) || isReadOnlyUser(this.userRoles)) {
-      if (suiteKey === 'settings') {
-        return this.isGlobalAdmin;
-      }
+    const cleanKey = (suiteKey || '').trim().toLowerCase().replace(/[\s\-_,&]/g, '');
+
+    if (this.isGlobalAdmin) {
       return true;
     }
 
-    switch (suiteKey) {
-      case 'user_management':
-        return hasUserRole('UserManager', this.userRoles) ||
-               hasUserRole('IdentityManager', this.userRoles) ||
-               hasFeatureScope('usermanager', this.userRoles);
+    if (cleanKey === 'settings' || cleanKey === 'billingsubscriptions') {
+      return false;
+    }
+
+    if (isGlobalEditor(this.userRoles)) {
+      return true;
+    }
+
+    switch (cleanKey) {
+      case 'usermanagement':
+        return hasFeatureScope('usermanager', this.userRoles);
       case 'identity':
-        return hasUserRole('IdentityManager', this.userRoles) ||
-               hasFeatureScope('identitymanager', this.userRoles) ||
-               hasFeatureScope('identityaccesscontrol', this.userRoles);
+      case 'securityaudit':
+      case 'compliancegovernance':
+      case 'compliancelearningcertification':
+      case 'academylearning':
+        return hasFeatureScope('identitymanager', this.userRoles);
       case 'cms':
-        return hasUserRole('CmsManager', this.userRoles) ||
-               hasUserRole('ContentManager', this.userRoles) ||
-               hasFeatureScope('cms', this.userRoles) ||
-               hasFeatureScope('cmsmanager', this.userRoles);
-      case 'settings':
-        return this.isGlobalAdmin;
-      case 'people_community':
-        return hasUserRole('UserManager', this.userRoles) ||
-               hasUserRole('IdentityManager', this.userRoles) ||
+      case 'websitecms':
+      case 'lifeeventspublications':
+        return hasFeatureScope('contentmanager', this.userRoles);
+      case 'formsintelligence':
+      case 'reportsformsanalytics':
+        return hasFeatureScope('formsmanager', this.userRoles) ||
+               hasFeatureScope('contentmanager', this.userRoles);
+      case 'peoplecommunity':
+      case 'peoplecommunitycollaboration':
+      case 'workforceshifts':
+      case 'workforcerotascheduling':
+      case 'communicationsupport':
+      case 'communicationaisupport':
+      case 'operationsworkflows':
+        return hasFeatureScope('crmmanager', this.userRoles) ||
+               hasFeatureScope('usermanager', this.userRoles);
+      case 'eventsticketing':
+      case 'eventstrainingmanagement':
+        return hasFeatureScope('eventsmanager', this.userRoles);
+      case 'financebanking':
+      case 'financecommercialrevenue':
+      case 'commercestore':
+        return hasFeatureScope('storemanager', this.userRoles) ||
+               hasFeatureScope('billingmanager', this.userRoles);
+      case 'demographicscensus':
+      case 'demographicsciviccensus':
+        return hasFeatureScope('telemetrymanager', this.userRoles) ||
                hasFeatureScope('usermanager', this.userRoles);
       default:
-        return true;
+        return hasFeatureScope(cleanKey, this.userRoles);
     }
   }
 

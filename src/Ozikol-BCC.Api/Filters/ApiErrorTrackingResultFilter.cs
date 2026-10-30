@@ -93,62 +93,96 @@ public sealed class ApiErrorTrackingResultFilter : IAsyncActionFilter, IAsyncRes
                         return;
                     }
 
-                    // Enforce Feature Editor module scope boundaries when the user holds FeatureEditor without a dedicated manager role
-                    var isScopedFeatureEditor = HasAnyRole("FeatureEditor", "FeatureEdit") &&
-                                                !HasAnyRole("IdentityManager", "UserManager", "CmsManager", "ContentManager", "CommerceManager");
-                    if (isScopedFeatureEditor)
+                    // Enforce per-feature view vs. edit/delete (CRUD) scope boundaries across all modular capability suites
+                    bool HasViewScope(params string[] scopes) =>
+                        HasAnyRole(scopes) ||
+                        roles.Any(r => scopes.Any(s => r.Replace(" ", "").Contains(s, StringComparison.OrdinalIgnoreCase)));
+
+                    bool HasEditScope(params string[] scopes) =>
+                        HasAnyRole(scopes) ||
+                        roles.Any(r =>
+                        {
+                            var clean = r.Replace(" ", "");
+                            if (clean.StartsWith("ReadOnly:", StringComparison.OrdinalIgnoreCase) ||
+                                clean.EndsWith(":Readonly", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return false;
+                            }
+                            return scopes.Any(s => clean.Contains(s, StringComparison.OrdinalIgnoreCase));
+                        });
+
+                    IActionResult ForbiddenScope(string suiteName, bool isEditAttempt) =>
+                        new ObjectResult(new ApiResponse<object>
+                        {
+                            IsSuccess = false,
+                            ErrorCode = isEditAttempt ? "ERR-4030" : "ERR-4031",
+                            Message = isEditAttempt
+                                ? $"Action Restricted: You need Global Editor or Feature Editor permission on '{suiteName}' to create, edit, or delete records."
+                                : $"Feature Restricted: Your role does not include access to '{suiteName}'.",
+                            Errors = new List<string> { isEditAttempt ? $"Insufficient edit/delete authority for {suiteName}." : $"No access scope for {suiteName}." },
+                            Timestamp = DateTime.UtcNow
+                        })
+                        {
+                            StatusCode = StatusCodes.Status403Forbidden
+                        };
+
+                    if (path.StartsWith("/api/usersapi") || path.StartsWith("/api/registrationformapi"))
                     {
-                        bool HasFeatureScopeClaim(params string[] scopes) =>
-                            roles.Any(r => scopes.Any(s => r.Replace(" ", "").Contains(s, StringComparison.OrdinalIgnoreCase)));
-
-                        if ((path.StartsWith("/api/usersapi") || path.StartsWith("/api/registrationformapi")) &&
-                            !HasFeatureScopeClaim("UserManager", "IdentityManager", "UserManagement"))
+                        var scopes = new[] { "UserManager", "IdentityManager", "CrmManager", "UserManagement" };
+                        if (!HasViewScope(scopes) && !HasAnyRole("ReadOnly"))
                         {
-                            context.Result = new ObjectResult(new ApiResponse<object>
-                            {
-                                IsSuccess = false,
-                                ErrorCode = "ERR-4031",
-                                Message = "Feature Scope Restricted: Your Feature Editor role is not scoped to User Management.",
-                                Errors = new List<string> { "Insufficient feature scope for User Management." },
-                                Timestamp = DateTime.UtcNow
-                            })
-                            {
-                                StatusCode = StatusCodes.Status403Forbidden
-                            };
+                            context.Result = ForbiddenScope("User Management", false);
                             return;
                         }
-
-                        if ((path.StartsWith("/api/contentapi") || path.StartsWith("/api/cmsdashboardapi") || path.StartsWith("/api/pageformsapi")) &&
-                            !HasFeatureScopeClaim("CMS", "CmsManager", "ContentManager", "Content"))
+                        if (isWriteMethod && !HasEditScope(scopes))
                         {
-                            context.Result = new ObjectResult(new ApiResponse<object>
-                            {
-                                IsSuccess = false,
-                                ErrorCode = "ERR-4031",
-                                Message = "Feature Scope Restricted: Your Feature Editor role is not scoped to Content & CMS Studio.",
-                                Errors = new List<string> { "Insufficient feature scope for Content & CMS." },
-                                Timestamp = DateTime.UtcNow
-                            })
-                            {
-                                StatusCode = StatusCodes.Status403Forbidden
-                            };
+                            context.Result = ForbiddenScope("User Management", true);
                             return;
                         }
-
-                        if (path.StartsWith("/api/productsapi") && isWriteMethod &&
-                            !HasFeatureScopeClaim("Commerce", "CommerceManager", "Products", "CMS"))
+                    }
+                    else if (path.StartsWith("/api/contentapi") || path.StartsWith("/api/cmsdashboardapi"))
+                    {
+                        var scopes = new[] { "CMS", "CmsManager", "ContentManager", "Content" };
+                        if (!HasViewScope(scopes) && !HasAnyRole("ReadOnly"))
                         {
-                            context.Result = new ObjectResult(new ApiResponse<object>
-                            {
-                                IsSuccess = false,
-                                ErrorCode = "ERR-4031",
-                                Message = "Feature Scope Restricted: Your Feature Editor role is not scoped to Commerce Studio.",
-                                Errors = new List<string> { "Insufficient feature scope for Commerce Studio." },
-                                Timestamp = DateTime.UtcNow
-                            })
-                            {
-                                StatusCode = StatusCodes.Status403Forbidden
-                            };
+                            context.Result = ForbiddenScope("Website & CMS Studio", false);
+                            return;
+                        }
+                        if (isWriteMethod && !HasEditScope(scopes))
+                        {
+                            context.Result = ForbiddenScope("Website & CMS Studio", true);
+                            return;
+                        }
+                    }
+                    else if (path.StartsWith("/api/pageformsapi"))
+                    {
+                        var scopes = new[] { "FormsManager", "CMS", "CmsManager", "ContentManager" };
+                        if (!HasViewScope(scopes) && !HasAnyRole("ReadOnly"))
+                        {
+                            context.Result = ForbiddenScope("Forms & Survey Studio", false);
+                            return;
+                        }
+                        if (isWriteMethod && !HasEditScope(scopes))
+                        {
+                            context.Result = ForbiddenScope("Forms & Survey Studio", true);
+                            return;
+                        }
+                    }
+                    else if (path.StartsWith("/api/productsapi") && isWriteMethod)
+                    {
+                        var scopes = new[] { "StoreManager", "Commerce", "CommerceManager", "Products", "CMS", "CmsManager" };
+                        if (!HasEditScope(scopes))
+                        {
+                            context.Result = ForbiddenScope("Store & Commerce Catalog", true);
+                            return;
+                        }
+                    }
+                    else if ((path.StartsWith("/api/mxmailsapi") || path.StartsWith("/api/mxsmsapi")) && isWriteMethod)
+                    {
+                        var scopes = new[] { "TelemetryManager", "UserManager", "IdentityManager", "CrmManager" };
+                        if (!HasEditScope(scopes))
+                        {
+                            context.Result = ForbiddenScope("System Communications & Telemetry", true);
                             return;
                         }
                     }

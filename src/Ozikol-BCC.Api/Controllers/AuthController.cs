@@ -2159,6 +2159,19 @@ namespace Ozikol_BCC.Api.Controllers
                             {
                                 roles.Add(shortTag);
                             }
+
+                            if (fr.ActionRole == BcpActionRole.GlobalEditor && !roles.Contains("Global Editor", StringComparer.OrdinalIgnoreCase))
+                            {
+                                roles.Add("Global Editor");
+                            }
+                            else if (fr.ActionRole == BcpActionRole.FeatureEditor && !roles.Contains("Feature Editor", StringComparer.OrdinalIgnoreCase))
+                            {
+                                roles.Add("Feature Editor");
+                            }
+                            else if (fr.ActionRole == BcpActionRole.Readonly && !roles.Contains("Read Only", StringComparer.OrdinalIgnoreCase))
+                            {
+                                roles.Add("Read Only");
+                            }
                         }
                     }
                     catch
