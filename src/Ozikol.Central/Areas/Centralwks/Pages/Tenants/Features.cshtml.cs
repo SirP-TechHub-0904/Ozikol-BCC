@@ -461,6 +461,16 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 }
 
                 bool isPaidSubscribed = isActiveForTenant && (!f.IsCompulsory || effectiveMonthlyPrice > 0);
+                int? subRemainingDays = null;
+                bool hasActiveOrOverdueSub = false;
+                if (sub != null && sub.IsActive &&
+                    !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase))
+                {
+                    subRemainingDays = (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays);
+                    hasActiveOrOverdueSub = true;
+                }
 
                 allItems.Add(new FeatureItemDto
                 {
@@ -477,7 +487,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     EffectiveFreeTrialDays = effectiveFreeTrialDays,
                     HasCustomFreeTrialOverride = hasCustomFreeTrialOverride,
                     HasUsedFreeTrial = hasUsedFreeTrial,
-                    IsTrialPeriod = isTrialPeriod
+                    IsTrialPeriod = isTrialPeriod,
+                    RemainingDays = subRemainingDays,
+                    HasActiveOrOverdueSubscription = hasActiveOrOverdueSub
                 });
             }
 
@@ -1016,6 +1028,105 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         }
 
         /// <summary>
+        /// Directly adjusts the remaining days (<see cref="MasterTenantFeatureSubscription.ExpiresAtUtc"/>) of a tenant's
+        /// active or overdue capability subscription/trial (e.g. -2 days overdue, 0 days due today, 1 day, 14 days, 25 days)
+        /// WITHOUT enabling Custom Tenant Pricing or Custom Availability (preserving General Mode).
+        /// </summary>
+        /// <param name="tenantId">The identifier of the tenant organization.</param>
+        /// <param name="featureId">The identifier of the capability to adjust.</param>
+        /// <param name="remainingDays">Target whole days remaining (-365 to 365; 0 or negative triggers immediate renewal/payment).</param>
+        /// <returns>Redirects back to the Tenant Capabilities page.</returns>
+        public async Task<IActionResult> OnPostAdjustSubscriptionExpiryDaysAsync(
+            Guid tenantId,
+            Guid featureId,
+            int remainingDays = 0)
+        {
+            var targetId = tenantId != Guid.Empty ? tenantId : (Id != Guid.Empty ? Id : (TenantId ?? Guid.Empty));
+            var tenant = await _dbContext.MasterTenantCatalogs
+                .Include(t => t.FeatureSubscriptions)
+                .FirstOrDefaultAsync(t => t.Id == targetId);
+
+            if (tenant == null)
+            {
+                TempData["Error"] = "Tenant not found.";
+                return RedirectToPage("/Features/Analytics");
+            }
+
+            var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(featureId);
+            if (feature == null)
+            {
+                TempData["Error"] = "Capability not found.";
+                return RedirectToPage(new { tenantId = tenant.Id });
+            }
+
+            int clampedDays = Math.Clamp(remainingDays, -365, 365);
+            var now = DateTime.UtcNow;
+            // When clampedDays == 0, set 5 minutes in the past so Math.Ceiling((ExpiresAtUtc - now).TotalDays) == 0 (due today / expired)
+            DateTime targetExpiry = clampedDays == 0
+                ? now.AddMinutes(-5)
+                : now.AddDays(clampedDays);
+
+            var existing = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == featureId);
+            if (existing != null)
+            {
+                existing.IsActive = true;
+                existing.ExpiresAtUtc = targetExpiry;
+                if (clampedDays <= 0)
+                {
+                    existing.Status = "Expired";
+                }
+                else
+                {
+                    existing.Status = existing.IsTrialPeriod ? "Trial" : "Active";
+                }
+            }
+            else
+            {
+                var newSub = new MasterTenantFeatureSubscription
+                {
+                    Id = Guid.NewGuid(),
+                    MasterTenantCatalogId = tenant.Id,
+                    MasterFeatureCatalogId = feature.Id,
+                    DurationType = SubscriptionBillingDuration.Monthly,
+                    RecurringPrice = feature.MonthlyPrice,
+                    StartsAtUtc = now,
+                    ExpiresAtUtc = targetExpiry,
+                    AutoRenew = true,
+                    IsActive = true,
+                    IsTrialPeriod = feature.FreeTrialDays > 0 && clampedDays > 0,
+                    HasUsedFreeTrial = feature.FreeTrialDays > 0,
+                    Status = clampedDays <= 0 ? "Expired" : (feature.FreeTrialDays > 0 ? "Trial" : "Active"),
+                    CreatedUtc = now
+                };
+                _dbContext.MasterTenantFeatureSubscriptions.Add(newSub);
+            }
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name,
+                UserName = User.Identity?.Name,
+                Action = "AdjustTenantSubscriptionExpiryDays",
+                EntityType = "FeatureSubscription",
+                EntityId = feature.Id.ToString(),
+                Summary = $"Adjusted remaining days for '{feature.Name}' on tenant '{tenant.OrganizationName}' to {clampedDays} day(s) (Expires {targetExpiry:yyyy-MM-dd HH:mm} UTC, General Mode preserved)",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = now
+            });
+
+            await _dbContext.SaveChangesAsync();
+
+            string statusDesc = clampedDays < 0
+                ? $"{Math.Abs(clampedDays)} day(s) Overdue — Payment Triggered"
+                : (clampedDays == 0
+                    ? "0 days (Due Today / Expired — Payment Triggered)"
+                    : $"{clampedDays} day(s) remaining");
+
+            TempData["Success"] = $"Updated '{feature.Name}' for {tenant.OrganizationName}: {statusDesc} (General Mode preserved).";
+            return RedirectToPage(new { tenantId = tenant.Id, tab = Tab, search = Search, category = Category, status = Status, viewMode = ViewMode });
+        }
+
+        /// <summary>
         /// View transfer representation of a capability with per-tenant active, availability, pricing, and free-trial posture.
         /// </summary>
         public class FeatureItemDto
@@ -1034,6 +1145,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             public bool HasCustomFreeTrialOverride { get; set; }
             public bool HasUsedFreeTrial { get; set; }
             public bool IsTrialPeriod { get; set; }
+            public int? RemainingDays { get; set; }
+            public bool HasActiveOrOverdueSubscription { get; set; }
         }
     }
 }

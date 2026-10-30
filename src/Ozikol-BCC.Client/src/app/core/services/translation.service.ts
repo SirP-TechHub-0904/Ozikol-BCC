@@ -4418,8 +4418,34 @@ export class TranslationService {
     } catch {}
   }
 
+  private static readonly BILLING_BANNER_TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
+    en: {
+      'billing.notice_title': 'Subscription & Free Trial Renewal Notice:',
+      'billing.review_entitlements': 'Review & Pay Now',
+      'billing.total_due': 'Total Amount to Pay:'
+    },
+    fr: {
+      'billing.notice_title': 'Avis de renouvellement d’abonnement et d’essai gratuit :',
+      'billing.review_entitlements': 'Vérifier et payer maintenant',
+      'billing.total_due': 'Montant total à payer :'
+    },
+    es: {
+      'billing.notice_title': 'Aviso de renovación de suscripción y prueba gratuita:',
+      'billing.review_entitlements': 'Revisar y pagar ahora',
+      'billing.total_due': 'Importe total a pagar:'
+    },
+    de: {
+      'billing.notice_title': 'Hinweis zur Verlängerung von Abonnement & Testphase:',
+      'billing.review_entitlements': 'Jetzt prüfen & bezahlen',
+      'billing.total_due': 'Gesamtbetrag zu zahlen:'
+    }
+  };
+
   public translate(key: string, fallback?: string): string {
     const lang = this.currentLangSubject.value;
+    if (TranslationService.BILLING_BANNER_TRANSLATIONS[lang]?.[key]) {
+      return TranslationService.BILLING_BANNER_TRANSLATIONS[lang][key];
+    }
     const table = this.translations[lang] || this.translations['en'];
     if (table && table[key]) {
       return table[key];
@@ -4427,6 +4453,9 @@ export class TranslationService {
     // Fallback to English dictionary
     if (this.translations['en'] && this.translations['en'][key]) {
       return this.translations['en'][key];
+    }
+    if (TranslationService.BILLING_BANNER_TRANSLATIONS['en']?.[key]) {
+      return TranslationService.BILLING_BANNER_TRANSLATIONS['en'][key];
     }
     return fallback ?? key;
   }

@@ -1147,21 +1147,46 @@
                     }
                   </td>
                   <td>
-                    <span class="badge-pill-md badge-available">
-                      <span class="material-symbols-outlined">check_circle</span>
-                      <span>Active</span>
-                    </span>
+                    @if (feat.status === 'Expired' || ((feat.daysRemaining ?? 999) <= 0 && !feat.isCompulsory)) {
+                      <span class="badge-pill-md" style="background: rgba(239, 68, 68, 0.14); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.35);">
+                        <span class="material-symbols-outlined">error</span>
+                        <span>{{ (feat.daysRemaining ?? 0) < 0 ? (((feat.daysRemaining || 0) * -1) + 'd Overdue — Payment Due') : 'Expired Today — Payment Due' }}</span>
+                      </span>
+                    } @else if (!feat.isCompulsory && (feat.daysRemaining ?? 999) <= 30) {
+                      <span class="badge-pill-md" style="background: rgba(245, 158, 11, 0.14); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.35);">
+                        <span class="material-symbols-outlined">schedule</span>
+                        <span>{{ feat.isTrialPeriod ? 'Free Trial' : 'Active' }} &bull; {{ feat.daysRemaining }}d Left</span>
+                      </span>
+                    } @else {
+                      <span class="badge-pill-md badge-available">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || 14) + 'd left)') : 'Active' }}</span>
+                      </span>
+                    }
                   </td>
                   <td style="text-align: right;">
-                    <button
-                      type="button"
-                      class="btn btn-outline btn-sm-action"
-                      [disabled]="togglingFeatureCode === feat.featureCode"
-                      (click)="toggleFeatureInstall(feat, false)"
-                    >
-                      <span class="material-symbols-outlined">toggle_off</span>
-                      <span>Deactivate</span>
-                    </button>
+                    <div style="display: inline-flex; align-items: center; gap: 6px;">
+                      @if (!feat.isCompulsory && (feat.status === 'Expired' || (feat.daysRemaining ?? 999) <= 30)) {
+                        <button
+                          type="button"
+                          class="btn btn-primary btn-sm-action"
+                          [disabled]="togglingFeatureCode === feat.featureCode"
+                          (click)="toggleFeatureInstall(feat, true)"
+                        >
+                          <span class="material-symbols-outlined">payments</span>
+                          <span>Pay &amp; Renew ({{ formatAmount(feat.monthlyPrice) }})</span>
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="btn btn-outline btn-sm-action"
+                        [disabled]="togglingFeatureCode === feat.featureCode"
+                        (click)="toggleFeatureInstall(feat, false)"
+                      >
+                        <span class="material-symbols-outlined">toggle_off</span>
+                        <span>Deactivate</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               }

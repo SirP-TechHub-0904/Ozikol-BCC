@@ -99,12 +99,12 @@ namespace Ozikol_BCC.Api.Services
         }
 
         /// <summary>
-        /// Computes the renewal severity bucket for a remaining-days value.
+        /// Computes the renewal severity bucket for a remaining-days value (within the 30-day renewal horizon).
         /// </summary>
         /// <param name="daysRemaining">Whole days remaining (ceiling); zero or less means expired.</param>
-        /// <returns>None, Warning, Urgent, or Critical.</returns>
+        /// <returns>None, Warning (30 days or fewer), Urgent (3 days or fewer), or Critical (expired).</returns>
         public static string SeverityFor(int daysRemaining) =>
-            daysRemaining <= 0 ? "Critical" : daysRemaining <= 3 ? "Urgent" : daysRemaining <= 14 ? "Warning" : "None";
+            daysRemaining <= 0 ? "Critical" : daysRemaining <= 3 ? "Urgent" : daysRemaining <= 30 ? "Warning" : "None";
 
         /// <summary>
         /// Builds tenant-neutral renewal wording for a feature.
@@ -452,12 +452,13 @@ namespace Ozikol_BCC.Api.Services
 
                 var days = (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays);
                 bool notSuspended = !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase)
-                                    && !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase);
+                                    && !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase)
+                                    && !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase);
                 var live = sub.IsActive
                            && notSuspended
                            && (f.IsCompulsory || sub.ExpiresAtUtc > now);
                 // A lapsed subscription is reported as Expired regardless of the stored status string
-                var status = !live && sub.IsActive && !f.IsCompulsory && sub.ExpiresAtUtc <= now
+                var status = !live && sub.IsActive && notSuspended && !f.IsCompulsory && sub.ExpiresAtUtc <= now
                     ? "Expired"
                     : (live ? "Active" : sub.Status);
 
@@ -474,7 +475,11 @@ namespace Ozikol_BCC.Api.Services
                 item.EffectivePrice = Math.Round(subEffectiveUsd * currRate, 2);
                 item.ExpiresAtUtc = sub.ExpiresAtUtc;
                 item.DaysRemaining = days;
-                item.Severity = live && !f.IsCompulsory && !string.Equals(sub.Status, "Pending", StringComparison.OrdinalIgnoreCase)
+                bool isTrackedForRenewal = sub.IsActive
+                                           && notSuspended
+                                           && !f.IsCompulsory
+                                           && !string.Equals(sub.Status, "Pending", StringComparison.OrdinalIgnoreCase);
+                item.Severity = isTrackedForRenewal
                     ? SeverityFor(days)
                     : "None";
 
@@ -493,6 +498,7 @@ namespace Ozikol_BCC.Api.Services
 
                 if (item.Severity != "None")
                 {
+                    decimal renewalPrice = item.EffectivePrice > 0 ? item.EffectivePrice : item.MonthlyPrice;
                     snapshot.Notices.Add(new FeatureExpirationNoticeDto
                     {
                         FeatureCode = f.FeatureCode,
@@ -502,7 +508,12 @@ namespace Ozikol_BCC.Api.Services
                         DaysRemaining = days,
                         IsExpired = days <= 0,
                         Severity = item.Severity,
-                        NoticeMessage = MessageFor(f.Name, days)
+                        NoticeMessage = MessageFor(f.Name, days),
+                        RenewalPrice = renewalPrice,
+                        CurrencyCode = currCode,
+                        CurrencySymbol = currSymbol,
+                        BillingCadence = item.BillingCadence,
+                        IsTrialPeriod = sub.IsTrialPeriod
                     });
                 }
 

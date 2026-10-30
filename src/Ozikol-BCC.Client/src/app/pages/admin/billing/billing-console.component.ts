@@ -370,7 +370,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   get activeInstalledFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
-    return this.allOrderedFeatures.filter(f => f.isActive);
+    return this.allOrderedFeatures.filter(f => f.isActive || f.status === 'Expired');
   }
 
   get filteredInvoices(): BillingInvoice[] {

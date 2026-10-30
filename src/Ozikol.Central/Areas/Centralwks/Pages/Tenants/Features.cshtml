@@ -454,12 +454,33 @@
                                                 Active (Subscribed)
                                             </span>
                                         }
+                                        else if (item.HasActiveOrOverdueSubscription && item.RemainingDays.HasValue && item.RemainingDays.Value <= 0)
+                                        {
+                                            <span class="badge" style="background: rgba(239, 68, 68, 0.14); color: #dc2626; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(239, 68, 68, 0.35);">
+                                                <span class="badge-dot" style="background-color: #ef4444;"></span>
+                                                Expired / Payment Due (@(item.RemainingDays.Value < 0 ? $"{Math.Abs(item.RemainingDays.Value)}d Overdue" : "0d Due Today"))
+                                            </span>
+                                        }
                                         else
                                         {
                                             <span class="badge" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; font-weight: 700; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(239, 68, 68, 0.25);">
                                                 <span class="badge-dot" style="background-color: #ef4444;"></span>
                                                 Not Active
                                             </span>
+                                        }
+
+                                        @if (!feat.IsCompulsory && item.HasActiveOrOverdueSubscription && item.RemainingDays.HasValue)
+                                        {
+                                            var remDays = item.RemainingDays.Value;
+                                            <button type="button"
+                                                    onclick="openAdjustExpiryModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @remDays)"
+                                                    class="badge"
+                                                    style="background: @(remDays <= 0 ? "rgba(239, 68, 68, 0.14)" : (remDays <= 30 ? "rgba(245, 158, 11, 0.15)" : "rgba(14, 165, 233, 0.12)")); color: @(remDays <= 0 ? "#dc2626" : (remDays <= 30 ? "#b45309" : "#0284c7")); font-weight: 800; font-size: 11px; border: 1px solid @(remDays <= 0 ? "#ef4444" : (remDays <= 30 ? "#f59e0b" : "rgba(14, 165, 233, 0.3)")); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
+                                                    title="Click to adjust remaining days for @Model.Tenant.OrganizationName (e.g. 0 or -2 days to trigger payment — stays in General Mode)">
+                                                <span class="material-symbols-outlined" style="font-size: 12px;">timer</span>
+                                                <span>@(remDays < 0 ? $"{Math.Abs(remDays)}d Overdue" : (remDays == 0 ? "0d Left (Due Today)" : $"{remDays}d Left"))</span>
+                                                <span class="material-symbols-outlined" style="font-size: 11px;">edit</span>
+                                            </button>
                                         }
 
                                         @if (isAvail)
@@ -659,6 +680,17 @@
                                                         <span class="material-symbols-outlined" style="font-size: 16px;">payments</span>
                                                         <span>Set Custom Price &amp; Trial...</span>
                                                     </button>
+
+                                                    @if (!feat.IsCompulsory)
+                                                    {
+                                                        <button type="button"
+                                                                onclick="openAdjustExpiryModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', @(item.RemainingDays ?? item.EffectiveFreeTrialDays))"
+                                                                class="dropdown-item-btn"
+                                                                style="width: 100%; text-align: left; padding: 8px 10px; border: none; background: transparent; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #b45309; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                                            <span class="material-symbols-outlined" style="font-size: 16px;">timer</span>
+                                                            <span>Adjust Remaining Days (0 / -2d)...</span>
+                                                        </button>
+                                                    }
                                                 </div>
                                             </div>
                                         </div>
@@ -914,6 +946,67 @@ else
     </div>
 </div>
 
+@* ── Adjust Remaining Days / Expiry Modal (Preserves General Mode, Does Not Enable Custom Mode) ── *@
+<div id="adjustExpiryModalBackdrop" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 480px; width: 100%; border: 1px solid #e2e8f0; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2); overflow: hidden;">
+        <div style="padding: 18px 22px; background: #fffbeb; border-bottom: 1px solid #fde68a; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="material-symbols-outlined" style="color: #b45309;">timer</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 800; color: #0f172a;">Adjust Remaining Days / Trigger Payment</h3>
+                    <div style="font-size: 11px; color: #92400e; font-weight: 600;">Stays in General Mode — does NOT turn on Custom Pricing</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeAdjustExpiryModal()" style="background: none; border: none; cursor: pointer; color: #64748b;">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form method="post" asp-page-handler="AdjustSubscriptionExpiryDays" style="margin: 0; padding: 22px;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="tenantId" value="@Model.Tenant.Id" />
+            <input type="hidden" name="tab" value="@Model.ActiveTab" />
+            <input type="hidden" name="featureId" id="adjustExpiryFeatureId" />
+
+            <div style="margin-bottom: 14px; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+                <div style="font-size: 11.5px; color: #64748b;">Active Capability on <strong>@Model.Tenant.OrganizationName</strong></div>
+                <div id="adjustExpiryFeatureName" style="font-size: 14.5px; font-weight: 800; color: #0f172a; margin-top: 2px;"></div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label class="form-label" style="font-weight: 700; font-size: 12.5px;">Remaining Days Before Expiry / Payment</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="number" min="-365" max="365" name="remainingDays" id="adjustExpiryDaysInput" class="form-control" placeholder="e.g. 0 or -2" required />
+                    <span style="font-size: 12px; font-weight: 700; color: #475569; white-space: nowrap;">Days</span>
+                </div>
+                <span class="form-help" style="font-size: 11.5px; color: #64748b; display: block; margin-top: 6px;">
+                    Set <strong>0</strong> or <strong>-2</strong> to expire immediately and trigger payment, or <strong>1 to 30</strong> to test the 30-day renewal banner, notification list, and email.
+                </span>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">Quick Test Presets:</div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <button type="button" onclick="setAdjustExpiryPreset(-2)" class="badge" style="background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 800; font-size: 11.5px; padding: 5px 10px; cursor: pointer;">-2d (Overdue)</button>
+                    <button type="button" onclick="setAdjustExpiryPreset(0)" class="badge" style="background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 800; font-size: 11.5px; padding: 5px 10px; cursor: pointer;">0d (Trigger Payment)</button>
+                    <button type="button" onclick="setAdjustExpiryPreset(1)" class="badge" style="background: rgba(245, 158, 11, 0.15); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.35); font-weight: 800; font-size: 11.5px; padding: 5px 10px; cursor: pointer;">1d (24hr Alert)</button>
+                    <button type="button" onclick="setAdjustExpiryPreset(7)" class="badge" style="background: rgba(245, 158, 11, 0.12); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 700; font-size: 11.5px; padding: 5px 10px; cursor: pointer;">7d Left</button>
+                    <button type="button" onclick="setAdjustExpiryPreset(14)" class="badge" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.3); font-weight: 700; font-size: 11.5px; padding: 5px 10px; cursor: pointer;">14d Left</button>
+                    <button type="button" onclick="setAdjustExpiryPreset(25)" class="badge" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.3); font-weight: 700; font-size: 11.5px; padding: 5px 10px; cursor: pointer;">25d Left (&le;30d)</button>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closeAdjustExpiryModal()">Cancel</button>
+                <button type="submit" class="btn-admin btn-admin-primary">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">timer</span>
+                    <span>Update Remaining Days</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <style>
 .tenant-avail-tab {
     display: inline-flex;
@@ -1060,6 +1153,30 @@ else
 
         function closeCustomPriceModal() {
             document.getElementById('customPriceModalBackdrop').style.display = 'none';
+        }
+
+        function openAdjustExpiryModal(featureId, featureName, currentRemainingDays) {
+            document.querySelectorAll('.action-dropdown-menu').forEach(function (el) {
+                el.style.display = 'none';
+            });
+            document.getElementById('adjustExpiryFeatureId').value = featureId;
+            document.getElementById('adjustExpiryFeatureName').textContent = featureName;
+            var inputEl = document.getElementById('adjustExpiryDaysInput');
+            if (inputEl) {
+                inputEl.value = (currentRemainingDays !== undefined && currentRemainingDays !== null) ? currentRemainingDays : 0;
+            }
+            document.getElementById('adjustExpiryModalBackdrop').style.display = 'flex';
+        }
+
+        function setAdjustExpiryPreset(days) {
+            var inputEl = document.getElementById('adjustExpiryDaysInput');
+            if (inputEl) {
+                inputEl.value = days;
+            }
+        }
+
+        function closeAdjustExpiryModal() {
+            document.getElementById('adjustExpiryModalBackdrop').style.display = 'none';
         }
     </script>
 }

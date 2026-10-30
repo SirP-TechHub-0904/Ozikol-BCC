@@ -1453,17 +1453,44 @@ export interface SuiteInfoDetail {
         </div>
       </header>
 
-      <!-- Central Feature Expiration Notice Banner (Strictly visible to BCC Admins in Admin Console) -->
-      <div class="central-feature-expiration-banner" *ngIf="isAdmin && isConsoleActive && expiringFeatures.length > 0">
-        <div class="banner-content">
-          <span class="material-symbols-outlined banner-icon">warning</span>
-          <div class="banner-text">
-            <span class="banner-title">{{ 'billing.notice_title' | translate }}</span>
-            <span class="banner-desc">{{ getExpirationBannerText() }}</span>
+      <!-- Central Feature Expiration Notice Banner (Strictly visible to BCC Admins in Admin Console, re-shows every 24h after dismissal) -->
+      <div class="central-feature-expiration-banner" *ngIf="isAdmin && isConsoleActive && expiringFeatures.length > 0 && !isExpirationBannerDismissed" style="align-items: flex-start;">
+        <div class="banner-content" style="flex: 1; min-width: 0; align-items: flex-start;">
+          <span class="material-symbols-outlined banner-icon" style="margin-top: 2px;">warning</span>
+          <div class="banner-text" style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="banner-title" style="font-weight: 800;">{{ 'billing.notice_title' | translate:'Subscription & Free Trial Renewal Notice:' }}</span>
+              <span class=" banner-desc">{{ getExpirationBannerText() }}</span>
+              <span *ngIf="getTotalExpirationAmountDue() > 0" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(180, 83, 9, 0.14); color: #78350f; border: 1px solid rgba(180, 83, 9, 0.3); padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 800;">
+                <span>{{ 'billing.total_due' | translate:'Total Amount to Pay:' }}</span>
+                <span>{{ getExpirationCurrencySymbol() }}{{ getTotalExpirationAmountDue() | number:'1.2-2' }}</span>
+              </span>
+            </div>
+
+            <!-- Consolidated Multi-Feature Itemized List (shown when 1 or more features are expiring within 30 days) -->
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px;">
+              <span *ngFor="let f of expiringFeatures; let idx = index"
+                    style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.78); border: 1px solid rgba(217, 119, 6, 0.35); border-radius: 6px; padding: 3px 9px; font-size: 11.5px; color: #78350f; font-weight: 600;">
+                <strong style="color: #451a03;">{{ idx + 1 }}. {{ (f.featureName || f.featureCode) | translate:(f.featureName || f.featureCode) }}</strong>
+                <span style="padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 800; background: rgba(124, 58, 237, 0.12); color: #6d28d9;" *ngIf="f.isTrialPeriod">Free Trial</span>
+                <span style="color: #b45309; font-weight: 700;">
+                  ({{ (f.daysRemaining ?? 0) < 0 ? ((f.daysRemaining * -1) + 'd overdue') : ((f.daysRemaining ?? 0) === 0 ? 'Due today' : (f.daysRemaining + 'd left')) }})
+                </span>
+                <strong style="color: #0f172a;" *ngIf="(f.renewalPrice ?? 0) > 0">
+                  &bull; {{ f.currencySymbol || getExpirationCurrencySymbol() }}{{ (f.renewalPrice || 0) | number:'1.2-2' }}
+                </strong>
+              </span>
+            </div>
           </div>
         </div>
-        <div class="banner-actions">
-          <a routerLink="/settings/console" class="banner-btn">{{ 'billing.review_entitlements' | translate }}</a>
+        <div class="banner-actions" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <a routerLink="/billing/subscriptions" class="banner-btn">{{ 'billing.review_entitlements' | translate:'Review & Pay Now' }}</a>
+          <button type="button"
+                  (click)="dismissExpirationBanner()"
+                  title="Close notice (will remind you again in 24 hours and remains in Notifications)"
+                  style="background: rgba(180, 83, 9, 0.12); border: 1px solid rgba(180, 83, 9, 0.28); color: #78350f; width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+          </button>
         </div>
       </div>
 
@@ -3524,6 +3551,7 @@ export class AdminLayoutComponent implements OnInit {
 
   currentConsoleMode: 'console' | 'workspace' = (localStorage.getItem('bcp_console_mode') as any) || 'console';
   expiringFeatures: any[] = [];
+  isExpirationBannerDismissed = false;
 
   get isConsoleActive(): boolean {
     return this.isAdmin && this.currentConsoleMode === 'console';
@@ -3549,12 +3577,68 @@ export class AdminLayoutComponent implements OnInit {
     this.setConsoleMode(next);
   }
 
+  private getExpirationBannerStorageKey(): string {
+    const tKey = (this.tenantKey || localStorage.getItem('tenant_key') || 'workspace').toLowerCase();
+    return `bcp_exp_banner_dismissed_${tKey}`;
+  }
+
+  private computeExpirationFingerprint(items: any[]): string {
+    if (!Array.isArray(items) || items.length === 0) return '';
+    return items
+      .map(f => `${f.featureCode || f.featureName}:${f.daysRemaining ?? 0}`)
+      .sort()
+      .join('|');
+  }
+
+  checkExpirationBannerDismissal(): void {
+    try {
+      const raw = localStorage.getItem(this.getExpirationBannerStorageKey());
+      if (!raw) {
+        this.isExpirationBannerDismissed = false;
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      const dismissedAt = Number(parsed?.dismissedAt || 0);
+      const savedFp = String(parsed?.fingerprint || '');
+      const currentFp = this.computeExpirationFingerprint(this.expiringFeatures);
+      const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+
+      // Re-show the banner if 24 hours have passed OR if the expiring feature list / remaining days changed
+      if (!dismissedAt || (Date.now() - dismissedAt) >= twentyFourHoursMs || (savedFp && savedFp !== currentFp)) {
+        this.isExpirationBannerDismissed = false;
+      } else {
+        this.isExpirationBannerDismissed = true;
+      }
+    } catch {
+      this.isExpirationBannerDismissed = false;
+    }
+  }
+
+  /**
+   * Dismisses the top-of-page expiration banner for 24 hours.
+   * Automatically re-displays after 24 hours if capabilities are still within 30 days of expiring.
+   */
+  dismissExpirationBanner(): void {
+    this.isExpirationBannerDismissed = true;
+    try {
+      localStorage.setItem(
+        this.getExpirationBannerStorageKey(),
+        JSON.stringify({
+          dismissedAt: Date.now(),
+          fingerprint: this.computeExpirationFingerprint(this.expiringFeatures)
+        })
+      );
+    } catch {}
+  }
+
   loadFeatureExpirations(): void {
     if (!this.isAdmin) return;
     this.api.get<any>('SettingsApi/feature-expirations').subscribe({
       next: (res) => {
         if (res && res.isSuccess && Array.isArray(res.data)) {
           this.expiringFeatures = res.data;
+          this.checkExpirationBannerDismissal();
+          this.loadNotificationFeed();
         }
       },
       error: () => {
@@ -3563,14 +3647,38 @@ export class AdminLayoutComponent implements OnInit {
     });
   }
 
+  getTotalExpirationAmountDue(): number {
+    if (!this.expiringFeatures || this.expiringFeatures.length === 0) return 0;
+    return this.expiringFeatures.reduce((sum, f) => sum + (Number(f.renewalPrice) || 0), 0);
+  }
+
+  getExpirationCurrencySymbol(): string {
+    if (!this.expiringFeatures || this.expiringFeatures.length === 0) return '$';
+    const first = this.expiringFeatures.find(f => f.currencySymbol);
+    return first?.currencySymbol || '$';
+  }
+
   getExpirationBannerText(): string {
     if (!this.expiringFeatures || this.expiringFeatures.length === 0) return '';
-    const names = this.expiringFeatures.map(f => f.featureName || f.featureCode).join(', ');
+    const count = this.expiringFeatures.length;
     const minDays = Math.min(...this.expiringFeatures.map(f => f.daysRemaining ?? 0));
-    if (minDays <= 0) {
-      return `${names} capability subscription has expired. Renew immediately to restore full feature access.`;
+    if (count === 1) {
+      const f = this.expiringFeatures[0];
+      const name = f.featureName || f.featureCode;
+      const typeLabel = f.isTrialPeriod ? 'free trial' : 'capability subscription';
+      if (minDays < 0) {
+        return `${name} ${typeLabel} is ${Math.abs(minDays)} day${Math.abs(minDays) === 1 ? '' : 's'} overdue. Renew immediately to restore full feature access.`;
+      }
+      if (minDays === 0) {
+        return `${name} ${typeLabel} expires today. Renew immediately to maintain uninterrupted platform capabilities.`;
+      }
+      return `${name} ${typeLabel} expires in ${minDays} day${minDays === 1 ? '' : 's'}. Renew to maintain uninterrupted platform capabilities.`;
     }
-    return `${names} capability subscription expires in ${minDays} day${minDays === 1 ? '' : 's'}. Renew to maintain uninterrupted platform capabilities.`;
+
+    if (minDays <= 0) {
+      return `${count} workspace capabilities are expiring or overdue (within 30 days). Review the list below and complete renewal payment.`;
+    }
+    return `${count} workspace capabilities are expiring within 30 days (soonest in ${minDays} day${minDays === 1 ? '' : 's'}). Review the list below to renew.`;
   }
 
   showHelpModal = false;
@@ -4310,6 +4418,10 @@ export class AdminLayoutComponent implements OnInit {
     localStorage.setItem('bcp_visible_feature_codes_v4', JSON.stringify(Array.from(visible)));
     localStorage.setItem('bcp_available_feature_codes_v4', JSON.stringify(Array.from(available)));
     localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
+    if (Array.isArray(d.notices)) {
+      this.expiringFeatures = d.notices;
+      this.checkExpirationBannerDismissal();
+    }
     this.translation.registerDynamicCatalogStrings(dynamicTexts);
   }
 
