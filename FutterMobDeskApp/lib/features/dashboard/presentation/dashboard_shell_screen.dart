@@ -256,6 +256,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
   bool _isRefreshing = false;
   int _activeCanvasRefreshTick = 0;
+  Offset? _aiFloatingOffset;
 
   /// Remakes all requests across the workspace:
   /// 1. Tenant organization branding (logo, icon, organization name) via /api/SettingsApi/brand
@@ -478,10 +479,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ],
           ),
 
-          // Floating Ozi AI Assistant Button at Bottom-Right
+          // Adjustable Floating Ozi AI Assistant Icon Button
           Positioned(
-            bottom: 24,
-            right: 24,
+            left: _aiFloatingOffset?.dx,
+            top: _aiFloatingOffset?.dy,
+            right: _aiFloatingOffset == null ? 24 : null,
+            bottom: _aiFloatingOffset == null ? 24 : null,
             child: _buildOziAiFloatingButton(isDark, isMobile: false),
           ),
 
@@ -716,9 +719,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
             ],
           ),
+          // Adjustable Floating Ozi AI Assistant Icon Button
           Positioned(
-            bottom: 12,
-            right: 12,
+            left: _aiFloatingOffset?.dx,
+            top: _aiFloatingOffset?.dy,
+            right: _aiFloatingOffset == null ? 14 : null,
+            bottom: _aiFloatingOffset == null ? 14 : null,
             child: _buildOziAiFloatingButton(isDark, isMobile: true),
           ),
 
@@ -3666,8 +3672,24 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }
 
   Widget _buildOziAiFloatingButton(bool isDark, {bool isMobile = false}) {
-    // Disabled: Floating overlay removed to prevent blocking table action buttons
-    return const SizedBox.shrink();
+    return _AdjustableFloatingAiIcon(
+      isDark: isDark,
+      isMobile: isMobile,
+      offset: _aiFloatingOffset,
+      onPositionChanged: (newOffset) {
+        setState(() {
+          _aiFloatingOffset = newOffset;
+        });
+      },
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('AI Assistant is available in the workspace studio.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildTopAiAssistantBtn(bool isDark) {
@@ -3718,47 +3740,51 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 }
 
 /// <summary>
-/// Minimized floating AI Assistant launcher.
-/// On desktop: Displays the standard extended pill button with text.
-/// On mobile: Minimized to a sleek 38x38 circular icon button with a subtle,
-/// continuous pulsing circle ring animation to prevent blocking page actions.
+/// Adjustable floating AI Assistant icon button.
+/// Sleek, circular 46x46 floating button with Royal Blue gradient and animated sparkle icon.
+/// Supports smooth dragging to any position across the viewport so it never obstructs table actions or page content.
+/// Clamped within screen bounds.
 /// </summary>
-class _OziAiAnimatedFab extends StatefulWidget {
-  final bool isMobile;
+class _AdjustableFloatingAiIcon extends StatefulWidget {
   final bool isDark;
-  final String label;
+  final bool isMobile;
+  final Offset? offset;
+  final ValueChanged<Offset> onPositionChanged;
   final VoidCallback onTap;
 
-  const _OziAiAnimatedFab({
-    required this.isMobile,
+  const _AdjustableFloatingAiIcon({
     required this.isDark,
-    required this.label,
+    required this.isMobile,
+    required this.offset,
+    required this.onPositionChanged,
     required this.onTap,
   });
 
   @override
-  State<_OziAiAnimatedFab> createState() => _OziAiAnimatedFabState();
+  State<_AdjustableFloatingAiIcon> createState() => _AdjustableFloatingAiIconState();
 }
 
-class _OziAiAnimatedFabState extends State<_OziAiAnimatedFab>
+class _AdjustableFloatingAiIconState extends State<_AdjustableFloatingAiIcon>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseScale;
   late Animation<double> _pulseOpacity;
+  bool _isDragging = false;
+  Offset _dragCumulative = Offset.zero;
 
   @override
   void initState() {
     super.initState();
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2200),
     )..repeat();
 
-    _pulseScale = Tween<double>(begin: 1.0, end: 1.45).animate(
+    _pulseScale = Tween<double>(begin: 1.0, end: 1.35).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeOutCubic),
     );
 
-    _pulseOpacity = Tween<double>(begin: 0.65, end: 0.0).animate(
+    _pulseOpacity = Tween<double>(begin: 0.55, end: 0.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeOutCubic),
     );
   }
@@ -3771,69 +3797,136 @@ class _OziAiAnimatedFabState extends State<_OziAiAnimatedFab>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.isMobile) {
-      return FloatingActionButton.extended(
-        onPressed: widget.onTap,
-        backgroundColor: AppColors.primary,
-        elevation: 4,
-        icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-        label: Text(
-          widget.label,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      );
-    }
+    const double iconButtonSize = 46.0;
 
-    // Minimized Mobile Mode: 38x38 circular button with gentle pulsing animated circle ring
-    return Tooltip(
-      message: widget.label,
+    return MouseRegion(
+      cursor: _isDragging ? SystemMouseCursors.grabbing : SystemMouseCursors.grab,
       child: GestureDetector(
-        onTap: widget.onTap,
-        child: SizedBox(
-          width: 52,
-          height: 52,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Subtle pulsing animated circle ring
-              AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, child) {
-                  return Container(
-                    width: 38 * _pulseScale.value,
-                    height: 38 * _pulseScale.value,
+        onPanStart: (details) {
+          _isDragging = false;
+          _dragCumulative = Offset.zero;
+        },
+        onPanUpdate: (details) {
+          _dragCumulative += details.delta;
+          if (_dragCumulative.distance > 4.0) {
+            _isDragging = true;
+          }
+          final screenSize = MediaQuery.of(context).size;
+          final current = widget.offset ?? Offset(
+            screenSize.width - (widget.isMobile ? 14 + iconButtonSize : 24 + iconButtonSize),
+            screenSize.height - (widget.isMobile ? 14 + iconButtonSize : 24 + iconButtonSize),
+          );
+          final double newX = (current.dx + details.delta.dx).clamp(
+            8.0,
+            screenSize.width - iconButtonSize - 8.0,
+          );
+          final double newY = (current.dy + details.delta.dy).clamp(
+            45.0,
+            screenSize.height - iconButtonSize - 8.0,
+          );
+          widget.onPositionChanged(Offset(newX, newY));
+        },
+        onPanEnd: (_) {
+          Future.delayed(const Duration(milliseconds: 80), () {
+            if (mounted) {
+              setState(() {
+                _isDragging = false;
+              });
+            }
+          });
+        },
+        onTap: () {
+          if (!_isDragging) {
+            widget.onTap();
+          }
+        },
+        child: Tooltip(
+          message: 'AI Assistant (Drag to reposition)',
+          child: SizedBox(
+            width: iconButtonSize + 12,
+            height: iconButtonSize + 12,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Subtle pulse ring when stationary
+                if (!_isDragging)
+                  AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, _) {
+                      return Container(
+                        width: iconButtonSize * _pulseScale.value,
+                        height: iconButtonSize * _pulseScale.value,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF0050E5).withValues(
+                              alpha: _pulseOpacity.value,
+                            ),
+                            width: 1.5,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                // Main Floating AI Icon Button
+                AnimatedScale(
+                  scale: _isDragging ? 1.08 : 1.0,
+                  duration: const Duration(milliseconds: 150),
+                  child: Container(
+                    width: iconButtonSize,
+                    height: iconButtonSize,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF0050E5),
+                          Color(0xFF1D4ED8),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0050E5).withValues(
+                            alpha: _isDragging ? 0.55 : 0.35,
+                          ),
+                          blurRadius: _isDragging ? 12 : 8,
+                          offset: Offset(0, _isDragging ? 6 : 3),
+                        ),
+                      ],
                       border: Border.all(
-                        color: const Color(0xFF0050E5).withValues(alpha: _pulseOpacity.value),
+                        color: Colors.white.withValues(alpha: 0.35),
                         width: 1.5,
                       ),
                     ),
-                  );
-                },
-              ),
-              // Inner solid Royal Blue circular action button
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0050E5).withValues(alpha: 0.35),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        // Tiny move indicator dot badge in corner
+                        Positioned(
+                          right: 5,
+                          bottom: 5,
+                          child: Container(
+                            width: 5,
+                            height: 5,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xFF38BDF8),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-                child: const Icon(
-                  Icons.auto_awesome,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
