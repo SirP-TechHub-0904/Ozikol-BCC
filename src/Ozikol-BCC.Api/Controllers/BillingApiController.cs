@@ -26,7 +26,7 @@ namespace Ozikol_BCC.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Route("api/billing")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize]
     [Tags("9. Billing & Feature Subscriptions")]
     public class BillingApiController : ControllerBase
     {
@@ -123,6 +123,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="request">Feature identifier/code and desired active state.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         [HttpPost("features/toggle-active")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<BillingFeaturesSnapshotDto>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 400)]
         public async Task<IActionResult> ToggleFeatureActive([FromBody] ToggleFeatureActiveRequest request, CancellationToken cancellationToken)
@@ -319,6 +320,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Resolves Central Paystack credentials and exact feature pricing strictly from MasterCatalogDbContext.
         /// </summary>
         [HttpPost("features/paystack/initialize")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<InitializeFeaturePaymentResponseDto>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 400)]
         public async Task<IActionResult> InitializeFeaturePayment(
@@ -548,6 +550,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// and broadcasts the updated snapshot over SignalR.
         /// </summary>
         [HttpPost("features/paystack/verify")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<BillingFeaturesSnapshotDto>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 400)]
         public async Task<IActionResult> VerifyFeaturePayment(
@@ -767,6 +770,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="request">Feature and cadence.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         [HttpPost("features/subscribe")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<SubscribeFeatureResultDto>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 400)]
         public async Task<IActionResult> Subscribe([FromBody] SubscribeFeatureRequest request, CancellationToken cancellationToken)
@@ -863,6 +867,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="subscriptionId">Subscription identifier.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         [HttpPost("features/{subscriptionId:guid}/auto-renew")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<bool>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 404)]
         public async Task<IActionResult> ToggleAutoRenew(Guid subscriptionId, CancellationToken cancellationToken)
@@ -890,6 +895,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
         [HttpGet("invoices")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<List<BillingInvoiceDto>>), 200)]
         public async Task<IActionResult> GetInvoices(CancellationToken cancellationToken)
         {
@@ -1021,6 +1027,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// and returns its Invoice ID so the client navigates to <c>/billing/invoices/:id</c> without ever duplicating invoices.
         /// </summary>
         [HttpPost("invoices/prepare")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<PrepareBillingInvoiceResponseDto>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 400)]
         public async Task<IActionResult> PrepareInvoice(
@@ -1226,6 +1233,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// including itemized capabilities, dynamic duration options, discount savings, and Central payment methods availability.
         /// </summary>
         [HttpGet("invoices/{id:guid}")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<BillingInvoiceDetailDto>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 404)]
         public async Task<IActionResult> GetInvoiceDetail(Guid id, CancellationToken cancellationToken)
@@ -1257,6 +1265,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// for a specific capability (or all capabilities) on a Pending invoice, recalculating discounts and totals automatically.
         /// </summary>
         [HttpPost("invoices/{id:guid}/cadence")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<BillingInvoiceDetailDto>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 400)]
         public async Task<IActionResult> UpdateInvoiceCadence(
@@ -1344,6 +1353,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Resolves Central Paystack credentials strictly from <see cref="MasterCatalogDbContext.MasterPlatformSettings"/>.
         /// </summary>
         [HttpPost("invoices/{id:guid}/pay/paystack")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<InitializeFeaturePaymentResponseDto>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 400)]
         public async Task<IActionResult> PayInvoiceWithPaystack(Guid id, CancellationToken cancellationToken)
@@ -1438,6 +1448,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Submits a Direct Bank Deposit transfer reference / payment proof for an invoice on <c>/billing/invoices/:id</c>.
         /// </summary>
         [HttpPost("invoices/{id:guid}/pay/bank-deposit")]
+        [Authorize(Roles = "SuperAdmin,Admin")]
         [ProducesResponseType(typeof(ApiResponse<BillingInvoiceDetailDto>), 200)]
         [ProducesResponseType(typeof(ApiResponse<object>), 400)]
         public async Task<IActionResult> SubmitInvoiceBankDeposit(

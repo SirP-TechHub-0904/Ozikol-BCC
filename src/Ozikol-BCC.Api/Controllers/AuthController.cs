@@ -2135,7 +2135,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
-                var roles = rolesList?.ToList() ?? (await _userManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
+                var roles = (rolesList as List<string>) ?? rolesList?.ToList() ?? (await _userManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
                 if (_dbContext != null)
                 {
                     try

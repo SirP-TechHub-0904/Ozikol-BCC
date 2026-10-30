@@ -427,7 +427,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="request">Dispatch request containing audience, content, severity, and selected channels.</param>
         /// <returns>Multi-channel delivery metrics and diagnostic status.</returns>
         [HttpPost("dispatch")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> DispatchNotification([FromBody] DispatchNotificationRequest request)
         {

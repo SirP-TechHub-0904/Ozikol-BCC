@@ -2016,7 +2016,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Sends a 6-digit email confirmation OTP to the member.
         /// </summary>
         [HttpPost("{id}/send-email-otp")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Member")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only,Member")]
         public async Task<IActionResult> SendEmailOtp(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -2037,7 +2037,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Verifies a 6-digit email confirmation OTP.
         /// </summary>
         [HttpPost("{id}/verify-email-otp")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Member")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only,Member")]
         public async Task<IActionResult> VerifyEmailOtp(string id, [FromBody] VerifyOtpRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.OtpCode))
@@ -2068,7 +2068,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Sends a 6-digit SMS phone confirmation OTP to the member.
         /// </summary>
         [HttpPost("{id}/send-phone-otp")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Member")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only,Member")]
         public async Task<IActionResult> SendPhoneOtp(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -2089,7 +2089,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Verifies a 6-digit phone confirmation OTP.
         /// </summary>
         [HttpPost("{id}/verify-phone-otp")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Member")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only,Member")]
         public async Task<IActionResult> VerifyPhoneOtp(string id, [FromBody] VerifyOtpRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.OtpCode))

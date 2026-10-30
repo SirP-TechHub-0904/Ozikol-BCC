@@ -255,7 +255,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="request">Payload containing tenant key and desired custom domain.</param>
         /// <returns>Updated master tenant info response.</returns>
         [HttpPut("update-custom-domain")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateCustomDomain([FromBody] UpdateCustomDomainRequest request)
         {
             var host = HttpContext.Request.Host.ToString();

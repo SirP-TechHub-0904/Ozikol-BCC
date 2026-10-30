@@ -15,6 +15,9 @@ import {
   getStoredUserRoles, 
   canAccessConsole, 
   isGlobalAdmin, 
+  isGlobalEditor,
+  isReadOnlyUser,
+  hasFeatureScope,
   hasUserRole, 
   getUserPrimaryRoleName 
 } from '../../core/utils/user-role.utils';
@@ -3467,19 +3470,33 @@ export class AdminLayoutComponent implements OnInit {
    * @returns True if the suite should be visible and accessible in the sidebar
    */
   canAccessSuite(suiteKey: string): boolean {
-    if (this.isGlobalAdmin) return true;
+    if (this.isGlobalAdmin || isGlobalEditor(this.userRoles) || isReadOnlyUser(this.userRoles)) {
+      if (suiteKey === 'settings') {
+        return this.isGlobalAdmin;
+      }
+      return true;
+    }
 
     switch (suiteKey) {
       case 'user_management':
-        return hasUserRole('UserManager', this.userRoles) || hasUserRole('IdentityManager', this.userRoles);
+        return hasUserRole('UserManager', this.userRoles) ||
+               hasUserRole('IdentityManager', this.userRoles) ||
+               hasFeatureScope('usermanager', this.userRoles);
       case 'identity':
-        return hasUserRole('IdentityManager', this.userRoles);
+        return hasUserRole('IdentityManager', this.userRoles) ||
+               hasFeatureScope('identitymanager', this.userRoles) ||
+               hasFeatureScope('identityaccesscontrol', this.userRoles);
       case 'cms':
-        return hasUserRole('CmsManager', this.userRoles);
+        return hasUserRole('CmsManager', this.userRoles) ||
+               hasUserRole('ContentManager', this.userRoles) ||
+               hasFeatureScope('cms', this.userRoles) ||
+               hasFeatureScope('cmsmanager', this.userRoles);
       case 'settings':
         return this.isGlobalAdmin;
       case 'people_community':
-        return hasUserRole('UserManager', this.userRoles) || hasUserRole('IdentityManager', this.userRoles);
+        return hasUserRole('UserManager', this.userRoles) ||
+               hasUserRole('IdentityManager', this.userRoles) ||
+               hasFeatureScope('usermanager', this.userRoles);
       default:
         return true;
     }
@@ -3643,7 +3660,7 @@ export class AdminLayoutComponent implements OnInit {
   }
 
   loadFeatureExpirations(): void {
-    if (!this.isAdmin) return;
+    if (!this.isGlobalAdmin) return;
     this.api.get<any>('SettingsApi/feature-expirations').subscribe({
       next: (res) => {
         if (res && res.isSuccess && Array.isArray(res.data)) {
@@ -4635,12 +4652,13 @@ export class AdminLayoutComponent implements OnInit {
             brandIconUrl: this.brandIconUrl
           });
 
-          // If user is an administrator, load administrative feature expirations
-          if (freshData.isAdmin) {
+          // If user is a global administrator, load administrative feature expirations
+          if (this.isGlobalAdmin) {
             this.loadFeatureExpirations();
-          } else {
-            // Standard members belong in their personal workspace.
-            // Only redirect if a non-admin is actively on an administrator console route.
+          }
+
+          // Only redirect to personal workspace if the user has NO console-level roles at all (Member only)
+          if (!canAccessConsole(freshData.roles || this.userRoles)) {
             const activeUrl = this.router.url || this.currentRoute || '';
             const isWorkspaceRoute = activeUrl.includes('/workspace');
             const isOnAdminRoute = !isWorkspaceRoute && (
@@ -4650,7 +4668,7 @@ export class AdminLayoutComponent implements OnInit {
             );
 
             if (isOnAdminRoute) {
-              console.warn('[AdminLayout] Non-administrator on console route -> Redirecting to workspace:', activeUrl);
+              console.warn('[AdminLayout] Member-only user on console route -> Redirecting to workspace:', activeUrl);
               this.router.navigate(['/dashboard/workspace']);
             }
           }
