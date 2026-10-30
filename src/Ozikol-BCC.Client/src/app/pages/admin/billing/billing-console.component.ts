@@ -1113,6 +1113,54 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Returns true if an active feature has an expiration date or remaining days counter.
+   */
+  hasFeatureExpirationInfo(feat: BillingFeatureItem): boolean {
+    if (!feat || !feat.isActive || feat.isCompulsory) return false;
+    return !!(feat.expiresAtUtc || (feat.daysRemaining !== undefined && feat.daysRemaining !== null));
+  }
+
+  /**
+   * Returns true if an active paid feature is expiring in less than or equal to 30 days (or already expired).
+   */
+  isFeatureExpiringWithinMonth(feat: BillingFeatureItem): boolean {
+    if (!feat || !feat.isActive || feat.isCompulsory) return false;
+    if (this.getFeatureDisplayAmount(feat) <= 0) return false;
+    if (feat.status === 'Expired') return true;
+    const days = feat.daysRemaining;
+    return days !== undefined && days !== null && days <= 30;
+  }
+
+  /**
+   * Formats the feature's expiration date (e.g., "Oct 31, 2026").
+   */
+  getFeatureExpirationDateText(feat: BillingFeatureItem): string {
+    if (!feat) return '';
+    if (feat.expiresAtUtc) {
+      const dt = new Date(feat.expiresAtUtc);
+      if (!isNaN(dt.getTime())) {
+        return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+    }
+    return '';
+  }
+
+  /**
+   * Formats the feature's remaining days text (e.g., "1 days remaining" or "Expires today").
+   */
+  getFeatureDaysRemainingText(feat: BillingFeatureItem): string {
+    if (!feat || feat.daysRemaining === undefined || feat.daysRemaining === null) return '';
+    const days = Number(feat.daysRemaining);
+    if (days < 0) {
+      return `${Math.abs(days)} ${this.translationService.translate('billing.days_overdue', 'days overdue')}`;
+    }
+    if (days === 0) {
+      return this.translationService.translate('billing.expires_today', 'Expires today');
+    }
+    return `${days} ${this.translationService.translate('billing.days_remaining', 'days remaining')}`;
+  }
+
+  /**
    * Resolves a numeric rank for sorting by feature status (1 = Active, 2 = Not Active / Available, 3 = Coming Soon).
    */
   private getFeatureStatusRank(feat: BillingFeatureItem): number {
