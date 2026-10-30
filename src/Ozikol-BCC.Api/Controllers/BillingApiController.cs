@@ -975,13 +975,22 @@ namespace Ozikol_BCC.Api.Controllers
             foreach (var grp in groups)
             {
                 var list = grp.ToList();
-                // Keep the earliest invoice (so its original INV-YYYYMM-00001 number is preserved),
-                // copy over the latest LineItemsJson/FeatureCodesCsv if present on a newer duplicate, and restore Status to "Pending".
                 var primary = list[0];
                 if (string.Equals(primary.Status, "Failed", StringComparison.OrdinalIgnoreCase))
                 {
                     primary.Status = "Pending";
                     modified = true;
+                }
+
+                // Normalize legacy "INV-YYYYMM-NNNNN" format to pure numeric "YYYYMMNNNNN" (e.g., 20261000001)
+                if (!string.IsNullOrWhiteSpace(primary.InvoiceNumber) && !primary.InvoiceNumber.All(char.IsDigit))
+                {
+                    var digitsOnly = new string(primary.InvoiceNumber.Where(char.IsDigit).ToArray());
+                    if (!string.IsNullOrWhiteSpace(digitsOnly))
+                    {
+                        primary.InvoiceNumber = digitsOnly;
+                        modified = true;
+                    }
                 }
 
                 if (list.Count > 1)
@@ -1153,6 +1162,19 @@ namespace Ozikol_BCC.Api.Controllers
                 if (matchedList.Count > 1)
                 {
                     _master.MasterBillingTransactions.RemoveRange(matchedList.Skip(1));
+                }
+
+                if (!string.IsNullOrWhiteSpace(matchedPending.InvoiceNumber) && !matchedPending.InvoiceNumber.All(char.IsDigit))
+                {
+                    var digitsOnly = new string(matchedPending.InvoiceNumber.Where(char.IsDigit).ToArray());
+                    if (!string.IsNullOrWhiteSpace(digitsOnly))
+                    {
+                        matchedPending.InvoiceNumber = digitsOnly;
+                    }
+                }
+                else if (string.IsNullOrWhiteSpace(matchedPending.InvoiceNumber))
+                {
+                    matchedPending.InvoiceNumber = await NextInvoiceNumberAsync(now, cancellationToken);
                 }
 
                 matchedPending.MasterTenantFeatureSubscriptionId = lineItems.Count == 1 ? primarySubId : null;
@@ -1831,16 +1853,37 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Generates the next sequential invoice number (INV-YYYYMM-NNNNN) for the given month.
+        /// Generates the next sequential pure numeric invoice number (<c>YYYYMMNNNNN</c>, e.g. <c>20261000001</c>) for the given month.
+        /// Parses the highest existing sequence number (MAX + 1) across both numeric and legacy <c>INV-</c> rows so numbers never collide.
         /// </summary>
         /// <param name="now">Reference timestamp.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         private async Task<string> NextInvoiceNumberAsync(DateTime now, CancellationToken cancellationToken)
         {
-            var prefix = $"INV-{now:yyyyMM}-";
-            var count = await _master.MasterBillingTransactions
-                .CountAsync(t => t.InvoiceNumber != null && t.InvoiceNumber.StartsWith(prefix), cancellationToken);
-            return $"{prefix}{count + 1:D5}";
+            var ym = $"{now:yyyyMM}";
+            var legacyPrefix = $"INV-{ym}-";
+            var existingNumbers = await _master.MasterBillingTransactions
+                .AsNoTracking()
+                .Where(t => t.InvoiceNumber != null &&
+                            (t.InvoiceNumber.StartsWith(ym) || t.InvoiceNumber.StartsWith(legacyPrefix)))
+                .Select(t => t.InvoiceNumber!)
+                .ToListAsync(cancellationToken);
+
+            int maxSeq = 0;
+            foreach (var raw in existingNumbers)
+            {
+                var digits = new string(raw.Where(char.IsDigit).ToArray());
+                if (digits.StartsWith(ym) && digits.Length > ym.Length)
+                {
+                    var seqPart = digits[ym.Length..];
+                    if (int.TryParse(seqPart, out int parsed) && parsed > maxSeq)
+                    {
+                        maxSeq = parsed;
+                    }
+                }
+            }
+
+            return $"{ym}{maxSeq + 1:D5}";
         }
 
         /// <summary>
