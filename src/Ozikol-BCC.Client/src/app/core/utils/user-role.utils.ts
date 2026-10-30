@@ -241,7 +241,7 @@ export function canAccessRoute(requiredRoles?: string[], targetUrl?: string, rol
   if (isGlobalAdmin(userRoles) || isGlobalEditor(userRoles) || isReadOnlyUser(userRoles)) {
     // Settings & Billing remain strictly restricted to Global Admins
     const cleanCheck = targetUrl ? targetUrl.toLowerCase().split('?')[0] : '';
-    if ((cleanCheck.startsWith('/settings/console') || cleanCheck.startsWith('/admin/settings') || cleanCheck.startsWith('/admin/billing')) && !isGlobalAdmin(userRoles)) {
+    if ((cleanCheck.startsWith('/settings') || cleanCheck.startsWith('/admin/settings') || cleanCheck.startsWith('/billing') || cleanCheck.startsWith('/admin/billing')) && !isGlobalAdmin(userRoles)) {
       return false;
     }
     return true;
@@ -256,8 +256,12 @@ export function canAccessRoute(requiredRoles?: string[], targetUrl?: string, rol
   const isConsoleRoute = cleanUrl.includes('/console') 
     || cleanUrl.startsWith('/admin') 
     || cleanUrl.startsWith('/content') 
+    || cleanUrl.startsWith('/products')
+    || cleanUrl.startsWith('/billing')
     || cleanUrl.startsWith('/settings')
     || cleanUrl.startsWith('/identity')
+    || cleanUrl.startsWith('/dashboard/mxmails')
+    || cleanUrl.startsWith('/dashboard/mxsms')
     || cleanUrl === '/dashboard/console';
 
   if (isConsoleRoute && isMember) {

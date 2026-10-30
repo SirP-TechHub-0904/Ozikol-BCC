@@ -152,6 +152,7 @@ export const routes: Routes = [
     path: '',
     component: AdminLayoutComponent,
     canActivate: [authGuard],
+    canActivateChild: [authGuard],
     children: [
       // 1. Unified Dashboards
       { path: 'dashboard/console', component: DashboardComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager', 'CmsManager'] } },
