@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -16,7 +16,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                 table: "MasterPlatformSettings",
                 type: "bit",
                 nullable: false,
-                defaultValue: false);
+                defaultValue: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "PaystackPublicKey",
@@ -52,21 +52,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                 type: "nvarchar(500)",
                 maxLength: 500,
                 nullable: true);
-
-            migrationBuilder.InsertData(
-                table: "MasterFeatureSuites",
-                columns: new[] { "Id", "CreatedUtc", "Description", "Icon", "IsActive", "IsPublished", "MenuTitle", "Name", "SortOrder", "SuiteCode", "SuiteLetter" },
-                values: new object[] { new Guid("11111111-0011-0000-0000-000000000011"), new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Desktop application workspace and workplace management suite.", "desktop_windows", true, true, "Workspace", "Workspace", 11, "suite-workspace", "K" });
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DeleteData(
-                table: "MasterFeatureSuites",
-                keyColumn: "Id",
-                keyValue: new Guid("11111111-0011-0000-0000-000000000011"));
-
             migrationBuilder.DropColumn(
                 name: "EnablePaystack",
                 table: "MasterPlatformSettings");
