@@ -52,7 +52,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         /// <returns>Collection of custom registration form fields.</returns>
         [HttpGet("fields")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GetAllFields()
         {
             var fields = await _context.BcpRegistrationFormFields
@@ -92,7 +92,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="dto">Field definition payload.</param>
         /// <returns>Created registration form field.</returns>
         [HttpPost("fields")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> CreateField([FromBody] CreateRegistrationFormFieldDto dto)
         {
             if (dto == null)
@@ -160,7 +160,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="dto">Updated field payload.</param>
         /// <returns>Updated field outcome.</returns>
         [HttpPut("fields/{id}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateField([FromRoute] Guid id, [FromBody] UpdateRegistrationFormFieldDto dto)
         {
             if (dto == null)
@@ -198,7 +198,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="id">Field identifier.</param>
         /// <returns>Success response.</returns>
         [HttpDelete("fields/{id}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> DeleteField([FromRoute] Guid id)
         {
             var entity = await _context.BcpRegistrationFormFields.FindAsync(id);
@@ -217,7 +217,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="orders">List of field IDs and their new integer sort index.</param>
         /// <returns>Success response.</returns>
         [HttpPut("fields/reorder")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> ReorderFields([FromBody] List<FieldSortOrderDto> orders)
         {
             if (orders == null || orders.Count == 0)
@@ -247,7 +247,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         /// <returns>Registration policy DTO.</returns>
         [HttpGet("policy")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GetRegistrationPolicy()
         {
             var policy = new RegistrationPolicyDto();
@@ -329,7 +329,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <returns>Success response.</returns>
         [HttpPut("policy")]
         [HttpPost("policy")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateRegistrationPolicy([FromBody] RegistrationPolicyDto dto)
         {
             if (dto == null)
@@ -444,7 +444,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="dto">Template choice and application mode.</param>
         /// <returns>Resulting fields count.</returns>
         [HttpPost("apply-template")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> ApplyIndustryTemplate([FromBody] ApplyIndustryTemplateDto dto)
         {
             if (dto == null || string.IsNullOrWhiteSpace(dto.TemplateKey))

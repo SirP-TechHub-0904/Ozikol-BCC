@@ -10,7 +10,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,CmsManager,ContentManager,CommerceManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
     [Tags("Admin Dashboard & Analytics")]
     public class DashboardApiController : ControllerBase
     {

@@ -26,7 +26,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin,CmsManager")]
+    [Authorize(Roles = "SuperAdmin,Admin,CmsManager,ContentManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
     [Tags("Content CMS Suite - Studio Management")]
     public class ContentApiController : ControllerBase
     {

@@ -21,7 +21,7 @@ namespace Ozikol_BCC.Api.Filters;
 /// assigns a standardized <c>ERR-XXXX</c> code and clean <c>CustomError</c> for the client, strips raw internal details,
 /// and records the full <c>CustomError + RealError + ErrorCode</c> entry into <c>MasterApiErrorLogs</c> for Central inspection.
 /// </summary>
-public sealed class ApiErrorTrackingResultFilter : IAsyncResultFilter
+public sealed class ApiErrorTrackingResultFilter : IAsyncActionFilter, IAsyncResultFilter
 {
     private readonly ILogger<ApiErrorTrackingResultFilter> _logger;
 
@@ -32,6 +32,131 @@ public sealed class ApiErrorTrackingResultFilter : IAsyncResultFilter
     public ApiErrorTrackingResultFilter(ILogger<ApiErrorTrackingResultFilter> logger)
     {
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Enforces operational editor action boundaries before controller action execution:
+    /// 1. Blocks <c>Read Only</c> auditors from executing write operations (POST, PUT, DELETE, PATCH) on console controllers.
+    /// 2. Enforces module scope boundaries for <c>Feature Editor</c> accounts across User Management, CMS, Commerce, and Identity.
+    /// </summary>
+    /// <param name="context">The active action executing context.</param>
+    /// <param name="next">The action execution continuation delegate.</param>
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        var httpContext = context.HttpContext;
+        var user = httpContext.User;
+        if (user?.Identity?.IsAuthenticated == true)
+        {
+            var roles = user.Claims
+                .Where(c => c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role")
+                .Select(c => c.Value.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            bool HasAnyRole(params string[] candidates) =>
+                roles.Any(r => candidates.Contains(r.Replace(" ", ""), StringComparer.OrdinalIgnoreCase));
+
+            var isGlobalPrivileged = HasAnyRole("SuperAdmin", "Admin", "SystemAdministrator", "GlobalEditor", "GlobalEdit");
+            if (!isGlobalPrivileged)
+            {
+                var path = (httpContext.Request.Path.Value ?? string.Empty).ToLowerInvariant();
+                var method = httpContext.Request.Method.ToUpperInvariant();
+                var isWriteMethod = method is "POST" or "PUT" or "DELETE" or "PATCH";
+
+                // Self-service and member endpoints are always permitted for authenticated users
+                var isSelfServicePath = path.StartsWith("/api/auth") ||
+                                        path.StartsWith("/api/portalusersapi") ||
+                                        path.StartsWith("/api/profile") ||
+                                        path.StartsWith("/api/groups") ||
+                                        path.StartsWith("/api/notifications") ||
+                                        path.StartsWith("/api/workspaceapi") ||
+                                        path.EndsWith("/orders/checkout");
+
+                if (!isSelfServicePath)
+                {
+                    var isReadOnlyAuditor = HasAnyRole("ReadOnly") &&
+                                            !HasAnyRole("FeatureEditor", "FeatureEdit", "IdentityManager", "UserManager", "CmsManager", "ContentManager", "CommerceManager");
+
+                    if (isReadOnlyAuditor && isWriteMethod)
+                    {
+                        context.Result = new ObjectResult(new ApiResponse<object>
+                        {
+                            IsSuccess = false,
+                            ErrorCode = "ERR-4030",
+                            Message = "Read-Only Auditor: You have view-only access and cannot create, modify, or delete workspace records.",
+                            Errors = new List<string> { "Read-Only role cannot perform write operations." },
+                            Timestamp = DateTime.UtcNow
+                        })
+                        {
+                            StatusCode = StatusCodes.Status403Forbidden
+                        };
+                        return;
+                    }
+
+                    // Enforce Feature Editor module scope boundaries when the user holds FeatureEditor without a dedicated manager role
+                    var isScopedFeatureEditor = HasAnyRole("FeatureEditor", "FeatureEdit") &&
+                                                !HasAnyRole("IdentityManager", "UserManager", "CmsManager", "ContentManager", "CommerceManager");
+                    if (isScopedFeatureEditor)
+                    {
+                        bool HasFeatureScopeClaim(params string[] scopes) =>
+                            roles.Any(r => scopes.Any(s => r.Replace(" ", "").Contains(s, StringComparison.OrdinalIgnoreCase)));
+
+                        if ((path.StartsWith("/api/usersapi") || path.StartsWith("/api/registrationformapi")) &&
+                            !HasFeatureScopeClaim("UserManager", "IdentityManager", "UserManagement"))
+                        {
+                            context.Result = new ObjectResult(new ApiResponse<object>
+                            {
+                                IsSuccess = false,
+                                ErrorCode = "ERR-4031",
+                                Message = "Feature Scope Restricted: Your Feature Editor role is not scoped to User Management.",
+                                Errors = new List<string> { "Insufficient feature scope for User Management." },
+                                Timestamp = DateTime.UtcNow
+                            })
+                            {
+                                StatusCode = StatusCodes.Status403Forbidden
+                            };
+                            return;
+                        }
+
+                        if ((path.StartsWith("/api/contentapi") || path.StartsWith("/api/cmsdashboardapi") || path.StartsWith("/api/pageformsapi")) &&
+                            !HasFeatureScopeClaim("CMS", "CmsManager", "ContentManager", "Content"))
+                        {
+                            context.Result = new ObjectResult(new ApiResponse<object>
+                            {
+                                IsSuccess = false,
+                                ErrorCode = "ERR-4031",
+                                Message = "Feature Scope Restricted: Your Feature Editor role is not scoped to Content & CMS Studio.",
+                                Errors = new List<string> { "Insufficient feature scope for Content & CMS." },
+                                Timestamp = DateTime.UtcNow
+                            })
+                            {
+                                StatusCode = StatusCodes.Status403Forbidden
+                            };
+                            return;
+                        }
+
+                        if (path.StartsWith("/api/productsapi") && isWriteMethod &&
+                            !HasFeatureScopeClaim("Commerce", "CommerceManager", "Products", "CMS"))
+                        {
+                            context.Result = new ObjectResult(new ApiResponse<object>
+                            {
+                                IsSuccess = false,
+                                ErrorCode = "ERR-4031",
+                                Message = "Feature Scope Restricted: Your Feature Editor role is not scoped to Commerce Studio.",
+                                Errors = new List<string> { "Insufficient feature scope for Commerce Studio." },
+                                Timestamp = DateTime.UtcNow
+                            })
+                            {
+                                StatusCode = StatusCodes.Status403Forbidden
+                            };
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        await next();
     }
 
     /// <inheritdoc />

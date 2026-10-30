@@ -20,7 +20,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+    [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
     [Tags("5. Admin User Management & Directory")]
     public class UsersApiController : ControllerBase
     {
@@ -556,7 +556,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Creates a new user profile with role assignment.
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Email))
@@ -680,7 +680,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Resets a user's password directly from the Admin console with temporary password and email instructions.
         /// </summary>
         [HttpPut("{id}/reset-password")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> AdminResetPassword(string id, [FromBody] AdminResetPasswordRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.NewPassword))
@@ -766,7 +766,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Generates a secure ASP.NET Identity tokenized password setup/activation link.
         /// </summary>
         [HttpPost("{id}/generate-reset-link")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GeneratePasswordResetLink(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -909,7 +909,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Toggles user account status (Active vs Suspended).
         /// </summary>
         [HttpPut("{id}/status")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> ToggleUserStatus(string id, [FromBody] UpdateUserStatusRequest request)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
@@ -934,7 +934,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Assigns category tier to a user.
         /// </summary>
         [HttpPut("{id}/category")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> AssignUserCategory(string id, [FromBody] AssignCategoryRequest request)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
@@ -1013,7 +1013,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Creates a new user category tier.
         /// </summary>
         [HttpPost("categories")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> CreateCategory([FromBody] CreateUserCategoryRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Name))
@@ -1042,7 +1042,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Updates an existing category tier and records property diffs in audit logs.
         /// </summary>
         [HttpPut("categories/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] CreateUserCategoryRequest request)
         {
             var existing = await _dbContext.BcpUserCategories.FirstOrDefaultAsync(c => c.Id == id);
@@ -1099,7 +1099,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Deletes a category tier if no active members are assigned.
         /// </summary>
         [HttpDelete("categories/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> DeleteCategory(Guid id)
         {
             var existing = await _dbContext.BcpUserCategories.FirstOrDefaultAsync(c => c.Id == id);
@@ -1216,7 +1216,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         [HttpPost("kpi-indicators")]
         [HttpPost("kpi/indicators")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> CreateKpiIndicator([FromBody] CreateKpiIndicatorRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Title))
@@ -1247,7 +1247,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         [HttpPut("kpi-indicators/{id:guid}")]
         [HttpPut("kpi/indicators/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateKpiIndicator(Guid id, [FromBody] CreateKpiIndicatorRequest request)
         {
             var existing = await _dbContext.BcpKpiIndicators.FirstOrDefaultAsync(k => k.Id == id);
@@ -1270,7 +1270,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         [HttpDelete("kpi-indicators/{id:guid}")]
         [HttpDelete("kpi/indicators/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> DeleteKpiIndicator(Guid id)
         {
             var existing = await _dbContext.BcpKpiIndicators.FirstOrDefaultAsync(k => k.Id == id);
@@ -1356,7 +1356,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         [HttpPost("kpi-periods")]
         [HttpPost("kpi/periods")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> CreateKpiPeriod([FromBody] CreateKpiPeriodRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Title))
@@ -1390,7 +1390,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         [HttpDelete("kpi-periods/{id:guid}")]
         [HttpDelete("kpi/periods/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> DeleteKpiPeriod(Guid id)
         {
             var period = await _dbContext.BcpKpiPeriods.FirstOrDefaultAsync(p => p.Id == id);
@@ -1415,7 +1415,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         [HttpPost("kpi-scores/batch")]
         [HttpPost("kpi/grade")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> SubmitBatchKpiScores([FromBody] BatchScoreSubmissionRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.ProfileId) || string.IsNullOrWhiteSpace(request.Period))
@@ -1555,7 +1555,7 @@ namespace Ozikol_BCC.Api.Controllers
         // =========================================================================
 
         [HttpGet("{id}/notes")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GetUserNotes(string id)
         {
             var rawNotes = await _dbContext.BcpUserNotes
@@ -1583,7 +1583,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPost("{id}/notes")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> AddUserNote(string id, [FromBody] AddNoteRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Note))
@@ -1627,7 +1627,7 @@ namespace Ozikol_BCC.Api.Controllers
         // =========================================================================
 
         [HttpGet("activity-logs")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GetActivityLogs([FromQuery] string? search, [FromQuery] string? module, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
             var query = _dbContext.BcpActivityLogs.AsNoTracking().AsQueryable();
@@ -1665,7 +1665,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves the active Member ID configuration rules and live previews for all 10 formats.
         /// </summary>
         [HttpGet("member-id-config")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GetMemberIdConfig()
         {
             var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -1717,7 +1717,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Updates the tenant's Member ID generation format rules and login policies.
         /// </summary>
         [HttpPut("member-id-config")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateMemberIdConfig([FromBody] UpdateMemberIdConfigRequest request)
         {
             var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -1872,7 +1872,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Updates the tenant's User Manager preferences (Titles, Suffix, Member ID rules, and Policies).
         /// </summary>
         [HttpPut("settings")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateUserSettings([FromBody] UpdateUserSettingsRequest request)
         {
             var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -2001,7 +2001,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Generates real-time format previews based on custom transient parameters.
         /// </summary>
         [HttpGet("member-id-config/preview")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> PreviewMemberIdFormats([FromQuery] string? prefix, [FromQuery] int? startNumber, [FromQuery] int? padding, [FromQuery] string? delimiter)
         {
             var previews = await _memberIdGenerator.GetFormatPreviewsAsync(prefix, startNumber, padding, delimiter);
@@ -2120,7 +2120,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Allows administrator to toggle verification status directly.
         /// </summary>
         [HttpPost("{id}/toggle-verification")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> ToggleVerification(string id, [FromBody] ToggleVerificationRequest request)
         {
             var user = await _userManager.FindByIdAsync(id);

@@ -84,7 +84,11 @@ namespace Ozikol_BCC.Api.Controllers
         {
             var isSuperAdmin = roles.Any(r => string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase));
             var isAdmin = isSuperAdmin || roles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase));
-            var hasGlobalEdit = isSuperAdmin || isAdmin || roles.Any(r => string.Equals(r, "GlobalEdit", StringComparison.OrdinalIgnoreCase) || string.Equals(r, "Global Edit", StringComparison.OrdinalIgnoreCase));
+            var hasGlobalEdit = isSuperAdmin || isAdmin || roles.Any(r =>
+                string.Equals(r, "GlobalEditor", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r, "Global Editor", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r, "GlobalEdit", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r, "Global Edit", StringComparison.OrdinalIgnoreCase));
 
             var features = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -126,7 +130,16 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            var canAccessAdminConsole = isSuperAdmin || isAdmin || hasGlobalEdit || features.Count > 0 || roles.Any(r => new[] { "IdentityManager", "CmsManager", "Editor" }.Contains(r, StringComparer.OrdinalIgnoreCase));
+            var canAccessAdminConsole = isSuperAdmin || isAdmin || hasGlobalEdit || features.Count > 0 || roles.Any(r => new[]
+            {
+                "IdentityManager", "Identity Manager",
+                "UserManager", "User Manager",
+                "CmsManager", "ContentManager", "CommerceManager",
+                "GlobalEditor", "Global Editor",
+                "FeatureEditor", "Feature Editor",
+                "ReadOnly", "Read Only",
+                "Editor"
+            }.Contains(r, StringComparer.OrdinalIgnoreCase));
 
             return new EffectiveUserPermissionsDto
             {
@@ -2123,12 +2136,50 @@ namespace Ozikol_BCC.Api.Controllers
             try
             {
                 var roles = rolesList?.ToList() ?? (await _userManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
+                if (_dbContext != null)
+                {
+                    try
+                    {
+                        var featureRoles = await _dbContext.BcpUserFeatureRoles
+                            .AsNoTracking()
+                            .Where(f => f.ProfileId == user.Id && f.IsActive && !string.IsNullOrEmpty(f.FeatureAreaKey))
+                            .ToListAsync();
+                        foreach (var fr in featureRoles)
+                        {
+                            var actionName = fr.ActionRole.ToString();
+                            var composite = $"FeatureEditor:{fr.FeatureAreaKey}:{actionName}";
+                            if (!roles.Contains(composite, StringComparer.OrdinalIgnoreCase))
+                            {
+                                roles.Add(composite);
+                            }
+                            var shortTag = fr.ActionRole == BcpActionRole.Readonly
+                                ? $"ReadOnly:{fr.FeatureAreaKey}"
+                                : $"FeatureEdit:{fr.FeatureAreaKey}";
+                            if (!roles.Contains(shortTag, StringComparer.OrdinalIgnoreCase))
+                            {
+                                roles.Add(shortTag);
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore if tenant DB table is not migrated yet
+                    }
+                }
                 if (roles.Count == 0)
                 {
                     roles.Add("Member");
                 }
 
+                var expandedClaims = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var role in roles)
+                {
+                    expandedClaims.Add(role);
+                    var spaceless = role.Replace(" ", "");
+                    expandedClaims.Add(spaceless);
+                }
+
+                foreach (var role in expandedClaims)
                 {
                     claims.Add(new Claim(ClaimTypes.Role, role));
                     claims.Add(new Claim("role", role));
