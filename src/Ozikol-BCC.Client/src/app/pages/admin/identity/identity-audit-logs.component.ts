@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { parseUserAgent, formatClientIpAddress } from '../../../core/utils/user-agent.util';
 
 /**
@@ -39,7 +41,7 @@ export interface WorkspaceAuditLogItem {
 @Component({
   selector: 'app-identity-audit-logs',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, TranslatePipe],
   template: `
     <div class="audit-page-container">
       <section class="card-section animate-fade">
@@ -48,15 +50,15 @@ export interface WorkspaceAuditLogItem {
           <div class="card-title-group">
             <span class="material-symbols-outlined head-icon text-primary">security</span>
             <div>
-              <h2 class="card-title">Security Audit &amp; Log Activity (All Workspace Users)</h2>
+              <h2 class="card-title">{{ 'audit.console_title' | translate:'Security Audit & Log Activity (All Workspace Users)' }}</h2>
               <p class="card-desc">
-                Complete workspace audit trail of tasks, operational changes, and authentication events across all users and historical archives.
+                {{ 'audit.console_desc' | translate:'Complete workspace audit trail of tasks, operational changes, and authentication events across all users and historical archives.' }}
               </p>
             </div>
           </div>
 
           <div class="head-actions-wrap">
-            <span class="counter-badge" *ngIf="totalCount > 0">{{ totalCount }} Audit Logs</span>
+            <span class="counter-badge" *ngIf="totalCount > 0">{{ totalCount }} {{ 'audit.logs_count' | translate:'Audit Logs' }}</span>
 
             <button
               type="button"
@@ -65,7 +67,7 @@ export interface WorkspaceAuditLogItem {
               (click)="deleteSelectedLogs()"
               [disabled]="isDeleting">
               <span class="material-symbols-outlined">delete_sweep</span>
-              <span>Delete Selected ({{ selectedIds.size }})</span>
+              <span>{{ 'audit.delete_selected' | translate:'Delete Selected' }} ({{ selectedIds.size }})</span>
             </button>
 
             <button
@@ -74,7 +76,7 @@ export interface WorkspaceAuditLogItem {
               (click)="loadLogs(page)"
               [disabled]="isLoading">
               <span class="material-symbols-outlined" [class.spin-icon]="isLoading">refresh</span>
-              <span>Refresh</span>
+              <span>{{ 'audit.refresh' | translate:'Refresh' }}</span>
             </button>
           </div>
         </div>
@@ -88,33 +90,33 @@ export interface WorkspaceAuditLogItem {
                 type="text"
                 [(ngModel)]="searchTerm"
                 (keyup.enter)="onSearchChange()"
-                placeholder="Search by user, email, action, description, or IP..."
+                [placeholder]="'audit.search_placeholder' | translate:'Search by user, email, action, description, or IP...'"
                 class="search-input" />
               <button
                 type="button"
                 class="clear-btn"
                 *ngIf="searchTerm"
                 (click)="clearSearch()"
-                title="Clear search">
+                [title]="'adm.close' | translate:'Clear search'">
                 <span class="material-symbols-outlined">close</span>
               </button>
             </div>
 
             <select [(ngModel)]="selectedModule" (ngModelChange)="onModuleChange()" class="module-select">
-              <option value="all">All Modules ({{ modules.length }})</option>
-              <option *ngFor="let mod of modules" [value]="mod">{{ mod }}</option>
+              <option value="all">{{ 'audit.all_modules' | translate:'All Modules' }} ({{ modules.length }})</option>
+              <option *ngFor="let mod of modules" [value]="mod">{{ translationService.translateDynamic(mod) }}</option>
             </select>
 
             <button type="button" class="btn-secondary btn-filter" (click)="onSearchChange()">
               <span class="material-symbols-outlined">filter_list</span>
-              <span>Filter</span>
+              <span>{{ 'audit.filter' | translate:'Filter' }}</span>
             </button>
           </div>
 
           <!-- Empty State -->
           <div class="empty-state" *ngIf="logs.length === 0 && !isLoading">
             <span class="material-symbols-outlined empty-icon">manage_search</span>
-            <p>No audit log records match your current criteria.</p>
+            <p>{{ 'audit.no_records' | translate:'No audit log records match your current criteria.' }}</p>
           </div>
 
           <!-- Unified Audit Log Table (Same structure as My Activity + User Column + Admin Delete) -->
@@ -126,16 +128,15 @@ export interface WorkspaceAuditLogItem {
                     <input
                       type="checkbox"
                       [checked]="isAllPageSelected"
-                      (change)="toggleSelectAll($event)"
-                      title="Select all on this page" />
+                      (change)="toggleSelectAll($event)" />
                   </th>
-                  <th>User / Account</th>
-                  <th>Action &amp; Status</th>
-                  <th>Description / Module</th>
-                  <th>IP Address</th>
-                  <th>Browser / Device</th>
-                  <th>Timestamp</th>
-                  <th style="text-align: right; width: 84px;">Action</th>
+                  <th>{{ 'audit.th_user' | translate:'User / Account' }}</th>
+                  <th>{{ 'audit.th_action_status' | translate:'Action & Status' }}</th>
+                  <th>{{ 'audit.th_desc_module' | translate:'Description / Module' }}</th>
+                  <th>{{ 'audit.th_ip' | translate:'IP Address' }}</th>
+                  <th>{{ 'audit.th_browser_device' | translate:'Browser / Device' }}</th>
+                  <th>{{ 'audit.th_timestamp' | translate:'Timestamp' }}</th>
+                  <th style="text-align: right; width: 84px;">{{ 'audit.th_action' | translate:'Action' }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -156,18 +157,18 @@ export interface WorkspaceAuditLogItem {
                     <div class="log-status-col">
                       <span class="log-status-pill" [ngClass]="getStatusClass(log.actionType || log.status)">
                         <span class="material-symbols-outlined">{{ getStatusIcon(log.actionType || log.status) }}</span>
-                        {{ log.actionType || log.status }}
+                        {{ translationService.translateDynamic(log.actionType || log.status) }}
                       </span>
-                      <span class="badge-trusted-pill" *ngIf="log.isTrusted || (log.status && log.status.includes('Trusted'))" title="Trusted device authentication">
+                      <span class="badge-trusted-pill" *ngIf="log.isTrusted || (log.status && log.status.includes('Trusted'))">
                         <span class="material-symbols-outlined">verified_user</span>
-                        <span>Trusted</span>
+                        <span>{{ 'audit.trusted' | translate:'Trusted' }}</span>
                       </span>
                     </div>
                   </td>
                   <td>
                     <div class="log-desc-col">
-                      <span class="log-desc-text">{{ log.description || log.actionType || log.status }}</span>
-                      <span class="log-module-badge" *ngIf="log.module">{{ log.module }}</span>
+                      <span class="log-desc-text">{{ translationService.translateDynamic(log.description || log.actionType || log.status) }}</span>
+                      <span class="log-module-badge" *ngIf="log.module">{{ translationService.translateDynamic(log.module) }}</span>
                     </div>
                   </td>
                   <td><code>{{ formatIpAddress(log.ipAddress) }}</code></td>
@@ -187,7 +188,7 @@ export interface WorkspaceAuditLogItem {
                       class="btn-delete-row"
                       (click)="deleteLog(log)"
                       [disabled]="deletingId === log.id"
-                      title="Delete Audit Log">
+                      [title]="'audit.delete_log' | translate:'Delete Audit Log'">
                       <span class="material-symbols-outlined">delete</span>
                     </button>
                   </td>
@@ -198,24 +199,24 @@ export interface WorkspaceAuditLogItem {
             <!-- Pagination Toolbar -->
             <div class="pagination-footer" *ngIf="totalCount > 0">
               <div class="page-size-selector">
-                <span>Show</span>
+                <span>{{ 'audit.show' | translate:'Show' }}</span>
                 <select [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
                   <option [ngValue]="10">10</option>
                   <option [ngValue]="25">25</option>
                   <option [ngValue]="50">50</option>
                   <option [ngValue]="100">100</option>
                 </select>
-                <span>entries per page</span>
+                <span>{{ 'audit.entries_per_page' | translate:'entries per page' }}</span>
                 <span class="entries-info">
-                  (Showing {{ (page - 1) * pageSize + 1 }} to {{ getEndIndex() }} of {{ totalCount }} records)
+                  ({{ 'audit.showing' | translate:'Showing' }} {{ (page - 1) * pageSize + 1 }} {{ 'audit.to' | translate:'to' }} {{ getEndIndex() }} {{ 'audit.of' | translate:'of' }} {{ totalCount }} {{ 'audit.records' | translate:'records' }})
                 </span>
               </div>
 
               <div class="pagination-controls" *ngIf="totalPages > 1">
-                <button type="button" class="page-btn" [disabled]="page === 1" (click)="setPage(1)" title="First Page">
+                <button type="button" class="page-btn" [disabled]="page === 1" (click)="setPage(1)">
                   <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
                 </button>
-                <button type="button" class="page-btn" [disabled]="page === 1" (click)="setPage(page - 1)" title="Previous Page">
+                <button type="button" class="page-btn" [disabled]="page === 1" (click)="setPage(page - 1)">
                   <span class="material-symbols-outlined">chevron_left</span>
                 </button>
 
@@ -231,10 +232,10 @@ export interface WorkspaceAuditLogItem {
                   </button>
                 </ng-container>
 
-                <button type="button" class="page-btn" [disabled]="page === totalPages" (click)="setPage(page + 1)" title="Next Page">
+                <button type="button" class="page-btn" [disabled]="page === totalPages" (click)="setPage(page + 1)">
                   <span class="material-symbols-outlined">chevron_right</span>
                 </button>
-                <button type="button" class="page-btn" [disabled]="page === totalPages" (click)="setPage(totalPages)" title="Last Page">
+                <button type="button" class="page-btn" [disabled]="page === totalPages" (click)="setPage(totalPages)">
                   <span class="material-symbols-outlined">keyboard_double_arrow_right</span>
                 </button>
               </div>
@@ -693,7 +694,8 @@ export class IdentityAuditLogsComponent implements OnInit {
 
   constructor(
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    public translationService: TranslationService
   ) {}
 
   ngOnInit(): void {
@@ -735,6 +737,14 @@ export class IdentityAuditLogsComponent implements OnInit {
           if (Array.isArray(data.modules)) {
             this.modules = data.modules;
           }
+          const dynamicStrings: string[] = [...this.modules];
+          for (const l of this.logs) {
+            if (l.actionType) dynamicStrings.push(l.actionType);
+            if (l.status) dynamicStrings.push(l.status);
+            if (l.description) dynamicStrings.push(l.description);
+            if (l.module) dynamicStrings.push(l.module);
+          }
+          this.translationService.registerDynamicTexts(dynamicStrings);
           this.selectedIds.clear();
         } else {
           this.logs = [];
@@ -771,12 +781,18 @@ export class IdentityAuditLogsComponent implements OnInit {
       next: () => {
         this.deletingId = null;
         this.selectedIds.delete(log.id);
-        this.toast.success('Audit log record deleted.', 'Deleted');
+        this.toast.success(
+          this.translationService.translate('audit.deleted_toast', 'Audit log record deleted.'),
+          this.translationService.translate('audit.deleted_title', 'Deleted')
+        );
         this.loadLogs(this.page);
       },
       error: err => {
         this.deletingId = null;
-        this.toast.error(err?.error?.message || 'Could not delete audit log record.', 'Error');
+        this.toast.error(
+          this.translationService.translateDynamic(err?.error?.message || 'Could not delete audit log record.'),
+          this.translationService.translate('audit.deleted_title', 'Error')
+        );
       }
     });
   }
@@ -792,12 +808,18 @@ export class IdentityAuditLogsComponent implements OnInit {
       next: () => {
         this.isDeleting = false;
         this.selectedIds.clear();
-        this.toast.success(`Deleted ${ids.length} selected audit log record(s).`, 'Bulk Delete');
+        this.toast.success(
+          this.translationService.translate('audit.deleted_toast', 'Audit log record deleted.'),
+          this.translationService.translate('audit.deleted_title', 'Deleted')
+        );
         this.loadLogs(1);
       },
       error: err => {
         this.isDeleting = false;
-        this.toast.error(err?.error?.message || 'Failed to delete selected logs.', 'Error');
+        this.toast.error(
+          this.translationService.translateDynamic(err?.error?.message || 'Failed to delete selected logs.'),
+          this.translationService.translate('audit.deleted_title', 'Error')
+        );
       }
     });
   }

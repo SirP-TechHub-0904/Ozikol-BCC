@@ -46,7 +46,8 @@
   * **Desktop**: Flutter Desktop (Windows `.exe`, macOS `.app`, Linux)
   * **Mobile**: Flutter Mobile (Android `.apk`/App Bundle, iOS)
   * **Backend**: ASP.NET Core Web API (`src/Ozikol-BCC.Api`) and Application layer
-* **No Platform Left Behind**: Never deliver a feature to web while leaving mobile/desktop unhandled or vice versa. Ensure business logic, data models, validation, and real-time feeds achieve 1-to-1 operational parity.
+* **Mandatory Translation Consideration Across All Activities**: Every activity, UI update, toast message, audit log view, or feature added across any platform MUST wire multi-language translation (`TranslationService` / `TranslatePipe` on Web, `.tr(ref)` on Flutter) across `en`, `fr`, `es`, and `de` before completion.
+* **No Platform Left Behind**: Never deliver a feature to web while leaving mobile/desktop unhandled or vice versa. Ensure business logic, data models, validation, localization, and real-time feeds achieve 1-to-1 operational parity.
 
 ---
 

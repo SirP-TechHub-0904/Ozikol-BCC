@@ -31,6 +31,7 @@
     5. **Role & Privilege Adjustments**: Granting, upgrading, or revoking administrative roles and scopes.
     6. **Account Status & Membership Changes**: Activation, suspension, category transfers, or administrative profile updates.
   * **Clickable Deep Linking Requirement**: Every notification MUST populate `ActionUrl` with a clean route (e.g. `/identity/console/account?tab=devices`) enabling users across Web, Mobile, and Desktop to click the notification and immediately navigate to the exact tab/screen.
+  * **Localization in Notifications & Toasts**: All in-app notifications, toast alerts, and audit activity descriptions MUST consider multi-language translation (`TranslationService` / `TranslatePipe` / `translateDynamic` on Web, `.tr(ref)` on Flutter).
   * **Future Feature Mandate**: All future features, modules, and administrative workflows MUST proactively identify high-impact actions and implement corresponding notification dispatches as part of their initial delivery.
 
 ---

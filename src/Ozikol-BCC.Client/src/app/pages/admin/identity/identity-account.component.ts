@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { SignalRService } from '../../../core/services/signalr.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { parseUserAgent, formatClientIpAddress } from '../../../core/utils/user-agent.util';
 
@@ -512,7 +513,7 @@ interface AccountSummary {
               <span class="counter-badge" *ngIf="loginTotalCount > 0">{{ loginTotalCount }} {{ 'account.tab_activity' | translate }}</span>
               <button type="button" class="btn-secondary" (click)="loadLoginHistory(loginPage)" [disabled]="loadingLogs">
                 <span class="material-symbols-outlined" [class.spin-icon]="loadingLogs">refresh</span>
-                <span>Refresh</span>
+                <span>{{ 'audit.refresh' | translate:'Refresh' }}</span>
               </button>
             </div>
           </div>
@@ -524,7 +525,7 @@ interface AccountSummary {
                 <span class="material-symbols-outlined retention-icon">schedule</span>
                 <div>
                   <span class="retention-title">{{ 'account.activity_retention_notice' | translate }}</span>
-                  <span class="retention-sub" *ngIf="hasOlderRecords">Archival records older than 30 days are secured in deep retention.</span>
+                  <span class="retention-sub" *ngIf="hasOlderRecords">{{ 'audit.archival_sub' | translate:'Archival records older than 30 days are secured in deep retention.' }}</span>
                 </div>
               </div>
               <button type="button" class="btn-contact-admin" (click)="contactAdminForArchives()">
@@ -542,11 +543,11 @@ interface AccountSummary {
               <table class="account-table">
                 <thead>
                   <tr>
-                    <th>Action & Status</th>
-                    <th>Description / Module</th>
-                    <th>IP Address</th>
-                    <th>Browser / Device</th>
-                    <th>Timestamp</th>
+                    <th>{{ 'audit.th_action_status' | translate:'Action & Status' }}</th>
+                    <th>{{ 'audit.th_desc_module' | translate:'Description / Module' }}</th>
+                    <th>{{ 'audit.th_ip' | translate:'IP Address' }}</th>
+                    <th>{{ 'audit.th_browser_device' | translate:'Browser / Device' }}</th>
+                    <th>{{ 'audit.th_timestamp' | translate:'Timestamp' }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -555,18 +556,18 @@ interface AccountSummary {
                       <div class="log-status-col">
                         <span class="log-status-pill" [ngClass]="getStatusClass(log.actionType || log.status)">
                           <span class="material-symbols-outlined">{{ getStatusIcon(log.actionType || log.status) }}</span>
-                          {{ log.actionType || log.status }}
+                          {{ translationService.translateDynamic(log.actionType || log.status) }}
                         </span>
-                        <span class="badge-trusted-pill" *ngIf="log.isTrusted || (log.status && log.status.includes('Trusted'))" title="Trusted device authentication">
+                        <span class="badge-trusted-pill" *ngIf="log.isTrusted || (log.status && log.status.includes('Trusted'))">
                           <span class="material-symbols-outlined">verified_user</span>
-                          <span>Trusted</span>
+                          <span>{{ 'audit.trusted' | translate:'Trusted' }}</span>
                         </span>
                       </div>
                     </td>
                     <td>
                       <div class="log-desc-col">
-                        <span class="log-desc-text">{{ log.description || log.actionType || log.status }}</span>
-                        <span class="log-module-badge" *ngIf="log.module">{{ log.module }}</span>
+                        <span class="log-desc-text">{{ translationService.translateDynamic(log.description || log.actionType || log.status) }}</span>
+                        <span class="log-module-badge" *ngIf="log.module">{{ translationService.translateDynamic(log.module) }}</span>
                       </div>
                     </td>
                     <td><code>{{ formatIpAddress(log.ipAddress) }}</code></td>
@@ -587,23 +588,23 @@ interface AccountSummary {
               <!-- Pagination Toolbar -->
               <div class="pagination-footer" *ngIf="loginTotalCount > 0">
                 <div class="page-size-selector">
-                  <span>Show</span>
+                  <span>{{ 'audit.show' | translate:'Show' }}</span>
                   <select [ngModel]="loginPageSize" (ngModelChange)="onLoginPageSizeChange($event)">
                     <option [ngValue]="10">10</option>
                     <option [ngValue]="25">25</option>
                     <option [ngValue]="50">50</option>
                   </select>
-                  <span>entries per page</span>
+                  <span>{{ 'audit.entries_per_page' | translate:'entries per page' }}</span>
                   <span class="entries-info">
-                    (Showing {{ (loginPage - 1) * loginPageSize + 1 }} to {{ getLoginEndIndex() }} of {{ loginTotalCount }} records)
+                    ({{ 'audit.showing' | translate:'Showing' }} {{ (loginPage - 1) * loginPageSize + 1 }} {{ 'audit.to' | translate:'to' }} {{ getLoginEndIndex() }} {{ 'audit.of' | translate:'of' }} {{ loginTotalCount }} {{ 'audit.records' | translate:'records' }})
                   </span>
                 </div>
 
                 <div class="pagination-controls" *ngIf="loginTotalPages > 1">
-                  <button type="button" class="page-btn" [disabled]="loginPage === 1" (click)="setLoginPage(1)" title="First Page">
+                  <button type="button" class="page-btn" [disabled]="loginPage === 1" (click)="setLoginPage(1)">
                     <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
                   </button>
-                  <button type="button" class="page-btn" [disabled]="loginPage === 1" (click)="setLoginPage(loginPage - 1)" title="Previous Page">
+                  <button type="button" class="page-btn" [disabled]="loginPage === 1" (click)="setLoginPage(loginPage - 1)">
                     <span class="material-symbols-outlined">chevron_left</span>
                   </button>
 
@@ -619,10 +620,10 @@ interface AccountSummary {
                     </button>
                   </ng-container>
 
-                  <button type="button" class="page-btn" [disabled]="loginPage === loginTotalPages" (click)="setLoginPage(loginPage + 1)" title="Next Page">
+                  <button type="button" class="page-btn" [disabled]="loginPage === loginTotalPages" (click)="setLoginPage(loginPage + 1)">
                     <span class="material-symbols-outlined">chevron_right</span>
                   </button>
-                  <button type="button" class="page-btn" [disabled]="loginPage === loginTotalPages" (click)="setLoginPage(loginTotalPages)" title="Last Page">
+                  <button type="button" class="page-btn" [disabled]="loginPage === loginTotalPages" (click)="setLoginPage(loginTotalPages)">
                     <span class="material-symbols-outlined">keyboard_double_arrow_right</span>
                   </button>
                 </div>
@@ -1745,7 +1746,8 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
     private readonly toast: ToastService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly signalR: SignalRService
+    private readonly signalR: SignalRService,
+    public readonly translationService: TranslationService
   ) {}
 
   ngOnInit(): void {
@@ -2111,6 +2113,14 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
           this.loginTotalPages = 1;
           this.hasOlderRecords = false;
         }
+        const dynamicStrings: string[] = [];
+        for (const l of this.loginLogs) {
+          if (l.actionType) dynamicStrings.push(l.actionType);
+          if (l.status) dynamicStrings.push(l.status);
+          if (l.description) dynamicStrings.push(l.description);
+          if (l.module) dynamicStrings.push(l.module);
+        }
+        this.translationService.registerDynamicTexts(dynamicStrings);
       },
       error: () => {
         this.loadingLogs = false;
