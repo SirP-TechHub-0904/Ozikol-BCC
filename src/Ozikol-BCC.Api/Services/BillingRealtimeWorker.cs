@@ -162,14 +162,16 @@ namespace Ozikol_BCC.Api.Services
                 subs = fallbackSubs.Select(s => (s.Id, s.MasterTenantCatalogId, s.ExpiresAtUtc, s.IsActive, s.Status, s.AutoRenew, s.DurationType, s.CustomPriceOverride, (bool?)null, s.RecurringPrice, s.IsCompulsory, s.FeatureCode, s.FeatureName)).ToList();
             }
 
+            // Only fingerprint Completed (paid) invoices so creating or editing Pending invoices
+            // (e.g. preparing an invoice, changing duration, or initializing checkout) never triggers a false "Catalog Synchronized" menu toast.
             var invoices = await db.MasterBillingTransactions.AsNoTracking()
+                .Where(x => x.Status == "Completed")
                 .GroupBy(t => t.MasterTenantCatalogId)
                 .Select(g => new
                 {
                     TenantId = g.Key,
-                    Count = g.Count(),
-                    Completed = g.Count(x => x.Status == "Completed"),
-                    Last = g.Max(x => x.UpdatedUtc ?? x.CreatedUtc)
+                    Completed = g.Count(),
+                    LastCompleted = g.Max(x => x.UpdatedUtc ?? x.CreatedUtc)
                 })
                 .ToListAsync(ct);
 
@@ -261,7 +263,7 @@ namespace Ozikol_BCC.Api.Services
             foreach (var inv in invoices)
             {
                 if (keyById.TryGetValue(inv.TenantId, out var key))
-                    builders[key].Append("inv|").Append(inv.Count).Append('|').Append(inv.Completed).Append('|').Append(inv.Last.Ticks).Append(';');
+                    builders[key].Append("inv|").Append(inv.Completed).Append('|').Append(inv.LastCompleted.Ticks).Append(';');
             }
 
             var toPublish = new List<string>();

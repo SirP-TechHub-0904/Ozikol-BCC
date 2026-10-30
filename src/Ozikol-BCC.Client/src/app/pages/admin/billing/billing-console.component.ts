@@ -197,6 +197,20 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Computes a deterministic signature of capability availability and menu activation state
+   * so that invoice-only or non-menu background updates never trigger a false "Central Catalog Synchronized" toast.
+   */
+  private computeSnapshotMenuSignature(snap?: BillingFeaturesSnapshot): string {
+    if (!snap) return '';
+    const all = [...(snap.included || []), ...(snap.subscribed || []), ...(snap.available || [])];
+    if (all.length === 0) return '';
+    return all
+      .map(f => `${f.featureCode}:${f.isActive ? 1 : 0}:${f.isAvailableForUse ? 1 : 0}:${f.effectivePrice ?? f.monthlyPrice}`)
+      .sort()
+      .join('|');
+  }
+
+  /**
    * Broadcasts the latest feature snapshot to the global window so AdminLayoutComponent
    * immediately updates the sidebar navigation menu without a page reload.
    */
@@ -233,6 +247,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     this.hubConnection.on('BillingUpdated', (incoming: BillingFeaturesSnapshot) => {
       this.ngZone.run(() => {
         if (incoming) {
+          const prevSig = this.computeSnapshotMenuSignature(this.snapshot);
+          const nextSig = this.computeSnapshotMenuSignature(incoming);
           this.snapshot = incoming;
           this.broadcastSnapshotToSidebar(incoming);
           if (this.selectedFeatureDetail) {
@@ -247,7 +263,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
           }
           if (this.suppressNextSocketToast) {
             this.suppressNextSocketToast = false;
-          } else {
+          } else if (this.activePage !== 'invoice-detail' && prevSig !== '' && prevSig !== nextSig) {
             this.toastService.info(
               'Central Catalog Synchronized',
               'Capabilities, availability, and menu items updated in real time.'
