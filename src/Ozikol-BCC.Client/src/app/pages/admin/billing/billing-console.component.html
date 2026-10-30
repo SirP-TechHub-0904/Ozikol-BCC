@@ -1128,10 +1128,10 @@
               class="btn btn-primary btn-sm-action"
               [disabled]="isPayingAllDue"
               (click)="payAllExpiringFeatures()"
-              title="Pay and renew all expiring/overdue capabilities in one Paystack Inline transaction"
+              title="Renew all expiring/overdue features in one Paystack Inline transaction"
             >
               <span class="material-symbols-outlined" [class.spin]="isPayingAllDue">{{ isPayingAllDue ? 'sync' : 'payments' }}</span>
-              <span>{{ isPayingAllDue ? 'Initializing Paystack...' : ('Pay All Due (' + formatAmount(totalExpiringAmountDue) + ')') }}</span>
+              <span>{{ isPayingAllDue ? 'Initializing Paystack...' : ('Renew All Expiring Features (' + formatAmount(totalExpiringAmountDue) + ')') }}</span>
             </button>
           }
           <span class="badge-pill-md badge-available">Monthly Spend: {{ formatAmount(snapshot.totalRecurringMonthly) }}/mo</span>
