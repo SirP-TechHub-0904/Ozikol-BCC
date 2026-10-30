@@ -994,7 +994,7 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           <div class="nav-item" *ngSwitchCase="'bcp-workspace'">
-            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-workspace')" (click)="onFeatureMenuClick('bcp-workspace', getFeatureFullTitle('bcp-workspace', 'Workspace (Desktop only)'), $event)">
+            <a [routerLink]="isFeatureActive('bcp-workspace') ? '/workspace/stations' : null" href="javascript:void(0)" class="nav-link" [class.active]="isFeatureActive('bcp-workspace') && (isCurrentRoute('/workspace/stations') || isCurrentRoute('/admin/workspace/stations'))" [class.feature-locked]="!isFeatureActive('bcp-workspace')" (click)="onFeatureMenuClick('bcp-workspace', getFeatureFullTitle('bcp-workspace', 'Workspace (Desktop only)'), $event)">
               <div class="nav-link-content"><span class="material-symbols-outlined">desktop_windows</span><span>{{ getFeatureMenuTitle('bcp-workspace', 'Workspace (Desktop only)') }}</span></div>
               <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-workspace') && !isFeatureActive('bcp-workspace')"><span class="material-symbols-outlined">lock</span></span>
               <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-workspace')">{{ 'badge.soon' | translate }}</span>

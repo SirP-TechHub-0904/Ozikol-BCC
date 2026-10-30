@@ -98,6 +98,7 @@ import { ProductOrderDetailsComponent } from './pages/admin/products/product-ord
 
 // Suite 13: Billing & Subscriptions Console
 import { BillingConsoleComponent } from './pages/admin/billing/billing-console.component';
+import { WorkstationsConsoleComponent } from './pages/admin/workstations/workstations-console.component';
 
 // Public Storefront
 import { StoreCatalogComponent } from './pages/store/store-catalog.component';
@@ -327,6 +328,11 @@ export const routes: Routes = [
       { path: 'billing/console', redirectTo: 'billing/features', pathMatch: 'full' },
       { path: 'billing/invoices', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
       { path: 'billing', redirectTo: 'billing/features', pathMatch: 'full' },
+
+      // Suite 11: Workstation Supervisor & Application Gatekeeper (bcp-workspace)
+      { path: 'workspace/stations', component: WorkstationsConsoleComponent, data: { roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'admin/workspace/stations', redirectTo: 'workspace/stations', pathMatch: 'full' },
+      { path: 'admin/workspace', redirectTo: 'workspace/stations', pathMatch: 'full' },
 
       // 8. Backwards Compatibility Redirects for legacy /admin routes
       { path: 'admin/products', redirectTo: 'products/console', pathMatch: 'full' },
