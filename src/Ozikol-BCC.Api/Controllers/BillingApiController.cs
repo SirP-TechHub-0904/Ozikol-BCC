@@ -184,8 +184,9 @@ namespace Ozikol_BCC.Api.Controllers
                 : feature.MonthlyPrice;
 
             int catalogTrialDays = feature.FreeTrialDays > 0 ? feature.FreeTrialDays : 0;
-            int effectiveFreeTrialDays = ((tenant.UseCustomPricing || tenant.UseCustomAvailability) && existing?.CustomFreeTrialDaysOverride != null)
-                ? Math.Max(0, existing.CustomFreeTrialDaysOverride.Value)
+            bool hasCustomTrialOverride = existing?.CustomFreeTrialDaysOverride != null;
+            int effectiveFreeTrialDays = ((tenant.UseCustomPricing || tenant.UseCustomAvailability || hasCustomTrialOverride) && hasCustomTrialOverride)
+                ? Math.Max(0, existing!.CustomFreeTrialDaysOverride!.Value)
                 : catalogTrialDays;
             bool hasUsedFreeTrial = existing?.HasUsedFreeTrial ?? false;
             bool startFirstTimeTrial = targetActive && !feature.IsCompulsory && effectiveFreeTrialDays > 0 && !hasUsedFreeTrial;
@@ -205,10 +206,12 @@ namespace Ozikol_BCC.Api.Controllers
                     }
                     else
                     {
+                        bool wasTrial = existing.IsTrialPeriod || string.Equals(existing.Status, "Trial", StringComparison.OrdinalIgnoreCase);
+                        existing.IsTrialPeriod = false;
                         existing.Status = "Active";
-                        if (existing.ExpiresAtUtc <= now)
+                        if (wasTrial || existing.ExpiresAtUtc <= now)
                         {
-                            existing.IsTrialPeriod = false;
+                            existing.StartsAtUtc = now;
                             existing.ExpiresAtUtc = cadence switch
                             {
                                 SubscriptionBillingDuration.Yearly => now.AddYears(1),
@@ -225,6 +228,11 @@ namespace Ozikol_BCC.Api.Controllers
                 }
                 else
                 {
+                    if (existing.IsTrialPeriod || string.Equals(existing.Status, "Trial", StringComparison.OrdinalIgnoreCase))
+                    {
+                        existing.IsTrialPeriod = false;
+                        existing.ExpiresAtUtc = now;
+                    }
                     existing.Status = "Suspended";
                 }
             }

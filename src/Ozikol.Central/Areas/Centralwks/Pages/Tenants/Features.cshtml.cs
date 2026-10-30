@@ -765,6 +765,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                         };
                     }
                 }
+                else
+                {
+                    // When deactivating a tenant's capability from Central, also end any active trial timer so old trial days do not linger
+                    existing.IsTrialPeriod = false;
+                    existing.ExpiresAtUtc = DateTime.UtcNow;
+                }
             }
             else
             {
@@ -924,6 +930,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             int? effectiveTrialOverride = (resetToGeneral || !enableCustomFreeTrial)
                 ? null
                 : (customFreeTrialDays.HasValue ? Math.Clamp(customFreeTrialDays.Value, 0, 365) : null);
+            int effectiveDaysForTenant = effectiveTrialOverride ?? Math.Max(0, feature.FreeTrialDays);
 
             if (existing != null)
             {
@@ -933,6 +940,30 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 {
                     existing.HasUsedFreeTrial = false;
                 }
+
+                // When updating this specific tenant's trial days in Central:
+                // 1) If effective trial days is now 0, terminate any active free trial immediately so the tenant does not keep old 14d trial days
+                if (effectiveDaysForTenant == 0 && (existing.IsTrialPeriod || string.Equals(existing.Status, "Trial", StringComparison.OrdinalIgnoreCase) || resetFreeTrialUsed))
+                {
+                    existing.IsTrialPeriod = false;
+                    existing.IsActive = false;
+                    existing.Status = "Inactive";
+                    existing.ExpiresAtUtc = DateTime.UtcNow;
+                }
+                // 2) If resetFreeTrialUsed is checked, reset active state so the tenant can test fresh from Not Active
+                else if (resetFreeTrialUsed)
+                {
+                    existing.IsTrialPeriod = false;
+                    existing.IsActive = false;
+                    existing.Status = "Inactive";
+                    existing.ExpiresAtUtc = DateTime.UtcNow;
+                }
+                // 3) If the tenant is currently in an active trial and the admin changed their trial days (e.g. 14d -> 7d), update ExpiresAtUtc to match
+                else if (existing.IsActive && (existing.IsTrialPeriod || string.Equals(existing.Status, "Trial", StringComparison.OrdinalIgnoreCase)))
+                {
+                    existing.ExpiresAtUtc = DateTime.UtcNow.AddDays(effectiveDaysForTenant);
+                }
+
                 if (!resetToGeneral)
                 {
                     existing.IsAvailableForUseOverride = true;
