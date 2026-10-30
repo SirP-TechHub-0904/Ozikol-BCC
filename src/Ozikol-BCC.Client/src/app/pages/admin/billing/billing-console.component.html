@@ -1315,7 +1315,7 @@
           <span class="sep">/</span>
           <a routerLink="/billing/subscriptions">Billing &amp; Subscriptions</a>
           <span class="sep">/</span>
-          <span class="current">Invoice {{ invoiceDetail?.invoiceNumber || currentInvoiceId }}</span>
+          <span class="current">Invoice {{ invoiceDetail?.invoiceNumber || activeInvoiceId }}</span>
         </div>
         <div class="title-row">
           <h1>Invoice &amp; Payment Checkout</h1>
@@ -1364,11 +1364,11 @@
               }
             </div>
             <h2 style="margin: 6px 0 4px; font-size: 22px; font-weight: 800; color: #0f172a; font-family: monospace;">{{ invoiceDetail.invoiceNumber }}</h2>
-            <p style="margin: 0; font-size: 13px; color: #475569;">{{ invoiceDetail.description }}</p>
+            <p style="margin: 0; font-size: 13px; color: #475569;">{{ invoiceDetail.notes }}</p>
           </div>
 
           <div style="text-align: right;">
-            <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #64748b;">TOTAL AMOUNT DUE ({{ invoiceDetail.currencyCode }})</div>
+            <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #64748b;">TOTAL AMOUNT DUE ({{ invoiceDetail.currency }})</div>
             <div style="font-size: 28px; font-weight: 900; color: #0050E5; line-height: 1.2; margin-top: 2px;">
               {{ formatAmount(invoiceDetail.totalAmount) }}
             </div>
@@ -1393,16 +1393,16 @@
             <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Issue Date</div>
             <div style="font-weight: 700; color: #0f172a; margin-top: 3px;">{{ invoiceDetail.createdUtc | date:'medium' }}</div>
           </div>
-          @if (invoiceDetail.completedUtc) {
+          @if (invoiceDetail.status === 'Completed' && invoiceDetail.updatedUtc) {
             <div>
               <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Paid Date</div>
-              <div style="font-weight: 700; color: #15803d; margin-top: 3px;">{{ invoiceDetail.completedUtc | date:'medium' }}</div>
+              <div style="font-weight: 700; color: #15803d; margin-top: 3px;">{{ invoiceDetail.updatedUtc | date:'medium' }}</div>
             </div>
           }
-          @if (invoiceDetail.providerReference) {
+          @if (invoiceDetail.reference) {
             <div>
               <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Payment Reference</div>
-              <div style="font-weight: 700; color: #0f172a; font-family: monospace; margin-top: 3px;">{{ invoiceDetail.providerReference }}</div>
+              <div style="font-weight: 700; color: #0f172a; font-family: monospace; margin-top: 3px;">{{ invoiceDetail.reference }}</div>
             </div>
           }
         </div>
@@ -1419,7 +1419,7 @@
               Select your preferred renewal duration per capability. Yearly and Quarterly options automatically apply calculated savings where available.
             </p>
           </div>
-          @if (isUpdatingCadence) {
+          @if (updatingCadenceFeatureCode !== null) {
             <span class="badge-pill-md badge-compulsory">
               <span class="material-symbols-outlined spin">sync</span>
               <span>Recalculating Invoice Total...</span>
@@ -1474,13 +1474,13 @@
                     }
                   </td>
                   <td>
-                    @if (invoiceDetail.status === 'Pending' && line.supportedCadences.length > 1) {
+                    @if (invoiceDetail.status !== 'Completed' && line.supportedCadences.length > 1) {
                       <select
                         class="filter-select"
                         style="min-width: 195px; font-weight: 700;"
                         [ngModel]="line.selectedCadence"
                         (ngModelChange)="onChangeInvoiceLineCadence(line, $event)"
-                        [disabled]="isUpdatingCadence || isProcessingGatewayPayment"
+                        [disabled]="updatingCadenceFeatureCode !== null || isProcessingGatewayPayment"
                       >
                         @for (cad of line.supportedCadences; track cad) {
                           <option [value]="cad">
@@ -1521,7 +1521,7 @@
                   </td>
                   <td style="text-align: right;">
                     <strong style="font-size: 15px; color: #0f172a;">{{ formatAmount(line.lineTotal) }}</strong>
-                    <div style="font-size: 11px; color: #64748b;">+{{ line.durationDays }} days access</div>
+                    <div style="font-size: 11px; color: #64748b;">+{{ line.months === 12 ? 365 : (line.months === 3 ? 90 : 30) }} days access</div>
                   </td>
                 </tr>
               }
@@ -1530,7 +1530,7 @@
               @if (invoiceDetail.totalSavingsAmount > 0) {
                 <tr style="background: #f8fafc;">
                   <td colspan="5" style="text-align: right; font-weight: 700; color: #475569;">Subtotal (Before Annual/Multi-Month Discount):</td>
-                  <td style="text-align: right; font-weight: 700; color: #64748b; text-decoration: line-through;">{{ formatAmount(invoiceDetail.subTotalAmount) }}</td>
+                  <td style="text-align: right; font-weight: 700; color: #64748b; text-decoration: line-through;">{{ formatAmount(invoiceDetail.subtotalBeforeDiscount) }}</td>
                 </tr>
                 <tr style="background: #f0fdf4;">
                   <td colspan="5" style="text-align: right; font-weight: 700; color: #15803d;">Total Discount Savings Applied:</td>
@@ -1538,7 +1538,7 @@
                 </tr>
               }
               <tr style="background: #f8fafc; border-top: 2px solid #cbd5e1;">
-                <td colspan="5" style="text-align: right; font-size: 14px; font-weight: 800; color: #0f172a;">TOTAL PAYABLE ({{ invoiceDetail.currencyCode }}):</td>
+                <td colspan="5" style="text-align: right; font-size: 14px; font-weight: 800; color: #0f172a;">TOTAL PAYABLE ({{ invoiceDetail.currency }}):</td>
                 <td style="text-align: right; font-size: 18px; font-weight: 900; color: #0050E5;">{{ formatAmount(invoiceDetail.totalAmount) }}</td>
               </tr>
             </tfoot>
@@ -1643,7 +1643,7 @@
                       </label>
                       <input
                         type="text"
-                        [(ngModel)]="bankDepositProofRef"
+                        [(ngModel)]="bankDepositReferenceInput"
                         class="search-input"
                         style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px;"
                         placeholder="e.g. TRF-20261030-994812"
@@ -1652,7 +1652,7 @@
                     <button
                       type="button"
                       class="btn btn-primary"
-                      [disabled]="isProcessingGatewayPayment || !bankDepositProofRef.trim()"
+                      [disabled]="isProcessingGatewayPayment || !bankDepositReferenceInput.trim()"
                       (click)="submitBankDepositProof()"
                     >
                       <span class="material-symbols-outlined" [class.spin]="isProcessingGatewayPayment">
@@ -1676,7 +1676,7 @@
                     type="button"
                     class="btn btn-primary"
                     style="padding: 11px 22px; font-size: 14px; font-weight: 800;"
-                    [disabled]="isProcessingGatewayPayment || isUpdatingCadence"
+                    [disabled]="isProcessingGatewayPayment || updatingCadenceFeatureCode !== null"
                     (click)="proceedWithSelectedGatewayPayment()"
                   >
                     <span class="material-symbols-outlined" [class.spin]="isProcessingGatewayPayment">
@@ -1698,6 +1698,23 @@
           }
         </div>
       }
+    } @else {
+      <div class="empty-catalog-card" style="padding: 36px 24px;">
+        <span class="material-symbols-outlined empty-icon">receipt_long</span>
+        <h3>Unable to Load Invoice Details</h3>
+        <p>Please ensure the backend API server has been restarted with the latest billing routes and your database migration is applied.</p>
+        <div style="display: inline-flex; gap: 10px; margin-top: 8px;">
+          @if (activeInvoiceId) {
+            <button type="button" class="btn btn-primary" (click)="loadInvoiceDetailPage(activeInvoiceId)">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>Retry Loading Invoice</span>
+            </button>
+          }
+          <button type="button" class="btn btn-outline" (click)="closeInvoiceDetail()">
+            <span>Back to Subscriptions</span>
+          </button>
+        </div>
+      </div>
     }
   }
 </div>

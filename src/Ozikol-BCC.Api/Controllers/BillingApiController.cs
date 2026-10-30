@@ -445,7 +445,6 @@ namespace Ozikol_BCC.Api.Controllers
 
             var now = DateTime.UtcNow;
             var reference = $"PSK-CENTRAL-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
-            var invoiceNumber = await NextInvoiceNumberAsync(now, cancellationToken);
             var payerEmail = User.FindFirstValue(ClaimTypes.Email)
                 ?? User.FindFirst("email")?.Value
                 ?? (!string.IsNullOrWhiteSpace(tenant.AdminEmail) ? tenant.AdminEmail : "billing@company.com");
@@ -457,24 +456,58 @@ namespace Ozikol_BCC.Api.Controllers
             if (descriptionNote.Length > 490)
                 descriptionNote = descriptionNote[..490];
 
-            var invoice = new MasterBillingTransaction
-            {
-                Id = Guid.NewGuid(),
-                MasterTenantCatalogId = tenant.Id,
-                MasterTenantFeatureSubscriptionId = selectedFeatures.Count == 1 ? primarySubId : null,
-                InvoiceNumber = invoiceNumber,
-                Amount = totalAmountInTenantCurrency,
-                Currency = currCode,
-                PaymentProvider = "Paystack",
-                TransactionRef = reference,
-                Status = "Pending",
-                Notes = descriptionNote,
-                FeatureCodesCsv = string.Join(",", resolvedCodes),
-                BillingCadence = cadence.ToString(),
-                CreatedUtc = now
-            };
+            var normalizedCsv = string.Join(",", resolvedCodes.Select(c => c.ToLowerInvariant()).OrderBy(c => c));
+            var existingUnpaid = await _master.MasterBillingTransactions
+                .Where(t => t.MasterTenantCatalogId == tenant.Id && t.Status != "Completed" && t.Status != "Refunded" && t.Status != "Cancelled")
+                .OrderBy(t => t.CreatedUtc)
+                .ToListAsync(cancellationToken);
 
-            _master.MasterBillingTransactions.Add(invoice);
+            var matchingInvoices = existingUnpaid.Where(t =>
+                string.Join(",", (t.FeatureCodesCsv ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(c => c.ToLowerInvariant()).OrderBy(c => c)) == normalizedCsv ||
+                (selectedFeatures.Count == 1 && primarySubId.HasValue && t.MasterTenantFeatureSubscriptionId == primarySubId.Value && string.IsNullOrWhiteSpace(t.FeatureCodesCsv)) ||
+                (selectedFeatures.Count == 1 && string.IsNullOrWhiteSpace(t.FeatureCodesCsv) && (t.Notes ?? "").StartsWith(featureNames[0], StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+
+            MasterBillingTransaction invoice;
+            if (matchingInvoices.Count > 0)
+            {
+                invoice = matchingInvoices[0];
+                if (matchingInvoices.Count > 1)
+                {
+                    _master.MasterBillingTransactions.RemoveRange(matchingInvoices.Skip(1));
+                }
+                invoice.Amount = totalAmountInTenantCurrency;
+                invoice.Currency = currCode;
+                invoice.PaymentProvider = "Paystack";
+                invoice.TransactionRef = reference;
+                invoice.Status = "Pending";
+                invoice.Notes = descriptionNote;
+                invoice.FeatureCodesCsv = string.Join(",", resolvedCodes);
+                invoice.BillingCadence = cadence.ToString();
+                invoice.UpdatedUtc = now;
+            }
+            else
+            {
+                var invoiceNumber = await NextInvoiceNumberAsync(now, cancellationToken);
+                invoice = new MasterBillingTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    MasterTenantCatalogId = tenant.Id,
+                    MasterTenantFeatureSubscriptionId = selectedFeatures.Count == 1 ? primarySubId : null,
+                    InvoiceNumber = invoiceNumber,
+                    Amount = totalAmountInTenantCurrency,
+                    Currency = currCode,
+                    PaymentProvider = "Paystack",
+                    TransactionRef = reference,
+                    Status = "Pending",
+                    Notes = descriptionNote,
+                    FeatureCodesCsv = string.Join(",", resolvedCodes),
+                    BillingCadence = cadence.ToString(),
+                    CreatedUtc = now
+                };
+                _master.MasterBillingTransactions.Add(invoice);
+            }
+
             await _master.SaveChangesAsync(cancellationToken);
 
             var initResult = await _paymentGateway.InitializeInlinePaymentAsync(new PaymentInitRequestDto
@@ -488,7 +521,7 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     ["scope"] = "central_platform",
                     ["tenant_key"] = tenant.TenantKey,
-                    ["invoice_number"] = invoiceNumber,
+                    ["invoice_number"] = invoice.InvoiceNumber ?? string.Empty,
                     ["feature_codes"] = string.Join(",", resolvedCodes),
                     ["cadence"] = cadence.ToString()
                 }
@@ -496,9 +529,8 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (!initResult.IsSuccess)
             {
-                invoice.Status = "Failed";
-                invoice.UpdatedUtc = DateTime.UtcNow;
-                await _master.SaveChangesAsync(cancellationToken);
+                // Keep the invoice Status as "Pending" (never mark the invoice itself as Failed just because a gateway attempt failed)
+                // so the user can retry or switch payment methods on the same invoice without creating duplicate invoices.
                 return BadRequest(ApiResponse<object>.FailureResponse(initResult.ErrorMessage));
             }
 
@@ -512,7 +544,7 @@ namespace Ozikol_BCC.Api.Controllers
                 Currency = currCode,
                 CurrencySymbol = currSymbol,
                 Email = payerEmail,
-                InvoiceNumber = invoiceNumber,
+                InvoiceNumber = invoice.InvoiceNumber ?? string.Empty,
                 Cadence = cadence.ToString(),
                 FeatureNames = featureNames
             }, "Paystack inline checkout initialized."));
@@ -860,6 +892,7 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Lists the workspace's billing invoices, newest first.
+        /// Automatically consolidates any redundant unpaid duplicate invoices for the same capability set.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
         [HttpGet("invoices")]
@@ -869,9 +902,22 @@ namespace Ozikol_BCC.Api.Controllers
             var key = ResolveTenantKey();
             if (key == null) return BadRequest(ApiResponse<object>.FailureResponse("Workspace could not be determined."));
 
+            var tenant = await _master.MasterTenantCatalogs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t =>
+                    t.TenantKey.ToLower() == key ||
+                    (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                    (t.CustomDomain != null && t.CustomDomain.ToLower() == key),
+                    cancellationToken);
+
+            if (tenant == null)
+                return Ok(ApiResponse<List<BillingInvoiceDto>>.SuccessResponse(new List<BillingInvoiceDto>(), "Invoices retrieved."));
+
+            await DeduplicateUnpaidTenantInvoicesAsync(tenant.Id, cancellationToken);
+
             var invoices = await _master.MasterBillingTransactions
                 .AsNoTracking()
-                .Where(t => t.Tenant!.TenantKey.ToLower() == key)
+                .Where(t => t.MasterTenantCatalogId == tenant.Id)
                 .OrderByDescending(t => t.CreatedUtc)
                 .Take(200)
                 .Select(t => new BillingInvoiceDto
@@ -894,9 +940,82 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Automatically prepares (or reuses an existing Pending invoice matching the exact feature set)
+        /// Automatically deduplicates any redundant unpaid (<c>Pending</c> / <c>Failed</c>) invoices for the same capability set
+        /// so a workspace never has multiple unpaid invoices for the same single feature or bundle.
+        /// </summary>
+        private async Task DeduplicateUnpaidTenantInvoicesAsync(Guid tenantId, CancellationToken cancellationToken)
+        {
+            var unpaid = await _master.MasterBillingTransactions
+                .Where(t => t.MasterTenantCatalogId == tenantId &&
+                            t.Status != "Completed" &&
+                            t.Status != "Refunded" &&
+                            t.Status != "Cancelled")
+                .OrderBy(t => t.CreatedUtc)
+                .ToListAsync(cancellationToken);
+
+            if (unpaid.Count <= 1) return;
+
+            var groups = unpaid.GroupBy(t =>
+            {
+                if (!string.IsNullOrWhiteSpace(t.FeatureCodesCsv))
+                {
+                    return "CODES:" + string.Join(",", t.FeatureCodesCsv
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .Select(c => c.ToLowerInvariant())
+                        .OrderBy(c => c));
+                }
+                if (t.MasterTenantFeatureSubscriptionId.HasValue)
+                {
+                    return "SUB:" + t.MasterTenantFeatureSubscriptionId.Value.ToString("N");
+                }
+                return "NOTE:" + (t.Notes ?? string.Empty).Split('—')[0].Trim().ToLowerInvariant();
+            });
+
+            bool modified = false;
+            foreach (var grp in groups)
+            {
+                var list = grp.ToList();
+                // Keep the earliest invoice (so its original INV-YYYYMM-00001 number is preserved),
+                // copy over the latest LineItemsJson/FeatureCodesCsv if present on a newer duplicate, and restore Status to "Pending".
+                var primary = list[0];
+                if (string.Equals(primary.Status, "Failed", StringComparison.OrdinalIgnoreCase))
+                {
+                    primary.Status = "Pending";
+                    modified = true;
+                }
+
+                if (list.Count > 1)
+                {
+                    var newest = list[^1];
+                    if (!string.IsNullOrWhiteSpace(newest.FeatureCodesCsv))
+                        primary.FeatureCodesCsv = newest.FeatureCodesCsv;
+                    if (!string.IsNullOrWhiteSpace(newest.LineItemsJson))
+                        primary.LineItemsJson = newest.LineItemsJson;
+                    if (!string.IsNullOrWhiteSpace(newest.BillingCadence))
+                        primary.BillingCadence = newest.BillingCadence;
+                    primary.Amount = newest.Amount;
+                    primary.Currency = newest.Currency;
+                    primary.Notes = newest.Notes;
+                    primary.Status = string.Equals(newest.Status, "AwaitingVerification", StringComparison.OrdinalIgnoreCase)
+                        ? "AwaitingVerification"
+                        : "Pending";
+                    primary.UpdatedUtc = DateTime.UtcNow;
+
+                    _master.MasterBillingTransactions.RemoveRange(list.Skip(1));
+                    modified = true;
+                }
+            }
+
+            if (modified)
+            {
+                await _master.SaveChangesAsync(cancellationToken);
+            }
+        }
+
+        /// <summary>
+        /// Automatically prepares (or loads and reuses an existing unpaid invoice matching the exact feature set)
         /// an itemized invoice for either a single capability ("Pay &amp; Renew") or all expiring capabilities ("Renew All Expiring Features")
-        /// and returns its Invoice ID so the client navigates to <c>/billing/invoices/:id</c>.
+        /// and returns its Invoice ID so the client navigates to <c>/billing/invoices/:id</c> without ever duplicating invoices.
         /// </summary>
         [HttpPost("invoices/prepare")]
         [ProducesResponseType(typeof(ApiResponse<PrepareBillingInvoiceResponseDto>), 200)]
@@ -952,17 +1071,62 @@ namespace Ozikol_BCC.Api.Controllers
 
             var (currCode, currSymbol, currRate) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
 
-            var lineItems = new List<BillingInvoiceLineItemDto>();
             Guid? primarySubId = null;
-
             foreach (var feat in selectedFeatures)
             {
                 var sub = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feat.Id);
                 if (sub != null && primarySubId == null) primarySubId = sub.Id;
+            }
 
+            var normalizedCsv = string.Join(",", selectedFeatures.Select(x => x.FeatureCode.ToLowerInvariant()).OrderBy(x => x));
+
+            // Check for any existing unpaid invoice (Pending, Failed, or AwaitingVerification) for this exact capability set
+            var existingUnpaid = await _master.MasterBillingTransactions
+                .Where(t => t.MasterTenantCatalogId == tenant.Id &&
+                            t.Status != "Completed" &&
+                            t.Status != "Refunded" &&
+                            t.Status != "Cancelled")
+                .OrderBy(t => t.CreatedUtc)
+                .ToListAsync(cancellationToken);
+
+            var matchedList = existingUnpaid.Where(t =>
+                string.Join(",", (t.FeatureCodesCsv ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(c => c.ToLowerInvariant()).OrderBy(c => c)) == normalizedCsv ||
+                (selectedFeatures.Count == 1 && primarySubId.HasValue && t.MasterTenantFeatureSubscriptionId == primarySubId.Value && string.IsNullOrWhiteSpace(t.FeatureCodesCsv)) ||
+                (selectedFeatures.Count == 1 && string.IsNullOrWhiteSpace(t.FeatureCodesCsv) && (t.Notes ?? "").StartsWith(selectedFeatures[0].Name, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+
+            // Extract previously saved per-feature cadence from the existing invoice if the user already adjusted duration on it
+            var savedCadenceByCode = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (matchedList.Count > 0 && string.IsNullOrWhiteSpace(request.Cadence))
+            {
+                var latestMatched = matchedList[^1];
+                if (!string.IsNullOrWhiteSpace(latestMatched.LineItemsJson))
+                {
+                    try
+                    {
+                        var parsed = System.Text.Json.JsonSerializer.Deserialize<List<BillingInvoiceLineItemDto>>(latestMatched.LineItemsJson);
+                        if (parsed != null)
+                        {
+                            foreach (var p in parsed)
+                            {
+                                if (!string.IsNullOrWhiteSpace(p.FeatureCode) && !string.IsNullOrWhiteSpace(p.SelectedCadence))
+                                    savedCadenceByCode[p.FeatureCode] = p.SelectedCadence;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            var lineItems = new List<BillingInvoiceLineItemDto>();
+            foreach (var feat in selectedFeatures)
+            {
+                var sub = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feat.Id);
                 var preferredCad = !string.IsNullOrWhiteSpace(request.Cadence)
                     ? request.Cadence
-                    : (sub != null ? sub.DurationType.ToString() : "Monthly");
+                    : (savedCadenceByCode.TryGetValue(feat.FeatureCode, out var savedCad)
+                        ? savedCad
+                        : (sub != null ? sub.DurationType.ToString() : "Monthly"));
 
                 var li = BuildInvoiceLineItem(feat, sub, tenant.UseCustomPricing, currRate, preferredCad);
                 if (li.LineTotal > 0m)
@@ -974,7 +1138,6 @@ namespace Ozikol_BCC.Api.Controllers
             if (lineItems.Count == 0)
                 return BadRequest(ApiResponse<object>.FailureResponse("The selected capability has no payable charge."));
 
-            var normalizedCsv = string.Join(",", lineItems.Select(x => x.FeatureCode.ToLowerInvariant()).OrderBy(x => x));
             var totalAmount = Math.Round(lineItems.Sum(x => x.LineTotal), 2);
             var lineItemsJson = System.Text.Json.JsonSerializer.Serialize(lineItems);
             var now = DateTime.UtcNow;
@@ -984,19 +1147,21 @@ namespace Ozikol_BCC.Api.Controllers
                 : $"{lineItems.Count} Capabilities ({string.Join(", ", lineItems.Select(x => x.FeatureName))}) — Subscription Renewal";
             if (descriptionNote.Length > 490) descriptionNote = descriptionNote[..490];
 
-            // Reuse an existing Pending invoice for this tenant if it covers the exact same feature set
-            var existingPending = await _master.MasterBillingTransactions
-                .Where(t => t.MasterTenantCatalogId == tenant.Id && t.Status == "Pending" && t.FeatureCodesCsv != null)
-                .OrderByDescending(t => t.CreatedUtc)
-                .ToListAsync(cancellationToken);
-
-            var matchedPending = existingPending.FirstOrDefault(t =>
-                string.Join(",", (t.FeatureCodesCsv ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(c => c.ToLowerInvariant()).OrderBy(c => c)) == normalizedCsv);
-
-            if (matchedPending != null)
+            if (matchedList.Count > 0)
             {
+                var matchedPending = matchedList[0];
+                if (matchedList.Count > 1)
+                {
+                    _master.MasterBillingTransactions.RemoveRange(matchedList.Skip(1));
+                }
+
+                matchedPending.MasterTenantFeatureSubscriptionId = lineItems.Count == 1 ? primarySubId : null;
                 matchedPending.Amount = totalAmount;
                 matchedPending.Currency = currCode;
+                if (string.Equals(matchedPending.Status, "Failed", StringComparison.OrdinalIgnoreCase))
+                {
+                    matchedPending.Status = "Pending";
+                }
                 matchedPending.Notes = descriptionNote;
                 matchedPending.FeatureCodesCsv = string.Join(",", lineItems.Select(x => x.FeatureCode));
                 matchedPending.BillingCadence = lineItems.Count == 1 ? lineItems[0].SelectedCadence : "Mixed";
@@ -1008,7 +1173,7 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     InvoiceId = matchedPending.Id,
                     InvoiceNumber = matchedPending.InvoiceNumber ?? matchedPending.Id.ToString()
-                }, "Invoice prepared."));
+                }, "Existing invoice loaded."));
             }
 
             var invoiceNumber = await NextInvoiceNumberAsync(now, cancellationToken);
@@ -1056,7 +1221,11 @@ namespace Ozikol_BCC.Api.Controllers
                     .ThenInclude(tn => tn!.FeatureSubscriptions)
                 .Include(t => t.FeatureSubscription)
                     .ThenInclude(fs => fs!.MasterFeatureCatalog)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant!.TenantKey.ToLower() == key, cancellationToken);
+                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant != null && (
+                    t.Tenant.TenantKey.ToLower() == key ||
+                    (t.Tenant.PrimaryDomain != null && t.Tenant.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                    (t.Tenant.CustomDomain != null && t.Tenant.CustomDomain.ToLower() == key)
+                ), cancellationToken);
 
             if (invoice == null || invoice.Tenant == null)
                 return NotFound(ApiResponse<object>.FailureResponse("Invoice was not found for this workspace."));
@@ -1086,13 +1255,17 @@ namespace Ozikol_BCC.Api.Controllers
                     .ThenInclude(tn => tn!.FeatureSubscriptions)
                 .Include(t => t.FeatureSubscription)
                     .ThenInclude(fs => fs!.MasterFeatureCatalog)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant!.TenantKey.ToLower() == key, cancellationToken);
+                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant != null && (
+                    t.Tenant.TenantKey.ToLower() == key ||
+                    (t.Tenant.PrimaryDomain != null && t.Tenant.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                    (t.Tenant.CustomDomain != null && t.Tenant.CustomDomain.ToLower() == key)
+                ), cancellationToken);
 
             if (invoice == null || invoice.Tenant == null)
                 return NotFound(ApiResponse<object>.FailureResponse("Invoice was not found."));
 
-            if (!string.Equals(invoice.Status, "Pending", StringComparison.OrdinalIgnoreCase))
-                return BadRequest(ApiResponse<object>.FailureResponse("Duration can only be modified on Pending invoices."));
+            if (string.Equals(invoice.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(ApiResponse<object>.FailureResponse("Duration cannot be modified on a paid invoice."));
 
             var tenant = invoice.Tenant;
             var (currCode, _, currRate) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
@@ -1128,6 +1301,10 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 invoice.Amount = Math.Round(updatedLines.Sum(x => x.LineTotal), 2);
                 invoice.Currency = currCode;
+                if (string.Equals(invoice.Status, "Failed", StringComparison.OrdinalIgnoreCase))
+                {
+                    invoice.Status = "Pending";
+                }
                 invoice.BillingCadence = updatedLines.Count == 1 ? updatedLines[0].SelectedCadence : "Mixed";
                 invoice.Notes = updatedLines.Count == 1
                     ? $"{updatedLines[0].FeatureName} — {FormatCadenceDisplay(updatedLines[0].SelectedCadence)} Subscription Renewal"
@@ -1160,7 +1337,11 @@ namespace Ozikol_BCC.Api.Controllers
 
             var invoice = await _master.MasterBillingTransactions
                 .Include(t => t.Tenant)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant!.TenantKey.ToLower() == key, cancellationToken);
+                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant != null && (
+                    t.Tenant.TenantKey.ToLower() == key ||
+                    (t.Tenant.PrimaryDomain != null && t.Tenant.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                    (t.Tenant.CustomDomain != null && t.Tenant.CustomDomain.ToLower() == key)
+                ), cancellationToken);
 
             if (invoice == null || invoice.Tenant == null)
                 return NotFound(ApiResponse<object>.FailureResponse("Invoice was not found."));
@@ -1179,6 +1360,10 @@ namespace Ozikol_BCC.Api.Controllers
 
             invoice.PaymentProvider = "Paystack";
             invoice.TransactionRef = reference;
+            if (string.Equals(invoice.Status, "Failed", StringComparison.OrdinalIgnoreCase))
+            {
+                invoice.Status = "Pending";
+            }
             invoice.UpdatedUtc = now;
             await _master.SaveChangesAsync(cancellationToken);
 
@@ -1242,7 +1427,11 @@ namespace Ozikol_BCC.Api.Controllers
             var invoice = await _master.MasterBillingTransactions
                 .Include(t => t.Tenant)
                     .ThenInclude(tn => tn!.FeatureSubscriptions)
-                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant!.TenantKey.ToLower() == key, cancellationToken);
+                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant != null && (
+                    t.Tenant.TenantKey.ToLower() == key ||
+                    (t.Tenant.PrimaryDomain != null && t.Tenant.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                    (t.Tenant.CustomDomain != null && t.Tenant.CustomDomain.ToLower() == key)
+                ), cancellationToken);
 
             if (invoice == null || invoice.Tenant == null)
                 return NotFound(ApiResponse<object>.FailureResponse("Invoice was not found."));
