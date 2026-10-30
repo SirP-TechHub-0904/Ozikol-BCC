@@ -21,17 +21,30 @@ using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Persistence.EF.SQL.Extensions;
 using Ozikol_BCC.Telemetry.Sentry.Extensions;
 using Ozikol_BCC.Api.Middleware;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
+using Ozikol.MasterDomain.Security;
+using Ozikol_BCC.Infrastructure.Caching;
+using StackExchange.Redis;
 using Ozikol_BCC.EmailServices.Postmark;
 
 namespace Ozikol_BCC.Api
 {
+    /// <summary>
+    /// Entry point and host configuration for the Ozikol Business Command Center multi-tenant API.
+    /// </summary>
     public class Program
     {
-        // Entry point for Ozikol-BCC multi-tenant API host
+        /// <summary>
+        /// Configures and runs the Ozikol Business Command Center multi-tenant API host.
+        /// </summary>
+        /// <param name="args">Command-line arguments passed at startup.</param>
         public static async Task Main(string[] args)
         {
             DotNetEnv.Env.TraversePath().Load();
             var builder = WebApplication.CreateBuilder(args);
+            builder.Configuration.AddEnvironmentVariables();
+            OzikolDataCipher.Initialize(builder.Configuration);
             builder.WebHost.UseOzikolSentry("Ozikol-BCC.Api");
 
             // 1. Core Services & Infrastructure
@@ -72,7 +85,23 @@ namespace Ozikol_BCC.Api
             builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.IPaymentGatewayService, Ozikol_BCC.PaymentServices.Paystack.Services.PaystackPaymentGatewayService>();
             builder.Services.AddScoped<Ozikol_BCC.Application.Services.IMemberIdGeneratorService, Ozikol_BCC.Application.Services.MemberIdGeneratorService>();
 
-            builder.Services.AddDistributedMemoryCache();
+            // 1b. Multi-Server Distributed Cache (Redis / Valkey / Garnet with L1+L2 fallback) & DataProtection Key Ring
+            builder.Services.AddOzikolDistributedCaching(builder.Configuration);
+            var activeRedisConnStr = RedisInfrastructureExtensions.ResolveRedisConnectionString(builder.Configuration);
+            var dataProtectionBuilder = builder.Services.AddDataProtection()
+                .SetApplicationName("Ozikol.BCC.Cluster");
+            if (!string.IsNullOrWhiteSpace(activeRedisConnStr))
+            {
+                try
+                {
+                    var dpRedis = ConnectionMultiplexer.Connect(activeRedisConnStr);
+                    dataProtectionBuilder.PersistKeysToStackExchangeRedis(dpRedis, "OzikolBcc:DataProtection-Keys");
+                }
+                catch
+                {
+                    // Fallback to local key ring if Redis is unreachable
+                }
+            }
 
             // 2. Identity Configuration
             builder.Services.AddIdentity<Profile, AppRole>(options =>
@@ -89,8 +118,16 @@ namespace Ozikol_BCC.Api
             .AddEntityFrameworkStores<DashboardDbContext>()
             .AddDefaultTokenProviders();
 
-            // 3. JWT Bearer Authentication
-            var jwtKey = builder.Configuration["Jwt:Key"] ?? "OzikolBCC_SuperSecretJwtEncryptionKey_2026_MustBe32BytesOrMore!";
+            // 3. JWT Bearer Authentication (Fail-Fast Secret Validation - Zero Hardcoded Fallbacks)
+            var jwtKey = builder.Configuration["Jwt:Key"]
+                ?? Environment.GetEnvironmentVariable("Jwt__Key")
+                ?? Environment.GetEnvironmentVariable("JWT_KEY");
+            if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey.Length < 32)
+            {
+                throw new InvalidOperationException(
+                    "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is missing or shorter than 32 characters. " +
+                    "Please configure a strong 256-bit secret key via 'Jwt__Key' in your .env file or OS environment variables.");
+            }
             var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "Ozikol-BCC.Api";
             var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "Ozikol-BCC.Client";
 
@@ -180,7 +217,7 @@ namespace Ozikol_BCC.Api
                 });
             });
 
-            // 4b. Defense-in-Depth Native Rate Limiting Policies (Auth, AI, Upload Protection)
+            // 4b. Defense-in-Depth Native Rate Limiting Policies (Auth, AI, Upload Protection with Cloudflare Real-IP)
             builder.Services.AddRateLimiter(options =>
             {
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -195,7 +232,7 @@ namespace Ozikol_BCC.Api
                 // Policy A: Auth limit (Login / Register / Forgot Password) - 5 requests / min per IP
                 options.AddPolicy("auth-limit", httpContext =>
                     RateLimitPartition.GetFixedWindowLimiter(
-                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        partitionKey: ResolveRealClientIp(httpContext),
                         factory: _ => new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = 5,
@@ -207,7 +244,7 @@ namespace Ozikol_BCC.Api
                 // Policy B: AI Assist & Generation limit - 15 requests / min per client
                 options.AddPolicy("ai-limit", httpContext =>
                     RateLimitPartition.GetSlidingWindowLimiter(
-                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        partitionKey: ResolveRealClientIp(httpContext),
                         factory: _ => new SlidingWindowRateLimiterOptions
                         {
                             PermitLimit = 15,
@@ -220,7 +257,7 @@ namespace Ozikol_BCC.Api
                 // Policy C: File / Media Upload limit - 20 uploads / min per IP
                 options.AddPolicy("upload-limit", httpContext =>
                     RateLimitPartition.GetFixedWindowLimiter(
-                        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+                        partitionKey: ResolveRealClientIp(httpContext),
                         factory: _ => new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = 20,
@@ -230,11 +267,27 @@ namespace Ozikol_BCC.Api
                         }));
             });
 
-            // 5. SignalR & Form Options
-            builder.Services.AddSignalR(options =>
+            // 4c. Forwarded Headers for Cloudflare WAF & Multi-Server Reverse Proxy Load Balancers
+            builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.KnownNetworks.Clear();
+                options.KnownProxies.Clear();
+            });
+
+            // 5. SignalR (with automatic Redis Backplane when Redis / Valkey / Garnet is configured) & Form Options
+            var signalrBuilder = builder.Services.AddSignalR(options =>
             {
                 options.MaximumReceiveMessageSize = 100 * 1024 * 1024; // 100MB
             });
+            if (!string.IsNullOrWhiteSpace(activeRedisConnStr))
+            {
+                signalrBuilder.AddStackExchangeRedis(activeRedisConnStr, redisOpts =>
+                {
+                    redisOpts.Configuration.ChannelPrefix = RedisChannel.Literal("OzikolBccSignalR:");
+                    redisOpts.Configuration.AbortOnConnectFail = false;
+                });
+            }
 
             builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
             {
@@ -301,6 +354,7 @@ namespace Ozikol_BCC.Api
 
             var app = builder.Build();
 
+            app.UseForwardedHeaders();
             app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
             app.UseSecurityHeaders();
 
@@ -343,6 +397,33 @@ namespace Ozikol_BCC.Api
             app.MapHub<NotificationHub>("/hubs/notifications");
 
             await app.RunAsync();
+        }
+
+        /// <summary>
+        /// Resolves the genuine client IP address when behind Cloudflare CDN/WAF or a reverse proxy load balancer,
+        /// ensuring rate limiting partitions per real end-user rather than throttling the Cloudflare edge IP.
+        /// </summary>
+        /// <param name="httpContext">The active HTTP request context.</param>
+        /// <returns>The resolved client IP address string.</returns>
+        private static string ResolveRealClientIp(HttpContext httpContext)
+        {
+            if (httpContext.Request.Headers.TryGetValue("CF-Connecting-IP", out var cfIp) &&
+                !string.IsNullOrWhiteSpace(cfIp.ToString()))
+            {
+                return cfIp.ToString().Trim();
+            }
+
+            if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var xff) &&
+                !string.IsNullOrWhiteSpace(xff.ToString()))
+            {
+                var firstIp = xff.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+                if (!string.IsNullOrWhiteSpace(firstIp))
+                {
+                    return firstIp;
+                }
+            }
+
+            return httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip";
         }
     }
 }

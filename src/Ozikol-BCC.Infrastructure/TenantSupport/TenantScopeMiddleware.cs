@@ -87,6 +87,57 @@ public class TenantScopeMiddleware
             return;
         }
 
+        // 2b. Cross-Tenant JWT Spoofing Defense:
+        // If an authenticated user sends a JWT token issued for Tenant A (carrying a 'tenant_key' claim),
+        // prevent them from spoofing Origin, Referer, or X-Tenant-Key headers to execute authenticated actions against Tenant B's database.
+        // Exempt public authentication/workspace discovery routes (/api/auth/login, /api/auth/register, /api/auth/forgot-password, etc.)
+        // where a user may be logging into a new workspace while holding a stale token in memory.
+        bool isAuthBootstrapPath = path.StartsWith("/api/auth/login", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/register", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/forgot", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/reset", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/request-otp", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/verify-login-mfa", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/auth/resend-login-mfa", StringComparison.OrdinalIgnoreCase) ||
+                                   path.StartsWith("/api/public", StringComparison.OrdinalIgnoreCase);
+
+        if (!isAuthBootstrapPath && match != null && httpContext.User?.Identity?.IsAuthenticated == true)
+        {
+            var jwtTenantClaim = ExtractJwtTenantClaim(httpContext);
+            if (!string.IsNullOrWhiteSpace(jwtTenantClaim) && !IsSystemDomain(jwtTenantClaim))
+            {
+                CachedTenantEntry? jwtMatchedTenant = null;
+                if (tenantProvider is TenantProvider tpCheck)
+                {
+                    jwtMatchedTenant = TenantProvider.FindMatchingTenant(tpCheck.GetAllCachedTenants(), jwtTenantClaim);
+                }
+
+                var canonicalJwtTenantKey = jwtMatchedTenant?.TenantKey ?? jwtTenantClaim;
+                if (!string.Equals(canonicalJwtTenantKey, match.TenantKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("========================================================================");
+                    Console.WriteLine($"[SECURITY ALERT: CROSS-TENANT SPOOFING BLOCKED] {method} {path}");
+                    Console.WriteLine($"  * JWT Token Tenant  : {canonicalJwtTenantKey}");
+                    Console.WriteLine($"  * Requested Target  : {match.TenantKey} ({origin})");
+                    Console.WriteLine($"  * Result            : 403 FORBIDDEN (Cross-Tenant Access Denied)");
+                    Console.WriteLine("========================================================================");
+                    Console.ResetColor();
+
+                    httpContext.Response.StatusCode = (int)HttpStatusCode.Forbidden;
+                    httpContext.Response.ContentType = "application/json";
+                    await httpContext.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        statusCode = 403,
+                        error = "CrossTenantAccessDenied",
+                        message = "Your authentication session belongs to a different workspace. Please sign in to this workspace.",
+                        timestamp = DateTime.UtcNow
+                    }));
+                    return;
+                }
+            }
+        }
+
         string tenantKey = match?.TenantKey ?? resolvedTenantKey ?? "(Default)";
         if (match != null)
         {
@@ -247,6 +298,30 @@ public class TenantScopeMiddleware
         if (!string.IsNullOrEmpty(cleanHost))
         {
             return cleanHost;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Extracts the <c>tenant_key</c> claim specifically from the authenticated principal or Bearer JWT token
+    /// so cross-tenant spoofing between HTTP headers and the signed JWT can be detected and blocked.
+    /// </summary>
+    /// <param name="httpContext">The current HTTP context.</param>
+    /// <returns>The cleaned tenant key from the JWT claim, or null if not present.</returns>
+    private static string? ExtractJwtTenantClaim(HttpContext httpContext)
+    {
+        var user = httpContext.User;
+        if (user?.Identity?.IsAuthenticated == true)
+        {
+            var tenantClaim = user.FindFirst("tenant_key")?.Value
+                ?? user.FindFirst("TenantKey")?.Value
+                ?? user.FindFirst("tenant")?.Value;
+            var cleanClaim = CleanIdentifier(tenantClaim ?? string.Empty);
+            if (!string.IsNullOrEmpty(cleanClaim))
+            {
+                return cleanClaim;
+            }
         }
 
         return null;

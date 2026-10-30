@@ -1,6 +1,10 @@
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Ozikol.MasterDomain.Security;
+using Ozikol_BCC.Infrastructure.Caching;
 
 namespace Ozikol_BCC.Infrastructure.TenantSupport;
 
@@ -29,10 +33,11 @@ public class CachedTenantEntry
 public class TenantProvider : ITenantProvider
 {
     public const string DefaultSchemaName = "dbo";
-    private const string CacheKey = "master_catalog_all_tenants_cache";
+    private const string CacheKey = RedisTenantCacheInvalidator.MasterTenantCatalogCacheKey;
     private readonly string _defaultConnectionString;
     private readonly Dictionary<string, string> _staticTenantConnections;
     private readonly IMemoryCache? _memoryCache;
+    private readonly IDistributedCache? _distributedCache;
     private readonly IServiceScopeFactory? _scopeFactory;
 
     public string? CurrentTenant => TenantContext.CurrentTenant;
@@ -108,38 +113,110 @@ public class TenantProvider : ITenantProvider
             .ToDictionary(ks => ks.Name, vs => vs.ConnectionString!, StringComparer.OrdinalIgnoreCase);
 
         _memoryCache = serviceProvider.GetService<IMemoryCache>();
+        _distributedCache = serviceProvider.GetService<IDistributedCache>();
         _scopeFactory = serviceProvider.GetService<IServiceScopeFactory>();
+
+        // Ensure cross-server Redis Pub/Sub invalidation listener is initialized
+        _ = serviceProvider.GetService<ITenantCacheInvalidator>();
     }
 
     /// <summary>
-    /// Retrieves all active tenant entries from fast in-memory cache, or loads from Master Catalog DB if expired.
+    /// Retrieves all active tenant entries using a 2-tier cache strategy:
+    /// L1 (<see cref="IMemoryCache"/>, &lt; 0.1ms) -&gt; L2 (<see cref="IDistributedCache"/> / Redis) -&gt; Master Catalog DB.
+    /// Cached connection strings in L2 Redis remain encrypted (`enc:v1:...`) and are decrypted strictly in local process memory.
     /// </summary>
     /// <returns>A list of cached tenant entries.</returns>
     public List<CachedTenantEntry> GetAllCachedTenants()
     {
+        // 1. L1 local in-memory cache check (< 0.1ms)
         if (_memoryCache != null && _memoryCache.TryGetValue<List<CachedTenantEntry>>(CacheKey, out var cachedList) && cachedList != null)
         {
             return cachedList;
+        }
+
+        // 2. L2 Redis distributed cache check (for multi-server consistency)
+        if (_distributedCache != null)
+        {
+            try
+            {
+                var redisJson = _distributedCache.GetString(CacheKey);
+                if (!string.IsNullOrWhiteSpace(redisJson))
+                {
+                    var fromRedis = JsonSerializer.Deserialize<List<CachedTenantEntry>>(redisJson);
+                    if (fromRedis != null && fromRedis.Count > 0)
+                    {
+                        foreach (var entry in fromRedis)
+                        {
+                            entry.ConnectionString = OzikolDataCipher.DecryptIfNeeded(entry.ConnectionString) ?? string.Empty;
+                        }
+
+                        _memoryCache?.Set(CacheKey, fromRedis, new MemoryCacheEntryOptions
+                        {
+                            Size = 1,
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
+                        });
+                        return fromRedis;
+                    }
+                }
+            }
+            catch
+            {
+                // Gracefully proceed to Master DB if Redis is unreachable
+            }
         }
 
         return RefreshCachedTenants();
     }
 
     /// <summary>
-    /// Actively refreshes the in-memory cache of tenants by reading directly from MasterCatalogDbContext.
-    /// Invoked automatically on cache miss when a new tenant was recently registered.
+    /// Actively refreshes the L1 and L2 caches of tenants by reading directly from MasterCatalogDbContext.
+    /// Invoked automatically on cache miss when a new tenant was recently registered or updated.
     /// </summary>
     /// <returns>The freshly loaded list of active cached tenants.</returns>
     public List<CachedTenantEntry> RefreshCachedTenants()
     {
         var loaded = LoadTenantsFromMasterDb();
-        if (loaded.Count > 0 && _memoryCache != null)
+        if (loaded.Count > 0)
         {
-            _memoryCache.Set(CacheKey, loaded, new MemoryCacheEntryOptions
+            _memoryCache?.Set(CacheKey, loaded, new MemoryCacheEntryOptions
             {
                 Size = 1,
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1)
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
             });
+
+            if (_distributedCache != null)
+            {
+                try
+                {
+                    // Store encrypted connection strings inside Redis so plaintext SQL credentials never sit in Redis RAM
+                    var encryptedSnapshot = loaded.Select(t => new CachedTenantEntry
+                    {
+                        Id = t.Id,
+                        TenantKey = t.TenantKey,
+                        OrganizationName = t.OrganizationName,
+                        PrimaryDomain = t.PrimaryDomain,
+                        CustomDomain = t.CustomDomain,
+                        ApiUrl = t.ApiUrl,
+                        WebsiteUrl = t.WebsiteUrl,
+                        DatabaseName = t.DatabaseName,
+                        ConnectionString = OzikolDataCipher.EncryptIfNeeded(t.ConnectionString) ?? string.Empty,
+                        AdminEmail = t.AdminEmail,
+                        IsActive = t.IsActive
+                    }).ToList();
+
+                    _distributedCache.SetString(
+                        CacheKey,
+                        JsonSerializer.Serialize(encryptedSnapshot),
+                        new DistributedCacheEntryOptions
+                        {
+                            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+                        });
+                }
+                catch
+                {
+                    // Ignore transient Redis write errors
+                }
+            }
         }
 
         return loaded;
@@ -313,7 +390,7 @@ public class TenantProvider : ITenantProvider
                                     ApiUrl = (string?)item.ApiUrl,
                                     WebsiteUrl = (string?)item.WebsiteUrl,
                                     DatabaseName = (string)item.DatabaseName,
-                                    ConnectionString = (string)item.ConnectionString,
+                                    ConnectionString = OzikolDataCipher.DecryptIfNeeded((string)item.ConnectionString) ?? string.Empty,
                                     AdminEmail = (string?)item.AdminEmail,
                                     IsActive = (bool)item.IsActive
                                 });

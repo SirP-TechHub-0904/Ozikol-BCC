@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Ozikol.MasterPersistence.EF.MasterSQL.Security;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Domain.Models.Ai;
 using Ozikol_BCC.Infrastructure.TenantSupport;
@@ -802,6 +803,29 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
         modelBuilder.Entity<MisWebsiteContactChannel>(entity =>
         {
             entity.HasIndex(c => new { c.ChannelType, c.IsPublished, c.SortOrder });
+        });
+
+        // --- Transparent AES-256-GCM Encryption at Rest for Tenant Secret Credentials ---
+        modelBuilder.Entity<MisConfigurationSetting>(entity =>
+        {
+            entity.Property(c => c.PaystackSecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.PaystackWebhookSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.FlutterwaveSecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.FlutterwaveEncryptionKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.StripeSecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.StripeWebhookSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.PayPalClientSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.PixelPaySecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.PixelPaySaltKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.PixelPayWebhookSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.TermiiApiKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.TwilioAuthToken).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.PostmarkServerToken).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.SmtpPassword).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.ZeptoMailApiKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.ZeptoMailSendMailToken).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.CustomCloudinaryApiSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(c => c.CustomS3SecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
         });
 
         // ConfigureCustomer(modelBuilder);

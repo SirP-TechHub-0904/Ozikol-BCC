@@ -21,6 +21,11 @@ using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Persistence.EF.SQL.Extensions;
 using Ozikol_BCC.Telemetry.Sentry.Extensions;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
+using Ozikol.MasterDomain.Security;
+using Ozikol_BCC.Infrastructure.Caching;
+using StackExchange.Redis;
 
 // 1. Load project-local .env environment variables
 var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
@@ -35,6 +40,7 @@ if (File.Exists(envPath))
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
+OzikolDataCipher.Initialize(builder.Configuration);
 
 // Configure Sentry Cloud Telemetry (gracefully active when SENTRY_DSN is configured in .env or appsettings)
 builder.WebHost.UseOzikolSentry("Ozikol.Central");
@@ -243,6 +249,22 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddMemoryCache();
+builder.Services.AddOzikolDistributedCaching(builder.Configuration);
+var centralRedisConnStr = RedisInfrastructureExtensions.ResolveRedisConnectionString(builder.Configuration);
+var centralDataProtection = builder.Services.AddDataProtection()
+    .SetApplicationName("Ozikol.BCC.Cluster");
+if (!string.IsNullOrWhiteSpace(centralRedisConnStr))
+{
+    try
+    {
+        var dpRedis = ConnectionMultiplexer.Connect(centralRedisConnStr);
+        centralDataProtection.PersistKeysToStackExchangeRedis(dpRedis, "OzikolBcc:DataProtection-Keys");
+    }
+    catch
+    {
+        // Fallback to local key ring if Redis is unreachable
+    }
+}
 builder.Services.Configure<PricingSettings>(builder.Configuration.GetSection("PricingSettings"));
 
 // 7. Register Central Services
@@ -294,10 +316,10 @@ builder.Services.AddRateLimiter(options =>
             token);
     };
 
-    // Central Auth Policy: 5 attempts per minute per IP
+    // Central Auth Policy: 5 attempts per minute per IP (Cloudflare CF-Connecting-IP aware)
     options.AddPolicy("central-auth-limit", httpContext =>
         RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+            partitionKey: ResolveCentralClientIp(httpContext),
             factory: _ => new FixedWindowRateLimiterOptions
             {
                 PermitLimit = 5,
@@ -306,10 +328,10 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0
             }));
 
-    // Central Submission Policy: 30 requests per minute per IP
+    // Central Submission Policy: 30 requests per minute per IP (Cloudflare CF-Connecting-IP aware)
     options.AddPolicy("central-general-limit", httpContext =>
         RateLimitPartition.GetSlidingWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip",
+            partitionKey: ResolveCentralClientIp(httpContext),
             factory: _ => new SlidingWindowRateLimiterOptions
             {
                 PermitLimit = 30,
@@ -318,6 +340,13 @@ builder.Services.AddRateLimiter(options =>
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
             }));
+});
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 var app = builder.Build();
@@ -333,6 +362,7 @@ catch (Exception ex)
 }
 
 // Global Exception Interception & Automated Cloud Email Alerting
+app.UseForwardedHeaders();
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 app.UseSecurityHeaders();
 
@@ -480,3 +510,24 @@ app.MapControllers();
 app.MapRazorPages();
 
 app.Run();
+
+static string ResolveCentralClientIp(HttpContext httpContext)
+{
+    if (httpContext.Request.Headers.TryGetValue("CF-Connecting-IP", out var cfIp) &&
+        !string.IsNullOrWhiteSpace(cfIp.ToString()))
+    {
+        return cfIp.ToString().Trim();
+    }
+
+    if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var xff) &&
+        !string.IsNullOrWhiteSpace(xff.ToString()))
+    {
+        var firstIp = xff.ToString().Split(',', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+        if (!string.IsNullOrWhiteSpace(firstIp))
+        {
+            return firstIp;
+        }
+    }
+
+    return httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip";
+}

@@ -2095,7 +2095,10 @@ namespace Ozikol_BCC.Api.Controllers
 
         private async Task<string> GenerateJwtTokenAsync(Profile user, string? tenantKey = null, IEnumerable<string>? rolesList = null, string? jwtId = null)
         {
-            var jwtKey = _configuration["Jwt:Key"] ?? "OzikolBCC_SuperSecretJwtEncryptionKey_2026_MustBe32BytesOrMore!";
+            var jwtKey = _configuration["Jwt:Key"]
+                ?? Environment.GetEnvironmentVariable("Jwt__Key")
+                ?? Environment.GetEnvironmentVariable("JWT_KEY")
+                ?? throw new InvalidOperationException("CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is missing. Configure 'Jwt__Key' in your .env file.");
             var jwtIssuer = _configuration["Jwt:Issuer"] ?? "Ozikol-BCC.Api";
             var jwtAudience = _configuration["Jwt:Audience"] ?? "Ozikol-BCC.Client";
 

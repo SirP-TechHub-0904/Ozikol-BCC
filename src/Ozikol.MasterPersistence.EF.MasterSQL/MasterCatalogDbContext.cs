@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Ozikol.MasterDomain.Models;
+using Ozikol.MasterPersistence.EF.MasterSQL.Security;
 
 namespace Ozikol.MasterPersistence.EF.MasterSQL;
 
@@ -155,6 +156,10 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.IsActive);
             entity.HasIndex(e => e.IsSuspended);
             entity.HasIndex(e => e.IsDeleted);
+
+            // Transparent AES-256-GCM encryption at rest for tenant database connection strings
+            entity.Property(e => e.ConnectionString)
+                .HasConversion(EncryptedStringValueConverter.Instance);
         });
 
         var suiteSeedCreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -682,6 +687,16 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.SupportCategories).HasMaxLength(1000);
             entity.Property(e => e.DefaultCurrencyCode).HasMaxLength(10).HasDefaultValue("USD");
             entity.Property(e => e.DefaultExchangeRateCurrencyCode).HasMaxLength(10).HasDefaultValue("USD");
+
+            // Transparent AES-256-GCM encryption at rest for Central payment gateway, storage, and log secrets
+            entity.Property(e => e.PaystackSecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.PaystackWebhookSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.FlutterwaveSecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.FlutterwaveWebhookSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.StripeSecretKey).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.StripeWebhookSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.CloudinaryApiSecret).HasConversion(NullableEncryptedStringValueConverter.Instance);
+            entity.Property(e => e.MongoLogsConnectionString).HasConversion(NullableEncryptedStringValueConverter.Instance);
         });
 
         modelBuilder.Entity<MasterHelpdeskArticle>(entity =>
@@ -814,6 +829,10 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.HasIndex(e => e.IsActive);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.RateLimitCooldownUntilUtc);
+
+            // Transparent AES-256-GCM encryption at rest for AI provider API keys
+            entity.Property(e => e.ApiKey)
+                .HasConversion(EncryptedStringValueConverter.Instance);
 
             entity.HasMany(e => e.UsageLogs)
                 .WithOne(e => e.MasterAiApiKey)
