@@ -16,7 +16,7 @@ namespace Ozikol_BCC.Api.Controllers
     /// document sandboxing, and station telemetry for the "Workspace (Desktop only)" suite (bcp-workspace).
     /// </summary>
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/Workstations")]
     [Tags("Workstations & Application Gatekeeper")]
     public class WorkstationsApiController : ControllerBase
     {
