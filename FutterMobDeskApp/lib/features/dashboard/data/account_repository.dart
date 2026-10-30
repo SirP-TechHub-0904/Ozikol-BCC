@@ -1482,4 +1482,405 @@ class AccountRepository {
       return false;
     }
   }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SECURITY & AUDIT + ERROR CODES (Suite 14)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// <summary>
+  /// Fetches paginated workspace-wide security audit logs from `GET api/IdentityApi/security-audit`.
+  /// </summary>
+  Future<Map<String, dynamic>> getSecurityAuditLogs({
+    int page = 1,
+    int pageSize = 25,
+    String? search,
+    String? module,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'pageSize': pageSize,
+      };
+      if (search != null && search.trim().isNotEmpty) {
+        queryParams['search'] = search.trim();
+      }
+      if (module != null && module.trim().isNotEmpty && module != 'all') {
+        queryParams['module'] = module.trim();
+      }
+      final response = await _dio.get(
+        'api/IdentityApi/security-audit',
+        queryParameters: queryParams,
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return {
+        'items': <dynamic>[],
+        'modules': <dynamic>[],
+        'totalCount': 0,
+        'page': page,
+        'pageSize': pageSize,
+        'totalPages': 1,
+      };
+    } catch (_) {
+      return {
+        'items': <dynamic>[],
+        'modules': <dynamic>[],
+        'totalCount': 0,
+        'page': page,
+        'pageSize': pageSize,
+        'totalPages': 1,
+      };
+    }
+  }
+
+  /// <summary>
+  /// Deletes a single security audit log entry (`DELETE api/IdentityApi/security-audit/{id}`).
+  /// </summary>
+  Future<Map<String, dynamic>> deleteSecurityAuditLog(String id) async {
+    try {
+      final response = await _dio.delete('api/IdentityApi/security-audit/$id');
+      final ok = response.statusCode == 200 || response.statusCode == 204;
+      final msg = (response.data is Map) ? response.data['message']?.toString() : null;
+      return {'success': ok, 'message': msg};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not delete audit log record.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not delete audit log record.'};
+    }
+  }
+
+  /// <summary>
+  /// Deletes multiple security audit log entries in bulk (`POST api/IdentityApi/security-audit/bulk-delete`).
+  /// </summary>
+  Future<Map<String, dynamic>> bulkDeleteSecurityAuditLogs(List<String> ids) async {
+    try {
+      final response = await _dio.post(
+        'api/IdentityApi/security-audit/bulk-delete',
+        data: ids,
+      );
+      final ok = response.statusCode == 200 || response.statusCode == 204;
+      final msg = (response.data is Map) ? response.data['message']?.toString() : null;
+      return {'success': ok, 'message': msg};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Failed to delete selected logs.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Failed to delete selected logs.'};
+    }
+  }
+
+  /// <summary>
+  /// Fetches the standardized client error codes catalog from `GET api/error-codes`.
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getErrorCodesCatalog() async {
+    try {
+      final response = await _dio.get('api/error-codes');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        List<dynamic> list = [];
+        if (data is Map && (data['data'] is List || data['Data'] is List)) {
+          list = (data['data'] ?? data['Data']) as List;
+        } else if (data is List) {
+          list = data;
+        }
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // BILLING, FEATURES & SUBSCRIPTIONS (Suite 13)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// <summary>
+  /// Retrieves the live feature billing snapshot for the active workspace (`GET api/billing/features`).
+  /// </summary>
+  Future<Map<String, dynamic>> getBillingFeaturesSnapshot() async {
+    try {
+      final response = await _dio.get('api/billing/features');
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        if (body is Map && body['data'] is Map) {
+          return Map<String, dynamic>.from(body['data'] as Map);
+        } else if (body is Map) {
+          return Map<String, dynamic>.from(body);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Installs/activates or deactivates a workspace capability (`POST api/billing/features/toggle-active`).
+  /// </summary>
+  Future<Map<String, dynamic>> toggleBillingFeatureActive({
+    required String featureId,
+    required String featureCode,
+    bool? setActive,
+    String cadence = 'Monthly',
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/billing/features/toggle-active',
+        data: {
+          'featureId': featureId,
+          'featureCode': featureCode,
+          if (setActive != null) 'setActive': setActive,
+          'cadence': cadence,
+        },
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        return {
+          'success': ok,
+          'message': body['message']?.toString(),
+          'data': body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null,
+        };
+      }
+      return {'success': false, 'message': 'Could not update capability status.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not update feature status.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not update feature status.'};
+    }
+  }
+
+  /// <summary>
+  /// Lists all billing invoices generated for the workspace (`GET api/billing/invoices`).
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getBillingInvoices() async {
+    try {
+      final response = await _dio.get('api/billing/invoices');
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        List<dynamic> list = [];
+        if (body is Map && body['data'] is List) {
+          list = body['data'] as List;
+        } else if (body is List) {
+          list = body;
+        }
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// <summary>
+  /// Prepares/generates an invoice for one or more capabilities (`POST api/billing/invoices/prepare`).
+  /// </summary>
+  Future<Map<String, dynamic>> prepareBillingInvoice({
+    required List<String> featureCodes,
+    String? cadence,
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/billing/invoices/prepare',
+        data: {
+          'featureCodes': featureCodes,
+          if (cadence != null) 'cadence': cadence,
+        },
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok && dataMap != null && dataMap['invoiceId'] != null,
+          'invoiceId': dataMap?['invoiceId']?.toString(),
+          'invoiceNumber': dataMap?['invoiceNumber']?.toString(),
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'message': 'Could not prepare invoice.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not prepare invoice.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not prepare invoice.'};
+    }
+  }
+
+  /// <summary>
+  /// Retrieves full invoice detail and payment gateway options (`GET api/billing/invoices/{invoiceId}`).
+  /// </summary>
+  Future<Map<String, dynamic>> getBillingInvoiceDetail(String invoiceId) async {
+    try {
+      final response = await _dio.get('api/billing/invoices/$invoiceId');
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok && dataMap != null,
+          'data': dataMap,
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'message': 'Could not load invoice details.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not load invoice details.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not load invoice details.'};
+    }
+  }
+
+  /// <summary>
+  /// Updates billing duration cadence ('Monthly', 'Quarterly', 'Yearly') on a pending invoice line item
+  /// (`POST api/billing/invoices/{invoiceId}/cadence`).
+  /// </summary>
+  Future<Map<String, dynamic>> updateBillingInvoiceLineCadence({
+    required String invoiceId,
+    required String cadence,
+    String? featureCode,
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/billing/invoices/$invoiceId/cadence',
+        data: {
+          if (featureCode != null) 'featureCode': featureCode,
+          'cadence': cadence,
+        },
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok && dataMap != null,
+          'data': dataMap,
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'message': 'Could not update billing duration.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not update billing duration.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not update billing duration.'};
+    }
+  }
+
+  /// <summary>
+  /// Initializes Paystack checkout for a specific invoice (`POST api/billing/invoices/{invoiceId}/pay/paystack`).
+  /// </summary>
+  Future<Map<String, dynamic>> payBillingInvoiceWithPaystack(String invoiceId) async {
+    try {
+      final response = await _dio.post('api/billing/invoices/$invoiceId/pay/paystack', data: {});
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok && dataMap != null,
+          'data': dataMap,
+          'errorCode': body['errorCode']?.toString(),
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'errorCode': 'ERR-3001', 'message': 'Paystack unavailable.'};
+    } on DioException catch (e) {
+      final errCode = (e.response?.data is Map)
+          ? e.response?.data['errorCode']?.toString()
+          : 'ERR-3001';
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'errorCode': errCode ?? 'ERR-3001', 'message': msg ?? 'Paystack unavailable.'};
+    } catch (_) {
+      return {'success': false, 'errorCode': 'ERR-3001', 'message': 'Paystack unavailable.'};
+    }
+  }
+
+  /// <summary>
+  /// Verifies a completed Paystack payment reference (`POST api/billing/features/paystack/verify`).
+  /// </summary>
+  Future<Map<String, dynamic>> verifyPaystackFeaturePayment(String reference) async {
+    try {
+      final response = await _dio.post(
+        'api/billing/features/paystack/verify',
+        data: {'reference': reference},
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok,
+          'data': dataMap,
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'message': 'Could not verify Paystack transaction.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Error verifying Paystack transaction with server.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Error verifying Paystack transaction with server.'};
+    }
+  }
+
+  /// <summary>
+  /// Submits a Direct Bank Deposit transfer reference / proof for a specific invoice
+  /// (`POST api/billing/invoices/{invoiceId}/pay/bank-deposit`).
+  /// </summary>
+  Future<Map<String, dynamic>> submitBillingInvoiceBankDeposit({
+    required String invoiceId,
+    required String transferReference,
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/billing/invoices/$invoiceId/pay/bank-deposit',
+        data: {'transferReference': transferReference},
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok && dataMap != null,
+          'data': dataMap,
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'message': 'Could not submit bank transfer reference.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not submit bank transfer reference.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not submit bank transfer reference.'};
+    }
+  }
 }

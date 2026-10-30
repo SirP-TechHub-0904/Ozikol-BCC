@@ -47,6 +47,10 @@ import 'screens/manage_account/two_factor_security_view.dart';
 import 'screens/manage_account/manage_devices_view.dart';
 import 'screens/manage_account/login_activity_view.dart';
 import 'screens/manage_account/account_roles_privileges_view.dart';
+import 'screens/billing/subscription_plans_view.dart';
+import 'screens/billing/subscriptions_invoices_view.dart';
+import 'screens/identity_access/security_audit_logs_view.dart';
+import 'screens/identity_access/error_codes_view.dart';
 import 'screens/member_workspace/workspace_home_view.dart';
 
 /// Clean adaptive dashboard shell delivering 1-to-1 operational and visual parity
@@ -1816,6 +1820,92 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
         ],
       ),
+
+      // 4. BILLING & SUBSCRIPTIONS
+      AppDrawerSection(
+        title: 'BILLING & SUBSCRIPTIONS',
+        onInfoTap: () {},
+        infoTooltip: 'Billing, Add-on Features & Invoices Management',
+        items: [
+          AppDrawerItem(
+            icon: Icons.extension_outlined,
+            title: 'Subscription Plans',
+            isSelected: _selectedNavIndex == 21,
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEA580C),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'LIVE',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            onTap: () {
+              _navigateToTab(21, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+          AppDrawerItem(
+            icon: Icons.receipt_long_outlined,
+            title: 'Subscriptions & Invoices',
+            isSelected: _selectedNavIndex == 22,
+            onTap: () {
+              _navigateToTab(22, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+        ],
+      ),
+
+      // 5. SECURITY & AUDIT
+      AppDrawerSection(
+        title: 'SECURITY & AUDIT',
+        onInfoTap: () {},
+        infoTooltip: 'Audit Trail and Diagnostic Code Reference',
+        items: [
+          AppDrawerItem(
+            icon: Icons.security_outlined,
+            title: 'Security Audit',
+            isSelected: _selectedNavIndex == 23,
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEA580C),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                'LIVE',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            onTap: () {
+              _navigateToTab(23, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+          AppDrawerItem(
+            icon: Icons.menu_book_outlined,
+            title: 'Error Codes',
+            isSelected: _selectedNavIndex == 24,
+            onTap: () {
+              _navigateToTab(24, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+        ],
+      ),
     ];
   }
 
@@ -2067,6 +2157,21 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             workspace: activeWs,
             onSelectTab: _handleAccountTabAdmin,
           );
+        case 21:
+          return SubscriptionPlansView(
+            workspace: activeWs,
+            onNavigateToSubscriptions: () => _navigateToTab(22),
+            onOpenInvoice: (invId) => _navigateToTab(22),
+          );
+        case 22:
+          return SubscriptionsInvoicesView(
+            workspace: activeWs,
+            onNavigateToPlans: () => _navigateToTab(21),
+          );
+        case 23:
+          return SecurityAuditLogsView(workspace: activeWs);
+        case 24:
+          return ErrorCodesView(workspace: activeWs);
         default:
           return UserDashboardOverviewView(workspace: activeWs);
       }
