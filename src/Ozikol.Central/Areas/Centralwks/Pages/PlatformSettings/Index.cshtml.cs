@@ -437,17 +437,36 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             try
             {
                 using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-                using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, "https://api.paystack.co/bank?perPage=1");
+                using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "https://api.paystack.co/transaction/initialize");
                 req.Headers.Add("Authorization", $"Bearer {targetSecret}");
+                var probePayload = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    email = "billing@company.com",
+                    amount = 10000,
+                    currency = "NGN"
+                });
+                req.Content = new System.Net.Http.StringContent(probePayload, System.Text.Encoding.UTF8, "application/json");
 
                 var resp = await http.SendAsync(req);
+                var body = await resp.Content.ReadAsStringAsync();
                 if (resp.IsSuccessStatusCode)
                 {
                     var keyMode = targetSecret.StartsWith("sk_live_", StringComparison.OrdinalIgnoreCase) ? "LIVE Mode" : "TEST Mode";
-                    return new JsonResult(new { success = true, message = $"Paystack connection verified ({keyMode})! Ready for inline payments." });
+                    return new JsonResult(new { success = true, message = $"Paystack key verified ({keyMode})! Ready for payments." });
                 }
 
-                return new JsonResult(new { success = false, message = $"Paystack rejected key (HTTP {(int)resp.StatusCode}). Please verify your Secret Key." });
+                string paystackMsg = $"HTTP {(int)resp.StatusCode}";
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    if (doc.RootElement.TryGetProperty("message", out var msgProp) && !string.IsNullOrWhiteSpace(msgProp.GetString()))
+                    {
+                        paystackMsg = msgProp.GetString()!;
+                    }
+                }
+                catch { }
+
+                return new JsonResult(new { success = false, message = $"Paystack rejected key: {paystackMsg}" });
             }
             catch (Exception ex)
             {
