@@ -1714,10 +1714,18 @@
             @if (activeSelectedGateway) {
               @if (activeSelectedGateway.providerCode === 'BankDeposit') {
                 <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; background: #f8fafc;">
-                  <h4 style="margin: 0 0 12px; font-size: 14.5px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
-                    <span class="material-symbols-outlined" style="color: #0050E5;">account_balance</span>
-                    <span>{{ 'billing.direct_bank_deposit' | translate:'Direct Bank Deposit' }}</span>
-                  </h4>
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+                    <h4 style="margin: 0; font-size: 14.5px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                      <span class="material-symbols-outlined" style="color: #0050E5;">account_balance</span>
+                      <span>{{ 'billing.direct_bank_deposit' | translate:'Direct Bank Deposit' }}</span>
+                    </h4>
+                    @if (invoiceDetail.status === 'AwaitingVerification') {
+                      <span class="badge-pill-md" style="background: rgba(16, 185, 129, 0.14); color: #059669; border: 1px solid rgba(16, 185, 129, 0.35);">
+                        <span class="material-symbols-outlined">task_alt</span>
+                        <span>{{ 'billing.proof_submitted_badge' | translate:'Deposit Proof Submitted — Awaiting Confirmation' }}</span>
+                      </span>
+                    }
+                  </div>
                   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 14px; background: #ffffff; padding: 14px; border-radius: 9px; border: 1px solid #e2e8f0;">
                     <div>
                       <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">{{ translationService.translateDynamic('Bank Name') }}</div>
@@ -1745,31 +1753,90 @@
                     </p>
                   }
 
-                  <div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;">
-                    <div style="flex: 1 1 280px;">
-                      <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                  @if (invoiceDetail.status === 'AwaitingVerification' && !isEditingBankDepositProof) {
+                    <div style="background: #ecfdf5; border: 1.5px solid #6ee7b7; border-radius: 10px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1 1 320px;">
+                        <div style="width: 40px; height: 40px; border-radius: 10px; background: #10b981; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                          <span class="material-symbols-outlined" style="font-size: 22px;">verified</span>
+                        </div>
+                        <div>
+                          <div style="font-size: 14px; font-weight: 800; color: #065f46;">
+                            {{ 'billing.deposit_proof_received_title' | translate:'Bank Deposit Reference Submitted — Awaiting Verification' }}
+                          </div>
+                          <div style="font-size: 12.5px; color: #047857; margin-top: 3px; line-height: 1.5;">
+                            {{ 'billing.deposit_proof_received_desc' | translate:'Your transfer reference has been recorded. Your subscribed capabilities will be unlocked and activated automatically once your bank transfer is confirmed.' }}
+                          </div>
+                          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
+                            <span style="font-size: 12px; font-weight: 700; color: #065f46; background: #ffffff; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 6px; font-family: monospace;">
+                              Ref: {{ invoiceDetail.paymentProofRef || invoiceDetail.reference }}
+                            </span>
+                            @if (invoiceDetail.reference && invoiceDetail.paymentProofRef && invoiceDetail.reference !== invoiceDetail.paymentProofRef) {
+                              <span style="font-size: 11.5px; font-weight: 600; color: #047857; font-family: monospace;">
+                                ({{ invoiceDetail.reference }})
+                              </span>
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <button
+                          type="button"
+                          class="btn btn-outline"
+                          style="height: 38px; padding: 0 14px; font-size: 12.5px; font-weight: 700; background: #ffffff;"
+                          (click)="isEditingBankDepositProof = true"
+                        >
+                          <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+                          <span>{{ 'billing.update_reference' | translate:'Update Reference' }}</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-primary"
+                          style="height: 38px; padding: 0 16px; font-size: 12.5px; font-weight: 700;"
+                          (click)="closeInvoiceDetail()"
+                        >
+                          <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                          <span>{{ 'billing.done_view_invoices' | translate:'Done — View Invoices' }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  } @else {
+                    <div>
+                      <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px;">
                         {{ 'billing.transfer_reference' | translate:'Transfer Reference / Teller / Session ID' }}
                       </label>
-                      <input
-                        type="text"
-                        [(ngModel)]="bankDepositReferenceInput"
-                        class="search-input"
-                        style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px;"
-                        placeholder="e.g. TRF-20261030-994812"
-                      />
+                      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <input
+                          type="text"
+                          [(ngModel)]="bankDepositReferenceInput"
+                          style="flex: 1 1 280px; min-width: 220px; height: 42px; padding: 0 14px; border: 1.5px solid #cbd5e1; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: #0f172a; background: #ffffff; outline: none; box-sizing: border-box;"
+                          placeholder="e.g. TRF-000000000000"
+                        />
+                        <button
+                          type="button"
+                          class="btn btn-primary"
+                          style="height: 42px; padding: 0 20px; border-radius: 9px; font-size: 13.5px; font-weight: 700; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px; box-sizing: border-box;"
+                          [disabled]="isProcessingGatewayPayment || !bankDepositReferenceInput.trim()"
+                          (click)="submitBankDepositProof()"
+                        >
+                          <span class="material-symbols-outlined" [class.spin]="isProcessingGatewayPayment" style="font-size: 18px;">
+                            {{ isProcessingGatewayPayment ? 'sync' : 'upload_file' }}
+                          </span>
+                          <span>{{ 'billing.submit_deposit_proof' | translate:'Submit Deposit Proof' }} ({{ formatAmount(invoiceDetail.totalAmount) }})</span>
+                        </button>
+                        @if (invoiceDetail.status === 'AwaitingVerification' && isEditingBankDepositProof) {
+                          <button
+                            type="button"
+                            class="btn btn-outline"
+                            style="height: 42px; padding: 0 14px; border-radius: 9px; font-size: 13px; font-weight: 700; background: #ffffff; box-sizing: border-box;"
+                            (click)="isEditingBankDepositProof = false"
+                          >
+                            <span>{{ 'common.cancel' | translate:'Cancel' }}</span>
+                          </button>
+                        }
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      class="btn btn-primary"
-                      [disabled]="isProcessingGatewayPayment || !bankDepositReferenceInput.trim()"
-                      (click)="submitBankDepositProof()"
-                    >
-                      <span class="material-symbols-outlined" [class.spin]="isProcessingGatewayPayment">
-                        {{ isProcessingGatewayPayment ? 'sync' : 'upload_file' }}
-                      </span>
-                      <span>{{ 'billing.submit_deposit_proof' | translate:'Submit Deposit Proof' }} ({{ formatAmount(invoiceDetail.totalAmount) }})</span>
-                    </button>
-                  </div>
+                  }
                 </div>
               } @else {
                 <div style="display: flex; align-items: center; justify-content: flex-end; padding-top: 4px;">

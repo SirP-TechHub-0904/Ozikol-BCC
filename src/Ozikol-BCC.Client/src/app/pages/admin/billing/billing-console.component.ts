@@ -106,6 +106,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   selectedGatewayCode: string = 'Paystack';
   isProcessingGatewayPayment = false;
   bankDepositReferenceInput = '';
+  isEditingBankDepositProof = false;
   private paramMapSub: Subscription | null = null;
 
   // Feature Details Page / Modal
@@ -468,11 +469,16 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         if (ok && res.data) {
           this.invoiceDetail = res.data;
           this.bankDepositReferenceInput = res.data.paymentProofRef || '';
-          const firstConfigured = (res.data.paymentMethods || []).find(m => m.isEnabled && m.isConfigured);
-          if (firstConfigured) {
-            this.selectedGatewayCode = firstConfigured.providerCode;
-          } else if (res.data.paymentMethods?.length > 0) {
-            this.selectedGatewayCode = res.data.paymentMethods[0].providerCode;
+          this.isEditingBankDepositProof = false;
+          if (res.data.status === 'AwaitingVerification' || res.data.paymentProvider === 'BankDeposit') {
+            this.selectedGatewayCode = 'BankDeposit';
+          } else {
+            const firstConfigured = (res.data.paymentMethods || []).find(m => m.isEnabled && m.isConfigured);
+            if (firstConfigured) {
+              this.selectedGatewayCode = firstConfigured.providerCode;
+            } else if (res.data.paymentMethods?.length > 0) {
+              this.selectedGatewayCode = res.data.paymentMethods[0].providerCode;
+            }
           }
         } else {
           this.toastService.error('Invoice Not Found', res?.message || 'Could not load invoice details.');
@@ -702,9 +708,11 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
         if (ok && res.data) {
           this.invoiceDetail = res.data;
+          this.bankDepositReferenceInput = res.data.paymentProofRef || ref;
+          this.isEditingBankDepositProof = false;
           this.loadInvoices();
           this.toastService.success(
-            'Bank Deposit Reference Submitted',
+            this.translationService.translate('billing.deposit_proof_submitted_title', 'Bank Deposit Reference Submitted'),
             res.message || `Transfer reference '${ref}' recorded for Invoice ${this.invoiceDetail.invoiceNumber}.`
           );
         } else {

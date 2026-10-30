@@ -1485,6 +1485,20 @@ namespace Ozikol_BCC.Api.Controllers
                 CreatedUtc = now
             });
 
+            _master.MasterNotifications.Add(new MasterNotification
+            {
+                Id = Guid.NewGuid(),
+                Category = "Billing",
+                Severity = "Warning",
+                Icon = "account_balance",
+                Title = $"Bank Deposit Proof — Invoice {invoice.InvoiceNumber}",
+                Message = $"{invoice.Tenant.OrganizationName} submitted transfer ref '{cleanProof}' for {invoice.Currency} {invoice.Amount:N2}. Click to verify and activate capabilities.",
+                ActionUrl = $"/centralwks/billing/details/{invoice.Id}",
+                EntityId = invoice.Id.ToString(),
+                DispatchedChannels = "InApp",
+                CreatedUtc = now
+            });
+
             await _master.SaveChangesAsync(cancellationToken);
 
             await LogTenantFeatureActivityAsync(

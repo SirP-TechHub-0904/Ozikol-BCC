@@ -155,6 +155,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
         public List<TenantSubscriptionSummaryViewModel> Tenants { get; set; } = new();
 
         /// <summary>
+        /// Invoices where a tenant has submitted a Direct Bank Deposit transfer reference awaiting Central approval.
+        /// </summary>
+        public List<MasterBillingTransaction> PendingBankDeposits { get; set; } = new();
+
+        /// <summary>
         /// Handles HTTP GET requests to calculate multi-window renewal metrics and populate tenant subscription summaries.
         /// </summary>
         public async Task OnGetAsync()
@@ -670,6 +675,151 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Subscriptions
                 .Skip((PageNumber - 1) * PageSize)
                 .Take(PageSize)
                 .ToList();
+
+            try
+            {
+                PendingBankDeposits = await _dbContext.MasterBillingTransactions
+                    .AsNoTracking()
+                    .Include(tx => tx.Tenant)
+                    .Where(tx => tx.Status == "AwaitingVerification")
+                    .OrderByDescending(tx => tx.UpdatedUtc ?? tx.CreatedUtc)
+                    .Take(50)
+                    .ToListAsync();
+            }
+            catch
+            {
+                PendingBankDeposits = new List<MasterBillingTransaction>();
+            }
+        }
+
+        /// <summary>
+        /// Approves a Direct Bank Deposit invoice on /centralwks/subscriptions, marking it Completed and activating covered capabilities.
+        /// </summary>
+        public async Task<IActionResult> OnPostApproveBankDepositAsync(Guid invoiceId)
+        {
+            var txn = await _dbContext.MasterBillingTransactions
+                .Include(t => t.Tenant)
+                    .ThenInclude(tn => tn!.FeatureSubscriptions)
+                .Include(t => t.FeatureSubscription)
+                    .ThenInclude(s => s!.MasterFeatureCatalog)
+                .FirstOrDefaultAsync(t => t.Id == invoiceId);
+
+            if (txn == null || txn.Tenant == null)
+            {
+                TempData["Error"] = "Invoice was not found.";
+                return RedirectToPage();
+            }
+
+            var now = DateTime.UtcNow;
+            txn.Status = "Completed";
+            txn.UpdatedUtc = now;
+
+            if (!Enum.TryParse<SubscriptionBillingDuration>(txn.BillingCadence, true, out var fallbackCadence))
+            {
+                fallbackCadence = SubscriptionBillingDuration.Monthly;
+            }
+
+            var codes = (txn.FeatureCodesCsv ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(c => c.ToLowerInvariant())
+                .ToHashSet();
+
+            var featuresToRenew = new List<MasterFeatureCatalog>();
+            if (codes.Count > 0)
+            {
+                featuresToRenew = await _dbContext.MasterFeatureCatalogs
+                    .Where(f => codes.Contains(f.FeatureCode.ToLower()))
+                    .ToListAsync();
+            }
+            else if (txn.MasterTenantFeatureSubscriptionId.HasValue)
+            {
+                var subMatch = txn.Tenant.FeatureSubscriptions.FirstOrDefault(s => s.Id == txn.MasterTenantFeatureSubscriptionId.Value);
+                if (subMatch != null)
+                {
+                    var feat = await _dbContext.MasterFeatureCatalogs.FirstOrDefaultAsync(f => f.Id == subMatch.MasterFeatureCatalogId);
+                    if (feat != null) featuresToRenew.Add(feat);
+                }
+            }
+
+            foreach (var feature in featuresToRenew)
+            {
+                var sub = txn.Tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feature.Id);
+                bool hasCustomMonthly = txn.Tenant.UseCustomPricing && sub?.CustomPriceOverride != null;
+                bool hasCustomYearly = txn.Tenant.UseCustomPricing && sub?.CustomYearlyPriceOverride != null;
+
+                decimal effectiveMonthlyUsd = hasCustomMonthly ? sub!.CustomPriceOverride!.Value : feature.MonthlyPrice;
+                decimal effectiveYearlyUsd = hasCustomYearly
+                    ? sub!.CustomYearlyPriceOverride!.Value
+                    : (feature.YearlyPrice > 0 ? feature.YearlyPrice : effectiveMonthlyUsd * 10m);
+
+                var itemCadence = (effectiveMonthlyUsd <= 0m && effectiveYearlyUsd > 0m)
+                    ? SubscriptionBillingDuration.Yearly
+                    : fallbackCadence;
+
+                decimal effectiveUsdPrice = itemCadence == SubscriptionBillingDuration.Yearly
+                    ? effectiveYearlyUsd
+                    : effectiveMonthlyUsd;
+
+                if (sub != null)
+                {
+                    var baseStart = (!sub.IsTrialPeriod && sub.ExpiresAtUtc > now) ? sub.ExpiresAtUtc : now;
+                    sub.StartsAtUtc = now;
+                    sub.ExpiresAtUtc = itemCadence switch
+                    {
+                        SubscriptionBillingDuration.Yearly => baseStart.AddYears(1),
+                        SubscriptionBillingDuration.Quarterly => baseStart.AddMonths(3),
+                        _ => baseStart.AddMonths(1)
+                    };
+                    sub.DurationType = itemCadence;
+                    sub.RecurringPrice = effectiveUsdPrice;
+                    sub.IsActive = true;
+                    sub.Status = "Active";
+                    sub.IsTrialPeriod = false;
+                    sub.HasUsedFreeTrial = true;
+                }
+                else
+                {
+                    _dbContext.MasterTenantFeatureSubscriptions.Add(new MasterTenantFeatureSubscription
+                    {
+                        Id = Guid.NewGuid(),
+                        MasterTenantCatalogId = txn.Tenant.Id,
+                        MasterFeatureCatalogId = feature.Id,
+                        DurationType = itemCadence,
+                        RecurringPrice = effectiveUsdPrice,
+                        StartsAtUtc = now,
+                        ExpiresAtUtc = itemCadence switch
+                        {
+                            SubscriptionBillingDuration.Yearly => now.AddYears(1),
+                            SubscriptionBillingDuration.Quarterly => now.AddMonths(3),
+                            _ => now.AddMonths(1)
+                        },
+                        AutoRenew = true,
+                        IsActive = true,
+                        Status = "Active",
+                        HasUsedFreeTrial = true,
+                        IsTrialPeriod = false,
+                        CreatedUtc = now
+                    });
+                }
+            }
+
+            _dbContext.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name ?? "SuperAdmin",
+                UserName = User.Identity?.Name ?? "SuperAdmin",
+                Action = "ApproveBankDepositInvoice",
+                EntityType = "MasterBillingTransaction",
+                EntityId = txn.Id.ToString(),
+                Summary = $"Central Admin approved Bank Deposit proof '{txn.PaymentProofRef}' for Invoice {txn.InvoiceNumber} ({txn.Currency} {txn.Amount:N2}) and activated capabilities for '{txn.Tenant.OrganizationName}'.",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = now
+            });
+
+            await _dbContext.SaveChangesAsync();
+
+            TempData["Success"] = $"Bank deposit confirmed for Invoice {txn.InvoiceNumber} ({txn.Currency} {txn.Amount:N2}). Capabilities activated for {txn.Tenant.OrganizationName}.";
+            return RedirectToPage(new { search = Search, filter = Filter, tierFilter = TierFilter, pageNumber = PageNumber, pageSize = PageSize });
         }
 
         /// <summary>
