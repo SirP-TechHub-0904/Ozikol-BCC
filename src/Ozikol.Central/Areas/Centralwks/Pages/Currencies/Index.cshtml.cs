@@ -161,6 +161,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
             string currencySymbol,
             string displayName,
             decimal rateFromUsd,
+            decimal? vatPercentage,
             string? cultureName,
             string? countryCodes,
             bool isBaseCurrency = false)
@@ -190,6 +191,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
                 rateFromUsd = 1.0000m;
             }
 
+            var cleanVat = vatPercentage.HasValue && vatPercentage.Value > 0m
+                ? Math.Round(Math.Min(100m, vatPercentage.Value), 2)
+                : 0m;
+
             var newCurr = new MasterCurrencyRate
             {
                 CurrencyCode = cleanCode,
@@ -198,6 +203,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
                 CultureName = string.IsNullOrWhiteSpace(cultureName) ? "en-US" : cultureName.Trim(),
                 PillLabel = $"{cleanCode} ({currencySymbol.Trim()})",
                 RateFromUsd = Math.Max(0.0001m, rateFromUsd),
+                VatPercentage = cleanVat,
                 IsBaseCurrency = isBaseCurrency,
                 IsActive = true,
                 SortOrder = isBaseCurrency ? 1 : 10,
@@ -210,7 +216,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
             await _dbContext.SaveChangesAsync();
             _currencyService.InvalidatePricingCache();
 
-            TempData["Success"] = $"Currency {cleanCode} ({newCurr.CurrencySymbol}) created with exchange rate 1 USD = {newCurr.RateFromUsd:N4} {cleanCode}.";
+            TempData["Success"] = $"Currency {cleanCode} ({newCurr.CurrencySymbol}) created with exchange rate 1 USD = {newCurr.RateFromUsd:N4} {cleanCode}" + (cleanVat > 0 ? $" and {cleanVat:0.##}% VAT." : " (No VAT).");
             return RedirectToPage();
         }
 
@@ -238,6 +244,32 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Currencies
             _currencyService.InvalidatePricingCache();
 
             TempData["Success"] = $"Exchange rate for {currency.CurrencyCode} ({currency.CurrencySymbol}) updated: 1 USD ($) = {currency.CurrencySymbol}{currency.RateFromUsd:N4} {currency.CurrencyCode}.";
+            return RedirectToPage();
+        }
+
+        /// <summary>
+        /// Updates a currency's VAT percentage. When empty or 0, VAT is removed (0%). When greater than 0, VAT is applied on invoices.
+        /// </summary>
+        public async Task<IActionResult> OnPostUpdateVatAsync(int id, decimal? vatPercentage)
+        {
+            var currency = await _dbContext.MasterCurrencyRates.FindAsync(id);
+            if (currency == null)
+            {
+                return NotFound();
+            }
+
+            var cleanVat = vatPercentage.HasValue && vatPercentage.Value > 0m
+                ? Math.Round(Math.Min(100m, vatPercentage.Value), 2)
+                : 0m;
+
+            currency.VatPercentage = cleanVat;
+            currency.UpdatedAtUtc = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+            _currencyService.InvalidatePricingCache();
+
+            TempData["Success"] = cleanVat > 0m
+                ? $"VAT for {currency.CurrencyCode} ({currency.CurrencySymbol}) set to {cleanVat:0.##}%."
+                : $"VAT removed (0%) for {currency.CurrencyCode} ({currency.CurrencySymbol}).";
             return RedirectToPage();
         }
 

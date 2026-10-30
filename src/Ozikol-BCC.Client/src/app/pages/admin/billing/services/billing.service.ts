@@ -187,6 +187,9 @@ export interface BillingInvoiceDetail {
   currencySymbol: string;
   subtotalBeforeDiscount: number;
   totalSavingsAmount: number;
+  subtotalAmount?: number;
+  vatPercentage?: number;
+  vatAmount?: number;
   totalAmount: number;
   paymentProvider?: string;
   reference?: string;

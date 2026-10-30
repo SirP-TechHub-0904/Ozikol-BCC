@@ -592,6 +592,7 @@ public class MasterCatalogDbContext : IdentityDbContext<CentralUser, CentralRole
             entity.Property(e => e.CultureName).HasMaxLength(20).IsRequired();
             entity.Property(e => e.PillLabel).HasMaxLength(30).IsRequired();
             entity.Property(e => e.RateFromUsd).HasPrecision(18, 4);
+            entity.Property(e => e.VatPercentage).HasPrecision(5, 2).HasDefaultValue(0m);
             entity.Property(e => e.AssociatedCountryCodes).HasMaxLength(250);
         });
 

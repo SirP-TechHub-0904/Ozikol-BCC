@@ -63,7 +63,7 @@
                     <div style="font-size: 22px; font-weight: 800; font-family: monospace; color: var(--admin-primary);">
                         @Model.Currency.RateFromUsd.ToString("N4")
                     </div>
-                    <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 2px;">Relative to 1.00 USD</div>
+                    <div style="font-size: 11px; color: var(--admin-text-muted); margin-top: 2px;">Relative to 1.00 USD &bull; VAT: @(Model.Currency.VatPercentage > 0 ? $"{Model.Currency.VatPercentage:0.##}%" : "0%")</div>
                 </div>
 
                 <div style="background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-sm); padding: 16px;">

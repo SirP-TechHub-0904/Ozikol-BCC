@@ -515,7 +515,16 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>Total discount savings across all line items.</summary>
         public decimal TotalSavingsAmount { get; set; }
 
-        /// <summary>Final payable invoice total.</summary>
+        /// <summary>Net subtotal after discounts and before VAT.</summary>
+        public decimal SubtotalAmount { get; set; }
+
+        /// <summary>Currency VAT percentage (e.g. 7.5 for 7.5%). 0 when VAT is not applicable.</summary>
+        public decimal VatPercentage { get; set; }
+
+        /// <summary>Calculated VAT amount in the invoice currency. 0 when VatPercentage is 0.</summary>
+        public decimal VatAmount { get; set; }
+
+        /// <summary>Final payable invoice total (SubtotalAmount + VatAmount).</summary>
         public decimal TotalAmount { get; set; }
 
         /// <summary>Selected or completed payment provider.</summary>

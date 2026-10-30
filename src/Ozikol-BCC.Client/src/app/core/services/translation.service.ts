@@ -1073,6 +1073,8 @@ export class TranslationService {
       'user_settings.kpi_hub_cta': 'Open KPI & Leaderboard Hub',
       'user_settings.msg_saved_success': 'User management settings saved successfully.',
       'user_settings.err_saved_failed': 'Failed to save settings.',
+      'billing.subtotal': 'Subtotal',
+      'billing.vat': 'VAT',
     },
 
     fr: {

@@ -112,6 +112,17 @@
                         Display Sort Order
                     </label>
                     <input asp-for="Input.SortOrder" type="number" class="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Input.VatPercentage" class="form-label" style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: var(--admin-text);">
+                        VAT Percentage (%)
+                    </label>
+                    <input asp-for="Input.VatPercentage" type="number" step="0.01" min="0" max="100" class="form-control" placeholder="e.g. 7.5 (empty or 0 = no VAT)" />
+                    <span asp-validation-for="Input.VatPercentage" class="text-danger" style="font-size: 12px; color: var(--admin-danger); margin-top: 4px; display: block;"></span>
+                    <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Included on invoices when &gt; 0%; removed when empty or 0.</span>
+                </div>
+                <div>
                     <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Lower numbers appear first in the header currency selector.</span>
                 </div>
             </div>

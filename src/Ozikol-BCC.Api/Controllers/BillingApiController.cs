@@ -379,25 +379,8 @@ namespace Ozikol_BCC.Api.Controllers
             if (selectedFeatures.Count == 0)
                 return BadRequest(ApiResponse<object>.FailureResponse("No valid capability was specified for payment."));
 
-            // Resolve tenant's running currency and exchange rate from MasterCurrencyRates
-            string currCode = !string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode)
-                ? tenant.DefaultCurrencyCode.Trim().ToUpperInvariant()
-                : "NGN";
-            string currSymbol = currCode == "NGN" ? "₦" : "$";
-            decimal currRate = 1.0m;
-
-            try
-            {
-                var rateObj = await _master.MasterCurrencyRates
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.IsActive && r.CurrencyCode.ToLower() == currCode.ToLower(), cancellationToken);
-                if (rateObj != null)
-                {
-                    currSymbol = rateObj.CurrencySymbol;
-                    currRate = rateObj.RateFromUsd > 0 ? rateObj.RateFromUsd : 1.0m;
-                }
-            }
-            catch { }
+            // Resolve tenant's running currency, exchange rate, and VAT percentage from MasterCurrencyRates
+            var (currCode, currSymbol, currRate, vatPercentage) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
 
             decimal totalAmountInTenantCurrency = 0m;
             var featureNames = new List<string>();
@@ -442,6 +425,12 @@ namespace Ozikol_BCC.Api.Controllers
             totalAmountInTenantCurrency = Math.Round(totalAmountInTenantCurrency, 2);
             if (totalAmountInTenantCurrency <= 0m)
                 return BadRequest(ApiResponse<object>.FailureResponse("The selected capability has no payable charge."));
+
+            if (vatPercentage > 0m)
+            {
+                var vatAmt = Math.Round(totalAmountInTenantCurrency * (vatPercentage / 100m), 2);
+                totalAmountInTenantCurrency = Math.Round(totalAmountInTenantCurrency + vatAmt, 2);
+            }
 
             var now = DateTime.UtcNow;
             var reference = $"PSK-CENTRAL-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
@@ -1078,7 +1067,7 @@ namespace Ozikol_BCC.Api.Controllers
             if (selectedFeatures.Count == 0)
                 return BadRequest(ApiResponse<object>.FailureResponse("No payable capability matched the requested selection."));
 
-            var (currCode, currSymbol, currRate) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
+            var (currCode, currSymbol, currRate, vatPercentage) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
 
             Guid? primarySubId = null;
             foreach (var feat in selectedFeatures)
@@ -1147,7 +1136,9 @@ namespace Ozikol_BCC.Api.Controllers
             if (lineItems.Count == 0)
                 return BadRequest(ApiResponse<object>.FailureResponse("The selected capability has no payable charge."));
 
-            var totalAmount = Math.Round(lineItems.Sum(x => x.LineTotal), 2);
+            var subtotalAmount = Math.Round(lineItems.Sum(x => x.LineTotal), 2);
+            var vatAmount = vatPercentage > 0m ? Math.Round(subtotalAmount * (vatPercentage / 100m), 2) : 0m;
+            var totalAmount = Math.Round(subtotalAmount + vatAmount, 2);
             var lineItemsJson = System.Text.Json.JsonSerializer.Serialize(lineItems);
             var now = DateTime.UtcNow;
 
@@ -1290,7 +1281,7 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("Duration cannot be modified on a paid invoice."));
 
             var tenant = invoice.Tenant;
-            var (currCode, _, currRate) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
+            var (currCode, _, currRate, vatPercentage) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
 
             var currentDetail = await BuildFullInvoiceDetailDtoAsync(invoice, tenant, cancellationToken);
             var catalogFeatures = await _master.MasterFeatureCatalogs
@@ -1321,7 +1312,9 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (updatedLines.Count > 0)
             {
-                invoice.Amount = Math.Round(updatedLines.Sum(x => x.LineTotal), 2);
+                var subTotal = Math.Round(updatedLines.Sum(x => x.LineTotal), 2);
+                var vatAmt = vatPercentage > 0m ? Math.Round(subTotal * (vatPercentage / 100m), 2) : 0m;
+                invoice.Amount = Math.Round(subTotal + vatAmt, 2);
                 invoice.Currency = currCode;
                 if (string.Equals(invoice.Status, "Failed", StringComparison.OrdinalIgnoreCase))
                 {
@@ -1372,7 +1365,12 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse("This invoice has already been paid."));
 
             var tenant = invoice.Tenant;
-            var (currCode, currSymbol, _) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
+            var (currCode, currSymbol, _, _) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
+            var refreshedDetail = await BuildFullInvoiceDetailDtoAsync(invoice, tenant, cancellationToken);
+            if (refreshedDetail.TotalAmount > 0m && invoice.Amount != refreshedDetail.TotalAmount)
+            {
+                invoice.Amount = refreshedDetail.TotalAmount;
+            }
 
             var now = DateTime.UtcNow;
             var reference = $"PSK-CENTRAL-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
@@ -1500,7 +1498,7 @@ namespace Ozikol_BCC.Api.Controllers
                 _ => "1 Month (Monthly)"
             };
 
-        private async Task<(string CurrCode, string CurrSymbol, decimal CurrRate)> ResolveTenantCurrencyContextAsync(
+        private async Task<(string CurrCode, string CurrSymbol, decimal CurrRate, decimal VatPercentage)> ResolveTenantCurrencyContextAsync(
             MasterTenantCatalog tenant,
             CancellationToken cancellationToken)
         {
@@ -1509,6 +1507,7 @@ namespace Ozikol_BCC.Api.Controllers
                 : "NGN";
             string currSymbol = currCode == "NGN" ? "₦" : "$";
             decimal currRate = 1.0m;
+            decimal vatPercentage = 0m;
 
             try
             {
@@ -1519,11 +1518,12 @@ namespace Ozikol_BCC.Api.Controllers
                 {
                     currSymbol = rateObj.CurrencySymbol;
                     currRate = rateObj.RateFromUsd > 0 ? rateObj.RateFromUsd : 1.0m;
+                    vatPercentage = rateObj.VatPercentage > 0m ? Math.Round(rateObj.VatPercentage, 2) : 0m;
                 }
             }
             catch { }
 
-            return (currCode, currSymbol, currRate);
+            return (currCode, currSymbol, currRate, vatPercentage);
         }
 
         private static BillingInvoiceLineItemDto BuildInvoiceLineItem(
@@ -1658,7 +1658,7 @@ namespace Ozikol_BCC.Api.Controllers
             MasterTenantCatalog tenant,
             CancellationToken cancellationToken)
         {
-            var (currCode, currSymbol, currRate) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
+            var (currCode, currSymbol, currRate, vatPercentage) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
             if (!string.IsNullOrWhiteSpace(invoice.Currency))
             {
                 currCode = invoice.Currency.ToUpperInvariant();
@@ -1671,6 +1671,7 @@ namespace Ozikol_BCC.Api.Controllers
                     {
                         currSymbol = matchedRate.CurrencySymbol;
                         currRate = matchedRate.RateFromUsd > 0 ? matchedRate.RateFromUsd : currRate;
+                        vatPercentage = matchedRate.VatPercentage > 0m ? Math.Round(matchedRate.VatPercentage, 2) : 0m;
                     }
                 }
                 catch { }
@@ -1825,8 +1826,24 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             decimal totalSavings = Math.Round(lineItems.Sum(x => x.AppliedSavingsAmount), 2);
-            decimal totalAmount = Math.Round(lineItems.Sum(x => x.LineTotal), 2);
-            if (totalAmount <= 0m) totalAmount = invoice.Amount;
+            decimal subtotalAmount = Math.Round(lineItems.Sum(x => x.LineTotal), 2);
+            if (subtotalAmount <= 0m) subtotalAmount = invoice.Amount;
+
+            decimal effectiveVatPct = vatPercentage > 0m ? Math.Round(vatPercentage, 2) : 0m;
+            decimal vatAmount = effectiveVatPct > 0m ? Math.Round(subtotalAmount * (effectiveVatPct / 100m), 2) : 0m;
+            decimal totalAmount = Math.Round(subtotalAmount + vatAmount, 2);
+
+            if (!string.Equals(invoice.Status, "Completed", StringComparison.OrdinalIgnoreCase) &&
+                totalAmount > 0m &&
+                invoice.Amount != totalAmount)
+            {
+                try
+                {
+                    invoice.Amount = totalAmount;
+                    await _master.SaveChangesAsync(cancellationToken);
+                }
+                catch { }
+            }
 
             return new BillingInvoiceDetailDto
             {
@@ -1838,8 +1855,11 @@ namespace Ozikol_BCC.Api.Controllers
                 BillingEmail = !string.IsNullOrWhiteSpace(tenant.AdminEmail) ? tenant.AdminEmail : "billing@company.com",
                 Currency = currCode,
                 CurrencySymbol = currSymbol,
-                SubtotalBeforeDiscount = Math.Round(totalAmount + totalSavings, 2),
+                SubtotalBeforeDiscount = Math.Round(subtotalAmount + totalSavings, 2),
                 TotalSavingsAmount = totalSavings,
+                SubtotalAmount = subtotalAmount,
+                VatPercentage = effectiveVatPct,
+                VatAmount = vatAmount,
                 TotalAmount = totalAmount,
                 PaymentProvider = invoice.PaymentProvider,
                 Reference = invoice.TransactionRef,
