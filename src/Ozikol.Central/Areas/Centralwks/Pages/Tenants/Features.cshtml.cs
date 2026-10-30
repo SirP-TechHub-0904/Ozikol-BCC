@@ -221,6 +221,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                                 DurationType = s.DurationType,
                                 RecurringPrice = s.RecurringPrice,
                                 CustomPriceOverride = s.CustomPriceOverride,
+                                CustomYearlyPriceOverride = s.CustomYearlyPriceOverride,
                                 IsAvailableForUseOverride = s.IsAvailableForUseOverride,
                                 StartsAtUtc = s.StartsAtUtc,
                                 ExpiresAtUtc = s.ExpiresAtUtc,
@@ -401,11 +402,14 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     ? f.IsAvailableForUse
                     : DefaultAvailableCodes.Contains(f.FeatureCode);
 
-                // Determine effective Monthly Price for this tenant
-                bool hasCustomPriceOverride = sub?.CustomPriceOverride != null;
-                decimal effectiveMonthlyPrice = (tenant.UseCustomPricing && hasCustomPriceOverride)
-                    ? sub!.CustomPriceOverride!.Value
+                // Determine effective Monthly & Yearly Prices for this tenant
+                bool hasCustomPriceOverride = sub?.CustomPriceOverride != null || sub?.CustomYearlyPriceOverride != null;
+                decimal effectiveMonthlyPrice = (tenant.UseCustomPricing && sub?.CustomPriceOverride != null)
+                    ? sub.CustomPriceOverride.Value
                     : f.MonthlyPrice;
+                decimal effectiveYearlyPrice = (tenant.UseCustomPricing && sub?.CustomYearlyPriceOverride != null)
+                    ? sub.CustomYearlyPriceOverride.Value
+                    : (f.YearlyPrice > 0 ? f.YearlyPrice : Math.Round(effectiveMonthlyPrice * 10m, 2));
 
                 // Determine effective First-Time Free Trial Days before payment (General Mode vs Custom Mode)
                 // When Custom Free Trial is enabled/set for this tenant, it overrides the General Free Trial Days.
@@ -481,7 +485,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     EffectiveAvailableForUse = effectiveAvailableForUse,
                     HasCustomAvailabilityOverride = hasCustomAvailOverride,
                     EffectiveMonthlyPrice = effectiveMonthlyPrice,
+                    EffectiveYearlyPrice = effectiveYearlyPrice,
                     EffectiveTenantCurrencyPrice = Math.Round(effectiveMonthlyPrice * TenantCurrencyRateFromUsd, 2),
+                    EffectiveTenantCurrencyYearlyPrice = Math.Round(effectiveYearlyPrice * TenantCurrencyRateFromUsd, 2),
                     MasterTenantCurrencyPrice = Math.Round(f.MonthlyPrice * TenantCurrencyRateFromUsd, 2),
                     HasCustomPriceOverride = hasCustomPriceOverride,
                     EffectiveFreeTrialDays = effectiveFreeTrialDays,
@@ -909,6 +915,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             Guid tenantId,
             Guid featureId,
             decimal? customPrice,
+            decimal? customYearlyPrice = null,
             int? customFreeTrialDays = null,
             bool enableCustomFreeTrial = true,
             bool resetFreeTrialUsed = false,
@@ -939,6 +946,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             var existing = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == featureId);
             decimal? effectiveOverride = resetToGeneral ? null : Math.Max(0m, customPrice ?? 0m);
+            decimal? effectiveYearlyOverride = resetToGeneral
+                ? null
+                : (customYearlyPrice.HasValue ? Math.Max(0m, customYearlyPrice.Value) : (effectiveOverride.HasValue ? Math.Round(effectiveOverride.Value * 10m, 2) : null));
             int? effectiveTrialOverride = (resetToGeneral || !enableCustomFreeTrial)
                 ? null
                 : (customFreeTrialDays.HasValue ? Math.Clamp(customFreeTrialDays.Value, 0, 365) : null);
@@ -947,6 +957,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             if (existing != null)
             {
                 existing.CustomPriceOverride = effectiveOverride;
+                existing.CustomYearlyPriceOverride = effectiveYearlyOverride;
                 existing.CustomFreeTrialDaysOverride = effectiveTrialOverride;
                 if (resetFreeTrialUsed)
                 {
@@ -988,9 +999,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                     Id = Guid.NewGuid(),
                     MasterTenantCatalogId = tenant.Id,
                     MasterFeatureCatalogId = feature.Id,
-                    DurationType = SubscriptionBillingDuration.Monthly,
+                    DurationType = effectiveOverride == 0m && (effectiveYearlyOverride ?? 0m) > 0m
+                        ? SubscriptionBillingDuration.Yearly
+                        : SubscriptionBillingDuration.Monthly,
                     RecurringPrice = feature.MonthlyPrice,
                     CustomPriceOverride = effectiveOverride,
+                    CustomYearlyPriceOverride = effectiveYearlyOverride,
                     CustomFreeTrialDaysOverride = effectiveTrialOverride,
                     HasUsedFreeTrial = false,
                     IsAvailableForUseOverride = true,
@@ -1138,7 +1152,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             public bool EffectiveAvailableForUse { get; set; }
             public bool HasCustomAvailabilityOverride { get; set; }
             public decimal EffectiveMonthlyPrice { get; set; }
+            public decimal EffectiveYearlyPrice { get; set; }
             public decimal EffectiveTenantCurrencyPrice { get; set; }
+            public decimal EffectiveTenantCurrencyYearlyPrice { get; set; }
             public decimal MasterTenantCurrencyPrice { get; set; }
             public bool HasCustomPriceOverride { get; set; }
             public int EffectiveFreeTrialDays { get; set; }

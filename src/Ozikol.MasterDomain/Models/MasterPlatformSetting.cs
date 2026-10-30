@@ -232,6 +232,91 @@ namespace Ozikol.MasterDomain.Models
         public string? PaystackWebhookSecret { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the Central platform Flutterwave payment gateway is enabled
+        /// for tenant workspace subscriptions, capability renewals, and add-on checkouts.
+        /// </summary>
+        public bool EnableFlutterwave { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the Central platform Flutterwave Public Key (e.g., "FLWPUBK_LIVE-..." or "FLWPUBK_TEST-...").
+        /// </summary>
+        [MaxLength(255)]
+        public string? FlutterwavePublicKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Flutterwave Secret Key (e.g., "FLWSECK_LIVE-..." or "FLWSECK_TEST-...")
+        /// resolved strictly server-side from MasterCatalogDbContext.
+        /// </summary>
+        [MaxLength(255)]
+        public string? FlutterwaveSecretKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Flutterwave Webhook Secret Hash used to validate incoming webhook callbacks.
+        /// </summary>
+        [MaxLength(255)]
+        public string? FlutterwaveWebhookSecret { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the Central platform Stripe payment gateway is enabled
+        /// for international card and wallet settlements on tenant invoices.
+        /// </summary>
+        public bool EnableStripe { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the Central platform Stripe Publishable Key (e.g., "pk_live_..." or "pk_test_...").
+        /// </summary>
+        [MaxLength(255)]
+        public string? StripePublishableKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Stripe Secret Key (e.g., "sk_live_..." or "sk_test_...")
+        /// resolved strictly server-side from MasterCatalogDbContext.
+        /// </summary>
+        [MaxLength(255)]
+        public string? StripeSecretKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Stripe Webhook Signing Secret (e.g., "whsec_...").
+        /// </summary>
+        [MaxLength(255)]
+        public string? StripeWebhookSecret { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether Direct Bank Deposit / Wire Transfer is enabled on Central invoices.
+        /// </summary>
+        public bool EnableBankDeposit { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the beneficiary bank institution name for Direct Bank Deposit settlements.
+        /// </summary>
+        [MaxLength(150)]
+        public string? BankDepositBankName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the beneficiary corporate account name for Direct Bank Deposit settlements.
+        /// </summary>
+        [MaxLength(150)]
+        public string? BankDepositAccountName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the beneficiary bank account number or IBAN for Direct Bank Deposit settlements.
+        /// </summary>
+        [MaxLength(100)]
+        public string? BankDepositAccountNumber { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional routing number, sort code, or SWIFT/BIC code for Direct Bank Deposit settlements.
+        /// </summary>
+        [MaxLength(100)]
+        public string? BankDepositSortCodeOrSwift { get; set; }
+
+        /// <summary>
+        /// Gets or sets custom payment narration or verification instructions displayed to tenants when paying via Direct Bank Deposit.
+        /// </summary>
+        [MaxLength(500)]
+        public string? BankDepositInstructions { get; set; }
+
+        /// <summary>
         /// Gets or sets the UTC timestamp when these settings were last modified.
         /// </summary>
         public DateTime UpdatedUtc { get; set; } = DateTime.UtcNow;

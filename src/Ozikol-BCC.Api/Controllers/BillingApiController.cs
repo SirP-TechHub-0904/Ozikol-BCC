@@ -590,6 +590,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <summary>
         /// Marks a Central <see cref="MasterBillingTransaction"/> as Completed and activates/extends all covered
         /// <see cref="MasterTenantFeatureSubscription"/> records. Shared idempotently with Central webhook processing.
+        /// Respects per-item durations stored in <see cref="MasterBillingTransaction.LineItemsJson"/>.
         /// </summary>
         private async Task FulfillCentralFeatureInvoiceAsync(
             MasterBillingTransaction invoice,
@@ -598,11 +599,36 @@ namespace Ozikol_BCC.Api.Controllers
         {
             var now = DateTime.UtcNow;
             invoice.Status = "Completed";
-            invoice.PaymentProvider = "Paystack";
+            if (string.IsNullOrWhiteSpace(invoice.PaymentProvider))
+            {
+                invoice.PaymentProvider = "Paystack";
+            }
             invoice.UpdatedUtc = now;
 
-            if (!Enum.TryParse<SubscriptionBillingDuration>(invoice.BillingCadence, true, out var cadence))
-                cadence = SubscriptionBillingDuration.Monthly;
+            if (!Enum.TryParse<SubscriptionBillingDuration>(invoice.BillingCadence, true, out var fallbackCadence))
+                fallbackCadence = SubscriptionBillingDuration.Monthly;
+
+            // Parse per-feature cadence map from LineItemsJson if present
+            var perFeatureCadence = new Dictionary<string, SubscriptionBillingDuration>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(invoice.LineItemsJson))
+            {
+                try
+                {
+                    var parsedItems = System.Text.Json.JsonSerializer.Deserialize<List<BillingInvoiceLineItemDto>>(invoice.LineItemsJson);
+                    if (parsedItems != null)
+                    {
+                        foreach (var li in parsedItems)
+                        {
+                            if (!string.IsNullOrWhiteSpace(li.FeatureCode) &&
+                                Enum.TryParse<SubscriptionBillingDuration>(li.SelectedCadence, true, out var parsedCad))
+                            {
+                                perFeatureCadence[li.FeatureCode.Trim()] = parsedCad;
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
 
             var codes = (invoice.FeatureCodesCsv ?? string.Empty)
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -629,9 +655,23 @@ namespace Ozikol_BCC.Api.Controllers
             foreach (var feature in featuresToRenew)
             {
                 var sub = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feature.Id);
-                decimal effectiveUsdPrice = (tenant.UseCustomPricing && sub?.CustomPriceOverride != null)
-                    ? sub.CustomPriceOverride.Value
+                bool hasCustomMonthly = tenant.UseCustomPricing && sub?.CustomPriceOverride != null;
+                bool hasCustomYearly = tenant.UseCustomPricing && sub?.CustomYearlyPriceOverride != null;
+
+                decimal effectiveMonthlyUsd = hasCustomMonthly
+                    ? sub!.CustomPriceOverride!.Value
                     : feature.MonthlyPrice;
+                decimal effectiveYearlyUsd = hasCustomYearly
+                    ? sub!.CustomYearlyPriceOverride!.Value
+                    : (feature.YearlyPrice > 0 ? feature.YearlyPrice : effectiveMonthlyUsd * 10m);
+
+                var itemCadence = perFeatureCadence.TryGetValue(feature.FeatureCode, out var matchedCad)
+                    ? matchedCad
+                    : (effectiveMonthlyUsd <= 0m && effectiveYearlyUsd > 0m ? SubscriptionBillingDuration.Yearly : fallbackCadence);
+
+                decimal effectiveUsdPrice = itemCadence == SubscriptionBillingDuration.Yearly
+                    ? effectiveYearlyUsd
+                    : effectiveMonthlyUsd;
 
                 if (sub != null)
                 {
@@ -639,13 +679,13 @@ namespace Ozikol_BCC.Api.Controllers
                     // if upgrading from a free trial or renewing after expiration, extend from now.
                     var baseStart = (!sub.IsTrialPeriod && sub.ExpiresAtUtc > now) ? sub.ExpiresAtUtc : now;
                     sub.StartsAtUtc = now;
-                    sub.ExpiresAtUtc = cadence switch
+                    sub.ExpiresAtUtc = itemCadence switch
                     {
                         SubscriptionBillingDuration.Yearly => baseStart.AddYears(1),
                         SubscriptionBillingDuration.Quarterly => baseStart.AddMonths(3),
                         _ => baseStart.AddMonths(1)
                     };
-                    sub.DurationType = cadence;
+                    sub.DurationType = itemCadence;
                     sub.RecurringPrice = effectiveUsdPrice;
                     sub.IsActive = true;
                     sub.Status = "Active";
@@ -659,10 +699,10 @@ namespace Ozikol_BCC.Api.Controllers
                         Id = Guid.NewGuid(),
                         MasterTenantCatalogId = tenant.Id,
                         MasterFeatureCatalogId = feature.Id,
-                        DurationType = cadence,
+                        DurationType = itemCadence,
                         RecurringPrice = effectiveUsdPrice,
                         StartsAtUtc = now,
-                        ExpiresAtUtc = cadence switch
+                        ExpiresAtUtc = itemCadence switch
                         {
                             SubscriptionBillingDuration.Yearly => now.AddYears(1),
                             SubscriptionBillingDuration.Quarterly => now.AddMonths(3),
@@ -685,7 +725,7 @@ namespace Ozikol_BCC.Api.Controllers
                 Action = "TenantPayAndRenewFeature",
                 EntityType = "MasterBillingTransaction",
                 EntityId = invoice.Id.ToString(),
-                Summary = $"Tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) paid {invoice.Currency} {invoice.Amount:N2} via Paystack ({invoice.InvoiceNumber}, Ref: {invoice.TransactionRef}) for {invoice.Notes}",
+                Summary = $"Tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) paid {invoice.Currency} {invoice.Amount:N2} via {invoice.PaymentProvider} ({invoice.InvoiceNumber}, Ref: {invoice.TransactionRef}) for {invoice.Notes}",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = now
@@ -851,6 +891,754 @@ namespace Ozikol_BCC.Api.Controllers
                 .ToListAsync(cancellationToken);
 
             return Ok(ApiResponse<List<BillingInvoiceDto>>.SuccessResponse(invoices, "Invoices retrieved."));
+        }
+
+        /// <summary>
+        /// Automatically prepares (or reuses an existing Pending invoice matching the exact feature set)
+        /// an itemized invoice for either a single capability ("Pay &amp; Renew") or all expiring capabilities ("Renew All Expiring Features")
+        /// and returns its Invoice ID so the client navigates to <c>/billing/invoices/:id</c>.
+        /// </summary>
+        [HttpPost("invoices/prepare")]
+        [ProducesResponseType(typeof(ApiResponse<PrepareBillingInvoiceResponseDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+        public async Task<IActionResult> PrepareInvoice(
+            [FromBody] PrepareBillingInvoiceRequest request,
+            CancellationToken cancellationToken)
+        {
+            var key = ResolveTenantKey();
+            if (string.IsNullOrWhiteSpace(key))
+                return BadRequest(ApiResponse<object>.FailureResponse("Workspace could not be determined."));
+
+            var tenant = await _master.MasterTenantCatalogs
+                .Include(t => t.FeatureSubscriptions)
+                .FirstOrDefaultAsync(t =>
+                    t.TenantKey.ToLower() == key ||
+                    (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                    (t.CustomDomain != null && t.CustomDomain.ToLower() == key),
+                    cancellationToken);
+
+            if (tenant == null)
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found in Central Catalog."));
+
+            var targetCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (request.FeatureCodes != null)
+            {
+                foreach (var c in request.FeatureCodes)
+                {
+                    if (!string.IsNullOrWhiteSpace(c)) targetCodes.Add(c.Trim().ToLowerInvariant());
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(request.FeatureCode))
+            {
+                targetCodes.Add(request.FeatureCode.Trim().ToLowerInvariant());
+            }
+
+            if (targetCodes.Count == 0)
+                return BadRequest(ApiResponse<object>.FailureResponse("Please select at least one capability to prepare an invoice."));
+
+            var allCatalogFeatures = await _master.MasterFeatureCatalogs
+                .AsNoTracking()
+                .Where(f => f.IsActive)
+                .OrderBy(f => f.SortOrder)
+                .ThenBy(f => f.Name)
+                .ToListAsync(cancellationToken);
+
+            var selectedFeatures = allCatalogFeatures
+                .Where(f => !f.IsCompulsory && targetCodes.Contains(f.FeatureCode.ToLowerInvariant()))
+                .ToList();
+
+            if (selectedFeatures.Count == 0)
+                return BadRequest(ApiResponse<object>.FailureResponse("No payable capability matched the requested selection."));
+
+            var (currCode, currSymbol, currRate) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
+
+            var lineItems = new List<BillingInvoiceLineItemDto>();
+            Guid? primarySubId = null;
+
+            foreach (var feat in selectedFeatures)
+            {
+                var sub = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feat.Id);
+                if (sub != null && primarySubId == null) primarySubId = sub.Id;
+
+                var preferredCad = !string.IsNullOrWhiteSpace(request.Cadence)
+                    ? request.Cadence
+                    : (sub != null ? sub.DurationType.ToString() : "Monthly");
+
+                var li = BuildInvoiceLineItem(feat, sub, tenant.UseCustomPricing, currRate, preferredCad);
+                if (li.LineTotal > 0m)
+                {
+                    lineItems.Add(li);
+                }
+            }
+
+            if (lineItems.Count == 0)
+                return BadRequest(ApiResponse<object>.FailureResponse("The selected capability has no payable charge."));
+
+            var normalizedCsv = string.Join(",", lineItems.Select(x => x.FeatureCode.ToLowerInvariant()).OrderBy(x => x));
+            var totalAmount = Math.Round(lineItems.Sum(x => x.LineTotal), 2);
+            var lineItemsJson = System.Text.Json.JsonSerializer.Serialize(lineItems);
+            var now = DateTime.UtcNow;
+
+            var descriptionNote = lineItems.Count == 1
+                ? $"{lineItems[0].FeatureName} — {FormatCadenceDisplay(lineItems[0].SelectedCadence)} Subscription Renewal"
+                : $"{lineItems.Count} Capabilities ({string.Join(", ", lineItems.Select(x => x.FeatureName))}) — Subscription Renewal";
+            if (descriptionNote.Length > 490) descriptionNote = descriptionNote[..490];
+
+            // Reuse an existing Pending invoice for this tenant if it covers the exact same feature set
+            var existingPending = await _master.MasterBillingTransactions
+                .Where(t => t.MasterTenantCatalogId == tenant.Id && t.Status == "Pending" && t.FeatureCodesCsv != null)
+                .OrderByDescending(t => t.CreatedUtc)
+                .ToListAsync(cancellationToken);
+
+            var matchedPending = existingPending.FirstOrDefault(t =>
+                string.Join(",", (t.FeatureCodesCsv ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(c => c.ToLowerInvariant()).OrderBy(c => c)) == normalizedCsv);
+
+            if (matchedPending != null)
+            {
+                matchedPending.Amount = totalAmount;
+                matchedPending.Currency = currCode;
+                matchedPending.Notes = descriptionNote;
+                matchedPending.FeatureCodesCsv = string.Join(",", lineItems.Select(x => x.FeatureCode));
+                matchedPending.BillingCadence = lineItems.Count == 1 ? lineItems[0].SelectedCadence : "Mixed";
+                matchedPending.LineItemsJson = lineItemsJson;
+                matchedPending.UpdatedUtc = now;
+                await _master.SaveChangesAsync(cancellationToken);
+
+                return Ok(ApiResponse<PrepareBillingInvoiceResponseDto>.SuccessResponse(new PrepareBillingInvoiceResponseDto
+                {
+                    InvoiceId = matchedPending.Id,
+                    InvoiceNumber = matchedPending.InvoiceNumber ?? matchedPending.Id.ToString()
+                }, "Invoice prepared."));
+            }
+
+            var invoiceNumber = await NextInvoiceNumberAsync(now, cancellationToken);
+            var invoice = new MasterBillingTransaction
+            {
+                Id = Guid.NewGuid(),
+                MasterTenantCatalogId = tenant.Id,
+                MasterTenantFeatureSubscriptionId = lineItems.Count == 1 ? primarySubId : null,
+                InvoiceNumber = invoiceNumber,
+                Amount = totalAmount,
+                Currency = currCode,
+                Status = "Pending",
+                Notes = descriptionNote,
+                FeatureCodesCsv = string.Join(",", lineItems.Select(x => x.FeatureCode)),
+                BillingCadence = lineItems.Count == 1 ? lineItems[0].SelectedCadence : "Mixed",
+                LineItemsJson = lineItemsJson,
+                CreatedUtc = now
+            };
+
+            _master.MasterBillingTransactions.Add(invoice);
+            await _master.SaveChangesAsync(cancellationToken);
+
+            return Ok(ApiResponse<PrepareBillingInvoiceResponseDto>.SuccessResponse(new PrepareBillingInvoiceResponseDto
+            {
+                InvoiceId = invoice.Id,
+                InvoiceNumber = invoiceNumber
+            }, "Invoice generated."));
+        }
+
+        /// <summary>
+        /// Retrieves the complete detail payload for the dedicated Invoice &amp; Multi-Gateway Checkout Page (<c>/billing/invoices/:id</c>),
+        /// including itemized capabilities, dynamic duration options, discount savings, and Central payment methods availability.
+        /// </summary>
+        [HttpGet("invoices/{id:guid}")]
+        [ProducesResponseType(typeof(ApiResponse<BillingInvoiceDetailDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 404)]
+        public async Task<IActionResult> GetInvoiceDetail(Guid id, CancellationToken cancellationToken)
+        {
+            var key = ResolveTenantKey();
+            if (string.IsNullOrWhiteSpace(key))
+                return BadRequest(ApiResponse<object>.FailureResponse("Workspace could not be determined."));
+
+            var invoice = await _master.MasterBillingTransactions
+                .Include(t => t.Tenant)
+                    .ThenInclude(tn => tn!.FeatureSubscriptions)
+                .Include(t => t.FeatureSubscription)
+                    .ThenInclude(fs => fs!.MasterFeatureCatalog)
+                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant!.TenantKey.ToLower() == key, cancellationToken);
+
+            if (invoice == null || invoice.Tenant == null)
+                return NotFound(ApiResponse<object>.FailureResponse("Invoice was not found for this workspace."));
+
+            var detail = await BuildFullInvoiceDetailDtoAsync(invoice, invoice.Tenant, cancellationToken);
+            return Ok(ApiResponse<BillingInvoiceDetailDto>.SuccessResponse(detail, "Invoice detail retrieved."));
+        }
+
+        /// <summary>
+        /// Dynamically updates the billing duration (<c>Monthly</c> = 1 Month, <c>Quarterly</c> = 3 Months, <c>Yearly</c> = 1 Year)
+        /// for a specific capability (or all capabilities) on a Pending invoice, recalculating discounts and totals automatically.
+        /// </summary>
+        [HttpPost("invoices/{id:guid}/cadence")]
+        [ProducesResponseType(typeof(ApiResponse<BillingInvoiceDetailDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+        public async Task<IActionResult> UpdateInvoiceCadence(
+            Guid id,
+            [FromBody] UpdateInvoiceLineCadenceRequest request,
+            CancellationToken cancellationToken)
+        {
+            var key = ResolveTenantKey();
+            if (string.IsNullOrWhiteSpace(key))
+                return BadRequest(ApiResponse<object>.FailureResponse("Workspace could not be determined."));
+
+            var invoice = await _master.MasterBillingTransactions
+                .Include(t => t.Tenant)
+                    .ThenInclude(tn => tn!.FeatureSubscriptions)
+                .Include(t => t.FeatureSubscription)
+                    .ThenInclude(fs => fs!.MasterFeatureCatalog)
+                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant!.TenantKey.ToLower() == key, cancellationToken);
+
+            if (invoice == null || invoice.Tenant == null)
+                return NotFound(ApiResponse<object>.FailureResponse("Invoice was not found."));
+
+            if (!string.Equals(invoice.Status, "Pending", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(ApiResponse<object>.FailureResponse("Duration can only be modified on Pending invoices."));
+
+            var tenant = invoice.Tenant;
+            var (currCode, _, currRate) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
+
+            var currentDetail = await BuildFullInvoiceDetailDtoAsync(invoice, tenant, cancellationToken);
+            var catalogFeatures = await _master.MasterFeatureCatalogs
+                .AsNoTracking()
+                .Where(f => f.IsActive)
+                .ToListAsync(cancellationToken);
+
+            var updatedLines = new List<BillingInvoiceLineItemDto>();
+            foreach (var existingLine in currentDetail.LineItems)
+            {
+                var feat = catalogFeatures.FirstOrDefault(f =>
+                    f.Id == existingLine.FeatureId ||
+                    f.FeatureCode.Equals(existingLine.FeatureCode, StringComparison.OrdinalIgnoreCase));
+                if (feat == null)
+                {
+                    updatedLines.Add(existingLine);
+                    continue;
+                }
+
+                var sub = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feat.Id);
+                bool matchesTarget = string.IsNullOrWhiteSpace(request.FeatureCode) ||
+                                     feat.FeatureCode.Equals(request.FeatureCode.Trim(), StringComparison.OrdinalIgnoreCase);
+
+                var desiredCadence = matchesTarget ? request.Cadence : existingLine.SelectedCadence;
+                var rebuilt = BuildInvoiceLineItem(feat, sub, tenant.UseCustomPricing, currRate, desiredCadence);
+                updatedLines.Add(rebuilt);
+            }
+
+            if (updatedLines.Count > 0)
+            {
+                invoice.Amount = Math.Round(updatedLines.Sum(x => x.LineTotal), 2);
+                invoice.Currency = currCode;
+                invoice.BillingCadence = updatedLines.Count == 1 ? updatedLines[0].SelectedCadence : "Mixed";
+                invoice.Notes = updatedLines.Count == 1
+                    ? $"{updatedLines[0].FeatureName} — {FormatCadenceDisplay(updatedLines[0].SelectedCadence)} Subscription Renewal"
+                    : $"{updatedLines.Count} Capabilities ({string.Join(", ", updatedLines.Select(x => x.FeatureName))}) — Subscription Renewal";
+                if (invoice.Notes.Length > 490) invoice.Notes = invoice.Notes[..490];
+                invoice.LineItemsJson = System.Text.Json.JsonSerializer.Serialize(updatedLines);
+                invoice.UpdatedUtc = DateTime.UtcNow;
+                await _master.SaveChangesAsync(cancellationToken);
+            }
+
+            var updatedDetail = await BuildFullInvoiceDetailDtoAsync(invoice, tenant, cancellationToken);
+            return Ok(ApiResponse<BillingInvoiceDetailDto>.SuccessResponse(updatedDetail, "Invoice duration and discount recalculated."));
+        }
+
+        /// <summary>
+        /// Initializes Paystack Inline / Redirect Checkout for an existing Pending invoice on <c>/billing/invoices/:id</c>.
+        /// Resolves Central Paystack credentials strictly from <see cref="MasterCatalogDbContext.MasterPlatformSettings"/>.
+        /// </summary>
+        [HttpPost("invoices/{id:guid}/pay/paystack")]
+        [ProducesResponseType(typeof(ApiResponse<InitializeFeaturePaymentResponseDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+        public async Task<IActionResult> PayInvoiceWithPaystack(Guid id, CancellationToken cancellationToken)
+        {
+            if (_paymentGateway == null)
+                return BadRequest(ApiResponse<object>.FailureResponse("Paystack payment gateway service is not registered."));
+
+            var key = ResolveTenantKey();
+            if (string.IsNullOrWhiteSpace(key))
+                return BadRequest(ApiResponse<object>.FailureResponse("Workspace could not be determined."));
+
+            var invoice = await _master.MasterBillingTransactions
+                .Include(t => t.Tenant)
+                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant!.TenantKey.ToLower() == key, cancellationToken);
+
+            if (invoice == null || invoice.Tenant == null)
+                return NotFound(ApiResponse<object>.FailureResponse("Invoice was not found."));
+
+            if (string.Equals(invoice.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(ApiResponse<object>.FailureResponse("This invoice has already been paid."));
+
+            var tenant = invoice.Tenant;
+            var (currCode, currSymbol, _) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
+
+            var now = DateTime.UtcNow;
+            var reference = $"PSK-CENTRAL-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+            var payerEmail = User.FindFirstValue(ClaimTypes.Email)
+                ?? User.FindFirst("email")?.Value
+                ?? (!string.IsNullOrWhiteSpace(tenant.AdminEmail) ? tenant.AdminEmail : "billing@company.com");
+
+            invoice.PaymentProvider = "Paystack";
+            invoice.TransactionRef = reference;
+            invoice.UpdatedUtc = now;
+            await _master.SaveChangesAsync(cancellationToken);
+
+            var initResult = await _paymentGateway.InitializeInlinePaymentAsync(new PaymentInitRequestDto
+            {
+                Scope = PaystackPaymentScope.CentralPlatform,
+                Email = payerEmail,
+                Amount = invoice.Amount,
+                Currency = invoice.Currency ?? currCode,
+                Reference = reference,
+                Metadata = new Dictionary<string, string>
+                {
+                    ["scope"] = "central_platform",
+                    ["tenant_key"] = tenant.TenantKey,
+                    ["invoice_id"] = invoice.Id.ToString(),
+                    ["invoice_number"] = invoice.InvoiceNumber ?? string.Empty,
+                    ["feature_codes"] = invoice.FeatureCodesCsv ?? string.Empty,
+                    ["cadence"] = invoice.BillingCadence ?? "Monthly"
+                }
+            }, cancellationToken);
+
+            if (!initResult.IsSuccess)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(initResult.ErrorMessage));
+            }
+
+            return Ok(ApiResponse<InitializeFeaturePaymentResponseDto>.SuccessResponse(new InitializeFeaturePaymentResponseDto
+            {
+                PublicKey = initResult.PublicKey,
+                AccessCode = initResult.AccessCode,
+                Reference = initResult.Reference,
+                AuthorizationUrl = initResult.AuthorizationUrl,
+                Amount = invoice.Amount,
+                Currency = invoice.Currency ?? currCode,
+                CurrencySymbol = currSymbol,
+                Email = payerEmail,
+                InvoiceNumber = invoice.InvoiceNumber ?? string.Empty,
+                Cadence = invoice.BillingCadence ?? "Monthly",
+                FeatureNames = new List<string> { invoice.Notes ?? "Capability Subscription" }
+            }, "Paystack inline checkout initialized for invoice."));
+        }
+
+        /// <summary>
+        /// Submits a Direct Bank Deposit transfer reference / payment proof for an invoice on <c>/billing/invoices/:id</c>.
+        /// </summary>
+        [HttpPost("invoices/{id:guid}/pay/bank-deposit")]
+        [ProducesResponseType(typeof(ApiResponse<BillingInvoiceDetailDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+        public async Task<IActionResult> SubmitInvoiceBankDeposit(
+            Guid id,
+            [FromBody] SubmitBankDepositProofRequest request,
+            CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(request.TransferReference))
+                return BadRequest(ApiResponse<object>.FailureResponse("Please enter your bank transfer reference or narration."));
+
+            var key = ResolveTenantKey();
+            if (string.IsNullOrWhiteSpace(key))
+                return BadRequest(ApiResponse<object>.FailureResponse("Workspace could not be determined."));
+
+            var invoice = await _master.MasterBillingTransactions
+                .Include(t => t.Tenant)
+                    .ThenInclude(tn => tn!.FeatureSubscriptions)
+                .FirstOrDefaultAsync(t => t.Id == id && t.Tenant!.TenantKey.ToLower() == key, cancellationToken);
+
+            if (invoice == null || invoice.Tenant == null)
+                return NotFound(ApiResponse<object>.FailureResponse("Invoice was not found."));
+
+            var now = DateTime.UtcNow;
+            var cleanProof = request.TransferReference.Trim();
+            invoice.PaymentProvider = "BankDeposit";
+            invoice.PaymentProofRef = cleanProof;
+            invoice.TransactionRef = $"BNK-{now:yyyyMMdd}-{cleanProof}";
+            invoice.Status = "AwaitingVerification";
+            invoice.UpdatedUtc = now;
+
+            _master.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name ?? invoice.Tenant.AdminEmail,
+                UserName = User.Identity?.Name ?? invoice.Tenant.AdminEmail,
+                Action = "SubmitBankDepositProof",
+                EntityType = "MasterBillingTransaction",
+                EntityId = invoice.Id.ToString(),
+                Summary = $"Tenant '{invoice.Tenant.OrganizationName}' submitted Direct Bank Deposit proof '{cleanProof}' for Invoice {invoice.InvoiceNumber} ({invoice.Currency} {invoice.Amount:N2})",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = now
+            });
+
+            await _master.SaveChangesAsync(cancellationToken);
+
+            await LogTenantFeatureActivityAsync(
+                "Bank Deposit Proof Submitted",
+                $"Submitted Direct Bank Deposit reference '{cleanProof}' for Invoice {invoice.InvoiceNumber} ({invoice.Currency} {invoice.Amount:N2}).",
+                cancellationToken);
+
+            var detail = await BuildFullInvoiceDetailDtoAsync(invoice, invoice.Tenant, cancellationToken);
+            return Ok(ApiResponse<BillingInvoiceDetailDto>.SuccessResponse(
+                detail,
+                $"Bank deposit reference '{cleanProof}' recorded for Invoice {invoice.InvoiceNumber}. Awaiting Central confirmation."));
+        }
+
+        private static string FormatCadenceDisplay(string? cadence) =>
+            (cadence ?? "Monthly").Trim().ToLowerInvariant() switch
+            {
+                "yearly" => "1 Year (Annual)",
+                "quarterly" => "3 Months (Quarterly)",
+                _ => "1 Month (Monthly)"
+            };
+
+        private async Task<(string CurrCode, string CurrSymbol, decimal CurrRate)> ResolveTenantCurrencyContextAsync(
+            MasterTenantCatalog tenant,
+            CancellationToken cancellationToken)
+        {
+            string currCode = !string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode)
+                ? tenant.DefaultCurrencyCode.Trim().ToUpperInvariant()
+                : "NGN";
+            string currSymbol = currCode == "NGN" ? "₦" : "$";
+            decimal currRate = 1.0m;
+
+            try
+            {
+                var rateObj = await _master.MasterCurrencyRates
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.IsActive && r.CurrencyCode.ToLower() == currCode.ToLower(), cancellationToken);
+                if (rateObj != null)
+                {
+                    currSymbol = rateObj.CurrencySymbol;
+                    currRate = rateObj.RateFromUsd > 0 ? rateObj.RateFromUsd : 1.0m;
+                }
+            }
+            catch { }
+
+            return (currCode, currSymbol, currRate);
+        }
+
+        private static BillingInvoiceLineItemDto BuildInvoiceLineItem(
+            MasterFeatureCatalog feat,
+            MasterTenantFeatureSubscription? sub,
+            bool useCustomPricing,
+            decimal currRate,
+            string? requestedCadence)
+        {
+            bool hasCustomMonthly = useCustomPricing && sub?.CustomPriceOverride != null;
+            bool hasCustomYearly = useCustomPricing && sub?.CustomYearlyPriceOverride != null;
+
+            decimal monthlyUsd = hasCustomMonthly
+                ? sub!.CustomPriceOverride!.Value
+                : feat.MonthlyPrice;
+
+            decimal yearlyUsd = hasCustomYearly
+                ? sub!.CustomYearlyPriceOverride!.Value
+                : (hasCustomMonthly
+                    ? Math.Round(monthlyUsd * 10m, 2)
+                    : (feat.YearlyPrice > 0 ? feat.YearlyPrice : Math.Round(monthlyUsd * 10m, 2)));
+
+            decimal quarterlyUsd = hasCustomMonthly
+                ? Math.Round(monthlyUsd * 3m * 0.9m, 2)
+                : (feat.QuarterlyPrice > 0 ? feat.QuarterlyPrice : Math.Round(monthlyUsd * 3m * 0.9m, 2));
+
+            decimal monthlyAmt = Math.Round(monthlyUsd * currRate, 2);
+            decimal quarterlyAmt = Math.Round(quarterlyUsd * currRate, 2);
+            decimal yearlyAmt = Math.Round(yearlyUsd * currRate, 2);
+
+            bool isYearlyOnly = monthlyAmt <= 0m && yearlyAmt > 0m;
+            bool isMonthlyOnly = monthlyAmt > 0m && yearlyAmt <= 0m;
+
+            var supported = new List<string>();
+            if (isYearlyOnly)
+            {
+                supported.Add("Yearly");
+            }
+            else if (isMonthlyOnly)
+            {
+                supported.Add("Monthly");
+            }
+            else
+            {
+                supported.Add("Monthly");
+                if (quarterlyAmt > 0m) supported.Add("Quarterly");
+                supported.Add("Yearly");
+            }
+
+            string selected = (requestedCadence ?? "Monthly").Trim();
+            if (!supported.Any(s => s.Equals(selected, StringComparison.OrdinalIgnoreCase)))
+            {
+                selected = supported[0];
+            }
+            else
+            {
+                selected = supported.First(s => s.Equals(selected, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Calculate automatic discounts compared to 1-Month baseline
+            decimal yearlySavings = 0m;
+            int yearlyDiscountPct = 0;
+            if (monthlyAmt > 0m && yearlyAmt > 0m && yearlyAmt < monthlyAmt * 12m)
+            {
+                yearlySavings = Math.Round((monthlyAmt * 12m) - yearlyAmt, 2);
+                yearlyDiscountPct = (int)Math.Round((yearlySavings / (monthlyAmt * 12m)) * 100m);
+            }
+
+            decimal quarterlySavings = 0m;
+            int quarterlyDiscountPct = 0;
+            if (monthlyAmt > 0m && quarterlyAmt > 0m && quarterlyAmt < monthlyAmt * 3m)
+            {
+                quarterlySavings = Math.Round((monthlyAmt * 3m) - quarterlyAmt, 2);
+                quarterlyDiscountPct = (int)Math.Round((quarterlySavings / (monthlyAmt * 3m)) * 100m);
+            }
+
+            decimal lineTotal = selected switch
+            {
+                "Yearly" => yearlyAmt,
+                "Quarterly" => quarterlyAmt,
+                _ => monthlyAmt
+            };
+
+            decimal appliedSavings = selected switch
+            {
+                "Yearly" => yearlySavings,
+                "Quarterly" => quarterlySavings,
+                _ => 0m
+            };
+
+            int appliedPct = selected switch
+            {
+                "Yearly" => yearlyDiscountPct,
+                "Quarterly" => quarterlyDiscountPct,
+                _ => 0
+            };
+
+            int months = selected switch
+            {
+                "Yearly" => 12,
+                "Quarterly" => 3,
+                _ => 1
+            };
+
+            return new BillingInvoiceLineItemDto
+            {
+                FeatureId = feat.Id,
+                FeatureCode = feat.FeatureCode,
+                FeatureName = feat.Name,
+                Category = feat.Category,
+                Icon = string.IsNullOrWhiteSpace(feat.Icon) ? "extension" : feat.Icon,
+                SelectedCadence = selected,
+                Months = months,
+                IsYearlyOnly = isYearlyOnly,
+                IsMonthlyOnly = isMonthlyOnly,
+                SupportedCadences = supported,
+                MonthlyPrice = monthlyAmt,
+                QuarterlyPrice = quarterlyAmt,
+                YearlyPrice = yearlyAmt,
+                YearlyDiscountPercent = yearlyDiscountPct,
+                YearlySavingsAmount = yearlySavings,
+                QuarterlyDiscountPercent = quarterlyDiscountPct,
+                QuarterlySavingsAmount = quarterlySavings,
+                LineTotal = lineTotal,
+                AppliedSavingsAmount = appliedSavings,
+                AppliedDiscountPercent = appliedPct
+            };
+        }
+
+        private async Task<BillingInvoiceDetailDto> BuildFullInvoiceDetailDtoAsync(
+            MasterBillingTransaction invoice,
+            MasterTenantCatalog tenant,
+            CancellationToken cancellationToken)
+        {
+            var (currCode, currSymbol, currRate) = await ResolveTenantCurrencyContextAsync(tenant, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(invoice.Currency))
+            {
+                currCode = invoice.Currency.ToUpperInvariant();
+                try
+                {
+                    var matchedRate = await _master.MasterCurrencyRates
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(r => r.CurrencyCode.ToLower() == currCode.ToLower(), cancellationToken);
+                    if (matchedRate != null)
+                    {
+                        currSymbol = matchedRate.CurrencySymbol;
+                        currRate = matchedRate.RateFromUsd > 0 ? matchedRate.RateFromUsd : currRate;
+                    }
+                }
+                catch { }
+            }
+
+            List<BillingInvoiceLineItemDto>? lineItems = null;
+            if (!string.IsNullOrWhiteSpace(invoice.LineItemsJson))
+            {
+                try
+                {
+                    lineItems = System.Text.Json.JsonSerializer.Deserialize<List<BillingInvoiceLineItemDto>>(invoice.LineItemsJson);
+                }
+                catch { }
+            }
+
+            if (lineItems == null || lineItems.Count == 0)
+            {
+                lineItems = new List<BillingInvoiceLineItemDto>();
+                var codes = (invoice.FeatureCodesCsv ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(c => c.ToLowerInvariant())
+                    .ToHashSet();
+
+                var allFeatures = await _master.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .ToListAsync(cancellationToken);
+
+                var matchedFeatures = new List<MasterFeatureCatalog>();
+                if (codes.Count > 0)
+                {
+                    matchedFeatures.AddRange(allFeatures.Where(f => codes.Contains(f.FeatureCode.ToLowerInvariant())));
+                }
+                else if (invoice.FeatureSubscription?.MasterFeatureCatalog != null)
+                {
+                    matchedFeatures.Add(invoice.FeatureSubscription.MasterFeatureCatalog);
+                }
+
+                foreach (var feat in matchedFeatures)
+                {
+                    var sub = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feat.Id);
+                    lineItems.Add(BuildInvoiceLineItem(feat, sub, tenant.UseCustomPricing, currRate, invoice.BillingCadence));
+                }
+
+                if (lineItems.Count == 0)
+                {
+                    lineItems.Add(new BillingInvoiceLineItemDto
+                    {
+                        FeatureId = Guid.Empty,
+                        FeatureCode = "workspace-subscription",
+                        FeatureName = invoice.Notes ?? "Workspace Subscription Charge",
+                        Category = "Workspace",
+                        Icon = "receipt_long",
+                        SelectedCadence = invoice.BillingCadence ?? "Monthly",
+                        Months = 1,
+                        SupportedCadences = new List<string> { invoice.BillingCadence ?? "Monthly" },
+                        MonthlyPrice = invoice.Amount,
+                        YearlyPrice = invoice.Amount,
+                        LineTotal = invoice.Amount
+                    });
+                }
+            }
+
+            // Resolve Central Platform Payment Gateways from MasterPlatformSettings
+            MasterPlatformSetting? settings = null;
+            try
+            {
+                settings = await _master.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1, cancellationToken);
+            }
+            catch { }
+
+            var paymentMethods = new List<BillingPaymentMethodOptionDto>();
+
+            // 1. Paystack
+            bool enablePaystack = settings?.EnablePaystack ?? true;
+            if (enablePaystack)
+            {
+                bool paystackConfigured = !string.IsNullOrWhiteSpace(settings?.PaystackPublicKey) &&
+                                          !string.IsNullOrWhiteSpace(settings?.PaystackSecretKey);
+                paymentMethods.Add(new BillingPaymentMethodOptionDto
+                {
+                    ProviderCode = "Paystack",
+                    Name = "Paystack Inline Checkout",
+                    Description = "Instant payment via Card, Bank Transfer, USSD, or Mobile Money",
+                    Icon = "credit_card",
+                    IsEnabled = true,
+                    IsConfigured = paystackConfigured,
+                    StatusBadge = paystackConfigured ? "Available (Instant Activation)" : "Not Available — Gateway Keys Not Configured",
+                    PublicKey = paystackConfigured ? settings!.PaystackPublicKey : null
+                });
+            }
+
+            // 2. Flutterwave
+            bool enableFlutterwave = settings?.EnableFlutterwave ?? false;
+            if (enableFlutterwave)
+            {
+                bool flwConfigured = !string.IsNullOrWhiteSpace(settings?.FlutterwavePublicKey) &&
+                                     !string.IsNullOrWhiteSpace(settings?.FlutterwaveSecretKey);
+                paymentMethods.Add(new BillingPaymentMethodOptionDto
+                {
+                    ProviderCode = "Flutterwave",
+                    Name = "Flutterwave Checkout",
+                    Description = "Pay with Multi-Currency Cards, Bank Account, M-Pesa, or Mobile Money",
+                    Icon = "payments",
+                    IsEnabled = true,
+                    IsConfigured = flwConfigured,
+                    StatusBadge = flwConfigured ? "Available (Instant Activation)" : "Not Available — Gateway Keys Not Configured",
+                    PublicKey = flwConfigured ? settings!.FlutterwavePublicKey : null
+                });
+            }
+
+            // 3. Stripe
+            bool enableStripe = settings?.EnableStripe ?? false;
+            if (enableStripe)
+            {
+                bool stripeConfigured = !string.IsNullOrWhiteSpace(settings?.StripePublishableKey) &&
+                                        !string.IsNullOrWhiteSpace(settings?.StripeSecretKey);
+                paymentMethods.Add(new BillingPaymentMethodOptionDto
+                {
+                    ProviderCode = "Stripe",
+                    Name = "Stripe Global Card Checkout",
+                    Description = "International Visa, Mastercard, Amex, Apple Pay & Google Pay",
+                    Icon = "language",
+                    IsEnabled = true,
+                    IsConfigured = stripeConfigured,
+                    StatusBadge = stripeConfigured ? "Available (Instant Activation)" : "Not Available — Gateway Keys Not Configured",
+                    PublicKey = stripeConfigured ? settings!.StripePublishableKey : null
+                });
+            }
+
+            // 4. Direct Bank Deposit
+            bool enableBank = settings?.EnableBankDeposit ?? true;
+            if (enableBank)
+            {
+                bool bankConfigured = !string.IsNullOrWhiteSpace(settings?.BankDepositBankName) &&
+                                      !string.IsNullOrWhiteSpace(settings?.BankDepositAccountNumber);
+                paymentMethods.Add(new BillingPaymentMethodOptionDto
+                {
+                    ProviderCode = "BankDeposit",
+                    Name = "Direct Bank Deposit / Wire Transfer",
+                    Description = "Transfer directly to corporate bank account and submit transfer reference",
+                    Icon = "account_balance",
+                    IsEnabled = true,
+                    IsConfigured = bankConfigured,
+                    StatusBadge = bankConfigured ? "Available (Bank Transfer)" : "Not Available — Bank Account Not Configured",
+                    BankName = settings?.BankDepositBankName,
+                    AccountName = settings?.BankDepositAccountName,
+                    AccountNumber = settings?.BankDepositAccountNumber,
+                    SortCodeOrSwift = settings?.BankDepositSortCodeOrSwift,
+                    Instructions = settings?.BankDepositInstructions
+                });
+            }
+
+            decimal totalSavings = Math.Round(lineItems.Sum(x => x.AppliedSavingsAmount), 2);
+            decimal totalAmount = Math.Round(lineItems.Sum(x => x.LineTotal), 2);
+            if (totalAmount <= 0m) totalAmount = invoice.Amount;
+
+            return new BillingInvoiceDetailDto
+            {
+                Id = invoice.Id,
+                InvoiceNumber = invoice.InvoiceNumber ?? invoice.Id.ToString(),
+                Status = invoice.Status,
+                OrganizationName = tenant.OrganizationName,
+                TenantKey = tenant.TenantKey,
+                BillingEmail = !string.IsNullOrWhiteSpace(tenant.AdminEmail) ? tenant.AdminEmail : "billing@company.com",
+                Currency = currCode,
+                CurrencySymbol = currSymbol,
+                SubtotalBeforeDiscount = Math.Round(totalAmount + totalSavings, 2),
+                TotalSavingsAmount = totalSavings,
+                TotalAmount = totalAmount,
+                PaymentProvider = invoice.PaymentProvider,
+                Reference = invoice.TransactionRef,
+                PaymentProofRef = invoice.PaymentProofRef,
+                Notes = invoice.Notes,
+                CreatedUtc = invoice.CreatedUtc,
+                UpdatedUtc = invoice.UpdatedUtc,
+                LineItems = lineItems,
+                PaymentMethods = paymentMethods
+            };
         }
 
         /// <summary>

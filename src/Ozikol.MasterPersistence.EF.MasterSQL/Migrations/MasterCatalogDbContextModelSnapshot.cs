@@ -17,7 +17,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -726,6 +726,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
+                    b.Property<string>("LineItemsJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
                     b.Property<Guid>("MasterTenantCatalogId")
                         .HasColumnType("uniqueidentifier");
 
@@ -735,6 +739,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PaymentProofRef")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<string>("PaymentProvider")
                         .HasMaxLength(50)
@@ -3000,6 +3008,26 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
+                    b.Property<string>("BankDepositAccountName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("BankDepositAccountNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("BankDepositBankName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("BankDepositInstructions")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("BankDepositSortCodeOrSwift")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("CareersAdminEmails")
                         .HasColumnType("nvarchar(max)");
 
@@ -3049,11 +3077,32 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<bool>("EnableAdminNotifications")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("EnableBankDeposit")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("EnableFlutterwave")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("EnablePaystack")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("EnableStripe")
                         .HasColumnType("bit");
 
                     b.Property<bool>("EnableTicketAutoClose")
                         .HasColumnType("bit");
+
+                    b.Property<string>("FlutterwavePublicKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FlutterwaveSecretKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FlutterwaveWebhookSecret")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<bool>("IsMaintenanceMode")
                         .HasColumnType("bit");
@@ -3108,6 +3157,18 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("SentryDsn")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("StripePublishableKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("StripeSecretKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("StripeWebhookSecret")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("SupportAdminEmails")
                         .HasColumnType("nvarchar(max)");
@@ -3661,6 +3722,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
                     b.Property<decimal?>("CustomPriceOverride")
                         .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("CustomYearlyPriceOverride")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("DurationType")

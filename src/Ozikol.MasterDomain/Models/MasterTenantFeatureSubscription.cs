@@ -43,8 +43,19 @@ namespace Ozikol.MasterDomain.Models
         [MaxLength(30)]
         public string Status { get; set; } = "Active"; // Active, Suspended, Expired, Cancelled
 
+        /// <summary>
+        /// Optional tenant-specific override for the monthly base recurring price in USD when Custom Pricing is enabled.
+        /// Set to 0 when the capability is Yearly-Only for this tenant.
+        /// </summary>
         [Column(TypeName = "decimal(18,2)")]
         public decimal? CustomPriceOverride { get; set; }
+
+        /// <summary>
+        /// Optional tenant-specific override for the yearly recurring price in USD when Custom Pricing is enabled.
+        /// Supports custom annual discounts or Yearly-Only custom tenant pricing.
+        /// </summary>
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? CustomYearlyPriceOverride { get; set; }
 
         /// <summary>
         /// Optional tenant-specific override for whether this capability is Available for Use (true)

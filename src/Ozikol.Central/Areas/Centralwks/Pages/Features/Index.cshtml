@@ -381,6 +381,14 @@
                                         @if (feat.MonthlyPrice > 0)
                                         {
                                             <span data-usd-amount="@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix="/mo">$@feat.MonthlyPrice.ToString("F2")/mo</span>
+                                            @if (feat.YearlyPrice > 0)
+                                            {
+                                                <span style="font-size: 11px; font-weight: 600; color: #64748b;">($@feat.YearlyPrice.ToString("F2")/yr)</span>
+                                            }
+                                        }
+                                        else if (feat.YearlyPrice > 0)
+                                        {
+                                            <span data-usd-amount="@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix="/yr" style="color: #0050e5;">$@feat.YearlyPrice.ToString("F2")/yr (Yearly Only)</span>
                                         }
                                         else
                                         {
@@ -589,6 +597,14 @@ else
                                             @if (feat.MonthlyPrice > 0)
                                             {
                                                 <span data-usd-amount="@feat.MonthlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix="/mo">$@feat.MonthlyPrice.ToString("F2")/mo</span>
+                                                @if (feat.YearlyPrice > 0)
+                                                {
+                                                    <span style="font-size: 11px; font-weight: 600; color: #64748b;">($@feat.YearlyPrice.ToString("F2")/yr)</span>
+                                                }
+                                            }
+                                            else if (feat.YearlyPrice > 0)
+                                            {
+                                                <span data-usd-amount="@feat.YearlyPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix="/yr" style="color: #0050e5;">$@feat.YearlyPrice.ToString("F2")/yr (Yearly Only)</span>
                                             }
                                             else
                                             {
@@ -1076,14 +1092,50 @@ else
             if (monthlyEl) monthlyEl.value = (monthlyPrice !== undefined && monthlyPrice !== null) ? monthlyPrice : '0.00';
             if (yearlyEl) yearlyEl.value = (yearlyPrice !== undefined && yearlyPrice !== null) ? yearlyPrice : '0.00';
             if (tierEl) tierEl.value = isCompulsory ? 'true' : 'false';
+            updateQuickModalPricingBadge();
             document.getElementById('freeTrialDaysModal').style.display = 'flex';
         }
 
         function onQuickMonthlyPriceInput(input) {
             const val = parseFloat(input.value) || 0;
             const yearlyEl = document.getElementById('quickModalYearlyPriceInput');
-            if (yearlyEl) {
+            if (yearlyEl && (!parseFloat(yearlyEl.value) || parseFloat(yearlyEl.value) === 0)) {
                 yearlyEl.value = (val * 10).toFixed(2);
+            }
+            updateQuickModalPricingBadge();
+        }
+
+        function updateQuickModalPricingBadge() {
+            const monthlyVal = parseFloat(document.getElementById('quickModalMonthlyPriceInput')?.value || '0') || 0;
+            const yearlyVal = parseFloat(document.getElementById('quickModalYearlyPriceInput')?.value || '0') || 0;
+            const badgeEl = document.getElementById('quickModalPricingSavingsBadge');
+            if (!badgeEl) return;
+
+            if (monthlyVal <= 0 && yearlyVal > 0) {
+                badgeEl.textContent = 'Yearly Only Billing ($' + yearlyVal.toFixed(2) + '/yr — 1 Month option disabled on invoices)';
+                badgeEl.style.background = 'rgba(0, 80, 229, 0.1)';
+                badgeEl.style.color = '#0050e5';
+            } else if (monthlyVal > 0 && yearlyVal <= 0) {
+                badgeEl.textContent = 'Monthly Only Billing ($' + monthlyVal.toFixed(2) + '/mo)';
+                badgeEl.style.background = '#f1f5f9';
+                badgeEl.style.color = '#475569';
+            } else if (monthlyVal > 0 && yearlyVal > 0) {
+                const fullAnnual = monthlyVal * 12;
+                if (yearlyVal < fullAnnual) {
+                    const saved = fullAnnual - yearlyVal;
+                    const pct = Math.round((saved / fullAnnual) * 100);
+                    badgeEl.textContent = 'Annual Discount: Save ' + pct + '% ($' + saved.toFixed(2) + '/yr off vs 12 months)';
+                    badgeEl.style.background = 'rgba(16, 185, 129, 0.12)';
+                    badgeEl.style.color = '#059669';
+                } else {
+                    badgeEl.textContent = 'Monthly ($' + monthlyVal.toFixed(2) + '/mo) & Yearly ($' + yearlyVal.toFixed(2) + '/yr)';
+                    badgeEl.style.background = '#f1f5f9';
+                    badgeEl.style.color = '#475569';
+                }
+            } else {
+                badgeEl.textContent = 'Free / Included Capability ($0.00)';
+                badgeEl.style.background = 'rgba(16, 185, 129, 0.12)';
+                badgeEl.style.color = '#059669';
             }
         }
 
@@ -1174,15 +1226,18 @@ else
                 <div id="freeTrialFeatureNameText" style="font-size: 14.5px; font-weight: 800; color: #0f172a; margin-top: 2px;"></div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
                 <div class="form-group" style="margin: 0;">
                     <label class="form-label" style="font-weight: 700; font-size: 12.5px;">Monthly Price ($ USD)</label>
-                    <input type="number" step="0.01" min="0" name="monthlyPrice" id="quickModalMonthlyPriceInput" class="form-control" placeholder="e.g. 2.99" oninput="onQuickMonthlyPriceInput(this)" required />
+                    <input type="number" step="0.01" min="0" name="monthlyPrice" id="quickModalMonthlyPriceInput" class="form-control" placeholder="e.g. 2.99 (0 = Yearly Only)" oninput="onQuickMonthlyPriceInput(this)" required />
                 </div>
                 <div class="form-group" style="margin: 0;">
                     <label class="form-label" style="font-weight: 700; font-size: 12.5px;">Yearly Price ($ USD)</label>
-                    <input type="number" step="0.01" min="0" name="yearlyPrice" id="quickModalYearlyPriceInput" class="form-control" placeholder="e.g. 29.90" required />
+                    <input type="number" step="0.01" min="0" name="yearlyPrice" id="quickModalYearlyPriceInput" class="form-control" placeholder="e.g. 29.90" oninput="updateQuickModalPricingBadge()" required />
                 </div>
+            </div>
+            <div id="quickModalPricingSavingsBadge" style="font-size: 11.5px; font-weight: 700; padding: 6px 10px; border-radius: 7px; margin-bottom: 14px; background: #f1f5f9; color: #475569;">
+                Set Monthly = 0 and Yearly &gt; 0 for Yearly-Only capabilities, or enter both for automatic annual discount calculation.
             </div>
 
             <div class="form-group" style="margin-bottom: 14px;">

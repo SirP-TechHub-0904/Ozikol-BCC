@@ -368,19 +368,29 @@ namespace Ozikol_BCC.Api.Services
                     ? (sub?.IsAvailableForUseOverride ?? ((sub?.CustomPriceOverride != null || (sub != null && sub.IsActive && !f.IsCompulsory)) ? true : masterAvailForUse))
                     : masterAvailForUse;
 
-                // Apply per-tenant custom monthly price override when tenant policy is set to Custom Pricing
-                bool hasCustomPrice = tenant?.UseCustomPricing == true && sub?.CustomPriceOverride != null;
-                decimal effectiveMonthlyUsd = hasCustomPrice
+                // Apply per-tenant custom monthly & yearly price overrides when tenant policy is set to Custom Pricing
+                bool hasCustomMonthly = tenant?.UseCustomPricing == true && sub?.CustomPriceOverride != null;
+                bool hasCustomYearly = tenant?.UseCustomPricing == true && sub?.CustomYearlyPriceOverride != null;
+                bool hasCustomPrice = hasCustomMonthly || hasCustomYearly;
+
+                decimal effectiveMonthlyUsd = hasCustomMonthly
                     ? sub!.CustomPriceOverride!.Value
                     : f.MonthlyPrice;
 
                 decimal effectiveMonthly = Math.Round(effectiveMonthlyUsd * currRate, 2);
-                decimal quarterlyUsd = hasCustomPrice
+                decimal quarterlyUsd = hasCustomMonthly
                     ? Math.Round(effectiveMonthlyUsd * 3m * 0.9m, 2)
                     : (f.QuarterlyPrice > 0 ? f.QuarterlyPrice : Math.Round(f.MonthlyPrice * 3m * 0.9m, 2));
-                decimal yearlyUsd = hasCustomPrice
-                    ? Math.Round(effectiveMonthlyUsd * 10m, 2)
-                    : (f.YearlyPrice > 0 ? f.YearlyPrice : f.MonthlyPrice * 10m);
+                decimal yearlyUsd = hasCustomYearly
+                    ? sub!.CustomYearlyPriceOverride!.Value
+                    : (hasCustomMonthly
+                        ? Math.Round(effectiveMonthlyUsd * 10m, 2)
+                        : (f.YearlyPrice > 0 ? f.YearlyPrice : f.MonthlyPrice * 10m));
+
+                decimal effectiveYearly = Math.Round(yearlyUsd * currRate, 2);
+                bool isYearlyOnly = effectiveMonthly <= 0m && effectiveYearly > 0m;
+                decimal defaultEffectivePrice = isYearlyOnly ? effectiveYearly : effectiveMonthly;
+                string defaultCadence = f.IsCompulsory ? "Included" : (isYearlyOnly ? "Yearly" : "Monthly");
 
                 var matchedSuite = ResolveMatchedSuite(f);
                 var suiteFullTitle = matchedSuite?.Name ?? f.Category;
@@ -425,7 +435,7 @@ namespace Ozikol_BCC.Api.Services
                     BillingType = f.BillingType.ToString(),
                     MonthlyPrice = effectiveMonthly,
                     QuarterlyPrice = Math.Round(quarterlyUsd * currRate, 2),
-                    YearlyPrice = Math.Round(yearlyUsd * currRate, 2)
+                    YearlyPrice = effectiveYearly
                 };
 
                 if (!isAvailForUse)
@@ -433,8 +443,8 @@ namespace Ozikol_BCC.Api.Services
                     item.IsSubscribed = false;
                     item.IsActive = false;
                     item.Status = "ComingSoon";
-                    item.BillingCadence = f.IsCompulsory ? "Included" : "Monthly";
-                    item.EffectivePrice = effectiveMonthly;
+                    item.BillingCadence = defaultCadence;
+                    item.EffectivePrice = defaultEffectivePrice;
                     snapshot.Available.Add(item);
                     continue;
                 }
@@ -444,8 +454,8 @@ namespace Ozikol_BCC.Api.Services
                     item.IsSubscribed = false;
                     item.IsActive = false;
                     item.Status = "Available";
-                    item.BillingCadence = f.IsCompulsory ? "Included" : "Monthly";
-                    item.EffectivePrice = effectiveMonthly;
+                    item.BillingCadence = defaultCadence;
+                    item.EffectivePrice = defaultEffectivePrice;
                     snapshot.Available.Add(item);
                     continue;
                 }
@@ -462,16 +472,19 @@ namespace Ozikol_BCC.Api.Services
                     ? "Expired"
                     : (live ? "Active" : sub.Status);
 
-                decimal subEffectiveUsd = (tenant?.UseCustomPricing == true && sub.CustomPriceOverride != null)
-                    ? sub.CustomPriceOverride.Value
-                    : (sub.RecurringPrice > 0 ? sub.RecurringPrice : f.MonthlyPrice);
+                var effectiveDuration = isYearlyOnly ? SubscriptionBillingDuration.Yearly : sub.DurationType;
+                decimal subEffectiveUsd = effectiveDuration == SubscriptionBillingDuration.Yearly
+                    ? yearlyUsd
+                    : (hasCustomMonthly
+                        ? sub.CustomPriceOverride!.Value
+                        : (sub.RecurringPrice > 0 ? sub.RecurringPrice : (f.MonthlyPrice > 0 ? f.MonthlyPrice : yearlyUsd)));
 
                 item.SubscriptionId = sub.Id;
                 item.IsSubscribed = live;
                 item.IsActive = live;
                 item.AutoRenew = sub.AutoRenew;
                 item.Status = status;
-                item.BillingCadence = sub.DurationType.ToString();
+                item.BillingCadence = effectiveDuration.ToString();
                 item.EffectivePrice = Math.Round(subEffectiveUsd * currRate, 2);
                 item.ExpiresAtUtc = sub.ExpiresAtUtc;
                 item.DaysRemaining = days;

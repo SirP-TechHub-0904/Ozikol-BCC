@@ -861,6 +861,8 @@
                         <div class="price-tag">
                           @if (feat.monthlyPrice > 0) {
                             <span class="price-paid">{{ formatAmount(feat.monthlyPrice) }}/mo</span>
+                          } @else if ((feat.yearlyPrice || 0) > 0) {
+                            <span class="price-paid">{{ formatAmount(feat.yearlyPrice!) }}/yr <small style="font-size: 10.5px; color: #b45309; font-weight: 700;">(Yearly Only)</small></span>
                           } @else {
                             <span class="price-included">
                               <span class="material-symbols-outlined">check_circle</span>
@@ -1128,10 +1130,10 @@
               class="btn btn-primary btn-sm-action"
               [disabled]="isPayingAllDue"
               (click)="payAllExpiringFeatures()"
-              title="Renew all expiring/overdue features in one Paystack Inline transaction"
+              title="Generate consolidated renewal invoice for all expiring/overdue features"
             >
-              <span class="material-symbols-outlined" [class.spin]="isPayingAllDue">{{ isPayingAllDue ? 'sync' : 'payments' }}</span>
-              <span>{{ isPayingAllDue ? 'Initializing Paystack...' : ('Renew All Expiring Features (' + formatAmount(totalExpiringAmountDue) + ')') }}</span>
+              <span class="material-symbols-outlined" [class.spin]="isPayingAllDue">{{ isPayingAllDue ? 'sync' : 'receipt_long' }}</span>
+              <span>{{ isPayingAllDue ? 'Preparing Invoice...' : ('Renew All Expiring Features (' + formatAmount(totalExpiringAmountDue) + ')') }}</span>
             </button>
           }
           <span class="badge-pill-md badge-available">Monthly Spend: {{ formatAmount(snapshot.totalRecurringMonthly) }}/mo</span>
@@ -1174,6 +1176,12 @@
                   <td>
                     @if (feat.monthlyPrice > 0) {
                       <strong>{{ formatAmount(feat.monthlyPrice) }}/mo</strong>
+                      @if ((feat.yearlyPrice || 0) > 0) {
+                        <div style="font-size: 11px; color: #64748b;">or {{ formatAmount(feat.yearlyPrice!) }}/yr</div>
+                      }
+                    } @else if ((feat.yearlyPrice || 0) > 0) {
+                      <strong>{{ formatAmount(feat.yearlyPrice!) }}/yr</strong>
+                      <div style="font-size: 10.5px; font-weight: 700; color: #b45309;">Yearly Only</div>
                     } @else {
                       <span class="price-included">Free / Included</span>
                     }
@@ -1206,9 +1214,9 @@
                           (click)="payAndRenewFeature(feat)"
                         >
                           <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === feat.featureCode">
-                            {{ payingFeatureCode === feat.featureCode ? 'sync' : 'payments' }}
+                            {{ payingFeatureCode === feat.featureCode ? 'sync' : 'receipt_long' }}
                           </span>
-                          <span>{{ payingFeatureCode === feat.featureCode ? 'Opening Paystack...' : ('Pay & Renew (' + formatAmount(getFeatureDisplayAmount(feat)) + ')') }}</span>
+                          <span>{{ payingFeatureCode === feat.featureCode ? 'Preparing Invoice...' : ('Pay & Renew (' + formatAmount(getFeatureDisplayAmount(feat)) + ')') }}</span>
                         </button>
                       }
                       <button
@@ -1242,7 +1250,7 @@
       <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
         <div>
           <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">Billing Invoices &amp; Receipts ({{ invoices.length }})</h3>
-          <p style="margin: 3px 0 0; font-size: 12.5px; color: #64748b;">Historical invoice ledger for your workspace subscriptions.</p>
+          <p style="margin: 3px 0 0; font-size: 12.5px; color: #64748b;">Historical invoice ledger for your workspace subscriptions. Click any invoice to view details or complete payment.</p>
         </div>
         <button type="button" class="btn btn-outline" (click)="loadInvoices()">
           <span class="material-symbols-outlined">refresh</span>
@@ -1260,11 +1268,12 @@
                 <th>AMOUNT</th>
                 <th>STATUS</th>
                 <th>DATE</th>
+                <th style="text-align: right;">ACTION</th>
               </tr>
             </thead>
             <tbody>
               @for (inv of filteredInvoices; track inv.id) {
-                <tr>
+                <tr (click)="openInvoiceDetail(inv)" style="cursor: pointer;" title="Click to open full invoice &amp; payment page">
                   <td><code>{{ inv.invoiceNumber || inv.id }}</code></td>
                   <td><strong>{{ inv.description }}</strong></td>
                   <td><strong>{{ formatAmount(inv.amount) }}</strong></td>
@@ -1274,6 +1283,12 @@
                     </span>
                   </td>
                   <td>{{ inv.createdUtc | date:'mediumDate' }}</td>
+                  <td style="text-align: right;" (click)="$event.stopPropagation()">
+                    <button type="button" class="btn btn-outline btn-sm-action" (click)="openInvoiceDetail(inv)">
+                      <span class="material-symbols-outlined">{{ inv.status === 'Completed' ? 'receipt_long' : 'payments' }}</span>
+                      <span>{{ inv.status === 'Completed' ? 'View Receipt' : 'View & Pay Invoice' }}</span>
+                    </button>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -1287,6 +1302,403 @@
         </div>
       }
     </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ── PAGE 3: /billing/invoices/:id (Dedicated Full-Page Invoice & Checkout)  -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  @if (activePage === 'invoice-detail') {
+    <div class="page-header">
+      <div class="header-titles">
+        <div class="breadcrumb">
+          <a routerLink="/dashboard/console">Command Center</a>
+          <span class="sep">/</span>
+          <a routerLink="/billing/subscriptions">Billing &amp; Subscriptions</a>
+          <span class="sep">/</span>
+          <span class="current">Invoice {{ invoiceDetail?.invoiceNumber || currentInvoiceId }}</span>
+        </div>
+        <div class="title-row">
+          <h1>Invoice &amp; Payment Checkout</h1>
+        </div>
+        <p class="subtitle">
+          Review your capability renewal items, adjust billing duration for eligible features, and select a payment method to complete checkout.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="btn btn-outline" (click)="closeInvoiceDetail()">
+          <span class="material-symbols-outlined">arrow_back</span>
+          <span>Back to Subscriptions &amp; Invoices</span>
+        </button>
+      </div>
+    </div>
+
+    @if (isLoadingInvoiceDetail) {
+      <div class="table-card" style="padding: 48px 24px; text-align: center;">
+        <span class="material-symbols-outlined spin" style="font-size: 36px; color: #0050E5;">sync</span>
+        <h3 style="margin: 12px 0 4px; font-size: 16px; font-weight: 800; color: #0f172a;">Loading Invoice &amp; Payment Options...</h3>
+        <p style="margin: 0; font-size: 13px; color: #64748b;">Synchronizing capability rates, discounts, and active payment gateways from Central.</p>
+      </div>
+    } @else if (invoiceDetail) {
+      <!-- Invoice Top Summary Card -->
+      <div class="table-card" style="margin-bottom: 22px; padding: 22px 24px;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 18px; margin-bottom: 18px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b;">INVOICE NUMBER</span>
+              @if (invoiceDetail.status === 'Completed') {
+                <span class="badge-pill-md badge-available">
+                  <span class="material-symbols-outlined">verified</span>
+                  <span>Paid &amp; Activated</span>
+                </span>
+              } @else if (invoiceDetail.status === 'AwaitingVerification') {
+                <span class="badge-pill-md" style="background: rgba(245, 158, 11, 0.14); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.35);">
+                  <span class="material-symbols-outlined">hourglass_top</span>
+                  <span>Awaiting Bank Verification</span>
+                </span>
+              } @else {
+                <span class="badge-pill-md badge-optional">
+                  <span class="material-symbols-outlined">pending_actions</span>
+                  <span>Pending Payment</span>
+                </span>
+              }
+            </div>
+            <h2 style="margin: 6px 0 4px; font-size: 22px; font-weight: 800; color: #0f172a; font-family: monospace;">{{ invoiceDetail.invoiceNumber }}</h2>
+            <p style="margin: 0; font-size: 13px; color: #475569;">{{ invoiceDetail.description }}</p>
+          </div>
+
+          <div style="text-align: right;">
+            <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #64748b;">TOTAL AMOUNT DUE ({{ invoiceDetail.currencyCode }})</div>
+            <div style="font-size: 28px; font-weight: 900; color: #0050E5; line-height: 1.2; margin-top: 2px;">
+              {{ formatAmount(invoiceDetail.totalAmount) }}
+            </div>
+            @if (invoiceDetail.totalSavingsAmount > 0) {
+              <div style="margin-top: 4px;">
+                <span class="badge-pill-md badge-available" style="font-size: 11px;">
+                  <span class="material-symbols-outlined" style="font-size: 14px;">savings</span>
+                  <span>Total Multi-Month Savings: {{ formatAmount(invoiceDetail.totalSavingsAmount) }}</span>
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 13px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Billed Organization</div>
+            <div style="font-weight: 700; color: #0f172a; margin-top: 3px;">{{ invoiceDetail.organizationName }}</div>
+            <div style="color: #64748b; font-size: 12px;">{{ invoiceDetail.billingEmail }}</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Issue Date</div>
+            <div style="font-weight: 700; color: #0f172a; margin-top: 3px;">{{ invoiceDetail.createdUtc | date:'medium' }}</div>
+          </div>
+          @if (invoiceDetail.completedUtc) {
+            <div>
+              <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Paid Date</div>
+              <div style="font-weight: 700; color: #15803d; margin-top: 3px;">{{ invoiceDetail.completedUtc | date:'medium' }}</div>
+            </div>
+          }
+          @if (invoiceDetail.providerReference) {
+            <div>
+              <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Payment Reference</div>
+              <div style="font-weight: 700; color: #0f172a; font-family: monospace; margin-top: 3px;">{{ invoiceDetail.providerReference }}</div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Itemized Capabilities & Dynamic Billing Duration Table -->
+      <div class="table-card" style="margin-bottom: 24px;">
+        <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">
+              Itemized Capabilities on this Invoice ({{ invoiceDetail.lineItems.length }})
+            </h3>
+            <p style="margin: 3px 0 0; font-size: 12.5px; color: #64748b;">
+              Select your preferred renewal duration per capability. Yearly and Quarterly options automatically apply calculated savings where available.
+            </p>
+          </div>
+          @if (isUpdatingCadence) {
+            <span class="badge-pill-md badge-compulsory">
+              <span class="material-symbols-outlined spin">sync</span>
+              <span>Recalculating Invoice Total...</span>
+            </span>
+          }
+        </div>
+
+        <div class="table-responsive">
+          <table class="bcp-table">
+            <thead>
+              <tr>
+                <th style="width: 56px;">S/N</th>
+                <th>CAPABILITY</th>
+                <th>BASE RATES</th>
+                <th>BILLING DURATION</th>
+                <th>DISCOUNT / SAVINGS</th>
+                <th style="text-align: right;">LINE TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (line of invoiceDetail.lineItems; track line.featureCode; let idx = $index) {
+                <tr>
+                  <td><span class="sn-pill">{{ idx + 1 }}</span></td>
+                  <td>
+                    <div class="table-feat-cell">
+                      <div class="table-feat-icon icon-available">
+                        <span class="material-symbols-outlined">{{ line.icon || 'extension' }}</span>
+                      </div>
+                      <div>
+                        <div class="table-feat-name">{{ line.featureName }}</div>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                          <code class="feature-code-pill">{{ line.featureCode }}</code>
+                          <span style="font-size: 11px; color: #64748b;">{{ line.category }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    @if (line.isYearlyOnly) {
+                      <div style="font-weight: 700; color: #0f172a;">{{ formatAmount(line.yearlyPrice) }}/yr</div>
+                      <span style="font-size: 11px; font-weight: 700; color: #b45309;">Yearly Only Capability</span>
+                    } @else {
+                      <div style="font-weight: 700; color: #0f172a;">{{ formatAmount(line.monthlyPrice) }}/mo</div>
+                      @if (line.yearlyPrice > 0) {
+                        <div style="font-size: 11.5px; color: #64748b;">
+                          or {{ formatAmount(line.yearlyPrice) }}/yr
+                          @if (line.yearlyDiscountPercent > 0) {
+                            <span style="color: #15803d; font-weight: 700;">({{ line.yearlyDiscountPercent }}% off)</span>
+                          }
+                        </div>
+                      }
+                    }
+                  </td>
+                  <td>
+                    @if (invoiceDetail.status === 'Pending' && line.supportedCadences.length > 1) {
+                      <select
+                        class="filter-select"
+                        style="min-width: 195px; font-weight: 700;"
+                        [ngModel]="line.selectedCadence"
+                        (ngModelChange)="onChangeInvoiceLineCadence(line, $event)"
+                        [disabled]="isUpdatingCadence || isProcessingGatewayPayment"
+                      >
+                        @for (cad of line.supportedCadences; track cad) {
+                          <option [value]="cad">
+                            @if (cad === 'Monthly') {
+                              1 Month ({{ formatAmount(line.monthlyPrice) }})
+                            } @else if (cad === 'Quarterly') {
+                              3 Months — Quarterly ({{ formatAmount(line.quarterlyPrice) }})
+                            } @else if (cad === 'Yearly') {
+                              1 Year — Annual ({{ formatAmount(line.yearlyPrice) }}){{ line.yearlyDiscountPercent > 0 ? (' — Save ' + line.yearlyDiscountPercent + '%') : '' }}
+                            }
+                          </option>
+                        }
+                      </select>
+                    } @else {
+                      <span class="badge-pill-md badge-billing">
+                        <span class="material-symbols-outlined">event_repeat</span>
+                        <span>
+                          @if (line.isYearlyOnly || line.selectedCadence === 'Yearly') {
+                            1 Year (Annual{{ line.isYearlyOnly ? ' — Yearly Only' : '' }})
+                          } @else if (line.selectedCadence === 'Quarterly') {
+                            3 Months (Quarterly)
+                          } @else {
+                            1 Month (Monthly)
+                          }
+                        </span>
+                      </span>
+                    }
+                  </td>
+                  <td>
+                    @if (line.appliedSavingsAmount > 0) {
+                      <span class="badge-pill-md badge-available">
+                        <span class="material-symbols-outlined">loyalty</span>
+                        <span>Save {{ line.appliedDiscountPercent }}% ({{ formatAmount(line.appliedSavingsAmount) }} off)</span>
+                      </span>
+                    } @else {
+                      <span style="font-size: 12px; color: #94a3b8;">Standard Rate</span>
+                    }
+                  </td>
+                  <td style="text-align: right;">
+                    <strong style="font-size: 15px; color: #0f172a;">{{ formatAmount(line.lineTotal) }}</strong>
+                    <div style="font-size: 11px; color: #64748b;">+{{ line.durationDays }} days access</div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              @if (invoiceDetail.totalSavingsAmount > 0) {
+                <tr style="background: #f8fafc;">
+                  <td colspan="5" style="text-align: right; font-weight: 700; color: #475569;">Subtotal (Before Annual/Multi-Month Discount):</td>
+                  <td style="text-align: right; font-weight: 700; color: #64748b; text-decoration: line-through;">{{ formatAmount(invoiceDetail.subTotalAmount) }}</td>
+                </tr>
+                <tr style="background: #f0fdf4;">
+                  <td colspan="5" style="text-align: right; font-weight: 700; color: #15803d;">Total Discount Savings Applied:</td>
+                  <td style="text-align: right; font-weight: 800; color: #15803d;">-{{ formatAmount(invoiceDetail.totalSavingsAmount) }}</td>
+                </tr>
+              }
+              <tr style="background: #f8fafc; border-top: 2px solid #cbd5e1;">
+                <td colspan="5" style="text-align: right; font-size: 14px; font-weight: 800; color: #0f172a;">TOTAL PAYABLE ({{ invoiceDetail.currencyCode }}):</td>
+                <td style="text-align: right; font-size: 18px; font-weight: 900; color: #0050E5;">{{ formatAmount(invoiceDetail.totalAmount) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Available Payment Methods Section (Only shown when invoice is not yet Completed) -->
+      @if (invoiceDetail.status !== 'Completed') {
+        <div class="table-card" style="padding: 22px 24px; margin-bottom: 24px;">
+          <div style="margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a;">Select Payment Method</h3>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">
+              Choose from the payment gateways enabled by Central Platform Settings. Gateways without configured keys are automatically marked unavailable.
+            </p>
+          </div>
+
+          @if (invoiceDetail.paymentMethods.length > 0) {
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 20px;">
+              @for (method of invoiceDetail.paymentMethods; track method.providerCode) {
+                <div
+                  (click)="selectPaymentGateway(method)"
+                  [style.cursor]="method.isConfigured ? 'pointer' : 'not-allowed'"
+                  [style.opacity]="method.isConfigured ? '1' : '0.62'"
+                  [style.border]="selectedGatewayCode === method.providerCode && method.isConfigured ? '2px solid #0050E5' : '1px solid #cbd5e1'"
+                  [style.background]="selectedGatewayCode === method.providerCode && method.isConfigured ? 'rgba(0, 80, 229, 0.04)' : '#ffffff'"
+                  style="border-radius: 12px; padding: 16px; transition: all 0.15s ease; display: flex; flex-direction: column; justify-content: space-between; gap: 10px;"
+                >
+                  <div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 38px; height: 38px; border-radius: 9px; background: rgba(0, 80, 229, 0.08); color: #0050E5; display: flex; align-items: center; justify-content: center;">
+                          <span class="material-symbols-outlined">{{ method.icon || 'payments' }}</span>
+                        </div>
+                        <strong style="font-size: 14.5px; color: #0f172a;">{{ method.name }}</strong>
+                      </div>
+                      @if (method.isConfigured) {
+                        <span class="badge-pill-md badge-available" style="font-size: 10.5px;">
+                          <span class="material-symbols-outlined" style="font-size: 13px;">
+                            {{ selectedGatewayCode === method.providerCode ? 'radio_button_checked' : 'check_circle' }}
+                          </span>
+                          <span>{{ selectedGatewayCode === method.providerCode ? 'Selected' : 'Available' }}</span>
+                        </span>
+                      } @else {
+                        <span class="badge-pill-md" style="font-size: 10.5px; background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.25);">
+                          <span class="material-symbols-outlined" style="font-size: 13px;">block</span>
+                          <span>Not Available</span>
+                        </span>
+                      }
+                    </div>
+                    <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.45;">{{ method.description }}</p>
+                  </div>
+
+                  @if (!method.isConfigured) {
+                    <div style="padding: 7px 10px; border-radius: 7px; background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 11.5px; font-weight: 700;">
+                      {{ method.statusBadge }}
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Selected Gateway Checkout Panel -->
+            @if (activeSelectedGateway) {
+              @if (activeSelectedGateway.providerCode === 'BankDeposit') {
+                <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; background: #f8fafc;">
+                  <h4 style="margin: 0 0 12px; font-size: 14.5px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: #0050E5;">account_balance</span>
+                    <span>Direct Bank Deposit / Wire Transfer Instructions</span>
+                  </h4>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 14px; background: #ffffff; padding: 14px; border-radius: 9px; border: 1px solid #e2e8f0;">
+                    <div>
+                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Bank Name</div>
+                      <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ activeSelectedGateway.bankName }}</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Account Name</div>
+                      <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ activeSelectedGateway.accountName }}</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Account Number / IBAN</div>
+                      <div style="font-size: 15px; font-weight: 900; color: #0050E5; font-family: monospace; margin-top: 2px;">{{ activeSelectedGateway.accountNumber }}</div>
+                    </div>
+                    @if (activeSelectedGateway.sortCodeOrSwift) {
+                      <div>
+                        <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">Sort Code / SWIFT / BIC</div>
+                        <div style="font-size: 14px; font-weight: 800; color: #0f172a; font-family: monospace; margin-top: 2px;">{{ activeSelectedGateway.sortCodeOrSwift }}</div>
+                      </div>
+                    }
+                  </div>
+
+                  @if (activeSelectedGateway.instructions) {
+                    <p style="margin: 0 0 14px; font-size: 12.5px; color: #475569; background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 12px; border-radius: 8px;">
+                      <strong>Note:</strong> {{ activeSelectedGateway.instructions }}
+                    </p>
+                  }
+
+                  <div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;">
+                    <div style="flex: 1 1 280px;">
+                      <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Transfer Reference / Teller / Session ID
+                      </label>
+                      <input
+                        type="text"
+                        [(ngModel)]="bankDepositProofRef"
+                        class="search-input"
+                        style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px;"
+                        placeholder="e.g. TRF-20261030-994812"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      [disabled]="isProcessingGatewayPayment || !bankDepositProofRef.trim()"
+                      (click)="submitBankDepositProof()"
+                    >
+                      <span class="material-symbols-outlined" [class.spin]="isProcessingGatewayPayment">
+                        {{ isProcessingGatewayPayment ? 'sync' : 'upload_file' }}
+                      </span>
+                      <span>{{ isProcessingGatewayPayment ? 'Submitting Proof...' : ('Submit Deposit Proof (' + formatAmount(invoiceDetail.totalAmount) + ')') }}</span>
+                    </button>
+                  </div>
+                </div>
+              } @else {
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 16px 20px; border-radius: 12px; background: #f8fafc; border: 1px solid #e2e8f0;">
+                  <div>
+                    <div style="font-size: 14px; font-weight: 800; color: #0f172a;">
+                      Pay with {{ activeSelectedGateway.name }}
+                    </div>
+                    <div style="font-size: 12.5px; color: #64748b;">
+                      Instant capability activation and receipt generation upon payment confirmation.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    style="padding: 11px 22px; font-size: 14px; font-weight: 800;"
+                    [disabled]="isProcessingGatewayPayment || isUpdatingCadence"
+                    (click)="proceedWithSelectedGatewayPayment()"
+                  >
+                    <span class="material-symbols-outlined" [class.spin]="isProcessingGatewayPayment">
+                      {{ isProcessingGatewayPayment ? 'sync' : 'lock' }}
+                    </span>
+                    <span>
+                      {{ isProcessingGatewayPayment ? 'Opening ' + activeSelectedGateway.name + '...' : ('Pay ' + formatAmount(invoiceDetail.totalAmount) + ' Now with ' + activeSelectedGateway.name) }}
+                    </span>
+                  </button>
+                </div>
+              }
+            }
+          } @else {
+            <div class="empty-catalog-card" style="padding: 28px;">
+              <span class="material-symbols-outlined empty-icon">payments</span>
+              <h3>No Payment Gateways Enabled in Central Settings</h3>
+              <p>Please enable at least one payment method (Paystack, Flutterwave, Stripe, or Direct Bank Deposit) in Central Platform Settings (/centralwks/platform-settings).</p>
+            </div>
+          }
+        </div>
+      }
+    }
   }
 </div>
 

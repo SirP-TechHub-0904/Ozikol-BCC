@@ -91,6 +91,19 @@ public class MasterBillingTransaction
     public string? BillingCadence { get; set; }
 
     /// <summary>
+    /// Serialized JSON array of invoice line items with per-capability duration (1 Month, 3 Months, 1 Year),
+    /// unit pricing, and calculated annual/quarterly discount savings.
+    /// </summary>
+    [MaxLength(4000)]
+    public string? LineItemsJson { get; set; }
+
+    /// <summary>
+    /// Optional bank transfer reference, narration, or payment receipt note submitted by the tenant for Direct Bank Deposit verification.
+    /// </summary>
+    [MaxLength(250)]
+    public string? PaymentProofRef { get; set; }
+
+    /// <summary>
     /// UTC timestamp when this transaction was created.
     /// </summary>
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;

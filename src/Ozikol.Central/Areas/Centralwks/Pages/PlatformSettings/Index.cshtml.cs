@@ -160,6 +160,59 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             [MaxLength(255)]
             public string? PaystackWebhookSecret { get; set; }
 
+            /// <summary>Gets or sets whether Central Flutterwave checkout is enabled for workspace capability subscriptions &amp; renewals.</summary>
+            public bool EnableFlutterwave { get; set; } = false;
+
+            /// <summary>Gets or sets Central Flutterwave Public Key (FLWPUBK_LIVE-... or FLWPUBK_TEST-...).</summary>
+            [MaxLength(255)]
+            public string? FlutterwavePublicKey { get; set; }
+
+            /// <summary>Gets or sets Central Flutterwave Secret Key (FLWSECK_LIVE-... or FLWSECK_TEST-...).</summary>
+            [MaxLength(255)]
+            public string? FlutterwaveSecretKey { get; set; }
+
+            /// <summary>Gets or sets Central Flutterwave Webhook Secret Hash.</summary>
+            [MaxLength(255)]
+            public string? FlutterwaveWebhookSecret { get; set; }
+
+            /// <summary>Gets or sets whether Central Stripe checkout is enabled for workspace capability subscriptions &amp; renewals.</summary>
+            public bool EnableStripe { get; set; } = false;
+
+            /// <summary>Gets or sets Central Stripe Publishable Key (pk_live_... or pk_test_...).</summary>
+            [MaxLength(255)]
+            public string? StripePublishableKey { get; set; }
+
+            /// <summary>Gets or sets Central Stripe Secret Key (sk_live_... or sk_test_...).</summary>
+            [MaxLength(255)]
+            public string? StripeSecretKey { get; set; }
+
+            /// <summary>Gets or sets Central Stripe Webhook Signing Secret (whsec_...).</summary>
+            [MaxLength(255)]
+            public string? StripeWebhookSecret { get; set; }
+
+            /// <summary>Gets or sets whether Direct Bank Deposit / Wire Transfer is enabled on Central invoices.</summary>
+            public bool EnableBankDeposit { get; set; } = true;
+
+            /// <summary>Gets or sets the beneficiary bank institution name for Direct Bank Deposit.</summary>
+            [MaxLength(150)]
+            public string? BankDepositBankName { get; set; }
+
+            /// <summary>Gets or sets the beneficiary corporate account name for Direct Bank Deposit.</summary>
+            [MaxLength(150)]
+            public string? BankDepositAccountName { get; set; }
+
+            /// <summary>Gets or sets the beneficiary account number or IBAN for Direct Bank Deposit.</summary>
+            [MaxLength(100)]
+            public string? BankDepositAccountNumber { get; set; }
+
+            /// <summary>Gets or sets the optional routing number, sort code, or SWIFT/BIC code for Direct Bank Deposit.</summary>
+            [MaxLength(100)]
+            public string? BankDepositSortCodeOrSwift { get; set; }
+
+            /// <summary>Gets or sets custom payment narration or verification instructions for Direct Bank Deposit.</summary>
+            [MaxLength(500)]
+            public string? BankDepositInstructions { get; set; }
+
             /// <summary>Gets or sets whether platform-wide maintenance mode is engaged.</summary>
             public bool IsMaintenanceMode { get; set; } = false;
 
@@ -237,6 +290,20 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 PaystackPublicKey = settings.PaystackPublicKey,
                 PaystackSecretKey = settings.PaystackSecretKey,
                 PaystackWebhookSecret = settings.PaystackWebhookSecret,
+                EnableFlutterwave = settings.EnableFlutterwave,
+                FlutterwavePublicKey = settings.FlutterwavePublicKey,
+                FlutterwaveSecretKey = settings.FlutterwaveSecretKey,
+                FlutterwaveWebhookSecret = settings.FlutterwaveWebhookSecret,
+                EnableStripe = settings.EnableStripe,
+                StripePublishableKey = settings.StripePublishableKey,
+                StripeSecretKey = settings.StripeSecretKey,
+                StripeWebhookSecret = settings.StripeWebhookSecret,
+                EnableBankDeposit = settings.EnableBankDeposit,
+                BankDepositBankName = settings.BankDepositBankName,
+                BankDepositAccountName = settings.BankDepositAccountName,
+                BankDepositAccountNumber = settings.BankDepositAccountNumber,
+                BankDepositSortCodeOrSwift = settings.BankDepositSortCodeOrSwift,
+                BankDepositInstructions = settings.BankDepositInstructions,
                 IsMaintenanceMode = settings.IsMaintenanceMode,
                 MaintenanceMessage = settings.MaintenanceMessage,
                 MinimumAppVersion = !string.IsNullOrWhiteSpace(settings.MinimumAppVersion) ? settings.MinimumAppVersion : "1.0.0"
@@ -304,6 +371,35 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             {
                 settings.PaystackWebhookSecret = Input.PaystackWebhookSecret.Trim();
             }
+
+            settings.EnableFlutterwave = Input.EnableFlutterwave;
+            settings.FlutterwavePublicKey = Input.FlutterwavePublicKey?.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.FlutterwaveSecretKey))
+            {
+                settings.FlutterwaveSecretKey = Input.FlutterwaveSecretKey.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(Input.FlutterwaveWebhookSecret))
+            {
+                settings.FlutterwaveWebhookSecret = Input.FlutterwaveWebhookSecret.Trim();
+            }
+
+            settings.EnableStripe = Input.EnableStripe;
+            settings.StripePublishableKey = Input.StripePublishableKey?.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.StripeSecretKey))
+            {
+                settings.StripeSecretKey = Input.StripeSecretKey.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(Input.StripeWebhookSecret))
+            {
+                settings.StripeWebhookSecret = Input.StripeWebhookSecret.Trim();
+            }
+
+            settings.EnableBankDeposit = Input.EnableBankDeposit;
+            settings.BankDepositBankName = Input.BankDepositBankName?.Trim();
+            settings.BankDepositAccountName = Input.BankDepositAccountName?.Trim();
+            settings.BankDepositAccountNumber = Input.BankDepositAccountNumber?.Trim();
+            settings.BankDepositSortCodeOrSwift = Input.BankDepositSortCodeOrSwift?.Trim();
+            settings.BankDepositInstructions = Input.BankDepositInstructions?.Trim();
 
             settings.IsMaintenanceMode = Input.IsMaintenanceMode;
             settings.MaintenanceMessage = Input.MaintenanceMessage?.Trim();

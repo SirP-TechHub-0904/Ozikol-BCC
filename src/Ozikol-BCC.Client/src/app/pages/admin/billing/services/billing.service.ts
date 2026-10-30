@@ -120,6 +120,85 @@ export interface BillingInvoice {
 }
 
 /**
+ * Result of preparing/generating an invoice before navigating to /billing/invoices/:id.
+ */
+export interface PrepareBillingInvoiceResponse {
+  invoiceId: string;
+  invoiceNumber: string;
+}
+
+/**
+ * Individual capability line item inside a full billing invoice, supporting dynamic duration selection
+ * (1 Month, 3 Months, 1 Year) and automatic discount calculation.
+ */
+export interface BillingInvoiceLineItem {
+  featureId: string;
+  featureCode: string;
+  featureName: string;
+  category: string;
+  icon: string;
+  selectedCadence: 'Monthly' | 'Quarterly' | 'Yearly' | string;
+  months: number;
+  isYearlyOnly: boolean;
+  isMonthlyOnly: boolean;
+  supportedCadences: string[];
+  monthlyPrice: number;
+  quarterlyPrice: number;
+  yearlyPrice: number;
+  yearlyDiscountPercent: number;
+  yearlySavingsAmount: number;
+  quarterlyDiscountPercent: number;
+  quarterlySavingsAmount: number;
+  lineTotal: number;
+  appliedSavingsAmount: number;
+  appliedDiscountPercent: number;
+}
+
+/**
+ * Payment gateway / method option displayed on the dedicated Invoice Page (/billing/invoices/:id).
+ */
+export interface BillingPaymentMethodOption {
+  providerCode: 'Paystack' | 'Flutterwave' | 'Stripe' | 'BankDeposit' | string;
+  name: string;
+  description: string;
+  icon: string;
+  isEnabled: boolean;
+  isConfigured: boolean;
+  statusBadge: string;
+  publicKey?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  sortCodeOrSwift?: string;
+  instructions?: string;
+}
+
+/**
+ * Full invoice detail payload for /billing/invoices/:id.
+ */
+export interface BillingInvoiceDetail {
+  id: string;
+  invoiceNumber: string;
+  status: string;
+  organizationName: string;
+  tenantKey: string;
+  billingEmail: string;
+  currency: string;
+  currencySymbol: string;
+  subtotalBeforeDiscount: number;
+  totalSavingsAmount: number;
+  totalAmount: number;
+  paymentProvider?: string;
+  reference?: string;
+  paymentProofRef?: string;
+  notes?: string;
+  createdUtc: string;
+  updatedUtc?: string;
+  lineItems: BillingInvoiceLineItem[];
+  paymentMethods: BillingPaymentMethodOption[];
+}
+
+/**
  * Saved payment card method for automated settlements.
  */
 export interface PaymentCard {
@@ -242,6 +321,54 @@ export class BillingService {
    */
   getInvoices(): Observable<ApiResponse<BillingInvoice[]>> {
     return this.api.get<ApiResponse<BillingInvoice[]>>('billing/invoices');
+  }
+
+  /**
+   * Automatically prepares/generates an itemized invoice for either a single capability ("Pay & Renew")
+   * or all expiring capabilities ("Renew All Expiring Features") and returns its Invoice ID.
+   */
+  prepareInvoice(featureCodes: string[], cadence?: string): Observable<ApiResponse<PrepareBillingInvoiceResponse>> {
+    return this.api.post<ApiResponse<PrepareBillingInvoiceResponse>>('billing/invoices/prepare', {
+      featureCodes,
+      cadence
+    });
+  }
+
+  /**
+   * Retrieves the full invoice detail and payment gateway options for /billing/invoices/:id.
+   */
+  getInvoiceDetail(invoiceId: string): Observable<ApiResponse<BillingInvoiceDetail>> {
+    return this.api.get<ApiResponse<BillingInvoiceDetail>>(`billing/invoices/${invoiceId}`);
+  }
+
+  /**
+   * Updates the billing duration (Monthly = 1 Month, Quarterly = 3 Months, Yearly = 1 Year) for a line item on a Pending invoice.
+   */
+  updateInvoiceLineCadence(
+    invoiceId: string,
+    cadence: 'Monthly' | 'Quarterly' | 'Yearly' | string,
+    featureCode?: string
+  ): Observable<ApiResponse<BillingInvoiceDetail>> {
+    return this.api.post<ApiResponse<BillingInvoiceDetail>>(`billing/invoices/${invoiceId}/cadence`, {
+      featureCode,
+      cadence
+    });
+  }
+
+  /**
+   * Initializes Paystack checkout for a specific invoice on /billing/invoices/:id.
+   */
+  payInvoiceWithPaystack(invoiceId: string): Observable<ApiResponse<InitializeFeaturePaymentPayload>> {
+    return this.api.post<ApiResponse<InitializeFeaturePaymentPayload>>(`billing/invoices/${invoiceId}/pay/paystack`, {});
+  }
+
+  /**
+   * Submits a Direct Bank Deposit transfer reference / proof for a specific invoice on /billing/invoices/:id.
+   */
+  submitInvoiceBankDeposit(invoiceId: string, transferReference: string): Observable<ApiResponse<BillingInvoiceDetail>> {
+    return this.api.post<ApiResponse<BillingInvoiceDetail>>(`billing/invoices/${invoiceId}/pay/bank-deposit`, {
+      transferReference
+    });
   }
 
   /**

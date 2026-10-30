@@ -512,7 +512,7 @@
                                         }
 
                                         <button type="button"
-                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                                 class="badge"
                                                 style="background: @(item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.08)" : "#f1f5f9")); color: @(item.EffectiveFreeTrialDays > 0 || item.HasCustomFreeTrialOverride ? "#6d28d9" : "#64748b"); font-weight: 700; font-size: 11px; border: 1px solid @(item.HasCustomFreeTrialOverride ? "#7c3aed" : (item.EffectiveFreeTrialDays > 0 ? "rgba(124, 58, 237, 0.25)" : "#e2e8f0")); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
                                                 title="Click to configure Custom Free Trial Days for @Model.Tenant.OrganizationName (overrides General @(feat.FreeTrialDays)d trial)">
@@ -545,13 +545,19 @@
                                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid #e2e8f0; flex-wrap: wrap;">
                                     <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                         <button type="button"
-                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                                 style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-family: inherit;"
                                                 title="Click to set Custom Price &amp; Custom Free Trial Days for @Model.Tenant.OrganizationName">
                                             @if (item.EffectiveMonthlyPrice > 0)
                                             {
                                                 <span style="font-size: 13px; font-weight: 800; color: #0f172a;">
                                                     @Model.TenantCurrencySymbol@item.EffectiveTenantCurrencyPrice.ToString("N2")/mo
+                                                </span>
+                                            }
+                                            else if (item.EffectiveYearlyPrice > 0)
+                                            {
+                                                <span style="font-size: 13px; font-weight: 800; color: #0050e5;">
+                                                    @Model.TenantCurrencySymbol@item.EffectiveTenantCurrencyYearlyPrice.ToString("N2")/yr (Yearly Only)
                                                 </span>
                                             }
                                             else
@@ -579,7 +585,7 @@
                                             <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                                 <button type="button"
                                                         class="btn-admin btn-admin-secondary btn-admin-sm"
-                                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                                         title="Set Custom Price &amp; Free Trial Days for @Model.Tenant.OrganizationName">
                                                     <span class="material-symbols-outlined" style="font-size: 14px;">payments</span>
                                                     <span>Price / Trial</span>
@@ -633,7 +639,7 @@
                                         <div style="display: inline-flex; align-items: center; gap: 6px; position: relative;">
                                             <button type="button"
                                                     class="btn-admin btn-admin-secondary btn-admin-sm"
-                                                    onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                                    onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                                     title="Set Custom Price &amp; Free Trial Days for @Model.Tenant.OrganizationName">
                                                 <span class="material-symbols-outlined" style="font-size: 14px;">attach_money</span>
                                                 <span>Price / Trial</span>
@@ -674,7 +680,7 @@
                                                     <div style="height: 1px; background: #e2e8f0; margin: 4px 0;"></div>
 
                                                     <button type="button"
-                                                            onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                                            onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                                             class="dropdown-item-btn"
                                                             style="width: 100%; text-align: left; padding: 8px 10px; border: none; background: transparent; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #0050e5; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                                                         <span class="material-symbols-outlined" style="font-size: 16px;">payments</span>
@@ -784,7 +790,7 @@ else
                             </td>
                             <td>
                                 <button type="button"
-                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                         style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 9px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-family: inherit;"
                                         title="Click to update Custom Price &amp; Free Trial Days">
                                     @if (item.EffectiveMonthlyPrice > 0)
@@ -795,6 +801,11 @@ else
                                             <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 9.5px;">Custom</span>
                                         }
                                     }
+                                    else if (item.EffectiveYearlyPrice > 0)
+                                    {
+                                        <strong style="font-size: 12.5px; color: #0050e5;">@Model.TenantCurrencySymbol@item.EffectiveTenantCurrencyYearlyPrice.ToString("N2")/yr</strong>
+                                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050e5; font-size: 9.5px;">Yearly Only</span>
+                                    }
                                     else
                                     {
                                         <strong style="font-size: 12px; color: #059669;">Included Free</strong>
@@ -804,7 +815,7 @@ else
                             </td>
                             <td>
                                 <button type="button"
-                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))"
+                                        onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')"
                                         class="badge"
                                         style="background: @(item.HasCustomFreeTrialOverride ? "rgba(124, 58, 237, 0.14)" : "rgba(124, 58, 237, 0.08)"); color: #6d28d9; font-weight: 700; font-size: 11px; border: 1px solid @(item.HasCustomFreeTrialOverride ? "#7c3aed" : "rgba(124, 58, 237, 0.25)"); display: inline-flex; align-items: center; gap: 4px; cursor: pointer;"
                                         title="Click to set Custom Free Trial Days for @Model.Tenant.OrganizationName">
@@ -825,7 +836,7 @@ else
                                     <div style="display: inline-flex; align-items: center; gap: 6px;">
                                         <button type="button"
                                                 class="btn-admin btn-admin-secondary btn-admin-sm"
-                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"))">
+                                                onclick="openCustomPriceModal('@feat.Id', '@Html.Raw(feat.Name.Replace("'", "\\'"))', '@feat.MonthlyPrice.ToString("F2")', '@item.EffectiveMonthlyPrice.ToString("F2")', @(feat.FreeTrialDays), @(item.EffectiveFreeTrialDays), @(item.HasUsedFreeTrial ? "true" : "false"), @(item.HasCustomFreeTrialOverride ? "true" : "false"), '@item.EffectiveYearlyPrice.ToString("F2")')">
                                             Price / Trial
                                         </button>
                                         <form method="post" asp-page-handler="ToggleTenantActive" style="margin: 0;">
@@ -899,12 +910,18 @@ else
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 16px;">
-                <label class="form-label" style="font-weight: 700; font-size: 12.5px;">Custom Monthly Base Price ($ USD)</label>
-                <input type="number" step="0.01" min="0" name="customPrice" id="modalCustomPriceInput" class="form-control" placeholder="e.g. 0.00" required />
-                <span class="form-help" style="font-size: 11.5px; color: #64748b;">
-                    Automatically converts to <strong>@Model.TenantCurrencyCode (@Model.TenantCurrencySymbol)</strong> and marks this capability Available for @Model.Tenant.OrganizationName.
-                </span>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label" style="font-weight: 700; font-size: 12.5px;">Custom Monthly Price ($ USD)</label>
+                    <input type="number" step="0.01" min="0" name="customPrice" id="modalCustomPriceInput" class="form-control" placeholder="e.g. 0.00 (0 = Yearly Only)" oninput="onTenantCustomMonthlyInput(this)" required />
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label class="form-label" style="font-weight: 700; font-size: 12.5px;">Custom Yearly Price ($ USD)</label>
+                    <input type="number" step="0.01" min="0" name="customYearlyPrice" id="modalCustomYearlyPriceInput" class="form-control" placeholder="e.g. 0.00" oninput="updateTenantCustomPricingBadge()" />
+                </div>
+            </div>
+            <div id="modalCustomPricingDiscountBadge" style="font-size: 11.5px; font-weight: 700; padding: 6px 10px; border-radius: 7px; margin-bottom: 14px; background: #f1f5f9; color: #475569;">
+                Automatically converts to <strong>@Model.TenantCurrencyCode (@Model.TenantCurrencySymbol)</strong>. Set Monthly = 0 and Yearly &gt; 0 for Yearly-Only billing.
             </div>
 
             <div class="form-group" style="margin-bottom: 16px; padding: 14px; background: rgba(124, 58, 237, 0.05); border: 1.5px solid rgba(124, 58, 237, 0.25); border-radius: 10px;">
@@ -1101,12 +1118,22 @@ else
             }
         });
 
-        function openCustomPriceModal(featureId, featureName, masterPrice, currentPrice, masterTrialDays, currentTrialDays, hasUsedTrial, hasCustomTrialOverride) {
+        function openCustomPriceModal(featureId, featureName, masterPrice, currentPrice, masterTrialDays, currentTrialDays, hasUsedTrial, hasCustomTrialOverride, currentYearlyPrice) {
             currentModalGeneralTrialDays = (masterTrialDays !== undefined && masterTrialDays !== null) ? masterTrialDays : 14;
             document.getElementById('modalFeatureId').value = featureId;
             document.getElementById('modalFeatureName').textContent = featureName;
             document.getElementById('modalMasterPrice').textContent = '$' + masterPrice;
             document.getElementById('modalCustomPriceInput').value = currentPrice;
+            var yearlyInput = document.getElementById('modalCustomYearlyPriceInput');
+            if (yearlyInput) {
+                if (currentYearlyPrice !== undefined && currentYearlyPrice !== null) {
+                    yearlyInput.value = currentYearlyPrice;
+                } else {
+                    var mp = parseFloat(currentPrice) || 0;
+                    yearlyInput.value = (mp * 10).toFixed(2);
+                }
+            }
+            updateTenantCustomPricingBadge();
             var masterTrialEl = document.getElementById('modalMasterTrialDays');
             if (masterTrialEl) masterTrialEl.textContent = currentModalGeneralTrialDays + ' days';
             var customTrialEl = document.getElementById('modalCustomTrialDaysInput');
@@ -1117,6 +1144,49 @@ else
             if (resetTrialChk) resetTrialChk.checked = false;
             onToggleCustomTrialCheckbox();
             document.getElementById('customPriceModalBackdrop').style.display = 'flex';
+        }
+
+        function onTenantCustomMonthlyInput(input) {
+            var val = parseFloat(input.value) || 0;
+            var yearlyEl = document.getElementById('modalCustomYearlyPriceInput');
+            if (yearlyEl && (!parseFloat(yearlyEl.value) || parseFloat(yearlyEl.value) === 0)) {
+                yearlyEl.value = (val * 10).toFixed(2);
+            }
+            updateTenantCustomPricingBadge();
+        }
+
+        function updateTenantCustomPricingBadge() {
+            var monthlyVal = parseFloat(document.getElementById('modalCustomPriceInput')?.value || '0') || 0;
+            var yearlyVal = parseFloat(document.getElementById('modalCustomYearlyPriceInput')?.value || '0') || 0;
+            var badgeEl = document.getElementById('modalCustomPricingDiscountBadge');
+            if (!badgeEl) return;
+
+            if (monthlyVal <= 0 && yearlyVal > 0) {
+                badgeEl.textContent = 'Yearly Only Billing ($' + yearlyVal.toFixed(2) + '/yr — 1 Month option disabled on tenant invoice)';
+                badgeEl.style.background = 'rgba(0, 80, 229, 0.1)';
+                badgeEl.style.color = '#0050e5';
+            } else if (monthlyVal > 0 && yearlyVal > 0) {
+                var fullAnnual = monthlyVal * 12;
+                if (yearlyVal < fullAnnual) {
+                    var saved = fullAnnual - yearlyVal;
+                    var pct = Math.round((saved / fullAnnual) * 100);
+                    badgeEl.textContent = 'Annual Discount: Save ' + pct + '% ($' + saved.toFixed(2) + '/yr off vs 12 months)';
+                    badgeEl.style.background = 'rgba(16, 185, 129, 0.12)';
+                    badgeEl.style.color = '#059669';
+                } else {
+                    badgeEl.textContent = 'Monthly ($' + monthlyVal.toFixed(2) + '/mo) & Yearly ($' + yearlyVal.toFixed(2) + '/yr)';
+                    badgeEl.style.background = '#f1f5f9';
+                    badgeEl.style.color = '#475569';
+                }
+            } else if (monthlyVal > 0 && yearlyVal <= 0) {
+                badgeEl.textContent = 'Monthly Only Billing ($' + monthlyVal.toFixed(2) + '/mo)';
+                badgeEl.style.background = '#f1f5f9';
+                badgeEl.style.color = '#475569';
+            } else {
+                badgeEl.textContent = 'Free / Included for Tenant ($0.00)';
+                badgeEl.style.background = 'rgba(16, 185, 129, 0.12)';
+                badgeEl.style.color = '#059669';
+            }
         }
 
         function onToggleCustomTrialCheckbox() {

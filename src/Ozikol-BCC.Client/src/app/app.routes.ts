@@ -317,6 +317,7 @@ export const routes: Routes = [
       // 7. Suite 13: Billing, Features & Subscriptions (Console Only)
       { path: 'billing/features', component: BillingConsoleComponent, data: { tab: 'features', roles: ['SuperAdmin', 'Admin'] } },
       { path: 'billing/subscriptions', component: BillingConsoleComponent, data: { tab: 'subscriptions', roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'billing/invoices/:id', component: BillingConsoleComponent, data: { tab: 'invoice-detail', roles: ['SuperAdmin', 'Admin'] } },
       { path: 'billing/paymentmethod', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
       { path: 'billing/payment-methods', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
       { path: 'billing/plans', redirectTo: 'billing/features', pathMatch: 'full' },

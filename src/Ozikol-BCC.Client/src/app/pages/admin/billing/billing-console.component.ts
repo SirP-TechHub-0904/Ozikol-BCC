@@ -9,7 +9,10 @@ import {
   BillingService,
   BillingFeaturesSnapshot,
   BillingFeatureItem,
-  BillingInvoice
+  BillingInvoice,
+  BillingInvoiceDetail,
+  BillingInvoiceLineItem,
+  BillingPaymentMethodOption
 } from './services/billing.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TranslationService } from '../../../core/services/translation.service';
@@ -23,7 +26,7 @@ export interface SuiteFeatureGroup {
   comingSoonCount: number;
 }
 
-export type BillingPageSection = 'features' | 'subscriptions';
+export type BillingPageSection = 'features' | 'subscriptions' | 'invoice-detail';
 
 /**
  * Billing, Features & Subscriptions Console (Suite 13).
@@ -88,11 +91,21 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     totalRecurringMonthly: 0
   };
 
-  // Subscriptions & Invoices State (/billing/subscriptions)
+  // Subscriptions & Invoices State (/billing/subscriptions & /billing/invoices/:id)
   invoices: BillingInvoice[] = [];
   invoiceStatusFilter: 'all' | 'pending' | 'completed' = 'all';
   selectedInvoice: BillingInvoice | null = null;
   showInvoiceModal = false;
+
+  // Dedicated Full-Page Invoice & Multi-Gateway Checkout State (/billing/invoices/:id)
+  activeInvoiceId: string | null = null;
+  invoiceDetail: BillingInvoiceDetail | null = null;
+  isLoadingInvoiceDetail = false;
+  updatingCadenceFeatureCode: string | null = null;
+  selectedGatewayCode: string = 'Paystack';
+  isProcessingGatewayPayment = false;
+  bankDepositReferenceInput = '';
+  private paramMapSub: Subscription | null = null;
 
   // Feature Details Page / Modal
   selectedFeatureDetail: (BillingFeatureItem & { serialNo?: number; suiteLetter?: string }) | null = null;
@@ -123,6 +136,17 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       this.resolveActivePageFromRoute(data?.['tab']);
     });
 
+    this.paramMapSub = this.route.paramMap.subscribe(params => {
+      const invId = params.get('id');
+      if (invId && invId.trim()) {
+        this.activePage = 'invoice-detail';
+        this.activeInvoiceId = invId.trim();
+        this.loadInvoiceDetailPage(this.activeInvoiceId);
+      } else {
+        this.activeInvoiceId = null;
+      }
+    });
+
     this.queryParamSub = this.route.queryParamMap.subscribe(params => {
       const code = params.get('feature');
       if (code && code.trim()) {
@@ -145,6 +169,9 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     if (this.routeSub) {
       this.routeSub.unsubscribe();
     }
+    if (this.paramMapSub) {
+      this.paramMapSub.unsubscribe();
+    }
     if (this.queryParamSub) {
       this.queryParamSub.unsubscribe();
     }
@@ -159,7 +186,10 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    */
   private resolveActivePageFromRoute(tabData?: string): void {
     const url = (this.router.url || '').toLowerCase();
-    if (tabData === 'subscriptions' || tabData === 'invoices' || url.includes('/billing/subscriptions') || url.includes('/billing/invoices')) {
+    const paramId = this.route.snapshot.paramMap.get('id');
+    if (tabData === 'invoice-detail' || paramId || /\/billing\/invoices\/[0-9a-f-]+/i.test(url)) {
+      this.activePage = 'invoice-detail';
+    } else if (tabData === 'subscriptions' || tabData === 'invoices' || url.includes('/billing/subscriptions') || url.includes('/billing/invoices')) {
       this.activePage = 'subscriptions';
     } else {
       this.activePage = 'features';
@@ -355,43 +385,209 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Launches the Central Paystack Inline Checkout popup to pay for and renew a single capability.
+   * Automatically prepares an invoice for ONLY the clicked capability (even if other capabilities are also expiring)
+   * and navigates to the dedicated full-page Invoice & Multi-Gateway Checkout screen (/billing/invoices/:id).
    */
   payAndRenewFeature(feat: BillingFeatureItem): void {
     if (!feat || !feat.featureCode) return;
     this.payingFeatureCode = feat.featureCode;
-    this.launchPaystackInlineCheckout([feat.featureCode], feat.name);
+    this.billingService.prepareInvoice([feat.featureCode], feat.billingCadence || 'Monthly').subscribe({
+      next: res => {
+        this.payingFeatureCode = null;
+        const ok = Boolean(res && (res.success || res.isSuccess) && res.data?.invoiceId);
+        if (ok && res.data?.invoiceId) {
+          this.loadInvoices();
+          this.router.navigate(['/billing/invoices', res.data.invoiceId]);
+        } else {
+          this.toastService.error('Invoice Error', res?.message || 'Could not generate invoice for this capability.');
+        }
+      },
+      error: err => {
+        this.payingFeatureCode = null;
+        const msg = err?.error?.message || 'Could not prepare invoice for this capability.';
+        this.toastService.error('Invoice Error', msg);
+      }
+    });
   }
 
   /**
-   * Launches a single consolidated Central Paystack Inline Checkout popup for all expiring/overdue capabilities.
+   * Automatically prepares a consolidated invoice containing all expiring/overdue capabilities
+   * and navigates to the dedicated full-page Invoice & Multi-Gateway Checkout screen (/billing/invoices/:id).
    */
   payAllExpiringFeatures(): void {
     const due = this.expiringOrExpiredFeatures;
     if (due.length === 0) return;
     this.isPayingAllDue = true;
     const codes = due.map(f => f.featureCode);
-    const label = due.length === 1 ? due[0].name : `${due.length} Capabilities`;
-    this.launchPaystackInlineCheckout(codes, label);
+    this.billingService.prepareInvoice(codes).subscribe({
+      next: res => {
+        this.isPayingAllDue = false;
+        const ok = Boolean(res && (res.success || res.isSuccess) && res.data?.invoiceId);
+        if (ok && res.data?.invoiceId) {
+          this.loadInvoices();
+          this.router.navigate(['/billing/invoices', res.data.invoiceId]);
+        } else {
+          this.toastService.error('Invoice Error', res?.message || 'Could not prepare consolidated invoice.');
+        }
+      },
+      error: err => {
+        this.isPayingAllDue = false;
+        const msg = err?.error?.message || 'Could not prepare consolidated invoice.';
+        this.toastService.error('Invoice Error', msg);
+      }
+    });
   }
 
   /**
-   * Calls the backend to initialize a Central Paystack transaction and opens Paystack Inline (PaystackPop).
+   * Loads the full invoice details and Central payment methods availability for /billing/invoices/:id.
    */
-  private launchPaystackInlineCheckout(featureCodes: string[], label: string): void {
-    this.billingService.initializePaystackFeaturePayment(featureCodes, 'Monthly').subscribe({
+  loadInvoiceDetailPage(invoiceId: string): void {
+    if (!invoiceId) return;
+    this.isLoadingInvoiceDetail = true;
+    this.billingService.getInvoiceDetail(invoiceId).subscribe({
+      next: res => {
+        this.isLoadingInvoiceDetail = false;
+        const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
+        if (ok && res.data) {
+          this.invoiceDetail = res.data;
+          this.bankDepositReferenceInput = res.data.paymentProofRef || '';
+          const firstConfigured = (res.data.paymentMethods || []).find(m => m.isEnabled && m.isConfigured);
+          if (firstConfigured) {
+            this.selectedGatewayCode = firstConfigured.providerCode;
+          } else if (res.data.paymentMethods?.length > 0) {
+            this.selectedGatewayCode = res.data.paymentMethods[0].providerCode;
+          }
+        } else {
+          this.toastService.error('Invoice Not Found', res?.message || 'Could not load invoice details.');
+        }
+      },
+      error: err => {
+        this.isLoadingInvoiceDetail = false;
+        const msg = err?.error?.message || 'Could not load invoice details.';
+        this.toastService.error('Invoice Error', msg);
+      }
+    });
+  }
+
+  /**
+   * Dynamically updates the billing duration (1 Month, 3 Months, 1 Year) for a capability line item on the invoice
+   * and recalculates its discount and the invoice total.
+   */
+  onChangeInvoiceLineCadence(line: BillingInvoiceLineItem, newCadence: string): void {
+    if (!this.invoiceDetail || !line || this.invoiceDetail.status !== 'Pending') return;
+    this.updatingCadenceFeatureCode = line.featureCode;
+    this.billingService.updateInvoiceLineCadence(this.invoiceDetail.id, newCadence, line.featureCode).subscribe({
+      next: res => {
+        this.updatingCadenceFeatureCode = null;
+        const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
+        if (ok && res.data) {
+          this.invoiceDetail = res.data;
+          this.loadInvoices();
+          this.toastService.success(
+            'Duration & Discount Updated',
+            `${line.featureName} set to ${this.formatCadenceOptionLabel(newCadence)}.`
+          );
+        } else {
+          this.toastService.error('Update Failed', res?.message || 'Could not update billing duration.');
+        }
+      },
+      error: err => {
+        this.updatingCadenceFeatureCode = null;
+        this.toastService.error('Update Failed', err?.error?.message || 'Could not update billing duration.');
+      }
+    });
+  }
+
+  /**
+   * Formats a cadence code ('Monthly', 'Quarterly', 'Yearly') into a clear duration label.
+   */
+  formatCadenceOptionLabel(cadence: string, line?: BillingInvoiceLineItem): string {
+    const clean = (cadence || 'Monthly').trim().toLowerCase();
+    if (clean === 'yearly') {
+      if (line && line.isYearlyOnly) {
+        return '1 Year (Yearly Only)';
+      }
+      if (line && line.yearlyDiscountPercent > 0) {
+        return `1 Year (Save ${line.yearlyDiscountPercent}%)`;
+      }
+      return '1 Year (Annual)';
+    }
+    if (clean === 'quarterly') {
+      if (line && line.quarterlyDiscountPercent > 0) {
+        return `3 Months (Save ${line.quarterlyDiscountPercent}%)`;
+      }
+      return '3 Months (Quarterly)';
+    }
+    return '1 Month (Monthly)';
+  }
+
+  /**
+   * Selects an active, configured payment gateway on the Invoice Page.
+   */
+  selectPaymentGateway(method: BillingPaymentMethodOption): void {
+    if (!method.isConfigured) {
+      this.toastService.warning(
+        'Payment Method Not Available',
+        `${method.name} is enabled in Central Settings, but its API keys / account details are not configured yet.`
+      );
+      return;
+    }
+    this.selectedGatewayCode = method.providerCode;
+  }
+
+  get activeSelectedGateway(): BillingPaymentMethodOption | undefined {
+    return (this.invoiceDetail?.paymentMethods || []).find(m => m.providerCode === this.selectedGatewayCode);
+  }
+
+  /**
+   * Proceeds with payment on /billing/invoices/:id using the selected payment gateway.
+   */
+  proceedWithSelectedGatewayPayment(): void {
+    if (!this.invoiceDetail) return;
+    const method = this.activeSelectedGateway;
+    if (!method || !method.isConfigured) {
+      this.toastService.warning(
+        'Gateway Not Configured',
+        'Please select an available payment method with configured credentials, or configure the gateway keys in /centralwks/platform-settings.'
+      );
+      return;
+    }
+
+    if (method.providerCode === 'Paystack') {
+      this.launchPaystackForCurrentInvoice();
+      return;
+    }
+
+    if (method.providerCode === 'BankDeposit') {
+      this.submitBankDepositProof();
+      return;
+    }
+
+    this.toastService.info(
+      `${method.name} Selected`,
+      `Redirecting to ${method.name} checkout for Invoice ${this.invoiceDetail.invoiceNumber}...`
+    );
+  }
+
+  /**
+   * Initializes Paystack checkout for the current invoice on /billing/invoices/:id.
+   */
+  private launchPaystackForCurrentInvoice(): void {
+    if (!this.invoiceDetail) return;
+    this.isProcessingGatewayPayment = true;
+    const inv = this.invoiceDetail;
+    const label = inv.invoiceNumber;
+
+    this.billingService.payInvoiceWithPaystack(inv.id).subscribe({
       next: async res => {
         const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
         if (!ok || !res.data) {
-          this.payingFeatureCode = null;
-          this.isPayingAllDue = false;
-          this.toastService.error('Payment Initialization Failed', res?.message || 'Could not initialize Paystack transaction.');
+          this.isProcessingGatewayPayment = false;
+          this.toastService.error('Paystack Checkout Error', res?.message || 'Could not initialize Paystack checkout.');
           return;
         }
 
         const init = res.data;
-        this.loadInvoices();
-
         try {
           await this.ensurePaystackScriptLoaded();
           const win = window as any;
@@ -399,9 +595,9 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
           if (win.PaystackPop && init.publicKey) {
             const handler = win.PaystackPop.setup({
               key: init.publicKey,
-              email: init.email || 'billing@company.com',
+              email: init.email || inv.billingEmail || 'billing@company.com',
               amount: Math.round(Number(init.amount) * 100),
-              currency: init.currency || this.currencyCode || 'NGN',
+              currency: init.currency || inv.currency || 'NGN',
               ref: init.reference,
               access_code: init.accessCode || undefined,
               callback: (response: any) => {
@@ -412,40 +608,62 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
               },
               onClose: () => {
                 this.ngZone.run(() => {
-                  this.payingFeatureCode = null;
-                  this.isPayingAllDue = false;
-                  this.toastService.info('Checkout Closed', `Payment window for ${label} was closed before completion.`);
+                  this.isProcessingGatewayPayment = false;
+                  this.toastService.info('Checkout Closed', `Paystack window for ${label} was closed.`);
                 });
               }
             });
             handler.openIframe();
           } else if (init.authorizationUrl) {
-            this.payingFeatureCode = null;
-            this.isPayingAllDue = false;
+            this.isProcessingGatewayPayment = false;
             window.open(init.authorizationUrl, '_blank', 'noopener,noreferrer');
-            this.toastService.info(
-              'Paystack Checkout Opened',
-              'Complete your payment in the Paystack checkout tab. Note: Add your Paystack Public Key in /centralwks/platform-settings for inline popup mode.'
-            );
           } else {
-            this.payingFeatureCode = null;
-            this.isPayingAllDue = false;
-            this.toastService.error(
-              'Paystack Public Key Missing',
-              'Please configure your Central Paystack Public Key in /centralwks/platform-settings.'
-            );
+            this.isProcessingGatewayPayment = false;
+            this.toastService.error('Paystack Key Missing', 'Please configure your Central Paystack Public Key in /centralwks/platform-settings.');
           }
         } catch {
-          this.payingFeatureCode = null;
-          this.isPayingAllDue = false;
-          this.toastService.error('Paystack Inline Error', 'Could not load Paystack Inline checkout script.');
+          this.isProcessingGatewayPayment = false;
+          this.toastService.error('Paystack Script Error', 'Could not load Paystack Inline script.');
         }
       },
       error: err => {
-        this.payingFeatureCode = null;
-        this.isPayingAllDue = false;
+        this.isProcessingGatewayPayment = false;
         const msg = err?.error?.message || 'Paystack initialization failed. Please check Central Paystack keys in /centralwks/platform-settings.';
         this.toastService.error('Paystack Checkout Error', msg);
+      }
+    });
+  }
+
+  /**
+   * Submits a Direct Bank Deposit transfer reference for the current invoice on /billing/invoices/:id.
+   */
+  submitBankDepositProof(): void {
+    if (!this.invoiceDetail) return;
+    const ref = (this.bankDepositReferenceInput || '').trim();
+    if (!ref) {
+      this.toastService.warning('Transfer Reference Required', 'Please enter your bank transfer reference or depositor narration.');
+      return;
+    }
+
+    this.isProcessingGatewayPayment = true;
+    this.billingService.submitInvoiceBankDeposit(this.invoiceDetail.id, ref).subscribe({
+      next: res => {
+        this.isProcessingGatewayPayment = false;
+        const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
+        if (ok && res.data) {
+          this.invoiceDetail = res.data;
+          this.loadInvoices();
+          this.toastService.success(
+            'Bank Deposit Reference Submitted',
+            res.message || `Transfer reference '${ref}' recorded for Invoice ${this.invoiceDetail.invoiceNumber}.`
+          );
+        } else {
+          this.toastService.error('Submission Failed', res?.message || 'Could not submit bank transfer reference.');
+        }
+      },
+      error: err => {
+        this.isProcessingGatewayPayment = false;
+        this.toastService.error('Submission Failed', err?.error?.message || 'Could not submit bank transfer reference.');
       }
     });
   }
@@ -459,11 +677,15 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       next: res => {
         this.payingFeatureCode = null;
         this.isPayingAllDue = false;
+        this.isProcessingGatewayPayment = false;
         const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
         if (ok) {
           this.snapshot = res.data;
           this.broadcastSnapshotToSidebar(res.data);
           this.loadInvoices();
+          if (this.activeInvoiceId) {
+            this.loadInvoiceDetailPage(this.activeInvoiceId);
+          }
           if (this.selectedFeatureDetail) {
             const refreshed = this.allOrderedFeatures.find(
               f => f.featureCode === this.selectedFeatureDetail?.featureCode
@@ -482,6 +704,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       error: err => {
         this.payingFeatureCode = null;
         this.isPayingAllDue = false;
+        this.isProcessingGatewayPayment = false;
         this.suppressNextSocketToast = false;
         const msg = err?.error?.message || 'Error verifying Paystack transaction with server.';
         this.toastService.error('Verification Error', msg);
@@ -590,14 +813,22 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
       .reduce((acc, item) => acc + (item.amount || 0), 0);
   }
 
+  /**
+   * Navigates to the dedicated full-page Invoice & Multi-Gateway Checkout view (/billing/invoices/:id).
+   *
+   * @param inv The billing invoice item to inspect or pay.
+   */
   openInvoiceDetail(inv: BillingInvoice): void {
-    this.selectedInvoice = inv;
-    this.showInvoiceModal = true;
+    this.router.navigate(['/billing/invoices', inv.id]);
   }
 
+  /**
+   * Returns from the dedicated Invoice & Checkout page back to /billing/subscriptions.
+   */
   closeInvoiceDetail(): void {
     this.showInvoiceModal = false;
     this.selectedInvoice = null;
+    this.router.navigate(['/billing/subscriptions']);
   }
 
   /**
