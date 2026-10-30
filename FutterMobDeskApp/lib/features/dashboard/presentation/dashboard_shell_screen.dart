@@ -2353,72 +2353,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
   /// Feature Expiration Alert Banner visible strictly to administrators in Administration mode.
   Widget _buildFeatureExpirationBanner(bool isDark, Workspace? activeWs, {bool isMobile = false}) {
-    if (activeWs == null || !activeWs.isAdmin || activeWs.activeConsoleMode == 'workspace') {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      margin: EdgeInsets.fromLTRB(
-        isMobile ? 16 : 28,
-        isMobile ? 8 : 12,
-        isMobile ? 16 : 28,
-        isMobile ? 4 : 4,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2D2010) : const Color(0xFFFFFBEB),
-        border: Border.all(
-          color: isDark ? const Color(0xFF78350F) : const Color(0xFFFDE68A),
-        ),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.info_outline_rounded, color: Color(0xFFD97706), size: 18),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'billing.notice_title'.tr(ref, fallback: 'Central Feature Subscriptions Active (Admin Notice)'),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFFB45309),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'billing.license_desc'.tr(ref, fallback: 'Organization capabilities are governed by Central Master Catalog licenses.'),
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isDark ? const Color(0xFFD97706) : const Color(0xFF92400E),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF59E0B),
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: Text(
-              'billing.licenses'.tr(ref, fallback: 'LICENSES'),
-              style: const TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: 0.4,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    // Disabled: Avoid displaying permanent intrusive admin notice across views
+    return const SizedBox.shrink();
   }
 
   String _getUserInitials(String? fullName) {

@@ -541,29 +541,35 @@ class _ErrorCodesViewState extends ConsumerState<ErrorCodesView> {
 
                 const SizedBox(height: 12),
 
-                // Category Pills (Wraps cleanly across lines on narrow screens)
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _buildCategoryPill(
-                      label:
-                          '${'common.all'.tr(ref, fallback: 'All')} (${_allCodes.length})',
-                      isActive: _selectedCategory == 'ALL',
-                      onTap: () => _selectCategory('ALL'),
-                      isDark: isDark,
-                      borderColor: borderColor,
-                    ),
-                    ..._categories.map(
-                      (cat) => _buildCategoryPill(
-                        label: '$cat (${_countByCategory(cat)})',
-                        isActive: _selectedCategory == cat,
-                        onTap: () => _selectCategory(cat),
+                // Category Pills (Clean horizontal scrollable row matching Angular web)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildCategoryPill(
+                        label:
+                            '${'common.all'.tr(ref, fallback: 'All')} (${_allCodes.length})',
+                        isActive: _selectedCategory == 'ALL',
+                        onTap: () => _selectCategory('ALL'),
                         isDark: isDark,
                         borderColor: borderColor,
                       ),
-                    ),
-                  ],
+                      ..._categories.map(
+                        (cat) => Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: _buildCategoryPill(
+                            label: '$cat (${_countByCategory(cat)})',
+                            isActive: _selectedCategory == cat,
+                            onTap: () => _selectCategory(cat),
+                            isDark: isDark,
+                            borderColor: borderColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -845,32 +851,33 @@ class _ErrorCodesViewState extends ConsumerState<ErrorCodesView> {
     required bool isDark,
     required Color borderColor,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        height: 30,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF0050E5) : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isActive ? const Color(0xFF0050E5) : borderColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFF0050E5) : Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: isActive ? const Color(0xFF0050E5) : borderColor,
+              width: 1,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: isActive
-                ? Colors.white
-                : (isDark ? AppColors.gray300 : const Color(0xFF475569)),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: isActive
+                  ? Colors.white
+                  : (isDark ? AppColors.gray300 : const Color(0xFF475569)),
+            ),
           ),
         ),
       ),
     );
   }
 }
-
