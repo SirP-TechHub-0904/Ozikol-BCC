@@ -99,6 +99,13 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpUserNote> BcpUserNotes { get; set; }
     public DbSet<BcpActivityLog> BcpActivityLogs { get; set; }
 
+    // --- BCP: Workstations & Application Gatekeeper Feature (bcp-workspace) ---
+    public DbSet<BcpWorkstation> BcpWorkstations { get; set; } = null!;
+    public DbSet<BcpWorkstationAppPolicy> BcpWorkstationAppPolicies { get; set; } = null!;
+    public DbSet<BcpWorkstationFilePolicy> BcpWorkstationFilePolicies { get; set; } = null!;
+    public DbSet<BcpWorkstationViolationLog> BcpWorkstationViolationLogs { get; set; } = null!;
+    public DbSet<BcpWorkstationAccessRequest> BcpWorkstationAccessRequests { get; set; } = null!;
+
     // --- BCP: Committees & Groups Feature ---
     public DbSet<BcpGroup> BcpGroups { get; set; }
     public DbSet<BcpGroupMember> BcpGroupMembers { get; set; }
