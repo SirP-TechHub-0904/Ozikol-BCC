@@ -155,39 +155,39 @@
 
             @if (selectedFeatureDetail.isActive) {
               @if (hasFeatureExpirationInfo(selectedFeatureDetail)) {
-                <div style="font-size: 12.5px; font-weight: 700; text-align: right;" [style.color]="isFeatureExpiringWithinMonth(selectedFeatureDetail) ? '#b45309' : '#475569'">
+                <div style="font-size: 12px; font-weight: 700; text-align: right; color: #0f172a;">
                   <span>{{ 'billing.expires' | translate:'Expires' }}: {{ getFeatureExpirationDateText(selectedFeatureDetail) }}</span>
                   @if (getFeatureDaysRemainingText(selectedFeatureDetail)) {
-                    <span> ({{ getFeatureDaysRemainingText(selectedFeatureDetail) }})</span>
+                    <span style="font-size: 10px; font-weight: 500; margin-left: 4px; white-space: nowrap;" [style.color]="isFeatureExpiringWithinMonth(selectedFeatureDetail) ? '#b45309' : '#059669'">({{ getFeatureDaysRemainingText(selectedFeatureDetail) }})</span>
                   }
                 </div>
               }
-              @if (isFeatureExpiringWithinMonth(selectedFeatureDetail)) {
+              <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: nowrap;">
+                @if (isFeatureExpiringWithinMonth(selectedFeatureDetail)) {
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm-action"
+                    [disabled]="payingFeatureCode === selectedFeatureDetail.featureCode || togglingFeatureCode === selectedFeatureDetail.featureCode"
+                    (click)="payAndRenewFeature(selectedFeatureDetail)"
+                  >
+                    <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === selectedFeatureDetail.featureCode">
+                      {{ payingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'receipt_long' }}
+                    </span>
+                    <span>{{ 'billing.view_invoice' | translate:'View Invoice' }}</span>
+                  </button>
+                }
                 <button
                   type="button"
-                  class="btn btn-primary"
-                  style="width: 100%; justify-content: center; padding: 11px 18px; font-weight: 700;"
-                  [disabled]="payingFeatureCode === selectedFeatureDetail.featureCode || togglingFeatureCode === selectedFeatureDetail.featureCode"
-                  (click)="payAndRenewFeature(selectedFeatureDetail)"
+                  class="btn btn-outline btn-sm-action"
+                  [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode"
+                  (click)="toggleFeatureInstall(selectedFeatureDetail, false)"
                 >
-                  <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === selectedFeatureDetail.featureCode">
-                    {{ payingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'receipt_long' }}
+                  <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === selectedFeatureDetail.featureCode">
+                    {{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'toggle_off' }}
                   </span>
-                  <span>{{ 'billing.view_invoice' | translate:'View Invoice' }}</span>
+                  <span>{{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Updating...' : 'Deactivate Feature' }}</span>
                 </button>
-              }
-              <button
-                type="button"
-                class="btn btn-outline"
-                style="width: 100%; justify-content: center; padding: 11px 18px; font-weight: 700;"
-                [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode"
-                (click)="toggleFeatureInstall(selectedFeatureDetail, false)"
-              >
-                <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === selectedFeatureDetail.featureCode">
-                  {{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'toggle_off' }}
-                </span>
-                <span>{{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Updating...' : 'Deactivate Feature' }}</span>
-              </button>
+              </div>
             } @else if (selectedFeatureDetail.isAvailableForUse) {
               <button
                 type="button"
@@ -468,20 +468,20 @@
                         <span>{{ getFeatureDurationLabel(feat) }}</span>
                       </span>
                     </td>
-                    <td>
+                    <td style="white-space: nowrap;">
                       @if (feat.isActive && hasFeatureExpirationInfo(feat)) {
-                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <div style="display: flex; flex-direction: column; gap: 1px; line-height: 1.25;">
                           @if (getFeatureExpirationDateText(feat)) {
-                            <strong style="font-size: 13px; color: #0f172a;">{{ getFeatureExpirationDateText(feat) }}</strong>
+                            <strong style="font-size: 12px; color: #0f172a; white-space: nowrap;">{{ getFeatureExpirationDateText(feat) }}</strong>
                           }
                           @if (getFeatureDaysRemainingText(feat)) {
-                            <span style="font-size: 11.5px; font-weight: 700;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#059669'">
+                            <span style="font-size: 10px; font-weight: 500; white-space: nowrap;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#059669'">
                               ({{ getFeatureDaysRemainingText(feat) }})
                             </span>
                           }
                         </div>
                       } @else if (feat.isActive && getFeatureDisplayAmount(feat) <= 0) {
-                        <span style="font-size: 12.5px; font-weight: 600; color: #059669;">Lifetime / Free</span>
+                        <span style="font-size: 11.5px; font-weight: 600; color: #059669; white-space: nowrap;">Lifetime / Free</span>
                       } @else {
                         <span style="color: #94a3b8; font-weight: 600;">—</span>
                       }
@@ -510,8 +510,8 @@
                         </span>
                       }
                     </td>
-                    <td style="text-align: right;">
-                      <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap;">
+                    <td style="text-align: right; white-space: nowrap;">
+                      <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: nowrap;">
                         @if (isFeatureExpiringWithinMonth(feat)) {
                           <button
                             type="button"
@@ -867,7 +867,7 @@
                                     {{ getFeatureExpirationDateText(feat) }}
                                   }
                                   @if (getFeatureDaysRemainingText(feat)) {
-                                    ({{ getFeatureDaysRemainingText(feat) }})
+                                    <span style="font-size: 9.5px; font-weight: 500;">({{ getFeatureDaysRemainingText(feat) }})</span>
                                   }
                                 </span>
                               </span>
@@ -1062,22 +1062,10 @@
                       </td>
                       <td>
                         @if (feat.isActive) {
-                          <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
-                            <span class="badge-pill-md badge-available">
-                              <span class="material-symbols-outlined">check_circle</span>
-                              <span>Active</span>
-                            </span>
-                            @if (hasFeatureExpirationInfo(feat)) {
-                              <span style="font-size: 11.5px; font-weight: 700;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#475569'">
-                                @if (getFeatureExpirationDateText(feat)) {
-                                  <span>{{ getFeatureExpirationDateText(feat) }}</span>
-                                }
-                                @if (getFeatureDaysRemainingText(feat)) {
-                                  <span> ({{ getFeatureDaysRemainingText(feat) }})</span>
-                                }
-                              </span>
-                            }
-                          </div>
+                          <span class="badge-pill-md badge-available">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            <span>Active</span>
+                          </span>
                         } @else if (feat.isAvailableForUse) {
                           <span class="badge-pill-md badge-optional">
                             <span class="material-symbols-outlined">verified</span>
@@ -1116,26 +1104,26 @@
                           <span>{{ getFeatureDurationLabel(feat) }}</span>
                         </span>
                       </td>
-                      <td>
+                      <td style="white-space: nowrap;">
                         @if (feat.isActive && hasFeatureExpirationInfo(feat)) {
-                          <div style="display: flex; flex-direction: column; gap: 2px;">
+                          <div style="display: flex; flex-direction: column; gap: 1px; line-height: 1.25;">
                             @if (getFeatureExpirationDateText(feat)) {
-                              <strong style="font-size: 13px; color: #0f172a;">{{ getFeatureExpirationDateText(feat) }}</strong>
+                              <strong style="font-size: 12px; color: #0f172a; white-space: nowrap;">{{ getFeatureExpirationDateText(feat) }}</strong>
                             }
                             @if (getFeatureDaysRemainingText(feat)) {
-                              <span style="font-size: 11.5px; font-weight: 700;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#059669'">
+                              <span style="font-size: 10px; font-weight: 500; white-space: nowrap;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#059669'">
                                 ({{ getFeatureDaysRemainingText(feat) }})
                               </span>
                             }
                           </div>
                         } @else if (feat.isActive && getFeatureDisplayAmount(feat) <= 0) {
-                          <span style="font-size: 12.5px; font-weight: 600; color: #059669;">Lifetime / Free</span>
+                          <span style="font-size: 11.5px; font-weight: 600; color: #059669; white-space: nowrap;">Lifetime / Free</span>
                         } @else {
                           <span style="color: #94a3b8; font-weight: 600;">—</span>
                         }
                       </td>
-                      <td style="text-align: right;">
-                        <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                      <td style="text-align: right; white-space: nowrap;">
+                        <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; justify-content: flex-end;">
                           @if (feat.isActive) {
                             @if (isFeatureExpiringWithinMonth(feat)) {
                               <button
@@ -1310,19 +1298,19 @@
                         </span>
                       }
                       @if (hasFeatureExpirationInfo(feat)) {
-                        <span style="font-size: 11.5px; font-weight: 700;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#475569'">
+                        <span style="font-size: 11.5px; font-weight: 700; color: #0f172a; white-space: nowrap;">
                           @if (getFeatureExpirationDateText(feat)) {
                             <span>{{ getFeatureExpirationDateText(feat) }}</span>
                           }
                           @if (getFeatureDaysRemainingText(feat)) {
-                            <span> ({{ getFeatureDaysRemainingText(feat) }})</span>
+                            <span style="font-size: 10px; font-weight: 500; margin-left: 3px;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#059669'">({{ getFeatureDaysRemainingText(feat) }})</span>
                           }
                         </span>
                       }
                     </div>
                   </td>
-                  <td style="text-align: right;">
-                    <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                  <td style="text-align: right; white-space: nowrap;">
+                    <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; justify-content: flex-end;">
                       @if (isFeatureExpiringWithinMonth(feat)) {
                         <button
                           type="button"
