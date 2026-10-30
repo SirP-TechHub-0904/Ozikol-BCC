@@ -1116,7 +1116,8 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    * Returns true if an active feature has an expiration date or remaining days counter.
    */
   hasFeatureExpirationInfo(feat: BillingFeatureItem): boolean {
-    if (!feat || !feat.isActive || feat.isCompulsory) return false;
+    if (!feat || !feat.isActive) return false;
+    if (this.getFeatureDisplayAmount(feat) <= 0 && feat.isCompulsory && !feat.expiresAtUtc) return false;
     return !!(feat.expiresAtUtc || (feat.daysRemaining !== undefined && feat.daysRemaining !== null));
   }
 
@@ -1124,7 +1125,7 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
    * Returns true if an active paid feature is expiring in less than or equal to 30 days (or already expired).
    */
   isFeatureExpiringWithinMonth(feat: BillingFeatureItem): boolean {
-    if (!feat || !feat.isActive || feat.isCompulsory) return false;
+    if (!feat || !feat.isActive) return false;
     if (this.getFeatureDisplayAmount(feat) <= 0) return false;
     if (feat.status === 'Expired') return true;
     const days = feat.daysRemaining;

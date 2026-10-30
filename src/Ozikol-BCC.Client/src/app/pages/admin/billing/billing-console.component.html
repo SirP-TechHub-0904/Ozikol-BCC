@@ -419,13 +419,16 @@
                       <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'duration'">{{ getSortIcon('duration') }}</span>
                     </span>
                   </th>
+                  <th>
+                    <span>{{ 'billing.expiring_date' | translate:'EXPIRING DATE' }}</span>
+                  </th>
                   <th class="sortable-th" (click)="toggleSort('status')">
                     <span class="th-sort-wrap">
                       <span>STATUS</span>
                       <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'status'">{{ getSortIcon('status') }}</span>
                     </span>
                   </th>
-                  <th style="text-align: right; width: 280px;">ACTION</th>
+                  <th style="text-align: right; width: 320px;">ACTION</th>
                 </tr>
               </thead>
               <tbody>
@@ -466,23 +469,29 @@
                       </span>
                     </td>
                     <td>
-                      @if (feat.isActive) {
-                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
-                          <span class="badge-pill-md badge-available">
-                            <span class="material-symbols-outlined">check_circle</span>
-                            <span>{{ feat.isTrialPeriod ? ('Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 14) + 'd left)') : 'Active' }}</span>
-                          </span>
-                          @if (hasFeatureExpirationInfo(feat)) {
-                            <span style="font-size: 11.5px; font-weight: 700;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#475569'">
-                              @if (getFeatureExpirationDateText(feat)) {
-                                <span>{{ getFeatureExpirationDateText(feat) }}</span>
-                              }
-                              @if (getFeatureDaysRemainingText(feat)) {
-                                <span> ({{ getFeatureDaysRemainingText(feat) }})</span>
-                              }
+                      @if (feat.isActive && hasFeatureExpirationInfo(feat)) {
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                          @if (getFeatureExpirationDateText(feat)) {
+                            <strong style="font-size: 13px; color: #0f172a;">{{ getFeatureExpirationDateText(feat) }}</strong>
+                          }
+                          @if (getFeatureDaysRemainingText(feat)) {
+                            <span style="font-size: 11.5px; font-weight: 700;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#059669'">
+                              ({{ getFeatureDaysRemainingText(feat) }})
                             </span>
                           }
                         </div>
+                      } @else if (feat.isActive && getFeatureDisplayAmount(feat) <= 0) {
+                        <span style="font-size: 12.5px; font-weight: 600; color: #059669;">Lifetime / Free</span>
+                      } @else {
+                        <span style="color: #94a3b8; font-weight: 600;">—</span>
+                      }
+                    </td>
+                    <td>
+                      @if (feat.isActive) {
+                        <span class="badge-pill-md badge-available">
+                          <span class="material-symbols-outlined">check_circle</span>
+                          <span>{{ feat.isTrialPeriod ? ('Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 14) + 'd left)') : 'Active' }}</span>
+                        </span>
                       } @else if (feat.isAvailableForUse) {
                         <span class="badge-pill-md badge-optional">
                           <span class="material-symbols-outlined">lock</span>
@@ -1023,6 +1032,9 @@
                         <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'duration'">{{ getSortIcon('duration') }}</span>
                       </span>
                     </th>
+                    <th>
+                      <span>{{ 'billing.expiring_date' | translate:'EXPIRING DATE' }}</span>
+                    </th>
                     <th style="text-align: right;">ACTION</th>
                   </tr>
                 </thead>
@@ -1103,6 +1115,24 @@
                           <span class="material-symbols-outlined">event_repeat</span>
                           <span>{{ getFeatureDurationLabel(feat) }}</span>
                         </span>
+                      </td>
+                      <td>
+                        @if (feat.isActive && hasFeatureExpirationInfo(feat)) {
+                          <div style="display: flex; flex-direction: column; gap: 2px;">
+                            @if (getFeatureExpirationDateText(feat)) {
+                              <strong style="font-size: 13px; color: #0f172a;">{{ getFeatureExpirationDateText(feat) }}</strong>
+                            }
+                            @if (getFeatureDaysRemainingText(feat)) {
+                              <span style="font-size: 11.5px; font-weight: 700;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#059669'">
+                                ({{ getFeatureDaysRemainingText(feat) }})
+                              </span>
+                            }
+                          </div>
+                        } @else if (feat.isActive && getFeatureDisplayAmount(feat) <= 0) {
+                          <span style="font-size: 12.5px; font-weight: 600; color: #059669;">Lifetime / Free</span>
+                        } @else {
+                          <span style="color: #94a3b8; font-weight: 600;">—</span>
+                        }
                       </td>
                       <td style="text-align: right;">
                         <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">

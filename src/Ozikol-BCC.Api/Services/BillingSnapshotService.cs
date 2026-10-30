@@ -139,36 +139,77 @@ namespace Ozikol_BCC.Api.Services
             }
             catch
             {
-                // Graceful fallback if UseCustomPricing / UseCustomAvailability / IsAvailableForUseOverride columns are pending migration
-                tenant = await _master.MasterTenantCatalogs
-                    .AsNoTracking()
-                    .Where(t =>
-                        t.TenantKey.ToLower() == key ||
-                        (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
-                        (t.CustomDomain != null && t.CustomDomain.ToLower() == key))
-                    .Select(t => new MasterTenantCatalog
-                    {
-                        Id = t.Id,
-                        TenantKey = t.TenantKey,
-                        OrganizationName = t.OrganizationName,
-                        UseCustomPricing = false,
-                        UseCustomAvailability = false,
-                        FeatureSubscriptions = t.FeatureSubscriptions.Select(s => new MasterTenantFeatureSubscription
+                // Graceful fallback if CustomYearlyPriceOverride or newer columns are pending migration
+                try
+                {
+                    tenant = await _master.MasterTenantCatalogs
+                        .AsNoTracking()
+                        .Where(t =>
+                            t.TenantKey.ToLower() == key ||
+                            (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                            (t.CustomDomain != null && t.CustomDomain.ToLower() == key))
+                        .Select(t => new MasterTenantCatalog
                         {
-                            Id = s.Id,
-                            MasterTenantCatalogId = s.MasterTenantCatalogId,
-                            MasterFeatureCatalogId = s.MasterFeatureCatalogId,
-                            IsActive = s.IsActive,
-                            Status = s.Status,
-                            AutoRenew = s.AutoRenew,
-                            DurationType = s.DurationType,
-                            RecurringPrice = s.RecurringPrice,
-                            CustomPriceOverride = s.CustomPriceOverride,
-                            IsAvailableForUseOverride = null,
-                            ExpiresAtUtc = s.ExpiresAtUtc
-                        }).ToList()
-                    })
-                    .FirstOrDefaultAsync(cancellationToken);
+                            Id = t.Id,
+                            TenantKey = t.TenantKey,
+                            OrganizationName = t.OrganizationName,
+                            DefaultCurrencyCode = t.DefaultCurrencyCode,
+                            UseCustomPricing = t.UseCustomPricing,
+                            UseCustomAvailability = t.UseCustomAvailability,
+                            LastAccessedUtc = t.LastAccessedUtc,
+                            FeatureSubscriptions = t.FeatureSubscriptions.Select(s => new MasterTenantFeatureSubscription
+                            {
+                                Id = s.Id,
+                                MasterTenantCatalogId = s.MasterTenantCatalogId,
+                                MasterFeatureCatalogId = s.MasterFeatureCatalogId,
+                                IsActive = s.IsActive,
+                                Status = s.Status,
+                                AutoRenew = s.AutoRenew,
+                                DurationType = s.DurationType,
+                                RecurringPrice = s.RecurringPrice,
+                                CustomPriceOverride = s.CustomPriceOverride,
+                                IsAvailableForUseOverride = s.IsAvailableForUseOverride,
+                                CustomFreeTrialDaysOverride = s.CustomFreeTrialDaysOverride,
+                                HasUsedFreeTrial = s.HasUsedFreeTrial,
+                                IsTrialPeriod = s.IsTrialPeriod,
+                                SubscribedAtUtc = s.SubscribedAtUtc,
+                                ExpiresAtUtc = s.ExpiresAtUtc
+                            }).ToList()
+                        })
+                        .FirstOrDefaultAsync(cancellationToken);
+                }
+                catch
+                {
+                    tenant = await _master.MasterTenantCatalogs
+                        .AsNoTracking()
+                        .Where(t =>
+                            t.TenantKey.ToLower() == key ||
+                            (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                            (t.CustomDomain != null && t.CustomDomain.ToLower() == key))
+                        .Select(t => new MasterTenantCatalog
+                        {
+                            Id = t.Id,
+                            TenantKey = t.TenantKey,
+                            OrganizationName = t.OrganizationName,
+                            UseCustomPricing = false,
+                            UseCustomAvailability = false,
+                            FeatureSubscriptions = t.FeatureSubscriptions.Select(s => new MasterTenantFeatureSubscription
+                            {
+                                Id = s.Id,
+                                MasterTenantCatalogId = s.MasterTenantCatalogId,
+                                MasterFeatureCatalogId = s.MasterFeatureCatalogId,
+                                IsActive = s.IsActive,
+                                Status = s.Status,
+                                AutoRenew = s.AutoRenew,
+                                DurationType = s.DurationType,
+                                RecurringPrice = s.RecurringPrice,
+                                CustomPriceOverride = s.CustomPriceOverride,
+                                IsAvailableForUseOverride = null,
+                                ExpiresAtUtc = s.ExpiresAtUtc
+                            }).ToList()
+                        })
+                        .FirstOrDefaultAsync(cancellationToken);
+                }
             }
 
             List<MasterFeatureCatalog> rawFeatures;
@@ -407,6 +448,7 @@ namespace Ozikol_BCC.Api.Services
                 bool isTrialPeriod = (sub?.IsTrialPeriod ?? false) && (sub?.ExpiresAtUtc > now);
                 bool isEligibleForFreeTrial = effectiveTrialDays > 0 && !hasUsedTrial;
 
+                bool isPaidCapability = defaultEffectivePrice > 0m || effectiveYearly > 0m;
                 var item = new BillingFeatureItemDto
                 {
                     FeatureId = f.Id,
@@ -420,7 +462,7 @@ namespace Ozikol_BCC.Api.Services
                     Description = f.Description,
                     Icon = f.Icon,
                     RoutePrefix = f.RoutePrefix,
-                    IsCompulsory = f.IsCompulsory,
+                    IsCompulsory = f.IsCompulsory && !isPaidCapability,
                     IsAvailableForUse = isAvailForUse,
                     IsInBeta = f.IsInBeta,
                     HasCustomPriceOverride = sub?.CustomPriceOverride != null,
