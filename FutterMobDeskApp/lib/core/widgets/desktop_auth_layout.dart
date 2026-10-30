@@ -98,13 +98,20 @@ class DesktopAuthLayout extends ConsumerWidget {
         ? branding.companyWhiteLogoUrl
         : (branding.logoUrl ?? workspace.logoUrl);
 
-    final chipText = branding.loginNoteTitle ?? 'auth.security_portal'.tr(ref, fallback: 'Enterprise Security Portal');
-    final heroTitle = branding.loginTitle ?? 'Welcome to ${workspace.displayName}';
-    final heroDesc = branding.loginNote ??
-        branding.loginSubtitle ??
-        'auth.default_auth_desc'.tr(ref, fallback: 'Enter your authorized credentials to access member applications, identity services, and workspace records.');
-    final footerNote = branding.loginNoteFooter ??
-        'auth.default_auth_footer'.tr(ref, fallback: 'Authorized personnel only. All authentication attempts and access events are encrypted, logged, and audited.');
+    final chipText = (branding.loginNoteTitle != null && branding.loginNoteTitle!.trim().isNotEmpty)
+        ? branding.loginNoteTitle!.trim()
+        : '';
+    final heroTitle = (branding.loginTitle != null && branding.loginTitle!.trim().isNotEmpty)
+        ? branding.loginTitle!.trim()
+        : '';
+    final heroDesc = (branding.loginNote != null && branding.loginNote!.trim().isNotEmpty)
+        ? branding.loginNote!.trim()
+        : ((branding.loginSubtitle != null && branding.loginSubtitle!.trim().isNotEmpty)
+            ? branding.loginSubtitle!.trim()
+            : '');
+    final footerNote = (branding.loginNoteFooter != null && branding.loginNoteFooter!.trim().isNotEmpty)
+        ? branding.loginNoteFooter!.trim()
+        : '';
 
     return Scaffold(
       backgroundColor: const Color(0xFF090D16),
@@ -229,54 +236,59 @@ class DesktopAuthLayout extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Security Badge Chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.verified_user_rounded, size: 13, color: Color(0xFF60A5FA)),
-                            const SizedBox(width: 6),
-                            Text(
-                              chipText,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                                letterSpacing: 0.4,
+                      if (chipText.isNotEmpty) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.verified_user_rounded, size: 13, color: Color(0xFF60A5FA)),
+                              const SizedBox(width: 6),
+                              Text(
+                                chipText,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  letterSpacing: 0.4,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 18),
+                        const SizedBox(height: 18),
+                      ],
 
                       // Headline
-                      Text(
-                        heroTitle,
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          height: 1.2,
-                          letterSpacing: -0.8,
+                      if (heroTitle.isNotEmpty) ...[
+                        Text(
+                          heroTitle,
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.2,
+                            letterSpacing: -0.8,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 12),
+                      ],
 
                       // Description
-                      Text(
-                        heroDesc,
-                        style: TextStyle(
-                          fontSize: 14.5,
-                          color: Colors.white.withValues(alpha: 0.8),
-                          height: 1.5,
+                      if (heroDesc.isNotEmpty)
+                        Text(
+                          heroDesc,
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            color: Colors.white.withValues(alpha: 0.8),
+                            height: 1.5,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),

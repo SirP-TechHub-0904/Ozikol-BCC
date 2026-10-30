@@ -62,12 +62,12 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
   Map<String, dynamic> _brand = {
     'loginLayout': 'centered',
     'loginBackgroundImageUrl': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=85',
-    'loginTitle': 'Welcome to your Workspace',
-    'loginSubtitle': 'Enter your authorized credentials to access member applications and services.',
-    'loginNoteTitle': 'Enterprise Security Portal',
+    'loginTitle': '',
+    'loginSubtitle': '',
+    'loginNoteTitle': '',
     'loginButtonText': 'Sign In',
-    'loginComplianceNotice': 'Authorized personnel only. All access events are encrypted, logged, and audited.',
-    'loginNoteFooter': 'Authorized personnel only. All access events are encrypted, logged, and audited.',
+    'loginComplianceNotice': '',
+    'loginNoteFooter': '',
     'allowPublicRegistration': true,
     'showRegisterLinkOnLogin': true,
     'useWhiteLogoInLogin': false,
@@ -159,13 +159,11 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
             _brand['loginLayout'] = 'centered';
           }
 
-          _titleCtrl.text = _brand['loginTitle'] as String? ?? 'Welcome to your Workspace';
-          _subtitleCtrl.text = (_brand['loginSubtitle'] ?? _brand['loginNote']) as String? ??
-              'Enter your authorized credentials to access member applications and services.';
-          _noteTitleCtrl.text = _brand['loginNoteTitle'] as String? ?? 'Enterprise Security Portal';
+          _titleCtrl.text = _brand['loginTitle'] as String? ?? '';
+          _subtitleCtrl.text = (_brand['loginSubtitle'] ?? _brand['loginNote']) as String? ?? '';
+          _noteTitleCtrl.text = _brand['loginNoteTitle'] as String? ?? '';
           _btnTextCtrl.text = _brand['loginButtonText'] as String? ?? 'Sign In';
-          _complianceCtrl.text = (_brand['loginComplianceNotice'] ?? _brand['loginNoteFooter']) as String? ??
-              'Authorized personnel only. All access events are encrypted, logged, and audited.';
+          _complianceCtrl.text = (_brand['loginComplianceNotice'] ?? _brand['loginNoteFooter']) as String? ?? '';
           _bgUrlCtrl.text = _brand['loginBackgroundImageUrl'] as String? ?? defaultWallpaper;
           _isLoading = false;
         });
@@ -1136,11 +1134,11 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
   }
 
   Widget _buildLiveSimulatorCard(bool isDark, bool isSplitLayout, String currentBg) {
-    final noteTitle = _noteTitleCtrl.text.isNotEmpty ? _noteTitleCtrl.text : 'auth_setup.fallback_security_portal'.tr(ref, fallback: 'Enterprise Security Portal');
-    final title = _titleCtrl.text.isNotEmpty ? _titleCtrl.text : 'auth_setup.fallback_greeting'.tr(ref, fallback: 'Greeting Headline');
-    final subtitle = _subtitleCtrl.text.isNotEmpty ? _subtitleCtrl.text : 'auth_setup.fallback_subtitle'.tr(ref, fallback: 'Hero Subtitle & Portal Instructions');
-    final btnText = _btnTextCtrl.text.isNotEmpty ? _btnTextCtrl.text : 'auth_setup.fallback_signin'.tr(ref, fallback: 'Sign In');
-    final footerNote = _complianceCtrl.text.isNotEmpty ? _complianceCtrl.text : 'auth_setup.fallback_disclaimer'.tr(ref, fallback: 'Compliance Disclaimer / Footer Note');
+    final noteTitle = _noteTitleCtrl.text.trim();
+    final title = _titleCtrl.text.trim().isNotEmpty ? _titleCtrl.text.trim() : 'Sign In';
+    final subtitle = _subtitleCtrl.text.trim();
+    final btnText = _btnTextCtrl.text.trim().isNotEmpty ? _btnTextCtrl.text.trim() : 'Sign In';
+    final footerNote = _complianceCtrl.text.trim();
     final showReg = _brand['allowPublicRegistration'] != false && _brand['showRegisterLinkOnLogin'] != false;
     final workspaceName = widget.workspace?.displayName ?? 'testspace';
 
@@ -1338,11 +1336,13 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
                                     child: _buildSimulatorForm(btnText, showReg, workspaceName, title, subtitle),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(
+                                   if (footerNote.isNotEmpty) ...[
+                                     Text(
                                     footerNote,
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(fontSize: 7.5, color: Colors.white54),
                                   ),
+                                   ],
                                   const SizedBox(height: 4),
                                   const Text('Powered by Ozikol', style: TextStyle(fontSize: 8, color: Colors.white38)),
                                 ],
@@ -1407,8 +1407,10 @@ class _AuthPageSetupViewState extends ConsumerState<AuthPageSetupView> {
         Text(wsName, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF0F172A))),
         const SizedBox(height: 6),
         Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
-        const SizedBox(height: 2),
-        Text(subtitle, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 8, color: Color(0xFF64748B))),
+        if (subtitle.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(subtitle, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 8, color: Color(0xFF64748B))),
+        ],
         const SizedBox(height: 10),
         Container(
           width: double.infinity,

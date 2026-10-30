@@ -157,6 +157,13 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
     final state = ref.watch(workspaceStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final ws = widget.workspace;
+    final branding = ref.watch(tenantBrandingProvider(ws.tenantKey)).valueOrNull;
+    final cardTitle = (branding?.loginTitle != null && branding!.loginTitle!.trim().isNotEmpty)
+        ? branding.loginTitle!.trim()
+        : 'auth.sign_in'.tr(ref, fallback: 'Sign In');
+    final cardSubtitle = (branding?.loginNote != null && branding!.loginNote!.trim().isNotEmpty)
+        ? branding.loginNote!.trim()
+        : null;
 
     return PopScope(
       canPop: Navigator.of(context).canPop(),
@@ -167,8 +174,8 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
       },
       child: DesktopAuthLayout(
         workspace: ws,
-        title: 'auth.sign_in'.tr(ref, fallback: 'Authentication'),
-        subtitle: 'auth.enter_workspace_desc'.tr(ref, fallback: 'Enter your organization credentials to proceed.'),
+        title: cardTitle,
+        subtitle: cardSubtitle,
         onBackTap: _handleChangeOrganization,
         child: Form(
           key: _formKey,
