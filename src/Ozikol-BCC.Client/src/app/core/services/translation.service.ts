@@ -1075,6 +1075,8 @@ export class TranslationService {
       'user_settings.err_saved_failed': 'Failed to save settings.',
       'billing.subtotal': 'Subtotal',
       'billing.vat': 'VAT',
+      'billing.payment_error_title': 'Payment Unavailable',
+      'billing.paystack_unavailable': 'Paystack unavailable.',
     },
 
     fr: {

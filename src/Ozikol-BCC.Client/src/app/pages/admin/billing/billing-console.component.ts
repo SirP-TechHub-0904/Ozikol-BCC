@@ -618,7 +618,10 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
         const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
         if (!ok || !res.data) {
           this.isProcessingGatewayPayment = false;
-          this.toastService.error('Paystack Checkout Error', res?.message || 'Could not initialize Paystack checkout.');
+          this.toastService.error(
+            this.translationService.translate('billing.payment_error_title', 'Payment Unavailable'),
+            this.translationService.translate('billing.paystack_unavailable', 'Paystack unavailable.')
+          );
           return;
         }
 
@@ -654,17 +657,25 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
             window.open(init.authorizationUrl, '_blank', 'noopener,noreferrer');
           } else {
             this.isProcessingGatewayPayment = false;
-            this.toastService.error('Paystack Key Missing', 'Paystack not enabled.');
+            this.toastService.error(
+              this.translationService.translate('billing.not_enabled_title', 'Not Enabled'),
+              `Paystack ${this.translationService.translate('billing.not_enabled', 'not enabled')}.`
+            );
           }
         } catch {
           this.isProcessingGatewayPayment = false;
-          this.toastService.error('Paystack Script Error', 'Could not load Paystack checkout script.');
+          this.toastService.error(
+            this.translationService.translate('billing.payment_error_title', 'Payment Unavailable'),
+            this.translationService.translate('billing.paystack_unavailable', 'Paystack unavailable.')
+          );
         }
       },
-      error: err => {
+      error: () => {
         this.isProcessingGatewayPayment = false;
-        const msg = err?.error?.message || 'Paystack initialization failed.';
-        this.toastService.error('Paystack Checkout Error', msg);
+        this.toastService.error(
+          this.translationService.translate('billing.payment_error_title', 'Payment Unavailable'),
+          this.translationService.translate('billing.paystack_unavailable', 'Paystack unavailable.')
+        );
       }
     });
   }

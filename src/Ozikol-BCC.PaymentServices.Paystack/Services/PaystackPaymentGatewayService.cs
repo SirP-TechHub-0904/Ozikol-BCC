@@ -160,7 +160,7 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                 return new PaymentInitResponseDto
                 {
                     IsSuccess = false,
-                    ErrorMessage = $"Paystack online payment is currently disabled in {creds.ScopeLabel}."
+                    ErrorMessage = "Paystack not enabled."
                 };
             }
 
@@ -169,7 +169,7 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                 return new PaymentInitResponseDto
                 {
                     IsSuccess = false,
-                    ErrorMessage = $"Paystack Secret Key is not configured in {creds.ScopeLabel}."
+                    ErrorMessage = "Paystack not enabled."
                 };
             }
 
@@ -201,18 +201,11 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    string gatewayMsg = "Failed to initialize Paystack transaction.";
-                    try
+                    return new PaymentInitResponseDto
                     {
-                        using var errDoc = JsonDocument.Parse(bodyText);
-                        if (errDoc.RootElement.TryGetProperty("message", out var msgEl) && !string.IsNullOrWhiteSpace(msgEl.GetString()))
-                        {
-                            gatewayMsg = $"Paystack: {msgEl.GetString()}";
-                        }
-                    }
-                    catch { }
-
-                    return new PaymentInitResponseDto { IsSuccess = false, ErrorMessage = gatewayMsg };
+                        IsSuccess = false,
+                        ErrorMessage = "Paystack unavailable."
+                    };
                 }
 
                 using var doc = JsonDocument.Parse(bodyText);
@@ -227,12 +220,12 @@ namespace Ozikol_BCC.PaymentServices.Paystack.Services
                     AuthorizationUrl = data.TryGetProperty("authorization_url", out var au) ? (au.GetString() ?? string.Empty) : string.Empty
                 };
             }
-            catch (Exception ex)
+            catch
             {
                 return new PaymentInitResponseDto
                 {
                     IsSuccess = false,
-                    ErrorMessage = $"Paystack gateway error: {ex.Message}"
+                    ErrorMessage = "Paystack unavailable."
                 };
             }
         }
