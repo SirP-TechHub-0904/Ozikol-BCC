@@ -268,4 +268,74 @@ namespace Ozikol_BCC.Api.Models
         /// <summary>Creation timestamp (UTC).</summary>
         public DateTime CreatedUtc { get; set; }
     }
+
+    /// <summary>
+    /// Request to initialize a Central Paystack Inline payment for one or more workspace capabilities
+    /// (supports single capability "Pay &amp; Renew" and consolidated "Pay All Expiring / Overdue").
+    /// API keys and amounts are resolved strictly server-side from MasterCatalogDbContext.
+    /// </summary>
+    public class InitializeFeaturePaymentRequest
+    {
+        /// <summary>Optional single feature ID when paying for one capability.</summary>
+        public Guid? FeatureId { get; set; }
+
+        /// <summary>Optional single feature code when paying for one capability.</summary>
+        public string? FeatureCode { get; set; }
+
+        /// <summary>Optional list of feature codes when paying for multiple capabilities in one consolidated checkout.</summary>
+        public List<string>? FeatureCodes { get; set; }
+
+        /// <summary>Billing cadence: Monthly, Quarterly, or Yearly.</summary>
+        public string Cadence { get; set; } = "Monthly";
+    }
+
+    /// <summary>
+    /// Server-calculated Paystack Inline Checkout initialization payload returned to the client.
+    /// Contains only the non-secret <see cref="PublicKey"/>, <see cref="AccessCode"/>, and <see cref="Reference"/>.
+    /// </summary>
+    public class InitializeFeaturePaymentResponseDto
+    {
+        /// <summary>Non-secret Central Paystack Public Key (pk_live_... or pk_test_...).</summary>
+        public string PublicKey { get; set; } = string.Empty;
+
+        /// <summary>Paystack inline access code.</summary>
+        public string AccessCode { get; set; } = string.Empty;
+
+        /// <summary>Unique transaction reference (PSK-CENTRAL-...).</summary>
+        public string Reference { get; set; } = string.Empty;
+
+        /// <summary>Paystack hosted checkout URL fallback.</summary>
+        public string AuthorizationUrl { get; set; } = string.Empty;
+
+        /// <summary>Exact server-computed amount in the tenant's running currency.</summary>
+        public decimal Amount { get; set; }
+
+        /// <summary>ISO 4217 currency code (e.g., NGN, USD).</summary>
+        public string Currency { get; set; } = "NGN";
+
+        /// <summary>Currency symbol (e.g., ₦, $).</summary>
+        public string CurrencySymbol { get; set; } = "₦";
+
+        /// <summary>Payer email address attached to the transaction.</summary>
+        public string Email { get; set; } = string.Empty;
+
+        /// <summary>Generated Central invoice number (INV-YYYYMM-NNNNN).</summary>
+        public string InvoiceNumber { get; set; } = string.Empty;
+
+        /// <summary>Billing cadence (Monthly, Quarterly, Yearly).</summary>
+        public string Cadence { get; set; } = "Monthly";
+
+        /// <summary>Display names of the capabilities covered by this checkout.</summary>
+        public List<string> FeatureNames { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Request to verify a completed Central Paystack Inline payment and activate/renew the covered capabilities.
+    /// </summary>
+    public class VerifyFeaturePaymentRequest
+    {
+        /// <summary>Paystack transaction reference (PSK-CENTRAL-...).</summary>
+        [Required]
+        public string Reference { get; set; } = string.Empty;
+    }
 }

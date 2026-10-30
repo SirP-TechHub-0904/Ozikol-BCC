@@ -17,7 +17,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "9.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -706,6 +706,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("BillingCadence")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
@@ -713,6 +717,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("FeatureCodesCsv")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("InvoiceNumber")
                         .HasMaxLength(30)
@@ -1740,6 +1748,20 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                             SortOrder = 10,
                             SuiteCode = "suite-life-events",
                             SuiteLetter = "J"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0011-0000-0000-000000000011"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Desktop application workspace and workplace management suite.",
+                            Icon = "desktop_windows",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Workspace",
+                            Name = "Workspace",
+                            SortOrder = 11,
+                            SuiteCode = "suite-workspace",
+                            SuiteLetter = "K"
                         });
                 });
 
@@ -3027,6 +3049,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<bool>("EnableAdminNotifications")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("EnablePaystack")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("EnableTicketAutoClose")
                         .HasColumnType("bit");
 
@@ -3062,6 +3087,18 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
                     b.Property<string>("PartnerAdminEmails")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PaystackPublicKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PaystackSecretKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PaystackWebhookSecret")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("PlatformName")
                         .IsRequired()

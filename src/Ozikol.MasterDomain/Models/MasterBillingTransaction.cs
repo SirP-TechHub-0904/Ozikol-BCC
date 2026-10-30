@@ -78,6 +78,19 @@ public class MasterBillingTransaction
     public string? Notes { get; set; }
 
     /// <summary>
+    /// Optional comma-separated list of canonical feature codes covered by this invoice
+    /// (supports both single capability renewals and consolidated multi-feature renewals).
+    /// </summary>
+    [MaxLength(500)]
+    public string? FeatureCodesCsv { get; set; }
+
+    /// <summary>
+    /// Billing duration cadence covered by this transaction (Monthly, Quarterly, Yearly).
+    /// </summary>
+    [MaxLength(30)]
+    public string? BillingCadence { get; set; }
+
+    /// <summary>
     /// UTC timestamp when this transaction was created.
     /// </summary>
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;

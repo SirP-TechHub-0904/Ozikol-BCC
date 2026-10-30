@@ -69,7 +69,7 @@ namespace Ozikol_BCC.Api
 
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.IAiSmartAssistService, Ozikol_BCC.AiServices.Services.AiSmartAssistService>();
-            builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.IPaymentGatewayService, Ozikol_BCC.PaymentServices.Services.PaystackPaymentGatewayService>();
+            builder.Services.AddScoped<Ozikol_BCC.Application.Interfaces.Services.IPaymentGatewayService, Ozikol_BCC.PaymentServices.Paystack.Services.PaystackPaymentGatewayService>();
             builder.Services.AddScoped<Ozikol_BCC.Application.Services.IMemberIdGeneratorService, Ozikol_BCC.Application.Services.MemberIdGeneratorService>();
 
             builder.Services.AddDistributedMemoryCache();

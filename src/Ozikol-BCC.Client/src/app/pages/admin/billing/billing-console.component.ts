@@ -62,6 +62,9 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
   isLoading = false;
   togglingFeatureCode: string | null = null;
+  payingFeatureCode: string | null = null;
+  isPayingAllDue = false;
+  private suppressNextSocketToast = false;
 
   // Filter & Search controls
   searchQuery = '';
@@ -212,10 +215,14 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
               this.closeFeatureDetail();
             }
           }
-          this.toastService.info(
-            'Central Catalog Synchronized',
-            'Capabilities, availability, and menu items updated in real time.'
-          );
+          if (this.suppressNextSocketToast) {
+            this.suppressNextSocketToast = false;
+          } else {
+            this.toastService.info(
+              'Central Catalog Synchronized',
+              'Capabilities, availability, and menu items updated in real time.'
+            );
+          }
         }
       });
     });
@@ -300,7 +307,16 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
     }
 
     const desiredState = targetActive !== undefined ? targetActive : !feat.isActive;
+
+    // If activating or renewing a paid capability when no first-time free trial applies,
+    // launch the Central Paystack Inline Checkout instead of bypassing payment.
+    if (desiredState && !feat.isCompulsory && this.getFeatureDisplayAmount(feat) > 0 && !feat.isEligibleForFreeTrial) {
+      this.payAndRenewFeature(feat);
+      return;
+    }
+
     this.togglingFeatureCode = feat.featureCode;
+    this.suppressNextSocketToast = true;
 
     this.billingService.toggleFeatureActive(feat.featureId, feat.featureCode, desiredState).subscribe({
       next: res => {
@@ -325,14 +341,179 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
             );
           }
         } else {
+          this.suppressNextSocketToast = false;
           this.toastService.error('Update Failed', res?.message || 'Could not update capability status.');
         }
       },
       error: err => {
         this.togglingFeatureCode = null;
+        this.suppressNextSocketToast = false;
         const msg = err?.error?.message || 'Could not synchronize capability activation with Central.';
         this.toastService.error('Update Failed', msg);
       }
+    });
+  }
+
+  /**
+   * Launches the Central Paystack Inline Checkout popup to pay for and renew a single capability.
+   */
+  payAndRenewFeature(feat: BillingFeatureItem): void {
+    if (!feat || !feat.featureCode) return;
+    this.payingFeatureCode = feat.featureCode;
+    this.launchPaystackInlineCheckout([feat.featureCode], feat.name);
+  }
+
+  /**
+   * Launches a single consolidated Central Paystack Inline Checkout popup for all expiring/overdue capabilities.
+   */
+  payAllExpiringFeatures(): void {
+    const due = this.expiringOrExpiredFeatures;
+    if (due.length === 0) return;
+    this.isPayingAllDue = true;
+    const codes = due.map(f => f.featureCode);
+    const label = due.length === 1 ? due[0].name : `${due.length} Capabilities`;
+    this.launchPaystackInlineCheckout(codes, label);
+  }
+
+  /**
+   * Calls the backend to initialize a Central Paystack transaction and opens Paystack Inline (PaystackPop).
+   */
+  private launchPaystackInlineCheckout(featureCodes: string[], label: string): void {
+    this.billingService.initializePaystackFeaturePayment(featureCodes, 'Monthly').subscribe({
+      next: async res => {
+        const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
+        if (!ok || !res.data) {
+          this.payingFeatureCode = null;
+          this.isPayingAllDue = false;
+          this.toastService.error('Payment Initialization Failed', res?.message || 'Could not initialize Paystack transaction.');
+          return;
+        }
+
+        const init = res.data;
+        this.loadInvoices();
+
+        try {
+          await this.ensurePaystackScriptLoaded();
+          const win = window as any;
+
+          if (win.PaystackPop && init.publicKey) {
+            const handler = win.PaystackPop.setup({
+              key: init.publicKey,
+              email: init.email || 'billing@company.com',
+              amount: Math.round(Number(init.amount) * 100),
+              currency: init.currency || this.currencyCode || 'NGN',
+              ref: init.reference,
+              access_code: init.accessCode || undefined,
+              callback: (response: any) => {
+                this.ngZone.run(() => {
+                  const verifiedRef = response?.reference || init.reference;
+                  this.verifyPaystackPayment(verifiedRef, label);
+                });
+              },
+              onClose: () => {
+                this.ngZone.run(() => {
+                  this.payingFeatureCode = null;
+                  this.isPayingAllDue = false;
+                  this.toastService.info('Checkout Closed', `Payment window for ${label} was closed before completion.`);
+                });
+              }
+            });
+            handler.openIframe();
+          } else if (init.authorizationUrl) {
+            this.payingFeatureCode = null;
+            this.isPayingAllDue = false;
+            window.open(init.authorizationUrl, '_blank', 'noopener,noreferrer');
+            this.toastService.info(
+              'Paystack Checkout Opened',
+              'Complete your payment in the Paystack checkout tab. Note: Add your Paystack Public Key in /centralwks/platform-settings for inline popup mode.'
+            );
+          } else {
+            this.payingFeatureCode = null;
+            this.isPayingAllDue = false;
+            this.toastService.error(
+              'Paystack Public Key Missing',
+              'Please configure your Central Paystack Public Key in /centralwks/platform-settings.'
+            );
+          }
+        } catch {
+          this.payingFeatureCode = null;
+          this.isPayingAllDue = false;
+          this.toastService.error('Paystack Inline Error', 'Could not load Paystack Inline checkout script.');
+        }
+      },
+      error: err => {
+        this.payingFeatureCode = null;
+        this.isPayingAllDue = false;
+        const msg = err?.error?.message || 'Paystack initialization failed. Please check Central Paystack keys in /centralwks/platform-settings.';
+        this.toastService.error('Paystack Checkout Error', msg);
+      }
+    });
+  }
+
+  /**
+   * Verifies a completed Paystack payment reference on the server and updates the capability posture & invoices.
+   */
+  private verifyPaystackPayment(reference: string, label: string): void {
+    this.suppressNextSocketToast = true;
+    this.billingService.verifyPaystackFeaturePayment(reference).subscribe({
+      next: res => {
+        this.payingFeatureCode = null;
+        this.isPayingAllDue = false;
+        const ok = Boolean(res && (res.success || res.isSuccess) && res.data);
+        if (ok) {
+          this.snapshot = res.data;
+          this.broadcastSnapshotToSidebar(res.data);
+          this.loadInvoices();
+          if (this.selectedFeatureDetail) {
+            const refreshed = this.allOrderedFeatures.find(
+              f => f.featureCode === this.selectedFeatureDetail?.featureCode
+            );
+            if (refreshed) this.selectedFeatureDetail = refreshed;
+          }
+          this.toastService.success(
+            'Payment Verified & Subscription Renewed',
+            res.message || `Payment confirmed! '${label}' has been renewed and activated.`
+          );
+        } else {
+          this.suppressNextSocketToast = false;
+          this.toastService.error('Verification Failed', res?.message || 'Could not verify Paystack transaction.');
+        }
+      },
+      error: err => {
+        this.payingFeatureCode = null;
+        this.isPayingAllDue = false;
+        this.suppressNextSocketToast = false;
+        const msg = err?.error?.message || 'Error verifying Paystack transaction with server.';
+        this.toastService.error('Verification Error', msg);
+      }
+    });
+  }
+
+  /**
+   * Dynamically loads https://js.paystack.co/v1/inline.js once per session for Paystack Inline Popup.
+   */
+  private ensurePaystackScriptLoaded(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (typeof window === 'undefined' || typeof document === 'undefined') {
+        resolve();
+        return;
+      }
+      if ((window as any).PaystackPop) {
+        resolve();
+        return;
+      }
+      const existing = document.querySelector('script[src="https://js.paystack.co/v1/inline.js"]') as HTMLScriptElement | null;
+      if (existing) {
+        existing.addEventListener('load', () => resolve());
+        existing.addEventListener('error', () => reject());
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://js.paystack.co/v1/inline.js';
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject();
+      document.head.appendChild(script);
     });
   }
 
@@ -371,6 +552,22 @@ export class BillingConsoleComponent implements OnInit, OnDestroy {
 
   get activeInstalledFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
     return this.allOrderedFeatures.filter(f => f.isActive || f.status === 'Expired');
+  }
+
+  /**
+   * Capabilities that are expired or expiring within 30 days and have a payable amount.
+   */
+  get expiringOrExpiredFeatures(): Array<BillingFeatureItem & { serialNo: number; suiteLetter: string }> {
+    return this.activeInstalledFeatures.filter(
+      f => !f.isCompulsory && this.getFeatureDisplayAmount(f) > 0 && (f.status === 'Expired' || (f.daysRemaining ?? 999) <= 30)
+    );
+  }
+
+  /**
+   * Consolidated total amount due across all capabilities expiring within 30 days or overdue.
+   */
+  get totalExpiringAmountDue(): number {
+    return this.expiringOrExpiredFeatures.reduce((sum, f) => sum + this.getFeatureDisplayAmount(f), 0);
   }
 
   get filteredInvoices(): BillingInvoice[] {

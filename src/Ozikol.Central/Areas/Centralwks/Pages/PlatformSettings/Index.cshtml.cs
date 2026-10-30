@@ -145,6 +145,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             [MaxLength(255)]
             public string? CloudinaryApiSecret { get; set; }
 
+            /// <summary>Gets or sets whether Central Paystack checkout is enabled for workspace capability subscriptions &amp; renewals.</summary>
+            public bool EnablePaystack { get; set; } = true;
+
+            /// <summary>Gets or sets Central Paystack Public Key (pk_live_... or pk_test_...).</summary>
+            [MaxLength(255)]
+            public string? PaystackPublicKey { get; set; }
+
+            /// <summary>Gets or sets Central Paystack Secret Key (sk_live_... or sk_test_...).</summary>
+            [MaxLength(255)]
+            public string? PaystackSecretKey { get; set; }
+
+            /// <summary>Gets or sets Central Paystack Webhook Secret for HMAC-SHA512 signature validation.</summary>
+            [MaxLength(255)]
+            public string? PaystackWebhookSecret { get; set; }
+
             /// <summary>Gets or sets whether platform-wide maintenance mode is engaged.</summary>
             public bool IsMaintenanceMode { get; set; } = false;
 
@@ -218,6 +233,10 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 CloudinaryCloudName = settings.CloudinaryCloudName,
                 CloudinaryApiKey = settings.CloudinaryApiKey,
                 CloudinaryApiSecret = settings.CloudinaryApiSecret,
+                EnablePaystack = settings.EnablePaystack,
+                PaystackPublicKey = settings.PaystackPublicKey,
+                PaystackSecretKey = settings.PaystackSecretKey,
+                PaystackWebhookSecret = settings.PaystackWebhookSecret,
                 IsMaintenanceMode = settings.IsMaintenanceMode,
                 MaintenanceMessage = settings.MaintenanceMessage,
                 MinimumAppVersion = !string.IsNullOrWhiteSpace(settings.MinimumAppVersion) ? settings.MinimumAppVersion : "1.0.0"
@@ -275,6 +294,17 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 settings.CloudinaryApiSecret = Input.CloudinaryApiSecret.Trim();
             }
 
+            settings.EnablePaystack = Input.EnablePaystack;
+            settings.PaystackPublicKey = Input.PaystackPublicKey?.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.PaystackSecretKey))
+            {
+                settings.PaystackSecretKey = Input.PaystackSecretKey.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(Input.PaystackWebhookSecret))
+            {
+                settings.PaystackWebhookSecret = Input.PaystackWebhookSecret.Trim();
+            }
+
             settings.IsMaintenanceMode = Input.IsMaintenanceMode;
             settings.MaintenanceMessage = Input.MaintenanceMessage?.Trim();
             settings.MinimumAppVersion = string.IsNullOrWhiteSpace(Input.MinimumAppVersion) ? "1.0.0" : Input.MinimumAppVersion.Trim();
@@ -289,6 +319,44 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             StatusMessage = "Global platform settings saved successfully.";
 
             return RedirectToPage();
+        }
+
+        /// <summary>
+        /// Handles AJAX POST request to test the Central Paystack Secret Key live against Paystack's API.
+        /// </summary>
+        public async Task<IActionResult> OnPostTestPaystackConnectionAsync([FromForm] string? secretKey)
+        {
+            var targetSecret = secretKey?.Trim();
+            if (string.IsNullOrWhiteSpace(targetSecret))
+            {
+                var settings = await _context.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
+                targetSecret = settings?.PaystackSecretKey?.Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(targetSecret))
+            {
+                return new JsonResult(new { success = false, message = "No Paystack Secret Key provided or saved in Central Settings." });
+            }
+
+            try
+            {
+                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, "https://api.paystack.co/bank?perPage=1");
+                req.Headers.Add("Authorization", $"Bearer {targetSecret}");
+
+                var resp = await http.SendAsync(req);
+                if (resp.IsSuccessStatusCode)
+                {
+                    var keyMode = targetSecret.StartsWith("sk_live_", StringComparison.OrdinalIgnoreCase) ? "LIVE Mode" : "TEST Mode";
+                    return new JsonResult(new { success = true, message = $"Paystack connection verified ({keyMode})! Ready for inline payments." });
+                }
+
+                return new JsonResult(new { success = false, message = $"Paystack rejected key (HTTP {(int)resp.StatusCode}). Please verify your Secret Key." });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { success = false, message = $"Paystack connection error: {ex.Message}" });
+            }
         }
 
         /// <summary>

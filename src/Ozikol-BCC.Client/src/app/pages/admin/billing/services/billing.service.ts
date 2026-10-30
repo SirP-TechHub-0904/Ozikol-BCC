@@ -88,6 +88,23 @@ export interface SubscribeFeatureResult {
 }
 
 /**
+ * Server-calculated Central Paystack Inline Checkout initialization payload.
+ */
+export interface InitializeFeaturePaymentPayload {
+  publicKey: string;
+  accessCode: string;
+  reference: string;
+  authorizationUrl: string;
+  amount: number;
+  currency: string;
+  currencySymbol: string;
+  email: string;
+  invoiceNumber: string;
+  cadence: string;
+  featureNames: string[];
+}
+
+/**
  * Invoice ledger record.
  */
 export interface BillingInvoice {
@@ -187,6 +204,29 @@ export class BillingService {
       featureCode,
       setActive,
       cadence
+    });
+  }
+
+  /**
+   * Initializes a Central Paystack Inline Checkout transaction for one or more capabilities.
+   * Credentials and exact pricing are resolved server-side from MasterCatalogDbContext.
+   */
+  initializePaystackFeaturePayment(
+    featureCodes: string[],
+    cadence: 'Monthly' | 'Quarterly' | 'Yearly' = 'Monthly'
+  ): Observable<ApiResponse<InitializeFeaturePaymentPayload>> {
+    return this.api.post<ApiResponse<InitializeFeaturePaymentPayload>>('billing/features/paystack/initialize', {
+      featureCodes,
+      cadence
+    });
+  }
+
+  /**
+   * Verifies a completed Central Paystack Inline payment reference and renews/activates the covered capabilities.
+   */
+  verifyPaystackFeaturePayment(reference: string): Observable<ApiResponse<BillingFeaturesSnapshot>> {
+    return this.api.post<ApiResponse<BillingFeaturesSnapshot>>('billing/features/paystack/verify', {
+      reference
     });
   }
 

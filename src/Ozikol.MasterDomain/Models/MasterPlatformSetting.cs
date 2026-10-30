@@ -205,6 +205,33 @@ namespace Ozikol.MasterDomain.Models
         public string MongoLogsCollectionName { get; set; } = "central_system_logs";
 
         /// <summary>
+        /// Gets or sets a value indicating whether the Central platform Paystack payment gateway is enabled
+        /// for tenant workspace subscriptions, capability renewals, and add-on checkouts.
+        /// </summary>
+        public bool EnablePaystack { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the Central platform Paystack Public Key (e.g., "pk_live_..." or "pk_test_...")
+        /// used by Paystack Inline Checkout when tenants pay Ozikol Central for subscriptions and renewals.
+        /// </summary>
+        [MaxLength(255)]
+        public string? PaystackPublicKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Paystack Secret Key (e.g., "sk_live_..." or "sk_test_...")
+        /// resolved strictly server-side from MasterCatalogDbContext and never exposed to client payloads.
+        /// </summary>
+        [MaxLength(255)]
+        public string? PaystackSecretKey { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Central platform Paystack Webhook Secret used to validate HMAC-SHA512 signatures
+        /// on incoming central webhook events (/api/paystack-webhook/central). Falls back to PaystackSecretKey when blank.
+        /// </summary>
+        [MaxLength(255)]
+        public string? PaystackWebhookSecret { get; set; }
+
+        /// <summary>
         /// Gets or sets the UTC timestamp when these settings were last modified.
         /// </summary>
         public DateTime UpdatedUtc { get; set; } = DateTime.UtcNow;

@@ -164,6 +164,20 @@
             </div>
 
             @if (selectedFeatureDetail.isActive) {
+              @if (!selectedFeatureDetail.isCompulsory && (selectedFeatureDetail.daysRemaining ?? 999) <= 30 && getFeatureDisplayAmount(selectedFeatureDetail) > 0) {
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  style="width: 100%; justify-content: center; padding: 11px 18px; font-weight: 700;"
+                  [disabled]="payingFeatureCode === selectedFeatureDetail.featureCode || togglingFeatureCode === selectedFeatureDetail.featureCode"
+                  (click)="payAndRenewFeature(selectedFeatureDetail)"
+                >
+                  <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === selectedFeatureDetail.featureCode">
+                    {{ payingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'payments' }}
+                  </span>
+                  <span>{{ payingFeatureCode === selectedFeatureDetail.featureCode ? 'Opening Paystack...' : ('Pay & Renew (' + formatAmount(getFeatureDisplayAmount(selectedFeatureDetail)) + ')') }}</span>
+                </button>
+              }
               <button
                 type="button"
                 class="btn btn-outline"
@@ -181,13 +195,15 @@
                 type="button"
                 class="btn btn-primary"
                 style="width: 100%; justify-content: center; padding: 11px 20px; font-weight: 700; font-size: 14px;"
-                [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode"
+                [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode || payingFeatureCode === selectedFeatureDetail.featureCode"
                 (click)="toggleFeatureInstall(selectedFeatureDetail, true)"
               >
-                <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === selectedFeatureDetail.featureCode">
-                  {{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : (selectedFeatureDetail.isEligibleForFreeTrial ? 'redeem' : 'download_done') }}
+                <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === selectedFeatureDetail.featureCode || payingFeatureCode === selectedFeatureDetail.featureCode">
+                  {{ (togglingFeatureCode === selectedFeatureDetail.featureCode || payingFeatureCode === selectedFeatureDetail.featureCode) ? 'sync' : (selectedFeatureDetail.isEligibleForFreeTrial ? 'redeem' : (getFeatureDisplayAmount(selectedFeatureDetail) > 0 && !selectedFeatureDetail.isCompulsory ? 'payments' : 'download_done')) }}
                 </span>
-                <span>{{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Installing...' : (selectedFeatureDetail.isEligibleForFreeTrial ? ('Start ' + selectedFeatureDetail.effectiveFreeTrialDays + '-Day Free Trial & Activate') : 'Install & Activate Now') }}</span>
+                <span>
+                  {{ payingFeatureCode === selectedFeatureDetail.featureCode ? 'Opening Paystack...' : (togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Installing...' : (selectedFeatureDetail.isEligibleForFreeTrial ? ('Start ' + selectedFeatureDetail.effectiveFreeTrialDays + '-Day Free Trial & Activate') : (getFeatureDisplayAmount(selectedFeatureDetail) > 0 && !selectedFeatureDetail.isCompulsory ? ('Pay & Activate (' + formatAmount(getFeatureDisplayAmount(selectedFeatureDetail)) + ')') : 'Install & Activate Now'))) }}
+                </span>
               </button>
             } @else {
               <span class="badge-pill-md badge-coming-soon" style="padding: 9px 16px; font-size: 13px;">
@@ -504,14 +520,16 @@
                           <button
                             type="button"
                             class="btn btn-primary btn-sm-action"
-                            [disabled]="togglingFeatureCode === feat.featureCode"
+                            [disabled]="togglingFeatureCode === feat.featureCode || payingFeatureCode === feat.featureCode"
                             (click)="toggleFeatureInstall(feat, true)"
                             title="Install and unlock in sidebar menu"
                           >
-                            <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode">
-                              {{ togglingFeatureCode === feat.featureCode ? 'sync' : (feat.isEligibleForFreeTrial ? 'redeem' : 'download_done') }}
+                            <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode || payingFeatureCode === feat.featureCode">
+                              {{ (togglingFeatureCode === feat.featureCode || payingFeatureCode === feat.featureCode) ? 'sync' : (feat.isEligibleForFreeTrial ? 'redeem' : (getFeatureDisplayAmount(feat) > 0 && !feat.isCompulsory ? 'payments' : 'download_done')) }}
                             </span>
-                            <span>{{ togglingFeatureCode === feat.featureCode ? 'Installing...' : (feat.isEligibleForFreeTrial ? ('Start ' + feat.effectiveFreeTrialDays + 'd Free Trial') : 'Install & Activate') }}</span>
+                            <span>
+                              {{ payingFeatureCode === feat.featureCode ? 'Opening Paystack...' : (togglingFeatureCode === feat.featureCode ? 'Installing...' : (feat.isEligibleForFreeTrial ? ('Start ' + feat.effectiveFreeTrialDays + 'd Free Trial') : (getFeatureDisplayAmount(feat) > 0 && !feat.isCompulsory ? 'Pay & Activate' : 'Install & Activate'))) }}
+                            </span>
                           </button>
                         } @else {
                           <span class="badge-pill-md badge-coming-soon" style="opacity: 0.75;">
@@ -1098,12 +1116,26 @@
 
     <!-- Active Installed Capabilities Table -->
     <div class="table-card" style="margin-bottom: 24px;">
-      <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+      <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
         <div>
           <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">Installed &amp; Active Capabilities ({{ activeInstalledFeatures.length }})</h3>
           <p style="margin: 3px 0 0; font-size: 12.5px; color: #64748b;">Capabilities currently active and displayed in your workspace navigation menu.</p>
         </div>
-        <span class="badge-pill-md badge-available">Monthly Spend: {{ formatAmount(snapshot.totalRecurringMonthly) }}/mo</span>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          @if (expiringOrExpiredFeatures.length > 1 && totalExpiringAmountDue > 0) {
+            <button
+              type="button"
+              class="btn btn-primary btn-sm-action"
+              [disabled]="isPayingAllDue"
+              (click)="payAllExpiringFeatures()"
+              title="Pay and renew all expiring/overdue capabilities in one Paystack Inline transaction"
+            >
+              <span class="material-symbols-outlined" [class.spin]="isPayingAllDue">{{ isPayingAllDue ? 'sync' : 'payments' }}</span>
+              <span>{{ isPayingAllDue ? 'Initializing Paystack...' : ('Pay All Due (' + formatAmount(totalExpiringAmountDue) + ')') }}</span>
+            </button>
+          }
+          <span class="badge-pill-md badge-available">Monthly Spend: {{ formatAmount(snapshot.totalRecurringMonthly) }}/mo</span>
+        </div>
       </div>
 
       @if (activeInstalledFeatures.length > 0) {
@@ -1170,11 +1202,13 @@
                         <button
                           type="button"
                           class="btn btn-primary btn-sm-action"
-                          [disabled]="togglingFeatureCode === feat.featureCode"
-                          (click)="toggleFeatureInstall(feat, true)"
+                          [disabled]="payingFeatureCode === feat.featureCode || togglingFeatureCode === feat.featureCode"
+                          (click)="payAndRenewFeature(feat)"
                         >
-                          <span class="material-symbols-outlined">payments</span>
-                          <span>Pay &amp; Renew ({{ formatAmount(feat.monthlyPrice) }})</span>
+                          <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === feat.featureCode">
+                            {{ payingFeatureCode === feat.featureCode ? 'sync' : 'payments' }}
+                          </span>
+                          <span>{{ payingFeatureCode === feat.featureCode ? 'Opening Paystack...' : ('Pay & Renew (' + formatAmount(getFeatureDisplayAmount(feat)) + ')') }}</span>
                         </button>
                       }
                       <button

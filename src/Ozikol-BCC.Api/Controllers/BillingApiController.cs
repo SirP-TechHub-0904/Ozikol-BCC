@@ -11,6 +11,7 @@ using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Api.Services;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Persistence.EF.SQL;
@@ -31,6 +32,7 @@ namespace Ozikol_BCC.Api.Controllers
     {
         private readonly MasterCatalogDbContext _master;
         private readonly IBillingSnapshotService _snapshots;
+        private readonly IPaymentGatewayService? _paymentGateway;
         private readonly ITenantProvider? _tenantProvider;
         private readonly DashboardDbContext? _tenantDb;
 
@@ -39,16 +41,19 @@ namespace Ozikol_BCC.Api.Controllers
         /// </summary>
         /// <param name="master">Master catalog database context.</param>
         /// <param name="snapshots">Snapshot builder and real-time publisher.</param>
+        /// <param name="paymentGateway">Unified Paystack payment gateway service.</param>
         /// <param name="tenantProvider">Current tenant resolver.</param>
         /// <param name="tenantDb">Tenant workspace database context for activity audit logging.</param>
         public BillingApiController(
             MasterCatalogDbContext master,
             IBillingSnapshotService snapshots,
+            IPaymentGatewayService? paymentGateway = null,
             ITenantProvider? tenantProvider = null,
             DashboardDbContext? tenantDb = null)
         {
             _master = master;
             _snapshots = snapshots;
+            _paymentGateway = paymentGateway;
             _tenantProvider = tenantProvider;
             _tenantDb = tenantDb;
         }
@@ -191,6 +196,21 @@ namespace Ozikol_BCC.Api.Controllers
             bool hasUsedFreeTrial = existing?.HasUsedFreeTrial ?? false;
             bool startFirstTimeTrial = targetActive && !feature.IsCompulsory && effectiveFreeTrialDays > 0 && !hasUsedFreeTrial;
 
+            // Safeguard: If activating a paid capability when no first-time free trial applies,
+            // only allow re-enabling if the tenant already holds an unexpired paid subscription that is currently suspended.
+            // Renewals or expired/post-trial paid activations MUST go through Paystack Inline Checkout (/api/billing/features/paystack/initialize).
+            bool hasUnexpiredPaidTerm = existing != null
+                && !existing.IsTrialPeriod
+                && !string.Equals(existing.Status, "Trial", StringComparison.OrdinalIgnoreCase)
+                && existing.ExpiresAtUtc > now
+                && !currentlyActive;
+
+            if (targetActive && !feature.IsCompulsory && effectiveUsdPrice > 0m && !startFirstTimeTrial && !hasUnexpiredPaidTerm)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Payment is required to activate or renew '{feature.Name}'. Please complete payment via Paystack Inline Checkout."));
+            }
+
             if (existing != null)
             {
                 existing.IsActive = targetActive;
@@ -206,18 +226,12 @@ namespace Ozikol_BCC.Api.Controllers
                     }
                     else
                     {
-                        bool wasTrial = existing.IsTrialPeriod || string.Equals(existing.Status, "Trial", StringComparison.OrdinalIgnoreCase);
                         existing.IsTrialPeriod = false;
                         existing.Status = "Active";
-                        if (wasTrial || existing.ExpiresAtUtc <= now)
+                        if (feature.IsCompulsory || effectiveUsdPrice <= 0m)
                         {
                             existing.StartsAtUtc = now;
-                            existing.ExpiresAtUtc = cadence switch
-                            {
-                                SubscriptionBillingDuration.Yearly => now.AddYears(1),
-                                SubscriptionBillingDuration.Quarterly => now.AddMonths(3),
-                                _ => now.AddMonths(1)
-                            };
+                            existing.ExpiresAtUtc = now.AddYears(10);
                         }
                     }
 
@@ -248,7 +262,7 @@ namespace Ozikol_BCC.Api.Controllers
                     StartsAtUtc = now,
                     ExpiresAtUtc = startFirstTimeTrial
                         ? now.AddDays(effectiveFreeTrialDays)
-                        : (cadence == SubscriptionBillingDuration.Yearly ? now.AddYears(1) : (cadence == SubscriptionBillingDuration.Quarterly ? now.AddMonths(3) : now.AddMonths(1))),
+                        : now.AddYears(10),
                     AutoRenew = true,
                     IsActive = targetActive,
                     Status = targetActive ? (startFirstTimeTrial ? "Trial" : "Active") : "Suspended",
@@ -297,6 +311,387 @@ namespace Ozikol_BCC.Api.Controllers
                         ? $"'{feature.Name}' is now active on your {effectiveFreeTrialDays}-Day Free Trial! Test all capabilities before payment is required."
                         : $"'{feature.Name}' has been installed and activated. It is now available in your workspace menu.")
                     : $"'{feature.Name}' has been deactivated and removed from your workspace menu."));
+        }
+
+        /// <summary>
+        /// Initializes a Central Paystack Inline payment transaction for one or more workspace capabilities
+        /// (supports single "Pay &amp; Renew" and consolidated multi-feature renewal).
+        /// Resolves Central Paystack credentials and exact feature pricing strictly from MasterCatalogDbContext.
+        /// </summary>
+        [HttpPost("features/paystack/initialize")]
+        [ProducesResponseType(typeof(ApiResponse<InitializeFeaturePaymentResponseDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+        public async Task<IActionResult> InitializeFeaturePayment(
+            [FromBody] InitializeFeaturePaymentRequest request,
+            CancellationToken cancellationToken)
+        {
+            if (_paymentGateway == null)
+                return BadRequest(ApiResponse<object>.FailureResponse("Paystack payment gateway service is not registered."));
+
+            var key = ResolveTenantKey();
+            if (string.IsNullOrWhiteSpace(key))
+                return BadRequest(ApiResponse<object>.FailureResponse("Workspace could not be determined."));
+
+            var tenant = await _master.MasterTenantCatalogs
+                .Include(t => t.FeatureSubscriptions)
+                .FirstOrDefaultAsync(t =>
+                    t.TenantKey.ToLower() == key ||
+                    (t.PrimaryDomain != null && t.PrimaryDomain.ToLower().StartsWith(key + ".")) ||
+                    (t.CustomDomain != null && t.CustomDomain.ToLower() == key),
+                    cancellationToken);
+
+            if (tenant == null)
+                return NotFound(ApiResponse<object>.FailureResponse("Workspace could not be found in Central Catalog."));
+
+            if (!Enum.TryParse<SubscriptionBillingDuration>(request.Cadence, true, out var cadence))
+                cadence = SubscriptionBillingDuration.Monthly;
+
+            // Collect target feature codes or single feature ID
+            var targetCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (request.FeatureCodes != null)
+            {
+                foreach (var c in request.FeatureCodes)
+                {
+                    if (!string.IsNullOrWhiteSpace(c)) targetCodes.Add(c.Trim().ToLowerInvariant());
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(request.FeatureCode))
+            {
+                targetCodes.Add(request.FeatureCode.Trim().ToLowerInvariant());
+            }
+
+            var allCatalogFeatures = await _master.MasterFeatureCatalogs
+                .AsNoTracking()
+                .Where(f => f.IsActive)
+                .ToListAsync(cancellationToken);
+
+            var selectedFeatures = new List<MasterFeatureCatalog>();
+            if (targetCodes.Count > 0)
+            {
+                selectedFeatures.AddRange(allCatalogFeatures.Where(f => targetCodes.Contains(f.FeatureCode.ToLowerInvariant())));
+            }
+            else if (request.FeatureId.HasValue && request.FeatureId.Value != Guid.Empty)
+            {
+                var byId = allCatalogFeatures.FirstOrDefault(f => f.Id == request.FeatureId.Value);
+                if (byId != null) selectedFeatures.Add(byId);
+            }
+
+            if (selectedFeatures.Count == 0)
+                return BadRequest(ApiResponse<object>.FailureResponse("No valid capability was specified for payment."));
+
+            // Resolve tenant's running currency and exchange rate from MasterCurrencyRates
+            string currCode = !string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode)
+                ? tenant.DefaultCurrencyCode.Trim().ToUpperInvariant()
+                : "NGN";
+            string currSymbol = currCode == "NGN" ? "₦" : "$";
+            decimal currRate = 1.0m;
+
+            try
+            {
+                var rateObj = await _master.MasterCurrencyRates
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.IsActive && r.CurrencyCode.ToLower() == currCode.ToLower(), cancellationToken);
+                if (rateObj != null)
+                {
+                    currSymbol = rateObj.CurrencySymbol;
+                    currRate = rateObj.RateFromUsd > 0 ? rateObj.RateFromUsd : 1.0m;
+                }
+            }
+            catch { }
+
+            decimal totalAmountInTenantCurrency = 0m;
+            var featureNames = new List<string>();
+            var resolvedCodes = new List<string>();
+            Guid? primarySubId = null;
+
+            foreach (var feat in selectedFeatures)
+            {
+                if (feat.IsCompulsory) continue;
+
+                var sub = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feat.Id);
+                if (sub != null && primarySubId == null)
+                {
+                    primarySubId = sub.Id;
+                }
+
+                bool hasCustomPrice = tenant.UseCustomPricing && sub?.CustomPriceOverride != null;
+                decimal baseMonthlyUsd = hasCustomPrice
+                    ? sub!.CustomPriceOverride!.Value
+                    : (sub != null && sub.RecurringPrice > 0 ? sub.RecurringPrice : feat.MonthlyPrice);
+
+                decimal cadenceUsd = cadence switch
+                {
+                    SubscriptionBillingDuration.Yearly => hasCustomPrice
+                        ? Math.Round(baseMonthlyUsd * 10m, 2)
+                        : (feat.YearlyPrice > 0 ? feat.YearlyPrice : Math.Round(baseMonthlyUsd * 10m, 2)),
+                    SubscriptionBillingDuration.Quarterly => hasCustomPrice
+                        ? Math.Round(baseMonthlyUsd * 3m * 0.9m, 2)
+                        : (feat.QuarterlyPrice > 0 ? feat.QuarterlyPrice : Math.Round(baseMonthlyUsd * 3m * 0.9m, 2)),
+                    _ => baseMonthlyUsd
+                };
+
+                decimal featureAmount = Math.Round(cadenceUsd * currRate, 2);
+                if (featureAmount > 0m)
+                {
+                    totalAmountInTenantCurrency += featureAmount;
+                    featureNames.Add(feat.Name);
+                    resolvedCodes.Add(feat.FeatureCode);
+                }
+            }
+
+            totalAmountInTenantCurrency = Math.Round(totalAmountInTenantCurrency, 2);
+            if (totalAmountInTenantCurrency <= 0m)
+                return BadRequest(ApiResponse<object>.FailureResponse("The selected capability has no payable charge."));
+
+            var now = DateTime.UtcNow;
+            var reference = $"PSK-CENTRAL-{now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+            var invoiceNumber = await NextInvoiceNumberAsync(now, cancellationToken);
+            var payerEmail = User.FindFirstValue(ClaimTypes.Email)
+                ?? User.FindFirst("email")?.Value
+                ?? (!string.IsNullOrWhiteSpace(tenant.AdminEmail) ? tenant.AdminEmail : "billing@company.com");
+
+            var descriptionNote = featureNames.Count == 1
+                ? $"{featureNames[0]} — {cadence} Subscription Renewal"
+                : $"{featureNames.Count} Capabilities ({string.Join(", ", featureNames)}) — {cadence} Renewal";
+
+            if (descriptionNote.Length > 490)
+                descriptionNote = descriptionNote[..490];
+
+            var invoice = new MasterBillingTransaction
+            {
+                Id = Guid.NewGuid(),
+                MasterTenantCatalogId = tenant.Id,
+                MasterTenantFeatureSubscriptionId = selectedFeatures.Count == 1 ? primarySubId : null,
+                InvoiceNumber = invoiceNumber,
+                Amount = totalAmountInTenantCurrency,
+                Currency = currCode,
+                PaymentProvider = "Paystack",
+                TransactionRef = reference,
+                Status = "Pending",
+                Notes = descriptionNote,
+                FeatureCodesCsv = string.Join(",", resolvedCodes),
+                BillingCadence = cadence.ToString(),
+                CreatedUtc = now
+            };
+
+            _master.MasterBillingTransactions.Add(invoice);
+            await _master.SaveChangesAsync(cancellationToken);
+
+            var initResult = await _paymentGateway.InitializeInlinePaymentAsync(new PaymentInitRequestDto
+            {
+                Scope = PaystackPaymentScope.CentralPlatform,
+                Email = payerEmail,
+                Amount = totalAmountInTenantCurrency,
+                Currency = currCode,
+                Reference = reference,
+                Metadata = new Dictionary<string, string>
+                {
+                    ["scope"] = "central_platform",
+                    ["tenant_key"] = tenant.TenantKey,
+                    ["invoice_number"] = invoiceNumber,
+                    ["feature_codes"] = string.Join(",", resolvedCodes),
+                    ["cadence"] = cadence.ToString()
+                }
+            }, cancellationToken);
+
+            if (!initResult.IsSuccess)
+            {
+                invoice.Status = "Failed";
+                invoice.UpdatedUtc = DateTime.UtcNow;
+                await _master.SaveChangesAsync(cancellationToken);
+                return BadRequest(ApiResponse<object>.FailureResponse(initResult.ErrorMessage));
+            }
+
+            return Ok(ApiResponse<InitializeFeaturePaymentResponseDto>.SuccessResponse(new InitializeFeaturePaymentResponseDto
+            {
+                PublicKey = initResult.PublicKey,
+                AccessCode = initResult.AccessCode,
+                Reference = initResult.Reference,
+                AuthorizationUrl = initResult.AuthorizationUrl,
+                Amount = totalAmountInTenantCurrency,
+                Currency = currCode,
+                CurrencySymbol = currSymbol,
+                Email = payerEmail,
+                InvoiceNumber = invoiceNumber,
+                Cadence = cadence.ToString(),
+                FeatureNames = featureNames
+            }, "Paystack inline checkout initialized."));
+        }
+
+        /// <summary>
+        /// Verifies a completed Central Paystack Inline payment reference against Paystack's API,
+        /// marks the Central invoice as Completed, activates/extends the covered capability subscriptions,
+        /// and broadcasts the updated snapshot over SignalR.
+        /// </summary>
+        [HttpPost("features/paystack/verify")]
+        [ProducesResponseType(typeof(ApiResponse<BillingFeaturesSnapshotDto>), 200)]
+        [ProducesResponseType(typeof(ApiResponse<object>), 400)]
+        public async Task<IActionResult> VerifyFeaturePayment(
+            [FromBody] VerifyFeaturePaymentRequest request,
+            CancellationToken cancellationToken)
+        {
+            if (_paymentGateway == null)
+                return BadRequest(ApiResponse<object>.FailureResponse("Paystack payment gateway service is not registered."));
+
+            if (string.IsNullOrWhiteSpace(request.Reference))
+                return BadRequest(ApiResponse<object>.FailureResponse("Payment reference is required."));
+
+            var cleanRef = request.Reference.Trim();
+            var invoice = await _master.MasterBillingTransactions
+                .Include(t => t.Tenant)
+                    .ThenInclude(tn => tn!.FeatureSubscriptions)
+                .FirstOrDefaultAsync(t => t.TransactionRef == cleanRef, cancellationToken);
+
+            if (invoice == null || invoice.Tenant == null)
+                return NotFound(ApiResponse<object>.FailureResponse("Billing transaction reference was not found in Central Catalog."));
+
+            var tenant = invoice.Tenant;
+
+            // Idempotency: if webhook already completed this invoice, return the fresh snapshot immediately
+            if (string.Equals(invoice.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+            {
+                var existingSnap = await _snapshots.BuildAsync(tenant.TenantKey, cancellationToken);
+                return Ok(ApiResponse<BillingFeaturesSnapshotDto>.SuccessResponse(
+                    existingSnap!,
+                    $"Payment verified (Invoice {invoice.InvoiceNumber}). Your subscription is active and renewed!"));
+            }
+
+            var verification = await _paymentGateway.VerifyPaymentAsync(cleanRef, PaystackPaymentScope.CentralPlatform, cancellationToken);
+            if (!verification.IsSuccess)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    string.IsNullOrWhiteSpace(verification.ErrorMessage)
+                        ? "Payment could not be verified with Paystack."
+                        : verification.ErrorMessage));
+            }
+
+            // Anti-tampering check: verify paid amount matches invoice amount
+            if (verification.AmountPaid + 0.05m < invoice.Amount)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    $"Verified payment amount ({verification.AmountPaid:N2}) is less than the invoice total ({invoice.Amount:N2})."));
+            }
+
+            await FulfillCentralFeatureInvoiceAsync(invoice, tenant, cancellationToken);
+
+            await LogTenantFeatureActivityAsync(
+                "Capability Subscription Paid & Renewed",
+                $"Completed Paystack payment ({invoice.Currency} {invoice.Amount:N2}, Ref: {cleanRef}, Invoice: {invoice.InvoiceNumber}) for {invoice.Notes}.",
+                cancellationToken);
+
+            await _snapshots.PublishAsync(tenant.TenantKey, cancellationToken);
+            var updatedSnapshot = await _snapshots.BuildAsync(tenant.TenantKey, cancellationToken);
+
+            return Ok(ApiResponse<BillingFeaturesSnapshotDto>.SuccessResponse(
+                updatedSnapshot!,
+                $"Payment verified ({invoice.InvoiceNumber})! Your capability subscription has been renewed and activated."));
+        }
+
+        /// <summary>
+        /// Marks a Central <see cref="MasterBillingTransaction"/> as Completed and activates/extends all covered
+        /// <see cref="MasterTenantFeatureSubscription"/> records. Shared idempotently with Central webhook processing.
+        /// </summary>
+        private async Task FulfillCentralFeatureInvoiceAsync(
+            MasterBillingTransaction invoice,
+            MasterTenantCatalog tenant,
+            CancellationToken cancellationToken)
+        {
+            var now = DateTime.UtcNow;
+            invoice.Status = "Completed";
+            invoice.PaymentProvider = "Paystack";
+            invoice.UpdatedUtc = now;
+
+            if (!Enum.TryParse<SubscriptionBillingDuration>(invoice.BillingCadence, true, out var cadence))
+                cadence = SubscriptionBillingDuration.Monthly;
+
+            var codes = (invoice.FeatureCodesCsv ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(c => c.ToLowerInvariant())
+                .ToHashSet();
+
+            var featuresToRenew = new List<MasterFeatureCatalog>();
+            if (codes.Count > 0)
+            {
+                featuresToRenew = await _master.MasterFeatureCatalogs
+                    .Where(f => codes.Contains(f.FeatureCode.ToLower()))
+                    .ToListAsync(cancellationToken);
+            }
+            else if (invoice.MasterTenantFeatureSubscriptionId.HasValue)
+            {
+                var subMatch = tenant.FeatureSubscriptions.FirstOrDefault(s => s.Id == invoice.MasterTenantFeatureSubscriptionId.Value);
+                if (subMatch != null)
+                {
+                    var feat = await _master.MasterFeatureCatalogs.FirstOrDefaultAsync(f => f.Id == subMatch.MasterFeatureCatalogId, cancellationToken);
+                    if (feat != null) featuresToRenew.Add(feat);
+                }
+            }
+
+            foreach (var feature in featuresToRenew)
+            {
+                var sub = tenant.FeatureSubscriptions.FirstOrDefault(s => s.MasterFeatureCatalogId == feature.Id);
+                decimal effectiveUsdPrice = (tenant.UseCustomPricing && sub?.CustomPriceOverride != null)
+                    ? sub.CustomPriceOverride.Value
+                    : feature.MonthlyPrice;
+
+                if (sub != null)
+                {
+                    // If renewing an active paid subscription before expiry, extend from current ExpiresAtUtc so no paid days are lost;
+                    // if upgrading from a free trial or renewing after expiration, extend from now.
+                    var baseStart = (!sub.IsTrialPeriod && sub.ExpiresAtUtc > now) ? sub.ExpiresAtUtc : now;
+                    sub.StartsAtUtc = now;
+                    sub.ExpiresAtUtc = cadence switch
+                    {
+                        SubscriptionBillingDuration.Yearly => baseStart.AddYears(1),
+                        SubscriptionBillingDuration.Quarterly => baseStart.AddMonths(3),
+                        _ => baseStart.AddMonths(1)
+                    };
+                    sub.DurationType = cadence;
+                    sub.RecurringPrice = effectiveUsdPrice;
+                    sub.IsActive = true;
+                    sub.Status = "Active";
+                    sub.IsTrialPeriod = false;
+                    sub.HasUsedFreeTrial = true;
+                }
+                else
+                {
+                    _master.MasterTenantFeatureSubscriptions.Add(new MasterTenantFeatureSubscription
+                    {
+                        Id = Guid.NewGuid(),
+                        MasterTenantCatalogId = tenant.Id,
+                        MasterFeatureCatalogId = feature.Id,
+                        DurationType = cadence,
+                        RecurringPrice = effectiveUsdPrice,
+                        StartsAtUtc = now,
+                        ExpiresAtUtc = cadence switch
+                        {
+                            SubscriptionBillingDuration.Yearly => now.AddYears(1),
+                            SubscriptionBillingDuration.Quarterly => now.AddMonths(3),
+                            _ => now.AddMonths(1)
+                        },
+                        AutoRenew = true,
+                        IsActive = true,
+                        Status = "Active",
+                        HasUsedFreeTrial = true,
+                        IsTrialPeriod = false,
+                        CreatedUtc = now
+                    });
+                }
+            }
+
+            _master.MasterAuditLogs.Add(new MasterAuditLog
+            {
+                UserId = User.Identity?.Name ?? tenant.AdminEmail,
+                UserName = User.Identity?.Name ?? tenant.AdminEmail,
+                Action = "TenantPayAndRenewFeature",
+                EntityType = "MasterBillingTransaction",
+                EntityId = invoice.Id.ToString(),
+                Summary = $"Tenant '{tenant.OrganizationName}' ({tenant.TenantKey}) paid {invoice.Currency} {invoice.Amount:N2} via Paystack ({invoice.InvoiceNumber}, Ref: {invoice.TransactionRef}) for {invoice.Notes}",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                UserAgent = Request.Headers["User-Agent"].ToString(),
+                CreatedUtc = now
+            });
+
+            await _master.SaveChangesAsync(cancellationToken);
         }
 
         /// <summary>
