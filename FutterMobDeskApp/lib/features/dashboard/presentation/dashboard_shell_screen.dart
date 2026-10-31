@@ -19,6 +19,7 @@ import '../../../core/widgets/offline_status_bar.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../../core/widgets/tenant_cached_image.dart';
 import '../../../core/widgets/update_banner.dart';
+import '../../../core/config/single_tenant_config.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../workspace_auth/presentation/workspace_login_screen.dart';
@@ -489,7 +490,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           Row(
             children: [
               // 1. Far Left Multi-Tenant Workspace Switcher Dock (68px)
-              const WorkspaceSwitcherDock(),
+              if (!SingleTenantConfig.isLocked) const WorkspaceSwitcherDock(),
 
               // 2. Persistent Navigation Sidebar (250px expanded / 68px collapsed) - Matches Angular BCC Admin
               AppDrawer(
@@ -2567,6 +2568,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }
 
   void _showMobileWorkspaceSheet(BuildContext context) {
+    if (SingleTenantConfig.isLocked) return;
     final state = ref.read(workspaceStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -3343,22 +3345,24 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.of(dialogCtx).pop();
-                        _showMobileWorkspaceSheet(context);
-                      },
-                      icon: const Icon(Icons.swap_horiz_rounded, size: 16),
-                      label: Text('ws.switch_title'.tr(ref, fallback: 'Switch Tenant')),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: borderColor),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                  if (!SingleTenantConfig.isLocked) ...[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.of(dialogCtx).pop();
+                          _showMobileWorkspaceSheet(context);
+                        },
+                        icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                        label: Text('ws.switch_title'.tr(ref, fallback: 'Switch Tenant')),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: borderColor),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                  ],
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {

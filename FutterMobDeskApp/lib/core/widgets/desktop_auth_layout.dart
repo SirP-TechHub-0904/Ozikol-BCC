@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../config/single_tenant_config.dart';
 import '../localization/language_provider.dart';
 import '../models/workspace.dart';
 import '../theme/app_colors.dart';
@@ -299,7 +300,7 @@ class DesktopAuthLayout extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildChangeWorkspacePill(context, ref),
+                    SingleTenantConfig.isLocked ? const SizedBox.shrink() : _buildChangeWorkspacePill(context, ref),
                     Text(
                       'auth.powered_by'.tr(ref, fallback: 'Powered by Business Command Center'),
                       style: const TextStyle(
@@ -371,7 +372,7 @@ class DesktopAuthLayout extends ConsumerWidget {
         Positioned(
           top: 18,
           left: 20,
-          child: _buildChangeWorkspacePill(context, ref),
+          child: SingleTenantConfig.isLocked ? const SizedBox.shrink() : _buildChangeWorkspacePill(context, ref),
         ),
 
         // Floating Top-Right Language Switcher Pill

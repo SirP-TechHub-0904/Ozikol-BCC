@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'core/config/single_tenant_config.dart';
 import 'core/constants/api_constants.dart';
 import 'core/services/app_logger.dart';
 import 'core/storage/secure_storage_service.dart';
@@ -77,6 +78,7 @@ void main(List<String> args) async {
 
   // Initialize secure storage service and multi-tenant cache
   final storageService = await SecureStorageService.create();
+  await SingleTenantConfig.initialize(storageService);
   final cacheService = await TenantCacheService.create(storageService);
   final apiClient = ApiClient(storageService);
   final crashReporter = CrashReporterService(apiClient, storageService, cacheService);
@@ -270,6 +272,11 @@ class OzikolApp extends ConsumerWidget {
           if (workspaceState.hasActiveSession) {
             return const DashboardShellScreen();
           }
+          if (SingleTenantConfig.isLocked) {
+            return WorkspaceLoginScreen(
+              workspace: workspaceState.pendingWorkspace ?? SingleTenantConfig.buildLockedWorkspace(),
+            );
+          }
           if (workspaceState.shouldBypassEntryScreen && workspaceState.pendingWorkspace != null) {
             return WorkspaceLoginScreen(workspace: workspaceState.pendingWorkspace!);
           }
@@ -282,6 +289,11 @@ class OzikolApp extends ConsumerWidget {
           // If config fetch fails, continue safely with cached/default state
           if (workspaceState.hasActiveSession) {
             return const DashboardShellScreen();
+          }
+          if (SingleTenantConfig.isLocked) {
+            return WorkspaceLoginScreen(
+              workspace: workspaceState.pendingWorkspace ?? SingleTenantConfig.buildLockedWorkspace(),
+            );
           }
           if (workspaceState.shouldBypassEntryScreen && workspaceState.pendingWorkspace != null) {
             return WorkspaceLoginScreen(workspace: workspaceState.pendingWorkspace!);

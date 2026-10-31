@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/single_tenant_config.dart';
 import '../../../core/localization/language_provider.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/theme/app_colors.dart';
@@ -135,6 +136,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
   /// </summary>
   /// <returns>A future representing the asynchronous navigation operation.</returns>
   Future<void> _handleChangeOrganization() async {
+    if (SingleTenantConfig.isLocked) return;
     final notifier = ref.read(workspaceStateProvider.notifier);
     notifier.clearError();
     await notifier.cancelBypass(clearRemembered: true);
@@ -349,6 +351,7 @@ class _WorkspaceLoginScreenState extends ConsumerState<WorkspaceLoginScreen> {
                             const SizedBox(height: 16),
 
                             // Switch Organization Action
+                            if (!SingleTenantConfig.isLocked)
                             Center(
                               child: TextButton.icon(
                                 icon: const Icon(Icons.swap_horiz_rounded, size: 16),

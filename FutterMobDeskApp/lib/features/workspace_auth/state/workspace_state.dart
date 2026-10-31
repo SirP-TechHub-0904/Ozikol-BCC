@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/single_tenant_config.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/windows_jump_list_service.dart';
@@ -215,6 +216,11 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
         }
       }
 
+      if (SingleTenantConfig.isLocked && (active == null || !active.isAuthenticated)) {
+        bypassTarget ??= SingleTenantConfig.buildLockedWorkspace(active);
+        bypass = true;
+      }
+
       _syncJumpList(workspaces);
 
       state = state.copyWith(
@@ -422,6 +428,15 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
   /// <param name="clearRemembered">Whether to wipe the remembered organization bypass preferences from local device storage.</param>
   /// <returns>A future that completes when storage has been updated.</returns>
   Future<void> cancelBypass({bool clearRemembered = true}) async {
+    if (SingleTenantConfig.isLocked) {
+      state = state.copyWith(
+        shouldBypassEntryScreen: true,
+        pendingWorkspace: state.pendingWorkspace ?? SingleTenantConfig.buildLockedWorkspace(state.activeWorkspace),
+        clearError: true,
+      );
+      return;
+    }
+
     // 1. Immediately reset in-memory bypass and pending workspace state synchronously
     state = state.copyWith(
       shouldBypassEntryScreen: false,
