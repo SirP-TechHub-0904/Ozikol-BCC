@@ -6,7 +6,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/localization/language_provider.dart';
 import '../services/workstation_watcher_service.dart';
 import '../state/workstation_shift_state.dart';
-import '../../workspace_auth/state/workspace_state.dart';
 import 'widgets/approved_apps_modal.dart';
 import 'widgets/close_from_work_modal.dart';
 import 'widgets/pre_work_app_checker_modal.dart';
@@ -236,8 +235,6 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     final watcher = ref.watch(workstationWatcherProvider);
-    final activeWs = ref.watch(workspaceStateProvider).activeWorkspace;
-    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
     final machineName = Platform.isWindows ? Platform.localHostname : 'Office Workstation';
 
     return Scaffold(
@@ -278,95 +275,101 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
             ),
             const SizedBox(height: 8),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
+            LayoutBuilder(
+              builder: (context, headerConstraints) {
+                final isCompactHeader = headerConstraints.maxWidth < 920;
+                final titleBlock = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'workstation.title'.tr(ref, fallback: 'Workstation Shift Tracker & Gatekeeper'),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'workstation.subtitle'.tr(
+                        ref,
+                        fallback: "Track today's shift hours, monitor breaks and inactive time with automated station auditing.",
+                      ),
+                      style: TextStyle(fontSize: 13, color: textSecondary),
+                    ),
+                  ],
+                );
+
+                final actionButtons = Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => _openShiftCalendarDialog(context),
+                      icon: const Icon(Icons.calendar_month_rounded, size: 16),
+                      label: const Text('Shift Calendar'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF4338CA),
+                        backgroundColor: isDark ? const Color(0xFF312E81).withValues(alpha: 0.2) : const Color(0xFFEEF2FF),
+                        side: const BorderSide(color: Color(0xFFC7D2FE)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _openLocalFolder(watcher.approvedDirectory),
+                      icon: const Icon(Icons.folder_shared_rounded, size: 16),
+                      label: Text(
+                        watcher.approvedDirectory.isNotEmpty
+                            ? 'Company Work Drive (${watcher.approvedDirectory})'
+                            : 'Company Work Drive',
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                        side: const BorderSide(color: Color(0xFFBFDBFE)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => showApprovedAppsModal(context, ref),
+                      icon: const Icon(Icons.apps_rounded, size: 16),
+                      label: const Text('Approved Apps'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        elevation: 0,
+                      ),
+                    ),
+                  ],
+                );
+
+                if (isCompactHeader) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'workstation.title'.tr(ref, fallback: 'Workstation Shift Tracker & Gatekeeper'),
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: textPrimary,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'workstation.subtitle'.tr(
-                          ref,
-                          fallback: "Track today's shift hours, monitor breaks and inactive time with automated station auditing.",
-                        ),
-                        style: TextStyle(fontSize: 13, color: textSecondary),
-                      ),
+                      titleBlock,
+                      const SizedBox(height: 12),
+                      actionButtons,
                     ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Shift Calendar Button
-                OutlinedButton.icon(
-                  onPressed: () => _openShiftCalendarDialog(context),
-                  icon: const Icon(Icons.calendar_month_rounded, size: 16),
-                  label: const Text('Shift Calendar'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF4338CA),
-                    backgroundColor: isDark ? const Color(0xFF312E81).withValues(alpha: 0.2) : const Color(0xFFEEF2FF),
-                    side: const BorderSide(color: Color(0xFFC7D2FE)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                OutlinedButton.icon(
-                  onPressed: () => _openLocalFolder(watcher.approvedDirectory),
-                  icon: const Icon(Icons.folder_shared_rounded, size: 16),
-                  label: Text(
-                    watcher.approvedDirectory.isNotEmpty
-                        ? 'Company Work Drive (${watcher.approvedDirectory})'
-                        : 'Company Work Drive',
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
-                    side: const BorderSide(color: Color(0xFFBFDBFE)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton.icon(
-                  onPressed: () => showApprovedAppsModal(context, ref),
-                  icon: const Icon(Icons.apps_rounded, size: 16),
-                  label: const Text('Approved Apps'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                    elevation: 0,
-                  ),
-                ),
-                if (canAccessAdmin) ...[
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(
-                    onPressed: _openWebAdminConsole,
-                    icon: const Icon(Icons.open_in_browser_rounded, size: 16),
-                    label: const Text('Web Admin Console'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0F172A),
-                      foregroundColor: const Color(0xFF38BDF8),
-                      side: const BorderSide(color: Color(0xFF334155)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                      elevation: 0,
-                    ),
-                  ),
-                ],
-              ],
+                  );
+                }
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: titleBlock),
+                    const SizedBox(width: 16),
+                    Flexible(child: actionButtons),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 20),
 
@@ -1558,14 +1561,6 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     if (!Platform.isWindows) return;
     try {
       await Process.start('explorer.exe', [path]);
-    } catch (_) {}
-  }
-
-  Future<void> _openWebAdminConsole() async {
-    const webUrl = 'http://localhost:4200/admin/workstations';
-    if (!Platform.isWindows) return;
-    try {
-      await Process.start('cmd', ['/c', 'start', '', webUrl]);
     } catch (_) {}
   }
 
