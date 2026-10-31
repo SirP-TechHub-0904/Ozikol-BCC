@@ -990,6 +990,9 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
   // ==========================================
   // SHIFT CALENDAR DIALOG
   // ==========================================
+  // ==========================================
+  // FULL MONTHLY SHIFT CALENDAR DIALOG
+  // ==========================================
   void _openShiftCalendarDialog(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark ? const Color(0xFF1E293B) : Colors.white;
@@ -997,202 +1000,461 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     final textP = isDark ? Colors.white : const Color(0xFF0F172A);
     final textS = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    final weekdays = [
-      {'day': 'Monday', 'date': '27 Oct', 'hours': '09:00 AM – 05:00 PM', 'status': 'Worked (8h 40m • +1h 50m OT)', 'isOff': false, 'isToday': false},
-      {'day': 'Tuesday', 'date': '28 Oct', 'hours': '09:00 AM – 05:00 PM', 'status': 'Worked (7h 59m • +12m OT)', 'isOff': false, 'isToday': false},
-      {'day': 'Wednesday', 'date': '29 Oct', 'hours': '09:00 AM – 05:00 PM', 'status': 'Worked (6h 30m • Standard)', 'isOff': false, 'isToday': false},
-      {'day': 'Thursday', 'date': '30 Oct', 'hours': '09:00 AM – 05:00 PM', 'status': 'Worked (7h 53m • +5m OT)', 'isOff': false, 'isToday': false},
-      {'day': 'Friday', 'date': '31 Oct', 'hours': '09:00 AM – 05:00 PM', 'status': 'Today (Active Shift)', 'isOff': false, 'isToday': true},
-      {'day': 'Saturday', 'date': '01 Nov', 'hours': 'Off-Duty', 'status': 'Weekend Rest Day', 'isOff': true, 'isToday': false},
-      {'day': 'Sunday', 'date': '02 Nov', 'hours': 'Off-Duty', 'status': 'Weekend Rest Day', 'isOff': true, 'isToday': false},
-    ];
+    DateTime currentMonth = DateTime(2026, 10, 1);
+    DateTime selectedDate = DateTime(2026, 10, 31);
 
     showDialog(
       context: context,
       builder: (ctx) {
-        return Dialog(
-          backgroundColor: surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 620, maxHeight: 680),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title & Close Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            final monthName = _getMonthName(currentMonth.month);
+            final year = currentMonth.year;
+
+            // Calendar math
+            final firstDay = DateTime(currentMonth.year, currentMonth.month, 1);
+            final daysInMonth = DateTime(currentMonth.year, currentMonth.month + 1, 0).day;
+            final leadingOffset = firstDay.weekday - 1; // 1 = Mon -> 0 leading
+            final totalCells = ((leadingOffset + daysInMonth) / 7.0).ceil() * 7;
+
+            // Day inspection data
+            final isWeekendSelected = selectedDate.weekday >= 6;
+            final isTodaySelected = selectedDate.year == 2026 && selectedDate.month == 10 && selectedDate.day == 31;
+
+            return Dialog(
+              backgroundColor: surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 840, maxHeight: 760),
+                child: Padding(
+                  padding: const EdgeInsets.all(22),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // 1. Header Row
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEEF2FF),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.calendar_month_rounded, color: Color(0xFF4338CA), size: 22),
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          Row(
                             children: [
-                              Text(
-                                'Shift Calendar & Schedule Roster',
-                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: textP),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEEF2FF),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.calendar_month_rounded, color: Color(0xFF4338CA), size: 22),
                               ),
-                              Text(
-                                'Official Company Policy: 9 to 5 (Mon – Fri)',
-                                style: TextStyle(fontSize: 12, color: textS),
+                              const SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Shift Calendar & Work Roster',
+                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: textP),
+                                  ),
+                                  Text(
+                                    'Standard Schedule: 9:00 AM – 5:00 PM (Monday – Friday) • 40 hrs / week',
+                                    style: TextStyle(fontSize: 12, color: textS),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF3C7),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFFFDE68A)),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.bolt_rounded, size: 14, color: Color(0xFFD97706)),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'Overtime Past 5:00 PM Auto-Audited',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                onPressed: () => Navigator.of(ctx).pop(),
+                                icon: const Icon(Icons.close_rounded, size: 20),
+                                splashRadius: 18,
                               ),
                             ],
                           ),
                         ],
                       ),
-                      IconButton(
-                        onPressed: () => Navigator.of(ctx).pop(),
-                        icon: const Icon(Icons.close_rounded, size: 20),
-                        splashRadius: 18,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
+                      const SizedBox(height: 14),
 
-                  // Overtime & Policy Banner
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEF3C7),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFFDE68A)),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.bolt_rounded, color: Color(0xFFD97706), size: 20),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Overtime (OT) Policy: Any active work past 05:00 PM on weekdays or anytime on weekends is automatically recorded as billable Overtime.',
-                            style: TextStyle(fontSize: 12, color: Color(0xFF92400E), height: 1.3, fontWeight: FontWeight.w600),
-                          ),
+                      // 2. Month Selector Navigation Bar
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: border),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  Text(
-                    'WEEKLY SHIFT SCHEDULE',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textS, letterSpacing: 0.6),
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Weekdays Roster List
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: weekdays.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final item = weekdays[index];
-                        final isToday = item['isToday'] == true;
-                        final isOff = item['isOff'] == true;
-
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isToday
-                                ? const Color(0xFFEFF6FF)
-                                : (isOff ? (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)) : surface),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: isToday ? const Color(0xFF93C5FD) : border,
-                              width: isToday ? 1.4 : 1.0,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.chevron_left_rounded, size: 22),
+                                  splashRadius: 18,
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      currentMonth = DateTime(currentMonth.year, currentMonth.month - 1, 1);
+                                    });
+                                  },
+                                ),
+                                Text(
+                                  '$monthName $year',
+                                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: textP),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.chevron_right_rounded, size: 22),
+                                  splashRadius: 18,
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      currentMonth = DateTime(currentMonth.year, currentMonth.month + 1, 1);
+                                    });
+                                  },
+                                ),
+                              ],
                             ),
+                            Row(
+                              children: [
+                                OutlinedButton(
+                                  onPressed: () {
+                                    setDialogState(() {
+                                      currentMonth = DateTime(2026, 10, 1);
+                                      selectedDate = DateTime(2026, 10, 31);
+                                    });
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.primary,
+                                    side: const BorderSide(color: Color(0xFFBFDBFE)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  ),
+                                  child: const Text('Today', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 3. Day of Week Header (Mon - Sun)
+                      Row(
+                        children: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'].map((day) {
+                          final isWeekend = day == 'SAT' || day == 'SUN';
+                          return Expanded(
+                            child: Container(
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              child: Text(
+                                day,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: isWeekend ? const Color(0xFFEF4444) : textS,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 4),
+
+                      // 4. Full Month Days Grid
+                      Expanded(
+                        child: GridView.builder(
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 7,
+                            mainAxisSpacing: 6,
+                            crossAxisSpacing: 6,
+                            childAspectRatio: 1.45,
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  SizedBox(
-                                    width: 80,
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item['day'] as String,
-                                          style: TextStyle(
-                                            fontSize: 12.5,
-                                            fontWeight: isToday ? FontWeight.w800 : FontWeight.w700,
-                                            color: isToday ? AppColors.primary : (isOff ? textS : textP),
+                          itemCount: totalCells,
+                          itemBuilder: (context, index) {
+                            final dayNum = index - leadingOffset + 1;
+                            final isCurrentMonth = dayNum >= 1 && dayNum <= daysInMonth;
+
+                            if (!isCurrentMonth) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.transparent : const Color(0xFFF8FAFC).withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              );
+                            }
+
+                            final cellDate = DateTime(currentMonth.year, currentMonth.month, dayNum);
+                            final isWeekend = cellDate.weekday >= 6;
+                            final isToday = cellDate.year == 2026 && cellDate.month == 10 && cellDate.day == 31;
+                            final isSelected = cellDate.year == selectedDate.year &&
+                                cellDate.month == selectedDate.month &&
+                                cellDate.day == selectedDate.day;
+
+                            // Mock shift data for October 2026
+                            String shiftPill = isWeekend ? 'Rest Day' : '9AM – 5PM';
+                            Color pillBg = isWeekend ? const Color(0xFFF1F5F9) : const Color(0xFFEFF6FF);
+                            Color pillFg = isWeekend ? const Color(0xFF94A3B8) : AppColors.primary;
+
+                            // Overtime highlights on specific weekdays
+                            if (cellDate.month == 10 && (dayNum == 27 || dayNum == 30 || dayNum == 31)) {
+                              shiftPill = dayNum == 31 ? 'Active (+OT)' : '+OT Worked';
+                              pillBg = const Color(0xFFFEF3C7);
+                              pillFg = const Color(0xFFB45309);
+                            }
+
+                            return Material(
+                              color: isSelected
+                                  ? (isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.4) : const Color(0xFFEFF6FF))
+                                  : (isDark ? const Color(0xFF0F172A) : Colors.white),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : (isToday ? const Color(0xFF3B82F6) : border),
+                                  width: isSelected ? 1.8 : (isToday ? 1.4 : 1.0),
+                                ),
+                              ),
+                              child: InkWell(
+                                onTap: () {
+                                  setDialogState(() {
+                                    selectedDate = cellDate;
+                                  });
+                                },
+                                borderRadius: BorderRadius.circular(8),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            '$dayNum',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: (isToday || isSelected) ? FontWeight.w900 : FontWeight.w700,
+                                              color: isToday
+                                                  ? AppColors.primary
+                                                  : (isWeekend ? const Color(0xFFEF4444) : textP),
+                                            ),
                                           ),
+                                          if (isToday)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary,
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Text(
+                                                'TODAY',
+                                                style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: Colors.white),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: pillBg,
+                                          borderRadius: BorderRadius.circular(4),
                                         ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          shiftPill,
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                            color: pillFg,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // 5. Selected Day Shift Detail Inspector Card
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: border),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        _getWeekdayAbbr(selectedDate.weekday),
+                                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.primary),
+                                      ),
+                                      Text(
+                                        '${selectedDate.day}',
+                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.primary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${_getWeekdayFull(selectedDate.weekday)}, ${selectedDate.day} $monthName $year',
+                                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: textP),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      isWeekendSelected
+                                          ? 'Scheduled: Weekend Off-Duty (Rest Day)'
+                                          : 'Standard Shift: 09:00 AM – 05:00 PM (8h Shift • 1h Break Allowance)',
+                                      style: TextStyle(fontSize: 11.5, color: textS),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                if (isTodaySelected) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'ACTIVE SHIFT • 08:30 AM CLOCK-IN',
+                                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEF3C7),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFD97706)),
+                                        SizedBox(width: 2),
                                         Text(
-                                          item['date'] as String,
-                                          style: TextStyle(fontSize: 11, color: textS),
+                                          '+1h 30m OT Eligible',
+                                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 14),
-                                  Text(
-                                    item['hours'] as String,
-                                    style: TextStyle(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: isOff ? textS : textP,
+                                ] else if (isWeekendSelected) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      'Off-Duty',
+                                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: textS),
+                                    ),
+                                  ),
+                                ] else ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'Worked & Audited',
+                                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF15803D)),
                                     ),
                                   ),
                                 ],
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isToday
-                                      ? const Color(0xFFDCFCE7)
-                                      : (isOff ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)) : const Color(0xFFF1F5F9)),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Text(
-                                  item['status'] as String,
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: isToday
-                                        ? const Color(0xFF15803D)
-                                        : (isOff ? textS : const Color(0xFF475569)),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Close button
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                      child: const Text('Close Schedule'),
-                    ),
+                      const SizedBox(height: 12),
+
+                      // 6. Action Button
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+                          ),
+                          child: const Text('Close Calendar'),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
+  }
+
+  String _getMonthName(int month) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return months[(month - 1) % 12];
+  }
+
+  String _getWeekdayAbbr(int weekday) {
+    const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    return days[(weekday - 1) % 7];
+  }
+
+  String _getWeekdayFull(int weekday) {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return days[(weekday - 1) % 7];
   }
 
   Future<void> _openLocalFolder(String path) async {
