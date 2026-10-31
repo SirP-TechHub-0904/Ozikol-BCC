@@ -2595,7 +2595,15 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
                 const p = (a.processName || '').toLowerCase();
                 const d = (a.appDisplayName || '').toLowerCase();
                 const w = (a.windowTitle || '').toLowerCase();
-                return !p.includes('ozikol') && d !== 'ozikol' && w !== 'business command center';
+                if (p.includes('ozikol') || d === 'ozikol' || w === 'business command center' || p.includes('webview2') || d.includes('webview2')) {
+                  return false;
+                }
+                const isBrowser = p.includes('chrome') || p.includes('msedge') || p.includes('firefox') || p.includes('brave') || d.includes('chrome');
+                const hasFileExt = !!(a.fileName && /\.[a-z0-9]{2,5}$/i.test(a.fileName.trim()));
+                if (isBrowser && a.eventType === 'DOCUMENT_ACTIVE' && !hasFileExt) {
+                  return false;
+                }
+                return true;
               })
               .map((a: WorkstationActivityItem) => this.normalizeActivityLogItem(a));
           }

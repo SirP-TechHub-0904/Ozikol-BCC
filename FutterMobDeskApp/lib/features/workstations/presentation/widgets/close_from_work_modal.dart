@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../services/workstation_watcher_service.dart';
 import '../../state/workstation_shift_state.dart';
 
 /// Shows the enterprise departure audit modal before exiting At-Work Fullscreen mode.
@@ -53,6 +54,7 @@ class _CloseFromWorkDialogState extends ConsumerState<CloseFromWorkDialog> {
   Future<void> _handleSubmit() async {
     setState(() => _isSubmitting = true);
     try {
+      ref.read(workstationWatcherProvider).stopGuarding(reason: _selectedReason);
       await ref.read(workstationShiftProvider.notifier).closeFromWork(
             reason: _selectedReason,
             notes: _notesCtrl.text.trim(),

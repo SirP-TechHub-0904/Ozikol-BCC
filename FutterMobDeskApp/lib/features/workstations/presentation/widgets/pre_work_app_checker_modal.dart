@@ -574,6 +574,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
 
     if (!mounted) return;
     Navigator.of(context).pop(true);
+    ref.read(workstationWatcherProvider).startGuarding();
     await ref
         .read(workstationShiftProvider.notifier)
         .startOrResumeWork(primaryDomain: widget.primaryDomain);

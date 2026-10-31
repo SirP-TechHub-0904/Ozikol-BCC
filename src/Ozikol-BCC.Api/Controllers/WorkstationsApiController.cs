@@ -932,9 +932,9 @@ namespace Ozikol_BCC.Api.Controllers
         {
             await EnsureActivityLogTableExistsAsync();
 
-            // Never log the workstation compliance agent binary itself as a user application
-            if ((!string.IsNullOrWhiteSpace(dto.ProcessName) && dto.ProcessName.Contains("ozikol", StringComparison.OrdinalIgnoreCase)) ||
-                (!string.IsNullOrWhiteSpace(dto.AppDisplayName) && dto.AppDisplayName.Contains("ozikol", StringComparison.OrdinalIgnoreCase)) ||
+            // Never log the workstation compliance agent binary itself or background webview helpers as a user application
+            if ((!string.IsNullOrWhiteSpace(dto.ProcessName) && (dto.ProcessName.Contains("ozikol", StringComparison.OrdinalIgnoreCase) || dto.ProcessName.Contains("webview2", StringComparison.OrdinalIgnoreCase))) ||
+                (!string.IsNullOrWhiteSpace(dto.AppDisplayName) && (dto.AppDisplayName.Contains("ozikol", StringComparison.OrdinalIgnoreCase) || dto.AppDisplayName.Contains("webview2", StringComparison.OrdinalIgnoreCase))) ||
                 string.Equals(dto.WindowTitle?.Trim(), "Business Command Center", StringComparison.OrdinalIgnoreCase))
             {
                 return Ok(new { success = true, skipped = true });
@@ -959,9 +959,13 @@ namespace Ozikol_BCC.Api.Controllers
             var rawFilePath = SanitizeBrandText(dto.FilePath);
             var hasRealExtension = !string.IsNullOrWhiteSpace(rawFileName) && System.IO.Path.HasExtension(rawFileName);
 
-            // Prevent web browser tab titles from being stored as fake disk file paths
+            // Prevent web browser tab titles from being stored as fake disk file paths or "FILE WORKED ON" events
             if (isBrowser && !hasRealExtension)
             {
+                if (string.Equals(dto.EventType?.Trim(), "DOCUMENT_ACTIVE", StringComparison.OrdinalIgnoreCase))
+                {
+                    return Ok(new { success = true, skipped = true });
+                }
                 rawFileName = null;
                 rawFilePath = null;
             }
@@ -1073,25 +1077,34 @@ namespace Ozikol_BCC.Api.Controllers
                     .Replace("Ozikol", tenantBrand, StringComparison.OrdinalIgnoreCase);
             }
 
+            var filteredLogs = new List<BcpWorkstationActivityLog>();
             foreach (var l in logs)
             {
+                var proc = (l.ProcessName ?? l.AppDisplayName ?? string.Empty).ToLowerInvariant();
+                if (proc.Contains("webview2")) continue;
+
+                var isBrowser = proc.Contains("chrome") || proc.Contains("msedge") || proc.Contains("firefox") || proc.Contains("brave");
+                var hasExt = !string.IsNullOrWhiteSpace(l.FileName) && System.IO.Path.HasExtension(l.FileName);
+                if (isBrowser && l.EventType == "DOCUMENT_ACTIVE" && !hasExt)
+                {
+                    continue;
+                }
+
                 l.WindowTitle = CleanText(l.WindowTitle);
                 l.FileName = CleanText(l.FileName);
                 l.FilePath = CleanText(l.FilePath);
                 l.Details = CleanText(l.Details);
 
-                var proc = (l.ProcessName ?? l.AppDisplayName ?? string.Empty).ToLowerInvariant();
-                var isBrowser = proc.Contains("chrome") || proc.Contains("msedge") || proc.Contains("firefox") || proc.Contains("brave");
-                if (isBrowser && !string.IsNullOrWhiteSpace(l.FileName) && !System.IO.Path.HasExtension(l.FileName))
+                if (isBrowser && !hasExt)
                 {
-                    var tabTitle = l.FileName;
                     l.FileName = null;
                     l.FilePath = null;
-                    l.Details = $"Active browser tab \"{tabTitle}\" in {l.AppDisplayName ?? "Browser"}";
+                    l.Details = $"Opened {l.AppDisplayName ?? "Chrome"} ({l.WindowTitle ?? "Web Browser"})";
                 }
+                filteredLogs.Add(l);
             }
 
-            return Ok(new { success = true, data = logs });
+            return Ok(new { success = true, data = filteredLogs });
         }
 
         /// <summary>

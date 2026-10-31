@@ -342,8 +342,9 @@ class WorkstationWatcherService extends ChangeNotifier {
       // 3. Ensure approved corporate workspace folder exists on disk
       await _ensureApprovedFolderExists();
 
-      // 4. Start background guard loops
-      startGuarding();
+      // NOTE: Background process guarding, app/file activity logging, idle lock,
+      // and periodic screenshots ONLY start when the employee clicks
+      // "Start Active Work Duty" (startGuarding()), never while shift is inactive.
     } catch (e) {
       debugPrint('⚠️ [WorkstationService] Init error: $e');
     }
@@ -546,8 +547,9 @@ class WorkstationWatcherService extends ChangeNotifier {
     }
   }
 
-  /// Stops background monitoring.
-  void stopGuarding() {
+  /// Stops background monitoring when shift is closed.
+  void stopGuarding({String? reason}) {
+    final wasMonitoring = _isMonitoring;
     _watcherTimer?.cancel();
     _watcherTimer = null;
     _heartbeatTimer?.cancel();
@@ -558,7 +560,17 @@ class WorkstationWatcherService extends ChangeNotifier {
     _screenshotTimer = null;
     _isIdleCountdownActive = false;
     _isMonitoring = false;
+    _activeAppSessions.clear();
     notifyListeners();
+
+    if (wasMonitoring) {
+      logWorkstationActivity(
+        eventType: 'SHIFT_CLOSED',
+        details: reason != null && reason.trim().isNotEmpty
+            ? 'Active work shift closed ($reason). Workstation monitoring stopped.'
+            : 'Active work shift closed. Workstation monitoring stopped.',
+      );
+    }
   }
 
   /// Inspects currently running tasks using native Windows tasklist.
@@ -687,17 +699,23 @@ class WorkstationWatcherService extends ChangeNotifier {
 
   /// Sends periodic telemetry heartbeat with currently active window title to server.
   Future<void> _sendTelemetryHeartbeat() async {
-    if (!Platform.isWindows || _stationKey == null) return;
+    if (!Platform.isWindows || _stationKey == null || !_isMonitoring) return;
     try {
-      await _trackWindowedApplicationsAndFiles();
-      final windowTitle = await _getForegroundWindowTitle();
+      if (!_isBreakActive && !_isLocked) {
+        await _trackWindowedApplicationsAndFiles();
+      }
+      final windowTitle = (!_isBreakActive && !_isLocked) ? await _getForegroundWindowTitle() : 'On Break';
 
-      if (windowTitle != null && windowTitle.isNotEmpty) {
+      if (!_isBreakActive && !_isLocked && windowTitle != null && windowTitle.isNotEmpty) {
         await _checkDirectoryBoundary(windowTitle);
       }
 
-      final activeProc = _deriveProcessFromTitle(windowTitle) ?? _lastForegroundProcess;
-      final parsedFile = windowTitle != null ? _extractFileNameAndPath(windowTitle) : null;
+      final activeProc = _isBreakActive
+          ? 'On Break'
+          : (_deriveProcessFromTitle(windowTitle) ?? _lastForegroundProcess);
+      final parsedFile = (!_isBreakActive && windowTitle != null)
+          ? _extractFileNameAndPath(windowTitle, processName: activeProc)
+          : null;
 
       final res = await _api.dio.post('/api/Workstations/heartbeat', data: {
         'stationKey': _stationKey,
