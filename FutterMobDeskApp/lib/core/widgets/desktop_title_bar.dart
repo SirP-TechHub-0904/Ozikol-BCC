@@ -44,6 +44,7 @@ class DesktopTitleBar extends ConsumerStatefulWidget {
 
 class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowListener {
   bool _isMaximized = false;
+  bool _isFullScreen = false;
 
   @override
   void initState() {
@@ -51,6 +52,7 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
     if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
       windowManager.addListener(this);
       _checkMaximizedState();
+      _checkFullScreenState();
     }
   }
 
@@ -85,6 +87,13 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
     } catch (_) {}
   }
 
+  Future<void> _checkFullScreenState() async {
+    try {
+      final fullScreen = await windowManager.isFullScreen();
+      if (mounted) setState(() => _isFullScreen = fullScreen);
+    } catch (_) {}
+  }
+
   @override
   void onWindowMaximize() {
     setState(() => _isMaximized = true);
@@ -93,6 +102,16 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
   @override
   void onWindowUnmaximize() {
     setState(() => _isMaximized = false);
+  }
+
+  @override
+  void onWindowEnterFullScreen() {
+    if (mounted) setState(() => _isFullScreen = true);
+  }
+
+  @override
+  void onWindowLeaveFullScreen() {
+    if (mounted) setState(() => _isFullScreen = false);
   }
 
   Future<void> _toggleMaximize() async {
@@ -110,7 +129,8 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
     }
 
     final shiftState = ref.watch(workstationShiftProvider);
-    final isAtWork = shiftState.isAtWork;
+    // STRICT: "Close From Work" and "AT WORK (LOCKED)" badge ONLY show when in Full Screen!
+    final isAtWork = shiftState.isAtWork && _isFullScreen;
 
     final isDark = widget.isDarkTheme ?? (Theme.of(context).brightness == Brightness.dark);
     final iconColor = isDark ? Colors.white70 : const Color(0xFF334155);

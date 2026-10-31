@@ -557,3 +557,4 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     );
   }
 }
+

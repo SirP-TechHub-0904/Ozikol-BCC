@@ -288,23 +288,20 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                Tooltip(
-                  message: 'Assigned Company Storage: ${watcher.approvedDirectory.isNotEmpty ? watcher.approvedDirectory : "C:\\Company-WorkDrive"}',
-                  child: OutlinedButton.icon(
-                    onPressed: () => _openLocalFolder(watcher.approvedDirectory),
-                    icon: const Icon(Icons.folder_shared_rounded, size: 16),
-                    label: Text(
-                      watcher.approvedDirectory.isNotEmpty
-                          ? 'Company Work Drive (${watcher.approvedDirectory})'
-                          : 'Company Work Drive',
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
-                      side: const BorderSide(color: Color(0xFFBFDBFE)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                    ),
+                OutlinedButton.icon(
+                  onPressed: () => _openLocalFolder(watcher.approvedDirectory),
+                  icon: const Icon(Icons.folder_shared_rounded, size: 16),
+                  label: Text(
+                    watcher.approvedDirectory.isNotEmpty
+                        ? 'Company Work Drive (${watcher.approvedDirectory})'
+                        : 'Company Work Drive',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                    side: const BorderSide(color: Color(0xFFBFDBFE)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                   ),
                 ),
               ],

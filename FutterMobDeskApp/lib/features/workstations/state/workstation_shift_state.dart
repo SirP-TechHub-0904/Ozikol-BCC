@@ -104,8 +104,8 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
   WorkstationShiftNotifier()
       : super(
           WorkstationShiftState(
-            isAtWork: true,
-            hasStartedToday: true,
+            isAtWork: false,
+            hasStartedToday: false,
             isOnBreak: false,
             // Defaults to 08:30 AM today
             shiftStartTime: DateTime(
@@ -206,6 +206,8 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
     }
     try {
       if (fullScreen) {
+        await windowManager.show();
+        await windowManager.focus();
         await windowManager.setFullScreen(true);
       } else {
         await windowManager.setFullScreen(false);
