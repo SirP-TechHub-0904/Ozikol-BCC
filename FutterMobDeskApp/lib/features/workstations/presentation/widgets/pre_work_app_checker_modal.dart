@@ -89,8 +89,6 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     'igfxemn.exe',
     'onedrive.sync.service.exe',
     'adb.exe',
-    'cmd.exe',
-    'powershell.exe',
     'conhost.exe',
     'openconsole.exe',
     'explorer.exe',
@@ -126,9 +124,6 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     'ozikol.exe',
     'ozikol.central.exe',
     'ozikol-bcc.api.exe',
-    'antigravity ide.exe',
-    'antigravity.exe',
-    'agy.exe',
     'taskmgr.exe',
   };
 
@@ -266,11 +261,43 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
           icon: Icons.slideshow_rounded,
         );
       case 'onenote.exe':
+      case 'onenotem.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Microsoft OneNote',
           windowTitle: title,
           icon: Icons.note_alt_rounded,
+        );
+      case 'antigravity.exe':
+      case 'antigravity ide.exe':
+      case 'agy.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Antigravity IDE',
+          windowTitle: title,
+          icon: Icons.code_rounded,
+        );
+      case 'cmd.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Command Prompt',
+          windowTitle: title,
+          icon: Icons.terminal_rounded,
+        );
+      case 'powershell.exe':
+      case 'pwsh.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Windows PowerShell',
+          windowTitle: title,
+          icon: Icons.terminal_rounded,
+        );
+      case 'mstsc.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Remote Desktop Connection',
+          windowTitle: title,
+          icon: Icons.desktop_windows_rounded,
         );
       case 'notepad.exe':
         return DetectedRunningApp(

@@ -97,6 +97,19 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
     setState(() => _isMaximized = false);
   }
 
+  @override
+  void onWindowMinimize() async {
+    final shiftState = ref.read(workstationShiftProvider);
+    if (shiftState.isAtWork && !shiftState.isOnBreak) {
+      // Workstation is locked in duty: prevent Win+D from dropping to desktop
+      await Future.delayed(const Duration(milliseconds: 150));
+      await windowManager.show();
+      await windowManager.restore();
+      await windowManager.setFullScreen(true);
+      await windowManager.focus();
+    }
+  }
+
   Future<void> _handleResumeFromBreak() async {
     final confirmed = await showPreWorkAppCheckerModal(context, ref);
     if (confirmed == true) {

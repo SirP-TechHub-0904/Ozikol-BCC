@@ -275,9 +275,12 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
     try {
       if (fullScreen) {
         await windowManager.show();
+        await windowManager.restore();
         await windowManager.focus();
         await windowManager.setFullScreen(true);
+        await windowManager.setPreventClose(true);
       } else {
+        await windowManager.setPreventClose(false);
         await windowManager.setFullScreen(false);
       }
     } catch (e) {
