@@ -569,7 +569,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             Positioned(
               top: 72,
               right: 24,
-              child: _buildViolationSlideBanner(isDark, _activeViolation!),
+              child: _buildViolationSlideBanner(isDark, _activeViolation!, watcher),
             ),
 
           // Workstation Inactivity Countdown Warning Overlay (45s idle trigger)
@@ -3925,17 +3925,23 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     );
   }
 
-  Widget _buildViolationSlideBanner(bool isDark, ViolationEvent violation) {
+  Widget _buildViolationSlideBanner(bool isDark, ViolationEvent violation, WorkstationWatcherService watcher) {
+    final isDirectoryViolation = violation.violationType == 'DIRECTORY_VIOLATION';
+
     return Material(
       color: Colors.transparent,
       child: Container(
-        width: 440,
+        width: 460,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1010) : const Color(0xFFFEF2F2),
+          color: isDirectoryViolation
+              ? (isDark ? const Color(0xFF261D07) : const Color(0xFFFFFBEB))
+              : (isDark ? const Color(0xFF1E1010) : const Color(0xFFFEF2F2)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: const Color(0xFFEF4444).withValues(alpha: 0.6),
+            color: isDirectoryViolation
+                ? const Color(0xFFD97706).withValues(alpha: 0.7)
+                : const Color(0xFFEF4444).withValues(alpha: 0.6),
             width: 1.5,
           ),
           boxShadow: [
@@ -3955,13 +3961,15 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                    color: isDirectoryViolation
+                        ? const Color(0xFFD97706).withValues(alpha: 0.15)
+                        : const Color(0xFFEF4444).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
-                    Icons.gpp_bad_rounded,
+                  child: Icon(
+                    isDirectoryViolation ? Icons.warning_amber_rounded : Icons.gpp_bad_rounded,
                     size: 18,
-                    color: Color(0xFFEF4444),
+                    color: isDirectoryViolation ? const Color(0xFFD97706) : const Color(0xFFEF4444),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -3970,18 +3978,22 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Workplace Policy Restriction',
+                        isDirectoryViolation ? 'Directory Boundary Warning' : 'Workplace Policy Restriction',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : const Color(0xFF991B1B),
+                          color: isDirectoryViolation
+                              ? (isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E))
+                              : (isDark ? Colors.white : const Color(0xFF991B1B)),
                         ),
                       ),
                       Text(
-                        'Process Intercepted & Closed',
+                        isDirectoryViolation ? 'File Outside Workspace Directory' : 'Process Intercepted & Closed',
                         style: TextStyle(
                           fontSize: 11,
-                          color: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626),
+                          color: isDirectoryViolation
+                              ? (isDark ? const Color(0xFFFCD34D) : const Color(0xFFB45309))
+                              : (isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626)),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -4002,7 +4014,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
             const SizedBox(height: 10),
             Text(
-              '${violation.processName} is not authorized on this workstation during office hours. Non-work software is restricted to preserve business focus.',
+              isDirectoryViolation
+                  ? 'You are trying to access a file outside the workspace directory. Note: This action will be logged as a Directory Violation in the security audit trail.'
+                  : '${violation.processName} is not authorized on this workstation during office hours. Non-work software is restricted to preserve business focus.',
               style: TextStyle(
                 fontSize: 12,
                 color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
@@ -4010,13 +4024,35 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               ),
             ),
             if (violation.windowTitle.isNotEmpty && violation.windowTitle != violation.processName) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.black26 : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  isDirectoryViolation
+                      ? 'Detected Location: "${violation.windowTitle}"'
+                      : 'Window: "${violation.windowTitle}"',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+            if (isDirectoryViolation && watcher.approvedDirectory.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
-                'Window: "${violation.windowTitle}"',
+                'Approved Workspace: "${watcher.approvedDirectory}"',
                 style: TextStyle(
                   fontSize: 11,
-                  fontStyle: FontStyle.italic,
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -4035,24 +4071,41 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                   child: const Text('Dismiss', style: TextStyle(fontSize: 12)),
                 ),
                 const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    setState(() => _activeViolation = null);
-                    final activeWs = ref.read(workspaceStateProvider).activeWorkspace;
-                    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
-                    final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
-                    _navigateToTab(isAdministration ? 25 : 7, clearHistory: true);
-                  },
-                  icon: const Icon(Icons.shield_rounded, size: 14),
-                  label: const Text('Request Access', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEF4444),
-                    foregroundColor: Colors.white,
-                    visualDensity: VisualDensity.compact,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                if (isDirectoryViolation)
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      setState(() => _activeViolation = null);
+                      await watcher.openWorkspaceFolder();
+                    },
+                    icon: const Icon(Icons.folder_open_rounded, size: 14),
+                    label: const Text('Open Workspace Folder', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.white,
+                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  )
+                else
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() => _activeViolation = null);
+                      final activeWs = ref.read(workspaceStateProvider).activeWorkspace;
+                      final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
+                      final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
+                      _navigateToTab(isAdministration ? 25 : 7, clearHistory: true);
+                    },
+                    icon: const Icon(Icons.shield_rounded, size: 14),
+                    label: const Text('Request Access', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEF4444),
+                      foregroundColor: Colors.white,
+                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
                   ),
-                ),
               ],
             ),
           ],

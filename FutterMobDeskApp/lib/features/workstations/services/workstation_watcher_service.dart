@@ -32,18 +32,22 @@ class WorkstationAppRule {
   }
 }
 
-/// Represents an intercepted process violation event.
+/// Represents an intercepted process or directory boundary violation event.
 class ViolationEvent {
   final String processName;
   final String windowTitle;
   final String actionTaken;
   final DateTime timestamp;
+  final String violationType;
+  final String? filePath;
 
   const ViolationEvent({
     required this.processName,
     required this.windowTitle,
     required this.actionTaken,
     required this.timestamp,
+    this.violationType = 'UNAPPROVED_APP',
+    this.filePath,
   });
 }
 
@@ -475,6 +479,10 @@ class WorkstationWatcherService extends ChangeNotifier {
     try {
       final windowTitle = await _getForegroundWindowTitle();
 
+      if (windowTitle != null && windowTitle.isNotEmpty) {
+        await _checkDirectoryBoundary(windowTitle);
+      }
+
       final res = await _api.dio.post('/api/Workstations/heartbeat', data: {
         'stationKey': _stationKey,
         'currentWindowTitle': windowTitle,
@@ -501,6 +509,84 @@ class WorkstationWatcherService extends ChangeNotifier {
         }
       }
     } catch (_) {}
+  }
+
+  DateTime? _lastDirectoryAlertTime;
+
+  /// Checks if an active productivity/document app is working with a file outside the approved workspace.
+  Future<void> _checkDirectoryBoundary(String windowTitle) async {
+    if (!Platform.isWindows || _approvedDirectory.isEmpty || _isBreakActive) return;
+
+    // Debounce directory violation alerts to avoid spamming the user
+    final now = DateTime.now();
+    if (_lastDirectoryAlertTime != null && now.difference(_lastDirectoryAlertTime!).inSeconds < 25) {
+      return;
+    }
+
+    final lowerTitle = windowTitle.toLowerCase();
+
+    // Check if the foreground window is an editor/office application
+    final isDocumentApp = lowerTitle.contains('word') ||
+        lowerTitle.contains('excel') ||
+        lowerTitle.contains('powerpoint') ||
+        lowerTitle.contains('notepad') ||
+        lowerTitle.contains('acrobat') ||
+        lowerTitle.contains('.docx') ||
+        lowerTitle.contains('.xlsx') ||
+        lowerTitle.contains('.pptx') ||
+        lowerTitle.contains('.pdf');
+
+    if (!isDocumentApp) return;
+
+    // Determine if file is outside approved directory
+    final approvedFolderName = _approvedDirectory.split(Platform.pathSeparator).last.toLowerCase();
+    final isOutsideWorkspace = lowerTitle.contains(r'\downloads') ||
+        lowerTitle.contains('downloads') ||
+        lowerTitle.contains(r'\desktop') ||
+        lowerTitle.contains('desktop') ||
+        lowerTitle.contains(r'd:\') ||
+        lowerTitle.contains(r'e:\') ||
+        lowerTitle.contains(r'f:\') ||
+        (!lowerTitle.contains(approvedFolderName) && (lowerTitle.contains(r':\') || lowerTitle.contains('.doc') || lowerTitle.contains('.xls')));
+
+    if (isOutsideWorkspace) {
+      _lastDirectoryAlertTime = now;
+      final procName = _deriveProcessFromTitle(windowTitle) ?? 'Document App';
+
+      final event = ViolationEvent(
+        processName: procName,
+        windowTitle: windowTitle,
+        actionTaken: 'WARNING_LOGGED',
+        timestamp: DateTime.now().toUtc(),
+        violationType: 'DIRECTORY_VIOLATION',
+        filePath: windowTitle,
+      );
+
+      _violationStreamController.add(event);
+
+      // Report directory violation to central audit trail
+      try {
+        await _api.dio.post('/api/Workstations/violations', data: {
+          'machineName': Platform.localHostname,
+          'processName': procName,
+          'windowTitle': windowTitle,
+          'actionTaken': 'WARNING_LOGGED',
+          'violationType': 'DIRECTORY_VIOLATION',
+          'filePath': windowTitle,
+        });
+      } catch (_) {}
+    }
+  }
+
+  /// Opens the corporate workspace folder in Windows File Explorer
+  Future<void> openWorkspaceFolder() async {
+    if (!Platform.isWindows) return;
+    try {
+      await _ensureApprovedFolderExists();
+      await Process.start('explorer.exe', [_approvedDirectory]);
+    } catch (e) {
+      debugPrint('⚠️ [WorkstationService] Open folder error: $e');
+    }
   }
 
   String? _deriveProcessFromTitle(String? title) {
