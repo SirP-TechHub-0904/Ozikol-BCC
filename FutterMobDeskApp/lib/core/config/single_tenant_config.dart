@@ -13,6 +13,7 @@ import '../storage/secure_storage_service.dart';
 /// When [isLocked] is `true`:
 /// - The initial organization lookup screen (`WorkspaceEntryScreen`) is completely bypassed.
 /// - All "Choose Workspace", "Change Organization", and "Switch Workspace" UI controls are hidden.
+/// - Tenant icon, logo, and brand name are pre-bound for the title bar, taskbar, and login screen.
 /// - Sign-out returns directly to the locked tenant's login screen.
 class SingleTenantConfig {
   SingleTenantConfig._();
@@ -21,11 +22,15 @@ class SingleTenantConfig {
   static const String _compileTenantName = String.fromEnvironment('LOCKED_TENANT_NAME');
   static const String _compileTenantDomain = String.fromEnvironment('LOCKED_TENANT_DOMAIN');
   static const String _compileApiBaseUrl = String.fromEnvironment('API_BASE_URL');
+  static const String _compileIconUrl = String.fromEnvironment('LOCKED_TENANT_ICON_URL');
+  static const String _compileLogoUrl = String.fromEnvironment('LOCKED_TENANT_LOGO_URL');
 
   static String? _tenantKey = _compileTenantKey.isNotEmpty ? _compileTenantKey : null;
   static String? _organizationName = _compileTenantName.isNotEmpty ? _compileTenantName : null;
   static String? _primaryDomain = _compileTenantDomain.isNotEmpty ? _compileTenantDomain : null;
   static String? _apiBaseUrl = _compileApiBaseUrl.isNotEmpty ? _compileApiBaseUrl : null;
+  static String? _iconUrl = _compileIconUrl.isNotEmpty ? _compileIconUrl : null;
+  static String? _logoUrl = _compileLogoUrl.isNotEmpty ? _compileLogoUrl : null;
 
   /// Whether this build/installation is locked exclusively to a single tenant.
   static bool get isLocked => _tenantKey != null && _tenantKey!.trim().isNotEmpty;
@@ -49,6 +54,14 @@ class SingleTenantConfig {
   static String? get apiBaseUrl =>
       (_apiBaseUrl != null && _apiBaseUrl!.trim().isNotEmpty) ? _apiBaseUrl!.trim() : null;
 
+  /// Optional pre-resolved tenant square icon URL.
+  static String? get iconUrl =>
+      (_iconUrl != null && _iconUrl!.trim().isNotEmpty) ? _iconUrl!.trim() : null;
+
+  /// Optional pre-resolved tenant wide logo URL.
+  static String? get logoUrl =>
+      (_logoUrl != null && _logoUrl!.trim().isNotEmpty) ? _logoUrl!.trim() : null;
+
   /// Initializes single-tenant configuration from `tenant.lock.json` (if present next to the desktop executable)
   /// or compile-time `--dart-define` flags, and persists the target tenant in [storageService].
   static Future<void> initialize(SecureStorageService storageService) async {
@@ -70,6 +83,8 @@ class SingleTenantConfig {
               _organizationName = (json['organizationName'] ?? json['brandName'])?.toString().trim() ?? _organizationName;
               _primaryDomain = json['primaryDomain']?.toString().trim() ?? _primaryDomain;
               _apiBaseUrl = json['apiBaseUrl']?.toString().trim() ?? _apiBaseUrl;
+              _iconUrl = json['iconUrl']?.toString().trim() ?? _iconUrl;
+              _logoUrl = json['logoUrl']?.toString().trim() ?? _logoUrl;
               break;
             }
           }
@@ -102,12 +117,16 @@ class SingleTenantConfig {
       return existing.copyWith(
         organizationName: existing.organizationName.isNotEmpty ? existing.organizationName : organizationName,
         primaryDomain: existing.primaryDomain.isNotEmpty ? existing.primaryDomain : primaryDomain,
+        iconUrl: existing.iconUrl ?? iconUrl,
+        logoUrl: existing.logoUrl ?? logoUrl,
       );
     }
     return Workspace(
       tenantKey: key,
       organizationName: organizationName,
       primaryDomain: primaryDomain,
+      iconUrl: iconUrl,
+      logoUrl: logoUrl,
       lastAccessed: DateTime.now(),
     );
   }

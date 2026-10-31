@@ -23,6 +23,10 @@
   #define MyOutputBaseFilename "WorkspaceSetup"
 #endif
 
+#ifndef MySetupIconFile
+  #define MySetupIconFile "..\runner\resources\app_icon.ico"
+#endif
+
 [Setup]
 AppId={{8D6B9E44-7F2A-4D1B-9A3C-5E8F1A2B3C4D}
 AppName={#MyAppName}
@@ -34,7 +38,7 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=..\..\build\installer
 OutputBaseFilename={#MyOutputBaseFilename}
-SetupIconFile=..\runner\resources\app_icon.ico
+SetupIconFile={#MySetupIconFile}
 Compression=lzma2/fast
 SolidCompression=yes
 WizardStyle=modern
@@ -53,10 +57,11 @@ Source: "..\..\build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app
 Source: "..\..\build\windows\x64\runner\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\build\windows\x64\runner\Release\tenant.lock.json"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "..\..\build\windows\x64\runner\Release\tenant_icon.ico"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\tenant_icon.ico"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\tenant_icon.ico"; Tasks: desktopicon
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletevalue; Tasks: startup

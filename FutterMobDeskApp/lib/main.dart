@@ -79,6 +79,11 @@ void main(List<String> args) async {
   // Initialize secure storage service and multi-tenant cache
   final storageService = await SecureStorageService.create();
   await SingleTenantConfig.initialize(storageService);
+  if (SingleTenantConfig.isLocked && !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
+    try {
+      await windowManager.setTitle('${SingleTenantConfig.organizationName} - Command Center');
+    } catch (_) {}
+  }
   final cacheService = await TenantCacheService.create(storageService);
   final apiClient = ApiClient(storageService);
   final crashReporter = CrashReporterService(apiClient, storageService, cacheService);
@@ -205,14 +210,17 @@ class OzikolApp extends ConsumerWidget {
         final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
         final activeWs = workspaceState.hasActiveSession ? workspaceState.activeWorkspace : null;
+        final brandingWs = activeWs ??
+            workspaceState.pendingWorkspace ??
+            (SingleTenantConfig.isLocked ? SingleTenantConfig.buildLockedWorkspace() : null);
 
         Widget body = isDesktop
             ? Column(
                 children: [
                   DesktopTitleBar(
-                    title: activeWs != null ? '${activeWs.displayName} - Command Center' : 'Business Command Center',
-                    iconUrl: activeWs?.iconUrl,
-                    logoUrl: activeWs?.logoUrl,
+                    title: brandingWs != null ? '${brandingWs.displayName} - Command Center' : 'Business Command Center',
+                    iconUrl: brandingWs?.iconUrl,
+                    logoUrl: brandingWs?.logoUrl,
                   ),
                   Expanded(child: content),
                 ],
