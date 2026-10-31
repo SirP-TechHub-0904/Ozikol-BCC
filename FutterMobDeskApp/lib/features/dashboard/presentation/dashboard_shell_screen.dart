@@ -370,6 +370,14 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     }
   }
 
+  /// Strictly true ONLY when the workspace is licensed for BCP Workspace AND the user has started active work duty.
+  bool get isWorkModeActive {
+    final activeWs = ref.read(workspaceStateProvider).activeWorkspace;
+    final shiftState = ref.read(workstationShiftProvider);
+    final isWorkspaceLicensed = activeWs != null && activeWs.isFeatureActive('bcp-workspace');
+    return isWorkspaceLicensed && shiftState.isStrictlyAtWork;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(workspaceStateProvider);
@@ -383,15 +391,15 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final watcher = ref.watch(workstationWatcherProvider);
     final shiftState = ref.watch(workstationShiftProvider);
     final isWorkspaceLicensed = activeWs != null && activeWs.isFeatureActive('bcp-workspace');
-    final isWorkModeActive = isWorkspaceLicensed && shiftState.isAtWork && !shiftState.isOnBreak;
+    final workModeActive = isWorkspaceLicensed && shiftState.isStrictlyAtWork;
 
     // Strict Work-Mode Gate: ONLY monitor, log activity, or run inactivity timers when Work Mode is actively running
     if (!kIsWeb && Platform.isWindows) {
-      if (isWorkModeActive && !watcher.isMonitoring) {
+      if (workModeActive && !watcher.isMonitoring) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           watcher.startGuarding();
         });
-      } else if (!isWorkModeActive && watcher.isMonitoring) {
+      } else if (!workModeActive && watcher.isMonitoring) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           watcher.stopGuarding();
         });
@@ -569,7 +577,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
 
           // Slide-down Workplace Policy Restriction Intercept Notification Banner (only if Work Mode is active)
-          if (watcher.isActiveWorkDuty && _activeViolation != null)
+          if (isWorkModeActive && _activeViolation != null)
             Positioned(
               top: 72,
               right: 24,
@@ -577,13 +585,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
 
           // Workstation Inactivity Countdown Warning Overlay (only when Work Mode is active)
-          if (watcher.isActiveWorkDuty && watcher.isIdleCountdownActive && !watcher.isLocked)
+          if (isWorkModeActive && watcher.isIdleCountdownActive && !watcher.isLocked)
             Positioned.fill(
               child: _buildInactivityCountdownOverlay(isDark, watcher),
             ),
 
           // Workstation Force-Lock Full-Screen Kiosk Overlay (only if active)
-          if (watcher.isActiveWorkDuty && watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
+          if (watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned.fill(
               child: _buildWorkstationKioskLockOverlay(isDark, watcher, activeWs),
             ),
@@ -832,13 +840,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
 
           // Workstation Inactivity Countdown Warning Overlay (only when Work Mode is active)
-          if (watcher.isActiveWorkDuty && watcher.isIdleCountdownActive && !watcher.isLocked)
+          if (isWorkModeActive && watcher.isIdleCountdownActive && !watcher.isLocked)
             Positioned.fill(
               child: _buildInactivityCountdownOverlay(isDark, watcher),
             ),
 
           // Workstation Force-Lock Full-Screen Kiosk Overlay (only if active)
-          if (watcher.isActiveWorkDuty && watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
+          if (watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned.fill(
               child: _buildWorkstationKioskLockOverlay(isDark, watcher, activeWs),
             ),
