@@ -137,8 +137,8 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     super.initState();
     _scanRunningApplications();
     _liveSyncTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (mounted) {
-        ref.read(workstationWatcherProvider).refreshPolicies();
+      if (mounted && !_isScanning && !_isClosingAll) {
+        _scanRunningApplications(silent: true);
       }
     });
   }
@@ -378,8 +378,10 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     return cells.map((c) => c.trim()).toList();
   }
 
-  Future<void> _scanRunningApplications() async {
-    setState(() => _isScanning = true);
+  Future<void> _scanRunningApplications({bool silent = false}) async {
+    if (!silent) {
+      setState(() => _isScanning = true);
+    }
     final Set<String> seen = {};
     final List<DetectedRunningApp> apps = [];
 
@@ -466,16 +468,21 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     }
   }
 
+  /// Sends a graceful close signal first so apps with unsaved work (Word, Excel, IDE)
+  /// can prompt the user to save changes before closing.
   Future<void> _closeSingleApp(String procName) async {
     if (!kIsWeb && Platform.isWindows) {
       try {
-        await Process.run('taskkill', ['/F', '/T', '/IM', procName]);
+        final graceful = await Process.run('taskkill', ['/IM', procName]);
+        if (graceful.exitCode != 0) {
+          await Process.run('taskkill', ['/F', '/T', '/IM', procName]);
+        }
       } catch (e) {
         debugPrint('[PreWorkAppChecker] Taskkill error: $e');
       }
     }
     // Refresh scan after closing
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
       await _scanRunningApplications();
     }
@@ -486,11 +493,14 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     if (!kIsWeb && Platform.isWindows) {
       for (final app in _detectedApps) {
         try {
-          await Process.run('taskkill', ['/F', '/T', '/IM', app.processName]);
+          final graceful = await Process.run('taskkill', ['/IM', app.processName]);
+          if (graceful.exitCode != 0) {
+            await Process.run('taskkill', ['/F', '/T', '/IM', app.processName]);
+          }
         } catch (_) {}
       }
     }
-    await Future.delayed(const Duration(milliseconds: 600));
+    await Future.delayed(const Duration(milliseconds: 700));
     if (mounted) {
       setState(() => _isClosingAll = false);
       await _scanRunningApplications();
@@ -685,7 +695,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${_detectedApps.length} Running Application(s) Detected — Force Close All First',
+                              '${_detectedApps.length} Running Application(s) Detected — Please Close All Apps to Start Work',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
@@ -694,7 +704,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                             ),
                             const SizedBox(height: 2),
                             const Text(
-                              'All open applications (even Approved Apps) must be force-closed before starting work so no outside project or document remains open. Once inside your Workstation, open your Approved Apps fresh.',
+                              'Please save any unsaved work and close all open applications (even Approved Apps) so no outside project or document remains open. Once inside your Workstation, open your Approved Apps fresh.',
                               style: TextStyle(fontSize: 11.5, color: Color(0xFFB91C1C)),
                             ),
                           ],
@@ -1045,11 +1055,11 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                                 height: 14,
                                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                               )
-                            : const Icon(Icons.power_settings_new_rounded, size: 15),
+                            : const Icon(Icons.close_rounded, size: 15),
                         label: Text(
                           _isClosingAll
-                              ? 'Force Closing All...'
-                              : 'Force Close All Apps (${_detectedApps.length})',
+                              ? 'Closing Apps...'
+                              : 'Close All Apps (${_detectedApps.length})',
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                         ),
                         style: ElevatedButton.styleFrom(

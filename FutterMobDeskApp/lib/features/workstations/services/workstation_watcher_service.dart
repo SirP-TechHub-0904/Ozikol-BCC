@@ -88,14 +88,17 @@ class WorkstationWatcherService extends ChangeNotifier {
     }
   }
 
-  // Workstation Inactivity & Idle Countdown Governance (45s idle trigger)
+  // Workstation Inactivity & Idle Countdown Governance (3 mins = 180s idle trigger, 60s countdown)
+  static const int idleWarningThresholdSeconds = 180;
+  static const int idleCountdownDurationSeconds = 60;
+
   int _inactivitySeconds = 0;
   int get inactivitySeconds => _inactivitySeconds;
 
   bool _isIdleCountdownActive = false;
   bool get isIdleCountdownActive => _isIdleCountdownActive;
 
-  int _idleCountdownSeconds = 15;
+  int _idleCountdownSeconds = idleCountdownDurationSeconds;
   int get idleCountdownSeconds => _idleCountdownSeconds;
 
   String? _stationKey;
@@ -351,7 +354,7 @@ class WorkstationWatcherService extends ChangeNotifier {
   }
 
   /// Records user activity (mouse move, click, or keyboard) and resets idle timer.
-  /// When the 15s countdown warning overlay is already on screen, passive pointer hover/move
+  /// When the 60s countdown warning overlay is already on screen, passive pointer hover/move
   /// will NOT auto-dismiss it — only an explicit click/keypress or clicking "Resume Duty" will.
   void recordUserActivity({bool isExplicitAction = false}) {
     if (_isLocked) return;
@@ -361,7 +364,7 @@ class WorkstationWatcherService extends ChangeNotifier {
     _inactivitySeconds = 0;
     if (_isIdleCountdownActive) {
       _isIdleCountdownActive = false;
-      _idleCountdownSeconds = 15;
+      _idleCountdownSeconds = idleCountdownDurationSeconds;
       notifyListeners();
     }
   }
@@ -421,7 +424,8 @@ class WorkstationWatcherService extends ChangeNotifier {
     });
   }
 
-  /// Inactivity watchdog: if user is inactive for 45s, triggers a 15s countdown to lockdown.
+  /// Inactivity watchdog: if user has no mouse or keyboard input for 3 minutes (180s),
+  /// triggers a 1-minute (60s) countdown to workstation lockdown.
   Future<void> _checkInactivityAndIdleLock() async {
     if (!_isMonitoring || _isBreakActive || _isLocked) {
       _inactivitySeconds = 0;
@@ -432,7 +436,9 @@ class WorkstationWatcherService extends ChangeNotifier {
       return;
     }
 
-    // Check OS-wide Windows input idle time (so typing/clicking inside Chrome/Word/Excel counts as activity)
+    // Check OS-wide Windows hardware input idle time (GetLastInputInfo)
+    // Only physical mouse movements, clicks, scroll wheel, or keyboard keystrokes reset GetLastInputInfo.
+    // Passive video playback (e.g. watching YouTube) does NOT reset GetLastInputInfo.
     final osIdle = await _getWindowsSystemIdleSeconds();
     if (osIdle != null && !_isIdleCountdownActive && osIdle < 3) {
       _inactivitySeconds = 0;
@@ -441,10 +447,10 @@ class WorkstationWatcherService extends ChangeNotifier {
 
     _inactivitySeconds++;
 
-    // When 45s of continuous inactivity is reached, trigger on-screen countdown warning
-    if (!_isIdleCountdownActive && _inactivitySeconds >= 45) {
+    // When 180s (3 minutes) of continuous inactivity is reached, trigger 60s on-screen countdown warning
+    if (!_isIdleCountdownActive && _inactivitySeconds >= idleWarningThresholdSeconds) {
       _isIdleCountdownActive = true;
-      _idleCountdownSeconds = 15;
+      _idleCountdownSeconds = idleCountdownDurationSeconds;
       notifyListeners();
       if (!kIsWeb && Platform.isWindows) {
         try {
@@ -455,11 +461,11 @@ class WorkstationWatcherService extends ChangeNotifier {
       return;
     }
 
-    // Tick the active countdown until lockdown
+    // Tick the active 60s countdown until lockdown
     if (_isIdleCountdownActive) {
       _idleCountdownSeconds--;
       if (_idleCountdownSeconds <= 0) {
-        await lockStationLocally('Locked due to workstation inactivity');
+        await lockStationLocally('Locked due to 3 minutes of workstation inactivity');
       } else {
         notifyListeners();
       }

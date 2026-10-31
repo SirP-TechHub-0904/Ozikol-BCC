@@ -4115,10 +4115,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     );
   }
 
-  /// Inactivity Countdown Warning Overlay (triggers after 45s idle, counts down 15s to lockdown)
+  /// Inactivity Countdown Warning Overlay (triggers after 3 mins idle, counts down 60s to lockdown)
   Widget _buildInactivityCountdownOverlay(bool isDark, WorkstationWatcherService watcher) {
     final remaining = watcher.idleCountdownSeconds;
-    final progress = (remaining / 15.0).clamp(0.0, 1.0);
+    final progress = (remaining / WorkstationWatcherService.idleCountdownDurationSeconds).clamp(0.0, 1.0);
 
     return Material(
       color: Colors.transparent,
@@ -4175,7 +4175,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'No keyboard or mouse activity detected for 45 seconds.\nTo secure corporate data and maintain audit accuracy, this station will lock in:',
+                    'No keyboard or mouse activity detected for 3 minutes.\nTo secure corporate data and maintain audit accuracy, this station will lock in:',
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.5,
