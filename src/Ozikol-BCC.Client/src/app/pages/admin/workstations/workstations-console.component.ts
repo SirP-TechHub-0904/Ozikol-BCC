@@ -755,18 +755,18 @@ export interface WorkstationActivityLogItem {
                     </span>
                   </td>
                   <td>
-                    <div *ngIf="a.processName || a.appDisplayName">
+                    <div *ngIf="a.processName || a.appDisplayName" style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
                       <code class="process-tag font-bold text-blue">{{ a.appDisplayName || a.processName }}</code>
-                      <span class="text-xs text-gray block mt-1 max-w-xs truncate" *ngIf="a.windowTitle" [title]="a.windowTitle">
+                      <span class="text-xs text-gray max-w-xs truncate" *ngIf="a.windowTitle" [title]="cleanWindowTitle(a.windowTitle)">
                         {{ cleanWindowTitle(a.windowTitle) }}
                       </span>
                     </div>
                     <span *ngIf="!a.processName && !a.appDisplayName" class="text-xs text-gray">—</span>
                   </td>
                   <td>
-                    <div *ngIf="a.fileName || a.filePath">
-                      <strong class="text-xs block" *ngIf="a.fileName">{{ a.fileName }}</strong>
-                      <code class="text-xs text-gray block max-w-xs truncate" *ngIf="a.filePath" [title]="a.filePath">{{ a.filePath }}</code>
+                    <div *ngIf="a.fileName || a.filePath" style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
+                      <strong class="text-xs" *ngIf="a.fileName">{{ a.fileName }}</strong>
+                      <code class="text-xs text-gray max-w-xs truncate" *ngIf="a.filePath" [title]="a.filePath">{{ a.filePath }}</code>
                     </div>
                     <span *ngIf="!a.fileName && !a.filePath" class="text-xs text-gray">—</span>
                   </td>
@@ -1065,18 +1065,18 @@ export interface WorkstationActivityLogItem {
                         </span>
                       </td>
                       <td>
-                        <div *ngIf="a.processName || a.appDisplayName">
+                        <div *ngIf="a.processName || a.appDisplayName" style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
                           <code class="process-tag font-bold text-blue">{{ a.appDisplayName || a.processName }}</code>
-                          <span class="text-xs text-gray block mt-1 max-w-xs truncate" *ngIf="a.windowTitle" [title]="a.windowTitle">
+                          <span class="text-xs text-gray max-w-xs truncate" *ngIf="a.windowTitle" [title]="cleanWindowTitle(a.windowTitle)">
                             {{ cleanWindowTitle(a.windowTitle) }}
                           </span>
                         </div>
                         <span *ngIf="!a.processName && !a.appDisplayName" class="text-xs text-gray">—</span>
                       </td>
                       <td>
-                        <div *ngIf="a.fileName || a.filePath">
-                          <strong class="text-xs block" *ngIf="a.fileName">{{ a.fileName }}</strong>
-                          <code class="text-xs text-gray block max-w-xs truncate" *ngIf="a.filePath" [title]="a.filePath">{{ a.filePath }}</code>
+                        <div *ngIf="a.fileName || a.filePath" style="display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
+                          <strong class="text-xs" *ngIf="a.fileName">{{ a.fileName }}</strong>
+                          <code class="text-xs text-gray max-w-xs truncate" *ngIf="a.filePath" [title]="a.filePath">{{ a.filePath }}</code>
                         </div>
                         <span *ngIf="!a.fileName && !a.filePath" class="text-xs text-gray">—</span>
                       </td>
@@ -2475,14 +2475,57 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     return new Promise(resolve => {
       this.api.get<any>('/Workstations/activity-logs?limit=200').subscribe({
         next: res => {
-          if (res && res.success && res.data) {
-            this.activityLogs = res.data;
+          if (res && res.success && Array.isArray(res.data)) {
+            this.activityLogs = res.data
+              .filter((a: WorkstationActivityItem) => {
+                const p = (a.processName || '').toLowerCase();
+                const d = (a.appDisplayName || '').toLowerCase();
+                const w = (a.windowTitle || '').toLowerCase();
+                return !p.includes('ozikol') && d !== 'ozikol' && w !== 'business command center';
+              })
+              .map((a: WorkstationActivityItem) => this.normalizeActivityLogItem(a));
           }
           resolve();
         },
         error: () => resolve()
       });
     });
+  }
+
+  private normalizeActivityLogItem(a: WorkstationActivityItem): WorkstationActivityItem {
+    const sanitize = (val?: string) => {
+      if (!val) return val;
+      return val
+        .replace(/OzikolBCCClient/gi, this.brandName)
+        .replace(/Ozikol-BCC/gi, `${this.brandName}-Workspace`)
+        .replace(/Ozikol/gi, this.brandName);
+    };
+
+    const proc = (a.processName || a.appDisplayName || '').toLowerCase();
+    const isBrowser = proc.includes('chrome') || proc.includes('msedge') || proc.includes('firefox') || proc.includes('brave');
+    let fileName = sanitize(a.fileName);
+    let filePath = sanitize(a.filePath);
+    let details = sanitize(a.details);
+    const windowTitle = this.cleanWindowTitle(a.windowTitle);
+
+    const hasFileExt = !!(fileName && /\.[a-z0-9]{2,5}$/i.test(fileName.trim()));
+    if (isBrowser && fileName && !hasFileExt) {
+      const tabTitle = fileName;
+      fileName = undefined;
+      filePath = undefined;
+      details = a.eventType === 'APP_OPENED'
+        ? `Opened ${a.appDisplayName || 'Chrome'} (${windowTitle || tabTitle})`
+        : `Active browser tab "${tabTitle}" in ${a.appDisplayName || 'Chrome'}`;
+    }
+
+    return {
+      ...a,
+      appDisplayName: sanitize(a.appDisplayName),
+      windowTitle,
+      fileName,
+      filePath,
+      details
+    };
   }
 
   requestScreenshot(station: WorkstationItem): void {

@@ -806,6 +806,40 @@ namespace Ozikol_BCC.Api.Controllers
         {
             await EnsureActivityLogTableExistsAsync();
 
+            // Never log the workstation compliance agent binary itself as a user application
+            if ((!string.IsNullOrWhiteSpace(dto.ProcessName) && dto.ProcessName.Contains("ozikol", StringComparison.OrdinalIgnoreCase)) ||
+                (!string.IsNullOrWhiteSpace(dto.AppDisplayName) && dto.AppDisplayName.Contains("ozikol", StringComparison.OrdinalIgnoreCase)) ||
+                string.Equals(dto.WindowTitle?.Trim(), "Business Command Center", StringComparison.OrdinalIgnoreCase))
+            {
+                return Ok(new { success = true, skipped = true });
+            }
+
+            var siteSetting = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var tenantBrand = !string.IsNullOrWhiteSpace(siteSetting?.BrandName) ? siteSetting.BrandName : "Workspace";
+
+            string? SanitizeBrandText(string? input)
+            {
+                if (string.IsNullOrWhiteSpace(input)) return input;
+                return input
+                    .Replace("OzikolBCCClient", tenantBrand, StringComparison.OrdinalIgnoreCase)
+                    .Replace("Ozikol-BCC", $"{tenantBrand}-Workspace", StringComparison.OrdinalIgnoreCase)
+                    .Replace("Ozikol", tenantBrand, StringComparison.OrdinalIgnoreCase)
+                    .Trim();
+            }
+
+            var procLower = (dto.ProcessName ?? string.Empty).Trim().ToLowerInvariant();
+            var isBrowser = procLower.Contains("chrome") || procLower.Contains("msedge") || procLower.Contains("firefox") || procLower.Contains("brave");
+            var rawFileName = SanitizeBrandText(dto.FileName);
+            var rawFilePath = SanitizeBrandText(dto.FilePath);
+            var hasRealExtension = !string.IsNullOrWhiteSpace(rawFileName) && System.IO.Path.HasExtension(rawFileName);
+
+            // Prevent web browser tab titles from being stored as fake disk file paths
+            if (isBrowser && !hasRealExtension)
+            {
+                rawFileName = null;
+                rawFilePath = null;
+            }
+
             var machine = !string.IsNullOrWhiteSpace(dto.MachineName) ? dto.MachineName.Trim() : "Workstation";
             var stationKey = !string.IsNullOrWhiteSpace(dto.StationKey)
                 ? dto.StationKey.Trim().ToUpperInvariant()
@@ -815,6 +849,13 @@ namespace Ozikol_BCC.Api.Controllers
                 .AsNoTracking()
                 .OrderByDescending(s => s.LastHeartbeat)
                 .FirstOrDefaultAsync(s => s.StationKey == stationKey || s.MachineName == machine);
+
+            var cleanWindow = SanitizeBrandText(dto.WindowTitle);
+            var cleanDetails = SanitizeBrandText(dto.Details);
+            if (isBrowser && rawFileName == null && !string.IsNullOrWhiteSpace(cleanDetails) && cleanDetails.Contains("working on", StringComparison.OrdinalIgnoreCase))
+            {
+                cleanDetails = $"Active browser window: {cleanWindow ?? "Web Browser"}";
+            }
 
             var entry = new BcpWorkstationActivityLog
             {
@@ -826,15 +867,15 @@ namespace Ozikol_BCC.Api.Controllers
                 UserEmail = !string.IsNullOrWhiteSpace(dto.UserEmail) ? dto.UserEmail : station?.AssignedUserEmail,
                 EventType = !string.IsNullOrWhiteSpace(dto.EventType) ? dto.EventType.Trim().ToUpperInvariant() : "APP_OPENED",
                 ProcessName = dto.ProcessName?.Trim(),
-                AppDisplayName = dto.AppDisplayName?.Trim(),
-                WindowTitle = dto.WindowTitle?.Trim(),
-                FileName = dto.FileName?.Trim(),
-                FilePath = dto.FilePath?.Trim(),
+                AppDisplayName = SanitizeBrandText(dto.AppDisplayName),
+                WindowTitle = cleanWindow,
+                FileName = rawFileName,
+                FilePath = rawFilePath,
                 StartedAt = dto.StartedAt ?? DateTime.UtcNow,
                 EndedAt = dto.EndedAt,
                 DurationSeconds = dto.DurationSeconds,
                 ScreenshotUrl = dto.ScreenshotUrl,
-                Details = dto.Details?.Trim(),
+                Details = cleanDetails,
                 Timestamp = DateTime.UtcNow
             };
 
@@ -858,7 +899,14 @@ namespace Ozikol_BCC.Api.Controllers
         {
             await EnsureActivityLogTableExistsAsync();
 
-            var query = _db.BcpWorkstationActivityLogs.AsNoTracking().AsQueryable();
+            var siteSetting = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var tenantBrand = !string.IsNullOrWhiteSpace(siteSetting?.BrandName) ? siteSetting.BrandName : "Workspace";
+
+            var query = _db.BcpWorkstationActivityLogs
+                .AsNoTracking()
+                .Where(l => (l.ProcessName == null || !l.ProcessName.ToLower().Contains("ozikol")) &&
+                            (l.AppDisplayName == null || !l.AppDisplayName.ToLower().Contains("ozikol")))
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(stationKey))
             {
@@ -889,6 +937,33 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderByDescending(l => l.Timestamp)
                 .Take(Math.Min(limit, 300))
                 .ToListAsync();
+
+            string? CleanText(string? s)
+            {
+                if (string.IsNullOrWhiteSpace(s)) return s;
+                return s
+                    .Replace("OzikolBCCClient", tenantBrand, StringComparison.OrdinalIgnoreCase)
+                    .Replace("Ozikol-BCC", $"{tenantBrand}-Workspace", StringComparison.OrdinalIgnoreCase)
+                    .Replace("Ozikol", tenantBrand, StringComparison.OrdinalIgnoreCase);
+            }
+
+            foreach (var l in logs)
+            {
+                l.WindowTitle = CleanText(l.WindowTitle);
+                l.FileName = CleanText(l.FileName);
+                l.FilePath = CleanText(l.FilePath);
+                l.Details = CleanText(l.Details);
+
+                var proc = (l.ProcessName ?? l.AppDisplayName ?? string.Empty).ToLowerInvariant();
+                var isBrowser = proc.Contains("chrome") || proc.Contains("msedge") || proc.Contains("firefox") || proc.Contains("brave");
+                if (isBrowser && !string.IsNullOrWhiteSpace(l.FileName) && !System.IO.Path.HasExtension(l.FileName))
+                {
+                    var tabTitle = l.FileName;
+                    l.FileName = null;
+                    l.FilePath = null;
+                    l.Details = $"Active browser tab \"{tabTitle}\" in {l.AppDisplayName ?? "Browser"}";
+                }
+            }
 
             return Ok(new { success = true, data = logs });
         }

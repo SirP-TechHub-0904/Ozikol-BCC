@@ -779,9 +779,13 @@ class WorkstationWatcherService extends ChangeNotifier {
         final idx = line.indexOf('|||');
         if (idx <= 0) continue;
         final proc = line.substring(0, idx).trim().toLowerCase();
-        final title = line.substring(idx + 3).trim();
+        final rawTitle = line.substring(idx + 3).trim();
+        final title = rawTitle.replaceAll('OzikolBCCClient', 'Workspace Portal');
         if (proc.isEmpty ||
+            proc == 'ozikol.exe' ||
             proc == 'ozikol_bcc.exe' ||
+            proc.contains('ozikol') ||
+            title == 'Business Command Center' ||
             proc == 'textinputhost.exe' ||
             proc == 'applicationframehost.exe') {
           continue;
@@ -795,7 +799,7 @@ class WorkstationWatcherService extends ChangeNotifier {
       for (final entry in currentRunning.entries) {
         final proc = entry.key;
         final title = entry.value;
-        final fileInfo = _extractFileNameAndPath(title);
+        final fileInfo = _extractFileNameAndPath(title, processName: proc);
         final fileName = fileInfo['fileName'];
         final filePath = fileInfo['filePath'];
 
@@ -877,9 +881,25 @@ class WorkstationWatcherService extends ChangeNotifier {
   }
 
   /// Extracts document file name and full file path from a window title or matches inside the approved workspace folder.
-  Map<String, String?> _extractFileNameAndPath(String windowTitle) {
+  /// Never fabricates fake disk paths for web browser tabs or non-file window titles.
+  Map<String, String?> _extractFileNameAndPath(String windowTitle, {String? processName}) {
     final clean = windowTitle.replaceFirst(RegExp(r'^\d+\s+'), '').trim();
     if (clean.isEmpty) return {'fileName': null, 'filePath': null};
+
+    final lowerProc = (processName ?? '').toLowerCase();
+    final isBrowser = lowerProc.contains('chrome') ||
+        lowerProc.contains('msedge') ||
+        lowerProc.contains('firefox') ||
+        lowerProc.contains('brave') ||
+        lowerProc.contains('opera') ||
+        clean.toLowerCase().endsWith('- google chrome') ||
+        clean.toLowerCase().endsWith('- microsoft​ edge') ||
+        clean.toLowerCase().endsWith('- mozilla firefox');
+
+    // Web browsers show page/tab titles, not local disk files (unless viewing a file:/// or C:\ path)
+    if (isBrowser && !RegExp(r'[A-Za-z]:\\').hasMatch(clean)) {
+      return {'fileName': null, 'filePath': null};
+    }
 
     // Check if an explicit Windows path is in the window title (e.g. "C:\Folder\Report.xlsx - Excel")
     final pathMatch = RegExp(r'([A-Za-z]:\\[^\r\n*?"<>|]+)').firstMatch(clean);
@@ -893,18 +913,28 @@ class WorkstationWatcherService extends ChangeNotifier {
       return {'fileName': name, 'filePath': fullPath};
     }
 
+    final fileExtRegex = RegExp(
+      r'\.(docx?|xlsx?|pptx?|pdf|csv|txt|rtf|psd|ai|fig|xd|indd|json|xml|yaml|yml|cs|ts|js|dart|py|html|css|sql|md|zip|rar|png|jpe?g|svg)\b',
+      caseSensitive: false,
+    );
+
     // Extract document name before " - AppName" (e.g., "Budget_2026.xlsx - Excel" or "Proposal.docx - Word")
     String? candidateName;
     final parts = clean.split(' - ');
     if (parts.length >= 2) {
-      candidateName = parts.first.trim();
-    } else if (RegExp(r'\.(docx?|xlsx?|pptx?|pdf|csv|txt|psd|ai|fig|json|cs|ts|dart|html|sql)\b', caseSensitive: false)
-        .hasMatch(clean)) {
+      for (final p in parts) {
+        if (fileExtRegex.hasMatch(p)) {
+          candidateName = p.trim();
+          break;
+        }
+      }
+      candidateName ??= parts.first.trim();
+    } else if (fileExtRegex.hasMatch(clean)) {
       candidateName = clean;
     }
 
     if (candidateName != null && candidateName.isNotEmpty) {
-      // Check if this file exists inside the approved workspace directory
+      // 1. Check if this file physically exists inside the approved workspace directory
       if (_approvedDirectory.isNotEmpty) {
         try {
           final candidatePath = '$_approvedDirectory\\$candidateName';
@@ -913,10 +943,14 @@ class WorkstationWatcherService extends ChangeNotifier {
           }
         } catch (_) {}
       }
-      return {
-        'fileName': candidateName,
-        'filePath': _approvedDirectory.isNotEmpty ? '$_approvedDirectory\\$candidateName' : candidateName,
-      };
+
+      // 2. Only report as a file if it has a recognized document/file extension
+      if (fileExtRegex.hasMatch(candidateName)) {
+        return {
+          'fileName': candidateName,
+          'filePath': _approvedDirectory.isNotEmpty ? '$_approvedDirectory\\$candidateName' : null,
+        };
+      }
     }
 
     return {'fileName': null, 'filePath': null};
