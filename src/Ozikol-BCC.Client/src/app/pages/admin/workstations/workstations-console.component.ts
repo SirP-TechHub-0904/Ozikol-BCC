@@ -2145,7 +2145,7 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     });
   }
 
-  respondRequest(requestId: string, approve: boolean, durationHours: number = 4, permanent: boolean = false): void {
+  respondRequest(requestId: string, approve: boolean, durationHours: number = 8, permanent: boolean = true): void {
     this.api.post<any>(`/Workstations/requests/${requestId}/respond`, {
       approve: approve,
       durationHours: durationHours,
@@ -2154,7 +2154,7 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
       next: () => {
         this.toast.success(`Request ${approve ? 'Approved' : 'Denied'}.`);
         this.loadRequests();
-        if (permanent) this.loadPolicies();
+        this.loadPolicies();
       },
       error: () => {
         this.toast.error('Failed to submit response.');

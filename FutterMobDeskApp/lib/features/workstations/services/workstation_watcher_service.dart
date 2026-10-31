@@ -117,6 +117,33 @@ class WorkstationWatcherService extends ChangeNotifier {
   final Set<String> _temporaryApprovals = {};
   Set<String> get temporaryApprovals => Set.unmodifiable(_temporaryApprovals);
 
+  final Set<String> _serverApprovedRequests = {};
+  final Set<String> _serverPendingRequests = {};
+  final Set<String> _serverDeniedRequests = {};
+
+  /// Returns true if the process is approved via whitelist policies, approved access requests, or temporary session grant.
+  bool isProcessApproved(String procName) {
+    final clean = procName.toLowerCase().trim();
+    if (_temporaryApprovals.contains(clean) || _serverApprovedRequests.contains(clean)) {
+      return true;
+    }
+    return _rules.any((r) => r.isAllowed && r.processName.toLowerCase().trim() == clean);
+  }
+
+  /// Returns true if the process currently has a Pending access request and is not yet approved.
+  bool isProcessPending(String procName) {
+    final clean = procName.toLowerCase().trim();
+    if (isProcessApproved(clean)) return false;
+    return _serverPendingRequests.contains(clean);
+  }
+
+  /// Returns true if the process was explicitly Denied and is not approved.
+  bool isProcessDenied(String procName) {
+    final clean = procName.toLowerCase().trim();
+    if (isProcessApproved(clean) || isProcessPending(clean)) return false;
+    return _serverDeniedRequests.contains(clean);
+  }
+
   final StreamController<ViolationEvent> _violationStreamController =
       StreamController<ViolationEvent>.broadcast();
   Stream<ViolationEvent> get onViolationIntercepted =>
@@ -228,7 +255,7 @@ class WorkstationWatcherService extends ChangeNotifier {
     }
   }
 
-  /// Refreshes app policies and whitelist from the server.
+  /// Refreshes app policies, whitelist, and employee access request statuses from the server.
   Future<void> refreshPolicies() async {
     try {
       final res = await _api.dio.get('/api/Workstations/policies');
@@ -245,9 +272,38 @@ class WorkstationWatcherService extends ChangeNotifier {
             _approvedDirectory = filePol['approvedDirectoryPath'] as String? ?? _approvedDirectory;
             _blockUsbStorage = filePol['blockUsbStorage'] as bool? ?? _blockUsbStorage;
           }
-          notifyListeners();
         }
       }
+
+      // Also sync access requests so any Admin approval or pending request is reflected immediately
+      final reqRes = await _api.dio.get('/api/Workstations/requests');
+      if (reqRes.statusCode == 200 && reqRes.data != null) {
+        final reqList = reqRes.data['data'] as List<dynamic>? ?? [];
+        final localHost = Platform.isWindows ? Platform.localHostname.toLowerCase().trim() : '';
+        _serverApprovedRequests.clear();
+        _serverPendingRequests.clear();
+        _serverDeniedRequests.clear();
+
+        for (final raw in reqList) {
+          if (raw is! Map<String, dynamic>) continue;
+          final machine = (raw['machineName'] as String? ?? '').toLowerCase().trim();
+          if (localHost.isNotEmpty && machine.isNotEmpty && machine != localHost) {
+            continue;
+          }
+          final proc = (raw['requestedProcessName'] as String? ?? '').toLowerCase().trim();
+          final status = (raw['status'] as String? ?? '').trim();
+          if (proc.isEmpty) continue;
+          if (status == 'Approved') {
+            _serverApprovedRequests.add(proc);
+            _temporaryApprovals.add(proc);
+          } else if (status == 'Pending') {
+            _serverPendingRequests.add(proc);
+          } else if (status == 'Denied') {
+            _serverDeniedRequests.add(proc);
+          }
+        }
+      }
+      notifyListeners();
     } catch (e) {
       debugPrint('⚠️ [WorkstationService] Policy refresh error: $e');
     }
