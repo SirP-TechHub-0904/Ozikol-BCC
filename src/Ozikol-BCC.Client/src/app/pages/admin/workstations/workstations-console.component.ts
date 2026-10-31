@@ -2591,7 +2591,7 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
         next: res => {
           if (res && res.success && Array.isArray(res.data)) {
             this.activityLogs = res.data
-              .filter((a: WorkstationActivityItem) => {
+              .filter((a: WorkstationActivityLogItem) => {
                 const p = (a.processName || '').toLowerCase();
                 const d = (a.appDisplayName || '').toLowerCase();
                 const w = (a.windowTitle || '').toLowerCase();
@@ -2605,7 +2605,7 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
                 }
                 return true;
               })
-              .map((a: WorkstationActivityItem) => this.normalizeActivityLogItem(a));
+              .map((a: WorkstationActivityLogItem) => this.normalizeActivityLogItem(a));
           }
           resolve();
         },
@@ -2614,7 +2614,7 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     });
   }
 
-  private normalizeActivityLogItem(a: WorkstationActivityItem): WorkstationActivityItem {
+  private normalizeActivityLogItem(a: WorkstationActivityLogItem): WorkstationActivityLogItem {
     const sanitize = (val?: string) => {
       if (!val) return val;
       return val
