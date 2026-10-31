@@ -147,6 +147,12 @@ class WorkstationWatcherService extends ChangeNotifier {
 
   WorkstationWatcherService(this._api);
 
+  /// Grants local session exemption for a process (e.g. approved by manager or demo mode)
+  void grantTemporaryApproval(String processName) {
+    _temporaryApprovals.add(processName.toLowerCase().trim());
+    notifyListeners();
+  }
+
   /// Initializes workstation registration with the server and starts background guarding.
   Future<void> initializeAndStart({
     String? userId,

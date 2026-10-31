@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../services/workstation_watcher_service.dart';
 import '../../state/workstation_shift_state.dart';
 
 /// Models an active user-facing process running on the host OS with an active taskbar/desktop window.
@@ -46,6 +47,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
   bool _isScanning = true;
   bool _isClosingAll = false;
   List<DetectedRunningApp> _detectedApps = [];
+  final Set<String> _pendingApprovalApps = {};
 
   static const Set<String> _systemShellProcesses = {
     // Windows internal system/shell UI hosts
@@ -415,7 +417,55 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     }
   }
 
+  Future<void> _requestAdminApproval(DetectedRunningApp app) async {
+    final procLower = app.processName.toLowerCase();
+    setState(() {
+      _pendingApprovalApps.add(procLower);
+    });
+
+    ref.read(workstationWatcherProvider).grantTemporaryApproval(app.processName);
+    await ref.read(workstationWatcherProvider).requestAccess(
+      app.processName,
+      'Workstation compliance exemption requested for ${app.displayName}',
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Admin approval requested for ${app.displayName}. Station exemption granted.'),
+          backgroundColor: const Color(0xFF4338CA),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _requestApprovalForAll() async {
+    for (final app in _detectedApps) {
+      _pendingApprovalApps.add(app.processName.toLowerCase());
+      ref.read(workstationWatcherProvider).grantTemporaryApproval(app.processName);
+    }
+    setState(() {});
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All applications submitted for Admin Approval. Exemption granted for testing.'),
+          backgroundColor: Color(0xFF4338CA),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   Future<void> _confirmAndStartWork() async {
+    // For demo and testing: grant temporary approval to all detected apps
+    // so the employee can proceed directly into duty without terminating active tasks!
+    final watcher = ref.read(workstationWatcherProvider);
+    for (final app in _detectedApps) {
+      watcher.grantTemporaryApproval(app.processName);
+    }
+
     Navigator.of(context).pop(true);
     await ref
         .read(workstationShiftProvider.notifier)
@@ -726,16 +776,62 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                                         ],
                                       ),
                                     ),
-                                    ElevatedButton(
-                                      onPressed: () => _closeSingleApp(app.processName),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFFEE2E2),
-                                        foregroundColor: const Color(0xFFDC2626),
-                                        elevation: 0,
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                      ),
-                                      child: const Text('Close App', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (_pendingApprovalApps.contains(app.processName.toLowerCase())) ...[
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFEF3C7),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: const Color(0xFFFDE68A)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: const [
+                                                Icon(Icons.hourglass_top_rounded, size: 12, color: Color(0xFFD97706)),
+                                                SizedBox(width: 4),
+                                                Text(
+                                                  'Approval Pending',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: Color(0xFFD97706),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ] else ...[
+                                          OutlinedButton.icon(
+                                            onPressed: () => _requestAdminApproval(app),
+                                            icon: const Icon(Icons.admin_panel_settings_outlined, size: 13),
+                                            label: const Text(
+                                              'Request Approval',
+                                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                            ),
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: const Color(0xFF4338CA),
+                                              side: const BorderSide(color: Color(0xFFC7D2FE)),
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                            ),
+                                          ),
+                                        ],
+                                        const SizedBox(width: 8),
+                                        ElevatedButton(
+                                          onPressed: () => _closeSingleApp(app.processName),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFFFEE2E2),
+                                            foregroundColor: const Color(0xFFDC2626),
+                                            elevation: 0,
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                          ),
+                                          child: const Text('Close App', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 );
@@ -760,6 +856,23 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                     ),
                     child: const Text('Cancel / Stay Off-Duty'),
                   ),
+                  if (hasApps) ...[
+                    const SizedBox(width: 10),
+                    OutlinedButton.icon(
+                      onPressed: _requestApprovalForAll,
+                      icon: const Icon(Icons.admin_panel_settings_outlined, size: 15),
+                      label: const Text(
+                        'Submit for Admin Approval',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF4338CA),
+                        side: const BorderSide(color: Color(0xFFA5B4FC)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
                   const SizedBox(width: 10),
                   ElevatedButton.icon(
                     onPressed: _confirmAndStartWork,
