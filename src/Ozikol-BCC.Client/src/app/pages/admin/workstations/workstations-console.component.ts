@@ -236,7 +236,7 @@ export interface ViolationLogItem {
 
         <!-- GRID CARDS VIEW -->
         <div *ngIf="filteredStations.length > 0 && viewMode === 'grid'" class="stations-grid">
-          <div *ngFor="let s of filteredStations" class="station-card" [class.is-locked]="s.isLocked">
+          <div *ngFor="let s of filteredStations" class="station-card clickable-card" [class.is-locked]="s.isLocked" (click)="openStationDetails(s)">
             <div class="station-card-head">
               <div class="station-title-box">
                 <span class="badge-status-pill pill-active" *ngIf="getStationStatus(s) === 'active'">
@@ -258,7 +258,7 @@ export interface ViolationLogItem {
                 <h3 class="station-name">{{ s.machineName }}</h3>
                 <span class="station-pill">{{ s.stationKey }}</span>
               </div>
-              <div class="station-action-btns">
+              <div class="station-action-btns" (click)="$event.stopPropagation()">
                 <button *ngIf="!s.isLocked" (click)="toggleStationLock(s, true)" class="btn-lock" title="Force Remote Lock">
                   <span class="material-symbols-outlined">lock</span>
                   <span>Lock PC</span>
@@ -311,7 +311,10 @@ export interface ViolationLogItem {
 
             <div class="station-card-footer">
               <span class="footer-time">Last active: {{ formatTime(s.lastHeartbeat) }}</span>
-              <span class="footer-os">{{ s.osVersion || 'Windows 11' }}</span>
+              <span class="footer-inspect-link">
+                <span>View Details ({{ getStationPendingRequestsCount(s) }} pending)</span>
+                <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span>
+              </span>
             </div>
           </div>
         </div>
@@ -331,7 +334,7 @@ export interface ViolationLogItem {
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let s of filteredStations" [class.row-locked]="s.isLocked">
+                <tr *ngFor="let s of filteredStations" class="clickable-row" [class.row-locked]="s.isLocked" (click)="openStationDetails(s)">
                   <td>
                     <div class="station-meta-cell">
                       <strong class="text-sm font-bold">{{ s.machineName }}</strong>
@@ -376,7 +379,7 @@ export interface ViolationLogItem {
                   <td class="text-xs whitespace-nowrap text-gray">
                     {{ formatTime(s.lastHeartbeat) }}
                   </td>
-                  <td>
+                  <td (click)="$event.stopPropagation()">
                     <button *ngIf="!s.isLocked" (click)="toggleStationLock(s, true)" class="btn-table-lock" title="Lock PC">
                       <span class="material-symbols-outlined text-sm">lock</span>
                       <span>Lock</span>
@@ -636,6 +639,229 @@ export interface ViolationLogItem {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- WORKSTATION 360 DETAILS MODAL (ON CARD / ROW CLICK) -->
+      <div *ngIf="selectedStation" class="station-modal-backdrop" (click)="closeStationDetails()">
+        <div class="station-modal-card" (click)="$event.stopPropagation()">
+          <!-- Modal Header -->
+          <div class="station-modal-header">
+            <div class="station-modal-title-group">
+              <div class="station-modal-icon">
+                <span class="material-symbols-outlined">desktop_windows</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h2 class="station-modal-title">{{ selectedStation.machineName }}</h2>
+                  <span class="station-pill">{{ selectedStation.stationKey }}</span>
+                  <span class="badge-status-pill pill-active" *ngIf="getStationStatus(selectedStation) === 'active'">
+                    <span class="dot-indicator dot-green"></span> ACTIVE
+                  </span>
+                  <span class="badge-status-pill pill-idle" *ngIf="getStationStatus(selectedStation) === 'idle'">
+                    <span class="dot-indicator dot-amber"></span> IDLE
+                  </span>
+                  <span class="badge-status-pill pill-break" *ngIf="getStationStatus(selectedStation) === 'break'">
+                    <span class="dot-indicator dot-blue"></span> BREAK
+                  </span>
+                  <span class="badge-status-pill pill-locked" *ngIf="getStationStatus(selectedStation) === 'locked'">
+                    <span class="dot-indicator dot-red"></span> LOCKED
+                  </span>
+                  <span class="badge-status-pill pill-offline" *ngIf="getStationStatus(selectedStation) === 'offline'">
+                    <span class="dot-indicator dot-gray"></span> OFFLINE
+                  </span>
+                </div>
+                <p class="station-modal-subtitle">
+                  Operator: <strong>{{ selectedStation.assignedUserName || 'Unassigned Staff' }}</strong>
+                  • IP: {{ selectedStation.ipAddress || '127.0.0.1' }}
+                  • OS: {{ selectedStation.osVersion || 'Windows 11' }}
+                </p>
+              </div>
+            </div>
+            <div class="station-modal-actions">
+              <button *ngIf="!selectedStation.isLocked" (click)="toggleStationLock(selectedStation, true)" class="btn-lock">
+                <span class="material-symbols-outlined">lock</span>
+                <span>Lock PC</span>
+              </button>
+              <button *ngIf="selectedStation.isLocked" (click)="toggleStationLock(selectedStation, false)" class="btn-unlock">
+                <span class="material-symbols-outlined">lock_open</span>
+                <span>Unlock PC</span>
+              </button>
+              <button (click)="closeStationDetails()" class="btn-close-modal" title="Close">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Modal Sub-Navigation Tabs (Scoped to this Workstation) -->
+          <div class="station-modal-tabs">
+            <button class="modal-tab-btn" [class.active]="stationDetailTab === 'overview'" (click)="stationDetailTab = 'overview'">
+              <span class="material-symbols-outlined">monitoring</span>
+              <span>Station Overview</span>
+            </button>
+            <button class="modal-tab-btn" [class.active]="stationDetailTab === 'approved'" (click)="stationDetailTab = 'approved'">
+              <span class="material-symbols-outlined">verified</span>
+              <span>Approved Apps ({{ appPolicies.length }})</span>
+            </button>
+            <button class="modal-tab-btn" [class.active]="stationDetailTab === 'pending'" (click)="stationDetailTab = 'pending'">
+              <span class="material-symbols-outlined">pending_actions</span>
+              <span>Pending & Requests ({{ getStationRequests(selectedStation).length }})</span>
+              <span *ngIf="getStationPendingRequestsCount(selectedStation) > 0" class="badge-count">
+                {{ getStationPendingRequestsCount(selectedStation) }}
+              </span>
+            </button>
+            <button class="modal-tab-btn" [class.active]="stationDetailTab === 'violations'" (click)="stationDetailTab = 'violations'">
+              <span class="material-symbols-outlined">gavel</span>
+              <span>Station Violations ({{ getStationViolations(selectedStation).length }})</span>
+            </button>
+          </div>
+
+          <!-- Modal Body -->
+          <div class="station-modal-body">
+            <!-- SUB-TAB 1: STATION OVERVIEW -->
+            <div *ngIf="stationDetailTab === 'overview'">
+              <div class="detail-grid-2">
+                <div class="detail-info-card">
+                  <span class="detail-card-label">CURRENT FOREGROUND APPLICATION</span>
+                  <div class="flex items-center gap-2 mt-2">
+                    <span class="material-symbols-outlined text-blue">terminal</span>
+                    <strong class="text-base">{{ selectedStation.currentProcessName || 'Desktop Idle' }}</strong>
+                    <span *ngIf="selectedStation.currentProcessName && isAppAllowed(selectedStation.currentProcessName)" class="badge-status-approved">APPROVED</span>
+                    <span *ngIf="selectedStation.currentProcessName && !isAppAllowed(selectedStation.currentProcessName)" class="badge-status-unapproved">RESTRICTED</span>
+                  </div>
+                  <p class="text-xs text-gray mt-2" *ngIf="selectedStation.currentWindowTitle">
+                    Window: {{ cleanWindowTitle(selectedStation.currentWindowTitle) }}
+                  </p>
+                  <div class="mt-3" *ngIf="selectedStation.currentProcessName && !isAppAllowed(selectedStation.currentProcessName)">
+                    <button (click)="quickApproveProcess(selectedStation.currentProcessName)" class="btn-approve">
+                      + Whitelist {{ selectedStation.currentProcessName }} Now
+                    </button>
+                  </div>
+                </div>
+
+                <div class="detail-info-card">
+                  <span class="detail-card-label">WORKSTATION SANDBOX & TELEMETRY</span>
+                  <div class="detail-kv-row mt-2">
+                    <span>Approved Work Folder:</span>
+                    <code>{{ filePolicy.approvedDirectoryPath || ('C:\\' + brandName + '-Workspace') }}</code>
+                  </div>
+                  <div class="detail-kv-row">
+                    <span>USB Storage Policy:</span>
+                    <strong>{{ filePolicy.usbStoragePolicy }}</strong>
+                  </div>
+                  <div class="detail-kv-row">
+                    <span>Last Heartbeat:</span>
+                    <strong>{{ formatTime(selectedStation.lastHeartbeat) }}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUB-TAB 2: APPROVED APPS FOR THIS WORKSTATION -->
+            <div *ngIf="stationDetailTab === 'approved'">
+              <div class="table-wrap">
+                <table class="policy-table">
+                  <thead>
+                    <tr>
+                      <th>APPLICATION</th>
+                      <th>PROCESS (.EXE)</th>
+                      <th>CATEGORY</th>
+                      <th>STATUS ON {{ selectedStation.machineName }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let p of appPolicies">
+                      <td class="font-semibold">{{ p.displayName }}</td>
+                      <td><code class="process-tag">{{ p.processName }}</code></td>
+                      <td><span class="cat-pill">{{ p.category }}</span></td>
+                      <td>
+                        <span class="badge-status-approved">APPROVED</span>
+                        <span *ngIf="selectedStation.currentProcessName && selectedStation.currentProcessName.toLowerCase() === p.processName.toLowerCase()" class="badge-live ml-2">
+                          RUNNING NOW
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SUB-TAB 3: PENDING & ACCESS REQUESTS FOR THIS WORKSTATION -->
+            <div *ngIf="stationDetailTab === 'pending'">
+              <div *ngIf="getStationRequests(selectedStation).length === 0" class="empty-state">
+                <span class="material-symbols-outlined empty-icon">task_alt</span>
+                <h3>No Access Requests from {{ selectedStation.machineName }}</h3>
+                <p>When {{ selectedStation.assignedUserName || 'the operator' }} requests approval for an app on {{ selectedStation.machineName }}, it appears here immediately.</p>
+              </div>
+
+              <div *ngIf="getStationRequests(selectedStation).length > 0" class="table-wrap">
+                <table class="policy-table">
+                  <thead>
+                    <tr>
+                      <th>REQUESTED APP</th>
+                      <th>REASON / JUSTIFICATION</th>
+                      <th>REQUESTED AT</th>
+                      <th>STATUS</th>
+                      <th>ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let r of getStationRequests(selectedStation)">
+                      <td><code class="process-tag font-bold text-blue">{{ r.requestedProcessName }}</code></td>
+                      <td class="reason-cell">{{ r.reason }}</td>
+                      <td>{{ formatTime(r.createdAt) }}</td>
+                      <td>
+                        <span *ngIf="r.status === 'Pending'" class="badge-pending">PENDING</span>
+                        <span *ngIf="r.status === 'Approved'" class="badge-status-approved">APPROVED</span>
+                        <span *ngIf="r.status === 'Denied'" class="badge-status-unapproved">DENIED</span>
+                      </td>
+                      <td>
+                        <div class="btn-group" *ngIf="r.status === 'Pending'">
+                          <button (click)="respondRequest(r.id, true, 8, true)" class="btn-approve">
+                            Approve
+                          </button>
+                          <button (click)="respondRequest(r.id, false)" class="btn-deny">
+                            Deny
+                          </button>
+                        </div>
+                        <span *ngIf="r.status !== 'Pending'" class="text-gray text-xs">Reviewed</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SUB-TAB 4: VIOLATIONS FOR THIS WORKSTATION -->
+            <div *ngIf="stationDetailTab === 'violations'">
+              <div *ngIf="getStationViolations(selectedStation).length === 0" class="empty-state">
+                <span class="material-symbols-outlined empty-icon text-green">verified_user</span>
+                <h3>Zero Violations on {{ selectedStation.machineName }}</h3>
+                <p>No unauthorized processes or directory violations recorded for this workstation.</p>
+              </div>
+
+              <div *ngIf="getStationViolations(selectedStation).length > 0" class="table-wrap">
+                <table class="policy-table">
+                  <thead>
+                    <tr>
+                      <th>TIME</th>
+                      <th>PROCESS</th>
+                      <th>WINDOW / PATH</th>
+                      <th>ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let v of getStationViolations(selectedStation)">
+                      <td class="whitespace-nowrap text-gray">{{ formatTime(v.timestamp) }}</td>
+                      <td><code class="process-tag text-red">{{ v.processName }}</code></td>
+                      <td class="max-w-xs truncate" [title]="v.windowTitle || ''">{{ v.windowTitle || 'No Title' }}</td>
+                      <td><span class="badge-status-unapproved">{{ v.actionTaken }}</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1394,11 +1620,176 @@ export interface ViolationLogItem {
       max-width: 500px;
       margin: 0 auto;
     }
+
+    /* Clickable Cards & Workstation 360 Details Modal */
+    .clickable-card {
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .clickable-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px -6px rgba(15, 23, 42, 0.1);
+      border-color: #93c5fd;
+    }
+    .clickable-row {
+      cursor: pointer;
+    }
+    .clickable-row:hover td {
+      background: #f8fafc;
+    }
+    .footer-inspect-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: #2563eb;
+      font-weight: 700;
+      font-size: 11.5px;
+    }
+    .station-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(3px);
+      z-index: 1200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .station-modal-card {
+      background: #ffffff;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 920px;
+      max-height: 86vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+    .station-modal-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      background: #f8fafc;
+    }
+    .station-modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .station-modal-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .station-modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0;
+    }
+    .station-modal-subtitle {
+      font-size: 12.5px;
+      color: #64748b;
+      margin: 4px 0 0 0;
+    }
+    .station-modal-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-close-modal {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-close-modal:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .station-modal-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 0 22px;
+      border-bottom: 1px solid #e2e8f0;
+      background: #ffffff;
+      overflow-x: auto;
+    }
+    .modal-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 14px;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-size: 13px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .modal-tab-btn.active {
+      color: #2563eb;
+      border-bottom-color: #2563eb;
+    }
+    .station-modal-body {
+      padding: 20px 22px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .detail-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .detail-info-card {
+      padding: 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+    .detail-card-label {
+      font-size: 10.5px;
+      font-weight: 800;
+      color: #64748b;
+      letter-spacing: 0.5px;
+    }
+    .detail-kv-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      padding: 6px 0;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .detail-kv-row:last-child {
+      border-bottom: none;
+    }
   `]
 })
 export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
   brandName: string = (typeof localStorage !== "undefined" ? (localStorage.getItem("tenant_name") || localStorage.getItem("company_name")) : null) || "Workspace";
   activeTab: 'stations' | 'policies' | 'requests' | 'violations' = 'stations';
+  selectedStation: WorkstationItem | null = null;
+  stationDetailTab: 'overview' | 'approved' | 'pending' | 'violations' = 'overview';
   isLoading: boolean = false;
   pollInterval: any;
 
@@ -1416,6 +1807,41 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
   stationSearch: string = '';
   viewMode: 'grid' | 'table' = 'grid';
   statusFilter: 'all' | 'active' | 'idle' | 'break' | 'locked' | 'offline' = 'all';
+
+  openStationDetails(s: WorkstationItem): void {
+    this.selectedStation = s;
+    this.stationDetailTab = 'overview';
+  }
+
+  closeStationDetails(): void {
+    this.selectedStation = null;
+  }
+
+  getStationRequests(s: WorkstationItem): AccessRequestItem[] {
+    const key = (s.machineName || '').trim().toLowerCase();
+    return this.requests.filter(r =>
+      (r.machineName || '').trim().toLowerCase() === key ||
+      r.workstationId === s.id
+    );
+  }
+
+  getStationPendingRequestsCount(s: WorkstationItem): number {
+    return this.getStationRequests(s).filter(r => r.status === 'Pending').length;
+  }
+
+  getStationViolations(s: WorkstationItem): ViolationLogItem[] {
+    const key = (s.machineName || '').trim().toLowerCase();
+    return this.violations.filter(v =>
+      (v.machineName || '').trim().toLowerCase() === key ||
+      v.workstationId === s.id
+    );
+  }
+
+  quickApproveProcess(processName: string): void {
+    const clean = processName.trim();
+    const display = clean.replace(/\.exe$/i, '');
+    this.addPreset(display.charAt(0).toUpperCase() + display.slice(1), clean, 'Productivity');
+  }
 
   getStationStatus(s: WorkstationItem): 'active' | 'idle' | 'break' | 'locked' | 'offline' {
     if (s.isLocked) return 'locked';
@@ -1593,6 +2019,11 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
               }
             }
             this.stations = Array.from(map.values());
+            if (this.selectedStation) {
+              const selKey = (this.selectedStation.stationKey || this.selectedStation.machineName || this.selectedStation.id).trim().toUpperCase();
+              const updated = map.get(selKey);
+              if (updated) this.selectedStation = updated;
+            }
           }
           resolve();
         },
