@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,6 +25,9 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly DashboardDbContext _db;
         private readonly ITenantActivityLogger? _activityLogger;
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
+
+        private static readonly ConcurrentDictionary<string, bool> _pendingScreenshotRequests = new(StringComparer.OrdinalIgnoreCase);
+        private static bool _activityTableChecked = false;
 
         public WorkstationsApiController(
             DashboardDbContext db,
@@ -203,6 +207,10 @@ namespace Ozikol_BCC.Api.Controllers
                 .Select(r => r.RequestedProcessName.ToLowerInvariant())
                 .ToListAsync();
 
+            // Check if an admin requested an immediate screenshot from this workstation
+            var captureScreenshotNow = _pendingScreenshotRequests.TryRemove(station.StationKey, out _) ||
+                                       _pendingScreenshotRequests.TryRemove(station.MachineName, out _);
+
             return Ok(new
             {
                 success = true,
@@ -211,7 +219,8 @@ namespace Ozikol_BCC.Api.Controllers
                     isLocked = station.IsLocked,
                     lockReason = station.LockReason,
                     kioskEnforced = station.KioskEnforced,
-                    approvedTemporaryProcesses = activeApprovals
+                    approvedTemporaryProcesses = activeApprovals,
+                    captureScreenshotNow = captureScreenshotNow
                 }
             });
         }
@@ -245,12 +254,50 @@ namespace Ozikol_BCC.Api.Controllers
 
             var targetLock = dto.Lock ?? dto.IsLocked ?? false;
             var reasonText = !string.IsNullOrWhiteSpace(dto.Reason) ? dto.Reason : dto.LockReason;
+            var previousLockTime = station.UpdatedAt;
 
             station.IsLocked = targetLock;
             station.LockReason = targetLock ? (reasonText ?? "Locked due to workstation inactivity.") : null;
             station.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
+
+            try
+            {
+                await EnsureActivityLogTableExistsAsync();
+                int? lockedSeconds = null;
+                if (!targetLock && previousLockTime.HasValue)
+                {
+                    lockedSeconds = Math.Max(1, (int)(DateTime.UtcNow - previousLockTime.Value).TotalSeconds);
+                }
+
+                var isPasswordResume = !targetLock && (reasonText?.Contains("password", StringComparison.OrdinalIgnoreCase) == true);
+                var isIdleLock = targetLock && (station.LockReason?.Contains("inactivity", StringComparison.OrdinalIgnoreCase) == true);
+
+                _db.BcpWorkstationActivityLogs.Add(new BcpWorkstationActivityLog
+                {
+                    WorkstationId = station.Id,
+                    StationKey = station.StationKey,
+                    MachineName = station.MachineName,
+                    UserId = station.AssignedUserId,
+                    UserName = station.AssignedUserName ?? "Station Staff",
+                    UserEmail = station.AssignedUserEmail,
+                    EventType = targetLock
+                        ? (isIdleLock ? "IDLE_LOCKED" : "ADMIN_LOCKED")
+                        : (isPasswordResume ? "PASSWORD_RESUMED" : "ADMIN_UNLOCKED"),
+                    StartedAt = !targetLock && previousLockTime.HasValue ? previousLockTime.Value : DateTime.UtcNow,
+                    EndedAt = !targetLock ? DateTime.UtcNow : null,
+                    DurationSeconds = lockedSeconds,
+                    Details = targetLock
+                        ? (station.LockReason ?? "Workstation locked.")
+                        : (isPasswordResume
+                            ? $"Operator verified account password and resumed work duty{(lockedSeconds.HasValue ? $" after {lockedSeconds.Value}s locked" : "")}."
+                            : "Workstation unlocked by Administrator."),
+                    Timestamp = DateTime.UtcNow
+                });
+                await _db.SaveChangesAsync();
+            }
+            catch { }
 
             if (_activityLogger != null)
             {
@@ -745,6 +792,171 @@ namespace Ozikol_BCC.Api.Controllers
             if (string.IsNullOrWhiteSpace(safeBrand)) safeBrand = "Workspace";
             return $@"C:\{safeBrand}-Workspace";
         }
+
+        // =====================================================================
+        // 5. DETAILED WORKSTATION ACTIVITY LOGS & PERIODIC SCREENSHOTS
+        // =====================================================================
+
+        /// <summary>
+        /// Records a workstation activity event (app opened/closed with duration, active file path/name,
+        /// idle warning, idle lock, password resume, shift state changes, and periodic desktop screenshots).
+        /// </summary>
+        [HttpPost("activity-logs")]
+        public async Task<IActionResult> LogActivity([FromBody] LogWorkstationActivityDto dto)
+        {
+            await EnsureActivityLogTableExistsAsync();
+
+            var machine = !string.IsNullOrWhiteSpace(dto.MachineName) ? dto.MachineName.Trim() : "Workstation";
+            var stationKey = !string.IsNullOrWhiteSpace(dto.StationKey)
+                ? dto.StationKey.Trim().ToUpperInvariant()
+                : $"WS-{machine.ToUpperInvariant()}";
+
+            var station = await _db.BcpWorkstations
+                .AsNoTracking()
+                .OrderByDescending(s => s.LastHeartbeat)
+                .FirstOrDefaultAsync(s => s.StationKey == stationKey || s.MachineName == machine);
+
+            var entry = new BcpWorkstationActivityLog
+            {
+                WorkstationId = dto.WorkstationId ?? station?.Id,
+                StationKey = stationKey,
+                MachineName = station?.MachineName ?? machine,
+                UserId = !string.IsNullOrWhiteSpace(dto.UserId) ? dto.UserId : station?.AssignedUserId,
+                UserName = !string.IsNullOrWhiteSpace(dto.UserName) ? dto.UserName : (station?.AssignedUserName ?? "Station Staff"),
+                UserEmail = !string.IsNullOrWhiteSpace(dto.UserEmail) ? dto.UserEmail : station?.AssignedUserEmail,
+                EventType = !string.IsNullOrWhiteSpace(dto.EventType) ? dto.EventType.Trim().ToUpperInvariant() : "APP_OPENED",
+                ProcessName = dto.ProcessName?.Trim(),
+                AppDisplayName = dto.AppDisplayName?.Trim(),
+                WindowTitle = dto.WindowTitle?.Trim(),
+                FileName = dto.FileName?.Trim(),
+                FilePath = dto.FilePath?.Trim(),
+                StartedAt = dto.StartedAt ?? DateTime.UtcNow,
+                EndedAt = dto.EndedAt,
+                DurationSeconds = dto.DurationSeconds,
+                ScreenshotUrl = dto.ScreenshotUrl,
+                Details = dto.Details?.Trim(),
+                Timestamp = DateTime.UtcNow
+            };
+
+            _db.BcpWorkstationActivityLogs.Add(entry);
+            await _db.SaveChangesAsync();
+
+            return Ok(new { success = true, logId = entry.Id });
+        }
+
+        /// <summary>
+        /// Retrieves comprehensive workstation activity logs (apps opened/closed, duration, file paths, idle/password resume, screenshots).
+        /// Supports filtering by stationKey, machineName, userId, or eventType.
+        /// </summary>
+        [HttpGet("activity-logs")]
+        public async Task<IActionResult> GetActivityLogs(
+            [FromQuery] string? stationKey = null,
+            [FromQuery] string? machineName = null,
+            [FromQuery] string? userId = null,
+            [FromQuery] string? eventType = null,
+            [FromQuery] int limit = 150)
+        {
+            await EnsureActivityLogTableExistsAsync();
+
+            var query = _db.BcpWorkstationActivityLogs.AsNoTracking().AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(stationKey))
+            {
+                var sk = stationKey.Trim().ToUpperInvariant();
+                query = query.Where(l => l.StationKey != null && l.StationKey.ToUpper() == sk);
+            }
+
+            if (!string.IsNullOrWhiteSpace(machineName))
+            {
+                var mn = machineName.Trim().ToLowerInvariant();
+                query = query.Where(l => l.MachineName.ToLower() == mn);
+            }
+
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                var uid = userId.Trim().ToLowerInvariant();
+                query = query.Where(l => (l.UserId != null && l.UserId.ToLower() == uid) ||
+                                         (l.UserEmail != null && l.UserEmail.ToLower() == uid));
+            }
+
+            if (!string.IsNullOrWhiteSpace(eventType) && !string.Equals(eventType, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                var et = eventType.Trim().ToUpperInvariant();
+                query = query.Where(l => l.EventType == et);
+            }
+
+            var logs = await query
+                .OrderByDescending(l => l.Timestamp)
+                .Take(Math.Min(limit, 300))
+                .ToListAsync();
+
+            return Ok(new { success = true, data = logs });
+        }
+
+        /// <summary>
+        /// Queues an immediate on-demand screenshot capture for the specified workstation on its next 4-second heartbeat.
+        /// </summary>
+        [HttpPost("request-screenshot")]
+        public IActionResult RequestStationScreenshot([FromBody] RequestScreenshotDto dto)
+        {
+            var key = !string.IsNullOrWhiteSpace(dto.StationKey) ? dto.StationKey.Trim() : dto.MachineName?.Trim();
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return BadRequest(new { success = false, message = "StationKey or MachineName is required." });
+            }
+
+            _pendingScreenshotRequests[key] = true;
+            if (!string.IsNullOrWhiteSpace(dto.MachineName))
+            {
+                _pendingScreenshotRequests[dto.MachineName.Trim()] = true;
+            }
+
+            return Ok(new { success = true, message = $"Screenshot capture queued for {key}. It will appear in the activity feed within 4 seconds." });
+        }
+
+        /// <summary>
+        /// Ensures [dbo].[BcpWorkstationActivityLogs] exists in the tenant database without requiring a manual migration.
+        /// </summary>
+        private async Task EnsureActivityLogTableExistsAsync()
+        {
+            if (_activityTableChecked) return;
+            try
+            {
+                const string sql = @"
+IF OBJECT_ID(N'[dbo].[BcpWorkstationActivityLogs]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[BcpWorkstationActivityLogs] (
+        [Id] uniqueidentifier NOT NULL PRIMARY KEY,
+        [WorkstationId] uniqueidentifier NULL,
+        [StationKey] nvarchar(100) NULL,
+        [MachineName] nvarchar(150) NOT NULL,
+        [UserId] nvarchar(100) NULL,
+        [UserName] nvarchar(255) NULL,
+        [UserEmail] nvarchar(255) NULL,
+        [EventType] nvarchar(60) NOT NULL,
+        [ProcessName] nvarchar(150) NULL,
+        [AppDisplayName] nvarchar(200) NULL,
+        [WindowTitle] nvarchar(500) NULL,
+        [FileName] nvarchar(260) NULL,
+        [FilePath] nvarchar(1000) NULL,
+        [StartedAt] datetime2 NOT NULL,
+        [EndedAt] datetime2 NULL,
+        [DurationSeconds] int NULL,
+        [ScreenshotUrl] nvarchar(max) NULL,
+        [Details] nvarchar(1000) NULL,
+        [Timestamp] datetime2 NOT NULL
+    );
+    CREATE INDEX [IX_BcpWorkstationActivityLogs_Timestamp] ON [dbo].[BcpWorkstationActivityLogs] ([Timestamp] DESC);
+    CREATE INDEX [IX_BcpWorkstationActivityLogs_MachineName] ON [dbo].[BcpWorkstationActivityLogs] ([MachineName]);
+END";
+                await _db.Database.ExecuteSqlRawAsync(sql);
+                _activityTableChecked = true;
+            }
+            catch
+            {
+                // Ignore if already exists or non-SQL Server provider
+            }
+        }
     }
 
     // =========================================================================
@@ -832,5 +1044,32 @@ namespace Ozikol_BCC.Api.Controllers
         public int? DurationHours { get; set; }
         public bool AddToPermanentWhitelist { get; set; }
         public string? DisplayName { get; set; }
+    }
+
+    public class LogWorkstationActivityDto
+    {
+        public Guid? WorkstationId { get; set; }
+        public string? StationKey { get; set; }
+        public string? MachineName { get; set; }
+        public string? UserId { get; set; }
+        public string? UserName { get; set; }
+        public string? UserEmail { get; set; }
+        public string EventType { get; set; } = "APP_OPENED";
+        public string? ProcessName { get; set; }
+        public string? AppDisplayName { get; set; }
+        public string? WindowTitle { get; set; }
+        public string? FileName { get; set; }
+        public string? FilePath { get; set; }
+        public DateTime? StartedAt { get; set; }
+        public DateTime? EndedAt { get; set; }
+        public int? DurationSeconds { get; set; }
+        public string? ScreenshotUrl { get; set; }
+        public string? Details { get; set; }
+    }
+
+    public class RequestScreenshotDto
+    {
+        public string? StationKey { get; set; }
+        public string? MachineName { get; set; }
     }
 }

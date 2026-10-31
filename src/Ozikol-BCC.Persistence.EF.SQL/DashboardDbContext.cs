@@ -105,6 +105,7 @@ public class DashboardDbContext : IdentityDbContext<Profile, AppRole, string>
     public DbSet<BcpWorkstationFilePolicy> BcpWorkstationFilePolicies { get; set; } = null!;
     public DbSet<BcpWorkstationViolationLog> BcpWorkstationViolationLogs { get; set; } = null!;
     public DbSet<BcpWorkstationAccessRequest> BcpWorkstationAccessRequests { get; set; } = null!;
+    public DbSet<BcpWorkstationActivityLog> BcpWorkstationActivityLogs { get; set; } = null!;
 
     // --- BCP: Committees & Groups Feature ---
     public DbSet<BcpGroup> BcpGroups { get; set; }

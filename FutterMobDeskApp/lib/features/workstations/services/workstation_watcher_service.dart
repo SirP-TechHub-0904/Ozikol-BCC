@@ -53,6 +53,24 @@ class ViolationEvent {
   });
 }
 
+class _TrackedAppSession {
+  final String processName;
+  final String displayName;
+  final DateTime startedAt;
+  String lastWindowTitle;
+  String? fileName;
+  String? filePath;
+
+  _TrackedAppSession({
+    required this.processName,
+    required this.displayName,
+    required this.startedAt,
+    required this.lastWindowTitle,
+    this.fileName,
+    this.filePath,
+  });
+}
+
 /// Riverpod provider for the Workstation Watcher Service.
 final workstationWatcherProvider = ChangeNotifierProvider<WorkstationWatcherService>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -75,6 +93,11 @@ class WorkstationWatcherService extends ChangeNotifier {
   Timer? _watcherTimer;
   Timer? _heartbeatTimer;
   Timer? _inactivityTicker;
+  Timer? _screenshotTimer;
+
+  final Map<String, _TrackedAppSession> _activeAppSessions = {};
+  String? _lastForegroundProcess;
+  String? _lastForegroundFilePath;
 
   bool _isMonitoring = false;
   bool get isMonitoring => _isMonitoring;
@@ -378,7 +401,13 @@ class WorkstationWatcherService extends ChangeNotifier {
 
   /// Cancels the inactivity countdown overlay and resumes active duty.
   void resumeFromIdleCountdown() {
+    final totalIdleSecs = idleWarningThresholdSeconds + (idleCountdownDurationSeconds - _idleCountdownSeconds);
     recordUserActivity(isExplicitAction: true);
+    logWorkstationActivity(
+      eventType: 'IDLE_RESUMED',
+      durationSeconds: totalIdleSecs,
+      details: 'Operator clicked Resume Duty during 60s inactivity warning after ${totalIdleSecs}s idle.',
+    );
   }
 
   /// Locks the workstation due to inactivity, enforces Windows key-combination lockdown, and syncs to server.
@@ -407,13 +436,18 @@ class WorkstationWatcherService extends ChangeNotifier {
     } catch (_) {}
   }
 
-  /// Begins native process inspection, idle watchdog, and telemetry heartbeats.
+  /// Begins native process inspection, idle watchdog, periodic screenshot capture, and telemetry heartbeats.
   void startGuarding() {
     if (_isMonitoring) return;
     _isMonitoring = true;
     _inactivitySeconds = 0;
     _isIdleCountdownActive = false;
     notifyListeners();
+
+    logWorkstationActivity(
+      eventType: 'SHIFT_STARTED',
+      details: 'Workstation compliance guard and active work session started.',
+    );
 
     // Process guard inspection runs every 3.5 seconds
     _watcherTimer = Timer.periodic(const Duration(milliseconds: 3500), (_) {
@@ -428,6 +462,14 @@ class WorkstationWatcherService extends ChangeNotifier {
     // Inactivity watchdog ticks every 1 second
     _inactivityTicker = Timer.periodic(const Duration(seconds: 1), (_) {
       _checkInactivityAndIdleLock();
+    });
+
+    // Periodic screen capture runs every 10 minutes during active work duty
+    _screenshotTimer?.cancel();
+    _screenshotTimer = Timer.periodic(const Duration(minutes: 10), (_) {
+      if (_isMonitoring && !_isBreakActive && !_isLocked) {
+        captureAndUploadScreenshot(reason: 'Periodic active work duty screenshot (10-min interval)');
+      }
     });
   }
 
@@ -459,6 +501,11 @@ class WorkstationWatcherService extends ChangeNotifier {
       _isIdleCountdownActive = true;
       _idleCountdownSeconds = idleCountdownDurationSeconds;
       notifyListeners();
+      logWorkstationActivity(
+        eventType: 'IDLE_WARNING',
+        durationSeconds: idleWarningThresholdSeconds,
+        details: '3 minutes (180s) of no keyboard/mouse activity detected; 60-second lock countdown started.',
+      );
       if (!kIsWeb && Platform.isWindows) {
         try {
           await windowManager.show();
@@ -487,6 +534,8 @@ class WorkstationWatcherService extends ChangeNotifier {
     _heartbeatTimer = null;
     _inactivityTicker?.cancel();
     _inactivityTicker = null;
+    _screenshotTimer?.cancel();
+    _screenshotTimer = null;
     _isIdleCountdownActive = false;
     _isMonitoring = false;
     notifyListeners();
@@ -617,16 +666,21 @@ class WorkstationWatcherService extends ChangeNotifier {
   Future<void> _sendTelemetryHeartbeat() async {
     if (!Platform.isWindows || _stationKey == null) return;
     try {
+      await _trackWindowedApplicationsAndFiles();
       final windowTitle = await _getForegroundWindowTitle();
 
       if (windowTitle != null && windowTitle.isNotEmpty) {
         await _checkDirectoryBoundary(windowTitle);
       }
 
+      final activeProc = _deriveProcessFromTitle(windowTitle) ?? _lastForegroundProcess;
+      final parsedFile = windowTitle != null ? _extractFileNameAndPath(windowTitle) : null;
+
       final res = await _api.dio.post('/api/Workstations/heartbeat', data: {
         'stationKey': _stationKey,
         'currentWindowTitle': windowTitle,
-        'currentProcessName': _deriveProcessFromTitle(windowTitle),
+        'currentProcessName': activeProc,
+        'currentDocumentPath': parsedFile?['filePath'] ?? _lastForegroundFilePath,
       });
 
       if (res.statusCode == 200 && res.data != null) {
@@ -670,6 +724,12 @@ class WorkstationWatcherService extends ChangeNotifier {
             }
           }
 
+          // Check if an Admin requested an immediate on-demand screenshot from the Web Console
+          final captureScreenshotNow = data['captureScreenshotNow'] as bool? ?? false;
+          if (captureScreenshotNow) {
+            captureAndUploadScreenshot(reason: 'On-demand screen capture requested by Administrator');
+          }
+
           // Update active temporary access approvals without wiping session approvals
           final approvedList = data['approvedTemporaryProcesses'] as List<dynamic>? ?? [];
           bool addedAny = false;
@@ -686,6 +746,299 @@ class WorkstationWatcherService extends ChangeNotifier {
       }
       await refreshPolicies();
     } catch (_) {}
+  }
+
+  /// Tracks all user-visible windowed applications (MainWindowHandle != 0),
+  /// logs when an application is opened, when the active document/file changes,
+  /// and when an application is closed (with exact duration open in seconds).
+  Future<void> _trackWindowedApplicationsAndFiles() async {
+    if (!Platform.isWindows || !_isMonitoring) return;
+    try {
+      const psCmd =
+          r"Get-Process | Where-Object { $_.MainWindowHandle -ne 0 -and $_.MainWindowTitle -ne '' } | Select-Object -Property ProcessName, MainWindowTitle | ForEach-Object { $p = $_.ProcessName + '.exe'; $t = ($_.MainWindowTitle -replace '[\r\n]+', ' ').Trim(); Write-Output ($p + '|||' + $t) }";
+      final res = await Process.run('powershell', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        psCmd,
+      ]);
+      if (res.exitCode != 0) return;
+
+      final lines = res.stdout
+          .toString()
+          .split(RegExp(r'[\r\n]+'))
+          .map((l) => l.trim())
+          .where((l) => l.contains('|||'))
+          .toList();
+
+      final currentRunning = <String, String>{};
+      for (final line in lines) {
+        final idx = line.indexOf('|||');
+        if (idx <= 0) continue;
+        final proc = line.substring(0, idx).trim().toLowerCase();
+        final title = line.substring(idx + 3).trim();
+        if (proc.isEmpty ||
+            proc == 'ozikol_bcc.exe' ||
+            proc == 'textinputhost.exe' ||
+            proc == 'applicationframehost.exe') {
+          continue;
+        }
+        currentRunning[proc] = title;
+      }
+
+      final now = DateTime.now().toUtc();
+
+      // 1. Detect newly opened applications or document/title changes in open applications
+      for (final entry in currentRunning.entries) {
+        final proc = entry.key;
+        final title = entry.value;
+        final fileInfo = _extractFileNameAndPath(title);
+        final fileName = fileInfo['fileName'];
+        final filePath = fileInfo['filePath'];
+
+        _lastForegroundProcess = proc;
+        if (filePath != null && filePath.isNotEmpty) {
+          _lastForegroundFilePath = filePath;
+        }
+
+        final existing = _activeAppSessions[proc];
+        if (existing == null) {
+          final friendly = _resolveDisplayNameForProcess(proc);
+          _activeAppSessions[proc] = _TrackedAppSession(
+            processName: proc,
+            displayName: friendly,
+            startedAt: now,
+            lastWindowTitle: title,
+            fileName: fileName,
+            filePath: filePath,
+          );
+          await logWorkstationActivity(
+            eventType: 'APP_OPENED',
+            processName: proc,
+            appDisplayName: friendly,
+            windowTitle: title,
+            fileName: fileName,
+            filePath: filePath,
+            startedAt: now,
+            details: fileName != null && fileName.isNotEmpty
+                ? 'Opened $friendly working on "$fileName"'
+                : 'Opened $friendly ($title)',
+          );
+        } else if (existing.lastWindowTitle != title && title.isNotEmpty) {
+          final prevFile = existing.fileName;
+          existing.lastWindowTitle = title;
+          if (fileName != null && fileName.isNotEmpty) {
+            existing.fileName = fileName;
+          }
+          if (filePath != null && filePath.isNotEmpty) {
+            existing.filePath = filePath;
+          }
+          if (fileName != null && fileName.isNotEmpty && fileName != prevFile) {
+            await logWorkstationActivity(
+              eventType: 'DOCUMENT_ACTIVE',
+              processName: proc,
+              appDisplayName: existing.displayName,
+              windowTitle: title,
+              fileName: fileName,
+              filePath: filePath,
+              startedAt: now,
+              details: 'Working on document "$fileName" in ${existing.displayName}',
+            );
+          }
+        }
+      }
+
+      // 2. Detect closed applications and log exact open duration
+      final closedProcs = _activeAppSessions.keys
+          .where((proc) => !currentRunning.containsKey(proc))
+          .toList();
+
+      for (final proc in closedProcs) {
+        final session = _activeAppSessions.remove(proc);
+        if (session == null) continue;
+        final durationSecs = now.difference(session.startedAt).inSeconds.clamp(1, 86400 * 7);
+        await logWorkstationActivity(
+          eventType: 'APP_CLOSED',
+          processName: session.processName,
+          appDisplayName: session.displayName,
+          windowTitle: session.lastWindowTitle,
+          fileName: session.fileName,
+          filePath: session.filePath,
+          startedAt: session.startedAt,
+          endedAt: now,
+          durationSeconds: durationSecs,
+          details: 'Closed ${session.displayName} after ${_formatDurationHuman(durationSecs)}',
+        );
+      }
+    } catch (_) {}
+  }
+
+  /// Extracts document file name and full file path from a window title or matches inside the approved workspace folder.
+  Map<String, String?> _extractFileNameAndPath(String windowTitle) {
+    final clean = windowTitle.replaceFirst(RegExp(r'^\d+\s+'), '').trim();
+    if (clean.isEmpty) return {'fileName': null, 'filePath': null};
+
+    // Check if an explicit Windows path is in the window title (e.g. "C:\Folder\Report.xlsx - Excel")
+    final pathMatch = RegExp(r'([A-Za-z]:\\[^\r\n*?"<>|]+)').firstMatch(clean);
+    if (pathMatch != null) {
+      var fullPath = pathMatch.group(1)!.trim();
+      final dashIdx = fullPath.indexOf(' - ');
+      if (dashIdx > 0) {
+        fullPath = fullPath.substring(0, dashIdx).trim();
+      }
+      final name = fullPath.split(r'\').last.trim();
+      return {'fileName': name, 'filePath': fullPath};
+    }
+
+    // Extract document name before " - AppName" (e.g., "Budget_2026.xlsx - Excel" or "Proposal.docx - Word")
+    String? candidateName;
+    final parts = clean.split(' - ');
+    if (parts.length >= 2) {
+      candidateName = parts.first.trim();
+    } else if (RegExp(r'\.(docx?|xlsx?|pptx?|pdf|csv|txt|psd|ai|fig|json|cs|ts|dart|html|sql)\b', caseSensitive: false)
+        .hasMatch(clean)) {
+      candidateName = clean;
+    }
+
+    if (candidateName != null && candidateName.isNotEmpty) {
+      // Check if this file exists inside the approved workspace directory
+      if (_approvedDirectory.isNotEmpty) {
+        try {
+          final candidatePath = '$_approvedDirectory\\$candidateName';
+          if (File(candidatePath).existsSync()) {
+            return {'fileName': candidateName, 'filePath': candidatePath};
+          }
+        } catch (_) {}
+      }
+      return {
+        'fileName': candidateName,
+        'filePath': _approvedDirectory.isNotEmpty ? '$_approvedDirectory\\$candidateName' : candidateName,
+      };
+    }
+
+    return {'fileName': null, 'filePath': null};
+  }
+
+  String _resolveDisplayNameForProcess(String procName) {
+    final lower = procName.toLowerCase().trim();
+    for (final r in _rules) {
+      if (r.processName.toLowerCase().trim() == lower && r.displayName.trim().isNotEmpty) {
+        return r.displayName.trim();
+      }
+    }
+    final base = lower.replaceAll(RegExp(r'\.exe$'), '');
+    if (base.isEmpty) return procName;
+    return base[0].toUpperCase() + base.substring(1);
+  }
+
+  String _formatDurationHuman(int seconds) {
+    final hrs = seconds ~/ 3600;
+    final mins = (seconds % 3600) ~/ 60;
+    final secs = seconds % 60;
+    if (hrs > 0) return '${hrs}h ${mins}m ${secs}s';
+    if (mins > 0) return '${mins}m ${secs}s';
+    return '${secs}s';
+  }
+
+  /// Sends a structured workstation activity log entry to the backend API.
+  Future<void> logWorkstationActivity({
+    required String eventType,
+    String? processName,
+    String? appDisplayName,
+    String? windowTitle,
+    String? fileName,
+    String? filePath,
+    DateTime? startedAt,
+    DateTime? endedAt,
+    int? durationSeconds,
+    String? screenshotUrl,
+    String? details,
+  }) async {
+    if (!Platform.isWindows) return;
+    try {
+      await _api.dio.post('/api/Workstations/activity-logs', data: {
+        'stationKey': _stationKey ?? 'WS-${Platform.localHostname.toUpperCase()}',
+        'machineName': Platform.localHostname,
+        'userId': _userId ?? _userEmail,
+        'userName': _userName,
+        'userEmail': _userEmail,
+        'eventType': eventType,
+        'processName': processName,
+        'appDisplayName': appDisplayName,
+        'windowTitle': windowTitle,
+        'fileName': fileName,
+        'filePath': filePath,
+        'startedAt': (startedAt ?? DateTime.now().toUtc()).toIso8601String(),
+        'endedAt': endedAt?.toIso8601String(),
+        'durationSeconds': durationSeconds,
+        'screenshotUrl': screenshotUrl,
+        'details': details,
+      });
+    } catch (_) {}
+  }
+
+  /// Captures a compressed JPEG snapshot of the primary Windows desktop screen and logs it to the server.
+  Future<bool> captureAndUploadScreenshot({String reason = 'Periodic active duty screen capture'}) async {
+    if (kIsWeb || !Platform.isWindows) return false;
+    try {
+      const psCapture = r'''
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+$bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+$bmp = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
+$g = [System.Drawing.Graphics]::FromImage($bmp)
+$g.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+$g.Dispose()
+
+$targetW = [Math]::Min(1280, $bounds.Width)
+$targetH = [int]($bounds.Height * ($targetW / $bounds.Width))
+$resized = New-Object System.Drawing.Bitmap($targetW, $targetH)
+$g2 = [System.Drawing.Graphics]::FromImage($resized)
+$g2.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+$g2.DrawImage($bmp, 0, 0, $targetW, $targetH)
+$g2.Dispose()
+$bmp.Dispose()
+
+$codec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' } | Select-Object -First 1
+$ep = New-Object System.Drawing.Imaging.EncoderParameters(1)
+$ep.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter([System.Drawing.Imaging.Encoder]::Quality, [long]60)
+
+$ms = New-Object System.IO.MemoryStream
+$resized.Save($ms, $codec, $ep)
+$resized.Dispose()
+$b64 = [Convert]::ToBase64String($ms.ToArray())
+$ms.Dispose()
+Write-Output ("data:image/jpeg;base64," + $b64)
+''';
+      final res = await Process.run('powershell', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        psCapture,
+      ]).timeout(const Duration(seconds: 12));
+
+      if (res.exitCode != 0) return false;
+      final out = res.stdout.toString().trim();
+      final idx = out.indexOf('data:image/jpeg;base64,');
+      if (idx < 0) return false;
+
+      final dataUri = out.substring(idx).trim();
+      final title = await _getForegroundWindowTitle();
+      final fileInfo = title != null ? _extractFileNameAndPath(title) : <String, String?>{};
+
+      await logWorkstationActivity(
+        eventType: 'SCREENSHOT_CAPTURED',
+        processName: _deriveProcessFromTitle(title) ?? _lastForegroundProcess,
+        windowTitle: title,
+        fileName: fileInfo['fileName'],
+        filePath: fileInfo['filePath'] ?? _lastForegroundFilePath,
+        screenshotUrl: dataUri,
+        details: reason,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   DateTime? _lastDirectoryAlertTime;

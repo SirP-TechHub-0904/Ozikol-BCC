@@ -74,6 +74,28 @@ export interface ViolationLogItem {
   timestamp: string;
 }
 
+export interface WorkstationActivityLogItem {
+  id: string;
+  workstationId?: string;
+  stationKey?: string;
+  machineName: string;
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+  eventType: string;
+  processName?: string;
+  appDisplayName?: string;
+  windowTitle?: string;
+  fileName?: string;
+  filePath?: string;
+  startedAt: string;
+  endedAt?: string;
+  durationSeconds?: number;
+  screenshotUrl?: string;
+  details?: string;
+  timestamp: string;
+}
+
 @Component({
   selector: 'app-workstations-console',
   standalone: true,
@@ -174,6 +196,11 @@ export interface ViolationLogItem {
         <button class="tab-btn" [class.active]="activeTab === 'violations'" (click)="activeTab = 'violations'; selectedStation = null">
           <span class="material-symbols-outlined">shield_with_heart</span>
           <span>Interception & Violation Logs</span>
+        </button>
+
+        <button class="tab-btn" [class.active]="activeTab === 'activity'" (click)="activeTab = 'activity'; selectedStation = null">
+          <span class="material-symbols-outlined">history</span>
+          <span>General Activity Logs ({{ activityLogs.length }})</span>
         </button>
       </div>
 
@@ -644,6 +671,119 @@ export interface ViolationLogItem {
         </div>
       </div>
 
+      <!-- TAB 5: GENERAL ACTIVITY & APP TIMELINE LOGS -->
+      <div *ngIf="activeTab === 'activity'" class="tab-content">
+        <div class="status-pills-bar" style="margin-bottom: 14px;">
+          <button class="pill-btn" [class.active]="activityFilter === 'all'" (click)="activityFilter = 'all'">
+            <span>All Activity</span>
+            <span class="pill-badge">{{ activityLogs.length }}</span>
+          </button>
+          <button class="pill-btn" [class.active]="activityFilter === 'apps'" (click)="activityFilter = 'apps'">
+            <span class="material-symbols-outlined" style="font-size: 15px;">apps</span>
+            <span>Opened & Closed Apps (Duration)</span>
+          </button>
+          <button class="pill-btn" [class.active]="activityFilter === 'files'" (click)="activityFilter = 'files'">
+            <span class="material-symbols-outlined" style="font-size: 15px;">description</span>
+            <span>Files & Documents Worked On</span>
+          </button>
+          <button class="pill-btn" [class.active]="activityFilter === 'idle'" (click)="activityFilter = 'idle'">
+            <span class="material-symbols-outlined" style="font-size: 15px;">lock_clock</span>
+            <span>Idle & Password Resume</span>
+          </button>
+          <button class="pill-btn" [class.active]="activityFilter === 'screenshots'" (click)="activityFilter = 'screenshots'">
+            <span class="material-symbols-outlined" style="font-size: 15px;">screenshot_monitor</span>
+            <span>Screen Captures</span>
+          </button>
+        </div>
+
+        <div class="card-box">
+          <div class="table-header-row">
+            <div>
+              <h3 class="box-title">
+                <span class="material-symbols-outlined text-blue">history</span>
+                <span>General Workstation Activity, App Duration, File Paths & Screen Captures</span>
+              </h3>
+              <p class="box-desc">Complete chronological timeline of opened/closed applications, how long each app stayed open, active file names & paths, idle lockouts, password resumes, and periodic desktop screenshots.</p>
+            </div>
+          </div>
+
+          <div *ngIf="filteredActivityLogs.length === 0" class="empty-state">
+            <span class="material-symbols-outlined empty-icon">history</span>
+            <h3>No Activity Logs Found</h3>
+            <p>Activity events, opened/closed app durations, active file paths, idle/password resumes, and periodic screenshots appear here in real time.</p>
+          </div>
+
+          <div *ngIf="filteredActivityLogs.length > 0" class="table-wrap">
+            <table class="policy-table">
+              <thead>
+                <tr>
+                  <th>TIME & DURATION</th>
+                  <th>WORKSTATION & STAFF</th>
+                  <th>EVENT</th>
+                  <th>APPLICATION & WINDOW</th>
+                  <th>FILE NAME & FILE PATH</th>
+                  <th>DETAILS / SCREENSHOT</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let a of filteredActivityLogs">
+                  <td class="whitespace-nowrap">
+                    <div class="text-xs font-semibold">{{ formatTime(a.startedAt || a.timestamp) }}</div>
+                    <div class="text-xs text-gray" *ngIf="a.endedAt">Closed: {{ formatTime(a.endedAt) }}</div>
+                    <span *ngIf="a.durationSeconds" class="badge-live" style="display: inline-block; margin-top: 3px;">
+                      Duration: {{ formatDuration(a.durationSeconds) }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="staff-meta">
+                      <strong>{{ a.userName || 'Station Staff' }}</strong>
+                      <span class="sub-text">{{ a.machineName }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge-status-approved" *ngIf="a.eventType === 'APP_OPENED' || a.eventType === 'PASSWORD_RESUMED' || a.eventType === 'SHIFT_STARTED'">
+                      {{ formatEventLabel(a.eventType) }}
+                    </span>
+                    <span class="badge-pending" *ngIf="a.eventType === 'APP_CLOSED' || a.eventType === 'DOCUMENT_ACTIVE' || a.eventType === 'IDLE_WARNING' || a.eventType === 'IDLE_RESUMED'">
+                      {{ formatEventLabel(a.eventType) }}
+                    </span>
+                    <span class="badge-status-unapproved" *ngIf="a.eventType === 'IDLE_LOCKED' || a.eventType === 'ADMIN_LOCKED'">
+                      {{ formatEventLabel(a.eventType) }}
+                    </span>
+                    <span class="badge-live" *ngIf="a.eventType === 'SCREENSHOT_CAPTURED'">
+                      SCREENSHOT
+                    </span>
+                  </td>
+                  <td>
+                    <div *ngIf="a.processName || a.appDisplayName">
+                      <code class="process-tag font-bold text-blue">{{ a.appDisplayName || a.processName }}</code>
+                      <span class="text-xs text-gray block mt-1 max-w-xs truncate" *ngIf="a.windowTitle" [title]="a.windowTitle">
+                        {{ cleanWindowTitle(a.windowTitle) }}
+                      </span>
+                    </div>
+                    <span *ngIf="!a.processName && !a.appDisplayName" class="text-xs text-gray">—</span>
+                  </td>
+                  <td>
+                    <div *ngIf="a.fileName || a.filePath">
+                      <strong class="text-xs block" *ngIf="a.fileName">{{ a.fileName }}</strong>
+                      <code class="text-xs text-gray block max-w-xs truncate" *ngIf="a.filePath" [title]="a.filePath">{{ a.filePath }}</code>
+                    </div>
+                    <span *ngIf="!a.fileName && !a.filePath" class="text-xs text-gray">—</span>
+                  </td>
+                  <td>
+                    <div class="text-xs text-gray" *ngIf="a.details">{{ a.details }}</div>
+                    <button *ngIf="a.screenshotUrl" (click)="previewScreenshotItem = a" class="btn-approve" style="margin-top: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                      <span class="material-symbols-outlined" style="font-size: 14px;">image</span>
+                      <span>View Screenshot</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- WORKSTATION 360 FULL-PAGE INLINE VIEW (ON CARD / ROW CLICK) -->
       <div *ngIf="activeTab === 'stations' && selectedStation" class="tab-content">
         <div class="station-page-breadcrumb-bar">
@@ -694,6 +834,10 @@ export interface ViolationLogItem {
               </div>
             </div>
             <div class="station-modal-actions">
+              <button (click)="requestScreenshot(selectedStation)" class="btn-back-stations" title="Capture live desktop screenshot from this PC">
+                <span class="material-symbols-outlined" style="font-size: 16px;">screenshot_monitor</span>
+                <span>Capture Screenshot</span>
+              </button>
               <button *ngIf="!selectedStation.isLocked" (click)="toggleStationLock(selectedStation, true)" class="btn-lock">
                 <span class="material-symbols-outlined">lock</span>
                 <span>Lock PC</span>
@@ -710,6 +854,10 @@ export interface ViolationLogItem {
             <button class="modal-tab-btn" [class.active]="stationDetailTab === 'overview'" (click)="stationDetailTab = 'overview'">
               <span class="material-symbols-outlined">monitoring</span>
               <span>Station Overview</span>
+            </button>
+            <button class="modal-tab-btn" [class.active]="stationDetailTab === 'activity'" (click)="stationDetailTab = 'activity'">
+              <span class="material-symbols-outlined">history</span>
+              <span>User Activity & App Logs ({{ getStationActivityLogs(selectedStation).length }})</span>
             </button>
             <button class="modal-tab-btn" [class.active]="stationDetailTab === 'approved'" (click)="stationDetailTab = 'approved'">
               <span class="material-symbols-outlined">verified</span>
@@ -873,6 +1021,96 @@ export interface ViolationLogItem {
                 </table>
               </div>
             </div>
+
+            <!-- SUB-TAB 5: USER ACTIVITY & APP TIMELINE LOGS FOR THIS WORKSTATION -->
+            <div *ngIf="stationDetailTab === 'activity'">
+              <div *ngIf="getStationActivityLogs(selectedStation).length === 0" class="empty-state">
+                <span class="material-symbols-outlined empty-icon">history</span>
+                <h3>No Activity Recorded Yet on {{ selectedStation.machineName }}</h3>
+                <p>Opened apps, closed apps with duration, active file paths, idle lockouts, password resumes, and periodic screenshots for {{ selectedStation.assignedUserName || 'this operator' }} appear here in real time.</p>
+              </div>
+
+              <div *ngIf="getStationActivityLogs(selectedStation).length > 0" class="table-wrap">
+                <table class="policy-table">
+                  <thead>
+                    <tr>
+                      <th>TIME & DURATION</th>
+                      <th>EVENT</th>
+                      <th>APPLICATION & WINDOW</th>
+                      <th>FILE NAME & FILE PATH</th>
+                      <th>DETAILS / SCREENSHOT</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let a of getStationActivityLogs(selectedStation)">
+                      <td class="whitespace-nowrap">
+                        <div class="text-xs font-semibold">{{ formatTime(a.startedAt || a.timestamp) }}</div>
+                        <div class="text-xs text-gray" *ngIf="a.endedAt">Closed: {{ formatTime(a.endedAt) }}</div>
+                        <span *ngIf="a.durationSeconds" class="badge-live" style="display: inline-block; margin-top: 3px;">
+                          Duration: {{ formatDuration(a.durationSeconds) }}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge-status-approved" *ngIf="a.eventType === 'APP_OPENED' || a.eventType === 'PASSWORD_RESUMED' || a.eventType === 'SHIFT_STARTED'">
+                          {{ formatEventLabel(a.eventType) }}
+                        </span>
+                        <span class="badge-pending" *ngIf="a.eventType === 'APP_CLOSED' || a.eventType === 'DOCUMENT_ACTIVE' || a.eventType === 'IDLE_WARNING' || a.eventType === 'IDLE_RESUMED'">
+                          {{ formatEventLabel(a.eventType) }}
+                        </span>
+                        <span class="badge-status-unapproved" *ngIf="a.eventType === 'IDLE_LOCKED' || a.eventType === 'ADMIN_LOCKED'">
+                          {{ formatEventLabel(a.eventType) }}
+                        </span>
+                        <span class="badge-live" *ngIf="a.eventType === 'SCREENSHOT_CAPTURED'">
+                          SCREENSHOT
+                        </span>
+                      </td>
+                      <td>
+                        <div *ngIf="a.processName || a.appDisplayName">
+                          <code class="process-tag font-bold text-blue">{{ a.appDisplayName || a.processName }}</code>
+                          <span class="text-xs text-gray block mt-1 max-w-xs truncate" *ngIf="a.windowTitle" [title]="a.windowTitle">
+                            {{ cleanWindowTitle(a.windowTitle) }}
+                          </span>
+                        </div>
+                        <span *ngIf="!a.processName && !a.appDisplayName" class="text-xs text-gray">—</span>
+                      </td>
+                      <td>
+                        <div *ngIf="a.fileName || a.filePath">
+                          <strong class="text-xs block" *ngIf="a.fileName">{{ a.fileName }}</strong>
+                          <code class="text-xs text-gray block max-w-xs truncate" *ngIf="a.filePath" [title]="a.filePath">{{ a.filePath }}</code>
+                        </div>
+                        <span *ngIf="!a.fileName && !a.filePath" class="text-xs text-gray">—</span>
+                      </td>
+                      <td>
+                        <div class="text-xs text-gray" *ngIf="a.details">{{ a.details }}</div>
+                        <button *ngIf="a.screenshotUrl" (click)="previewScreenshotItem = a" class="btn-approve" style="margin-top: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                          <span class="material-symbols-outlined" style="font-size: 14px;">image</span>
+                          <span>View Screenshot</span>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREENSHOT PREVIEW VIEWER -->
+      <div *ngIf="previewScreenshotItem" style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.78); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 24px;" (click)="previewScreenshotItem = null">
+        <div style="background: #ffffff; border-radius: 16px; max-width: 1100px; width: 100%; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);" (click)="$event.stopPropagation()">
+          <div style="padding: 14px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+            <div>
+              <strong style="font-size: 15px; color: #0f172a;">Screen Capture • {{ previewScreenshotItem.machineName }} ({{ previewScreenshotItem.userName || 'Operator' }})</strong>
+              <div style="font-size: 12px; color: #64748b;">
+                Captured at {{ formatTime(previewScreenshotItem.timestamp) }}
+                <span *ngIf="previewScreenshotItem.windowTitle"> • Window: {{ cleanWindowTitle(previewScreenshotItem.windowTitle) }}</span>
+              </div>
+            </div>
+            <button (click)="previewScreenshotItem = null" class="btn-back-stations">Close Preview</button>
+          </div>
+          <div style="padding: 16px; background: #0f172a; text-align: center; max-height: 78vh; overflow: auto;">
+            <img [src]="previewScreenshotItem.screenshotUrl" alt="Workstation Screenshot" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #334155;" />
           </div>
         </div>
       </div>
@@ -1812,9 +2050,9 @@ export interface ViolationLogItem {
 })
 export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
   brandName: string = (typeof localStorage !== "undefined" ? (localStorage.getItem("tenant_name") || localStorage.getItem("company_name")) : null) || "Workspace";
-  activeTab: 'stations' | 'policies' | 'requests' | 'violations' = 'stations';
+  activeTab: 'stations' | 'policies' | 'requests' | 'violations' | 'activity' = 'stations';
   selectedStation: WorkstationItem | null = null;
-  stationDetailTab: 'overview' | 'approved' | 'pending' | 'violations' = 'overview';
+  stationDetailTab: 'overview' | 'activity' | 'approved' | 'pending' | 'violations' = 'overview';
   isLoading: boolean = false;
   pollInterval: any;
 
@@ -1828,6 +2066,9 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
   };
   requests: AccessRequestItem[] = [];
   violations: ViolationLogItem[] = [];
+  activityLogs: WorkstationActivityLogItem[] = [];
+  activityFilter: 'all' | 'apps' | 'files' | 'idle' | 'screenshots' = 'all';
+  previewScreenshotItem: WorkstationActivityLogItem | null = null;
 
   stationSearch: string = '';
   viewMode: 'grid' | 'table' = 'grid';
@@ -1840,6 +2081,39 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
 
   closeStationDetails(): void {
     this.selectedStation = null;
+  }
+
+  get filteredActivityLogs(): WorkstationActivityLogItem[] {
+    if (this.activityFilter === 'apps') {
+      return this.activityLogs.filter(a => a.eventType === 'APP_OPENED' || a.eventType === 'APP_CLOSED');
+    }
+    if (this.activityFilter === 'files') {
+      return this.activityLogs.filter(a => a.eventType === 'DOCUMENT_ACTIVE' || !!a.fileName || !!a.filePath);
+    }
+    if (this.activityFilter === 'idle') {
+      return this.activityLogs.filter(a =>
+        a.eventType === 'IDLE_WARNING' ||
+        a.eventType === 'IDLE_LOCKED' ||
+        a.eventType === 'PASSWORD_RESUMED' ||
+        a.eventType === 'IDLE_RESUMED' ||
+        a.eventType === 'ADMIN_LOCKED' ||
+        a.eventType === 'ADMIN_UNLOCKED'
+      );
+    }
+    if (this.activityFilter === 'screenshots') {
+      return this.activityLogs.filter(a => a.eventType === 'SCREENSHOT_CAPTURED' || !!a.screenshotUrl);
+    }
+    return this.activityLogs;
+  }
+
+  getStationActivityLogs(s: WorkstationItem): WorkstationActivityLogItem[] {
+    const key = (s.machineName || '').trim().toLowerCase();
+    const sKey = (s.stationKey || '').trim().toLowerCase();
+    return this.activityLogs.filter(a =>
+      (a.machineName || '').trim().toLowerCase() === key ||
+      (a.stationKey || '').trim().toLowerCase() === sKey ||
+      a.workstationId === s.id
+    );
   }
 
   getStationRequests(s: WorkstationItem): AccessRequestItem[] {
@@ -1969,11 +2243,12 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     }
 
     this.refreshAll();
-    // Real-time live polling every 3 seconds across stations, access requests, and violations
+    // Real-time live polling every 3 seconds across stations, access requests, violations, and activity logs
     this.pollInterval = setInterval(() => {
       this.loadStations(false);
       this.loadRequests();
       this.loadViolations();
+      this.loadActivityLogs();
     }, 3000);
   }
 
@@ -2002,7 +2277,8 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
       this.loadStations(true),
       this.loadPolicies(),
       this.loadRequests(),
-      this.loadViolations()
+      this.loadViolations(),
+      this.loadActivityLogs()
     ]).finally(() => {
       this.isLoading = false;
     });
@@ -2185,6 +2461,65 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
         this.toast.error('Failed to submit response.');
       }
     });
+  }
+
+  loadActivityLogs(): Promise<void> {
+    return new Promise(resolve => {
+      this.api.get<any>('/Workstations/activity-logs?limit=200').subscribe({
+        next: res => {
+          if (res && res.success && res.data) {
+            this.activityLogs = res.data;
+          }
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  requestScreenshot(station: WorkstationItem): void {
+    this.api.post<any>('/Workstations/request-screenshot', {
+      stationKey: station.stationKey,
+      machineName: station.machineName
+    }).subscribe({
+      next: res => {
+        this.toast.success(res?.message || `Live screenshot requested for ${station.machineName}.`);
+        setTimeout(() => this.loadActivityLogs(), 4500);
+      },
+      error: () => {
+        this.toast.error('Failed to request screenshot.');
+      }
+    });
+  }
+
+  formatDuration(seconds?: number): string {
+    if (!seconds || seconds <= 0) return '0s';
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) return `${hrs}h ${mins}m ${secs}s`;
+    if (mins > 0) return `${mins}m ${secs}s`;
+    return `${secs}s`;
+  }
+
+  formatEventLabel(eventType?: string): string {
+    switch ((eventType || '').toUpperCase()) {
+      case 'APP_OPENED': return 'APP OPENED';
+      case 'APP_CLOSED': return 'APP CLOSED';
+      case 'DOCUMENT_ACTIVE': return 'FILE WORKED ON';
+      case 'IDLE_WARNING': return 'IDLE WARNING (3M)';
+      case 'IDLE_LOCKED': return 'IDLE LOCKED';
+      case 'PASSWORD_RESUMED': return 'PASSWORD RESUMED';
+      case 'IDLE_RESUMED': return 'IDLE RESUMED';
+      case 'ADMIN_LOCKED': return 'ADMIN LOCKED';
+      case 'ADMIN_UNLOCKED': return 'ADMIN UNLOCKED';
+      case 'SHIFT_STARTED': return 'SHIFT STARTED';
+      case 'BREAK_STARTED': return 'BREAK STARTED';
+      case 'BREAK_ENDED': return 'BREAK ENDED';
+      case 'SHIFT_CLOSED': return 'SHIFT CLOSED';
+      case 'SCREENSHOT_CAPTURED': return 'SCREENSHOT';
+      default: return eventType || 'ACTIVITY';
+    }
   }
 
   cleanWindowTitle(title?: string): string {
