@@ -94,6 +94,12 @@ class WorkstationWatcherService extends ChangeNotifier {
   Timer? _heartbeatTimer;
   Timer? _inactivityTicker;
   Timer? _screenshotTimer;
+  Timer? _historyAndFilesTimer;
+
+  DateTime? _shiftDutyStartedAt;
+  final Set<String> _loggedBrowserUrls = {};
+  final Set<String> _loggedRecentFiles = {};
+  final Map<String, String> _resolvedFilePathCache = {};
 
   final Map<String, _TrackedAppSession> _activeAppSessions = {};
   String? _lastForegroundProcess;
@@ -459,6 +465,9 @@ class WorkstationWatcherService extends ChangeNotifier {
     _isMonitoring = true;
     _inactivitySeconds = 0;
     _isIdleCountdownActive = false;
+    _shiftDutyStartedAt = DateTime.now().toUtc();
+    _loggedBrowserUrls.clear();
+    _loggedRecentFiles.clear();
     notifyListeners();
 
     final machineName = Platform.isWindows ? Platform.localHostname : 'Workstation';
@@ -480,6 +489,14 @@ class WorkstationWatcherService extends ChangeNotifier {
     // Telemetry heartbeat runs every 4 seconds for real-time Web Console updates
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       _sendTelemetryHeartbeat();
+    });
+
+    // Browser history (URLs/links visited) & Windows Recent files opened runs every 12 seconds
+    _historyAndFilesTimer?.cancel();
+    _historyAndFilesTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (isActiveWorkDuty && !_isLocked) {
+        _trackBrowserHistoryAndRecentFiles();
+      }
     });
 
     // Inactivity watchdog ticks every 1 second
@@ -560,6 +577,8 @@ class WorkstationWatcherService extends ChangeNotifier {
     _inactivityTicker = null;
     _screenshotTimer?.cancel();
     _screenshotTimer = null;
+    _historyAndFilesTimer?.cancel();
+    _historyAndFilesTimer = null;
     _isIdleCountdownActive = false;
     _isMonitoring = false;
     _activeAppSessions.clear();
@@ -1036,13 +1055,24 @@ if (\$closedTitle -ne '') { Write-Output \$closedTitle }
       caseSensitive: false,
     );
 
-    // Extract document name before " - AppName" (e.g., "Budget_2026.xlsx - Excel" or "Proposal.docx - Word")
+    // Extract document/file name and optional project/folder hint (e.g. "Ozikol-BCC - Antigravity - dashboard_shell_screen.dart")
     String? candidateName;
+    String? folderHint;
     final parts = clean.split(' - ');
     if (parts.length >= 2) {
       for (final p in parts) {
-        if (fileExtRegex.hasMatch(p)) {
-          candidateName = p.trim();
+        final trimmedPart = p.trim();
+        if (fileExtRegex.hasMatch(trimmedPart)) {
+          candidateName = trimmedPart;
+          break;
+        }
+      }
+      for (final p in parts) {
+        final trimmedPart = p.trim();
+        if (trimmedPart != candidateName &&
+            !RegExp(r'^(antigravity|antigravity ide|visual studio code|vs code|word|excel|powerpoint|notepad|adobe acrobat.*)$', caseSensitive: false)
+                .hasMatch(trimmedPart)) {
+          folderHint = trimmedPart;
           break;
         }
       }
@@ -1052,14 +1082,10 @@ if (\$closedTitle -ne '') { Write-Output \$closedTitle }
     }
 
     if (candidateName != null && candidateName.isNotEmpty) {
-      // 1. Check if this file physically exists inside the approved workspace directory
-      if (_approvedDirectory.isNotEmpty) {
-        try {
-          final candidatePath = '$_approvedDirectory\\$candidateName';
-          if (File(candidatePath).existsSync()) {
-            return {'fileName': candidateName, 'filePath': candidatePath};
-          }
-        } catch (_) {}
+      // 1. Resolve the true physical file path on disk (checks approved workspace, project folder hint, user source/Documents/Downloads/Desktop)
+      final realDiskPath = _resolveRealFilePathOnDisk(candidateName, folderHint: folderHint);
+      if (realDiskPath != null) {
+        return {'fileName': candidateName, 'filePath': realDiskPath};
       }
 
       // 2. Only report as a file if it has a recognized document/file extension
@@ -1072,6 +1098,257 @@ if (\$closedTitle -ne '') { Write-Output \$closedTitle }
     }
 
     return {'fileName': null, 'filePath': null};
+  }
+
+  /// Resolves the genuine full path on disk for an open file (e.g. from Antigravity IDE, VS Code, Word, Excel, PDF, Notepad).
+  String? _resolveRealFilePathOnDisk(String fileName, {String? folderHint}) {
+    if (!Platform.isWindows) return null;
+    final cleanFile = fileName.replaceAll(RegExp(r'^[*●•]\s*'), '').trim();
+    if (cleanFile.isEmpty) return null;
+
+    final cacheKey = '${folderHint ?? ""}|${cleanFile.toLowerCase()}';
+    final cached = _resolvedFilePathCache[cacheKey];
+    if (cached != null && File(cached).existsSync()) {
+      return cached;
+    }
+
+    final userProfile = Platform.environment['USERPROFILE'] ?? '';
+    final candidateRoots = <String>[
+      if (_approvedDirectory.isNotEmpty) _approvedDirectory,
+      if (folderHint != null && folderHint.isNotEmpty && userProfile.isNotEmpty) ...[
+        '$userProfile\\source\\$folderHint',
+        '$userProfile\\Desktop\\$folderHint',
+        '$userProfile\\Documents\\$folderHint',
+        if (_approvedDirectory.isNotEmpty) '$_approvedDirectory\\$folderHint',
+      ],
+      if (userProfile.isNotEmpty) ...[
+        '$userProfile\\source',
+        '$userProfile\\Documents',
+        '$userProfile\\Downloads',
+        '$userProfile\\Desktop',
+        '$userProfile\\OneDrive\\Documents',
+        '$userProfile\\OneDrive\\Desktop',
+        '$userProfile\\OneDrive\\Pictures',
+      ],
+    ];
+
+    const ignoredDirs = {
+      '.git',
+      'node_modules',
+      '.dart_tool',
+      'build',
+      'bin',
+      'obj',
+      '.vs',
+      '.angular',
+      '.idea',
+      'packages',
+    };
+
+    final targetLower = cleanFile.toLowerCase();
+
+    for (final rootPath in candidateRoots) {
+      try {
+        final rootDir = Directory(rootPath);
+        if (!rootDir.existsSync()) continue;
+
+        final directFile = File('$rootPath\\$cleanFile');
+        if (directFile.existsSync()) {
+          _resolvedFilePathCache[cacheKey] = directFile.path;
+          return directFile.path;
+        }
+
+        // Fast bounded breadth-first search (up to depth 6, max 1800 directories)
+        final queue = <MapEntry<Directory, int>>[MapEntry(rootDir, 0)];
+        int visitedDirs = 0;
+        while (queue.isNotEmpty && visitedDirs < 1800) {
+          final current = queue.removeAt(0);
+          final dir = current.key;
+          final depth = current.value;
+          visitedDirs++;
+
+          List<FileSystemEntity> entries;
+          try {
+            entries = dir.listSync(followLinks: false);
+          } catch (_) {
+            continue;
+          }
+
+          for (final entity in entries) {
+            final name = entity.path.split(Platform.pathSeparator).last;
+            if (entity is File) {
+              if (name.toLowerCase() == targetLower) {
+                _resolvedFilePathCache[cacheKey] = entity.path;
+                return entity.path;
+              }
+            } else if (entity is Directory && depth < 6) {
+              if (!ignoredDirs.contains(name.toLowerCase()) && !name.startsWith('.')) {
+                queue.add(MapEntry(entity, depth + 1));
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  /// Tracks browser history / links visited (Chrome & Edge SQLite `History` via `winsqlite3.dll`)
+  /// AND any files opened on Windows via `%APPDATA%\Microsoft\Windows\Recent\*.lnk`
+  /// strictly while `isActiveWorkDuty` is true.
+  Future<void> _trackBrowserHistoryAndRecentFiles() async {
+    if (!Platform.isWindows || !isActiveWorkDuty) return;
+    final shiftStart = _shiftDutyStartedAt ?? DateTime.now().toUtc().subtract(const Duration(minutes: 1));
+    // Chrome/Edge WebKit timestamp is microseconds since 1601-01-01 UTC
+    final webkitEpochDiffMicros = 11644473600000000;
+    final minWebkitTime = (shiftStart.microsecondsSinceEpoch + webkitEpochDiffMicros);
+    final minUnixMs = shiftStart.millisecondsSinceEpoch;
+
+    final psScript = '''
+\$ErrorActionPreference = 'SilentlyContinue'
+
+# 1. Read Recent Files (.lnk) opened since shift start
+try {
+  \$sh = New-Object -ComObject WScript.Shell
+  \$recentDir = Join-Path \$env:APPDATA 'Microsoft\\Windows\\Recent'
+  \$cutoff = [DateTimeOffset]::FromUnixTimeMilliseconds($minUnixMs).LocalDateTime
+  Get-ChildItem -Path \$recentDir -Filter '*.lnk' -ErrorAction SilentlyContinue |
+    Where-Object { \$_.LastWriteTime -ge \$cutoff } |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 10 |
+    ForEach-Object {
+      \$target = \$sh.CreateShortcut(\$_.FullName).TargetPath
+      if (\$target -and (Test-Path \$target -PathType Leaf)) {
+        \$leaf = Split-Path \$target -Leaf
+        Write-Output ("RECENT_FILE|||" + \$leaf + "|||" + \$target)
+      }
+    }
+} catch {}
+
+# 2. Read Chrome & Edge SQLite History visited since shift start using built-in winsqlite3.dll
+try {
+  Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public class BccWinSqlite {
+  [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.StdCall)]
+  public static extern int sqlite3_open([MarshalAs(UnmanagedType.LPStr)] string filename, out IntPtr db);
+  [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.StdCall)]
+  public static extern int sqlite3_prepare_v2(IntPtr db, [MarshalAs(UnmanagedType.LPStr)] string sql, int nByte, out IntPtr stmt, IntPtr pzTail);
+  [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.StdCall)]
+  public static extern int sqlite3_step(IntPtr stmt);
+  [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.StdCall)]
+  public static extern IntPtr sqlite3_column_text(IntPtr stmt, int iCol);
+  [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.StdCall)]
+  public static extern int sqlite3_finalize(IntPtr stmt);
+  [DllImport("winsqlite3.dll", CallingConvention = CallingConvention.StdCall)]
+  public static extern int sqlite3_close(IntPtr db);
+}
+'@
+} catch {}
+
+\$browsers = @(
+  @{ Proc = 'chrome.exe'; Name = 'Google Chrome'; Path = (Join-Path \$env:LOCALAPPDATA 'Google\\Chrome\\User Data\\Default\\History') },
+  @{ Proc = 'msedge.exe'; Name = 'Microsoft Edge'; Path = (Join-Path \$env:LOCALAPPDATA 'Microsoft\\Edge\\User Data\\Default\\History') }
+)
+
+foreach (\$b in \$browsers) {
+  if (Test-Path \$b.Path) {
+    \$tmpDb = Join-Path \$env:TEMP ("bcc_hist_" + \$b.Proc + ".db")
+    Copy-Item \$b.Path \$tmpDb -Force -ErrorAction SilentlyContinue
+    \$db = [IntPtr]::Zero
+    if ([BccWinSqlite]::sqlite3_open(\$tmpDb, [ref]\$db) -eq 0) {
+      \$stmt = [IntPtr]::Zero
+      \$sql = "SELECT url, title FROM urls WHERE last_visit_time >= $minWebkitTime ORDER BY last_visit_time DESC LIMIT 12;"
+      if ([BccWinSqlite]::sqlite3_prepare_v2(\$db, \$sql, -1, [ref]\$stmt, [IntPtr]::Zero) -eq 0) {
+        while ([BccWinSqlite]::sqlite3_step(\$stmt) -eq 100) {
+          \$pU = [BccWinSqlite]::sqlite3_column_text(\$stmt, 0)
+          \$pT = [BccWinSqlite]::sqlite3_column_text(\$stmt, 1)
+          \$u = if (\$pU -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::PtrToStringAnsi(\$pU) } else { '' }
+          \$t = if (\$pT -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::PtrToStringAnsi(\$pT) } else { '' }
+          if (\$u -ne '') {
+            Write-Output ("BROWSER_URL|||" + \$b.Proc + "|||" + \$b.Name + "|||" + \$t + "|||" + \$u)
+          }
+        }
+        [BccWinSqlite]::sqlite3_finalize(\$stmt) | Out-Null
+      }
+      [BccWinSqlite]::sqlite3_close(\$db) | Out-Null
+    }
+  }
+}
+''';
+
+    try {
+      final res = await Process.run('powershell', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        psScript,
+      ]).timeout(const Duration(seconds: 8));
+
+      if (res.exitCode != 0) return;
+      final lines = res.stdout
+          .toString()
+          .split(RegExp(r'[\r\n]+'))
+          .map((l) => l.trim())
+          .where((l) => l.isNotEmpty);
+
+      for (final line in lines) {
+        if (line.startsWith('RECENT_FILE|||')) {
+          final parts = line.split('|||');
+          if (parts.length >= 3) {
+            final fileName = parts[1].trim();
+            final fullPath = parts[2].trim();
+            if (fullPath.isNotEmpty && _loggedRecentFiles.add(fullPath.toLowerCase())) {
+              await logWorkstationActivity(
+                eventType: 'DOCUMENT_ACTIVE',
+                processName: _lastForegroundProcess ?? 'explorer.exe',
+                appDisplayName: _resolveDisplayNameForProcess(_lastForegroundProcess ?? 'File Explorer'),
+                windowTitle: 'Opened file: $fileName',
+                fileName: fileName,
+                filePath: fullPath,
+                details: 'Opened file "$fileName" at $fullPath',
+              );
+            }
+          }
+        } else if (line.startsWith('BROWSER_URL|||')) {
+          final parts = line.split('|||');
+          if (parts.length >= 5) {
+            final proc = parts[1].trim();
+            final browserName = parts[2].trim();
+            final rawTitle = parts[3].trim();
+            final url = parts[4].trim();
+            if (url.isNotEmpty && _loggedBrowserUrls.add('$proc|$url')) {
+              final cleanTitle = rawTitle.isNotEmpty ? rawTitle : url;
+              await logWorkstationActivity(
+                eventType: 'BROWSER_LINK_VISITED',
+                processName: proc,
+                appDisplayName: browserName,
+                windowTitle: cleanTitle,
+                fileName: cleanTitle,
+                filePath: url,
+                details: 'Visited link "$cleanTitle" ($url) in $browserName',
+              );
+            }
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// Explicitly logs a link or URL opened from inside the desktop app during active work duty.
+  Future<void> logLinkOpened(String url, {String? title}) async {
+    if (!isActiveWorkDuty) return;
+    final cleanTitle = (title != null && title.trim().isNotEmpty) ? title.trim() : url;
+    await logWorkstationActivity(
+      eventType: 'BROWSER_LINK_VISITED',
+      processName: 'Desktop Workspace',
+      appDisplayName: 'Workspace Link Launcher',
+      windowTitle: cleanTitle,
+      fileName: cleanTitle,
+      filePath: url,
+      details: 'Opened link "$cleanTitle" ($url) from Desktop App',
+    );
   }
 
   String _resolveDisplayNameForProcess(String procName) {

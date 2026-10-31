@@ -691,6 +691,10 @@ export interface WorkstationActivityLogItem {
             <span class="material-symbols-outlined" style="font-size: 15px;">description</span>
             <span>Files & Documents Worked On</span>
           </button>
+          <button class="pill-btn" [class.active]="activityFilter === 'links'" (click)="activityFilter = 'links'">
+            <span class="material-symbols-outlined" style="font-size: 15px;">language</span>
+            <span>Browser Links & History</span>
+          </button>
           <button class="pill-btn" [class.active]="activityFilter === 'idle'" (click)="activityFilter = 'idle'">
             <span class="material-symbols-outlined" style="font-size: 15px;">lock_clock</span>
             <span>Logins, Idle & Password Resume</span>
@@ -750,7 +754,7 @@ export interface WorkstationActivityLogItem {
                     <span class="badge-status-approved" *ngIf="a.eventType === 'APP_OPENED' || a.eventType === 'PASSWORD_RESUMED' || a.eventType === 'SHIFT_STARTED' || a.eventType === 'USER_LOGIN'">
                       {{ formatEventLabel(a.eventType) }}
                     </span>
-                    <span class="badge-pending" *ngIf="a.eventType === 'APP_CLOSED' || a.eventType === 'DOCUMENT_ACTIVE' || a.eventType === 'IDLE_WARNING' || a.eventType === 'IDLE_RESUMED' || a.eventType === 'USER_SWITCHED'">
+                    <span class="badge-pending" *ngIf="a.eventType === 'APP_CLOSED' || a.eventType === 'DOCUMENT_ACTIVE' || a.eventType === 'BROWSER_LINK_VISITED' || a.eventType === 'IDLE_WARNING' || a.eventType === 'IDLE_RESUMED' || a.eventType === 'USER_SWITCHED'">
                       {{ formatEventLabel(a.eventType) }}
                     </span>
                     <span class="badge-status-unapproved" *ngIf="a.eventType === 'IDLE_LOCKED' || a.eventType === 'ADMIN_LOCKED'">
@@ -2087,7 +2091,7 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
   requests: AccessRequestItem[] = [];
   violations: ViolationLogItem[] = [];
   activityLogs: WorkstationActivityLogItem[] = [];
-  activityFilter: 'all' | 'apps' | 'files' | 'idle' | 'screenshots' = 'all';
+  activityFilter: 'all' | 'apps' | 'files' | 'links' | 'idle' | 'screenshots' = 'all';
   previewScreenshotItem: WorkstationActivityLogItem | null = null;
 
   stationSearch: string = '';
@@ -2108,7 +2112,17 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
       return this.activityLogs.filter(a => a.eventType === 'APP_OPENED' || a.eventType === 'APP_CLOSED');
     }
     if (this.activityFilter === 'files') {
-      return this.activityLogs.filter(a => a.eventType === 'DOCUMENT_ACTIVE' || !!a.fileName || !!a.filePath);
+      return this.activityLogs.filter(
+        a =>
+          a.eventType !== 'BROWSER_LINK_VISITED' &&
+          !(a.filePath && /^https?:\/\//i.test(a.filePath)) &&
+          (a.eventType === 'DOCUMENT_ACTIVE' || !!a.fileName || !!a.filePath)
+      );
+    }
+    if (this.activityFilter === 'links') {
+      return this.activityLogs.filter(
+        a => a.eventType === 'BROWSER_LINK_VISITED' || !!(a.filePath && /^https?:\/\//i.test(a.filePath))
+      );
     }
     if (this.activityFilter === 'idle') {
       return this.activityLogs.filter(a =>
@@ -2624,19 +2638,20 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
       if (!val) return val;
       return val
         .replace(/OzikolBCCClient/gi, this.brandName)
-        .replace(/Ozikol-BCC/gi, `${this.brandName}-Workspace`)
         .replace(/Ozikol/gi, this.brandName);
     };
 
     const proc = (a.processName || a.appDisplayName || '').toLowerCase();
     const isBrowser = proc.includes('chrome') || proc.includes('msedge') || proc.includes('firefox') || proc.includes('brave');
-    let fileName = sanitize(a.fileName);
-    let filePath = sanitize(a.filePath);
+    const isLinkVisit = a.eventType === 'BROWSER_LINK_VISITED' || !!(a.filePath && /^https?:\/\//i.test(a.filePath));
+    let fileName = isLinkVisit ? sanitize(a.fileName) : a.fileName;
+    // Preserve genuine physical disk paths (e.g. C:\Users\...\source\Ozikol-BCC\...) and URLs intact
+    let filePath = a.filePath;
     let details = sanitize(a.details);
     const windowTitle = this.cleanWindowTitle(a.windowTitle);
 
-    const hasFileExt = !!(fileName && /\.[a-z0-9]{2,5}$/i.test(fileName.trim()));
-    if (isBrowser && fileName && !hasFileExt) {
+    const hasFileExt = !!(fileName && /\.[a-z0-9]{1,6}$/i.test(fileName.trim()));
+    if (isBrowser && !isLinkVisit && fileName && !hasFileExt) {
       const tabTitle = fileName;
       fileName = undefined;
       filePath = undefined;
@@ -2687,6 +2702,7 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
       case 'APP_OPENED': return 'APP OPENED';
       case 'APP_CLOSED': return 'APP CLOSED';
       case 'DOCUMENT_ACTIVE': return 'FILE WORKED ON';
+      case 'BROWSER_LINK_VISITED': return 'LINK VISITED';
       case 'IDLE_WARNING': return 'IDLE WARNING (3M)';
       case 'IDLE_LOCKED': return 'IDLE LOCKED';
       case 'PASSWORD_RESUMED': return 'PASSWORD RESUMED';
