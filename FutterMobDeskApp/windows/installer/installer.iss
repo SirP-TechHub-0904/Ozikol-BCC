@@ -58,6 +58,7 @@ Source: "..\..\build\windows\x64\runner\Release\*.dll"; DestDir: "{app}"; Flags:
 Source: "..\..\build\windows\x64\runner\Release\data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\build\windows\x64\runner\Release\tenant.lock.json"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "..\..\build\windows\x64\runner\Release\tenant_icon.ico"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "..\..\build\windows\x64\runner\Release\tenant_logo.png"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\tenant_icon.ico"

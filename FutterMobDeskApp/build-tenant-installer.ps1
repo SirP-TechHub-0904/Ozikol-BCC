@@ -153,11 +153,18 @@ if ($IconPath.Trim() -ne "" -and (Test-Path $IconPath.Trim())) {
 }
 
 $usingCustomIcon = $false
+$customPngFile = Join-Path $env:TEMP "tenant_build_logo.png"
 if ($tempIconSource -ne "" -and (Test-Path $tempIconSource)) {
     try {
         Convert-ToIcoFile -SourceImagePath $tempIconSource -DestinationIcoPath $customIcoFile
+        Add-Type -AssemblyName System.Drawing
+        $srcImg = [System.Drawing.Image]::FromFile($tempIconSource)
+        $srcImg.Save($customPngFile, [System.Drawing.Imaging.ImageFormat]::Png)
+        $srcImg.Dispose()
         $usingCustomIcon = $true
-        Write-Host "Generated Windows .ico for tenant: $customIcoFile" -ForegroundColor Green
+        if ($resolvedIconUrl -eq "") { $resolvedIconUrl = "local:tenant_logo.png" }
+        if ($resolvedLogoUrl -eq "") { $resolvedLogoUrl = "local:tenant_logo.png" }
+        Write-Host "Generated Windows .ico & offline PNG logo for tenant: $customIcoFile" -ForegroundColor Green
     } catch {
         Write-Host "Warning: Failed to convert $tempIconSource to .ico ($_). Falling back to default icon." -ForegroundColor Yellow
     }
@@ -204,12 +211,17 @@ if (-not (Test-Path $releaseDir)) {
     Write-Error "Release build folder not found at $releaseDir. Run without -SkipFlutterBuild first."
 }
 
-# Copy the active .ico into Release\tenant_icon.ico so shortcuts & Setup Wizard always use the tenant's icon
+# Copy the active .ico & offline .png into Release folder so shortcuts, Setup Wizard, and offline UI always use the tenant's logo
 $releaseTenantIcon = Join-Path $releaseDir "tenant_icon.ico"
+$releaseTenantLogo = Join-Path $releaseDir "tenant_logo.png"
 if ($usingCustomIcon) {
     Copy-Item -Path $customIcoFile -Destination $releaseTenantIcon -Force
+    if (Test-Path $customPngFile) {
+        Copy-Item -Path $customPngFile -Destination $releaseTenantLogo -Force
+    }
 } elseif (Test-Path $backupIconPath) {
     Copy-Item -Path $backupIconPath -Destination $releaseTenantIcon -Force
+    if (Test-Path $releaseTenantLogo) { Remove-Item $releaseTenantLogo -Force }
 } elseif (Test-Path $runnerIconPath) {
     Copy-Item -Path $runnerIconPath -Destination $releaseTenantIcon -Force
 }
