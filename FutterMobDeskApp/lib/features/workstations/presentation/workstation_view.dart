@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/localization/language_provider.dart';
 import '../services/workstation_watcher_service.dart';
+import '../state/workstation_shift_state.dart';
+import 'widgets/close_from_work_modal.dart';
 
 /// <summary>
 /// Workstation & Shift Tracker Screen (bcp-workspace).
@@ -27,14 +29,7 @@ class WorkstationView extends ConsumerStatefulWidget {
 class _WorkstationViewState extends ConsumerState<WorkstationView> {
   final TextEditingController _adjustmentReasonCtrl = TextEditingController();
 
-  // Realistic Interactive Shift State
-  bool _isShiftActive = true;
-  bool _isOnBreak = false;
-  DateTime _shiftStartTime = DateTime.now().subtract(const Duration(hours: 6, minutes: 15));
-  DateTime? _shiftEndTime;
-  DateTime? _breakStartTime;
-  int _breakMinutesTaken = 45;
-  final int _midShiftClosureMinutes = 30;
+  // Live UI ticker timer
   Timer? _tickerTimer;
 
   // Pre-populated History of Works ledger with Overtime (OT)
@@ -116,8 +111,11 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     super.initState();
     // Live UI tick to refresh elapsed counter
     _tickerTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted && _isShiftActive) {
-        setState(() {});
+      if (mounted) {
+        final shiftState = ref.read(workstationShiftProvider);
+        if (shiftState.isAtWork) {
+          setState(() {});
+        }
       }
     });
   }
@@ -130,19 +128,11 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
   }
 
   Duration get _elapsedGrossDuration {
-    if (!_isShiftActive && _shiftEndTime != null) {
-      return _shiftEndTime!.difference(_shiftStartTime);
-    }
-    return DateTime.now().difference(_shiftStartTime);
+    return ref.read(workstationShiftProvider).grossDuration;
   }
 
   Duration get _netEffectiveDuration {
-    final gross = _elapsedGrossDuration;
-    final deductions = Duration(minutes: _breakMinutesTaken + _midShiftClosureMinutes);
-    if (gross > deductions) {
-      return gross - deductions;
-    }
-    return Duration.zero;
+    return ref.read(workstationShiftProvider).netEffectiveDuration;
   }
 
   String _formatDuration(Duration d) {
@@ -158,63 +148,50 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     return '${hours.toString().padLeft(2, '0')} hrs ${minutes.toString().padLeft(2, '0')} mins';
   }
 
-  void _handleStartWork() {
-    setState(() {
-      _isShiftActive = true;
-      _isOnBreak = false;
-      _shiftStartTime = DateTime.now();
-      _shiftEndTime = null;
-      _breakMinutesTaken = 0;
-      _workHistory[0]['status'] = 'In Progress';
-      _workHistory[0]['close'] = '05:00 PM (Projected)';
-      _workHistory[0]['start'] = 'Just Started';
-      _workHistory[0]['overtime'] = '—';
-      _workHistory[0]['hasOvertime'] = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Shift started! Enterprise workstation logging is active.'),
-        backgroundColor: Color(0xFF16A34A),
-      ),
-    );
+  Future<void> _handleStartWork() async {
+    final domain = widget.workspace?.primaryDomain ?? widget.workspace?.tenantDomain;
+    await ref.read(workstationShiftProvider.notifier).startOrResumeWork(primaryDomain: domain);
+    if (mounted) {
+      setState(() {
+        _workHistory[0]['status'] = 'In Progress';
+        _workHistory[0]['close'] = '06:30 PM (Projected)';
+        _workHistory[0]['start'] = '08:30 AM';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('At-Work Mode activated! Fullscreen enforced & Chrome workspace launched.'),
+          backgroundColor: Color(0xFF16A34A),
+        ),
+      );
+    }
   }
 
   void _handleToggleBreak() {
-    setState(() {
-      if (!_isOnBreak) {
-        _isOnBreak = true;
-        _breakStartTime = DateTime.now();
-      } else {
-        _isOnBreak = false;
-        if (_breakStartTime != null) {
-          final diff = DateTime.now().difference(_breakStartTime!).inMinutes;
-          _breakMinutesTaken += (diff > 0 ? diff : 1);
-        }
-      }
-    });
+    ref.read(workstationShiftProvider.notifier).toggleBreak();
+    final shiftState = ref.read(workstationShiftProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_isOnBreak ? 'Break started. Work timer paused.' : 'Break ended. Work timer resumed!'),
-        backgroundColor: _isOnBreak ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+        content: Text(shiftState.isOnBreak ? 'Break started. Work timer paused.' : 'Break ended. Work timer resumed!'),
+        backgroundColor: shiftState.isOnBreak ? const Color(0xFFD97706) : const Color(0xFF16A34A),
       ),
     );
   }
 
-  void _handleCloseWork() {
-    setState(() {
-      _isShiftActive = false;
-      _isOnBreak = false;
-      _shiftEndTime = DateTime.now();
-      _workHistory[0]['status'] = 'Closed';
-      _workHistory[0]['close'] = 'Closed Just Now';
-      _workHistory[0]['totalWorkHours'] = _formatDurationHM(_netEffectiveDuration);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Work session closed! Shift report calculated and saved to history.'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
+  Future<void> _handleCloseWork() async {
+    final closed = await showCloseFromWorkModal(context, ref);
+    if (closed == true && mounted) {
+      setState(() {
+        _workHistory[0]['status'] = 'Closed';
+        _workHistory[0]['close'] = 'Closed Just Now';
+        _workHistory[0]['totalWorkHours'] = _formatDurationHM(_netEffectiveDuration);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Work session closed! Fullscreen restored. Click "Resume Work" to re-enter.'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+    }
   }
 
   @override
@@ -352,17 +329,22 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     Color textPrimary,
     Color textSecondary,
   ) {
+    final shiftState = ref.watch(workstationShiftProvider);
+    final isShiftActive = shiftState.isAtWork;
+    final isOnBreak = shiftState.isOnBreak;
+    final hasStartedToday = shiftState.hasStartedToday;
+
     Color statusBg;
     Color statusFg;
     String statusText;
     IconData statusIcon;
 
-    if (!_isShiftActive) {
+    if (!isShiftActive) {
       statusBg = isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9);
       statusFg = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-      statusText = 'SHIFT CLOSED';
-      statusIcon = Icons.stop_circle_outlined;
-    } else if (_isOnBreak) {
+      statusText = hasStartedToday ? 'SHIFT PAUSED • OFF-STATION' : 'SHIFT NOT STARTED';
+      statusIcon = hasStartedToday ? Icons.pause_circle_outline_rounded : Icons.stop_circle_outlined;
+    } else if (isOnBreak) {
       statusBg = const Color(0xFFFEF3C7);
       statusFg = const Color(0xFFD97706);
       statusText = 'ON BREAK • WORK PAUSED';
@@ -443,14 +425,14 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
           // Right: Action Control Buttons
           Row(
             children: [
-              if (_isShiftActive) ...[
+              if (isShiftActive) ...[
                 OutlinedButton.icon(
                   onPressed: _handleToggleBreak,
-                  icon: Icon(_isOnBreak ? Icons.play_arrow_rounded : Icons.coffee_rounded, size: 16),
-                  label: Text(_isOnBreak ? 'Resume Work' : 'Take Break'),
+                  icon: Icon(isOnBreak ? Icons.play_arrow_rounded : Icons.coffee_rounded, size: 16),
+                  label: Text(isOnBreak ? 'Resume Work' : 'Take Break'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _isOnBreak ? const Color(0xFF16A34A) : const Color(0xFFD97706),
-                    side: BorderSide(color: _isOnBreak ? const Color(0xFF86EFAC) : const Color(0xFFFDE68A)),
+                    foregroundColor: isOnBreak ? const Color(0xFF16A34A) : const Color(0xFFD97706),
+                    side: BorderSide(color: isOnBreak ? const Color(0xFF86EFAC) : const Color(0xFFFDE68A)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   ),
@@ -470,8 +452,8 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
               ] else ...[
                 ElevatedButton.icon(
                   onPressed: _handleStartWork,
-                  icon: const Icon(Icons.play_circle_filled_rounded, size: 16),
-                  label: const Text('Start Work'),
+                  icon: Icon(hasStartedToday ? Icons.replay_rounded : Icons.play_circle_filled_rounded, size: 16),
+                  label: Text(hasStartedToday ? 'Resume Work' : 'Start Work'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF16A34A),
                     foregroundColor: Colors.white,
@@ -498,6 +480,9 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     Color textSecondary,
     String machineName,
   ) {
+    final shiftState = ref.watch(workstationShiftProvider);
+    final isShiftActive = shiftState.isAtWork;
+    final hasStartedToday = shiftState.hasStartedToday;
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -585,7 +570,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                 child: _buildTimeMetricBlock(
                   title: 'BREAK TIME RANGE',
                   timeValue: '12:30 PM – 01:15 PM',
-                  subtitle: '$_breakMinutesTaken mins taken today',
+                  subtitle: '${shiftState.breakMinutesTaken} mins taken today',
                   icon: Icons.coffee_rounded,
                   accentColor: const Color(0xFFD97706),
                   isDark: isDark,
@@ -596,8 +581,12 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
               Expanded(
                 child: _buildTimeMetricBlock(
                   title: 'CLOSE WORK TIME',
-                  timeValue: _isShiftActive ? '05:00 PM (Projected)' : '05:00 PM (Logged)',
-                  subtitle: _isShiftActive ? 'Expected close today' : 'Concluded today',
+                  timeValue: isShiftActive
+                      ? '05:00 PM (Projected)'
+                      : (hasStartedToday ? '05:00 PM (Paused)' : '05:00 PM (Logged)'),
+                  subtitle: isShiftActive
+                      ? 'Expected close today'
+                      : (hasStartedToday ? 'Paused off-station' : 'Concluded today'),
                   icon: Icons.logout_rounded,
                   accentColor: const Color(0xFF6366F1),
                   isDark: isDark,
