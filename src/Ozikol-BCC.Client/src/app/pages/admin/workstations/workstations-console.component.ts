@@ -247,7 +247,7 @@ export interface ViolationLogItem {
 
                 <div class="telemetry-window-title" *ngIf="s.currentWindowTitle">
                   <span class="material-symbols-outlined text-gray">web_asset</span>
-                  <span class="window-title-text" [title]="s.currentWindowTitle">{{ s.currentWindowTitle }}</span>
+                  <span class="window-title-text" [title]="cleanWindowTitle(s.currentWindowTitle)">{{ cleanWindowTitle(s.currentWindowTitle) }}</span>
                 </div>
 
                 <div class="telemetry-doc-path" *ngIf="s.currentDocumentPath">
@@ -1412,10 +1412,17 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     });
   }
 
+  cleanWindowTitle(title?: string): string {
+    if (!title) return '';
+    // Strip any leading digit count prefix (e.g., "45 " or "37 ") from Win32 GetWindowText
+    return title.replace(/^\d+\s+/, '').trim();
+  }
+
   formatTime(isoString?: string): string {
     if (!isoString) return 'Never';
     try {
-      const d = new Date(isoString);
+      const utcString = isoString.endsWith('Z') || isoString.includes('+') ? isoString : `${isoString}Z`;
+      const d = new Date(utcString);
       return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     } catch (_) {
       return isoString;

@@ -365,11 +365,19 @@ class WorkstationWatcherService extends ChangeNotifier {
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        'Add-Type @"\nusing System;\nusing System.Runtime.InteropServices;\npublic class Win { [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int c); }\n"@; \$h = [Win]::GetForegroundWindow(); \$b = New-Object System.Text.StringBuilder 256; [Win]::GetWindowText(\$h, \$b, 256); \$b.ToString()',
+        'Add-Type @"\nusing System;\nusing System.Runtime.InteropServices;\npublic class Win { [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow(); [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr h, System.Text.StringBuilder s, int c); }\n"@; \$h = [Win]::GetForegroundWindow(); \$b = New-Object System.Text.StringBuilder 256; [void][Win]::GetWindowText(\$h, \$b, 256); \$b.ToString()',
       ]);
       if (res.exitCode == 0) {
-        final t = res.stdout.toString().trim();
-        return t.isNotEmpty ? t : null;
+        final lines = res.stdout
+            .toString()
+            .split(RegExp(r'[\r\n]+'))
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty)
+            .toList();
+        if (lines.isNotEmpty) {
+          final t = lines.last;
+          return t.isNotEmpty ? t : null;
+        }
       }
     } catch (_) {}
     return null;
