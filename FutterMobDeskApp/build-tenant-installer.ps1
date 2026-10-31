@@ -135,12 +135,32 @@ function Resolve-FullAssetUrl([string]$url) {
 $resolvedIconUrl = Resolve-FullAssetUrl $resolvedIconUrl
 $resolvedLogoUrl = Resolve-FullAssetUrl $resolvedLogoUrl
 
-# Prepare custom .ico file if -IconPath or resolvedIconUrl/resolvedLogoUrl is available
+# Prepare custom .ico file from:
+# 1. Explicit -IconPath (relative to project or absolute)
+# 2. Automatic project folder lookup: assets\tenant_logos\{TenantKey}.(png|ico|jpg)
+# 3. Live API download (resolvedIconUrl / resolvedLogoUrl)
 $tempIconSource = ""
 $customIcoFile = Join-Path $env:TEMP "tenant_build_icon.ico"
+$projectLogosDir = Join-Path $scriptDir "assets\tenant_logos"
+if (-not (Test-Path $projectLogosDir)) {
+    New-Item -ItemType Directory -Path $projectLogosDir -Force | Out-Null
+}
+
 if ($IconPath.Trim() -ne "" -and (Test-Path $IconPath.Trim())) {
     $tempIconSource = (Resolve-Path $IconPath.Trim()).Path
-} elseif ($resolvedIconUrl -ne "" -or $resolvedLogoUrl -ne "") {
+} elseif ($TenantKey.Trim() -ne "") {
+    $cleanKey = $TenantKey.Trim().ToLower()
+    foreach ($ext in @("png", "ico", "jpg", "jpeg")) {
+        $candidate = Join-Path $projectLogosDir "$cleanKey.$ext"
+        if (Test-Path $candidate) {
+            $tempIconSource = $candidate
+            Write-Host "Auto-detected tenant logo from project folder: $candidate" -ForegroundColor Green
+            break
+        }
+    }
+}
+
+if ($tempIconSource -eq "" -and ($resolvedIconUrl -ne "" -or $resolvedLogoUrl -ne "")) {
     $downloadUrl = if ($resolvedIconUrl -ne "") { $resolvedIconUrl } else { $resolvedLogoUrl }
     try {
         $dlTemp = Join-Path $env:TEMP "tenant_dl_img.png"
