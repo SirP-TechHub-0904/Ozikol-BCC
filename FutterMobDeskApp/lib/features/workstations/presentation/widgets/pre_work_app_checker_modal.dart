@@ -127,7 +127,6 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     'ozikol.exe',
     'ozikol.central.exe',
     'ozikol-bcc.api.exe',
-    'taskmgr.exe',
   };
 
   // Whitelist of Windows system shells, runtime daemons, and Ozikol app itself
@@ -342,6 +341,20 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
           windowTitle: title,
           icon: Icons.groups_rounded,
         );
+      case 'explorer.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Windows File Explorer',
+          windowTitle: title,
+          icon: Icons.folder_open_rounded,
+        );
+      case 'taskmgr.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Windows Task Manager',
+          windowTitle: title,
+          icon: Icons.monitor_heart_rounded,
+        );
       default:
         final cleanName = proc.replaceAll(RegExp(r'\.exe$', caseSensitive: false), '');
         return DetectedRunningApp(
@@ -389,13 +402,14 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
       bool scannedWithTaskbarFilter = false;
 
       // 1. Primary Scan: Filter ONLY interactive applications with visible windows on the Windows Taskbar
-      // NOTE: Uses single quotes inside the PowerShell command so CreateProcessW / powershell.exe never strips double quotes.
+      // PLUS open File Explorer folder windows via Shell.Application COM object.
       try {
         final psResult = await Process.run('powershell', [
           '-NoProfile',
           '-NonInteractive',
           '-Command',
-          "Get-Process | Where-Object { \$_.MainWindowHandle -ne 0 -and \$_.MainWindowTitle.Trim() -ne '' } | ForEach-Object { \$_.ProcessName + '.exe|' + \$_.MainWindowTitle }",
+          "Get-Process | Where-Object { \$_.MainWindowHandle -ne 0 -and \$_.MainWindowTitle.Trim() -ne '' } | ForEach-Object { \$_.ProcessName + '.exe|' + \$_.MainWindowTitle }; "
+          "try { \$expWins = @((New-Object -ComObject Shell.Application).Windows() | Where-Object { \$_.FullName -like '*explorer.exe' } | ForEach-Object { \$_.LocationName }); if (\$expWins.Count -gt 0) { Write-Output ('explorer.exe|File Explorer (' + (\$expWins -join ', ') + ')') } } catch {}",
         ]).timeout(const Duration(seconds: 8));
 
         if (psResult.exitCode == 0 && psResult.stdout.toString().trim().isNotEmpty) {
@@ -408,7 +422,8 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
             final title = parts.length > 1 ? parts.sublist(1).join('|').trim() : '';
             final procLower = procName.toLowerCase();
 
-            if (_systemShellProcesses.contains(procLower)) continue;
+            // Allow explorer.exe when emitted explicitly by the Shell.Application folder window check
+            if (procLower != 'explorer.exe' && _systemShellProcesses.contains(procLower)) continue;
             if (seen.contains(procLower)) continue;
             seen.add(procLower);
 
@@ -468,14 +483,49 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     }
   }
 
+  /// Closes all open File Explorer folder windows cleanly via Shell.Application COM + Win32 WM_CLOSE
+  /// without killing the Windows Desktop/Taskbar shell process.
+  Future<void> _closeOpenFileExplorerWindows() async {
+    await Process.run('powershell', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      r'''
+try {
+  (New-Object -ComObject Shell.Application).Windows() | Where-Object { $_.FullName -like '*explorer.exe' } | ForEach-Object { $_.Quit() }
+} catch {}
+try {
+  Add-Type @"
+  using System;
+  using System.Runtime.InteropServices;
+  public class WinExpClose {
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern IntPtr FindWindowEx(IntPtr parentHandle, IntPtr childAfter, string className, string windowTitle);
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+  }
+"@
+  $h = [IntPtr]::Zero
+  while (($h = [WinExpClose]::FindWindowEx([IntPtr]::Zero, $h, "CabinetWClass", $null)) -ne [IntPtr]::Zero) {
+    [WinExpClose]::PostMessage($h, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+  }
+} catch {}
+''',
+    ]);
+  }
+
   /// Sends a graceful close signal first so apps with unsaved work (Word, Excel, IDE)
   /// can prompt the user to save changes before closing.
   Future<void> _closeSingleApp(String procName) async {
     if (!kIsWeb && Platform.isWindows) {
       try {
-        final graceful = await Process.run('taskkill', ['/IM', procName]);
-        if (graceful.exitCode != 0) {
-          await Process.run('taskkill', ['/F', '/T', '/IM', procName]);
+        if (procName.toLowerCase().trim() == 'explorer.exe') {
+          await _closeOpenFileExplorerWindows();
+        } else {
+          final graceful = await Process.run('taskkill', ['/IM', procName]);
+          if (graceful.exitCode != 0) {
+            await Process.run('taskkill', ['/F', '/T', '/IM', procName]);
+          }
         }
       } catch (e) {
         debugPrint('[PreWorkAppChecker] Taskkill error: $e');
@@ -493,9 +543,13 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     if (!kIsWeb && Platform.isWindows) {
       for (final app in _detectedApps) {
         try {
-          final graceful = await Process.run('taskkill', ['/IM', app.processName]);
-          if (graceful.exitCode != 0) {
-            await Process.run('taskkill', ['/F', '/T', '/IM', app.processName]);
+          if (app.processName.toLowerCase().trim() == 'explorer.exe') {
+            await _closeOpenFileExplorerWindows();
+          } else {
+            final graceful = await Process.run('taskkill', ['/IM', app.processName]);
+            if (graceful.exitCode != 0) {
+              await Process.run('taskkill', ['/F', '/T', '/IM', app.processName]);
+            }
           }
         } catch (_) {}
       }

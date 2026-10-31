@@ -79,76 +79,16 @@ class _ApprovedAppsDialogState extends ConsumerState<ApprovedAppsDialog> {
   // Local state of pending requests submitted during this session
   final List<PendingAppRequestItem> _pendingRequests = [];
 
-  // Standard fallback corporate presets
-  static const List<ApprovedAppEntry> _defaultApprovedPresets = [
-    ApprovedAppEntry(
-      displayName: 'Google Chrome Enterprise',
-      processName: 'chrome.exe',
-      category: 'Web Browsers',
-      icon: Icons.public_rounded,
-    ),
-    ApprovedAppEntry(
-      displayName: 'Microsoft Edge',
-      processName: 'msedge.exe',
-      category: 'Web Browsers',
-      icon: Icons.language_rounded,
-    ),
-    ApprovedAppEntry(
-      displayName: 'Microsoft Excel',
-      processName: 'excel.exe',
-      category: 'Productivity',
-      icon: Icons.table_chart_rounded,
-    ),
-    ApprovedAppEntry(
-      displayName: 'Microsoft Word',
-      processName: 'winword.exe',
-      category: 'Productivity',
-      icon: Icons.description_rounded,
-    ),
-    ApprovedAppEntry(
-      displayName: 'Microsoft PowerPoint',
-      processName: 'powerpnt.exe',
-      category: 'Productivity',
-      icon: Icons.slideshow_rounded,
-    ),
-    ApprovedAppEntry(
-      displayName: 'Adobe Acrobat PDF',
-      processName: 'acrord32.exe',
-      category: 'Productivity',
-      icon: Icons.picture_as_pdf_rounded,
-    ),
-    ApprovedAppEntry(
-      displayName: 'Microsoft Teams',
-      processName: 'ms-teams.exe',
-      category: 'Communication',
-      icon: Icons.groups_rounded,
-    ),
-    ApprovedAppEntry(
-      displayName: 'Zoom Workplace',
-      processName: 'zoom.exe',
-      category: 'Communication',
-      icon: Icons.video_camera_front_rounded,
-    ),
-    ApprovedAppEntry(
-      displayName: 'Windows Calculator',
-      processName: 'calc.exe',
-      category: 'Utilities',
-      icon: Icons.calculate_rounded,
-    ),
-    ApprovedAppEntry(
-      displayName: 'Windows Notepad',
-      processName: 'notepad.exe',
-      category: 'Utilities',
-      icon: Icons.edit_note_rounded,
-    ),
-  ];
-
   static const List<InstalledSystemApp> _builtInWindowsAccessories = [
+    InstalledSystemApp(name: 'Windows File Explorer', processName: 'explorer.exe', icon: Icons.folder_open_rounded),
+    InstalledSystemApp(name: 'Windows PowerShell', processName: 'powershell.exe', icon: Icons.terminal_rounded),
+    InstalledSystemApp(name: 'Command Prompt (CMD)', processName: 'cmd.exe', icon: Icons.terminal_rounded),
+    InstalledSystemApp(name: 'Windows Task Manager', processName: 'taskmgr.exe', icon: Icons.monitor_heart_rounded),
+    InstalledSystemApp(name: 'Windows Terminal', processName: 'WindowsTerminal.exe', icon: Icons.terminal_rounded),
     InstalledSystemApp(name: 'Windows Calculator', processName: 'calc.exe', icon: Icons.calculate_rounded),
     InstalledSystemApp(name: 'Windows Notepad', processName: 'notepad.exe', icon: Icons.edit_note_rounded),
     InstalledSystemApp(name: 'Paint', processName: 'mspaint.exe', icon: Icons.palette_rounded),
     InstalledSystemApp(name: 'Snipping Tool', processName: 'SnippingTool.exe', icon: Icons.content_cut_rounded),
-    InstalledSystemApp(name: 'Windows Terminal', processName: 'WindowsTerminal.exe', icon: Icons.terminal_rounded),
     InstalledSystemApp(name: 'Remote Desktop Connection', processName: 'mstsc.exe', icon: Icons.desktop_windows_rounded),
     InstalledSystemApp(name: 'WordPad', processName: 'wordpad.exe', icon: Icons.article_rounded),
   ];
@@ -189,7 +129,13 @@ class _ApprovedAppsDialogState extends ConsumerState<ApprovedAppsDialog> {
     if (lower.contains('calc')) {
       return Icons.calculate_rounded;
     }
-    if (lower.contains('code') || lower.contains('devenv') || lower.contains('studio') || lower.contains('terminal')) {
+    if (lower.contains('explorer')) {
+      return Icons.folder_open_rounded;
+    }
+    if (lower.contains('taskmgr')) {
+      return Icons.monitor_heart_rounded;
+    }
+    if (lower.contains('code') || lower.contains('devenv') || lower.contains('studio') || lower.contains('terminal') || lower.contains('powershell') || lower.contains('pwsh') || lower.contains('cmd')) {
       return Icons.terminal_rounded;
     }
     if (lower.contains('pdf') || lower.contains('acrobat')) {
@@ -318,12 +264,6 @@ class _ApprovedAppsDialogState extends ConsumerState<ApprovedAppsDialog> {
           icon: _resolveIcon(proc),
           isTemporary: true,
         );
-      }
-    }
-
-    if (map.isEmpty) {
-      for (final def in _defaultApprovedPresets) {
-        map[def.processName.toLowerCase()] = def;
       }
     }
 

@@ -467,7 +467,7 @@ export interface WorkstationActivityLogItem {
 
               <!-- Quick 1-Click Presets -->
               <div class="preset-section">
-                <span class="preset-label">QUICK 1-CLICK POPULAR OFFICE PRESETS:</span>
+                <span class="preset-label">QUICK 1-CLICK POPULAR OFFICE & SYSTEM PRESETS:</span>
                 <div class="preset-pills">
                   <button (click)="addPreset('Microsoft Word', 'winword.exe', 'Productivity')" class="btn-preset">+ Word</button>
                   <button (click)="addPreset('Microsoft Excel', 'excel.exe', 'Productivity')" class="btn-preset">+ Excel</button>
@@ -476,6 +476,11 @@ export interface WorkstationActivityLogItem {
                   <button (click)="addPreset('Windows Calculator', 'calc.exe', 'Utilities')" class="btn-preset">+ Calculator</button>
                   <button (click)="addPreset('Microsoft Teams', 'ms-teams.exe', 'Communication')" class="btn-preset">+ Teams</button>
                   <button (click)="addPreset('Zoom Workplace', 'zoom.exe', 'Communication')" class="btn-preset">+ Zoom</button>
+                  <button (click)="addPreset('Windows File Explorer', 'explorer.exe', 'Utilities')" class="btn-preset">+ File Explorer</button>
+                  <button (click)="addPreset('Windows PowerShell', 'powershell.exe', 'Development')" class="btn-preset">+ PowerShell</button>
+                  <button (click)="addPreset('Command Prompt (CMD)', 'cmd.exe', 'Development')" class="btn-preset">+ Command Prompt</button>
+                  <button (click)="addPreset('Windows Task Manager', 'taskmgr.exe', 'Utilities')" class="btn-preset">+ Task Manager</button>
+                  <button (click)="addPreset('Windows Terminal', 'windowsterminal.exe', 'Development')" class="btn-preset">+ Windows Terminal</button>
                 </div>
               </div>
             </div>

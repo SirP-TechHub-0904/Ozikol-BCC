@@ -581,13 +581,101 @@ class WorkstationWatcherService extends ChangeNotifier {
     }
   }
 
-  /// Inspects currently running tasks using native Windows tasklist.
+  /// Inspects currently running windowed applications and File Explorer windows.
+  /// Strictly enforced whenever `isActiveWorkDuty` is true, even if `_rules` is empty (0 apps approved).
   Future<void> _inspectRunningProcesses() async {
-    // Process guard interception is suspended while the employee is on an authorized break
-    if (!Platform.isWindows || _rules.isEmpty || _isBreakActive) return;
+    if (!Platform.isWindows || !isActiveWorkDuty) return;
 
     try {
-      // Run Windows tasklist in CSV mode: tasklist /FO CSV /NH
+      // 1. Inspect open File Explorer (explorer.exe) folder windows via Shell.Application COM.
+      // Unless explorer.exe is explicitly approved, any File Explorer window outside the approved
+      // Company Work Drive (_approvedDirectory) is closed immediately without killing the Windows desktop shell.
+      if (!isProcessApproved('explorer.exe')) {
+        final safeApprovedDir = _approvedDirectory.replaceAll("'", "''").trim();
+        final expCheckScript = '''
+\$approved = '$safeApprovedDir'
+\$closedTitle = ''
+try {
+  \$wins = @((New-Object -ComObject Shell.Application).Windows() | Where-Object { \$_.FullName -like '*explorer.exe' })
+  foreach (\$w in \$wins) {
+    \$folderPath = ''
+    try { \$folderPath = [string]\$w.Document.Folder.Self.Path } catch {}
+    \$locName = [string]\$w.LocationName
+    \$isInsideApproved = (\$approved -ne '' -and \$folderPath -ne '' -and \$folderPath.StartsWith(\$approved, [System.StringComparison]::OrdinalIgnoreCase))
+    if (-not \$isInsideApproved) {
+      \$closedTitle = if (\$locName) { "File Explorer - \$locName" } else { "File Explorer" }
+      try { \$w.Quit() } catch {}
+    }
+  }
+} catch {}
+if (\$closedTitle -ne '') { Write-Output \$closedTitle }
+''';
+        final expRes = await Process.run('powershell', [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          expCheckScript,
+        ]);
+        final closedExplorerTitle = expRes.stdout.toString().trim();
+        if (closedExplorerTitle.isNotEmpty) {
+          final event = ViolationEvent(
+            processName: 'explorer.exe',
+            windowTitle: closedExplorerTitle,
+            actionTaken: 'TERMINATED',
+            timestamp: DateTime.now().toUtc(),
+          );
+          _violationStreamController.add(event);
+          await _api.dio.post('/api/Workstations/violations', data: {
+            'machineName': Platform.localHostname,
+            'userId': _userId ?? _userEmail,
+            'userName': _userName,
+            'processName': 'explorer.exe',
+            'windowTitle': closedExplorerTitle,
+            'actionTaken': 'TERMINATED',
+            'violationType': 'UNAPPROVED_APP',
+          });
+        }
+      }
+
+      // 2. Inspect interactive user-visible windows (including Task Manager, CMD, PowerShell, Terminal, Browsers, etc.)
+      final winRes = await Process.run('powershell', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        r"Get-Process | Where-Object { $_.MainWindowHandle -ne 0 -and $_.MainWindowTitle.Trim() -ne '' } | ForEach-Object { $_.ProcessName + '.exe|' + $_.MainWindowTitle }",
+      ]);
+      if (winRes.exitCode == 0) {
+        final lines = winRes.stdout.toString().split(RegExp(r'[\r\n]+'));
+        for (final line in lines) {
+          final trimmed = line.trim();
+          if (trimmed.isEmpty || !trimmed.contains('|')) continue;
+          final parts = trimmed.split('|');
+          final procName = parts[0].trim().toLowerCase();
+          final winTitle = parts.length > 1 ? parts.sublist(1).join('|').trim() : procName;
+
+          if (procName.isEmpty || procName == 'explorer.exe') continue;
+          if (procName.contains('ozikol') ||
+              procName == 'textinputhost.exe' ||
+              procName == 'applicationframehost.exe' ||
+              procName == 'shellexperiencehost.exe' ||
+              procName == 'startmenuexperiencehost.exe' ||
+              procName == 'searchhost.exe') {
+            continue;
+          }
+          // Protect active Flutter debug runner terminal / IDE only if hosting the live debug session
+          if ((procName == 'code.exe' || procName == 'antigravity.exe' || procName == 'devenv.exe') &&
+              _systemExemptions.contains(procName)) {
+            continue;
+          }
+
+          if (isProcessApproved(procName)) continue;
+
+          await _killProcess(procName, explicitWindowTitle: winTitle);
+          return;
+        }
+      }
+
+      // 3. Also run fast tasklist check for known side-job background/tray apps
       final result = await Process.run('tasklist', ['/FO', 'CSV', '/NH']);
       if (result.exitCode != 0) return;
 
@@ -599,26 +687,15 @@ class WorkstationWatcherService extends ChangeNotifier {
         final parts = line.split('","');
         if (parts.isEmpty) continue;
 
-        // Process executable name e.g. "telegram.exe"
         var procName = parts[0].replaceAll('"', '').trim().toLowerCase();
         if (procName.isEmpty) continue;
 
-        // Check if exempt (system or development tools)
         if (_systemExemptions.contains(procName)) continue;
+        if (isProcessApproved(procName)) continue;
 
-        // Check if temporary access was approved by admin
-        if (_temporaryApprovals.contains(procName)) continue;
-
-        // Check against active tenant whitelist
-        final isAllowed = _rules.any((r) => r.processName == procName && r.isAllowed);
-
-        // If the process is blacklisted or an unapproved high-risk app (social media, torrents, personal messengers)
-        final isDangerousOrDisallowed = _isKnownSideJobApp(procName) || (!isAllowed && _isKnownDisallowed(procName));
-
-        if (isDangerousOrDisallowed) {
-          // Terminate the unauthorized process immediately
+        if (_isKnownSideJobApp(procName)) {
           await _killProcess(procName);
-          break; // Process one violation at a time
+          break;
         }
       }
     } catch (_) {}
@@ -642,17 +719,12 @@ class WorkstationWatcherService extends ChangeNotifier {
     return sideHustleApps.contains(proc);
   }
 
-  bool _isKnownDisallowed(String proc) {
-    // If not in allowed rules and not system, it's restricted
-    return !_rules.any((r) => r.processName == proc && r.isAllowed);
-  }
-
   /// Gracefully terminates an unauthorized process via Windows taskkill.
-  Future<void> _killProcess(String procName) async {
+  Future<void> _killProcess(String procName, {String? explicitWindowTitle}) async {
     try {
       final killResult = await Process.run('taskkill', ['/F', '/IM', procName]);
       if (killResult.exitCode == 0) {
-        final title = await _getForegroundWindowTitle() ?? procName;
+        final title = explicitWindowTitle ?? await _getForegroundWindowTitle() ?? procName;
         final event = ViolationEvent(
           processName: procName,
           windowTitle: title,
@@ -1301,6 +1373,26 @@ if (Focus-ProcessWindow \$baseName) {
 }
 
 # 2. Known Windows / Store app protocol & alias shortcuts
+if (\$lower -eq 'explorer.exe') {
+  Start-Process 'explorer.exe'
+  Write-Output "LAUNCHED"
+  exit 0
+}
+if (\$lower -eq 'powershell.exe' -or \$lower -eq 'pwsh.exe') {
+  Start-Process 'powershell.exe'
+  Write-Output "LAUNCHED"
+  exit 0
+}
+if (\$lower -eq 'cmd.exe') {
+  Start-Process 'cmd.exe'
+  Write-Output "LAUNCHED"
+  exit 0
+}
+if (\$lower -eq 'taskmgr.exe') {
+  Start-Process 'taskmgr.exe'
+  Write-Output "LAUNCHED"
+  exit 0
+}
 if (\$lower -eq 'windowsterminal.exe' -or \$lower -eq 'terminal.exe') {
   Start-Process 'wt.exe'
   Write-Output "LAUNCHED"
