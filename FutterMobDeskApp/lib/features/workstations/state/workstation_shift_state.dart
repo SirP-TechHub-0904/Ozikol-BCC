@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,27 +37,31 @@ class WorkstationShiftState {
   final bool isOnBreak;
   final String currentBreakType;
   final String lastBreakTimeRange;
-  final DateTime shiftStartTime;
+  final DateTime? shiftStartTime;
   final DateTime? shiftEndTime;
   final DateTime? breakStartTime;
   final int breakMinutesTaken;
   final int midShiftClosureMinutes;
+  final String lastInactiveRange;
   final DateTime? lastClosureTime;
   final List<DepartureRecord> departureRecords;
+  final List<Map<String, dynamic>> shiftHistory;
 
   const WorkstationShiftState({
     required this.isAtWork,
     required this.hasStartedToday,
     required this.isOnBreak,
-    this.currentBreakType = 'Lunch Break',
-    this.lastBreakTimeRange = '12:30 PM – 01:15 PM',
-    required this.shiftStartTime,
+    this.currentBreakType = 'Break',
+    this.lastBreakTimeRange = '',
+    this.shiftStartTime,
     this.shiftEndTime,
     this.breakStartTime,
-    this.breakMinutesTaken = 45,
-    this.midShiftClosureMinutes = 30,
+    this.breakMinutesTaken = 0,
+    this.midShiftClosureMinutes = 0,
+    this.lastInactiveRange = '',
     this.lastClosureTime,
     this.departureRecords = const [],
+    this.shiftHistory = const [],
   });
 
   WorkstationShiftState copyWith({
@@ -67,11 +72,15 @@ class WorkstationShiftState {
     String? lastBreakTimeRange,
     DateTime? shiftStartTime,
     DateTime? shiftEndTime,
+    bool clearShiftEndTime = false,
     DateTime? breakStartTime,
+    bool clearBreakStartTime = false,
     int? breakMinutesTaken,
     int? midShiftClosureMinutes,
+    String? lastInactiveRange,
     DateTime? lastClosureTime,
     List<DepartureRecord>? departureRecords,
+    List<Map<String, dynamic>>? shiftHistory,
   }) {
     return WorkstationShiftState(
       isAtWork: isAtWork ?? this.isAtWork,
@@ -80,32 +89,43 @@ class WorkstationShiftState {
       currentBreakType: currentBreakType ?? this.currentBreakType,
       lastBreakTimeRange: lastBreakTimeRange ?? this.lastBreakTimeRange,
       shiftStartTime: shiftStartTime ?? this.shiftStartTime,
-      shiftEndTime: shiftEndTime ?? this.shiftEndTime,
-      breakStartTime: breakStartTime ?? this.breakStartTime,
+      shiftEndTime: clearShiftEndTime ? null : (shiftEndTime ?? this.shiftEndTime),
+      breakStartTime: clearBreakStartTime ? null : (breakStartTime ?? this.breakStartTime),
       breakMinutesTaken: breakMinutesTaken ?? this.breakMinutesTaken,
       midShiftClosureMinutes: midShiftClosureMinutes ?? this.midShiftClosureMinutes,
+      lastInactiveRange: lastInactiveRange ?? this.lastInactiveRange,
       lastClosureTime: lastClosureTime ?? this.lastClosureTime,
       departureRecords: departureRecords ?? this.departureRecords,
+      shiftHistory: shiftHistory ?? this.shiftHistory,
     );
   }
 
   Duration get grossDuration {
-    if (!isAtWork && shiftEndTime != null) {
-      return shiftEndTime!.difference(shiftStartTime);
+    if (!hasStartedToday || shiftStartTime == null) {
+      return Duration.zero;
     }
-    return DateTime.now().difference(shiftStartTime);
+    if (!isAtWork && shiftEndTime != null) {
+      final diff = shiftEndTime!.difference(shiftStartTime!);
+      return diff.isNegative ? Duration.zero : diff;
+    }
+    final diff = DateTime.now().difference(shiftStartTime!);
+    return diff.isNegative ? Duration.zero : diff;
   }
 
   Duration get currentBreakDuration {
     if (isOnBreak && breakStartTime != null) {
-      return DateTime.now().difference(breakStartTime!);
+      final diff = DateTime.now().difference(breakStartTime!);
+      return diff.isNegative ? Duration.zero : diff;
     }
     return Duration.zero;
   }
 
   Duration get netEffectiveDuration {
+    if (!hasStartedToday || shiftStartTime == null) {
+      return Duration.zero;
+    }
     final gross = grossDuration;
-    final deductions = Duration(minutes: breakMinutesTaken + midShiftClosureMinutes);
+    final deductions = Duration(minutes: breakMinutesTaken + midShiftClosureMinutes) + currentBreakDuration;
     if (gross > deductions) {
       return gross - deductions;
     }
@@ -114,58 +134,103 @@ class WorkstationShiftState {
 }
 
 /// Central Riverpod Notifier orchestrating fullscreen lock, workspace dock blur,
-/// chrome auto-launch, and departure audit logs.
+/// chrome auto-launch, and dynamic shift history persistence.
 class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
   WorkstationShiftNotifier()
       : super(
-          WorkstationShiftState(
+          const WorkstationShiftState(
             isAtWork: false,
             hasStartedToday: false,
             isOnBreak: false,
-            // Defaults to 08:30 AM today
-            shiftStartTime: DateTime(
-              DateTime.now().year,
-              DateTime.now().month,
-              DateTime.now().day,
-              8,
-              30,
-            ),
           ),
-        );
+        ) {
+    _loadPersistedHistory();
+  }
 
-  /// Starts or resumes work shift:
-  /// 1. Sets isAtWork = true, hasStartedToday = true
-  /// 2. Sets Flutter window to Fullscreen (disables window minimize)
-  /// 3. Automatically opens Google Chrome default browser to workspace URL
+  File get _historyFile {
+    final baseDir = (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
+        ? Directory.systemTemp.path
+        : '.';
+    return File('$baseDir${Platform.pathSeparator}ozikol_workstation_shifts.json');
+  }
+
+  Future<void> _loadPersistedHistory() async {
+    if (kIsWeb) return;
+    try {
+      final file = _historyFile;
+      if (!await file.exists()) return;
+      final raw = await file.readAsString();
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        final list = decoded
+            .whereType<Map>()
+            .map((m) => Map<String, dynamic>.from(m))
+            .toList();
+        state = state.copyWith(shiftHistory: list);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _savePersistedHistory(List<Map<String, dynamic>> history) async {
+    if (kIsWeb) return;
+    try {
+      await _historyFile.writeAsString(jsonEncode(history));
+    } catch (_) {}
+  }
+
+  static String formatTime12(DateTime dt) {
+    final h = dt.hour;
+    final m = dt.minute;
+    final ampm = h >= 12 ? 'PM' : 'AM';
+    final displayH = h % 12 == 0 ? 12 : h % 12;
+    return '${displayH.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')} $ampm';
+  }
+
+  static String formatDateKey(DateTime dt) {
+    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  }
+
+  /// Starts or resumes work shift dynamically.
   Future<void> startOrResumeWork({String? primaryDomain}) async {
     final now = DateTime.now();
     int additionalGap = 0;
-    if (state.lastClosureTime != null) {
+    String inactiveRange = state.lastInactiveRange;
+
+    if (state.hasStartedToday && state.lastClosureTime != null) {
       final gapMinutes = now.difference(state.lastClosureTime!).inMinutes;
       if (gapMinutes > 0) {
         additionalGap = gapMinutes;
+        inactiveRange = '${formatTime12(state.lastClosureTime!)} – ${formatTime12(now)}';
       }
     }
+
+    final effectiveStart = state.hasStartedToday && state.shiftStartTime != null
+        ? state.shiftStartTime!
+        : now;
 
     state = state.copyWith(
       isAtWork: true,
       hasStartedToday: true,
       isOnBreak: false,
-      shiftEndTime: null,
+      shiftStartTime: effectiveStart,
+      clearShiftEndTime: true,
       midShiftClosureMinutes: state.midShiftClosureMinutes + additionalGap,
+      lastInactiveRange: inactiveRange,
     );
+
+    _syncTodayRecordToHistory(status: 'In Progress');
 
     // Enforce Fullscreen on Desktop
     await _enforceFullScreen(true);
 
-    // Auto-launch Google Chrome default browser
-    await launchChromeBrowser(primaryDomain ?? 'https://app.ozikol.cloud');
+    // Auto-launch Google Chrome default browser if domain is configured
+    if (primaryDomain != null && primaryDomain.trim().isNotEmpty) {
+      final url = primaryDomain.startsWith('http') ? primaryDomain : 'https://$primaryDomain';
+      await launchChromeBrowser(url);
+    }
   }
 
-  /// Concludes or pauses shift:
-  /// 1. Exits Fullscreen mode and restores standard desktop window controls
-  /// 2. Records departure reason and audit metadata
-  /// 3. Allows employee to later click "Resume Work"
+  /// Concludes or pauses shift dynamically.
   Future<void> closeFromWork({
     required String reason,
     String notes = '',
@@ -188,15 +253,14 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
       departureRecords: updatedRecords,
     );
 
+    _syncTodayRecordToHistory(status: 'Closed');
+
     // Exit Fullscreen to standard desktop window
     await _enforceFullScreen(false);
   }
 
-  /// Begins official break:
-  /// 1. Pauses active billable work timer and starts break timer
-  /// 2. Exits Fullscreen mode and restores standard desktop window controls (- □ ✕)
-  /// 3. Employee is free to minimize window and use any personal apps
-  Future<void> startBreak({String breakType = 'Lunch Break'}) async {
+  /// Begins official break dynamically.
+  Future<void> startBreak({String breakType = 'Break'}) async {
     final now = DateTime.now();
     state = state.copyWith(
       isOnBreak: true,
@@ -204,13 +268,13 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
       currentBreakType: breakType,
     );
 
+    _syncTodayRecordToHistory(status: 'On Break');
+
     // Release fullscreen lock: allow window minimizing & free desktop usage
     await _enforceFullScreen(false);
   }
 
-  /// Ends official break and resumes active work shift:
-  /// 1. Calculates exact break duration and logs to break minutes
-  /// 2. Re-enters Fullscreen mode and restores workstation lock
+  /// Ends official break and resumes active work shift dynamically.
   Future<void> endBreakAndResumeWork({String? primaryDomain}) async {
     final now = DateTime.now();
     int additionalBreak = 0;
@@ -219,30 +283,65 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
     if (state.breakStartTime != null) {
       final diff = now.difference(state.breakStartTime!).inMinutes;
       additionalBreak = diff > 0 ? diff : 1;
-      newRange = '${_formatTime12(state.breakStartTime!)} – ${_formatTime12(now)}';
+      newRange = '${formatTime12(state.breakStartTime!)} – ${formatTime12(now)}';
     }
 
     state = state.copyWith(
       isOnBreak: false,
-      breakStartTime: null,
+      clearBreakStartTime: true,
       breakMinutesTaken: state.breakMinutesTaken + additionalBreak,
       lastBreakTimeRange: newRange,
       isAtWork: true,
     );
 
+    _syncTodayRecordToHistory(status: 'In Progress');
+
     // Re-engage Fullscreen mode & lock
     await _enforceFullScreen(true);
-
-    // Auto-launch Google Chrome default browser if needed
-    await launchChromeBrowser(primaryDomain ?? 'https://app.ozikol.cloud');
   }
 
-  static String _formatTime12(DateTime dt) {
-    final h = dt.hour;
-    final m = dt.minute;
-    final ampm = h >= 12 ? 'PM' : 'AM';
-    final displayH = h % 12 == 0 ? 12 : h % 12;
-    return '${displayH.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')} $ampm';
+  void _syncTodayRecordToHistory({required String status}) {
+    if (state.shiftStartTime == null) return;
+    final now = DateTime.now();
+    final dateKey = formatDateKey(now);
+    final net = state.netEffectiveDuration;
+    final netHours = net.inHours;
+    final netMins = net.inMinutes.remainder(60);
+    final workHoursStr = '${netHours.toString().padLeft(2, '0')} hrs ${netMins.toString().padLeft(2, '0')} mins';
+
+    // Standard shift is 8 hours (480 minutes); anything beyond 480 mins is Overtime (OT)
+    final otMinutes = net.inMinutes > 480 ? (net.inMinutes - 480) : 0;
+    final hasOvertime = otMinutes > 0;
+    final otHours = otMinutes ~/ 60;
+    final otRemMins = otMinutes % 60;
+    final overtimeStr = hasOvertime
+        ? (otHours > 0 ? '+${otHours}h ${otRemMins}m OT' : '+${otRemMins}m OT')
+        : '—';
+
+    final entry = <String, dynamic>{
+      'dateKey': dateKey,
+      'timestamp': now.toIso8601String(),
+      'start': formatTime12(state.shiftStartTime!),
+      'close': state.shiftEndTime != null ? formatTime12(state.shiftEndTime!) : 'In Progress',
+      'breakDuration': state.breakMinutesTaken > 0 ? '${state.breakMinutesTaken} mins' : 'None',
+      'breakRange': state.lastBreakTimeRange,
+      'inactiveDuration': state.midShiftClosureMinutes > 0 ? '${state.midShiftClosureMinutes} mins' : 'None',
+      'inactiveRange': state.lastInactiveRange,
+      'totalWorkHours': workHoursStr,
+      'overtime': overtimeStr,
+      'status': status,
+      'hasOvertime': hasOvertime,
+    };
+
+    final updated = List<Map<String, dynamic>>.from(state.shiftHistory);
+    final idx = updated.indexWhere((e) => e['dateKey'] == dateKey);
+    if (idx >= 0) {
+      updated[idx] = entry;
+    } else {
+      updated.insert(0, entry);
+    }
+    state = state.copyWith(shiftHistory: updated);
+    unawaited(_savePersistedHistory(updated));
   }
 
   /// Toggles official break (pauses work timer).
@@ -255,14 +354,17 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
       );
     } else {
       int additionalBreak = 0;
+      String newRange = state.lastBreakTimeRange;
       if (state.breakStartTime != null) {
         final diff = now.difference(state.breakStartTime!).inMinutes;
         additionalBreak = diff > 0 ? diff : 1;
+        newRange = '${formatTime12(state.breakStartTime!)} – ${formatTime12(now)}';
       }
       state = state.copyWith(
         isOnBreak: false,
-        breakStartTime: null,
+        clearBreakStartTime: true,
         breakMinutesTaken: state.breakMinutesTaken + additionalBreak,
+        lastBreakTimeRange: newRange,
       );
     }
   }
@@ -289,8 +391,8 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
   }
 
   /// Launches Google Chrome by default to the designated workspace URL.
-  /// Checks standard Windows paths for Chrome and falls back gracefully.
-  static Future<void> launchChromeBrowser([String url = 'https://app.ozikol.cloud']) async {
+  static Future<void> launchChromeBrowser([String url = '']) async {
+    if (url.trim().isEmpty) return;
     if (!kIsWeb && Platform.isWindows) {
       final chromeCandidates = [
         r'C:\Program Files\Google\Chrome\Application\chrome.exe',
@@ -309,14 +411,12 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
         }
       }
 
-      // Try running via Windows shell start chrome
       try {
         await Process.start('cmd.exe', ['/c', 'start', 'chrome', url], mode: ProcessStartMode.detached);
         return;
       } catch (_) {}
     }
 
-    // Standard fallback via url_launcher
     try {
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
@@ -333,4 +433,3 @@ final workstationShiftProvider =
     StateNotifierProvider<WorkstationShiftNotifier, WorkstationShiftState>((ref) {
   return WorkstationShiftNotifier();
 });
-

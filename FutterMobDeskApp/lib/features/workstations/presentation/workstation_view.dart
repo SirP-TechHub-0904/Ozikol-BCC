@@ -35,79 +35,73 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
   // Live UI ticker timer
   Timer? _tickerTimer;
 
-  // Pre-populated History of Works ledger with Overtime (OT)
-  final List<Map<String, dynamic>> _workHistory = [
-    {
-      'date': 'Today (Live)',
-      'start': '08:30 AM',
-      'close': '06:30 PM (Projected)',
-      'breakDuration': '45 mins',
-      'breakRange': '12:30 PM – 01:15 PM',
-      'inactiveDuration': '30 mins',
-      'inactiveRange': '02:10 PM – 02:40 PM',
-      'totalWorkHours': '9 hrs 15 mins',
-      'overtime': '+1h 30m OT',
-      'status': 'In Progress',
-      'isToday': true,
-      'hasOvertime': true,
-    },
-    {
-      'date': 'Yesterday (30 Oct)',
-      'start': '08:32 AM',
-      'close': '05:05 PM',
-      'breakDuration': '40 mins',
-      'breakRange': '12:45 PM – 01:25 PM',
-      'inactiveDuration': 'None',
-      'inactiveRange': '',
-      'totalWorkHours': '7 hrs 53 mins',
-      'overtime': '+5m OT',
-      'status': 'Approved',
-      'isToday': false,
-      'hasOvertime': true,
-    },
-    {
-      'date': 'Wed, 29 Oct 2026',
-      'start': '08:45 AM',
-      'close': '04:30 PM',
-      'breakDuration': '60 mins',
-      'breakRange': '01:00 PM – 02:00 PM',
-      'inactiveDuration': '15 mins',
-      'inactiveRange': '11:15 AM – 11:30 AM',
-      'totalWorkHours': '6 hrs 30 mins',
-      'overtime': '—',
-      'status': 'Approved',
-      'isToday': false,
-      'hasOvertime': false,
-    },
-    {
-      'date': 'Tue, 28 Oct 2026',
-      'start': '08:28 AM',
-      'close': '05:12 PM',
-      'breakDuration': '45 mins',
-      'breakRange': '12:30 PM – 01:15 PM',
-      'inactiveDuration': 'None',
-      'inactiveRange': '',
-      'totalWorkHours': '7 hrs 59 mins',
-      'overtime': '+12m OT',
-      'status': 'Approved',
-      'isToday': false,
-      'hasOvertime': true,
-    },
-    {
-      'date': 'Mon, 27 Oct 2026',
-      'start': '08:50 AM',
-      'close': '06:50 PM',
-      'breakDuration': '50 mins',
-      'breakRange': '01:10 PM – 02:00 PM',
-      'inactiveDuration': '20 mins',
-      'inactiveRange': '03:30 PM – 03:50 PM',
-      'totalWorkHours': '8 hrs 40 mins',
-      'overtime': '+1h 50m OT',
-      'status': 'Approved',
-      'isToday': false,
-      'hasOvertime': true,
-    },
-  ];
+  /// Dynamically builds the History of Works ledger from persisted shift records and live session state.
+  List<Map<String, dynamic>> _buildDynamicWorkHistory(WorkstationShiftState shiftState) {
+    final now = DateTime.now();
+    final todayKey = WorkstationShiftNotifier.formatDateKey(now);
+    final rows = <Map<String, dynamic>>[];
+
+    if (shiftState.hasStartedToday && shiftState.shiftStartTime != null) {
+      final net = shiftState.netEffectiveDuration;
+      final otMinutes = net.inMinutes > 480 ? (net.inMinutes - 480) : 0;
+      final hasOvertime = otMinutes > 0;
+      final otHours = otMinutes ~/ 60;
+      final otRemMins = otMinutes % 60;
+      final overtimeStr = hasOvertime
+          ? (otHours > 0 ? '+${otHours}h ${otRemMins}m OT' : '+${otRemMins}m OT')
+          : '—';
+
+      final liveStatus = shiftState.isOnBreak
+          ? 'On Break'
+          : (shiftState.isAtWork ? 'In Progress' : 'Closed');
+
+      rows.add({
+        'dateKey': todayKey,
+        'date': 'Today (${now.day} ${_getMonthName(now.month).substring(0, 3)})',
+        'start': WorkstationShiftNotifier.formatTime12(shiftState.shiftStartTime!),
+        'close': shiftState.isAtWork
+            ? 'In Progress'
+            : (shiftState.shiftEndTime != null
+                ? WorkstationShiftNotifier.formatTime12(shiftState.shiftEndTime!)
+                : 'Paused'),
+        'breakDuration': shiftState.breakMinutesTaken > 0
+            ? '${shiftState.breakMinutesTaken} mins'
+            : (shiftState.isOnBreak ? '${shiftState.currentBreakDuration.inMinutes} mins (Active)' : 'None'),
+        'breakRange': shiftState.lastBreakTimeRange,
+        'inactiveDuration': shiftState.midShiftClosureMinutes > 0
+            ? '${shiftState.midShiftClosureMinutes} mins'
+            : 'None',
+        'inactiveRange': shiftState.lastInactiveRange,
+        'totalWorkHours': _formatDurationHM(net),
+        'overtime': overtimeStr,
+        'status': liveStatus,
+        'isToday': true,
+        'hasOvertime': hasOvertime,
+      });
+    }
+
+    for (final item in shiftState.shiftHistory) {
+      final key = (item['dateKey'] ?? '').toString();
+      if (key == todayKey && rows.isNotEmpty) continue;
+      DateTime? parsedDate;
+      try {
+        if (item['timestamp'] != null) {
+          parsedDate = DateTime.tryParse(item['timestamp'].toString());
+        }
+      } catch (_) {}
+      final dateLabel = parsedDate != null
+          ? '${_getWeekdayAbbr(parsedDate.weekday)}, ${parsedDate.day} ${_getMonthName(parsedDate.month).substring(0, 3)} ${parsedDate.year}'
+          : (item['date'] ?? key).toString();
+
+      rows.add({
+        ...item,
+        'date': key == todayKey ? 'Today ($dateLabel)' : dateLabel,
+        'isToday': key == todayKey,
+      });
+    }
+
+    return rows;
+  }
 
   @override
   void initState() {
@@ -134,10 +128,6 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     return ref.read(workstationShiftProvider).grossDuration;
   }
 
-  Duration get _netEffectiveDuration {
-    return ref.read(workstationShiftProvider).netEffectiveDuration;
-  }
-
   String _formatDuration(Duration d) {
     final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60);
@@ -155,14 +145,10 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     final domain = widget.workspace?.primaryDomain ?? widget.workspace?.tenantDomain;
     final confirmed = await showPreWorkAppCheckerModal(context, ref, primaryDomain: domain);
     if (confirmed == true && mounted) {
-      setState(() {
-        _workHistory[0]['status'] = 'In Progress';
-        _workHistory[0]['close'] = '06:30 PM (Projected)';
-        _workHistory[0]['start'] = '08:30 AM';
-      });
+      setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('At-Work Mode activated! Fullscreen enforced & Chrome workspace launched.'),
+          content: Text('At-Work Mode activated! Fullscreen enforced & active shift logging started.'),
           backgroundColor: Color(0xFF16A34A),
         ),
       );
@@ -173,9 +159,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     final started = await showTakeBreakModal(context, ref);
     if (started == true && mounted) {
       final shiftState = ref.read(workstationShiftProvider);
-      setState(() {
-        _workHistory[0]['status'] = 'On Break';
-      });
+      setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${shiftState.currentBreakType} started! Work timer paused & desktop unlocked.'),
@@ -193,12 +177,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
       ref.read(workstationWatcherProvider).isBreakActive = false;
       await ref.read(workstationShiftProvider.notifier).endBreakAndResumeWork(primaryDomain: domain);
       if (!mounted) return;
-      final shiftState = ref.read(workstationShiftProvider);
-      setState(() {
-        _workHistory[0]['status'] = 'In Progress';
-        _workHistory[0]['breakDuration'] = '${shiftState.breakMinutesTaken} mins';
-        _workHistory[0]['breakRange'] = shiftState.lastBreakTimeRange;
-      });
+      setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Break concluded! Fullscreen re-engaged & active work logging resumed.'),
@@ -211,11 +190,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
   Future<void> _handleCloseWork() async {
     final closed = await showCloseFromWorkModal(context, ref);
     if (closed == true && mounted) {
-      setState(() {
-        _workHistory[0]['status'] = 'Closed';
-        _workHistory[0]['close'] = 'Closed Just Now';
-        _workHistory[0]['totalWorkHours'] = _formatDurationHM(_netEffectiveDuration);
-      });
+      setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Work session closed! Fullscreen restored. Click "Resume Work" to re-enter.'),
@@ -665,8 +640,12 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
               Expanded(
                 child: _buildTimeMetricBlock(
                   title: 'START WORK TIME',
-                  timeValue: '08:30 AM',
-                  subtitle: 'Clocked in today at station',
+                  timeValue: (hasStartedToday && shiftState.shiftStartTime != null)
+                      ? WorkstationShiftNotifier.formatTime12(shiftState.shiftStartTime!)
+                      : 'Not Started',
+                  subtitle: hasStartedToday
+                      ? 'Clocked in today at $machineName'
+                      : 'Click Start Work to clock in',
                   icon: Icons.login_rounded,
                   accentColor: const Color(0xFF16A34A),
                   isDark: isDark,
@@ -677,8 +656,14 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
               Expanded(
                 child: _buildTimeMetricBlock(
                   title: 'BREAK TIME RANGE',
-                  timeValue: '12:30 PM – 01:15 PM',
-                  subtitle: '${shiftState.breakMinutesTaken} mins taken today',
+                  timeValue: (shiftState.isOnBreak && shiftState.breakStartTime != null)
+                      ? '${WorkstationShiftNotifier.formatTime12(shiftState.breakStartTime!)} – Active'
+                      : (shiftState.lastBreakTimeRange.isNotEmpty
+                          ? shiftState.lastBreakTimeRange
+                          : 'No Break Taken'),
+                  subtitle: shiftState.isOnBreak
+                      ? '${shiftState.currentBreakDuration.inMinutes} mins in progress'
+                      : '${shiftState.breakMinutesTaken} mins taken today',
                   icon: Icons.coffee_rounded,
                   accentColor: const Color(0xFFD97706),
                   isDark: isDark,
@@ -690,11 +675,13 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                 child: _buildTimeMetricBlock(
                   title: 'CLOSE WORK TIME',
                   timeValue: isShiftActive
-                      ? '05:00 PM (Projected)'
-                      : (hasStartedToday ? '05:00 PM (Paused)' : '05:00 PM (Logged)'),
+                      ? 'In Progress (Active)'
+                      : (hasStartedToday && shiftState.shiftEndTime != null
+                          ? WorkstationShiftNotifier.formatTime12(shiftState.shiftEndTime!)
+                          : 'Not Logged'),
                   subtitle: isShiftActive
-                      ? 'Expected close today'
-                      : (hasStartedToday ? 'Paused off-station' : 'Concluded today'),
+                      ? 'Shift currently active'
+                      : (hasStartedToday ? 'Closed / Paused today' : 'Awaiting shift start'),
                   icon: Icons.logout_rounded,
                   accentColor: const Color(0xFF6366F1),
                   isDark: isDark,
@@ -774,6 +761,9 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     Color textPrimary,
     Color textSecondary,
   ) {
+    final shiftState = ref.watch(workstationShiftProvider);
+    final historyRows = _buildDynamicWorkHistory(shiftState);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -831,7 +821,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                       border: Border.all(color: borderColor),
                     ),
                     child: Text(
-                      '${_workHistory.length} Days Audited',
+                      '${historyRows.length} Days Audited',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSecondary),
                     ),
                   ),
@@ -841,62 +831,89 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
           ),
           const SizedBox(height: 14),
 
-          // Scrollable Container for Compact / Minimized Viewports (guarantees no text crunching)
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const minTableWidth = 920.0;
-              final effectiveWidth = constraints.maxWidth < minTableWidth ? minTableWidth : constraints.maxWidth;
+          if (historyRows.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: borderColor),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.schedule_rounded, size: 34, color: textSecondary),
+                  const SizedBox(height: 10),
+                  Text(
+                    'No Shift History Logged Yet',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: textPrimary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Click "Start Work" above to begin logging your live workstation shift, break times, and overtime.',
+                    style: TextStyle(fontSize: 12, color: textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          else
+            // Scrollable Container for Compact / Minimized Viewports (guarantees no text crunching)
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const minTableWidth = 920.0;
+                final effectiveWidth = constraints.maxWidth < minTableWidth ? minTableWidth : constraints.maxWidth;
 
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: effectiveWidth,
-                  child: Column(
-                    children: [
-                      // Ledger Table Headers
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: borderColor),
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: effectiveWidth,
+                    child: Column(
+                      children: [
+                        // Ledger Table Headers
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: borderColor),
+                          ),
+                          child: const Row(
+                            children: [
+                              SizedBox(width: 130, child: Text('DATE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                              SizedBox(width: 80, child: Text('START', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                              SizedBox(width: 140, child: Text('CLOSE WORK', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                              Expanded(flex: 3, child: Text('BREAKS TAKEN', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                              Expanded(flex: 3, child: Text('INACTIVE TIME', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                              SizedBox(width: 110, child: Text('WORK HRS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                              SizedBox(width: 100, child: Text('OVERTIME', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                              SizedBox(width: 95, child: Text('STATUS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                            ],
+                          ),
                         ),
-                        child: const Row(
-                          children: [
-                            SizedBox(width: 130, child: Text('DATE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                            SizedBox(width: 80, child: Text('START', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                            SizedBox(width: 140, child: Text('CLOSE WORK', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                            Expanded(flex: 3, child: Text('BREAKS TAKEN', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                            Expanded(flex: 3, child: Text('INACTIVE TIME', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                            SizedBox(width: 110, child: Text('WORK HRS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                            SizedBox(width: 100, child: Text('OVERTIME', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                            SizedBox(width: 95, child: Text('STATUS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                        const SizedBox(height: 8),
 
-                      // Ledger Rows
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _workHistory.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 6),
-                        itemBuilder: (context, index) {
-                          final row = _workHistory[index];
-                          final isToday = row['isToday'] == true;
-                          final dateStr = (row['date'] ?? '').toString();
-                          final startStr = (row['start'] ?? '08:30 AM').toString();
-                          final closeStr = (row['close'] ?? '05:00 PM').toString();
-                          final breakDur = (row['breakDuration'] ?? row['breaks'] ?? '45 mins').toString();
-                          final breakRng = (row['breakRange'] ?? '').toString();
-                          final inactiveDur = (row['inactiveDuration'] ?? row['closureGap'] ?? 'None').toString();
-                          final inactiveRng = (row['inactiveRange'] ?? '').toString();
-                          final totalWorkStr = (row['totalWorkHours'] ?? '7 hrs 30 mins').toString();
-                          final otStr = (row['overtime'] ?? '—').toString();
-                          final statusStr = (row['status'] ?? 'Approved').toString();
-                          final hasInactive = inactiveDur != 'None' && inactiveDur.isNotEmpty;
-                          final hasOT = (row['hasOvertime'] == true) || (otStr != '—' && otStr.isNotEmpty);
+                        // Ledger Rows
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: historyRows.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 6),
+                          itemBuilder: (context, index) {
+                            final row = historyRows[index];
+                            final isToday = row['isToday'] == true;
+                            final dateStr = (row['date'] ?? '').toString();
+                            final startStr = (row['start'] ?? '—').toString();
+                            final closeStr = (row['close'] ?? '—').toString();
+                            final breakDur = (row['breakDuration'] ?? row['breaks'] ?? 'None').toString();
+                            final breakRng = (row['breakRange'] ?? '').toString();
+                            final inactiveDur = (row['inactiveDuration'] ?? row['closureGap'] ?? 'None').toString();
+                            final inactiveRng = (row['inactiveRange'] ?? '').toString();
+                            final totalWorkStr = (row['totalWorkHours'] ?? '00 hrs 00 mins').toString();
+                            final otStr = (row['overtime'] ?? '—').toString();
+                            final statusStr = (row['status'] ?? 'Closed').toString();
+                            final hasInactive = inactiveDur != 'None' && inactiveDur.isNotEmpty;
+                            final hasOT = (row['hasOvertime'] == true) || (otStr != '—' && otStr.isNotEmpty);
 
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1097,8 +1114,15 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     final textP = isDark ? Colors.white : const Color(0xFF0F172A);
     final textS = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    DateTime currentMonth = DateTime(2026, 10, 1);
-    DateTime selectedDate = DateTime(2026, 10, 31);
+    final now = DateTime.now();
+    final shiftState = ref.read(workstationShiftProvider);
+    final historyByDateKey = <String, Map<String, dynamic>>{
+      for (final h in _buildDynamicWorkHistory(shiftState))
+        if (h['dateKey'] != null) h['dateKey'].toString(): h,
+    };
+
+    DateTime currentMonth = DateTime(now.year, now.month, 1);
+    DateTime selectedDate = DateTime(now.year, now.month, now.day);
 
     showDialog(
       context: context,
@@ -1116,7 +1140,11 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
 
             // Day inspection data
             final isWeekendSelected = selectedDate.weekday >= 6;
-            final isTodaySelected = selectedDate.year == 2026 && selectedDate.month == 10 && selectedDate.day == 31;
+            final isTodaySelected = selectedDate.year == now.year &&
+                selectedDate.month == now.month &&
+                selectedDate.day == now.day;
+            final selectedKey = WorkstationShiftNotifier.formatDateKey(selectedDate);
+            final selectedRecord = historyByDateKey[selectedKey];
 
             return Dialog(
               backgroundColor: surface,
@@ -1233,8 +1261,8 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                                 OutlinedButton(
                                   onPressed: () {
                                     setDialogState(() {
-                                      currentMonth = DateTime(2026, 10, 1);
-                                      selectedDate = DateTime(2026, 10, 31);
+                                      currentMonth = DateTime(now.year, now.month, 1);
+                                      selectedDate = DateTime(now.year, now.month, now.day);
                                     });
                                   },
                                   style: OutlinedButton.styleFrom(
@@ -1302,21 +1330,29 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
 
                             final cellDate = DateTime(currentMonth.year, currentMonth.month, dayNum);
                             final isWeekend = cellDate.weekday >= 6;
-                            final isToday = cellDate.year == 2026 && cellDate.month == 10 && cellDate.day == 31;
+                            final isToday = cellDate.year == now.year &&
+                                cellDate.month == now.month &&
+                                cellDate.day == now.day;
                             final isSelected = cellDate.year == selectedDate.year &&
                                 cellDate.month == selectedDate.month &&
                                 cellDate.day == selectedDate.day;
+                            final cellKey = WorkstationShiftNotifier.formatDateKey(cellDate);
+                            final cellRec = historyByDateKey[cellKey];
 
-                            // Mock shift data for October 2026
                             String shiftPill = isWeekend ? 'Rest Day' : '9AM – 5PM';
                             Color pillBg = isWeekend ? const Color(0xFFF1F5F9) : const Color(0xFFEFF6FF);
                             Color pillFg = isWeekend ? const Color(0xFF94A3B8) : AppColors.primary;
 
-                            // Overtime highlights on specific weekdays
-                            if (cellDate.month == 10 && (dayNum == 27 || dayNum == 30 || dayNum == 31)) {
-                              shiftPill = dayNum == 31 ? 'Active (+OT)' : '+OT Worked';
-                              pillBg = const Color(0xFFFEF3C7);
-                              pillFg = const Color(0xFFB45309);
+                            if (cellRec != null) {
+                              if (cellRec['hasOvertime'] == true) {
+                                shiftPill = '${cellRec['overtime']}';
+                                pillBg = const Color(0xFFFEF3C7);
+                                pillFg = const Color(0xFFB45309);
+                              } else {
+                                shiftPill = '${cellRec['status']}';
+                                pillBg = const Color(0xFFDCFCE7);
+                                pillFg = const Color(0xFF15803D);
+                              }
                             }
 
                             return Material(
@@ -1455,34 +1491,48 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                             ),
                             Row(
                               children: [
-                                if (isTodaySelected) ...[
+                                if (selectedRecord != null) ...[
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFDCFCE7),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Text(
-                                      'ACTIVE SHIFT • 08:30 AM CLOCK-IN',
-                                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
+                                    child: Text(
+                                      '${selectedRecord['status']} • ${selectedRecord['start']} CLOCK-IN',
+                                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  if (selectedRecord['hasOvertime'] == true) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFEF3C7),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFD97706)),
+                                          const SizedBox(width: 2),
+                                          Text(
+                                            '${selectedRecord['overtime']}',
+                                            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ] else if (isTodaySelected) ...[
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFFEF3C7),
+                                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
-                                    child: const Row(
-                                      children: [
-                                        Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFD97706)),
-                                        SizedBox(width: 2),
-                                        Text(
-                                          '+1h 30m OT Eligible',
-                                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
-                                        ),
-                                      ],
+                                    child: Text(
+                                      'SHIFT NOT STARTED TODAY',
+                                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: textS),
                                     ),
                                   ),
                                 ] else if (isWeekendSelected) ...[
@@ -1501,12 +1551,12 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFDCFCE7),
+                                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: const Text(
-                                      'Worked & Audited',
-                                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF15803D)),
+                                      'Standard Roster (9:00 AM – 5:00 PM)',
+                                      style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.primary),
                                     ),
                                   ),
                                 ],
