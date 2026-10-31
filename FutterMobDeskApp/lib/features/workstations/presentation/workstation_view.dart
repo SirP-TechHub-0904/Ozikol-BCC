@@ -7,6 +7,7 @@ import '../../../core/localization/language_provider.dart';
 import '../services/workstation_watcher_service.dart';
 import '../state/workstation_shift_state.dart';
 import 'widgets/close_from_work_modal.dart';
+import 'widgets/pre_work_app_checker_modal.dart';
 
 /// <summary>
 /// Workstation & Shift Tracker Screen (bcp-workspace).
@@ -15,7 +16,7 @@ import 'widgets/close_from_work_modal.dart';
 /// 2. Today's Shift Card (Start Work, Break Range, Close Work Time)
 /// 3. Shift Calendar & Future Schedule Viewer Modal
 /// 4. History of Works Ledger with Automated Overtime (OT) Detection & Responsive Min-Width Scrolling
-/// 5. Sandboxed Work Folder Access
+/// 5. Official Corporate Work Drive Access
 /// </summary>
 class WorkstationView extends ConsumerStatefulWidget {
   final dynamic workspace;
@@ -150,8 +151,8 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
 
   Future<void> _handleStartWork() async {
     final domain = widget.workspace?.primaryDomain ?? widget.workspace?.tenantDomain;
-    await ref.read(workstationShiftProvider.notifier).startOrResumeWork(primaryDomain: domain);
-    if (mounted) {
+    final confirmed = await showPreWorkAppCheckerModal(context, ref, primaryDomain: domain);
+    if (confirmed == true && mounted) {
       setState(() {
         _workHistory[0]['status'] = 'In Progress';
         _workHistory[0]['close'] = '06:30 PM (Projected)';
@@ -287,15 +288,23 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                OutlinedButton.icon(
-                  onPressed: () => _openLocalFolder(watcher.approvedDirectory),
-                  icon: const Icon(Icons.folder_open_rounded, size: 16),
-                  label: const Text('Open Work Folder'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: Color(0xFFBFDBFE)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                Tooltip(
+                  message: 'Assigned Company Storage: ${watcher.approvedDirectory.isNotEmpty ? watcher.approvedDirectory : "C:\\Company-WorkDrive"}',
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openLocalFolder(watcher.approvedDirectory),
+                    icon: const Icon(Icons.folder_shared_rounded, size: 16),
+                    label: Text(
+                      watcher.approvedDirectory.isNotEmpty
+                          ? 'Company Work Drive (${watcher.approvedDirectory})'
+                          : 'Company Work Drive',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
+                      side: const BorderSide(color: Color(0xFFBFDBFE)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    ),
                   ),
                 ),
               ],

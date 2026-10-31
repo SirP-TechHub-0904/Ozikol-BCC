@@ -260,3 +260,4 @@ final workstationShiftProvider =
     StateNotifierProvider<WorkstationShiftNotifier, WorkstationShiftState>((ref) {
   return WorkstationShiftNotifier();
 });
+

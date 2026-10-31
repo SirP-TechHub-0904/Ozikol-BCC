@@ -88,7 +88,7 @@ export interface ViolationLogItem {
           </div>
           <h1 class="page-title">{{ 'workspace.title' | translate:'Workstations & Application Gatekeeper' }}</h1>
           <p class="page-subtitle">
-            {{ 'workspace.subtitle' | translate:'Supervise native office PCs, enforce company-only application execution, sandbox working documents, and prevent unauthorized side-job activities.' }}
+            {{ 'workspace.subtitle' | translate:'Supervise native office PCs, enforce company-only application execution, isolate corporate working documents, and prevent unauthorized side-job activities.' }}
           </p>
         </div>
         <div class="header-right">
@@ -161,7 +161,7 @@ export interface ViolationLogItem {
 
         <button class="tab-btn" [class.active]="activeTab === 'policies'" (click)="activeTab = 'policies'">
           <span class="material-symbols-outlined">rule</span>
-          <span>App Whitelist & Sandbox Policy ({{ appPolicies.length }})</span>
+          <span>App Whitelist & Directory Policy ({{ appPolicies.length }})</span>
         </button>
 
         <button class="tab-btn" [class.active]="activeTab === 'requests'" (click)="activeTab = 'requests'">
@@ -325,7 +325,7 @@ export interface ViolationLogItem {
             <div class="card-box mt-4">
               <h3 class="box-title">
                 <span class="material-symbols-outlined text-blue">folder_supervised</span>
-                <span>Document Sandboxing & Peripheral Security</span>
+                <span>Corporate Work Directory & Peripheral Security</span>
               </h3>
               <p class="box-desc">Prevent staff from editing documents outside approved company folders or sneaking side jobs on USB drives.</p>
 
@@ -347,7 +347,7 @@ export interface ViolationLogItem {
               <div class="form-actions">
                 <button (click)="saveFilePolicy()" class="btn-primary">
                   <span class="material-symbols-outlined">save</span>
-                  <span>Update Sandbox Policy</span>
+                  <span>Update Directory Policy</span>
                 </button>
               </div>
             </div>
@@ -1388,10 +1388,10 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
   saveFilePolicy(): void {
     this.api.post<any>('/Workstations/policies/file-rules', this.filePolicy).subscribe({
       next: () => {
-        this.toast.success('Document sandbox and USB policies updated.');
+        this.toast.success('Corporate document directory and USB policies updated.');
       },
       error: () => {
-        this.toast.error('Failed to update sandbox policy.');
+        this.toast.error('Failed to update directory policy.');
       }
     });
   }
