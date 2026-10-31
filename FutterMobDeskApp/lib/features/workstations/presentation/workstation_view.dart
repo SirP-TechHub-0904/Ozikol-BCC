@@ -1025,7 +1025,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
               backgroundColor: surface,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 840, maxHeight: 760),
+                constraints: BoxConstraints(maxWidth: 840, maxHeight: (MediaQuery.of(context).size.height * 0.90).clamp(520.0, 780.0)),
                 child: Padding(
                   padding: const EdgeInsets.all(22),
                   child: Column(
@@ -1177,10 +1177,12 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                       ),
                       const SizedBox(height: 4),
 
-                      // 4. Full Month Days Grid
+                      // 4. Full Month Days Grid (Smoothly scrollable)
                       Expanded(
-                        child: GridView.builder(
-                          physics: const NeverScrollableScrollPhysics(),
+                        child: Scrollbar(
+                          thumbVisibility: true,
+                          child: GridView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 7,
                             mainAxisSpacing: 6,
@@ -1298,6 +1300,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                               ),
                             );
                           },
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
