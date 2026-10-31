@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1425,13 +1425,35 @@ foreach (\$b in \$browsers) {
     } catch (_) {}
   }
 
-  /// Captures a compressed PNG snapshot of the primary Windows desktop screen via native Win32 GDI32 FFI
-  /// (zero PowerShell subprocesses, immune to Windows Defender AMSI blocks) and logs it to the server.
+  /// Captures a compressed PNG snapshot of the primary Windows desktop screen via native Win32 GDI32 FFI,
+  /// uploads the binary image file to `/api/Workstations/upload-screenshot` (Cloudinary / media storage),
+  /// and logs only the returned URL to the activity ledger (zero files stored in the SQL database).
   Future<bool> captureAndUploadScreenshot({String reason = 'Periodic active duty screen capture'}) async {
     if (kIsWeb || !Platform.isWindows) return false;
     try {
-      final dataUri = await _captureDesktopScreenNativeFfi();
-      if (dataUri == null || dataUri.isEmpty) return false;
+      final pngBytes = await _captureDesktopScreenBytesNativeFfi();
+      if (pngBytes == null || pngBytes.isEmpty) return false;
+
+      final stationKey = _stationKey ?? 'WS-${Platform.localHostname.toUpperCase()}';
+      final fileName = 'ws_${Platform.localHostname.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}.png';
+
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          pngBytes,
+          filename: fileName,
+          contentType: DioMediaType.parse('image/png'),
+        ),
+        'stationKey': stationKey,
+        'machineName': Platform.localHostname,
+      });
+
+      final uploadRes = await _api.dio.post(
+        '/api/Workstations/upload-screenshot',
+        data: formData,
+      );
+
+      final uploadedUrl = uploadRes.data is Map ? (uploadRes.data['url'] as String?) : null;
+      if (uploadedUrl == null || uploadedUrl.isEmpty) return false;
 
       final title = await _getForegroundWindowTitle();
       final procName = _deriveProcessFromTitle(title) ?? _lastForegroundProcess ?? 'Desktop';
@@ -1445,7 +1467,7 @@ foreach (\$b in \$browsers) {
         windowTitle: title,
         fileName: fileInfo['fileName'],
         filePath: fileInfo['filePath'] ?? _lastForegroundFilePath,
-        screenshotUrl: dataUri,
+        screenshotUrl: uploadedUrl,
         details: reason,
       );
       return true;
@@ -1454,8 +1476,8 @@ foreach (\$b in \$browsers) {
     }
   }
 
-  /// Native Win32 User32/GDI32 screen capture via `dart:ffi` + `dart:ui` PNG encoder.
-  Future<String?> _captureDesktopScreenNativeFfi() async {
+  /// Native Win32 User32/GDI32 screen capture via `dart:ffi` + `dart:ui` PNG encoder returning raw PNG bytes.
+  Future<Uint8List?> _captureDesktopScreenBytesNativeFfi() async {
     if (!Platform.isWindows) return null;
     final user32 = ffi.DynamicLibrary.open('user32.dll');
     final gdi32 = ffi.DynamicLibrary.open('gdi32.dll');
@@ -1566,8 +1588,7 @@ foreach (\$b in \$browsers) {
     uiImage.dispose();
     if (byteData == null) return null;
 
-    final pngBytes = byteData.buffer.asUint8List();
-    return 'data:image/png;base64,${base64Encode(pngBytes)}';
+    return byteData.buffer.asUint8List();
   }
 
   DateTime? _lastDirectoryAlertTime;

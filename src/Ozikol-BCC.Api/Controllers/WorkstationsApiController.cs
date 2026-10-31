@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Application.Interfaces.Services;
+using Ozikol_BCC.Application.Services.Cloudinary;
 using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Api.Controllers
@@ -25,6 +28,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly DashboardDbContext _db;
         private readonly ITenantActivityLogger? _activityLogger;
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
+        private readonly ICloudinaryService? _cloudinaryService;
 
         private static readonly ConcurrentDictionary<string, bool> _pendingScreenshotRequests = new(StringComparer.OrdinalIgnoreCase);
         private static bool _activityTableChecked = false;
@@ -32,11 +36,13 @@ namespace Ozikol_BCC.Api.Controllers
         public WorkstationsApiController(
             DashboardDbContext db,
             ITenantActivityLogger? activityLogger = null,
-            ICentralNotificationDispatcher? notificationDispatcher = null)
+            ICentralNotificationDispatcher? notificationDispatcher = null,
+            ICloudinaryService? cloudinaryService = null)
         {
             _db = db;
             _activityLogger = activityLogger;
             _notificationDispatcher = notificationDispatcher;
+            _cloudinaryService = cloudinaryService;
         }
 
         // =====================================================================
@@ -969,6 +975,14 @@ namespace Ozikol_BCC.Api.Controllers
                 cleanDetails = $"Active browser window: {cleanWindow ?? "Web Browser"}";
             }
 
+            // Never store raw Base64 image data inside the SQL database; persist as a file/cloud URL
+            var resolvedScreenshotUrl = dto.ScreenshotUrl?.Trim();
+            if (!string.IsNullOrWhiteSpace(resolvedScreenshotUrl) &&
+                resolvedScreenshotUrl.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
+            {
+                resolvedScreenshotUrl = await PersistDataUriScreenshotAsync(resolvedScreenshotUrl, stationKey);
+            }
+
             var entry = new BcpWorkstationActivityLog
             {
                 WorkstationId = dto.WorkstationId ?? station?.Id,
@@ -986,7 +1000,7 @@ namespace Ozikol_BCC.Api.Controllers
                 StartedAt = dto.StartedAt ?? DateTime.UtcNow,
                 EndedAt = dto.EndedAt,
                 DurationSeconds = dto.DurationSeconds,
-                ScreenshotUrl = dto.ScreenshotUrl,
+                ScreenshotUrl = resolvedScreenshotUrl,
                 Details = cleanDetails,
                 Timestamp = DateTime.UtcNow
             };
@@ -1118,7 +1132,125 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Uploads a binary workstation screenshot file (multipart/form-data) to Cloudinary or local file storage
+        /// and returns the hosted URL so zero image bytes are ever stored in SQL Server.
+        /// </summary>
+        [HttpPost("upload-screenshot")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadWorkstationScreenshot([FromForm] UploadWorkstationScreenshotRequest request)
+        {
+            if (request?.File == null || request.File.Length == 0)
+            {
+                return BadRequest(new { success = false, message = "No screenshot file uploaded." });
+            }
+
+            var stationPrefix = !string.IsNullOrWhiteSpace(request.StationKey)
+                ? request.StationKey.Trim().ToLowerInvariant()
+                : "ws";
+
+            // 1. Try Cloudinary first (platform standard media storage)
+            if (_cloudinaryService != null)
+            {
+                try
+                {
+                    var (secureUrl, publicId) = await _cloudinaryService.UploadImageWithPublicIdAsync(
+                        request.File,
+                        "workstation-screenshots");
+                    if (!string.IsNullOrWhiteSpace(secureUrl))
+                    {
+                        return Ok(new { success = true, url = secureUrl, key = publicId });
+                    }
+                }
+                catch
+                {
+                    // Fall back to local file storage if offline
+                }
+            }
+
+            // 2. Local file storage fallback (Uploads/workstation-screenshots/)
+            using var ms = new MemoryStream();
+            await request.File.CopyToAsync(ms);
+            var localUrl = await SaveScreenshotBytesToDiskAsync(ms.ToArray(), stationPrefix, Path.GetExtension(request.File.FileName));
+            return Ok(new { success = true, url = localUrl });
+        }
+
+        /// <summary>
+        /// Serves locally stored workstation screenshot files when running offline or in local development.
+        /// </summary>
+        [HttpGet("screenshots/{fileName}")]
+        [AllowAnonymous]
+        public IActionResult GetWorkstationScreenshotFile(string fileName)
+        {
+            var safeFile = Path.GetFileName(fileName);
+            if (string.IsNullOrWhiteSpace(safeFile)) return NotFound();
+
+            var folder = Path.Combine(AppContext.BaseDirectory, "Uploads", "workstation-screenshots");
+            var fullPath = Path.Combine(folder, safeFile);
+            if (!System.IO.File.Exists(fullPath)) return NotFound();
+
+            var ext = Path.GetExtension(safeFile).ToLowerInvariant();
+            var contentType = ext == ".jpg" || ext == ".jpeg" ? "image/jpeg" : "image/png";
+            return PhysicalFile(fullPath, contentType);
+        }
+
+        private async Task<string?> PersistDataUriScreenshotAsync(string dataUri, string stationKey)
+        {
+            try
+            {
+                var commaIdx = dataUri.IndexOf(',');
+                if (commaIdx < 0) return null;
+                var header = dataUri.Substring(0, commaIdx).ToLowerInvariant();
+                var b64 = dataUri.Substring(commaIdx + 1).Trim();
+                var bytes = Convert.FromBase64String(b64);
+                var ext = header.Contains("jpeg") || header.Contains("jpg") ? ".jpg" : ".png";
+                var contentType = ext == ".jpg" ? "image/jpeg" : "image/png";
+                var fileName = $"{stationKey.ToLowerInvariant()}_{DateTime.UtcNow:yyyyMMdd_HHmmssfff}{ext}";
+
+                if (_cloudinaryService != null)
+                {
+                    try
+                    {
+                        using var stream = new MemoryStream(bytes);
+                        var formFile = new FormFile(stream, 0, bytes.Length, "file", fileName)
+                        {
+                            Headers = new HeaderDictionary(),
+                            ContentType = contentType
+                        };
+                        var (secureUrl, _) = await _cloudinaryService.UploadImageWithPublicIdAsync(formFile, "workstation-screenshots");
+                        if (!string.IsNullOrWhiteSpace(secureUrl))
+                        {
+                            return secureUrl;
+                        }
+                    }
+                    catch
+                    {
+                        // Fall back to local disk file
+                    }
+                }
+
+                return await SaveScreenshotBytesToDiskAsync(bytes, stationKey, ext);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private async Task<string> SaveScreenshotBytesToDiskAsync(byte[] bytes, string stationKey, string? ext = ".png")
+        {
+            var cleanExt = string.IsNullOrWhiteSpace(ext) || !ext.StartsWith(".") ? ".png" : ext.ToLowerInvariant();
+            var safePrefix = new string((stationKey ?? "ws").Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_').ToArray()).ToLowerInvariant();
+            var fileName = $"{safePrefix}_{DateTime.UtcNow:yyyyMMdd_HHmmssfff}_{Guid.NewGuid().ToString("N")[..6]}{cleanExt}";
+            var folder = Path.Combine(AppContext.BaseDirectory, "Uploads", "workstation-screenshots");
+            Directory.CreateDirectory(folder);
+            var fullPath = Path.Combine(folder, fileName);
+            await System.IO.File.WriteAllBytesAsync(fullPath, bytes);
+            return $"{Request.Scheme}://{Request.Host}/api/Workstations/screenshots/{fileName}";
+        }
+
+        /// <summary>
         /// Ensures [dbo].[BcpWorkstationActivityLogs] exists in the tenant database without requiring a manual migration.
+        /// Also purges any legacy Base64 data URIs so zero image blobs are stored in SQL Server.
         /// </summary>
         private async Task EnsureActivityLogTableExistsAsync()
         {
@@ -1145,12 +1277,16 @@ BEGIN
         [StartedAt] datetime2 NOT NULL,
         [EndedAt] datetime2 NULL,
         [DurationSeconds] int NULL,
-        [ScreenshotUrl] nvarchar(max) NULL,
+        [ScreenshotUrl] nvarchar(1000) NULL,
         [Details] nvarchar(1000) NULL,
         [Timestamp] datetime2 NOT NULL
     );
     CREATE INDEX [IX_BcpWorkstationActivityLogs_Timestamp] ON [dbo].[BcpWorkstationActivityLogs] ([Timestamp] DESC);
     CREATE INDEX [IX_BcpWorkstationActivityLogs_MachineName] ON [dbo].[BcpWorkstationActivityLogs] ([MachineName]);
+END
+ELSE
+BEGIN
+    DELETE FROM [dbo].[BcpWorkstationActivityLogs] WHERE [ScreenshotUrl] LIKE N'data:image/%';
 END";
                 await _db.Database.ExecuteSqlRawAsync(sql);
                 _activityTableChecked = true;
@@ -1272,6 +1408,13 @@ END";
 
     public class RequestScreenshotDto
     {
+        public string? StationKey { get; set; }
+        public string? MachineName { get; set; }
+    }
+
+    public class UploadWorkstationScreenshotRequest
+    {
+        public IFormFile? File { get; set; }
         public string? StationKey { get; set; }
         public string? MachineName { get; set; }
     }
