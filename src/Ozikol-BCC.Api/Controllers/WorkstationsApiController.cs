@@ -559,6 +559,18 @@ namespace Ozikol_BCC.Api.Controllers
                 data = req
             });
         }
+        /// <summary>
+        /// Dynamically resolves the approved company document path from the tenant's brand name.
+        /// Guaranteed 100% white-label: uses the tenant's brand name (e.g. C:\AcmeGlobal-Workspace) instead of any hardcoded vendor name.
+        /// </summary>
+        private async Task<string> ResolveDefaultApprovedDirectoryAsync()
+        {
+            var siteSetting = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var brand = siteSetting?.BrandName ?? "Workspace";
+            var safeBrand = System.Text.RegularExpressions.Regex.Replace(brand, @"[^a-zA-Z0-9_\-]", "");
+            if (string.IsNullOrWhiteSpace(safeBrand)) safeBrand = "Workspace";
+            return $@"C:\{safeBrand}-Workspace";
+        }
     }
 
     // =========================================================================
@@ -644,17 +656,4 @@ namespace Ozikol_BCC.Api.Controllers
         public bool AddToPermanentWhitelist { get; set; }
         public string? DisplayName { get; set; }
     }
-        /// <summary>
-        /// Dynamically resolves the approved company document path from the tenant's brand name.
-        /// Guaranteed 100% white-label: uses the tenant's brand name (e.g. C:\AcmeGlobal-Workspace) instead of any hardcoded vendor name.
-        /// </summary>
-        private async Task<string> ResolveDefaultApprovedDirectoryAsync()
-        {
-            var siteSetting = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
-            var brand = siteSetting?.BrandName ?? siteSetting?.SiteName ?? "Workspace";
-            var safeBrand = System.Text.RegularExpressions.Regex.Replace(brand, @"[^a-zA-Z0-9_\-]", "");
-            if (string.IsNullOrWhiteSpace(safeBrand)) safeBrand = "Workspace";
-            return $@"C:\{safeBrand}-Workspace";
-        }
-
 }
