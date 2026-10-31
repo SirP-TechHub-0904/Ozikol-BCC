@@ -387,15 +387,16 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
       bool scannedWithTaskbarFilter = false;
 
       // 1. Primary Scan: Filter ONLY interactive applications with visible windows on the Windows Taskbar
+      // NOTE: Uses single quotes inside the PowerShell command so CreateProcessW / powershell.exe never strips double quotes.
       try {
         final psResult = await Process.run('powershell', [
           '-NoProfile',
           '-NonInteractive',
           '-Command',
-          'Get-Process | Where-Object { \$_.MainWindowHandle -ne 0 -and \$_.MainWindowTitle.Trim() -ne "" } | ForEach-Object { \$_.ProcessName + ".exe|" + \$_.MainWindowTitle }',
-        ]).timeout(const Duration(seconds: 4));
+          "Get-Process | Where-Object { \$_.MainWindowHandle -ne 0 -and \$_.MainWindowTitle.Trim() -ne '' } | ForEach-Object { \$_.ProcessName + '.exe|' + \$_.MainWindowTitle }",
+        ]).timeout(const Duration(seconds: 8));
 
-        if (psResult.exitCode == 0 && psResult.stdout.toString().trim().isNotEmpty) {
+        if (psResult.exitCode == 0) {
           final lines = psResult.stdout.toString().split(RegExp(r'[\r\n]+'));
           for (final line in lines) {
             final trimmed = line.trim();
@@ -417,13 +418,13 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
         debugPrint('[PreWorkAppChecker] Taskbar window scan error: $e');
       }
 
-      // 2. Fallback to tasklist if PowerShell scan failed or returned empty
+      // 2. Fallback to fast tasklist (without slow /FI STATUS WMI query) if PowerShell failed
       if (!scannedWithTaskbarFilter) {
         try {
           final result = await Process.run(
             'tasklist',
-            ['/FI', 'STATUS eq RUNNING', '/FI', 'SESSIONNAME eq Console', '/FO', 'CSV', '/NH'],
-          ).timeout(const Duration(seconds: 3));
+            ['/FI', 'SESSIONNAME eq Console', '/FO', 'CSV', '/NH'],
+          ).timeout(const Duration(seconds: 6));
 
           if (result.exitCode == 0) {
             final lines = result.stdout.toString().split('\n');
@@ -482,11 +483,8 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
 
   Future<void> _closeAllDetectedApps() async {
     setState(() => _isClosingAll = true);
-    final watcher = ref.read(workstationWatcherProvider);
     if (!kIsWeb && Platform.isWindows) {
       for (final app in _detectedApps) {
-        // Keep approved apps open; only close unapproved apps!
-        if (watcher.isProcessApproved(app.processName)) continue;
         try {
           await Process.run('taskkill', ['/F', '/IM', app.processName]);
         } catch (_) {}
@@ -515,7 +513,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Admin approval requested for ${app.displayName}. Will turn Approved automatically once approved.'),
+          content: Text('Admin approval requested for ${app.displayName}. Close all apps to start work, then open approved apps from your Workstation.'),
           backgroundColor: const Color(0xFF4338CA),
           duration: const Duration(seconds: 2),
         ),
@@ -552,21 +550,16 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
   }
 
   Future<void> _confirmAndStartWork() async {
-    final watcher = ref.read(workstationWatcherProvider);
-    final unapprovedApps = _detectedApps.where((a) => !watcher.isProcessApproved(a.processName)).toList();
-
-    // Unapproved apps MUST be closed before entering active work duty; approved apps remain open!
-    if (unapprovedApps.isNotEmpty && !kIsWeb && Platform.isWindows) {
-      setState(() => _isClosingAll = true);
-      for (final app in unapprovedApps) {
-        try {
-          await Process.run('taskkill', ['/F', '/IM', app.processName]);
-        } catch (_) {}
-      }
-      await Future.delayed(const Duration(milliseconds: 400));
-      if (mounted) {
-        setState(() => _isClosingAll = false);
-      }
+    // Strict Compliance Rule: Work CANNOT start until ALL running applications are closed.
+    if (_detectedApps.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please close all running applications first. You can open your Approved Apps from inside your Workstation after starting work.'),
+          backgroundColor: Color(0xFFDC2626),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
     }
 
     if (!mounted) return;
@@ -588,7 +581,6 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     final hasApps = _detectedApps.isNotEmpty;
     final approvedAppsCount = _detectedApps.where((a) => watcher.isProcessApproved(a.processName)).length;
     final unapprovedAppsCount = _detectedApps.length - approvedAppsCount;
-    final allDetectedAreApproved = hasApps && unapprovedAppsCount == 0;
 
     return Dialog(
       backgroundColor: bgColor,
@@ -610,12 +602,12 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: (hasApps && !allDetectedAreApproved) ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
+                      color: hasApps ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      (hasApps && !allDetectedAreApproved) ? Icons.warning_amber_rounded : Icons.verified_user_rounded,
-                      color: (hasApps && !allDetectedAreApproved) ? const Color(0xFFD97706) : const Color(0xFF16A34A),
+                      hasApps ? Icons.warning_amber_rounded : Icons.verified_user_rounded,
+                      color: hasApps ? const Color(0xFFD97706) : const Color(0xFF16A34A),
                       size: 24,
                     ),
                   ),
@@ -635,7 +627,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Approved taskbar apps can stay open; unapproved apps must be closed or approved.',
+                          'Close all running applications before starting work. Open your Approved Apps from inside your Workstation.',
                           style: TextStyle(
                             fontSize: 12.5,
                             color: textSecondary,
@@ -676,41 +668,6 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                     ],
                   ),
                 )
-              else if (allDetectedAreApproved)
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFBBF7D0)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'All $approvedAppsCount Open Taskbar Application(s) Approved — Can Work!',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF166534),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            const Text(
-                              'Your open applications have active permission. You can proceed directly to work.',
-                              style: TextStyle(fontSize: 11.5, color: Color(0xFF15803D)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                )
               else if (hasApps)
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -728,8 +685,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '$unapprovedAppsCount Unapproved App(s) Must Close or Be Approved'
-                              '${approvedAppsCount > 0 ? " ($approvedAppsCount Approved Can Work)" : ""}',
+                              '${_detectedApps.length} Running Application(s) Detected — Close All Apps to Start Work',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
@@ -738,7 +694,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                             ),
                             const SizedBox(height: 2),
                             const Text(
-                              'Approved apps stay open. Unapproved apps must be closed or approved by Admin to proceed.',
+                              'Work cannot start until all running applications are closed. Once inside your Workstation, open your Approved Apps from the Approved Apps launcher.',
                               style: TextStyle(fontSize: 11.5, color: Color(0xFFB91C1C)),
                             ),
                           ],
@@ -790,7 +746,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    hasApps ? 'OPEN TASKBAR APPLICATIONS (${_detectedApps.length})' : 'COMPLIANCE STATUS',
+                    hasApps ? 'ACTIVE APPLICATIONS TO CLOSE (${_detectedApps.length})' : 'COMPLIANCE STATUS',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
@@ -810,7 +766,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         ),
                       ),
-                      if (unapprovedAppsCount > 0) ...[
+                      if (hasApps) ...[
                         const SizedBox(width: 6),
                         OutlinedButton.icon(
                           onPressed: _isClosingAll ? null : _closeAllDetectedApps,
@@ -822,7 +778,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                                 )
                               : const Icon(Icons.close_rounded, size: 14),
                           label: Text(
-                            _isClosingAll ? 'Closing...' : 'Close Unapproved Apps',
+                            _isClosingAll ? 'Closing...' : 'Close All Apps',
                             style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
                           ),
                           style: OutlinedButton.styleFrom(
@@ -949,7 +905,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                                                 Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF16A34A)),
                                                 SizedBox(width: 4),
                                                 Text(
-                                                  'Approved • Can Work',
+                                                  'Approved • Open from Workstation',
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.w800,
@@ -1081,17 +1037,22 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                         ),
                       ),
                     ElevatedButton.icon(
-                      onPressed: _confirmAndStartWork,
-                      icon: const Icon(Icons.play_circle_filled_rounded, size: 16),
+                      onPressed: (hasApps || _isScanning) ? null : _confirmAndStartWork,
+                      icon: Icon(
+                        hasApps ? Icons.lock_rounded : Icons.play_circle_filled_rounded,
+                        size: 16,
+                      ),
                       label: Text(
-                        unapprovedAppsCount > 0
-                            ? 'Close Unapproved ($unapprovedAppsCount) & Proceed to Work'
+                        hasApps
+                            ? 'Close All Running Apps (${_detectedApps.length}) to Start Work'
                             : 'Start Active Work Duty',
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF16A34A),
                         foregroundColor: Colors.white,
+                        disabledBackgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        disabledForegroundColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         elevation: 0,

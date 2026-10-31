@@ -356,6 +356,7 @@ class _ApprovedAppsDialogState extends ConsumerState<ApprovedAppsDialog> {
     // so the newly launched external application window is visible in front of the user.
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       try {
+        await windowManager.setAlwaysOnTop(false);
         if (await windowManager.isFullScreen()) {
           await windowManager.setFullScreen(false);
         }

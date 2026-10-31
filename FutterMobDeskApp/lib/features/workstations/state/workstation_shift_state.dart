@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
@@ -222,12 +223,6 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
 
     // Enforce Fullscreen on Desktop
     await _enforceFullScreen(true);
-
-    // Auto-launch Google Chrome default browser if domain is configured
-    if (primaryDomain != null && primaryDomain.trim().isNotEmpty) {
-      final url = primaryDomain.startsWith('http') ? primaryDomain : 'https://$primaryDomain';
-      await launchChromeBrowser(url);
-    }
   }
 
   /// Concludes or pauses shift dynamically.
@@ -369,12 +364,19 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
     }
   }
 
-  /// Toggles or sets fullscreen via window_manager safely.
+  static const MethodChannel _kioskChannel = MethodChannel('com.ozikol.bcc/kiosk');
+
+  /// Toggles or sets fullscreen and native Windows key-combination lockdown safely.
   Future<void> _enforceFullScreen(bool fullScreen) async {
     if (kIsWeb || (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux)) {
       return;
     }
     try {
+      if (Platform.isWindows) {
+        try {
+          await _kioskChannel.invokeMethod('setLockdownMode', {'enabled': fullScreen});
+        } catch (_) {}
+      }
       if (fullScreen) {
         await windowManager.show();
         await windowManager.restore();
@@ -383,6 +385,7 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
         await windowManager.setPreventClose(true);
       } else {
         await windowManager.setPreventClose(false);
+        await windowManager.setAlwaysOnTop(false);
         await windowManager.setFullScreen(false);
       }
     } catch (e) {

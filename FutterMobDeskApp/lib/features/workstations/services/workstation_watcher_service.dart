@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:window_manager/window_manager.dart';
 import '../../../core/network/api_client.dart';
 import '../../workspace_auth/state/workspace_state.dart';
 
@@ -101,6 +103,45 @@ class WorkstationWatcherService extends ChangeNotifier {
 
   bool _isLocked = false;
   bool get isLocked => _isLocked;
+
+  bool _isLocallyLocked = false;
+  bool _serverAcknowledgedLock = false;
+
+  static const MethodChannel _kioskChannel = MethodChannel('com.ozikol.bcc/kiosk');
+
+  /// Enables or disables native Windows Low-Level Keyboard Hook (`WH_KEYBOARD_LL`)
+  /// to block Win, Alt+Tab, Alt+F4, Alt+Esc, Ctrl+Esc, Ctrl+Shift+Esc, F11, and forces the window on top.
+  Future<void> setWindowsKeyLockdown(bool enabled, {bool topmost = true}) async {
+    if (kIsWeb || !Platform.isWindows) return;
+    try {
+      await _kioskChannel.invokeMethod('setLockdownMode', {
+        'enabled': enabled,
+        'topmost': enabled && topmost,
+      });
+    } catch (_) {}
+    try {
+      await windowManager.ensureInitialized();
+      if (enabled && topmost) {
+        await windowManager.setFullScreen(true);
+        await windowManager.setAlwaysOnTop(true);
+        await windowManager.show();
+        await windowManager.focus();
+      } else {
+        await windowManager.setAlwaysOnTop(false);
+      }
+    } catch (_) {}
+  }
+
+  /// Queries Windows OS-wide input idle time (`GetLastInputInfo`) via the native runner channel.
+  Future<int?> _getWindowsSystemIdleSeconds() async {
+    if (kIsWeb || !Platform.isWindows) return null;
+    try {
+      final secs = await _kioskChannel.invokeMethod<int>('getSystemIdleSeconds');
+      return secs;
+    } catch (_) {
+      return null;
+    }
+  }
 
   String? _lockReason;
   String? get lockReason => _lockReason;
@@ -310,7 +351,13 @@ class WorkstationWatcherService extends ChangeNotifier {
   }
 
   /// Records user activity (mouse move, click, or keyboard) and resets idle timer.
-  void recordUserActivity() {
+  /// When the 15s countdown warning overlay is already on screen, passive pointer hover/move
+  /// will NOT auto-dismiss it — only an explicit click/keypress or clicking "Resume Duty" will.
+  void recordUserActivity({bool isExplicitAction = false}) {
+    if (_isLocked) return;
+    if (_isIdleCountdownActive && !isExplicitAction) {
+      return;
+    }
     _inactivitySeconds = 0;
     if (_isIdleCountdownActive) {
       _isIdleCountdownActive = false;
@@ -321,23 +368,32 @@ class WorkstationWatcherService extends ChangeNotifier {
 
   /// Cancels the inactivity countdown overlay and resumes active duty.
   void resumeFromIdleCountdown() {
-    recordUserActivity();
+    recordUserActivity(isExplicitAction: true);
   }
 
-  /// Locks the workstation due to inactivity and broadcasts to server.
+  /// Locks the workstation due to inactivity, enforces Windows key-combination lockdown, and syncs to server.
   Future<void> lockStationLocally(String reason) async {
     _isLocked = true;
+    _isLocallyLocked = true;
+    _serverAcknowledgedLock = false;
     _lockReason = reason;
     _isIdleCountdownActive = false;
     _lockStateController.add(true);
     notifyListeners();
 
+    await setWindowsKeyLockdown(true);
+
     try {
-      await _api.dio.post('/api/Workstations/lock', data: {
+      final res = await _api.dio.post('/api/Workstations/lock', data: {
         'stationKey': _stationKey ?? 'WS-${Platform.localHostname.toUpperCase()}',
         'lock': true,
+        'isLocked': true,
         'reason': reason,
+        'lockReason': reason,
       });
+      if (res.statusCode == 200) {
+        _serverAcknowledgedLock = true;
+      }
     } catch (_) {}
   }
 
@@ -366,13 +422,20 @@ class WorkstationWatcherService extends ChangeNotifier {
   }
 
   /// Inactivity watchdog: if user is inactive for 45s, triggers a 15s countdown to lockdown.
-  void _checkInactivityAndIdleLock() {
+  Future<void> _checkInactivityAndIdleLock() async {
     if (!_isMonitoring || _isBreakActive || _isLocked) {
       _inactivitySeconds = 0;
       if (_isIdleCountdownActive) {
         _isIdleCountdownActive = false;
         notifyListeners();
       }
+      return;
+    }
+
+    // Check OS-wide Windows input idle time (so typing/clicking inside Chrome/Word/Excel counts as activity)
+    final osIdle = await _getWindowsSystemIdleSeconds();
+    if (osIdle != null && !_isIdleCountdownActive && osIdle < 3) {
+      _inactivitySeconds = 0;
       return;
     }
 
@@ -383,6 +446,12 @@ class WorkstationWatcherService extends ChangeNotifier {
       _isIdleCountdownActive = true;
       _idleCountdownSeconds = 15;
       notifyListeners();
+      if (!kIsWeb && Platform.isWindows) {
+        try {
+          await windowManager.show();
+          await windowManager.focus();
+        } catch (_) {}
+      }
       return;
     }
 
@@ -390,7 +459,7 @@ class WorkstationWatcherService extends ChangeNotifier {
     if (_isIdleCountdownActive) {
       _idleCountdownSeconds--;
       if (_idleCountdownSeconds <= 0) {
-        lockStationLocally('Locked due to 45s workstation inactivity');
+        await lockStationLocally('Locked due to workstation inactivity');
       } else {
         notifyListeners();
       }
@@ -549,11 +618,41 @@ class WorkstationWatcherService extends ChangeNotifier {
         final data = res.data['data'];
         if (data != null) {
           final serverLocked = data['isLocked'] as bool? ?? false;
-          if (serverLocked != _isLocked) {
-            _isLocked = serverLocked;
-            _lockReason = data['lockReason'] as String?;
-            _lockStateController.add(_isLocked);
-            notifyListeners();
+          if (serverLocked) {
+            _serverAcknowledgedLock = true;
+            if (!_isLocked) {
+              _isLocked = true;
+              _lockReason = data['lockReason'] as String?;
+              _lockStateController.add(true);
+              notifyListeners();
+              await setWindowsKeyLockdown(true);
+            }
+          } else {
+            // Only allow server heartbeat to unlock if it wasn't locally locked by inactivity,
+            // OR if the server had already acknowledged the lock and an Admin explicitly unlocked it.
+            if (_isLocked && (!_isLocallyLocked || _serverAcknowledgedLock)) {
+              _isLocked = false;
+              _isLocallyLocked = false;
+              _serverAcknowledgedLock = false;
+              _lockReason = null;
+              _inactivitySeconds = 0;
+              _lockStateController.add(false);
+              notifyListeners();
+              await setWindowsKeyLockdown(false);
+            } else if (_isLocked && _isLocallyLocked && !_serverAcknowledgedLock) {
+              // Ensure the server records our local inactivity lock
+              try {
+                final lockRes = await _api.dio.post('/api/Workstations/lock', data: {
+                  'stationKey': _stationKey,
+                  'lock': true,
+                  'isLocked': true,
+                  'reason': _lockReason ?? 'Locked due to workstation inactivity',
+                });
+                if (lockRes.statusCode == 200) {
+                  _serverAcknowledgedLock = true;
+                }
+              } catch (_) {}
+            }
           }
 
           // Update active temporary access approvals
@@ -846,23 +945,35 @@ exit 1
     }
   }
 
-  /// Attempts to unlock the workstation using administrative PIN or command.
-  Future<bool> unlockWithPin(String pin) async {
+  /// Unlocks the workstation after the signed-in user's account password has been verified,
+  /// restores normal Windows keyboard shortcuts, and syncs the unlocked state to the server.
+  Future<void> unlockStationAfterPasswordVerified() async {
+    _isLocked = false;
+    _isLocallyLocked = false;
+    _serverAcknowledgedLock = false;
+    _lockReason = null;
+    _inactivitySeconds = 0;
+    _isIdleCountdownActive = false;
+    _lockStateController.add(false);
+    notifyListeners();
+
+    await setWindowsKeyLockdown(false);
+
     try {
-      final res = await _api.dio.post('/api/Workstations/lock', data: {
+      await _api.dio.post('/api/Workstations/lock', data: {
         'stationKey': _stationKey ?? 'WS-${Platform.localHostname.toUpperCase()}',
+        'lock': false,
         'isLocked': false,
-        'lockReason': 'Unlocked with PIN ($pin)',
+        'reason': 'Unlocked with user account password',
+        'lockReason': 'Unlocked with user account password',
       });
-      if (res.statusCode == 200) {
-        _isLocked = false;
-        _lockReason = null;
-        _lockStateController.add(false);
-        notifyListeners();
-        return true;
-      }
     } catch (_) {}
-    return false;
+  }
+
+  /// Legacy alias kept for compatibility.
+  Future<bool> unlockWithPin(String pin) async {
+    await unlockStationAfterPasswordVerified();
+    return true;
   }
 
   @override

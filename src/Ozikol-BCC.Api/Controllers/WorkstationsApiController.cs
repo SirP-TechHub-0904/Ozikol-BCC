@@ -213,19 +213,37 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Remotely locks or unlocks an office computer from the Web Command Center.
+        /// Remotely or locally (on inactivity) locks or unlocks an office computer.
+        /// Supports lookup by either StationId (Web Admin Console) or StationKey (Native Desktop Client).
         /// </summary>
         [HttpPost("lock")]
         public async Task<IActionResult> SetLockState([FromBody] RemoteLockStationDto dto)
         {
-            var station = await _db.BcpWorkstations.FindAsync(dto.StationId);
+            BcpWorkstation? station = null;
+
+            if (dto.StationId.HasValue && dto.StationId.Value != Guid.Empty)
+            {
+                station = await _db.BcpWorkstations.FindAsync(dto.StationId.Value);
+            }
+
+            if (station == null && !string.IsNullOrWhiteSpace(dto.StationKey))
+            {
+                var key = dto.StationKey.Trim().ToUpperInvariant();
+                station = await _db.BcpWorkstations
+                    .OrderByDescending(s => s.LastHeartbeat)
+                    .FirstOrDefaultAsync(s => s.StationKey.ToUpper() == key || s.MachineName.ToUpper() == key);
+            }
+
             if (station == null)
             {
                 return NotFound(new { success = false, message = "Station not found." });
             }
 
-            station.IsLocked = dto.Lock;
-            station.LockReason = dto.Lock ? (dto.Reason ?? "Remote lock enforced by administrator.") : null;
+            var targetLock = dto.Lock ?? dto.IsLocked ?? false;
+            var reasonText = !string.IsNullOrWhiteSpace(dto.Reason) ? dto.Reason : dto.LockReason;
+
+            station.IsLocked = targetLock;
+            station.LockReason = targetLock ? (reasonText ?? "Locked due to workstation inactivity.") : null;
             station.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync();
@@ -233,8 +251,8 @@ namespace Ozikol_BCC.Api.Controllers
             if (_activityLogger != null)
             {
                 await _activityLogger.LogAsync(
-                    dto.Lock ? "WORKSTATION_LOCKED" : "WORKSTATION_UNLOCKED",
-                    $"Station '{station.MachineName}' was {(dto.Lock ? "locked" : "unlocked")} remotely. Reason: {station.LockReason ?? "None"}",
+                    targetLock ? "WORKSTATION_LOCKED" : "WORKSTATION_UNLOCKED",
+                    $"Station '{station.MachineName}' was {(targetLock ? "locked" : "unlocked")}. Reason: {station.LockReason ?? reasonText ?? "User authenticated"}",
                     module: "Workstations"
                 );
             }
@@ -242,7 +260,7 @@ namespace Ozikol_BCC.Api.Controllers
             return Ok(new
             {
                 success = true,
-                message = $"Workstation {station.MachineName} has been {(dto.Lock ? "locked" : "unlocked")}.",
+                message = $"Workstation {station.MachineName} has been {(targetLock ? "locked" : "unlocked")}.",
                 isLocked = station.IsLocked
             });
         }
@@ -603,9 +621,12 @@ namespace Ozikol_BCC.Api.Controllers
 
     public class RemoteLockStationDto
     {
-        public Guid StationId { get; set; }
-        public bool Lock { get; set; }
+        public Guid? StationId { get; set; }
+        public string? StationKey { get; set; }
+        public bool? Lock { get; set; }
+        public bool? IsLocked { get; set; }
         public string? Reason { get; set; }
+        public string? LockReason { get; set; }
     }
 
     public class AddAppPolicyDto

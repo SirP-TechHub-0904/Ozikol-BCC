@@ -77,6 +77,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   Timer? _violationDismissTimer;
   final TextEditingController _kioskUnlockPinCtrl = TextEditingController();
   bool _isKioskUnlocking = false;
+  bool _obscureKioskPassword = true;
   String? _kioskUnlockError;
   final GlobalKey<ScaffoldState> _mobileScaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedNavIndex = 0;
@@ -476,13 +477,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
       body: Listener(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) => watcher.recordUserActivity(),
+        onPointerDown: (_) => watcher.recordUserActivity(isExplicitAction: true),
         onPointerMove: (_) => watcher.recordUserActivity(),
         onPointerHover: (_) => watcher.recordUserActivity(),
         child: Focus(
           autofocus: true,
           onKeyEvent: (node, event) {
-            watcher.recordUserActivity();
+            watcher.recordUserActivity(isExplicitAction: true);
             return KeyEventResult.ignored;
           },
           child: Stack(
@@ -579,16 +580,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               child: _buildInactivityCountdownOverlay(isDark, watcher),
             ),
 
-          // Workstation Inactivity Countdown Warning Overlay (45s idle trigger)
-          if (watcher.isIdleCountdownActive && !watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
-            Positioned.fill(
-              child: _buildInactivityCountdownOverlay(isDark, watcher),
-            ),
-
-          // Workstation Remote Force-Lock Full-Screen Kiosk Overlay (only if active)
+          // Workstation Force-Lock Full-Screen Kiosk Overlay (only if active)
           if (watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned.fill(
-              child: _buildWorkstationKioskLockOverlay(isDark, watcher),
+              child: _buildWorkstationKioskLockOverlay(isDark, watcher, activeWs),
             ),
 
           // Full Workspace Refresh Loading Overlay
@@ -840,10 +835,10 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               child: _buildInactivityCountdownOverlay(isDark, watcher),
             ),
 
-          // Workstation Remote Force-Lock Full-Screen Kiosk Overlay (only if active)
+          // Workstation Force-Lock Full-Screen Kiosk Overlay (only if active)
           if (watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned.fill(
-              child: _buildWorkstationKioskLockOverlay(isDark, watcher),
+              child: _buildWorkstationKioskLockOverlay(isDark, watcher, activeWs),
             ),
 
           // Full Workspace Refresh Loading Overlay
@@ -4257,7 +4252,68 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     );
   }
 
-  Widget _buildWorkstationKioskLockOverlay(bool isDark, WorkstationWatcherService watcher) {
+  Future<void> _submitWorkstationPasswordUnlock(
+    WorkstationWatcherService watcher,
+    Workspace? activeWs,
+  ) async {
+    final password = _kioskUnlockPinCtrl.text;
+    if (password.trim().isEmpty || _isKioskUnlocking) return;
+
+    setState(() {
+      _isKioskUnlocking = true;
+      _kioskUnlockError = null;
+    });
+
+    try {
+      final email = (activeWs?.userEmail ?? '').trim();
+      bool verified = false;
+
+      if (activeWs != null && email.isNotEmpty) {
+        final outcome = await ref.read(workspaceStateProvider.notifier).login(
+              email: email,
+              password: password,
+              targetWorkspace: activeWs,
+            );
+        verified = outcome.isSuccess || outcome.requiresMfa;
+      }
+
+      if (verified) {
+        await watcher.unlockStationAfterPasswordVerified();
+        if (mounted) {
+          setState(() {
+            _isKioskUnlocking = false;
+            _kioskUnlockError = null;
+            _kioskUnlockPinCtrl.clear();
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isKioskUnlocking = false;
+            _kioskUnlockError = 'Incorrect password. Please enter your account password.';
+          });
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _isKioskUnlocking = false;
+          _kioskUnlockError = 'Incorrect password. Please try again.';
+        });
+      }
+    }
+  }
+
+  Widget _buildWorkstationKioskLockOverlay(
+    bool isDark,
+    WorkstationWatcherService watcher,
+    Workspace? activeWs,
+  ) {
+    final userName = (activeWs?.userFullName?.trim().isNotEmpty == true)
+        ? activeWs!.userFullName!
+        : 'Workspace Member';
+    final userEmail = activeWs?.userEmail?.trim() ?? '';
+
     return Material(
       color: Colors.transparent,
       child: Stack(
@@ -4270,15 +4326,15 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
           Center(
             child: Container(
-              width: 500,
+              width: 480,
               padding: const EdgeInsets.all(36),
               decoration: BoxDecoration(
                 color: const Color(0xFF111827),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.6), width: 1.5),
+                border: Border.all(color: const Color(0xFF334155), width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFEF4444).withValues(alpha: 0.2),
+                    color: Colors.black.withValues(alpha: 0.45),
                     blurRadius: 36,
                     spreadRadius: 4,
                   ),
@@ -4288,35 +4344,45 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 76,
-                    height: 76,
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: const Color(0xFFEF4444).withValues(alpha: 0.12),
-                      border: Border.all(color: const Color(0xFFEF4444), width: 2),
+                      color: AppColors.primary.withValues(alpha: 0.14),
+                      border: Border.all(color: AppColors.primary, width: 2),
                     ),
                     child: const Icon(
                       Icons.lock_rounded,
-                      size: 40,
-                      color: Color(0xFFEF4444),
+                      size: 36,
+                      color: Color(0xFF60A5FA),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
                   const Text(
                     'WORKSTATION LOCKED',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 21,
                       fontWeight: FontWeight.w900,
                       color: Colors.white,
-                      letterSpacing: 1.2,
+                      letterSpacing: 1.1,
                     ),
                   ),
                   const SizedBox(height: 6),
+                  Text(
+                    'Signed in as $userName${userEmail.isNotEmpty ? " ($userEmail)" : ""}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFCBD5E1),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   const Text(
-                    'This PC has been remotely locked by your IT Administrator.',
+                    'Enter your account password to unlock and resume your session.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 13.5,
+                      fontSize: 12.5,
                       color: Color(0xFF94A3B8),
                     ),
                   ),
@@ -4336,8 +4402,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                         Flexible(
                           child: Text(
                             watcher.lockReason != null && watcher.lockReason!.isNotEmpty
-                                ? 'Reason: ${watcher.lockReason}'
-                                : 'Administrative policy enforcement active.',
+                                ? watcher.lockReason!
+                                : 'Locked due to workstation inactivity.',
                             style: const TextStyle(fontSize: 12, color: Color(0xFFE2E8F0)),
                             textAlign: TextAlign.center,
                           ),
@@ -4345,22 +4411,41 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 22),
                   if (_kioskUnlockError != null) ...[
                     Text(
                       _kioskUnlockError!,
-                      style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12.5, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFFEF4444),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 10),
                   ],
                   TextField(
                     controller: _kioskUnlockPinCtrl,
-                    obscureText: true,
-                    style: const TextStyle(color: Colors.white, fontSize: 16, letterSpacing: 3),
-                    textAlign: TextAlign.center,
+                    obscureText: _obscureKioskPassword,
+                    autofocus: true,
+                    onSubmitted: (_) => _submitWorkstationPasswordUnlock(watcher, activeWs),
+                    style: const TextStyle(color: Colors.white, fontSize: 14.5),
                     decoration: InputDecoration(
-                      hintText: 'Enter Admin Unlock PIN',
-                      hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13, letterSpacing: 0),
+                      hintText: 'Enter your password',
+                      hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13.5),
+                      prefixIcon: const Icon(Icons.key_rounded, size: 18, color: Color(0xFF94A3B8)),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscureKioskPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                          size: 18,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscureKioskPassword = !_obscureKioskPassword;
+                          });
+                        },
+                      ),
                       filled: true,
                       fillColor: const Color(0xFF1E293B),
                       border: OutlineInputBorder(
@@ -4375,43 +4460,35 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                         borderRadius: BorderRadius.circular(10),
                         borderSide: const BorderSide(color: Color(0xFF0050E5), width: 1.8),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                     ),
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     height: 44,
-                    child: ElevatedButton(
+                    child: ElevatedButton.icon(
                       onPressed: _isKioskUnlocking
                           ? null
-                          : () async {
-                              final pin = _kioskUnlockPinCtrl.text.trim();
-                              if (pin.isEmpty) return;
-                              setState(() {
-                                _isKioskUnlocking = true;
-                                _kioskUnlockError = null;
-                              });
-                              final ok = await watcher.unlockWithPin(pin);
-                              if (mounted) {
-                                setState(() {
-                                  _isKioskUnlocking = false;
-                                  if (!ok) {
-                                    _kioskUnlockError = 'Invalid PIN or unlock rejected by server.';
-                                  } else {
-                                    _kioskUnlockPinCtrl.clear();
-                                  }
-                                });
-                              }
-                            },
+                          : () => _submitWorkstationPasswordUnlock(watcher, activeWs),
+                      icon: _isKioskUnlocking
+                          ? const SizedBox.shrink()
+                          : const Icon(Icons.lock_open_rounded, size: 17),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF0050E5),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       ),
-                      child: _isKioskUnlocking
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('Unlock Workstation', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      label: _isKioskUnlocking
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
+                          : const Text(
+                              'Unlock Screen',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 16),
