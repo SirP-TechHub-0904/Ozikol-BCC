@@ -31,6 +31,20 @@ class DepartureRecord {
   }
 }
 
+/// Authoritative Workspace Duty Status governing all workstation features,
+/// process monitoring, activity logging, idle lockouts, approved apps, and work drive access.
+enum WorkspaceDutyStatus {
+  /// Employee has not started work or has closed from work. All workstation enforcement & tools are disabled.
+  notAtWork,
+
+  /// Employee is on an official break. Timers, monitoring, and workstation tools are paused/locked.
+  onBreak,
+
+  /// Employee has completed the pre-work app check and clicked "Start Active Work Duty".
+  /// All workstation monitoring, logging, idle watchdogs, and approved tools are strictly active.
+  atWork,
+}
+
 /// State representation for Enterprise Workstation Shift & Enforced Work Mode.
 class WorkstationShiftState {
   final bool isAtWork;
@@ -64,6 +78,29 @@ class WorkstationShiftState {
     this.departureRecords = const [],
     this.shiftHistory = const [],
   });
+
+  /// Single authoritative Workspace Duty Status tied to all workstation UI and services.
+  WorkspaceDutyStatus get dutyStatus {
+    if (!isAtWork) return WorkspaceDutyStatus.notAtWork;
+    if (isOnBreak) return WorkspaceDutyStatus.onBreak;
+    return WorkspaceDutyStatus.atWork;
+  }
+
+  /// True ONLY when the employee is actively working (`dutyStatus == WorkspaceDutyStatus.atWork`).
+  /// If false, all workstation tools, monitoring, activity logs, and idle timers must remain inactive.
+  bool get isStrictlyAtWork => dutyStatus == WorkspaceDutyStatus.atWork;
+
+  /// Human-readable label for the current Workspace Duty Status.
+  String get dutyStatusLabel {
+    switch (dutyStatus) {
+      case WorkspaceDutyStatus.atWork:
+        return 'AT WORK (ACTIVE DUTY)';
+      case WorkspaceDutyStatus.onBreak:
+        return 'ON BREAK (PAUSED)';
+      case WorkspaceDutyStatus.notAtWork:
+        return hasStartedToday ? 'NOT AT WORK (SHIFT CLOSED)' : 'NOT AT WORK (OFF DUTY)';
+    }
+  }
 
   WorkstationShiftState copyWith({
     bool? isAtWork,

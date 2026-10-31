@@ -569,7 +569,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
 
           // Slide-down Workplace Policy Restriction Intercept Notification Banner (only if Work Mode is active)
-          if (isWorkModeActive && _activeViolation != null)
+          if (watcher.isActiveWorkDuty && _activeViolation != null)
             Positioned(
               top: 72,
               right: 24,
@@ -577,13 +577,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
 
           // Workstation Inactivity Countdown Warning Overlay (only when Work Mode is active)
-          if (isWorkModeActive && watcher.isIdleCountdownActive && !watcher.isLocked)
+          if (watcher.isActiveWorkDuty && watcher.isIdleCountdownActive && !watcher.isLocked)
             Positioned.fill(
               child: _buildInactivityCountdownOverlay(isDark, watcher),
             ),
 
           // Workstation Force-Lock Full-Screen Kiosk Overlay (only if active)
-          if (watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
+          if (watcher.isActiveWorkDuty && watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned.fill(
               child: _buildWorkstationKioskLockOverlay(isDark, watcher, activeWs),
             ),
@@ -832,13 +832,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
           ),
 
           // Workstation Inactivity Countdown Warning Overlay (only when Work Mode is active)
-          if (isWorkModeActive && watcher.isIdleCountdownActive && !watcher.isLocked)
+          if (watcher.isActiveWorkDuty && watcher.isIdleCountdownActive && !watcher.isLocked)
             Positioned.fill(
               child: _buildInactivityCountdownOverlay(isDark, watcher),
             ),
 
           // Workstation Force-Lock Full-Screen Kiosk Overlay (only if active)
-          if (watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
+          if (watcher.isActiveWorkDuty && watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned.fill(
               child: _buildWorkstationKioskLockOverlay(isDark, watcher, activeWs),
             ),
@@ -1442,6 +1442,16 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     }
 
     final hasLogo = activeWs?.logoUrl != null && (activeWs!.logoUrl as String).trim().isNotEmpty;
+    final shiftState = ref.watch(workstationShiftProvider);
+    final Color statusDotColor = shiftState.isStrictlyAtWork
+        ? const Color(0xFF10B981)
+        : (shiftState.isOnBreak ? const Color(0xFFD97706) : const Color(0xFF94A3B8));
+    final Color statusTextColor = shiftState.isStrictlyAtWork
+        ? const Color(0xFF059669)
+        : (shiftState.isOnBreak ? const Color(0xFFD97706) : const Color(0xFF64748B));
+    final String statusSubtitle = shiftState.isStrictlyAtWork
+        ? 'At Work • Duty Active'
+        : (shiftState.isOnBreak ? 'On Break • Paused' : 'Not At Work • Off Duty');
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1488,21 +1498,21 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                             Container(
                               width: 6,
                               height: 6,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF10B981),
+                              decoration: BoxDecoration(
+                                color: statusDotColor,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                'shell.active_workspace'.tr(ref, fallback: 'Active Workspace'),
+                                statusSubtitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
+                                  color: statusTextColor,
                                   letterSpacing: 0.2,
                                 ),
                               ),
@@ -1551,21 +1561,21 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                           Container(
                             width: 6,
                             height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF10B981),
+                            decoration: BoxDecoration(
+                              color: statusDotColor,
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 4),
                           Flexible(
                             child: Text(
-                              'shell.active_workspace'.tr(ref, fallback: 'Active Workspace'),
+                              statusSubtitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.primary,
+                                color: statusTextColor,
                                 letterSpacing: 0.2,
                               ),
                             ),
@@ -1748,7 +1758,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'shell.powered_by'.tr(ref, fallback: 'Business Command Center'),
+                '${activeWs?.displayName ?? 'Workspace'} • Command Center',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,

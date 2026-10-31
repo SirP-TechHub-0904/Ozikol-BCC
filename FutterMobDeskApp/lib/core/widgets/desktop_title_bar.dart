@@ -289,10 +289,10 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withAlpha(25),
+                              color: const Color(0xFF64748B).withAlpha(25),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: const Color(0xFF10B981).withAlpha(120),
+                                color: const Color(0xFF64748B).withAlpha(120),
                                 width: 0.8,
                               ),
                             ),
@@ -303,17 +303,17 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
                                   width: 5,
                                   height: 5,
                                   decoration: const BoxDecoration(
-                                    color: Color(0xFF10B981),
+                                    color: Color(0xFF64748B),
                                     shape: BoxShape.circle,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  context.trc('sh.active', fallback: 'ACTIVE'),
+                                  shiftState.dutyStatusLabel,
                                   style: const TextStyle(
                                     fontSize: 8.5,
                                     fontWeight: FontWeight.w800,
-                                    color: Color(0xFF059669),
+                                    color: Color(0xFF475569),
                                     letterSpacing: 0.5,
                                   ),
                                 ),

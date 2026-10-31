@@ -276,6 +276,31 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                   ],
                 );
 
+                final shiftState = ref.watch(workstationShiftProvider);
+                final isStrictlyAtWork = shiftState.isStrictlyAtWork;
+
+                void showNotAtWorkAlert(String featureName) {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: const Color(0xFFDC2626),
+                      content: Row(
+                        children: [
+                          const Icon(Icons.lock_outline_rounded, color: Colors.white, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '$featureName is locked because Workspace Status is "${shiftState.dutyStatusLabel}". Click "Start Work" to enter active work mode first.',
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
                 final actionButtons = Wrap(
                   spacing: 10,
                   runSpacing: 10,
@@ -293,32 +318,58 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                       ),
                     ),
-                    OutlinedButton.icon(
-                      onPressed: () => _openLocalFolder(watcher.approvedDirectory),
-                      icon: const Icon(Icons.folder_shared_rounded, size: 16),
-                      label: Text(
-                        watcher.approvedDirectory.isNotEmpty
-                            ? 'Company Work Drive (${watcher.approvedDirectory})'
-                            : 'Company Work Drive',
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF),
-                        side: const BorderSide(color: Color(0xFFBFDBFE)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    Tooltip(
+                      message: isStrictlyAtWork
+                          ? 'Open corporate work folder (${watcher.approvedDirectory})'
+                          : 'Locked — Start Work first to unlock Company Work Drive',
+                      child: OutlinedButton.icon(
+                        onPressed: isStrictlyAtWork
+                            ? () => _openLocalFolder(watcher.approvedDirectory)
+                            : () => showNotAtWorkAlert('Company Work Drive'),
+                        icon: Icon(
+                          isStrictlyAtWork ? Icons.folder_shared_rounded : Icons.lock_outline_rounded,
+                          size: 16,
+                        ),
+                        label: Text(
+                          isStrictlyAtWork
+                              ? (watcher.approvedDirectory.isNotEmpty
+                                  ? 'Company Work Drive (${watcher.approvedDirectory})'
+                                  : 'Company Work Drive')
+                              : 'Company Work Drive (Locked)',
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: isStrictlyAtWork ? AppColors.primary : const Color(0xFF64748B),
+                          backgroundColor: isStrictlyAtWork
+                              ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF))
+                              : (isDark ? const Color(0xFF1E293B).withValues(alpha: 0.5) : const Color(0xFFF1F5F9)),
+                          side: BorderSide(
+                            color: isStrictlyAtWork ? const Color(0xFFBFDBFE) : const Color(0xFFCBD5E1),
+                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        ),
                       ),
                     ),
-                    ElevatedButton.icon(
-                      onPressed: () => showApprovedAppsModal(context, ref),
-                      icon: const Icon(Icons.apps_rounded, size: 16),
-                      label: const Text('Approved Apps'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                        elevation: 0,
+                    Tooltip(
+                      message: isStrictlyAtWork
+                          ? 'View and launch approved work applications'
+                          : 'Locked — Start Work first to unlock Approved Apps',
+                      child: ElevatedButton.icon(
+                        onPressed: isStrictlyAtWork
+                            ? () => showApprovedAppsModal(context, ref)
+                            : () => showNotAtWorkAlert('Approved Apps'),
+                        icon: Icon(
+                          isStrictlyAtWork ? Icons.apps_rounded : Icons.lock_outline_rounded,
+                          size: 16,
+                        ),
+                        label: Text(isStrictlyAtWork ? 'Approved Apps' : 'Approved Apps (Locked)'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isStrictlyAtWork ? const Color(0xFF2563EB) : const Color(0xFF94A3B8),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                          elevation: 0,
+                        ),
                       ),
                     ),
                   ],

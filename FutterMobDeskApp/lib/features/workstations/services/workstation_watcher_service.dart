@@ -107,19 +107,27 @@ class WorkstationWatcherService extends ChangeNotifier {
   set isBreakActive(bool val) {
     if (_isBreakActive != val) {
       _isBreakActive = val;
+      if (val) {
+        _inactivitySeconds = 0;
+        _isIdleCountdownActive = false;
+        _idleCountdownSeconds = idleCountdownDurationSeconds;
+      }
       notifyListeners();
     }
   }
+
+  /// Strictly true ONLY when the user has started active work duty and is not on break.
+  bool get isActiveWorkDuty => _isMonitoring && !_isBreakActive;
 
   // Workstation Inactivity & Idle Countdown Governance (3 mins = 180s idle trigger, 60s countdown)
   static const int idleWarningThresholdSeconds = 180;
   static const int idleCountdownDurationSeconds = 60;
 
   int _inactivitySeconds = 0;
-  int get inactivitySeconds => _inactivitySeconds;
+  int get inactivitySeconds => isActiveWorkDuty ? _inactivitySeconds : 0;
 
   bool _isIdleCountdownActive = false;
-  bool get isIdleCountdownActive => _isIdleCountdownActive;
+  bool get isIdleCountdownActive => isActiveWorkDuty && _isIdleCountdownActive;
 
   int _idleCountdownSeconds = idleCountdownDurationSeconds;
   int get idleCountdownSeconds => _idleCountdownSeconds;
@@ -132,7 +140,7 @@ class WorkstationWatcherService extends ChangeNotifier {
   String? _userEmail;
 
   bool _isLocked = false;
-  bool get isLocked => _isLocked;
+  bool get isLocked => isActiveWorkDuty && _isLocked;
 
   bool _isLocallyLocked = false;
   bool _serverAcknowledgedLock = false;
@@ -282,15 +290,6 @@ class WorkstationWatcherService extends ChangeNotifier {
 
     try {
       final machineName = Platform.localHostname;
-      final winOsUser = Platform.environment['USERNAME'] ?? 'WindowsUser';
-      final prevUserName = _userName;
-      final prevUserEmail = _userEmail;
-      final isSwitchedUser = prevUserName != null &&
-          prevUserName.trim().isNotEmpty &&
-          userName != null &&
-          userName.trim().isNotEmpty &&
-          prevUserName.toLowerCase().trim() != userName.toLowerCase().trim();
-
       _stationKey = 'WS-${machineName.toUpperCase()}';
       _userId = userId;
       _userName = userName;
@@ -397,7 +396,7 @@ class WorkstationWatcherService extends ChangeNotifier {
   /// When the 60s countdown warning overlay is already on screen, passive pointer hover/move
   /// will NOT auto-dismiss it — only an explicit click/keypress or clicking "Resume Duty" will.
   void recordUserActivity({bool isExplicitAction = false}) {
-    if (_isLocked) return;
+    if (!isActiveWorkDuty || _isLocked) return;
     if (_isIdleCountdownActive && !isExplicitAction) {
       return;
     }
@@ -411,6 +410,12 @@ class WorkstationWatcherService extends ChangeNotifier {
 
   /// Cancels the inactivity countdown overlay and resumes active duty.
   void resumeFromIdleCountdown() {
+    if (!isActiveWorkDuty) {
+      _isIdleCountdownActive = false;
+      _inactivitySeconds = 0;
+      notifyListeners();
+      return;
+    }
     final totalIdleSecs = idleWarningThresholdSeconds + (idleCountdownDurationSeconds - _idleCountdownSeconds);
     recordUserActivity(isExplicitAction: true);
     logWorkstationActivity(
@@ -422,6 +427,7 @@ class WorkstationWatcherService extends ChangeNotifier {
 
   /// Locks the workstation due to inactivity, enforces Windows key-combination lockdown, and syncs to server.
   Future<void> lockStationLocally(String reason) async {
+    if (!isActiveWorkDuty) return;
     _isLocked = true;
     _isLocallyLocked = true;
     _serverAcknowledgedLock = false;
