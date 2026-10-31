@@ -1958,7 +1958,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         items: [
           AppDrawerItem(
             icon: Icons.desktop_windows_outlined,
-            title: 'Workspace (Desktop only)',
+            title: 'Workspace Hub',
             isSelected: _selectedNavIndex == 25,
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -2100,7 +2100,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       memberItems.add(
         AppDrawerItem(
           icon: Icons.desktop_windows_outlined,
-          title: 'Workspace (Desktop only)',
+          title: 'Workspace Hub',
           isSelected: memberIndex == 7,
           onTap: () {
             _navigateToTab(7, clearHistory: true);

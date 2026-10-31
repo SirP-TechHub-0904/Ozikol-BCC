@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/localization/language_provider.dart';
 import '../services/workstation_watcher_service.dart';
 import '../state/workstation_shift_state.dart';
+import '../../workspace_auth/state/workspace_state.dart';
 import 'widgets/approved_apps_modal.dart';
 import 'widgets/close_from_work_modal.dart';
 import 'widgets/pre_work_app_checker_modal.dart';
@@ -235,6 +236,8 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     final watcher = ref.watch(workstationWatcherProvider);
+    final activeWs = ref.watch(workspaceStateProvider).activeWorkspace;
+    final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
     final machineName = Platform.isWindows ? Platform.localHostname : 'Office Workstation';
 
     return Scaffold(
@@ -347,6 +350,22 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                     elevation: 0,
                   ),
                 ),
+                if (canAccessAdmin) ...[
+                  const SizedBox(width: 10),
+                  ElevatedButton.icon(
+                    onPressed: _openWebAdminConsole,
+                    icon: const Icon(Icons.open_in_browser_rounded, size: 16),
+                    label: const Text('Web Admin Console'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F172A),
+                      foregroundColor: const Color(0xFF38BDF8),
+                      side: const BorderSide(color: Color(0xFF334155)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      elevation: 0,
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 20),
@@ -1539,6 +1558,14 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     if (!Platform.isWindows) return;
     try {
       await Process.start('explorer.exe', [path]);
+    } catch (_) {}
+  }
+
+  Future<void> _openWebAdminConsole() async {
+    const webUrl = 'http://localhost:4200/admin/workstations';
+    if (!Platform.isWindows) return;
+    try {
+      await Process.start('cmd', ['/c', 'start', '', webUrl]);
     } catch (_) {}
   }
 
