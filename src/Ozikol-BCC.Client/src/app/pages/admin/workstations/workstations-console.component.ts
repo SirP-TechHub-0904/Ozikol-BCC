@@ -688,7 +688,7 @@ export interface WorkstationActivityLogItem {
           </button>
           <button class="pill-btn" [class.active]="activityFilter === 'idle'" (click)="activityFilter = 'idle'">
             <span class="material-symbols-outlined" style="font-size: 15px;">lock_clock</span>
-            <span>Idle & Password Resume</span>
+            <span>Logins, Idle & Password Resume</span>
           </button>
           <button class="pill-btn" [class.active]="activityFilter === 'screenshots'" (click)="activityFilter = 'screenshots'">
             <span class="material-symbols-outlined" style="font-size: 15px;">screenshot_monitor</span>
@@ -718,7 +718,7 @@ export interface WorkstationActivityLogItem {
               <thead>
                 <tr>
                   <th>TIME & DURATION</th>
-                  <th>WORKSTATION & STAFF</th>
+                  <th>SIGNED-IN USER & PC</th>
                   <th>EVENT</th>
                   <th>APPLICATION & WINDOW</th>
                   <th>FILE NAME & FILE PATH</th>
@@ -735,16 +735,17 @@ export interface WorkstationActivityLogItem {
                     </span>
                   </td>
                   <td>
-                    <div class="staff-meta">
+                    <div class="staff-meta" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
                       <strong>{{ a.userName || 'Station Staff' }}</strong>
-                      <span class="sub-text">{{ a.machineName }}</span>
+                      <span class="text-xs text-gray" *ngIf="a.userEmail && a.userEmail !== a.userName">{{ a.userEmail }}</span>
+                      <code class="process-tag" style="font-size: 10px;">PC: {{ a.machineName }} ({{ a.stationKey || ('WS-' + a.machineName) }})</code>
                     </div>
                   </td>
                   <td>
-                    <span class="badge-status-approved" *ngIf="a.eventType === 'APP_OPENED' || a.eventType === 'PASSWORD_RESUMED' || a.eventType === 'SHIFT_STARTED'">
+                    <span class="badge-status-approved" *ngIf="a.eventType === 'APP_OPENED' || a.eventType === 'PASSWORD_RESUMED' || a.eventType === 'SHIFT_STARTED' || a.eventType === 'USER_LOGIN'">
                       {{ formatEventLabel(a.eventType) }}
                     </span>
-                    <span class="badge-pending" *ngIf="a.eventType === 'APP_CLOSED' || a.eventType === 'DOCUMENT_ACTIVE' || a.eventType === 'IDLE_WARNING' || a.eventType === 'IDLE_RESUMED'">
+                    <span class="badge-pending" *ngIf="a.eventType === 'APP_CLOSED' || a.eventType === 'DOCUMENT_ACTIVE' || a.eventType === 'IDLE_WARNING' || a.eventType === 'IDLE_RESUMED' || a.eventType === 'USER_SWITCHED'">
                       {{ formatEventLabel(a.eventType) }}
                     </span>
                     <span class="badge-status-unapproved" *ngIf="a.eventType === 'IDLE_LOCKED' || a.eventType === 'ADMIN_LOCKED'">
@@ -1041,6 +1042,7 @@ export interface WorkstationActivityLogItem {
                   <thead>
                     <tr>
                       <th>TIME & DURATION</th>
+                      <th>SIGNED-IN USER & PC</th>
                       <th>EVENT</th>
                       <th>APPLICATION & WINDOW</th>
                       <th>FILE NAME & FILE PATH</th>
@@ -1057,10 +1059,17 @@ export interface WorkstationActivityLogItem {
                         </span>
                       </td>
                       <td>
-                        <span class="badge-status-approved" *ngIf="a.eventType === 'APP_OPENED' || a.eventType === 'PASSWORD_RESUMED' || a.eventType === 'SHIFT_STARTED'">
+                        <div class="staff-meta" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+                          <strong>{{ a.userName || selectedStation.assignedUserName || 'Operator' }}</strong>
+                          <span class="text-xs text-gray" *ngIf="a.userEmail && a.userEmail !== a.userName">{{ a.userEmail }}</span>
+                          <code class="process-tag" style="font-size: 10px;">PC: {{ a.machineName || selectedStation.machineName }} ({{ a.stationKey || selectedStation.stationKey }})</code>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="badge-status-approved" *ngIf="a.eventType === 'APP_OPENED' || a.eventType === 'PASSWORD_RESUMED' || a.eventType === 'SHIFT_STARTED' || a.eventType === 'USER_LOGIN'">
                           {{ formatEventLabel(a.eventType) }}
                         </span>
-                        <span class="badge-pending" *ngIf="a.eventType === 'APP_CLOSED' || a.eventType === 'DOCUMENT_ACTIVE' || a.eventType === 'IDLE_WARNING' || a.eventType === 'IDLE_RESUMED'">
+                        <span class="badge-pending" *ngIf="a.eventType === 'APP_CLOSED' || a.eventType === 'DOCUMENT_ACTIVE' || a.eventType === 'IDLE_WARNING' || a.eventType === 'IDLE_RESUMED' || a.eventType === 'USER_SWITCHED'">
                           {{ formatEventLabel(a.eventType) }}
                         </span>
                         <span class="badge-status-unapproved" *ngIf="a.eventType === 'IDLE_LOCKED' || a.eventType === 'ADMIN_LOCKED'">
@@ -2098,6 +2107,8 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     }
     if (this.activityFilter === 'idle') {
       return this.activityLogs.filter(a =>
+        a.eventType === 'USER_LOGIN' ||
+        a.eventType === 'USER_SWITCHED' ||
         a.eventType === 'IDLE_WARNING' ||
         a.eventType === 'IDLE_LOCKED' ||
         a.eventType === 'PASSWORD_RESUMED' ||
@@ -2115,11 +2126,18 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
   getStationActivityLogs(s: WorkstationItem): WorkstationActivityLogItem[] {
     const key = (s.machineName || '').trim().toLowerCase();
     const sKey = (s.stationKey || '').trim().toLowerCase();
-    return this.activityLogs.filter(a =>
-      (a.machineName || '').trim().toLowerCase() === key ||
-      (a.stationKey || '').trim().toLowerCase() === sKey ||
-      a.workstationId === s.id
-    );
+    const uName = (s.assignedUserName || '').trim().toLowerCase();
+    const uId = (s.assignedUserId || '').trim().toLowerCase();
+    return this.activityLogs.filter(a => {
+      const matchPc =
+        (a.machineName || '').trim().toLowerCase() === key ||
+        (a.stationKey || '').trim().toLowerCase() === sKey ||
+        a.workstationId === s.id;
+      const matchUser =
+        (uName.length > 0 && (a.userName || '').trim().toLowerCase() === uName) ||
+        (uId.length > 0 && ((a.userId || '').trim().toLowerCase() === uId || (a.userEmail || '').trim().toLowerCase() === uId));
+      return matchPc || matchUser;
+    });
   }
 
   get pendingRequestsList(): AccessRequestItem[] {
@@ -2651,6 +2669,8 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
 
   formatEventLabel(eventType?: string): string {
     switch ((eventType || '').toUpperCase()) {
+      case 'USER_LOGIN': return 'DESKTOP LOGIN';
+      case 'USER_SWITCHED': return 'ACCOUNT SWITCHED';
       case 'APP_OPENED': return 'APP OPENED';
       case 'APP_CLOSED': return 'APP CLOSED';
       case 'DOCUMENT_ACTIVE': return 'FILE WORKED ON';

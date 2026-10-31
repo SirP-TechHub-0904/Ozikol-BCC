@@ -282,6 +282,15 @@ class WorkstationWatcherService extends ChangeNotifier {
 
     try {
       final machineName = Platform.localHostname;
+      final winOsUser = Platform.environment['USERNAME'] ?? 'WindowsUser';
+      final prevUserName = _userName;
+      final prevUserEmail = _userEmail;
+      final isSwitchedUser = prevUserName != null &&
+          prevUserName.trim().isNotEmpty &&
+          userName != null &&
+          userName.trim().isNotEmpty &&
+          prevUserName.toLowerCase().trim() != userName.toLowerCase().trim();
+
       _stationKey = 'WS-${machineName.toUpperCase()}';
       _userId = userId;
       _userName = userName;
@@ -299,6 +308,17 @@ class WorkstationWatcherService extends ChangeNotifier {
         'clientVersion': '2.0.0',
         'kioskEnforced': false,
       });
+
+      // Log desktop login & PC identity explicitly to activity logs
+      await logWorkstationActivity(
+        eventType: isSwitchedUser ? 'USER_SWITCHED' : 'USER_LOGIN',
+        processName: 'Desktop Session',
+        appDisplayName: 'PC: $machineName ($_stationKey)',
+        windowTitle: 'Windows User: $winOsUser • ${Platform.operatingSystemVersion}',
+        details: isSwitchedUser
+            ? 'Account switched on PC $machineName ($_stationKey): ${userName ?? userEmail} (${userEmail ?? ""}) signed into desktop app (previous user: $prevUserName ${prevUserEmail != null ? "($prevUserEmail)" : ""}, Windows OS user: $winOsUser)'
+            : 'Signed into desktop app as ${userName ?? userEmail} (${userEmail ?? ""}) on PC $machineName ($_stationKey, Windows OS user: $winOsUser)',
+      );
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data['data'];

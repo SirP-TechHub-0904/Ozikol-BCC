@@ -105,6 +105,12 @@ namespace Ozikol_BCC.Api.Controllers
                                           (!string.IsNullOrEmpty(dto.HardwareGuid) && s.HardwareGuid == dto.HardwareGuid));
 
             var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var previousUserName = existing?.AssignedUserName;
+            var previousUserEmail = existing?.AssignedUserEmail;
+            var isDifferentUserOnPc = existing != null &&
+                                      !string.IsNullOrWhiteSpace(previousUserName) &&
+                                      !string.IsNullOrWhiteSpace(dto.UserName) &&
+                                      !string.Equals(previousUserName.Trim(), dto.UserName.Trim(), StringComparison.OrdinalIgnoreCase);
 
             if (existing == null)
             {
@@ -143,6 +149,63 @@ namespace Ozikol_BCC.Api.Controllers
             }
 
             await _db.SaveChangesAsync();
+
+            // Record desktop login & PC binding audit log
+            try
+            {
+                await EnsureActivityLogTableExistsAsync();
+                var cutoff = DateTime.UtcNow.AddMinutes(-2);
+                var recentDuplicate = await _db.BcpWorkstationActivityLogs
+                    .AsNoTracking()
+                    .AnyAsync(l => l.StationKey == existing.StationKey &&
+                                   l.UserName == existing.AssignedUserName &&
+                                   (l.EventType == "USER_LOGIN" || l.EventType == "USER_SWITCHED") &&
+                                   l.Timestamp >= cutoff);
+
+                if (!recentDuplicate)
+                {
+                    var loginType = isDifferentUserOnPc ? "USER_SWITCHED" : "USER_LOGIN";
+                    var emailPart = !string.IsNullOrWhiteSpace(existing.AssignedUserEmail) ? $" ({existing.AssignedUserEmail})" : "";
+                    var detailsText = isDifferentUserOnPc
+                        ? $"Account switched on PC {existing.MachineName} ({existing.StationKey}): {existing.AssignedUserName}{emailPart} signed into desktop app (previous operator: {previousUserName}) • IP: {clientIp ?? "127.0.0.1"}"
+                        : $"Signed into desktop app as {existing.AssignedUserName ?? "Operator"}{emailPart} on PC {existing.MachineName} ({existing.StationKey}) • IP: {clientIp ?? "127.0.0.1"}";
+
+                    _db.BcpWorkstationActivityLogs.Add(new BcpWorkstationActivityLog
+                    {
+                        WorkstationId = existing.Id,
+                        StationKey = existing.StationKey,
+                        MachineName = existing.MachineName,
+                        UserId = existing.AssignedUserId,
+                        UserName = existing.AssignedUserName ?? "Operator",
+                        UserEmail = existing.AssignedUserEmail,
+                        EventType = loginType,
+                        ProcessName = "Desktop Session",
+                        AppDisplayName = $"PC: {existing.MachineName} ({existing.StationKey})",
+                        WindowTitle = existing.OsVersion,
+                        StartedAt = DateTime.UtcNow,
+                        Details = detailsText,
+                        Timestamp = DateTime.UtcNow
+                    });
+                    await _db.SaveChangesAsync();
+                }
+
+                if (isDifferentUserOnPc)
+                {
+                    await DispatchWorkstationNotificationAsync(
+                        title: $"Operator Account Changed on PC {existing.MachineName}",
+                        message: $"<strong>{existing.AssignedUserName}</strong> ({existing.AssignedUserEmail ?? "N/A"}) signed into the desktop app on workstation <strong>{existing.MachineName} ({existing.StationKey})</strong>, which was previously used by <strong>{previousUserName}</strong>.",
+                        severity: NotificationSeverity.Update,
+                        targetUserIdOrEmail: existing.AssignedUserEmail ?? existing.AssignedUserId,
+                        targetUserName: existing.AssignedUserName,
+                        sendEmail: true,
+                        icon: "switch_account"
+                    );
+                }
+            }
+            catch
+            {
+                // Non-blocking audit log
+            }
 
             // Return active station state along with active app whitelist and file rules
             var appPolicies = await _db.BcpWorkstationAppPolicies
