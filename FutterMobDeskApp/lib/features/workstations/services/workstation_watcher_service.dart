@@ -111,6 +111,7 @@ class WorkstationWatcherService extends ChangeNotifier {
   List<WorkstationAppRule> get rules => List.unmodifiable(_rules);
 
   final Set<String> _temporaryApprovals = {};
+  Set<String> get temporaryApprovals => Set.unmodifiable(_temporaryApprovals);
 
   final StreamController<ViolationEvent> _violationStreamController =
       StreamController<ViolationEvent>.broadcast();

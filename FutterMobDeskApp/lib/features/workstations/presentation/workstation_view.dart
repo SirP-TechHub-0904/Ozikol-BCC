@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/localization/language_provider.dart';
 import '../services/workstation_watcher_service.dart';
 import '../state/workstation_shift_state.dart';
+import 'widgets/approved_apps_modal.dart';
 import 'widgets/close_from_work_modal.dart';
 import 'widgets/pre_work_app_checker_modal.dart';
 import 'widgets/take_break_modal.dart';
@@ -333,6 +334,19 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                   ),
                 ),
+                const SizedBox(width: 10),
+                ElevatedButton.icon(
+                  onPressed: () => showApprovedAppsModal(context, ref),
+                  icon: const Icon(Icons.apps_rounded, size: 16),
+                  label: const Text('Approved Apps'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    elevation: 0,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 20),
@@ -485,6 +499,19 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                   ),
                 ),
               ] else if (isShiftActive) ...[
+                ElevatedButton.icon(
+                  onPressed: () => showApprovedAppsModal(context, ref),
+                  icon: const Icon(Icons.rocket_launch_rounded, size: 16),
+                  label: const Text('Open App'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    elevation: 0,
+                  ),
+                ),
+                const SizedBox(width: 10),
                 OutlinedButton.icon(
                   onPressed: _handleTakeBreak,
                   icon: const Icon(Icons.coffee_rounded, size: 16),
