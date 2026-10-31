@@ -903,7 +903,7 @@ export interface WorkstationActivityLogItem {
                   <span class="detail-card-label">WORKSTATION SANDBOX & TELEMETRY</span>
                   <div class="detail-kv-row mt-2">
                     <span>Approved Work Folder:</span>
-                    <code>{{ filePolicy.approvedDirectoryPath || ('C:\\' + brandName + '-Workspace') }}</code>
+                    <code>{{ resolvedApprovedFolder }}</code>
                   </div>
                   <div class="detail-kv-row">
                     <span>USB Storage Policy:</span>
@@ -2286,6 +2286,14 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
 
   get onlineCount(): number {
     return this.stations.filter(s => s.isOnline).length;
+  }
+
+  get resolvedApprovedFolder(): string {
+    if (this.filePolicy?.approvedDirectoryPath && this.filePolicy.approvedDirectoryPath.trim().length > 0) {
+      return this.filePolicy.approvedDirectoryPath;
+    }
+    const cleanBrand = (this.brandName || 'Workspace').replace(/[^a-zA-Z0-9_-]/g, '') || 'Workspace';
+    return `C:\\${cleanBrand}-Workspace`;
   }
 
   get pendingRequestsCount(): number {
