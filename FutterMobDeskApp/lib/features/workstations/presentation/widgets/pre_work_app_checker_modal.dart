@@ -396,7 +396,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
           "Get-Process | Where-Object { \$_.MainWindowHandle -ne 0 -and \$_.MainWindowTitle.Trim() -ne '' } | ForEach-Object { \$_.ProcessName + '.exe|' + \$_.MainWindowTitle }",
         ]).timeout(const Duration(seconds: 8));
 
-        if (psResult.exitCode == 0) {
+        if (psResult.exitCode == 0 && psResult.stdout.toString().trim().isNotEmpty) {
           final lines = psResult.stdout.toString().split(RegExp(r'[\r\n]+'));
           for (final line in lines) {
             final trimmed = line.trim();
@@ -469,7 +469,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
   Future<void> _closeSingleApp(String procName) async {
     if (!kIsWeb && Platform.isWindows) {
       try {
-        await Process.run('taskkill', ['/F', '/IM', procName]);
+        await Process.run('taskkill', ['/F', '/T', '/IM', procName]);
       } catch (e) {
         debugPrint('[PreWorkAppChecker] Taskkill error: $e');
       }
@@ -486,7 +486,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     if (!kIsWeb && Platform.isWindows) {
       for (final app in _detectedApps) {
         try {
-          await Process.run('taskkill', ['/F', '/IM', app.processName]);
+          await Process.run('taskkill', ['/F', '/T', '/IM', app.processName]);
         } catch (_) {}
       }
     }
@@ -685,7 +685,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${_detectedApps.length} Running Application(s) Detected — Close All Apps to Start Work',
+                              '${_detectedApps.length} Running Application(s) Detected — Force Close All First',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
@@ -694,7 +694,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                             ),
                             const SizedBox(height: 2),
                             const Text(
-                              'Work cannot start until all running applications are closed. Once inside your Workstation, open your Approved Apps from the Approved Apps launcher.',
+                              'All open applications (even Approved Apps) must be force-closed before starting work so no outside project or document remains open. Once inside your Workstation, open your Approved Apps fresh.',
                               style: TextStyle(fontSize: 11.5, color: Color(0xFFB91C1C)),
                             ),
                           ],
@@ -1036,17 +1036,39 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
                       ),
+                    if (hasApps)
+                      ElevatedButton.icon(
+                        onPressed: _isClosingAll ? null : _closeAllDetectedApps,
+                        icon: _isClosingAll
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Icon(Icons.power_settings_new_rounded, size: 15),
+                        label: Text(
+                          _isClosingAll
+                              ? 'Force Closing All...'
+                              : 'Force Close All Apps (${_detectedApps.length})',
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFDC2626),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                      ),
                     ElevatedButton.icon(
                       onPressed: (hasApps || _isScanning) ? null : _confirmAndStartWork,
                       icon: Icon(
                         hasApps ? Icons.lock_rounded : Icons.play_circle_filled_rounded,
                         size: 16,
                       ),
-                      label: Text(
-                        hasApps
-                            ? 'Close All Running Apps (${_detectedApps.length}) to Start Work'
-                            : 'Start Active Work Duty',
-                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      label: const Text(
+                        'Start Active Work Duty',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF16A34A),
