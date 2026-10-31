@@ -63,6 +63,7 @@ export interface AccessRequestItem {
 
 export interface ViolationLogItem {
   id: string;
+  workstationId?: string;
   machineName: string;
   userName?: string;
   processName: string;
