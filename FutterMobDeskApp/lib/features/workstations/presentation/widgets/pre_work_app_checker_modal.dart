@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -468,9 +469,17 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
   }
 
   Future<void> _requestApprovalForAll() async {
-    for (final app in _detectedApps) {
+    final watcher = ref.read(workstationWatcherProvider);
+    final List<DetectedRunningApp> appsToSubmit = List.from(_detectedApps);
+
+    for (final app in appsToSubmit) {
       _pendingApprovalApps.add(app.processName.toLowerCase());
-      ref.read(workstationWatcherProvider).grantTemporaryApproval(app.processName);
+      watcher.grantTemporaryApproval(app.processName);
+      // Dispatch compliance exemption request to central API for admin console visibility
+      unawaited(watcher.requestAccess(
+        app.processName,
+        'Workstation compliance exemption requested for ${app.displayName}',
+      ));
     }
     setState(() {});
 

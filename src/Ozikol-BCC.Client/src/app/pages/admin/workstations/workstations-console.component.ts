@@ -93,8 +93,8 @@ export interface ViolationLogItem {
         </div>
         <div class="header-right">
           <button (click)="refreshAll()" class="btn-refresh" [class.spinning]="isLoading">
-            <span class="material-symbols-outlined">refresh</span>
-            <span>{{ 'btn.refresh' | translate:'Refresh Fleet' }}</span>
+            <span class="material-symbols-outlined">sync</span>
+            <span>{{ 'btn.syncEndpoints' | translate:'Sync Endpoints' }}</span>
           </button>
         </div>
       </div>
@@ -176,7 +176,7 @@ export interface ViolationLogItem {
         </button>
       </div>
 
-      <!-- TAB 1: CONNECTED WORKSTATIONS (LIVE FLEET MONITOR) -->
+      <!-- TAB 1: CONNECTED WORKSTATIONS (LIVE ENDPOINT DIRECTORY) -->
       <div *ngIf="activeTab === 'stations'" class="tab-content">
         <div class="toolbar-row">
           <div class="search-box">
