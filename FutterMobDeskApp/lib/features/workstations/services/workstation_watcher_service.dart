@@ -685,11 +685,161 @@ class WorkstationWatcherService extends ChangeNotifier {
   }
 
   /// Launches an approved application from the BCC application launcher.
-  Future<bool> launchApprovedApp(String processName) async {
+  /// Resolves system tools, Registry App Paths, Start Menu .lnk shortcuts,
+  /// Microsoft Store AppsFolder packages (WhatsApp, Teams, Terminal), and brings the window to front.
+  Future<bool> launchApprovedApp(String processName, {String? displayName}) async {
     if (!Platform.isWindows) return false;
+    final cleanProc = processName.trim();
+    if (cleanProc.isEmpty) return false;
+
+    // Ensure the watcher treats this launched process as approved
+    grantTemporaryApproval(cleanProc);
+
+    final baseName = cleanProc.replaceAll(RegExp(r'\.exe$', caseSensitive: false), '').trim();
+    final friendly = (displayName ?? baseName).replaceAll("'", "''").trim();
+    final safeProc = cleanProc.replaceAll("'", "''");
+    final safeBase = baseName.replaceAll("'", "''");
+
+    final psScript = '''
+\$ErrorActionPreference = 'SilentlyContinue'
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class Win32Focus {
+  [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
+}
+"@
+
+function Focus-ProcessWindow([string]\$name) {
+  \$procs = Get-Process -Name \$name -ErrorAction SilentlyContinue | Where-Object { \$_.MainWindowHandle -ne 0 }
+  if (\$procs) {
+    foreach (\$p in \$procs) {
+      [Win32Focus]::ShowWindowAsync(\$p.MainWindowHandle, 9) | Out-Null
+      [Win32Focus]::SetForegroundWindow(\$p.MainWindowHandle) | Out-Null
+      [Win32Focus]::SwitchToThisWindow(\$p.MainWindowHandle, \$true)
+      return \$true
+    }
+  }
+  return \$false
+}
+
+\$procName = '$safeProc'
+\$baseName = '$safeBase'
+\$friendlyName = '$friendly'
+\$lower = \$procName.ToLower()
+
+# 1. If already running with a visible window on the taskbar, bring it straight to the front
+if (Focus-ProcessWindow \$baseName) {
+  Write-Output "FOCUSED"
+  exit 0
+}
+
+# 2. Known Windows / Store app protocol & alias shortcuts
+if (\$lower -eq 'windowsterminal.exe' -or \$lower -eq 'terminal.exe') {
+  Start-Process 'wt.exe'
+  Write-Output "LAUNCHED"
+  exit 0
+}
+if (\$lower -eq 'calculatorapp.exe' -or \$lower -eq 'calc.exe') {
+  Start-Process 'calc.exe'
+  Write-Output "LAUNCHED"
+  exit 0
+}
+if (\$lower -like 'whatsapp*') {
+  \$wa = Get-StartApps | Where-Object { \$_.Name -like '*WhatsApp*' -or \$_.AppID -like '*WhatsApp*' } | Select-Object -First 1
+  if (\$wa) {
+    Start-Process 'explorer.exe' -ArgumentList "shell:AppsFolder\\\$(\$wa.AppID)"
+    Write-Output "LAUNCHED"
+    exit 0
+  }
+}
+if (\$lower -eq 'ms-teams.exe' -or \$lower -eq 'teams.exe') {
+  \$tm = Get-StartApps | Where-Object { \$_.Name -like '*Teams*' -or \$_.AppID -like '*Teams*' } | Select-Object -First 1
+  if (\$tm) {
+    Start-Process 'explorer.exe' -ArgumentList "shell:AppsFolder\\\$(\$tm.AppID)"
+    Write-Output "LAUNCHED"
+    exit 0
+  }
+}
+
+# 3. Try direct Start-Process (uses Windows ShellExecute & App Paths registry for chrome.exe, excel.exe, winword.exe, etc.)
+\$started = Start-Process -FilePath \$procName -PassThru -ErrorAction SilentlyContinue
+if (\$started) {
+  Start-Sleep -Milliseconds 350
+  Focus-ProcessWindow \$baseName | Out-Null
+  Write-Output "LAUNCHED"
+  exit 0
+}
+
+# 4. If a background process of the same executable is running, get its full disk Path and launch it
+\$runningPath = (Get-Process -Name \$baseName -ErrorAction SilentlyContinue | Where-Object { \$_.Path } | Select-Object -First 1).Path
+if (\$runningPath -and (Test-Path \$runningPath)) {
+  Start-Process -FilePath \$runningPath
+  Start-Sleep -Milliseconds 350
+  Focus-ProcessWindow \$baseName | Out-Null
+  Write-Output "LAUNCHED"
+  exit 0
+}
+
+# 5. Search Start Menu .lnk shortcuts matching the executable or display name
+\$sh = New-Object -ComObject WScript.Shell
+\$startDirs = @(
+  (Join-Path \$env:ProgramData 'Microsoft\\Windows\\Start Menu\\Programs'),
+  (Join-Path \$env:AppData 'Microsoft\\Windows\\Start Menu\\Programs')
+)
+\$lnks = Get-ChildItem -Path \$startDirs -Recurse -Filter '*.lnk' -ErrorAction SilentlyContinue
+foreach (\$lnk in \$lnks) {
+  \$target = \$sh.CreateShortcut(\$lnk.FullName).TargetPath
+  if ((\$target -and (Split-Path \$target -Leaf).ToLower() -eq \$lower) -or (\$lnk.BaseName -eq \$friendlyName)) {
+    Start-Process -FilePath \$lnk.FullName
+    Start-Sleep -Milliseconds 400
+    Focus-ProcessWindow \$baseName | Out-Null
+    Write-Output "LAUNCHED"
+    exit 0
+  }
+}
+
+# 6. Search Windows Get-StartApps (shell:AppsFolder for Store / MSIX apps)
+\$startApp = Get-StartApps | Where-Object {
+  \$_.Name -like "*\$friendlyName*" -or \$_.Name -like "*\$baseName*" -or \$_.AppID -like "*\$baseName*"
+} | Select-Object -First 1
+if (\$startApp) {
+  Start-Process 'explorer.exe' -ArgumentList "shell:AppsFolder\\\$(\$startApp.AppID)"
+  Write-Output "LAUNCHED"
+  exit 0
+}
+
+# 7. Search common install roots (%LOCALAPPDATA%\\Programs, %ProgramFiles%, %ProgramFiles(x86)%)
+\$searchRoots = @(
+  (Join-Path \$env:LOCALAPPDATA 'Programs'),
+  \$env:ProgramFiles,
+  \${env:ProgramFiles(x86)}
+) | Where-Object { \$_ -and (Test-Path \$_) }
+
+foreach (\$root in \$searchRoots) {
+  \$foundExe = Get-ChildItem -Path \$root -Filter \$procName -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 1
+  if (\$foundExe) {
+    Start-Process -FilePath \$foundExe.FullName
+    Start-Sleep -Milliseconds 400
+    Focus-ProcessWindow \$baseName | Out-Null
+    Write-Output "LAUNCHED"
+    exit 0
+  }
+}
+
+Write-Output "NOT_FOUND"
+exit 1
+''';
+
     try {
-      await Process.start(processName, [], runInShell: true);
-      return true;
+      final res = await Process.run(
+        'powershell',
+        ['-NoProfile', '-NonInteractive', '-Command', psScript],
+      ).timeout(const Duration(seconds: 8));
+      final out = res.stdout.toString().trim();
+      return res.exitCode == 0 && (out.contains('LAUNCHED') || out.contains('FOCUSED'));
     } catch (e) {
       debugPrint('⚠️ [WorkstationService] Launch error: $e');
       return false;

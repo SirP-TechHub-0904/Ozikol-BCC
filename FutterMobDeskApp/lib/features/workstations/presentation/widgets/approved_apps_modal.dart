@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:window_manager/window_manager.dart';
 import '../../services/workstation_watcher_service.dart';
 
 /// Models an approved application entry.
@@ -348,17 +349,30 @@ class _ApprovedAppsDialogState extends ConsumerState<ApprovedAppsDialog> {
 
   Future<void> _launchApp(ApprovedAppEntry app) async {
     final watcher = ref.read(workstationWatcherProvider);
-    final success = await watcher.launchApprovedApp(app.processName);
-
-    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pop();
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    // If workstation is in exclusive fullscreen mode, exit fullscreen to maximized
+    // so the newly launched external application window is visible in front of the user.
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      try {
+        if (await windowManager.isFullScreen()) {
+          await windowManager.setFullScreen(false);
+        }
+      } catch (_) {}
+    }
+
+    final success = await watcher.launchApprovedApp(
+      app.processName,
+      displayName: app.displayName,
+    );
+
+    messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
             Icon(
-              success ? Icons.rocket_launch_rounded : Icons.info_outline_rounded,
+              success ? Icons.rocket_launch_rounded : Icons.warning_amber_rounded,
               color: Colors.white,
               size: 16,
             ),
@@ -366,13 +380,13 @@ class _ApprovedAppsDialogState extends ConsumerState<ApprovedAppsDialog> {
             Expanded(
               child: Text(
                 success
-                    ? 'Launching ${app.displayName} (${app.processName})...'
-                    : 'Dispatched launch command for ${app.displayName}.',
+                    ? 'Opened ${app.displayName} (${app.processName}).'
+                    : 'Could not find ${app.displayName} (${app.processName}) installed on this PC.',
               ),
             ),
           ],
         ),
-        backgroundColor: success ? const Color(0xFF16A34A) : const Color(0xFF4338CA),
+        backgroundColor: success ? const Color(0xFF16A34A) : const Color(0xFFD97706),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
       ),
