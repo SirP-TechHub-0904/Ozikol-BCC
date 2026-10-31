@@ -448,14 +448,8 @@ export interface ViolationLogItem {
                   </td>
                   <td>
                     <div class="btn-group" *ngIf="r.status === 'Pending'">
-                      <button (click)="respondRequest(r.id, true, 2)" class="btn-approve" title="Approve for 2 Hours">
-                        Approve (2h)
-                      </button>
-                      <button (click)="respondRequest(r.id, true, 8)" class="btn-approve-day" title="Approve for Today">
-                        Approve (8h)
-                      </button>
-                      <button (click)="respondRequest(r.id, true, 8760, true)" class="btn-approve-perm" title="Approve Permanently">
-                        Permanent
+                      <button (click)="respondRequest(r.id, true)" class="btn-approve" title="Approve Request">
+                        Approve
                       </button>
                       <button (click)="respondRequest(r.id, false)" class="btn-deny" title="Deny Request">
                         Deny
@@ -1082,44 +1076,34 @@ export interface ViolationLogItem {
     .reason-cell { max-width: 280px; }
     .btn-group { display: flex; gap: 4px; flex-wrap: wrap; }
     .btn-approve {
-      padding: 4px 8px;
+      padding: 6px 14px;
       background: #dcfce7;
       color: #166534;
-      border: 1px solid #bbf7d0;
+      border: 1px solid #86efac;
       border-radius: 6px;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
+      transition: all 0.15s ease;
     }
-    .btn-approve-day {
-      padding: 4px 8px;
-      background: #eff6ff;
-      color: #1e40af;
-      border: 1px solid #bfdbfe;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-approve-perm {
-      padding: 4px 8px;
-      background: #faf5ff;
-      color: #6b21a8;
-      border: 1px solid #e9d5ff;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
+    .btn-approve:hover {
+      background: #bbf7d0;
+      border-color: #4ade80;
     }
     .btn-deny {
-      padding: 4px 8px;
+      padding: 6px 14px;
       background: #fee2e2;
       color: #991b1b;
-      border: 1px solid #fecaca;
+      border: 1px solid #fca5a5;
       border-radius: 6px;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 700;
       cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-deny:hover {
+      background: #fecaca;
+      border-color: #f87171;
     }
 
     /* Empty State */
