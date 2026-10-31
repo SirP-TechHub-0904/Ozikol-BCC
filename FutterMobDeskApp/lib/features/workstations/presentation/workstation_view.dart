@@ -10,9 +10,10 @@ import '../services/workstation_watcher_service.dart';
 /// Workstation & Shift Tracker Screen (bcp-workspace).
 /// Features:
 /// 1. Work Shift Controller (Start Work, Take Break, Close Work)
-/// 2. Today's Shift Card with 3 core time reports (Gross, Mid-Shift Closures, Net Effective Hours)
-/// 3. History of Works Ledger
-/// 4. Sandboxed Work Folder Access
+/// 2. Today's Shift Card (Start Work, Break Range, Close Work Time)
+/// 3. Shift Calendar & Future Schedule Viewer Modal
+/// 4. History of Works Ledger with Automated Overtime (OT) Detection & Responsive Min-Width Scrolling
+/// 5. Sandboxed Work Folder Access
 /// </summary>
 class WorkstationView extends ConsumerStatefulWidget {
   final dynamic workspace;
@@ -36,57 +37,77 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
   final int _midShiftClosureMinutes = 30;
   Timer? _tickerTimer;
 
-  // Pre-populated History of Works ledger
+  // Pre-populated History of Works ledger with Overtime (OT)
   final List<Map<String, dynamic>> _workHistory = [
     {
       'date': 'Today (Live)',
       'start': '08:30 AM',
-      'close': 'In Progress',
-      'breaks': '45 mins (12:30 PM - 01:15 PM)',
-      'closureGap': '30 mins (02:10 PM - 02:40 PM)',
-      'totalWorkHours': '5 hrs 00 mins',
+      'close': '06:30 PM (Projected)',
+      'breakDuration': '45 mins',
+      'breakRange': '12:30 PM – 01:15 PM',
+      'inactiveDuration': '30 mins',
+      'inactiveRange': '02:10 PM – 02:40 PM',
+      'totalWorkHours': '9 hrs 15 mins',
+      'overtime': '+1h 30m OT',
       'status': 'In Progress',
       'isToday': true,
+      'hasOvertime': true,
     },
     {
       'date': 'Yesterday (30 Oct)',
       'start': '08:32 AM',
       'close': '05:05 PM',
-      'breaks': '40 mins (12:45 PM - 01:25 PM)',
-      'closureGap': 'None',
+      'breakDuration': '40 mins',
+      'breakRange': '12:45 PM – 01:25 PM',
+      'inactiveDuration': 'None',
+      'inactiveRange': '',
       'totalWorkHours': '7 hrs 53 mins',
-      'status': 'Audited & Approved',
+      'overtime': '+5m OT',
+      'status': 'Approved',
       'isToday': false,
+      'hasOvertime': true,
     },
     {
       'date': 'Wed, 29 Oct 2026',
       'start': '08:45 AM',
       'close': '04:30 PM',
-      'breaks': '60 mins (01:00 PM - 02:00 PM)',
-      'closureGap': '15 mins (11:15 AM - 11:30 AM)',
+      'breakDuration': '60 mins',
+      'breakRange': '01:00 PM – 02:00 PM',
+      'inactiveDuration': '15 mins',
+      'inactiveRange': '11:15 AM – 11:30 AM',
       'totalWorkHours': '6 hrs 30 mins',
-      'status': 'Audited & Approved',
+      'overtime': '—',
+      'status': 'Approved',
       'isToday': false,
+      'hasOvertime': false,
     },
     {
       'date': 'Tue, 28 Oct 2026',
       'start': '08:28 AM',
       'close': '05:12 PM',
-      'breaks': '45 mins (12:30 PM - 01:15 PM)',
-      'closureGap': 'None',
+      'breakDuration': '45 mins',
+      'breakRange': '12:30 PM – 01:15 PM',
+      'inactiveDuration': 'None',
+      'inactiveRange': '',
       'totalWorkHours': '7 hrs 59 mins',
-      'status': 'Audited & Approved',
+      'overtime': '+12m OT',
+      'status': 'Approved',
       'isToday': false,
+      'hasOvertime': true,
     },
     {
       'date': 'Mon, 27 Oct 2026',
       'start': '08:50 AM',
-      'close': '05:20 PM',
-      'breaks': '50 mins (01:10 PM - 02:00 PM)',
-      'closureGap': '20 mins (03:30 PM - 03:50 PM)',
-      'totalWorkHours': '7 hrs 20 mins',
-      'status': 'Audited & Approved',
+      'close': '06:50 PM',
+      'breakDuration': '50 mins',
+      'breakRange': '01:10 PM – 02:00 PM',
+      'inactiveDuration': '20 mins',
+      'inactiveRange': '03:30 PM – 03:50 PM',
+      'totalWorkHours': '8 hrs 40 mins',
+      'overtime': '+1h 50m OT',
+      'status': 'Approved',
       'isToday': false,
+      'hasOvertime': true,
     },
   ];
 
@@ -145,8 +166,10 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
       _shiftEndTime = null;
       _breakMinutesTaken = 0;
       _workHistory[0]['status'] = 'In Progress';
-      _workHistory[0]['close'] = 'In Progress';
+      _workHistory[0]['close'] = '05:00 PM (Projected)';
       _workHistory[0]['start'] = 'Just Started';
+      _workHistory[0]['overtime'] = '—';
+      _workHistory[0]['hasOvertime'] = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -182,7 +205,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
       _isShiftActive = false;
       _isOnBreak = false;
       _shiftEndTime = DateTime.now();
-      _workHistory[0]['status'] = 'Shift Closed';
+      _workHistory[0]['status'] = 'Closed';
       _workHistory[0]['close'] = 'Closed Just Now';
       _workHistory[0]['totalWorkHours'] = _formatDurationHM(_netEffectiveDuration);
     });
@@ -265,7 +288,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                       Text(
                         'workstation.subtitle'.tr(
                           ref,
-                          fallback: 'Track today\'s shift hours, monitor breaks and mid-shift closures with automated station auditing.',
+                          fallback: "Track today's shift hours, monitor breaks and inactive time with automated station auditing.",
                         ),
                         style: TextStyle(fontSize: 13, color: textSecondary),
                       ),
@@ -273,6 +296,20 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                   ),
                 ),
                 const SizedBox(width: 16),
+                // Shift Calendar Button
+                OutlinedButton.icon(
+                  onPressed: () => _openShiftCalendarDialog(context),
+                  icon: const Icon(Icons.calendar_month_rounded, size: 16),
+                  label: const Text('Shift Calendar'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF4338CA),
+                    backgroundColor: isDark ? const Color(0xFF312E81).withValues(alpha: 0.2) : const Color(0xFFEEF2FF),
+                    side: const BorderSide(color: Color(0xFFC7D2FE)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                  ),
+                ),
+                const SizedBox(width: 10),
                 OutlinedButton.icon(
                   onPressed: () => _openLocalFolder(watcher.approvedDirectory),
                   icon: const Icon(Icons.folder_open_rounded, size: 16),
@@ -281,7 +318,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: Color(0xFFBFDBFE)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                   ),
                 ),
               ],
@@ -292,11 +329,11 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
             _buildSessionControlBar(isDark, surfaceColor, borderColor, textPrimary, textSecondary),
             const SizedBox(height: 20),
 
-            // 3. TODAY'S SHIFT CARD (Top 3 Time Reports & Anomaly Calculator)
+            // 3. TODAY'S SHIFT CARD (Start, Break, Close Work Time)
             _buildTodaysShiftCard(isDark, surfaceColor, borderColor, textPrimary, textSecondary, machineName),
             const SizedBox(height: 24),
 
-            // 4. HISTORY OF WORKS (Audited Shift Ledger)
+            // 4. HISTORY OF WORKS (Audited Shift Ledger with Overtime & Horizontal Scroll)
             _buildHistoryOfWorksLedger(isDark, surfaceColor, borderColor, textPrimary, textSecondary),
             const SizedBox(height: 40),
           ],
@@ -451,7 +488,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
   }
 
   // ==========================================
-  // WIDGET: TODAY'S SHIFT CARD (Top 3 Reports)
+  // WIDGET: TODAY'S SHIFT CARD
   // ==========================================
   Widget _buildTodaysShiftCard(
     bool isDark,
@@ -491,14 +528,14 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.analytics_rounded, color: AppColors.primary, size: 22),
+                    child: const Icon(Icons.badge_outlined, color: AppColors.primary, size: 22),
                   ),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Today's Shift Card & Work Hour Analytics",
+                        "Today's Shift Card",
                         style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.w800,
@@ -507,7 +544,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                         ),
                       ),
                       Text(
-                        'Logged on $machineName • Enforced Station Schedule (08:30 AM - 05:00 PM)',
+                        'Standard Schedule: Monday – Friday (09:00 AM – 05:00 PM) • Station $machineName',
                         style: TextStyle(fontSize: 12, color: textSecondary),
                       ),
                     ],
@@ -536,7 +573,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                 child: _buildTimeMetricBlock(
                   title: 'START WORK TIME',
                   timeValue: '08:30 AM',
-                  subtitle: 'Station boot & biometric login',
+                  subtitle: 'Clocked in today at station',
                   icon: Icons.login_rounded,
                   accentColor: const Color(0xFF16A34A),
                   isDark: isDark,
@@ -569,7 +606,6 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
               ),
             ],
           ),
-
         ],
       ),
     );
@@ -631,9 +667,8 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     );
   }
 
-
   // ==========================================
-  // WIDGET: HISTORY OF WORKS LEDGER
+  // WIDGET: HISTORY OF WORKS LEDGER (Min-Width Protected)
   // ==========================================
   Widget _buildHistoryOfWorksLedger(
     bool isDark,
@@ -669,154 +704,484 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Text(
-                  '${_workHistory.length} Days Audited',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSecondary),
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFFDE68A)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.bolt_rounded, size: 14, color: Color(0xFFD97706)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Overtime (OT) Tracked',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Text(
+                      '${_workHistory.length} Days Audited',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSecondary),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
           const SizedBox(height: 14),
 
-          // Ledger Table Headers
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: borderColor),
-            ),
-            child: const Row(
-              children: [
-                Expanded(flex: 3, child: Text('DATE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                Expanded(flex: 2, child: Text('START WORK', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                Expanded(flex: 2, child: Text('CLOSE WORK', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                Expanded(flex: 4, child: Text('BREAKS TAKEN', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                Expanded(flex: 4, child: Text('INACTIVE TIME', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                Expanded(flex: 3, child: Text('TOTAL WORK HR', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                Expanded(flex: 3, child: Text('STATUS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
+          // Scrollable Container for Compact / Minimized Viewports (guarantees no text crunching)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const minTableWidth = 920.0;
+              final effectiveWidth = constraints.maxWidth < minTableWidth ? minTableWidth : constraints.maxWidth;
 
-          // Ledger Rows
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _workHistory.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 6),
-            itemBuilder: (context, index) {
-              final row = _workHistory[index];
-              final isToday = row['isToday'] == true;
-              final hasClosure = row['closureGap'] != 'None';
-
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isToday
-                      ? (isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.2) : const Color(0xFFEFF6FF))
-                      : (isDark ? const Color(0xFF0F172A).withValues(alpha: 0.5) : Colors.white),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isToday ? const Color(0xFF93C5FD) : borderColor,
-                    width: isToday ? 1.2 : 1.0,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        row['date'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
-                          color: isToday ? AppColors.primary : textPrimary,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        row['start'] as String,
-                        style: TextStyle(fontSize: 12, color: textPrimary),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        row['close'] as String,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                          color: isToday ? const Color(0xFF16A34A) : textPrimary,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: Text(
-                        row['breaks'] as String,
-                        style: TextStyle(fontSize: 11.5, color: textSecondary),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: Text(
-                        row['closureGap'] as String,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: hasClosure ? const Color(0xFFDC2626) : textSecondary,
-                          fontWeight: hasClosure ? FontWeight.w700 : FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        row['totalWorkHours'] as String,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontFamily: 'monospace',
-                          fontWeight: FontWeight.w800,
-                          color: isToday ? const Color(0xFF16A34A) : textPrimary,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: effectiveWidth,
+                  child: Column(
+                    children: [
+                      // Ledger Table Headers
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
-                          color: isToday ? const Color(0xFFDCFCE7) : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
-                          borderRadius: BorderRadius.circular(4),
+                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: borderColor),
                         ),
-                        child: Text(
-                          row['status'] as String,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: isToday ? const Color(0xFF15803D) : textSecondary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        child: const Row(
+                          children: [
+                            SizedBox(width: 130, child: Text('DATE', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                            SizedBox(width: 80, child: Text('START', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                            SizedBox(width: 140, child: Text('CLOSE WORK', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                            Expanded(flex: 3, child: Text('BREAKS TAKEN', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                            Expanded(flex: 3, child: Text('INACTIVE TIME', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                            SizedBox(width: 110, child: Text('WORK HRS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                            SizedBox(width: 100, child: Text('OVERTIME', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                            SizedBox(width: 95, child: Text('STATUS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+
+                      // Ledger Rows
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _workHistory.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 6),
+                        itemBuilder: (context, index) {
+                          final row = _workHistory[index];
+                          final isToday = row['isToday'] == true;
+                          final hasInactive = row['inactiveDuration'] != 'None';
+                          final hasOT = row['hasOvertime'] == true;
+
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: isToday
+                                  ? (isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.2) : const Color(0xFFEFF6FF))
+                                  : (isDark ? const Color(0xFF0F172A).withValues(alpha: 0.5) : Colors.white),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isToday ? const Color(0xFF93C5FD) : borderColor,
+                                width: isToday ? 1.2 : 1.0,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                // 1. Date
+                                SizedBox(
+                                  width: 130,
+                                  child: Text(
+                                    row['date'] as String,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+                                      color: isToday ? AppColors.primary : textPrimary,
+                                    ),
+                                  ),
+                                ),
+
+                                // 2. Start Work
+                                SizedBox(
+                                  width: 80,
+                                  child: Text(
+                                    row['start'] as String,
+                                    style: TextStyle(fontSize: 12, color: textPrimary),
+                                  ),
+                                ),
+
+                                // 3. Close Work
+                                SizedBox(
+                                  width: 140,
+                                  child: Text(
+                                    row['close'] as String,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                                      color: isToday ? const Color(0xFF16A34A) : textPrimary,
+                                    ),
+                                  ),
+                                ),
+
+                                // 4. Breaks Taken (Two-line clear layout)
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        row['breakDuration'] as String,
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textPrimary),
+                                      ),
+                                      if ((row['breakRange'] as String).isNotEmpty)
+                                        Text(
+                                          row['breakRange'] as String,
+                                          style: TextStyle(fontSize: 10.5, color: textSecondary),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+
+                                // 5. Inactive Time (Two-line clear layout)
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        row['inactiveDuration'] as String,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: hasInactive ? FontWeight.w800 : FontWeight.w500,
+                                          color: hasInactive ? const Color(0xFFDC2626) : textSecondary,
+                                        ),
+                                      ),
+                                      if (hasInactive && (row['inactiveRange'] as String).isNotEmpty)
+                                        Text(
+                                          row['inactiveRange'] as String,
+                                          style: const TextStyle(fontSize: 10.5, color: Color(0xFFDC2626)),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+
+                                // 6. Work Hours
+                                SizedBox(
+                                  width: 110,
+                                  child: Text(
+                                    row['totalWorkHours'] as String,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.w800,
+                                      color: isToday ? const Color(0xFF16A34A) : textPrimary,
+                                    ),
+                                  ),
+                                ),
+
+                                // 7. Overtime (OT)
+                                SizedBox(
+                                  width: 100,
+                                  child: hasOT
+                                      ? Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFEF3C7),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: const Color(0xFFFDE68A)),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFD97706)),
+                                              const SizedBox(width: 2),
+                                              Text(
+                                                row['overtime'] as String,
+                                                style: const TextStyle(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: Color(0xFFB45309),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : Text(
+                                          '—',
+                                          style: TextStyle(fontSize: 12, color: textSecondary),
+                                        ),
+                                ),
+
+                                // 8. Status Pill
+                                SizedBox(
+                                  width: 95,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: isToday
+                                          ? const Color(0xFFDCFCE7)
+                                          : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (!isToday) ...[
+                                          const Icon(Icons.check_circle_rounded, size: 11, color: Color(0xFF16A34A)),
+                                          const SizedBox(width: 3),
+                                        ],
+                                        Text(
+                                          row['status'] as String,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: isToday ? const Color(0xFF15803D) : textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
           ),
         ],
       ),
+    );
+  }
+
+  // ==========================================
+  // SHIFT CALENDAR DIALOG
+  // ==========================================
+  void _openShiftCalendarDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final border = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textP = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textS = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    final weekdays = [
+      {'day': 'Monday', 'date': '27 Oct', 'hours': '09:00 AM – 05:00 PM', 'status': 'Worked (8h 40m • +1h 50m OT)', 'isOff': false, 'isToday': false},
+      {'day': 'Tuesday', 'date': '28 Oct', 'hours': '09:00 AM – 05:00 PM', 'status': 'Worked (7h 59m • +12m OT)', 'isOff': false, 'isToday': false},
+      {'day': 'Wednesday', 'date': '29 Oct', 'hours': '09:00 AM – 05:00 PM', 'status': 'Worked (6h 30m • Standard)', 'isOff': false, 'isToday': false},
+      {'day': 'Thursday', 'date': '30 Oct', 'hours': '09:00 AM – 05:00 PM', 'status': 'Worked (7h 53m • +5m OT)', 'isOff': false, 'isToday': false},
+      {'day': 'Friday', 'date': '31 Oct', 'hours': '09:00 AM – 05:00 PM', 'status': 'Today (Active Shift)', 'isOff': false, 'isToday': true},
+      {'day': 'Saturday', 'date': '01 Nov', 'hours': 'Off-Duty', 'status': 'Weekend Rest Day', 'isOff': true, 'isToday': false},
+      {'day': 'Sunday', 'date': '02 Nov', 'hours': 'Off-Duty', 'status': 'Weekend Rest Day', 'isOff': true, 'isToday': false},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620, maxHeight: 680),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title & Close Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEEF2FF),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.calendar_month_rounded, color: Color(0xFF4338CA), size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Shift Calendar & Schedule Roster',
+                                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: textP),
+                              ),
+                              Text(
+                                'Official Company Policy: 9 to 5 (Mon – Fri)',
+                                style: TextStyle(fontSize: 12, color: textS),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        icon: const Icon(Icons.close_rounded, size: 20),
+                        splashRadius: 18,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Overtime & Policy Banner
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFDE68A)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.bolt_rounded, color: Color(0xFFD97706), size: 20),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Overtime (OT) Policy: Any active work past 05:00 PM on weekdays or anytime on weekends is automatically recorded as billable Overtime.',
+                            style: TextStyle(fontSize: 12, color: Color(0xFF92400E), height: 1.3, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  Text(
+                    'WEEKLY SHIFT SCHEDULE',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: textS, letterSpacing: 0.6),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Weekdays Roster List
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: weekdays.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final item = weekdays[index];
+                        final isToday = item['isToday'] == true;
+                        final isOff = item['isOff'] == true;
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isToday
+                                ? const Color(0xFFEFF6FF)
+                                : (isOff ? (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)) : surface),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isToday ? const Color(0xFF93C5FD) : border,
+                              width: isToday ? 1.4 : 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 80,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item['day'] as String,
+                                          style: TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: isToday ? FontWeight.w800 : FontWeight.w700,
+                                            color: isToday ? AppColors.primary : (isOff ? textS : textP),
+                                          ),
+                                        ),
+                                        Text(
+                                          item['date'] as String,
+                                          style: TextStyle(fontSize: 11, color: textS),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Text(
+                                    item['hours'] as String,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: isOff ? textS : textP,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isToday
+                                      ? const Color(0xFFDCFCE7)
+                                      : (isOff ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)) : const Color(0xFFF1F5F9)),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  item['status'] as String,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: isToday
+                                        ? const Color(0xFF15803D)
+                                        : (isOff ? textS : const Color(0xFF475569)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Close button
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Close Schedule'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -846,7 +1211,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Need to explain a mid-shift closure, power outage, or external assignment? Submit a justification for supervisor review.',
+                  'Need to explain an off-station period, power outage, or external assignment? Submit a justification for supervisor review.',
                   style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
                 ),
                 const SizedBox(height: 16),
@@ -855,7 +1220,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                   maxLines: 3,
                   decoration: InputDecoration(
                     labelText: 'Adjustment Reason & Time Window',
-                    hintText: 'e.g. Off-site client emergency meeting from 02:10 PM to 02:40 PM...',
+                    hintText: 'e.g. Off-site client meeting from 02:10 PM to 02:40 PM...',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     contentPadding: const EdgeInsets.all(12),
                   ),
