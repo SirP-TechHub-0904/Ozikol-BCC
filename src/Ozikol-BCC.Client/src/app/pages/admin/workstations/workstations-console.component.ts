@@ -2253,10 +2253,10 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     }
 
     this.refreshAll();
-    // Real-time live polling every 3 seconds across stations, access requests, violations, and activity logs
+    // Real-time live polling every 3 seconds across stations, policies, access requests, violations, and activity logs
     this.pollInterval = setInterval(() => {
       this.loadStations(false);
-      this.loadRequests();
+      this.loadRequests().then(() => this.loadPolicies());
       this.loadViolations();
       this.loadActivityLogs();
     }, 3000);
@@ -2364,7 +2364,8 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
               'excel.exe',
               'powerpnt.exe',
               'acrord32.exe',
-              'calc.exe'
+              'calc.exe',
+              'ms-teams.exe'
             ]);
             const approvedRequestProcs = new Set(
               (this.requests || [])
