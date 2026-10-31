@@ -1151,6 +1151,7 @@ export interface ViolationLogItem {
   `]
 })
 export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
+  brandName: string = (typeof localStorage !== "undefined" ? (localStorage.getItem("tenant_name") || localStorage.getItem("company_name")) : null) || "Workspace";
   activeTab: 'stations' | 'policies' | 'requests' | 'violations' = 'stations';
   isLoading: boolean = false;
   pollInterval: any;
