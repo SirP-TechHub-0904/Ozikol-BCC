@@ -104,6 +104,10 @@ class WorkstationWatcherService extends ChangeNotifier {
   String? _stationKey;
   String? get stationKey => _stationKey;
 
+  String? _userId;
+  String? _userName;
+  String? _userEmail;
+
   bool _isLocked = false;
   bool get isLocked => _isLocked;
 
@@ -256,6 +260,9 @@ class WorkstationWatcherService extends ChangeNotifier {
     try {
       final machineName = Platform.localHostname;
       _stationKey = 'WS-${machineName.toUpperCase()}';
+      _userId = userId;
+      _userName = userName;
+      _userEmail = userEmail;
 
       // 1. Handshake with server
       final response = await _api.dio.post('/api/Workstations/register', data: {
@@ -413,8 +420,8 @@ class WorkstationWatcherService extends ChangeNotifier {
       _inspectRunningProcesses();
     });
 
-    // Telemetry heartbeat runs every 12 seconds
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+    // Telemetry heartbeat runs every 4 seconds for real-time Web Console updates
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       _sendTelemetryHeartbeat();
     });
 
@@ -569,6 +576,8 @@ class WorkstationWatcherService extends ChangeNotifier {
         // Report violation to backend API
         await _api.dio.post('/api/Workstations/violations', data: {
           'machineName': Platform.localHostname,
+          'userId': _userId ?? _userEmail,
+          'userName': _userName,
           'processName': procName,
           'windowTitle': title,
           'actionTaken': 'TERMINATED',
@@ -661,14 +670,21 @@ class WorkstationWatcherService extends ChangeNotifier {
             }
           }
 
-          // Update active temporary access approvals
+          // Update active temporary access approvals without wiping session approvals
           final approvedList = data['approvedTemporaryProcesses'] as List<dynamic>? ?? [];
-          _temporaryApprovals.clear();
+          bool addedAny = false;
           for (final item in approvedList) {
-            _temporaryApprovals.add(item.toString().toLowerCase().trim());
+            final clean = item.toString().toLowerCase().trim();
+            if (_temporaryApprovals.add(clean)) {
+              addedAny = true;
+            }
+          }
+          if (addedAny) {
+            notifyListeners();
           }
         }
       }
+      await refreshPolicies();
     } catch (_) {}
   }
 
@@ -729,6 +745,8 @@ class WorkstationWatcherService extends ChangeNotifier {
       try {
         await _api.dio.post('/api/Workstations/violations', data: {
           'machineName': Platform.localHostname,
+          'userId': _userId ?? _userEmail,
+          'userName': _userName,
           'processName': procName,
           'windowTitle': windowTitle,
           'actionTaken': 'WARNING_LOGGED',
@@ -778,8 +796,8 @@ class WorkstationWatcherService extends ChangeNotifier {
     try {
       final res = await _api.dio.post('/api/Workstations/request-access', data: {
         'machineName': Platform.localHostname,
-        'userId': userId ?? 'Staff',
-        'userName': userName ?? 'Staff Member',
+        'userId': userId ?? _userId ?? _userEmail ?? 'Staff',
+        'userName': userName ?? _userName ?? 'Staff Member',
         'requestedProcessName': processName,
         'reason': reason,
       });

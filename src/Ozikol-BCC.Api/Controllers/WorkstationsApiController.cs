@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using Ozikol_BCC.Application.Interfaces.Services;
+using static Ozikol_BCC.Domain.Enum.Enum;
 
 namespace Ozikol_BCC.Api.Controllers
 {
@@ -22,13 +23,16 @@ namespace Ozikol_BCC.Api.Controllers
     {
         private readonly DashboardDbContext _db;
         private readonly ITenantActivityLogger? _activityLogger;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         public WorkstationsApiController(
             DashboardDbContext db,
-            ITenantActivityLogger? activityLogger = null)
+            ITenantActivityLogger? activityLogger = null,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _db = db;
             _activityLogger = activityLogger;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         // =====================================================================
@@ -257,6 +261,18 @@ namespace Ozikol_BCC.Api.Controllers
                 );
             }
 
+            await DispatchWorkstationNotificationAsync(
+                title: targetLock ? $"Workstation Locked: {station.MachineName}" : $"Workstation Unlocked: {station.MachineName}",
+                message: targetLock
+                    ? $"Workstation <strong>{station.MachineName}</strong> (Operator: <strong>{station.AssignedUserName ?? "Staff"}</strong>) has been locked. Reason: {station.LockReason ?? "Inactivity or remote lock"}."
+                    : $"Workstation <strong>{station.MachineName}</strong> (Operator: <strong>{station.AssignedUserName ?? "Staff"}</strong>) has been unlocked and resumed active duty.",
+                severity: targetLock ? NotificationSeverity.Failed : NotificationSeverity.Success,
+                targetUserIdOrEmail: station.AssignedUserId ?? station.AssignedUserEmail,
+                targetUserName: station.AssignedUserName,
+                sendEmail: targetLock,
+                icon: targetLock ? "lock" : "lock_open"
+            );
+
             return Ok(new
             {
                 success = true,
@@ -461,6 +477,16 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _db.SaveChangesAsync();
 
+            await DispatchWorkstationNotificationAsync(
+                title: $"Security Violation Intercepted on {log.MachineName}",
+                message: $"Unauthorized application <code>{log.ProcessName}</code> ({log.WindowTitle ?? "Restricted Process"}) was intercepted and {log.ActionTaken.ToLowerInvariant()} on workstation <strong>{log.MachineName}</strong> (Operator: <strong>{log.UserName}</strong>).",
+                severity: NotificationSeverity.Error,
+                targetUserIdOrEmail: log.UserId,
+                targetUserName: log.UserName,
+                sendEmail: true,
+                icon: "gavel"
+            );
+
             return Ok(new { success = true, message = "Violation logged.", logId = log.Id });
         }
 
@@ -508,6 +534,16 @@ namespace Ozikol_BCC.Api.Controllers
 
             _db.BcpWorkstationAccessRequests.Add(req);
             await _db.SaveChangesAsync();
+
+            await DispatchWorkstationNotificationAsync(
+                title: $"App Access Request: {req.RequestedProcessName} ({req.MachineName})",
+                message: $"<strong>{req.UserName}</strong> on workstation <strong>{req.MachineName}</strong> requested permission to use <code>{req.RequestedProcessName}</code>.<br/><br/><strong>Reason:</strong> {req.Reason}",
+                severity: NotificationSeverity.Update,
+                targetUserIdOrEmail: req.UserId,
+                targetUserName: req.UserName,
+                sendEmail: true,
+                icon: "pending_actions"
+            );
 
             return Ok(new { success = true, message = "Access request submitted. Awaiting manager approval.", requestId = req.Id });
         }
@@ -571,12 +607,131 @@ namespace Ozikol_BCC.Api.Controllers
 
             await _db.SaveChangesAsync();
 
+            await DispatchWorkstationNotificationAsync(
+                title: dto.Approve
+                    ? $"Application Approved: {req.RequestedProcessName}"
+                    : $"Application Request Denied: {req.RequestedProcessName}",
+                message: dto.Approve
+                    ? $"Good news! Your request to run <code>{req.RequestedProcessName}</code> on workstation <strong>{req.MachineName}</strong> has been <strong>Approved</strong> by the administrator. You can now launch it from your Approved Apps list."
+                    : $"Your request to run <code>{req.RequestedProcessName}</code> on workstation <strong>{req.MachineName}</strong> was <strong>Denied</strong> by the administrator.",
+                severity: dto.Approve ? NotificationSeverity.Success : NotificationSeverity.Error,
+                targetUserIdOrEmail: req.UserId,
+                targetUserName: req.UserName,
+                sendEmail: true,
+                icon: dto.Approve ? "verified" : "block"
+            );
+
             return Ok(new
             {
                 success = true,
                 message = $"Request {(dto.Approve ? "Approved" : "Denied")} successfully.",
                 data = req
             });
+        }
+
+        /// <summary>
+        /// Dispatches real-time In-App notifications and transactional Email alerts to Workspace Admins and the station's assigned operator.
+        /// </summary>
+        private async Task DispatchWorkstationNotificationAsync(
+            string title,
+            string message,
+            NotificationSeverity severity,
+            string? targetUserIdOrEmail,
+            string? targetUserName,
+            bool sendEmail,
+            string icon = "desktop_windows")
+        {
+            if (_notificationDispatcher == null) return;
+
+            try
+            {
+                var channels = sendEmail
+                    ? (NotificationChannels.InApp | NotificationChannels.Email)
+                    : NotificationChannels.InApp;
+
+                var adminEmail = await _db.Users
+                    .AsNoTracking()
+                    .Where(u => u.Email != null && u.Email != "")
+                    .Select(u => u.Email)
+                    .FirstOrDefaultAsync();
+
+                // Resolve employee Profile if possible (by Id, Email, or station assignment)
+                Profile? operatorProfile = null;
+                if (!string.IsNullOrWhiteSpace(targetUserIdOrEmail) && targetUserIdOrEmail != "Unknown")
+                {
+                    var key = targetUserIdOrEmail.Trim();
+                    operatorProfile = await _db.Users
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.Id == key || (u.Email != null && u.Email.ToLower() == key.ToLower()));
+                }
+
+                // 1. Broadcast In-App notification + Admin Email copy so the Admin Console & Notification Bell update in real time
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.BroadcastAll,
+                    RecipientEmail = sendEmail ? (adminEmail ?? operatorProfile?.Email) : null,
+                    RecipientName = targetUserName ?? operatorProfile?.FirstName ?? "Administrator",
+                    Title = title,
+                    Message = message,
+                    EmailSubject = title,
+                    Severity = severity,
+                    Channels = channels,
+                    SendEmailCopy = sendEmail,
+                    Module = "Workstations",
+                    Icon = icon,
+                    Category = BcpMessageCategory.Security,
+                    Priority = severity == NotificationSeverity.Error ? BcpMessagePriority.High : BcpMessagePriority.Normal,
+                    ActionUrl = "/workspace/stations"
+                });
+
+                // 2. If we resolved a specific operator profile (or valid email), also send a direct SingleUser notification + email
+                if (operatorProfile != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = operatorProfile.Id,
+                        RecipientEmail = operatorProfile.Email,
+                        RecipientName = !string.IsNullOrWhiteSpace(operatorProfile.FirstName)
+                            ? $"{operatorProfile.FirstName} {operatorProfile.LastName}".Trim()
+                            : (targetUserName ?? operatorProfile.UserName),
+                        Title = title,
+                        Message = message,
+                        EmailSubject = title,
+                        Severity = severity,
+                        Channels = channels,
+                        SendEmailCopy = sendEmail,
+                        Module = "Workstations",
+                        Icon = icon,
+                        Category = BcpMessageCategory.Security,
+                        Priority = severity == NotificationSeverity.Error ? BcpMessagePriority.High : BcpMessagePriority.Normal,
+                        ActionUrl = "/workspace/stations"
+                    });
+                }
+                else if (sendEmail && !string.IsNullOrWhiteSpace(targetUserIdOrEmail) && targetUserIdOrEmail.Contains('@'))
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        RecipientEmail = targetUserIdOrEmail.Trim(),
+                        RecipientName = targetUserName ?? "Workspace Operator",
+                        Title = title,
+                        Message = message,
+                        EmailSubject = title,
+                        Severity = severity,
+                        Channels = NotificationChannels.Email,
+                        SendEmailCopy = true,
+                        Module = "Workstations",
+                        Icon = icon,
+                        Category = BcpMessageCategory.Security,
+                        ActionUrl = "/workspace/stations"
+                    });
+                }
+            }
+            catch
+            {
+                // Non-blocking: never fail the workstation API call if email/notification dispatch encounters an issue
+            }
         }
         /// <summary>
         /// Dynamically resolves the approved company document path from the tenant's brand name.

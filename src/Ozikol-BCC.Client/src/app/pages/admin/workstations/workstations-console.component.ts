@@ -132,7 +132,7 @@ export interface ViolationLogItem {
           </div>
         </div>
 
-        <div class="kpi-card">
+        <div class="kpi-card cursor-pointer" (click)="activeTab = 'violations'; selectedStation = null">
           <div class="kpi-icon-wrap bg-red-subtle">
             <span class="material-symbols-outlined text-red">security_update_warning</span>
           </div>
@@ -142,7 +142,7 @@ export interface ViolationLogItem {
           </div>
         </div>
 
-        <div class="kpi-card cursor-pointer" (click)="activeTab = 'requests'">
+        <div class="kpi-card cursor-pointer" (click)="activeTab = 'requests'; selectedStation = null">
           <div class="kpi-icon-wrap bg-purple-subtle">
             <span class="material-symbols-outlined text-purple">hourglass_top</span>
           </div>
@@ -155,30 +155,30 @@ export interface ViolationLogItem {
 
       <!-- Primary Navigation Tabs -->
       <div class="nav-tabs-bar">
-        <button class="tab-btn" [class.active]="activeTab === 'stations'" (click)="activeTab = 'stations'">
+        <button class="tab-btn" [class.active]="activeTab === 'stations'" (click)="activeTab = 'stations'; selectedStation = null">
           <span class="material-symbols-outlined">devices</span>
           <span>Connected Workstations ({{ stations.length }})</span>
         </button>
 
-        <button class="tab-btn" [class.active]="activeTab === 'policies'" (click)="activeTab = 'policies'">
+        <button class="tab-btn" [class.active]="activeTab === 'policies'" (click)="activeTab = 'policies'; selectedStation = null">
           <span class="material-symbols-outlined">rule</span>
           <span>App Whitelist & Directory Policy ({{ appPolicies.length }})</span>
         </button>
 
-        <button class="tab-btn" [class.active]="activeTab === 'requests'" (click)="activeTab = 'requests'">
+        <button class="tab-btn" [class.active]="activeTab === 'requests'" (click)="activeTab = 'requests'; selectedStation = null">
           <span class="material-symbols-outlined">notification_important</span>
           <span>Access Requests</span>
           <span *ngIf="pendingRequestsCount > 0" class="badge-count">{{ pendingRequestsCount }}</span>
         </button>
 
-        <button class="tab-btn" [class.active]="activeTab === 'violations'" (click)="activeTab = 'violations'">
+        <button class="tab-btn" [class.active]="activeTab === 'violations'" (click)="activeTab = 'violations'; selectedStation = null">
           <span class="material-symbols-outlined">shield_with_heart</span>
           <span>Interception & Violation Logs</span>
         </button>
       </div>
 
       <!-- TAB 1: CONNECTED WORKSTATIONS (LIVE ENDPOINT DIRECTORY) -->
-      <div *ngIf="activeTab === 'stations'" class="tab-content">
+      <div *ngIf="activeTab === 'stations' && !selectedStation" class="tab-content">
         <!-- Interactive Status Taxonomy Filter Pills -->
         <div class="status-pills-bar">
           <button class="pill-btn" [class.active]="statusFilter === 'all'" (click)="statusFilter = 'all'">
@@ -644,10 +644,23 @@ export interface ViolationLogItem {
         </div>
       </div>
 
-      <!-- WORKSTATION 360 DETAILS MODAL (ON CARD / ROW CLICK) -->
-      <div *ngIf="selectedStation" class="station-modal-backdrop" (click)="closeStationDetails()">
-        <div class="station-modal-card" (click)="$event.stopPropagation()">
-          <!-- Modal Header -->
+      <!-- WORKSTATION 360 FULL-PAGE INLINE VIEW (ON CARD / ROW CLICK) -->
+      <div *ngIf="activeTab === 'stations' && selectedStation" class="tab-content">
+        <div class="station-page-breadcrumb-bar">
+          <button (click)="closeStationDetails()" class="btn-back-stations">
+            <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+            <span>Back to Connected Workstations</span>
+          </button>
+          <div class="flex items-center gap-2">
+            <span class="badge-live">
+              <span class="dot-indicator dot-green" style="margin-right: 4px;"></span>
+              REAL-TIME SYNC ACTIVE (3s)
+            </span>
+          </div>
+        </div>
+
+        <div class="station-detail-page-card">
+          <!-- Page Section Header -->
           <div class="station-modal-header">
             <div class="station-modal-title-group">
               <div class="station-modal-icon">
@@ -688,9 +701,6 @@ export interface ViolationLogItem {
               <button *ngIf="selectedStation.isLocked" (click)="toggleStationLock(selectedStation, false)" class="btn-unlock">
                 <span class="material-symbols-outlined">lock_open</span>
                 <span>Unlock PC</span>
-              </button>
-              <button (click)="closeStationDetails()" class="btn-close-modal" title="Close">
-                <span class="material-symbols-outlined">close</span>
               </button>
             </div>
           </div>
@@ -1646,26 +1656,40 @@ export interface ViolationLogItem {
       font-weight: 700;
       font-size: 11.5px;
     }
-    .station-modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.55);
-      backdrop-filter: blur(3px);
-      z-index: 1200;
+    .station-page-breadcrumb-bar {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      padding: 20px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
-    .station-modal-card {
+    .btn-back-stations {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #1e293b;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-back-stations:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+    .station-detail-page-card {
       background: #ffffff;
       border-radius: 16px;
       width: 100%;
-      max-width: 920px;
-      max-height: 86vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
       border: 1px solid #e2e8f0;
       overflow: hidden;
     }
@@ -1945,12 +1969,12 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     }
 
     this.refreshAll();
-    // Auto-refresh live station telemetry every 15 seconds
+    // Real-time live polling every 3 seconds across stations, access requests, and violations
     this.pollInterval = setInterval(() => {
-      if (this.activeTab === 'stations') {
-        this.loadStations(false);
-      }
-    }, 15000);
+      this.loadStations(false);
+      this.loadRequests();
+      this.loadViolations();
+    }, 3000);
   }
 
   private getActiveFeatures(): Set<string> {

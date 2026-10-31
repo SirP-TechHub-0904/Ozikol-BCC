@@ -266,9 +266,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         final watcher = ref.read(workstationWatcherProvider);
         if (activeWs != null && activeWs.isFeatureActive('bcp-workspace')) {
           watcher.initializeAndStart(
-            userId: activeWs.tenantKey,
-            userName: activeWs.organizationName,
-            userEmail: activeWs.tenantKey,
+            userId: (activeWs.userId != null && activeWs.userId!.trim().isNotEmpty)
+                ? activeWs.userId
+                : (activeWs.userEmail ?? activeWs.tenantKey),
+            userName: (activeWs.userFullName != null && activeWs.userFullName!.trim().isNotEmpty)
+                ? activeWs.userFullName
+                : (activeWs.userEmail ?? activeWs.organizationName),
+            userEmail: activeWs.userEmail ?? activeWs.tenantKey,
             organizationName: activeWs.organizationName,
           );
         }
@@ -383,9 +387,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       if (isWorkspaceLicensed && !watcher.isMonitoring) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           watcher.initializeAndStart(
-            userId: activeWs.tenantKey,
-            userName: activeWs.organizationName,
-            userEmail: activeWs.tenantKey,
+            userId: (activeWs.userId != null && activeWs.userId!.trim().isNotEmpty)
+                ? activeWs.userId
+                : (activeWs.userEmail ?? activeWs.tenantKey),
+            userName: (activeWs.userFullName != null && activeWs.userFullName!.trim().isNotEmpty)
+                ? activeWs.userFullName
+                : (activeWs.userEmail ?? activeWs.organizationName),
+            userEmail: activeWs.userEmail ?? activeWs.tenantKey,
             organizationName: activeWs.organizationName,
           );
         });
