@@ -569,72 +569,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
 
-          // Divider with Section Badge
-          Row(
-            children: [
-              Text(
-                'TOP 3 TIME REPORTS (AUDIT & HOUR CALCULATOR)',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: textSecondary,
-                  letterSpacing: 0.8,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: Divider(color: borderColor, height: 1)),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // TOP 3 DETAILED TIME REPORTS
-          _buildReportRow(
-            number: '1',
-            title: 'Gross Shift Duration (Wall-Clock Elapsed)',
-            timeString: _formatDurationHM(_elapsedGrossDuration),
-            description: 'Total continuous wall-clock span from initial station clock-in (08:30 AM) to the current moment.',
-            badgeText: 'GROSS SPAN',
-            badgeBg: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-            badgeFg: textSecondary,
-            isDark: isDark,
-            borderColor: borderColor,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-          ),
-          const SizedBox(height: 12),
-
-          _buildReportRow(
-            number: '2',
-            title: 'Mid-Shift Closures & Deducted Interruption Report',
-            timeString: '01 hr 15 mins (Total Non-Work)',
-            description: 'Detected workstation gaps: • Closed between work hours: 02:10 PM - 02:40 PM (30 mins off-station) • Official break: 12:30 PM - 01:15 PM (45 mins).',
-            badgeText: 'GAP AUDITED',
-            badgeBg: const Color(0xFFFEE2E2),
-            badgeFg: const Color(0xFFDC2626),
-            isDark: isDark,
-            borderColor: borderColor,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            highlightAlert: true,
-          ),
-          const SizedBox(height: 12),
-
-          _buildReportRow(
-            number: '3',
-            title: 'Net Effective Work Hours (Calculated Work Hours)',
-            timeString: _formatDurationHM(_netEffectiveDuration),
-            description: 'Automated math: Gross Shift (${_formatDurationHM(_elapsedGrossDuration)}) minus Non-Work Interruptions (01 hr 15 mins) = Verified billable work.',
-            badgeText: 'NET APPROVED',
-            badgeBg: const Color(0xFFDCFCE7),
-            badgeFg: const Color(0xFF15803D),
-            isDark: isDark,
-            borderColor: borderColor,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-            isPrimaryResult: true,
-          ),
         ],
       ),
     );
@@ -696,115 +631,6 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     );
   }
 
-  Widget _buildReportRow({
-    required String number,
-    required String title,
-    required String timeString,
-    required String description,
-    required String badgeText,
-    required Color badgeBg,
-    required Color badgeFg,
-    required bool isDark,
-    required Color borderColor,
-    required Color textPrimary,
-    required Color textSecondary,
-    bool highlightAlert = false,
-    bool isPrimaryResult = false,
-  }) {
-    Color cardBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-    Color borderLine = borderColor;
-
-    if (isPrimaryResult) {
-      cardBg = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.25) : const Color(0xFFECFDF5);
-      borderLine = const Color(0xFF86EFAC);
-    } else if (highlightAlert) {
-      cardBg = isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.15) : const Color(0xFFFFF1F2);
-      borderLine = const Color(0xFFFECDD3);
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderLine, width: isPrimaryResult ? 1.5 : 1.0),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: badgeFg.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              number,
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 13,
-                color: badgeFg,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w800,
-                        color: textPrimary,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: badgeBg,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        badgeText,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: badgeFg,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: TextStyle(fontSize: 12, color: textSecondary, height: 1.3),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 20),
-          Text(
-            timeString,
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              fontFamily: 'monospace',
-              color: isPrimaryResult ? const Color(0xFF16A34A) : (highlightAlert ? const Color(0xFFDC2626) : textPrimary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // ==========================================
   // WIDGET: HISTORY OF WORKS LEDGER
@@ -873,7 +699,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                 Expanded(flex: 2, child: Text('START WORK', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
                 Expanded(flex: 2, child: Text('CLOSE WORK', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
                 Expanded(flex: 4, child: Text('BREAKS TAKEN', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
-                Expanded(flex: 4, child: Text('MID-SHIFT CLOSURES', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
+                Expanded(flex: 4, child: Text('INACTIVE TIME', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
                 Expanded(flex: 3, child: Text('TOTAL WORK HR', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
                 Expanded(flex: 3, child: Text('STATUS', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B)))),
               ],
