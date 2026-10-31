@@ -488,7 +488,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
       elevation: 24,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 580, maxHeight: 680),
+        constraints: const BoxConstraints(maxWidth: 680, maxHeight: 720),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -843,53 +843,56 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
               const SizedBox(height: 18),
 
               // Action Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: textPrimary,
-                      side: BorderSide(color: borderColor),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    child: const Text('Cancel / Stay Off-Duty'),
-                  ),
-                  if (hasApps) ...[
-                    const SizedBox(width: 10),
-                    OutlinedButton.icon(
-                      onPressed: _requestApprovalForAll,
-                      icon: const Icon(Icons.admin_panel_settings_outlined, size: 15),
-                      label: const Text(
-                        'Submit for Admin Approval',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                      ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(false),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF4338CA),
-                        side: const BorderSide(color: Color(0xFFA5B4FC)),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        foregroundColor: textPrimary,
+                        side: BorderSide(color: borderColor),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Cancel / Stay Off-Duty', style: TextStyle(fontSize: 12)),
+                    ),
+                    if (hasApps)
+                      OutlinedButton.icon(
+                        onPressed: _requestApprovalForAll,
+                        icon: const Icon(Icons.admin_panel_settings_outlined, size: 15),
+                        label: const Text(
+                          'Submit for Admin Approval',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF4338CA),
+                          side: const BorderSide(color: Color(0xFFA5B4FC)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ElevatedButton.icon(
+                      onPressed: _confirmAndStartWork,
+                      icon: const Icon(Icons.play_circle_filled_rounded, size: 16),
+                      label: Text(
+                        hasApps ? 'Close & Proceed to Work' : 'Start Active Work Duty',
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF16A34A),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        elevation: 0,
                       ),
                     ),
                   ],
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(
-                    onPressed: _confirmAndStartWork,
-                    icon: const Icon(Icons.play_circle_filled_rounded, size: 16),
-                    label: Text(
-                      hasApps ? 'Close & Proceed to Work' : 'Start Active Work Duty',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF16A34A),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      elevation: 0,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
