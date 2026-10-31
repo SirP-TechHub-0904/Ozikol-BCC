@@ -844,11 +844,11 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       builder: (context, constraints) {
         final topBarWidth = constraints.maxWidth;
 
-        // Progressive responsive breakpoints
-        final isWide = topBarWidth >= 1050;
-        final isMedium = topBarWidth >= 780 && topBarWidth < 1050;
-        final isCompact = topBarWidth < 780;
-        final isUltraNarrow = topBarWidth < 620;
+        // Progressive responsive breakpoints - tuned to eliminate all topbar pixel overflows
+        final isWide = topBarWidth >= 1180;
+        final isMedium = topBarWidth >= 880 && topBarWidth < 1180;
+        final isCompact = topBarWidth < 880;
+        final isUltraNarrow = topBarWidth < 680;
 
         final canAccessAdmin = activeWs == null || activeWs.canAccessAdminConsole;
         final isAdministration = canAccessAdmin && (activeWs?.activeConsoleMode != 'workspace');
@@ -856,11 +856,11 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         // Adaptive search box sizing: scales gracefully with the viewport
         final double searchMaxWidth;
         if (isWide) {
-          searchMaxWidth = (topBarWidth * 0.28).clamp(280.0, 440.0);
+          searchMaxWidth = (topBarWidth * 0.22).clamp(200.0, 320.0);
         } else if (isMedium) {
-          searchMaxWidth = (topBarWidth * 0.24).clamp(190.0, 280.0);
+          searchMaxWidth = (topBarWidth * 0.18).clamp(130.0, 200.0);
         } else {
-          searchMaxWidth = (topBarWidth * 0.22).clamp(130.0, 190.0);
+          searchMaxWidth = (topBarWidth * 0.15).clamp(90.0, 140.0);
         }
 
         return Container(
@@ -1103,12 +1103,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                           ],
                         ),
 
-                        // Name & Role labels (adapt based on available width)
-                        if (!isCompact) ...[
+                        // Name & Role labels (shown on wide viewports >= 1180px to prevent topbar overflow)
+                        if (isWide) ...[
                           const SizedBox(width: 8),
                           ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: isWide ? 130 : 90,
+                            constraints: const BoxConstraints(
+                              maxWidth: 130,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -1124,17 +1124,16 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                                     color: textColor,
                                   ),
                                 ),
-                                if (isWide)
-                                  Text(
-                                    _getUserRoleBadge(activeWs),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
-                                    ),
+                                Text(
+                                  _getUserRoleBadge(activeWs),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
                                   ),
+                                ),
                               ],
                             ),
                           ),

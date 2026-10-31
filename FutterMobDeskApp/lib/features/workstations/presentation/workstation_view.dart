@@ -83,29 +83,33 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
 
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'workstation.title'.tr(ref, fallback: 'Workstation Gatekeeper & App Launcher'),
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: textPrimary,
-                        letterSpacing: -0.5,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'workstation.title'.tr(ref, fallback: 'Workstation Gatekeeper & App Launcher'),
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: textPrimary,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'workstation.subtitle'.tr(
-                        ref,
-                        fallback: 'Enforced enterprise workspace. Only approved company applications and sandboxed documents may run on this PC.',
+                      const SizedBox(height: 4),
+                      Text(
+                        'workstation.subtitle'.tr(
+                          ref,
+                          fallback: 'Enforced enterprise workspace. Only approved company applications and sandboxed documents may run on this PC.',
+                        ),
+                        style: TextStyle(fontSize: 13, color: textSecondary),
                       ),
-                      style: TextStyle(fontSize: 13, color: textSecondary),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 16),
                 ElevatedButton.icon(
                   onPressed: () => _openRequestDialog(context),
                   icon: const Icon(Icons.add_moderator_rounded, size: 16),
