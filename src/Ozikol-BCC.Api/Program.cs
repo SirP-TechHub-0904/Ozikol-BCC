@@ -315,9 +315,9 @@ namespace Ozikol_BCC.Api
             {
                 c.SwaggerDoc("v1", new OpenApiInfo 
                 { 
-                    Title = "Ozikol BCP REST API", 
+                    Title = "Workspace Enterprise REST API", 
                     Version = "v1",
-                    Description = "Comprehensive REST API platform for Ozikol-BCC workspace governance, member directory, group chat, and AI services."
+                    Description = "Comprehensive REST API platform for enterprise workspace governance, member directory, group chat, and AI services."
                 });
 
                 var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
@@ -374,7 +374,7 @@ namespace Ozikol_BCC.Api
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Ozikol BCP API v1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Workspace API v1");
                 c.RoutePrefix = "swagger";
             });
 
@@ -388,7 +388,7 @@ namespace Ozikol_BCC.Api
             app.MapOpenApi();
             app.MapScalarApiReference(options =>
             {
-                options.Title = "Ozikol BCP Interactive API Console";
+                options.Title = "Workspace Interactive API Console";
                 options.Theme = ScalarTheme.Purple;
                 options.DefaultHttpClient = new(ScalarTarget.JavaScript, ScalarClient.HttpClient);
                 options.WithModels(false);

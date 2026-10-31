@@ -3432,7 +3432,36 @@ export class AdminLayoutComponent implements OnInit {
     this.activeSuiteInfo = null;
   }
 
-  brandName = localStorage.getItem('tenant_name') || 'Workspace';
+  brandName = this.resolveInitialBrandName();
+  currentPageTitle = 'Dashboard';
+
+  private resolveInitialBrandName(): string {
+    const saved = localStorage.getItem('tenant_name');
+    if (saved && !saved.toLowerCase().includes('ozikol')) {
+      return saved;
+    }
+    const host = window.location.hostname;
+    const parts = host.split('.');
+    if (parts.length >= 2 && parts[0] !== 'www' && parts[0] !== 'localhost' && !parts[0].toLowerCase().includes('ozikol')) {
+      return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    }
+    return 'Workspace';
+  }
+
+  /**
+   * Central page title template synchronization: "<Page Title> | <Tenant BrandName>"
+   */
+  syncDocumentTitle(pageTitle?: string): void {
+    if (pageTitle && pageTitle !== 'Page') {
+      this.currentPageTitle = pageTitle;
+    }
+    const cleanBrand = (this.brandName && !this.brandName.toLowerCase().includes('ozikol'))
+      ? this.brandName
+      : this.resolveInitialBrandName();
+    document.title = this.currentPageTitle
+      ? `${this.currentPageTitle} | ${cleanBrand}`
+      : `${cleanBrand} | Workspace Portal`;
+  }
   brandAbbreviation = this.computeAbbreviation(localStorage.getItem('tenant_abbreviation') && localStorage.getItem('tenant_abbreviation') !== 'CC' ? localStorage.getItem('tenant_abbreviation')! : (localStorage.getItem('tenant_name') || 'Workspace'));
   brandLogoUrl = localStorage.getItem('tenant_logo') || '';
   brandIconUrl = localStorage.getItem('tenant_icon') || '';
@@ -3903,8 +3932,8 @@ export class AdminLayoutComponent implements OnInit {
       if (data) {
         if (data.companyName) {
           this.brandName = data.companyName;
-          document.title = `${this.brandName} - Console`;
           localStorage.setItem('tenant_name', data.companyName);
+          this.syncDocumentTitle();
         }
         if (data.companyNameAbbreviation) {
           this.brandAbbreviation = data.companyNameAbbreviation;
@@ -4809,11 +4838,11 @@ export class AdminLayoutComponent implements OnInit {
       next: (res) => {
         if (res?.data) {
           const name = res.data.companyName || this.brandName;
-          if (res.data.companyName) {
+          if (res.data.companyName && !res.data.companyName.toLowerCase().includes('ozikol')) {
             this.brandName = res.data.companyName;
             localStorage.setItem('tenant_name', res.data.companyName);
-            document.title = `${this.brandName} - Console`;
           }
+          this.syncDocumentTitle();
           if (res.data.companyNameAbbreviation && res.data.companyNameAbbreviation !== 'CC') {
             this.brandAbbreviation = res.data.companyNameAbbreviation;
             localStorage.setItem('tenant_abbreviation', res.data.companyNameAbbreviation);
@@ -5061,7 +5090,10 @@ export class AdminLayoutComponent implements OnInit {
     else if (url.includes('/billing/features') || url.includes('/billing/plans') || url.includes('/billing/console')) { tabTitle = 'Features & Capabilities'; tabIcon = 'extension'; }
     else if (url.includes('/billing/paymentmethod') || url.includes('/billing/payment-methods')) { tabTitle = 'Payment Methods'; tabIcon = 'account_balance_wallet'; }
     else if (url.includes('/billing/subscriptions') || url.includes('/billing/invoices')) { tabTitle = 'Subscriptions & Invoices'; tabIcon = 'receipt_long'; }
+    else if (url.includes('/workspace/stations')) { tabTitle = 'Workstations & Gatekeeper'; tabIcon = 'desktop_windows'; }
     else if (url.includes('/settings')) { tabTitle = 'Brand Settings'; tabIcon = 'palette'; }
+
+    this.syncDocumentTitle(tabTitle !== 'Page' ? tabTitle : 'Workspace');
 
     const exists = this.openTabs.some(t => t.url === url);
     if (!exists) {
