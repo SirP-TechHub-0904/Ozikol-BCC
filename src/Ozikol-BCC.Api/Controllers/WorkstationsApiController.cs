@@ -932,14 +932,19 @@ namespace Ozikol_BCC.Api.Controllers
 
             var procLower = (dto.ProcessName ?? string.Empty).Trim().ToLowerInvariant();
             var isBrowser = procLower.Contains("chrome") || procLower.Contains("msedge") || procLower.Contains("firefox") || procLower.Contains("brave");
+            var eventTypeUpper = !string.IsNullOrWhiteSpace(dto.EventType) ? dto.EventType.Trim().ToUpperInvariant() : "APP_OPENED";
+            var isScreenshotOrLink = eventTypeUpper == "SCREENSHOT_CAPTURED" || eventTypeUpper == "BROWSER_LINK_VISITED";
+            var isRealPathOrUrl = !string.IsNullOrWhiteSpace(dto.FilePath) &&
+                                  (dto.FilePath.Contains(":\\") || dto.FilePath.StartsWith("\\\\") || dto.FilePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || dto.FilePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+
             var rawFileName = SanitizeBrandText(dto.FileName);
-            var rawFilePath = SanitizeBrandText(dto.FilePath);
+            var rawFilePath = isRealPathOrUrl ? dto.FilePath?.Trim() : SanitizeBrandText(dto.FilePath);
             var hasRealExtension = !string.IsNullOrWhiteSpace(rawFileName) && System.IO.Path.HasExtension(rawFileName);
 
             // Prevent web browser tab titles from being stored as fake disk file paths or "FILE WORKED ON" events
-            if (isBrowser && !hasRealExtension)
+            if (isBrowser && !hasRealExtension && !isScreenshotOrLink)
             {
-                if (string.Equals(dto.EventType?.Trim(), "DOCUMENT_ACTIVE", StringComparison.OrdinalIgnoreCase))
+                if (eventTypeUpper == "DOCUMENT_ACTIVE")
                 {
                     return Ok(new { success = true, skipped = true });
                 }
@@ -959,7 +964,7 @@ namespace Ozikol_BCC.Api.Controllers
 
             var cleanWindow = SanitizeBrandText(dto.WindowTitle);
             var cleanDetails = SanitizeBrandText(dto.Details);
-            if (isBrowser && rawFileName == null && !string.IsNullOrWhiteSpace(cleanDetails) && cleanDetails.Contains("working on", StringComparison.OrdinalIgnoreCase))
+            if (isBrowser && !isScreenshotOrLink && rawFileName == null && !string.IsNullOrWhiteSpace(cleanDetails) && cleanDetails.Contains("working on", StringComparison.OrdinalIgnoreCase))
             {
                 cleanDetails = $"Active browser window: {cleanWindow ?? "Web Browser"}";
             }
@@ -972,7 +977,7 @@ namespace Ozikol_BCC.Api.Controllers
                 UserId = !string.IsNullOrWhiteSpace(dto.UserId) ? dto.UserId : station?.AssignedUserId,
                 UserName = !string.IsNullOrWhiteSpace(dto.UserName) ? dto.UserName : (station?.AssignedUserName ?? "Station Staff"),
                 UserEmail = !string.IsNullOrWhiteSpace(dto.UserEmail) ? dto.UserEmail : station?.AssignedUserEmail,
-                EventType = !string.IsNullOrWhiteSpace(dto.EventType) ? dto.EventType.Trim().ToUpperInvariant() : "APP_OPENED",
+                EventType = eventTypeUpper,
                 ProcessName = dto.ProcessName?.Trim(),
                 AppDisplayName = SanitizeBrandText(dto.AppDisplayName),
                 WindowTitle = cleanWindow,
@@ -1061,18 +1066,25 @@ namespace Ozikol_BCC.Api.Controllers
                 if (proc.Contains("webview2")) continue;
 
                 var isBrowser = proc.Contains("chrome") || proc.Contains("msedge") || proc.Contains("firefox") || proc.Contains("brave");
+                var isScreenshotOrLink = l.EventType == "SCREENSHOT_CAPTURED" || l.EventType == "BROWSER_LINK_VISITED";
                 var hasExt = !string.IsNullOrWhiteSpace(l.FileName) && System.IO.Path.HasExtension(l.FileName);
                 if (isBrowser && l.EventType == "DOCUMENT_ACTIVE" && !hasExt)
                 {
                     continue;
                 }
 
+                var isRealPathOrUrl = !string.IsNullOrWhiteSpace(l.FilePath) &&
+                                      (l.FilePath.Contains(":\\") || l.FilePath.StartsWith("\\\\") || l.FilePath.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || l.FilePath.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+
                 l.WindowTitle = CleanText(l.WindowTitle);
                 l.FileName = CleanText(l.FileName);
-                l.FilePath = CleanText(l.FilePath);
+                if (!isRealPathOrUrl)
+                {
+                    l.FilePath = CleanText(l.FilePath);
+                }
                 l.Details = CleanText(l.Details);
 
-                if (isBrowser && !hasExt)
+                if (isBrowser && !hasExt && !isScreenshotOrLink)
                 {
                     l.FileName = null;
                     l.FilePath = null;

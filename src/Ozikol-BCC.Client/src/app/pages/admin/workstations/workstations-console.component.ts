@@ -286,7 +286,11 @@ export interface WorkstationActivityLogItem {
                 <h3 class="station-name">{{ s.machineName }}</h3>
                 <span class="station-pill">{{ s.stationKey }}</span>
               </div>
-              <div class="station-action-btns" (click)="$event.stopPropagation()">
+              <div class="station-action-btns" (click)="$event.stopPropagation()" style="display: flex; align-items: center; gap: 6px;">
+                <button (click)="requestScreenshot(s)" class="btn-back-stations" title="Capture Live Desktop Screenshot" style="padding: 6px 10px; font-size: 12px;">
+                  <span class="material-symbols-outlined" style="font-size: 15px;">screenshot_monitor</span>
+                  <span>Screenshot</span>
+                </button>
                 <button *ngIf="!s.isLocked" (click)="toggleStationLock(s, true)" class="btn-lock" title="Force Remote Lock">
                   <span class="material-symbols-outlined">lock</span>
                   <span>Lock PC</span>
@@ -407,7 +411,11 @@ export interface WorkstationActivityLogItem {
                   <td class="text-xs whitespace-nowrap text-gray">
                     {{ formatTime(s.lastHeartbeat) }}
                   </td>
-                  <td (click)="$event.stopPropagation()">
+                  <td (click)="$event.stopPropagation()" style="display: flex; align-items: center; gap: 6px;">
+                    <button (click)="requestScreenshot(s)" class="btn-back-stations" title="Capture Live Desktop Screenshot" style="padding: 5px 8px; font-size: 11px;">
+                      <span class="material-symbols-outlined text-sm">screenshot_monitor</span>
+                      <span>Snap</span>
+                    </button>
                     <button *ngIf="!s.isLocked" (click)="toggleStationLock(s, true)" class="btn-table-lock" title="Lock PC">
                       <span class="material-symbols-outlined text-sm">lock</span>
                       <span>Lock</span>
@@ -706,13 +714,19 @@ export interface WorkstationActivityLogItem {
         </div>
 
         <div class="card-box">
-          <div class="table-header-row">
+          <div class="table-header-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
             <div>
               <h3 class="box-title">
                 <span class="material-symbols-outlined text-blue">history</span>
                 <span>General Workstation Activity, App Duration, File Paths & Screen Captures</span>
               </h3>
               <p class="box-desc">Complete chronological timeline of opened/closed applications, how long each app stayed open, active file names & paths, idle lockouts, password resumes, and periodic desktop screenshots.</p>
+            </div>
+            <div *ngIf="stations.length > 0" style="display: flex; align-items: center; gap: 8px;">
+              <button *ngFor="let st of stations.slice(0, 2)" (click)="requestScreenshot(st)" class="btn-approve" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">screenshot_monitor</span>
+                <span>Capture Live Screenshot ({{ st.machineName }})</span>
+              </button>
             </div>
           </div>
 
@@ -782,10 +796,13 @@ export interface WorkstationActivityLogItem {
                   </td>
                   <td>
                     <div class="text-xs text-gray" *ngIf="a.details">{{ a.details }}</div>
-                    <button *ngIf="a.screenshotUrl" (click)="previewScreenshotItem = a" class="btn-approve" style="margin-top: 4px; display: inline-flex; align-items: center; gap: 4px;">
-                      <span class="material-symbols-outlined" style="font-size: 14px;">image</span>
-                      <span>View Screenshot</span>
-                    </button>
+                    <div *ngIf="a.screenshotUrl" style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                      <img [src]="a.screenshotUrl" alt="Screenshot Thumbnail" (click)="previewScreenshotItem = a" style="width: 68px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; cursor: pointer;" title="Click to enlarge screenshot" />
+                      <button (click)="previewScreenshotItem = a" class="btn-approve" style="display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">image</span>
+                        <span>View Screenshot</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -1106,10 +1123,13 @@ export interface WorkstationActivityLogItem {
                       </td>
                       <td>
                         <div class="text-xs text-gray" *ngIf="a.details">{{ a.details }}</div>
-                        <button *ngIf="a.screenshotUrl" (click)="previewScreenshotItem = a" class="btn-approve" style="margin-top: 4px; display: inline-flex; align-items: center; gap: 4px;">
-                          <span class="material-symbols-outlined" style="font-size: 14px;">image</span>
-                          <span>View Screenshot</span>
-                        </button>
+                        <div *ngIf="a.screenshotUrl" style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+                          <img [src]="a.screenshotUrl" alt="Screenshot Thumbnail" (click)="previewScreenshotItem = a" style="width: 68px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; cursor: pointer;" title="Click to enlarge screenshot" />
+                          <button (click)="previewScreenshotItem = a" class="btn-approve" style="display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">image</span>
+                            <span>View Screenshot</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -2650,8 +2670,9 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     let details = sanitize(a.details);
     const windowTitle = this.cleanWindowTitle(a.windowTitle);
 
+    const isScreenshot = a.eventType === 'SCREENSHOT_CAPTURED';
     const hasFileExt = !!(fileName && /\.[a-z0-9]{1,6}$/i.test(fileName.trim()));
-    if (isBrowser && !isLinkVisit && fileName && !hasFileExt) {
+    if (isBrowser && !isLinkVisit && !isScreenshot && fileName && !hasFileExt) {
       const tabTitle = fileName;
       fileName = undefined;
       filePath = undefined;

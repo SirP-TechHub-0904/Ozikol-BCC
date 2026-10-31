@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:ffi' as ffi;
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -504,11 +507,16 @@ class WorkstationWatcherService extends ChangeNotifier {
       _checkInactivityAndIdleLock();
     });
 
-    // Periodic screen capture runs every 10 minutes during active work duty
+    // Periodic screen capture runs automatically on work start (after 5s) and every 3 minutes during active work duty
     _screenshotTimer?.cancel();
-    _screenshotTimer = Timer.periodic(const Duration(minutes: 10), (_) {
-      if (_isMonitoring && !_isBreakActive && !_isLocked) {
-        captureAndUploadScreenshot(reason: 'Periodic active work duty screenshot (10-min interval)');
+    Future.delayed(const Duration(seconds: 5), () {
+      if (isActiveWorkDuty && !_isLocked) {
+        captureAndUploadScreenshot(reason: 'Automatic screen capture on Work Mode start');
+      }
+    });
+    _screenshotTimer = Timer.periodic(const Duration(minutes: 3), (_) {
+      if (isActiveWorkDuty && !_isLocked) {
+        captureAndUploadScreenshot(reason: 'Automatic periodic active work duty screenshot (3-min interval)');
       }
     });
   }
@@ -1389,7 +1397,10 @@ foreach (\$b in \$browsers) {
     String? details,
   }) async {
     if (!Platform.isWindows) return;
-    if (!_isMonitoring && eventType != 'SHIFT_CLOSED' && eventType != 'PASSWORD_RESUMED') {
+    if (!_isMonitoring &&
+        eventType != 'SHIFT_CLOSED' &&
+        eventType != 'PASSWORD_RESUMED' &&
+        eventType != 'SCREENSHOT_CAPTURED') {
       return;
     }
     try {
@@ -1414,58 +1425,23 @@ foreach (\$b in \$browsers) {
     } catch (_) {}
   }
 
-  /// Captures a compressed JPEG snapshot of the primary Windows desktop screen and logs it to the server.
+  /// Captures a compressed PNG snapshot of the primary Windows desktop screen via native Win32 GDI32 FFI
+  /// (zero PowerShell subprocesses, immune to Windows Defender AMSI blocks) and logs it to the server.
   Future<bool> captureAndUploadScreenshot({String reason = 'Periodic active duty screen capture'}) async {
     if (kIsWeb || !Platform.isWindows) return false;
     try {
-      const psCapture = r'''
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
-$bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-$bmp = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
-$g = [System.Drawing.Graphics]::FromImage($bmp)
-$g.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
-$g.Dispose()
+      final dataUri = await _captureDesktopScreenNativeFfi();
+      if (dataUri == null || dataUri.isEmpty) return false;
 
-$targetW = [Math]::Min(1280, $bounds.Width)
-$targetH = [int]($bounds.Height * ($targetW / $bounds.Width))
-$resized = New-Object System.Drawing.Bitmap($targetW, $targetH)
-$g2 = [System.Drawing.Graphics]::FromImage($resized)
-$g2.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-$g2.DrawImage($bmp, 0, 0, $targetW, $targetH)
-$g2.Dispose()
-$bmp.Dispose()
-
-$codec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq 'image/jpeg' } | Select-Object -First 1
-$ep = New-Object System.Drawing.Imaging.EncoderParameters(1)
-$ep.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter([System.Drawing.Imaging.Encoder]::Quality, [long]60)
-
-$ms = New-Object System.IO.MemoryStream
-$resized.Save($ms, $codec, $ep)
-$resized.Dispose()
-$b64 = [Convert]::ToBase64String($ms.ToArray())
-$ms.Dispose()
-Write-Output ("data:image/jpeg;base64," + $b64)
-''';
-      final res = await Process.run('powershell', [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        psCapture,
-      ]).timeout(const Duration(seconds: 12));
-
-      if (res.exitCode != 0) return false;
-      final out = res.stdout.toString().trim();
-      final idx = out.indexOf('data:image/jpeg;base64,');
-      if (idx < 0) return false;
-
-      final dataUri = out.substring(idx).trim();
       final title = await _getForegroundWindowTitle();
+      final procName = _deriveProcessFromTitle(title) ?? _lastForegroundProcess ?? 'Desktop';
+      final displayName = _resolveDisplayNameForProcess(procName);
       final fileInfo = title != null ? _extractFileNameAndPath(title) : <String, String?>{};
 
       await logWorkstationActivity(
         eventType: 'SCREENSHOT_CAPTURED',
-        processName: _deriveProcessFromTitle(title) ?? _lastForegroundProcess,
+        processName: procName,
+        appDisplayName: displayName,
         windowTitle: title,
         fileName: fileInfo['fileName'],
         filePath: fileInfo['filePath'] ?? _lastForegroundFilePath,
@@ -1476,6 +1452,122 @@ Write-Output ("data:image/jpeg;base64," + $b64)
     } catch (_) {
       return false;
     }
+  }
+
+  /// Native Win32 User32/GDI32 screen capture via `dart:ffi` + `dart:ui` PNG encoder.
+  Future<String?> _captureDesktopScreenNativeFfi() async {
+    if (!Platform.isWindows) return null;
+    final user32 = ffi.DynamicLibrary.open('user32.dll');
+    final gdi32 = ffi.DynamicLibrary.open('gdi32.dll');
+    final kernel32 = ffi.DynamicLibrary.open('kernel32.dll');
+
+    final getDC = user32.lookupFunction<ffi.IntPtr Function(ffi.IntPtr), int Function(int)>('GetDC');
+    final releaseDC = user32.lookupFunction<ffi.Int32 Function(ffi.IntPtr, ffi.IntPtr), int Function(int, int)>('ReleaseDC');
+    final getSystemMetrics = user32.lookupFunction<ffi.Int32 Function(ffi.Int32), int Function(int)>('GetSystemMetrics');
+
+    final getDeviceCaps = gdi32.lookupFunction<ffi.Int32 Function(ffi.IntPtr, ffi.Int32), int Function(int, int)>('GetDeviceCaps');
+    final createCompatibleDC = gdi32.lookupFunction<ffi.IntPtr Function(ffi.IntPtr), int Function(int)>('CreateCompatibleDC');
+    final createCompatibleBitmap = gdi32.lookupFunction<ffi.IntPtr Function(ffi.IntPtr, ffi.Int32, ffi.Int32), int Function(int, int, int)>('CreateCompatibleBitmap');
+    final selectObject = gdi32.lookupFunction<ffi.IntPtr Function(ffi.IntPtr, ffi.IntPtr), int Function(int, int)>('SelectObject');
+    final setStretchBltMode = gdi32.lookupFunction<ffi.Int32 Function(ffi.IntPtr, ffi.Int32), int Function(int, int)>('SetStretchBltMode');
+    final stretchBlt = gdi32.lookupFunction<
+        ffi.Int32 Function(ffi.IntPtr, ffi.Int32, ffi.Int32, ffi.Int32, ffi.Int32, ffi.IntPtr, ffi.Int32, ffi.Int32, ffi.Int32, ffi.Int32, ffi.Uint32),
+        int Function(int, int, int, int, int, int, int, int, int, int, int)>('StretchBlt');
+    final getDIBits = gdi32.lookupFunction<
+        ffi.Int32 Function(ffi.IntPtr, ffi.IntPtr, ffi.Uint32, ffi.Uint32, ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>, ffi.Uint32),
+        int Function(int, int, int, int, ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>, int)>('GetDIBits');
+    final deleteObject = gdi32.lookupFunction<ffi.Int32 Function(ffi.IntPtr), int Function(int)>('DeleteObject');
+    final deleteDC = gdi32.lookupFunction<ffi.Int32 Function(ffi.IntPtr), int Function(int)>('DeleteDC');
+
+    final localAlloc = kernel32.lookupFunction<ffi.Pointer<ffi.Uint8> Function(ffi.Uint32, ffi.IntPtr), ffi.Pointer<ffi.Uint8> Function(int, int)>('LocalAlloc');
+    final localFree = kernel32.lookupFunction<ffi.IntPtr Function(ffi.Pointer<ffi.Uint8>), int Function(ffi.Pointer<ffi.Uint8>)>('LocalFree');
+
+    final hdcScreen = getDC(0);
+    if (hdcScreen == 0) return null;
+
+    int srcW = getDeviceCaps(hdcScreen, 118); // DESKTOPHORZRES (physical width)
+    int srcH = getDeviceCaps(hdcScreen, 117); // DESKTOPVERTRES (physical height)
+    if (srcW <= 0 || srcH <= 0) {
+      srcW = getSystemMetrics(0);
+      srcH = getSystemMetrics(1);
+    }
+    if (srcW <= 0 || srcH <= 0) {
+      releaseDC(0, hdcScreen);
+      return null;
+    }
+
+    final targetW = srcW > 1152 ? 1152 : srcW;
+    final targetH = ((srcH * targetW) / srcW).round().clamp(1, 2160);
+
+    final hdcMem = createCompatibleDC(hdcScreen);
+    if (hdcMem == 0) {
+      releaseDC(0, hdcScreen);
+      return null;
+    }
+
+    final hBitmap = createCompatibleBitmap(hdcScreen, targetW, targetH);
+    if (hBitmap == 0) {
+      deleteDC(hdcMem);
+      releaseDC(0, hdcScreen);
+      return null;
+    }
+
+    final hOld = selectObject(hdcMem, hBitmap);
+    setStretchBltMode(hdcMem, 4); // HALFTONE = 4
+    // SRCCOPY = 0x00CC0020 | CAPTUREBLT = 0x40000000
+    stretchBlt(hdcMem, 0, 0, targetW, targetH, hdcScreen, 0, 0, srcW, srcH, 0x40CC0020);
+
+    final biPtr = localAlloc(0x0040, 44); // LPTR (zero-initialized)
+    final pixelCount = targetW * targetH * 4;
+    final pixelsPtr = localAlloc(0x0040, pixelCount);
+
+    Uint8List? rawPixels;
+    try {
+      if (biPtr != ffi.nullptr && pixelsPtr != ffi.nullptr) {
+        final biBytes = biPtr.asTypedList(44);
+        final bd = ByteData.sublistView(biBytes);
+        bd.setUint32(0, 40, Endian.little); // biSize = sizeof(BITMAPINFOHEADER)
+        bd.setInt32(4, targetW, Endian.little); // biWidth
+        bd.setInt32(8, -targetH, Endian.little); // top-down DIB (negative height)
+        bd.setUint16(12, 1, Endian.little); // biPlanes = 1
+        bd.setUint16(14, 32, Endian.little); // biBitCount = 32 (BGRA8888)
+        bd.setUint32(16, 0, Endian.little); // BI_RGB = 0
+
+        final scanLines = getDIBits(hdcMem, hBitmap, 0, targetH, pixelsPtr, biPtr, 0);
+        if (scanLines > 0) {
+          rawPixels = Uint8List.fromList(pixelsPtr.asTypedList(pixelCount));
+          // Force alpha channel to 255 across all pixels
+          for (int i = 3; i < rawPixels.length; i += 4) {
+            rawPixels[i] = 255;
+          }
+        }
+      }
+    } finally {
+      if (pixelsPtr != ffi.nullptr) localFree(pixelsPtr);
+      if (biPtr != ffi.nullptr) localFree(biPtr);
+      selectObject(hdcMem, hOld);
+      deleteObject(hBitmap);
+      deleteDC(hdcMem);
+      releaseDC(0, hdcScreen);
+    }
+
+    if (rawPixels == null) return null;
+
+    final completer = Completer<ui.Image>();
+    ui.decodeImageFromPixels(
+      rawPixels,
+      targetW,
+      targetH,
+      ui.PixelFormat.bgra8888,
+      (ui.Image img) => completer.complete(img),
+    );
+    final uiImage = await completer.future.timeout(const Duration(seconds: 6));
+    final byteData = await uiImage.toByteData(format: ui.ImageByteFormat.png);
+    uiImage.dispose();
+    if (byteData == null) return null;
+
+    final pngBytes = byteData.buffer.asUint8List();
+    return 'data:image/png;base64,${base64Encode(pngBytes)}';
   }
 
   DateTime? _lastDirectoryAlertTime;
