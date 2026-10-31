@@ -48,7 +48,8 @@ namespace Ozikol_BCC.Api.Controllers
                 .ToListAsync();
 
             // Refresh online status based on 45-second heartbeat window
-            var result = stations.Select(s => new
+            var deduplicated = stations.GroupBy(s => (!string.IsNullOrEmpty(s.StationKey) ? s.StationKey : s.MachineName).Trim().ToUpperInvariant()).Select(g => g.OrderByDescending(x => x.LastHeartbeat ?? x.CreatedAt).First()).ToList();
+            var result = deduplicated.Select(s => new
             {
                 s.Id,
                 s.StationKey,

@@ -1258,7 +1258,22 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
       this.api.get<any>('/Workstations/stations').subscribe({
         next: res => {
           if (res && res.success && res.data) {
-            this.stations = res.data;
+            // Deduplicate incoming stations by stationKey or machineName, keeping the freshest heartbeat
+            const map = new Map<string, WorkstationItem>();
+            for (const s of (res.data as WorkstationItem[])) {
+              const key = (s.stationKey || s.machineName || s.id).trim().toUpperCase();
+              const existing = map.get(key);
+              if (!existing) {
+                map.set(key, s);
+              } else {
+                const t1 = s.lastHeartbeat ? new Date(s.lastHeartbeat).getTime() : 0;
+                const t2 = existing.lastHeartbeat ? new Date(existing.lastHeartbeat).getTime() : 0;
+                if (t1 >= t2) {
+                  map.set(key, s);
+                }
+              }
+            }
+            this.stations = Array.from(map.values());
           }
           resolve();
         },
