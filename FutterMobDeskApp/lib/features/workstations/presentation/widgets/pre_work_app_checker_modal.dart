@@ -119,6 +119,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     'useroobebroker.exe',
     'crash_handler.exe',
     'plugin_host-3.14.exe',
+    'browser_assistant.exe',
 
     // Ozikol suite & development IDE whitelist
     'ozikol_app.exe',
@@ -371,38 +372,74 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     final List<DetectedRunningApp> apps = [];
 
     if (!kIsWeb && Platform.isWindows) {
-      try {
-        final result = await Process.run(
-          'tasklist',
-          ['/FI', 'STATUS eq RUNNING', '/FI', 'SESSIONNAME eq Console', '/FO', 'CSV', '/NH'],
-        ).timeout(const Duration(seconds: 3));
+      bool scannedWithTaskbarFilter = false;
 
-        if (result.exitCode == 0) {
-          final lines = result.stdout.toString().split('\n');
+      // 1. Primary Scan: Filter ONLY interactive applications with visible windows on the Windows Taskbar
+      try {
+        final psResult = await Process.run('powershell', [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          'Get-Process | Where-Object { \$_.MainWindowHandle -ne 0 -and \$_.MainWindowTitle.Trim() -ne "" } | ForEach-Object { \$_.ProcessName + ".exe|" + \$_.MainWindowTitle }',
+        ]).timeout(const Duration(seconds: 4));
+
+        if (psResult.exitCode == 0 && psResult.stdout.toString().trim().isNotEmpty) {
+          final lines = psResult.stdout.toString().split(RegExp(r'[\r\n]+'));
           for (final line in lines) {
             final trimmed = line.trim();
-            if (trimmed.isEmpty) continue;
-            final fields = _parseCsvRow(trimmed);
-            if (fields.isEmpty) continue;
-
-            final procName = fields[0].replaceAll('"', '').trim();
-            final sessionName = fields.length >= 3 ? fields[2].replaceAll('"', '').trim().toLowerCase() : '';
+            if (trimmed.isEmpty || !trimmed.contains('|')) continue;
+            final parts = trimmed.split('|');
+            final procName = parts[0].trim();
+            final title = parts.length > 1 ? parts.sublist(1).join('|').trim() : '';
             final procLower = procName.toLowerCase();
 
-            // 1. MUST be in the interactive console session
-            if (sessionName.isNotEmpty && sessionName != 'console') continue;
-
-            // 2. Skip whitelisted Windows system shells, runtime daemons, and Ozikol app itself
             if (_systemShellProcesses.contains(procLower)) continue;
-
             if (seen.contains(procLower)) continue;
             seen.add(procLower);
 
-            apps.add(_mapProcessToApp(procName));
+            apps.add(_mapProcessToApp(procName, title));
           }
+          scannedWithTaskbarFilter = true;
         }
       } catch (e) {
-        debugPrint('[PreWorkAppChecker] Tasklist scan error: $e');
+        debugPrint('[PreWorkAppChecker] Taskbar window scan error: $e');
+      }
+
+      // 2. Fallback to tasklist if PowerShell scan failed or returned empty
+      if (!scannedWithTaskbarFilter) {
+        try {
+          final result = await Process.run(
+            'tasklist',
+            ['/FI', 'STATUS eq RUNNING', '/FI', 'SESSIONNAME eq Console', '/FO', 'CSV', '/NH'],
+          ).timeout(const Duration(seconds: 3));
+
+          if (result.exitCode == 0) {
+            final lines = result.stdout.toString().split('\n');
+            for (final line in lines) {
+              final trimmed = line.trim();
+              if (trimmed.isEmpty) continue;
+              final fields = _parseCsvRow(trimmed);
+              if (fields.isEmpty) continue;
+
+              final procName = fields[0].replaceAll('"', '').trim();
+              final sessionName = fields.length >= 3 ? fields[2].replaceAll('"', '').trim().toLowerCase() : '';
+              final procLower = procName.toLowerCase();
+
+              // MUST be in the interactive console session
+              if (sessionName.isNotEmpty && sessionName != 'console') continue;
+
+              // Skip system shells and daemons
+              if (_systemShellProcesses.contains(procLower)) continue;
+
+              if (seen.contains(procLower)) continue;
+              seen.add(procLower);
+
+              apps.add(_mapProcessToApp(procName));
+            }
+          }
+        } catch (e) {
+          debugPrint('[PreWorkAppChecker] Tasklist fallback scan error: $e');
+        }
       }
     }
 
