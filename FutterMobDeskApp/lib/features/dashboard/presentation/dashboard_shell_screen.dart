@@ -855,12 +855,16 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
         // Adaptive search box sizing: scales gracefully with the viewport
         final double searchMaxWidth;
+        final double searchMinWidth;
         if (isWide) {
-          searchMaxWidth = (topBarWidth * 0.22).clamp(200.0, 320.0);
+          searchMaxWidth = (topBarWidth * 0.22).clamp(180.0, 320.0);
+          searchMinWidth = 160.0;
         } else if (isMedium) {
-          searchMaxWidth = (topBarWidth * 0.18).clamp(130.0, 200.0);
+          searchMaxWidth = (topBarWidth * 0.18).clamp(140.0, 200.0);
+          searchMinWidth = 120.0;
         } else {
           searchMaxWidth = (topBarWidth * 0.15).clamp(90.0, 140.0);
+          searchMinWidth = isUltraNarrow ? 60.0 : 80.0;
         }
 
         return Container(
@@ -930,8 +934,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               // 2. Adaptive Search workspace bar
               ConstrainedBox(
                 constraints: BoxConstraints(
+                  minWidth: searchMinWidth <= searchMaxWidth ? searchMinWidth : searchMaxWidth,
                   maxWidth: searchMaxWidth,
-                  minWidth: isUltraNarrow ? 110 : 140,
                 ),
                 child: Container(
                   height: 38,
