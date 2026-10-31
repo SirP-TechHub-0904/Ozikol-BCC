@@ -788,8 +788,18 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                         itemBuilder: (context, index) {
                           final row = _workHistory[index];
                           final isToday = row['isToday'] == true;
-                          final hasInactive = row['inactiveDuration'] != 'None';
-                          final hasOT = row['hasOvertime'] == true;
+                          final dateStr = (row['date'] ?? '').toString();
+                          final startStr = (row['start'] ?? '08:30 AM').toString();
+                          final closeStr = (row['close'] ?? '05:00 PM').toString();
+                          final breakDur = (row['breakDuration'] ?? row['breaks'] ?? '45 mins').toString();
+                          final breakRng = (row['breakRange'] ?? '').toString();
+                          final inactiveDur = (row['inactiveDuration'] ?? row['closureGap'] ?? 'None').toString();
+                          final inactiveRng = (row['inactiveRange'] ?? '').toString();
+                          final totalWorkStr = (row['totalWorkHours'] ?? '7 hrs 30 mins').toString();
+                          final otStr = (row['overtime'] ?? '—').toString();
+                          final statusStr = (row['status'] ?? 'Approved').toString();
+                          final hasInactive = inactiveDur != 'None' && inactiveDur.isNotEmpty;
+                          final hasOT = (row['hasOvertime'] == true) || (otStr != '—' && otStr.isNotEmpty);
 
                           return Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -809,7 +819,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                                 SizedBox(
                                   width: 130,
                                   child: Text(
-                                    row['date'] as String,
+                                    dateStr,
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
@@ -822,7 +832,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                                 SizedBox(
                                   width: 80,
                                   child: Text(
-                                    row['start'] as String,
+                                    startStr,
                                     style: TextStyle(fontSize: 12, color: textPrimary),
                                   ),
                                 ),
@@ -831,7 +841,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                                 SizedBox(
                                   width: 140,
                                   child: Text(
-                                    row['close'] as String,
+                                    closeStr,
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
@@ -848,12 +858,12 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        row['breakDuration'] as String,
+                                        breakDur,
                                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: textPrimary),
                                       ),
-                                      if ((row['breakRange'] as String).isNotEmpty)
+                                      if (breakRng.isNotEmpty)
                                         Text(
-                                          row['breakRange'] as String,
+                                          breakRng,
                                           style: TextStyle(fontSize: 10.5, color: textSecondary),
                                         ),
                                     ],
@@ -868,16 +878,16 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
-                                        row['inactiveDuration'] as String,
+                                        inactiveDur,
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: hasInactive ? FontWeight.w800 : FontWeight.w500,
                                           color: hasInactive ? const Color(0xFFDC2626) : textSecondary,
                                         ),
                                       ),
-                                      if (hasInactive && (row['inactiveRange'] as String).isNotEmpty)
+                                      if (hasInactive && inactiveRng.isNotEmpty)
                                         Text(
-                                          row['inactiveRange'] as String,
+                                          inactiveRng,
                                           style: const TextStyle(fontSize: 10.5, color: Color(0xFFDC2626)),
                                         ),
                                     ],
@@ -888,7 +898,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                                 SizedBox(
                                   width: 110,
                                   child: Text(
-                                    row['totalWorkHours'] as String,
+                                    totalWorkStr,
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       fontFamily: 'monospace',
@@ -915,7 +925,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                                               const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFD97706)),
                                               const SizedBox(width: 2),
                                               Text(
-                                                row['overtime'] as String,
+                                                otStr,
                                                 style: const TextStyle(
                                                   fontSize: 10.5,
                                                   fontWeight: FontWeight.w800,
@@ -950,7 +960,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                                           const SizedBox(width: 3),
                                         ],
                                         Text(
-                                          row['status'] as String,
+                                          statusStr,
                                           style: TextStyle(
                                             fontSize: 10,
                                             fontWeight: FontWeight.w700,
