@@ -3,7 +3,7 @@
 This document serves as the permanent memory bank and behavioral guidelines for all AI coding agents working in this repository. These rules apply to every prompt and session.
 
 > [!IMPORTANT]
-> **Active Rule Set**: This master memory bank is also modularized into `.agents/rules/` (`01-architecture-database-ai.md`, `02-translation-localization.md`, `03-ui-ux-design-standards.md`, `04-git-workflow-code-quality.md`, `05-notifications-communications.md`, `06-error-codes-handling.md`) to guarantee 100% prompt injection with zero byte truncation across all AI agent sessions. Always adhere strictly to all rules in this document and in `.agents/rules/`.
+> **Active Rule Set**: This master memory bank is also modularized into `.agents/rules/` (`01-architecture-database-ai.md`, `02-translation-localization.md`, `03-ui-ux-design-standards.md`, `04-git-workflow-code-quality.md`, `05-notifications-communications.md`, `06-error-codes-handling.md`, `07-sidebar-navigation-hierarchy.md`) to guarantee 100% prompt injection with zero byte truncation across all AI agent sessions. Always adhere strictly to all rules in this document and in `.agents/rules/`.
 
 ---
 
@@ -382,3 +382,30 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **Client Admin Error Codes Directory (`/identity/console/error-codes`)**:
   * Under **Audit Logs** in the Client Admin, provide the **Error Codes** reference page displaying only the **Error Code (`ERR-XXXX`)**, **Category**, **Custom Error**, and **Plain-Language Meaning / Recommended Action** (100% translated via `TranslationService`), never the `RealError`.
 * **Full Catalog Reference**: See `.agents/rules/06-error-codes-handling.md` for the complete `ERR-1000` through `ERR-9999` standard error code registry.
+
+---
+
+## 24. Canonical Sidebar Navigation Hierarchy & Feature Gating Standards (Mandatory)
+* **Absolute Sidebar Sequence (Top-to-Bottom across all platforms)**:
+  1. **Core Navigation & User Management**:
+     * `Dashboard Overview` / `Workspace Home`
+     * `User Directory` (`All Members`, `Categories`, `KPIs`, `User Settings`)
+     * `Identity & Access Control`
+     * `Manage Account & Profile` (`My Account`)
+  2. **Subscribed Modular Features**:
+     * Appears immediately after User Management / My Account.
+     * Includes `Workspace (Desktop Stations)`, `Messenger`, `Groups`, `Alumni`, etc.
+  3. **Billing & Subscriptions** (Admin / Tenant level only):
+     * `Subscription Plans`
+     * `Subscriptions & Invoices`
+  4. **Security, Audit & System Logs** (Admin / Tenant level only):
+     * `Security Audit` & Activity Logs
+     * `Error Codes`
+* **Strict Member Menu Isolation**:
+  * Members ONLY ever have `Dashboard (Workspace Home)` and `Manage My Account` by default.
+  * Modular features appear in the member menu ONLY if actively subscribed and enabled by the tenant administrator.
+  * Billing & Subscriptions and Security Logs are strictly prohibited from appearing in the member menu.
+* **Direct URL Protection (`feature.guard.ts`)**:
+  * Typing or deep-linking to an unsubscribed feature route (e.g. `/workspace/stations`) must be blocked by `FeatureGuard` and redirect to `/feature-unavailable` showing the unavailable advisory.
+* **Full Specification Reference**: See `.agents/rules/07-sidebar-navigation-hierarchy.md`.
+
