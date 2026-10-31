@@ -76,7 +76,12 @@ export class TenantStateService {
     const url = `${(environment.apiUrl || '').replace(/\/+$/, '')}/SettingsApi/brand`;
 
     try {
-      await firstValueFrom(this.http.get(url, { headers }));
+      const res: any = await firstValueFrom(this.http.get(url, { headers }));
+      const data = res?.data || res;
+      const dynamicTitle = data?.siteTitle || data?.websiteTitle || data?.brandName || data?.companyName;
+      if (dynamicTitle && typeof document !== 'undefined') {
+        document.title = dynamicTitle;
+      }
       this.tenantNotFoundSubject.next(false);
     } catch (err: any) {
       if (err?.status === 404 || err?.error?.error === 'TenantNotFound') {

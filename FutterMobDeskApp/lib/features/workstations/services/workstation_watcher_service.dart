@@ -654,7 +654,10 @@ class WorkstationWatcherService extends ChangeNotifier {
             .where((l) => l.isNotEmpty)
             .toList();
         if (lines.isNotEmpty) {
-          final t = lines.last;
+          final t = lines.last
+              .replaceAll(RegExp(r'OzikolBCCClient', caseSensitive: false), 'Workspace Portal')
+              .replaceAll(RegExp(r'Ozikol-BCC', caseSensitive: false), 'Workspace')
+              .trim();
           return t.isNotEmpty ? t : null;
         }
       }

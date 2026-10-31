@@ -13,7 +13,7 @@ import { Observable } from 'rxjs';
   styleUrl: './app.component.css'
 })
 export class AppComponent {
-  title = 'Ozikol-BCC.Client';
+  title = 'Workspace Portal';
   isTenantNotFound$: Observable<boolean>;
   isCheckingTenant$: Observable<boolean>;
 

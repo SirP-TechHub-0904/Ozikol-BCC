@@ -2525,7 +2525,12 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
   cleanWindowTitle(title?: string): string {
     if (!title) return '';
     // Strip any leading digit count prefix (e.g., "45 " or "37 ") from Win32 GetWindowText
-    return title.replace(/^\d+\s+/, '').trim();
+    // and replace any legacy Angular scaffold title ("OzikolBCCClient") with the tenant brandName
+    return title
+      .replace(/^\d+\s+/, '')
+      .replace(/OzikolBCCClient/gi, this.brandName)
+      .replace(/Ozikol-BCC/gi, this.brandName)
+      .trim();
   }
 
   formatTime(isoString?: string): string {
