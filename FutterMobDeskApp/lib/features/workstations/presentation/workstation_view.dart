@@ -7,12 +7,12 @@ import '../../../core/localization/language_provider.dart';
 import '../services/workstation_watcher_service.dart';
 
 /// <summary>
-/// Workstation & Application Gatekeeper Screen (bcp-workspace).
+/// Workstation & Shift Tracker Screen (bcp-workspace).
 /// Features:
 /// 1. Work Shift Controller (Start Work, Take Break, Close Work)
 /// 2. Today's Shift Card with 3 core time reports (Gross, Mid-Shift Closures, Net Effective Hours)
 /// 3. History of Works Ledger
-/// 4. Approved Applications & Sandbox Folder Launcher
+/// 4. Sandboxed Work Folder Access
 /// </summary>
 class WorkstationView extends ConsumerStatefulWidget {
   final dynamic workspace;
@@ -24,10 +24,7 @@ class WorkstationView extends ConsumerStatefulWidget {
 }
 
 class _WorkstationViewState extends ConsumerState<WorkstationView> {
-  final TextEditingController _requestAppCtrl = TextEditingController();
-  final TextEditingController _requestReasonCtrl = TextEditingController();
   final TextEditingController _adjustmentReasonCtrl = TextEditingController();
-  bool _isSubmitting = false;
 
   // Realistic Interactive Shift State
   bool _isShiftActive = true;
@@ -107,8 +104,6 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
   @override
   void dispose() {
     _tickerTimer?.cancel();
-    _requestAppCtrl.dispose();
-    _requestReasonCtrl.dispose();
     _adjustmentReasonCtrl.dispose();
     super.dispose();
   }
@@ -270,7 +265,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                       Text(
                         'workstation.subtitle'.tr(
                           ref,
-                          fallback: 'Track shift hours, log breaks and mid-shift closures, and launch approved enterprise tools.',
+                          fallback: 'Track daily shift hours, monitor breaks and mid-shift closures with automated station auditing.',
                         ),
                         style: TextStyle(fontSize: 13, color: textSecondary),
                       ),
@@ -286,19 +281,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: Color(0xFFBFDBFE)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton.icon(
-                  onPressed: () => _openRequestDialog(context),
-                  icon: const Icon(Icons.add_moderator_rounded, size: 16),
-                  label: Text('workstation.request_btn'.tr(ref, fallback: 'Request Software Access')),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
                   ),
                 ),
               ],
@@ -315,60 +298,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
 
             // 4. HISTORY OF WORKS (Audited Shift Ledger)
             _buildHistoryOfWorksLedger(isDark, surfaceColor, borderColor, textPrimary, textSecondary),
-            const SizedBox(height: 28),
-
-            // 5. Section: Approved Company Applications
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'workstation.approved_apps'.tr(ref, fallback: 'Approved Company Applications (1-Click Launch)'),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: textPrimary,
-                  ),
-                ),
-                Text(
-                  '${watcher.rules.isEmpty ? 6 : watcher.rules.length} Authorized Tools',
-                  style: TextStyle(fontSize: 12, color: textSecondary, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // 6. Launcher Grid
-            if (watcher.rules.isEmpty)
-              _buildDefaultLauncherGrid(context, watcher, isDark, surfaceColor, borderColor, textPrimary, textSecondary)
-            else
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 260,
-                  mainAxisExtent: 110,
-                  crossAxisSpacing: 14,
-                  mainAxisSpacing: 14,
-                ),
-                itemCount: watcher.rules.length,
-                itemBuilder: (context, index) {
-                  final rule = watcher.rules[index];
-                  return _buildAppLauncherCard(
-                    context,
-                    title: rule.displayName,
-                    processName: rule.processName,
-                    category: rule.category,
-                    icon: _resolveIcon(rule.iconName),
-                    isDark: isDark,
-                    surfaceColor: surfaceColor,
-                    borderColor: borderColor,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                    onTap: () => _launchApp(watcher, rule.processName, rule.displayName),
-                  );
-                },
-              ),
-            const SizedBox(height: 60),
+            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -1064,182 +994,6 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     );
   }
 
-  // ==========================================
-  // LAUNCHER HELPERS
-  // ==========================================
-  Widget _buildDefaultLauncherGrid(
-    BuildContext context,
-    WorkstationWatcherService watcher,
-    bool isDark,
-    Color surfaceColor,
-    Color borderColor,
-    Color textPrimary,
-    Color textSecondary,
-  ) {
-    final defaultTools = [
-      {'name': 'Microsoft Word', 'process': 'winword.exe', 'category': 'Documents', 'icon': Icons.description_rounded},
-      {'name': 'Microsoft Excel', 'process': 'excel.exe', 'category': 'Spreadsheets', 'icon': Icons.table_chart_rounded},
-      {'name': 'Microsoft PowerPoint', 'process': 'powerpnt.exe', 'category': 'Presentations', 'icon': Icons.slideshow_rounded},
-      {'name': 'Adobe Acrobat Reader', 'process': 'acrord32.exe', 'category': 'PDF Reader', 'icon': Icons.picture_as_pdf_rounded},
-      {'name': 'Windows Calculator', 'process': 'calc.exe', 'category': 'Utilities', 'icon': Icons.calculate_rounded},
-      {'name': 'Microsoft Teams', 'process': 'ms-teams.exe', 'category': 'Communication', 'icon': Icons.forum_rounded},
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 260,
-        mainAxisExtent: 110,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-      ),
-      itemCount: defaultTools.length,
-      itemBuilder: (context, index) {
-        final tool = defaultTools[index];
-        return _buildAppLauncherCard(
-          context,
-          title: tool['name'] as String,
-          processName: tool['process'] as String,
-          category: tool['category'] as String,
-          icon: tool['icon'] as IconData,
-          isDark: isDark,
-          surfaceColor: surfaceColor,
-          borderColor: borderColor,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-          onTap: () => _launchApp(watcher, tool['process'] as String, tool['name'] as String),
-        );
-      },
-    );
-  }
-
-  Widget _buildAppLauncherCard(
-    BuildContext context, {
-    required String title,
-    required String processName,
-    required String category,
-    required IconData icon,
-    required bool isDark,
-    required Color surfaceColor,
-    required Color borderColor,
-    required Color textPrimary,
-    required Color textSecondary,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: surfaceColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: borderColor),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: AppColors.primary, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      processName,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontFamily: 'monospace',
-                        color: textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        category,
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Colors.grey),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  IconData _resolveIcon(String? iconName) {
-    switch (iconName) {
-      case 'table_chart':
-      case 'table_view':
-        return Icons.table_chart_rounded;
-      case 'slideshow':
-        return Icons.slideshow_rounded;
-      case 'picture_as_pdf':
-        return Icons.picture_as_pdf_rounded;
-      case 'calculate':
-        return Icons.calculate_rounded;
-      case 'chat':
-      case 'forum':
-        return Icons.forum_rounded;
-      default:
-        return Icons.description_rounded;
-    }
-  }
-
-  Future<void> _launchApp(WorkstationWatcherService watcher, String processName, String appTitle) async {
-    final success = await watcher.launchApprovedApp(processName);
-    if (!mounted) return;
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Launching $appTitle...'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$appTitle ($processName) is not installed on this computer.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-    }
-  }
-
   Future<void> _openLocalFolder(String path) async {
     if (!Platform.isWindows) return;
     try {
@@ -1304,97 +1058,6 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                 foregroundColor: Colors.white,
               ),
               child: const Text('Submit Adjustment'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _openRequestDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          title: const Row(
-            children: [
-              Icon(Icons.add_moderator_rounded, color: AppColors.primary),
-              SizedBox(width: 8),
-              Text('Request Software Access', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Need an application not currently on your workstation whitelist? Submit an access request for manager approval.',
-                  style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _requestAppCtrl,
-                  decoration: InputDecoration(
-                    labelText: 'Process or Application Name',
-                    hintText: 'e.g. photoshop.exe or CorelDraw',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _requestReasonCtrl,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: 'Official Business Justification',
-                    hintText: 'Describe why you need this tool for your office duties...',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    contentPadding: const EdgeInsets.all(12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: _isSubmitting
-                  ? null
-                  : () async {
-                      if (_requestAppCtrl.text.trim().isEmpty || _requestReasonCtrl.text.trim().isEmpty) return;
-                      setState(() => _isSubmitting = true);
-                      final watcher = ref.read(workstationWatcherProvider);
-                      final ok = await watcher.requestAccess(
-                        _requestAppCtrl.text.trim(),
-                        _requestReasonCtrl.text.trim(),
-                      );
-                      setState(() => _isSubmitting = false);
-                      if (!ctx.mounted) return;
-                      Navigator.of(ctx).pop();
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            ok
-                                ? 'Access request submitted! Management will review shortly.'
-                                : 'Failed to submit request. Please check connection.',
-                          ),
-                          backgroundColor: ok ? const Color(0xFF16A34A) : AppColors.error,
-                        ),
-                      );
-                      _requestAppCtrl.clear();
-                      _requestReasonCtrl.clear();
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Submit Request'),
             ),
           ],
         );
