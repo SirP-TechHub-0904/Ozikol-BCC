@@ -107,6 +107,8 @@ import { StoreCartComponent } from './pages/store/store-cart.component';
 import { StoreCheckoutComponent } from './pages/store/store-checkout.component';
 
 import { authGuard } from './core/guards/auth.guard';
+import { featureGuard } from './core/guards/feature.guard';
+import { FeatureUnavailableComponent } from './pages/auth/feature-unavailable/feature-unavailable.component';
 
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 
@@ -124,6 +126,8 @@ export const routes: Routes = [
       { path: 'reset-password', component: ResetPasswordComponent },
       { path: 'forgot-password', component: ResetPasswordComponent },
       { path: 'access-denied', component: AccessDeniedComponent },
+      { path: 'feature-unavailable', component: FeatureUnavailableComponent },
+      { path: 'feature-not-available', redirectTo: 'feature-unavailable', pathMatch: 'full' },
       { path: 'register', redirectTo: '/register', pathMatch: 'full' }
     ]
   },
@@ -141,6 +145,8 @@ export const routes: Routes = [
   { path: 'reset-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
   { path: 'forgot-password', redirectTo: 'auth/reset-password', pathMatch: 'full' },
   { path: 'access-denied', redirectTo: 'auth/access-denied', pathMatch: 'full' },
+  { path: 'feature-unavailable', redirectTo: 'auth/feature-unavailable', pathMatch: 'full' },
+  { path: 'feature-not-available', redirectTo: 'auth/feature-unavailable', pathMatch: 'full' },
 
   // Public Storefront & Commerce Catalog
   { path: 'store', component: StoreCatalogComponent },
@@ -233,15 +239,15 @@ export const routes: Routes = [
       { path: 'users/workspace/alumni/cohorts', component: AlumniCohortsComponent },
       { path: 'users/workspace/profile/biography', component: BiographyEditComponent },
 
-      { path: 'admin/messenger', component: GroupsChatComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
-      { path: 'admin/alumni', component: AlumniNetworkComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
+      { path: 'admin/messenger', component: GroupsChatComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'], feature: 'bcp-community-messenger', featureName: 'Community Messenger & Team Chat' } },
+      { path: 'admin/alumni', component: AlumniNetworkComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'], feature: 'bcp-alumni-directory', featureName: 'Alumni Network & Directory' } },
       { path: 'admin/alumni/bio/:id', component: AlumniBioPageComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
       { path: 'admin/alumni/cohorts', component: AlumniCohortsComponent, data: { roles: ['SuperAdmin', 'Admin', 'IdentityManager'] } },
 
       { path: 'notifications', redirectTo: 'users/workspace/notifications', pathMatch: 'full' },
 
       // 3. Groups & Channels
-      { path: 'groups/console', component: GroupsComponent, data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'] } },
+      { path: 'groups/console', component: GroupsComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin', 'UserManager', 'IdentityManager'], feature: 'bcp-committees', featureName: 'Committees & Sub-Groups' } },
       { path: 'groups/workspace', component: GroupsDirectoryComponent },
       { path: 'groups', component: GroupsComponent },
 
@@ -329,8 +335,12 @@ export const routes: Routes = [
       { path: 'billing/invoices', redirectTo: 'billing/subscriptions', pathMatch: 'full' },
       { path: 'billing', redirectTo: 'billing/features', pathMatch: 'full' },
 
+      // Feature Not Available / Subscription Required In-Shell Route
+      { path: 'feature-unavailable', component: FeatureUnavailableComponent },
+      { path: 'feature-not-available', redirectTo: 'feature-unavailable', pathMatch: 'full' },
+
       // Suite 11: Workstation Supervisor & Application Gatekeeper (bcp-workspace)
-      { path: 'workspace/stations', component: WorkstationsConsoleComponent, data: { roles: ['SuperAdmin', 'Admin'] } },
+      { path: 'workspace/stations', component: WorkstationsConsoleComponent, canActivate: [featureGuard], data: { roles: ['SuperAdmin', 'Admin'], feature: 'bcp-workspace', featureName: 'Workspace (Desktop only)' } },
       { path: 'admin/workspace/stations', redirectTo: 'workspace/stations', pathMatch: 'full' },
       { path: 'admin/workspace', redirectTo: 'workspace/stations', pathMatch: 'full' },
 

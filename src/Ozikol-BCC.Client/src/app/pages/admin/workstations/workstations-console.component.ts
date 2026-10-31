@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
@@ -1177,10 +1177,24 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
 
   constructor(
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
+    // Defense-in-depth: Verify tenant has active bcp-workspace subscription
+    const activeFeatures = this.getActiveFeatures();
+    if (!activeFeatures.has('bcp-workspace')) {
+      this.router.navigate(['/feature-unavailable'], {
+        queryParams: {
+          feature: 'bcp-workspace',
+          featureName: 'Workspace (Desktop only)',
+          attemptedUrl: '/workspace/stations'
+        }
+      });
+      return;
+    }
+
     this.refreshAll();
     // Auto-refresh live station telemetry every 15 seconds
     this.pollInterval = setInterval(() => {
@@ -1188,6 +1202,19 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
         this.loadStations(false);
       }
     }, 15000);
+  }
+
+  private getActiveFeatures(): Set<string> {
+    try {
+      const raw = localStorage.getItem('bcp_active_feature_codes');
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          return new Set<string>(arr.map(x => String(x).toLowerCase()));
+        }
+      }
+    } catch {}
+    return new Set<string>();
   }
 
   ngOnDestroy(): void {
