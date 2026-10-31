@@ -743,6 +743,26 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEFF6FF),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFBFDBFE)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.sync_rounded, size: 12, color: Color(0xFF2563EB)),
+                            SizedBox(width: 4),
+                            Text(
+                              'Auto-refreshes every 3s',
+                              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF1D4ED8)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
                       TextButton.icon(
                         onPressed: _isScanning ? null : _scanRunningApplications,
                         icon: const Icon(Icons.refresh_rounded, size: 14),
@@ -752,29 +772,6 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         ),
                       ),
-                      if (hasApps) ...[
-                        const SizedBox(width: 6),
-                        OutlinedButton.icon(
-                          onPressed: _isClosingAll ? null : _closeAllDetectedApps,
-                          icon: _isClosingAll
-                              ? const SizedBox(
-                                  width: 12,
-                                  height: 12,
-                                  child: CircularProgressIndicator(strokeWidth: 1.8),
-                                )
-                              : const Icon(Icons.close_rounded, size: 14),
-                          label: Text(
-                            _isClosingAll ? 'Closing...' : 'Close All Apps',
-                            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFDC2626),
-                            side: const BorderSide(color: Color(0xFFFCA5A5)),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ],
