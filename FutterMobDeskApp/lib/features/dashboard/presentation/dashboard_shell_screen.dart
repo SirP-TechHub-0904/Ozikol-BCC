@@ -473,7 +473,18 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
   }) {
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : const Color(0xFFF8FAFC),
-      body: Stack(
+      body: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) => watcher.recordUserActivity(),
+        onPointerMove: (_) => watcher.recordUserActivity(),
+        onPointerHover: (_) => watcher.recordUserActivity(),
+        child: Focus(
+          autofocus: true,
+          onKeyEvent: (node, event) {
+            watcher.recordUserActivity();
+            return KeyEventResult.ignored;
+          },
+          child: Stack(
         children: [
           Row(
             children: [
@@ -561,6 +572,18 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               child: _buildViolationSlideBanner(isDark, _activeViolation!),
             ),
 
+          // Workstation Inactivity Countdown Warning Overlay (45s idle trigger)
+          if (watcher.isIdleCountdownActive && !watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
+            Positioned.fill(
+              child: _buildInactivityCountdownOverlay(isDark, watcher),
+            ),
+
+          // Workstation Inactivity Countdown Warning Overlay (45s idle trigger)
+          if (watcher.isIdleCountdownActive && !watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
+            Positioned.fill(
+              child: _buildInactivityCountdownOverlay(isDark, watcher),
+            ),
+
           // Workstation Remote Force-Lock Full-Screen Kiosk Overlay (only if active)
           if (watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned.fill(
@@ -574,7 +597,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   // =========================================================================
@@ -808,6 +833,12 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             child: _buildOziAiFloatingButton(isDark, isMobile: true),
           ),
 
+          // Workstation Inactivity Countdown Warning Overlay (45s idle trigger)
+          if (watcher.isIdleCountdownActive && !watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
+            Positioned.fill(
+              child: _buildInactivityCountdownOverlay(isDark, watcher),
+            ),
+
           // Workstation Remote Force-Lock Full-Screen Kiosk Overlay (only if active)
           if (watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned.fill(
@@ -977,7 +1008,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            '⌘K',
+                            'âŒ˜K',
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -2614,8 +2645,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
 
     return Tooltip(
       message: isOnline
-          ? 'shell.net_online_tooltip'.tr(ref, fallback: 'Network Online • Real-Time Connected')
-          : 'shell.net_offline_tooltip'.tr(ref, fallback: 'Network Offline • Showing Cached Workspace Data'),
+          ? 'shell.net_online_tooltip'.tr(ref, fallback: 'Network Online â€¢ Real-Time Connected')
+          : 'shell.net_offline_tooltip'.tr(ref, fallback: 'Network Offline â€¢ Showing Cached Workspace Data'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
@@ -2829,7 +2860,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                           ),
                         ),
                         Text(
-                          'Workspace Operations • $dateStr',
+                          'Workspace Operations â€¢ $dateStr',
                           style: TextStyle(fontSize: 12, color: subColor),
                         ),
                       ],
@@ -2855,7 +2886,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               _buildCalendarEventItem(
                 isDark,
                 title: 'Daily Telemetry & Membership Sync',
-                time: '08:00 AM UTC • Automated',
+                time: '08:00 AM UTC â€¢ Automated',
                 category: 'HEALTH',
                 categoryColor: const Color(0xFF16A34A),
               ),
@@ -2863,7 +2894,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               _buildCalendarEventItem(
                 isDark,
                 title: 'CMS Page Cache & Asset Purge',
-                time: '12:00 PM UTC • Scheduled',
+                time: '12:00 PM UTC â€¢ Scheduled',
                 category: 'CMS',
                 categoryColor: const Color(0xFF0284C7),
               ),
@@ -2871,7 +2902,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
               _buildCalendarEventItem(
                 isDark,
                 title: 'Tenant Security & Access Audit Review',
-                time: 'Tomorrow, 09:30 AM • Operations',
+                time: 'Tomorrow, 09:30 AM â€¢ Operations',
                 category: 'SECURITY',
                 categoryColor: const Color(0xFFF59E0B),
               ),
@@ -3281,8 +3312,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                 icon: Icons.wifi_rounded,
                 label: 'shell.network_status'.tr(ref, fallback: 'Network Status'),
                 value: isOnline
-                    ? 'shell.net_online_tooltip'.tr(ref, fallback: 'Online • Real-Time Connected')
-                    : 'shell.net_offline_tooltip'.tr(ref, fallback: 'Offline • Local Cache Active'),
+                    ? 'shell.net_online_tooltip'.tr(ref, fallback: 'Online â€¢ Real-Time Connected')
+                    : 'shell.net_offline_tooltip'.tr(ref, fallback: 'Offline â€¢ Local Cache Active'),
                 valueColor: isOnline ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
               ),
               const SizedBox(height: 14),
@@ -3625,7 +3656,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${activeWs?.userFullName ?? 'Member'} • $roleBadge',
+                      '${activeWs?.userFullName ?? 'Member'} â€¢ $roleBadge',
                       style: TextStyle(fontSize: 12, color: subColor, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -4026,6 +4057,143 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Inactivity Countdown Warning Overlay (triggers after 45s idle, counts down 15s to lockdown)
+  Widget _buildInactivityCountdownOverlay(bool isDark, WorkstationWatcherService watcher) {
+    final remaining = watcher.idleCountdownSeconds;
+    final progress = (remaining / 15.0).clamp(0.0, 1.0);
+
+    return Material(
+      color: Colors.transparent,
+      child: Stack(
+        children: [
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.78),
+            ),
+          ),
+          Center(
+            child: Container(
+              width: 480,
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFF59E0B), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.25),
+                    blurRadius: 32,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFFCD34D), width: 2),
+                    ),
+                    child: const Icon(
+                      Icons.hourglass_top_rounded,
+                      color: Color(0xFFD97706),
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Workstation Inactivity Warning',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'No keyboard or mouse activity detected for 45 seconds.\nTo secure corporate data and maintain audit accuracy, this station will lock in:',
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Giant Countdown Display
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFCA5A5)),
+                    ),
+                    child: Text(
+                      '${remaining}s',
+                      style: const TextStyle(
+                        fontSize: 38,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFDC2626),
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Progress Bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 6,
+                      backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFF59E0B)),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Action Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => watcher.resumeFromIdleCountdown(),
+                      icon: const Icon(Icons.touch_app_rounded, size: 18),
+                      label: const Text('I Am Working — Resume Duty'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF16A34A),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Moving your mouse or pressing any key will also dismiss this warning.',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

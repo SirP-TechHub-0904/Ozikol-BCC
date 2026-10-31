@@ -178,31 +178,83 @@ export interface ViolationLogItem {
 
       <!-- TAB 1: CONNECTED WORKSTATIONS (LIVE ENDPOINT DIRECTORY) -->
       <div *ngIf="activeTab === 'stations'" class="tab-content">
+        <!-- Interactive Status Taxonomy Filter Pills -->
+        <div class="status-pills-bar">
+          <button class="pill-btn" [class.active]="statusFilter === 'all'" (click)="statusFilter = 'all'">
+            <span>All Stations</span>
+            <span class="pill-badge">{{ stations.length }}</span>
+          </button>
+          <button class="pill-btn pill-active" [class.active]="statusFilter === 'active'" (click)="statusFilter = 'active'">
+            <span class="dot-indicator dot-green"></span>
+            <span>Active Duty</span>
+            <span class="pill-badge">{{ activeCount }}</span>
+          </button>
+          <button class="pill-btn pill-idle" [class.active]="statusFilter === 'idle'" (click)="statusFilter = 'idle'">
+            <span class="dot-indicator dot-amber"></span>
+            <span>Idle (Inactive)</span>
+            <span class="pill-badge">{{ idleCount }}</span>
+          </button>
+          <button class="pill-btn pill-break" [class.active]="statusFilter === 'break'" (click)="statusFilter = 'break'">
+            <span class="dot-indicator dot-blue"></span>
+            <span>On Break</span>
+            <span class="pill-badge">{{ breakCount }}</span>
+          </button>
+          <button class="pill-btn pill-locked" [class.active]="statusFilter === 'locked'" (click)="statusFilter = 'locked'">
+            <span class="dot-indicator dot-red"></span>
+            <span>Locked</span>
+            <span class="pill-badge">{{ lockedCount }}</span>
+          </button>
+          <button class="pill-btn pill-offline" [class.active]="statusFilter === 'offline'" (click)="statusFilter = 'offline'">
+            <span class="dot-indicator dot-gray"></span>
+            <span>Offline</span>
+            <span class="pill-badge">{{ offlineCount }}</span>
+          </button>
+        </div>
+
         <div class="toolbar-row">
           <div class="search-box">
             <span class="material-symbols-outlined">search</span>
             <input type="text" [(ngModel)]="stationSearch" placeholder="Search by station, staff name, or current application..." />
           </div>
-          <div class="filter-actions">
-            <select [(ngModel)]="statusFilter" class="filter-select">
-              <option value="all">All Stations ({{ stations.length }})</option>
-              <option value="online">Online Only ({{ onlineCount }})</option>
-              <option value="locked">Locked Only ({{ lockedCount }})</option>
-            </select>
+          <div class="view-mode-toggle">
+            <button class="view-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Card Grid View">
+              <span class="material-symbols-outlined">grid_view</span>
+              <span>Cards</span>
+            </button>
+            <button class="view-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'" title="Compact Table View">
+              <span class="material-symbols-outlined">table_rows</span>
+              <span>Table</span>
+            </button>
           </div>
         </div>
 
         <div *ngIf="filteredStations.length === 0" class="empty-state">
           <span class="material-symbols-outlined empty-icon">desktop_access_disabled</span>
           <h3>No Workstations Detected</h3>
-          <p>Launch the native Flutter desktop app on an office PC to automatically register the station and begin live monitoring.</p>
+          <p>No stations match the selected filter criteria. Launch the native Flutter desktop app to begin live monitoring.</p>
         </div>
 
-        <div *ngIf="filteredStations.length > 0" class="stations-grid">
+        <!-- GRID CARDS VIEW -->
+        <div *ngIf="filteredStations.length > 0 && viewMode === 'grid'" class="stations-grid">
           <div *ngFor="let s of filteredStations" class="station-card" [class.is-locked]="s.isLocked">
             <div class="station-card-head">
               <div class="station-title-box">
-                <span class="station-status-dot" [class.online]="s.isOnline"></span>
+                <span class="badge-status-pill pill-active" *ngIf="getStationStatus(s) === 'active'">
+                  <span class="dot-indicator dot-green"></span> ACTIVE
+                </span>
+                <span class="badge-status-pill pill-idle" *ngIf="getStationStatus(s) === 'idle'">
+                  <span class="dot-indicator dot-amber"></span> IDLE
+                </span>
+                <span class="badge-status-pill pill-break" *ngIf="getStationStatus(s) === 'break'">
+                  <span class="dot-indicator dot-blue"></span> BREAK
+                </span>
+                <span class="badge-status-pill pill-locked" *ngIf="getStationStatus(s) === 'locked'">
+                  <span class="dot-indicator dot-red"></span> LOCKED
+                </span>
+                <span class="badge-status-pill pill-offline" *ngIf="getStationStatus(s) === 'offline'">
+                  <span class="dot-indicator dot-gray"></span> OFFLINE
+                </span>
+
                 <h3 class="station-name">{{ s.machineName }}</h3>
                 <span class="station-pill">{{ s.stationKey }}</span>
               </div>
@@ -261,6 +313,82 @@ export interface ViolationLogItem {
               <span class="footer-time">Last active: {{ formatTime(s.lastHeartbeat) }}</span>
               <span class="footer-os">{{ s.osVersion || 'Windows 11' }}</span>
             </div>
+          </div>
+        </div>
+
+        <!-- COMPACT TABLE VIEW (10+ WORKSTATIONS) -->
+        <div *ngIf="filteredStations.length > 0 && viewMode === 'table'" class="card-box mt-3">
+          <div class="table-wrap">
+            <table class="policy-table">
+              <thead>
+                <tr>
+                  <th>STATION & HOST</th>
+                  <th>ASSIGNED STAFF</th>
+                  <th>STATUS</th>
+                  <th>CURRENT ACTIVE APP / WINDOW</th>
+                  <th>LAST TELEMETRY</th>
+                  <th>REMOTE ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let s of filteredStations" [class.row-locked]="s.isLocked">
+                  <td>
+                    <div class="station-meta-cell">
+                      <strong class="text-sm font-bold">{{ s.machineName }}</strong>
+                      <span class="text-xs text-gray block">{{ s.stationKey }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="staff-cell">
+                      <span class="font-semibold block">{{ s.assignedUserName || 'Unassigned Staff' }}</span>
+                      <span class="text-xs text-gray block" *ngIf="s.ipAddress">{{ s.ipAddress }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge-status-pill pill-active" *ngIf="getStationStatus(s) === 'active'">
+                      <span class="dot-indicator dot-green"></span> ACTIVE
+                    </span>
+                    <span class="badge-status-pill pill-idle" *ngIf="getStationStatus(s) === 'idle'">
+                      <span class="dot-indicator dot-amber"></span> IDLE
+                    </span>
+                    <span class="badge-status-pill pill-break" *ngIf="getStationStatus(s) === 'break'">
+                      <span class="dot-indicator dot-blue"></span> BREAK
+                    </span>
+                    <span class="badge-status-pill pill-locked" *ngIf="getStationStatus(s) === 'locked'">
+                      <span class="dot-indicator dot-red"></span> LOCKED
+                    </span>
+                    <span class="badge-status-pill pill-offline" *ngIf="getStationStatus(s) === 'offline'">
+                      <span class="dot-indicator dot-gray"></span> OFFLINE
+                    </span>
+                  </td>
+                  <td>
+                    <div class="table-app-cell">
+                      <div class="flex items-center gap-1">
+                        <code class="process-tag">{{ s.currentProcessName || 'Desktop Idle' }}</code>
+                        <span *ngIf="s.currentProcessName && isAppAllowed(s.currentProcessName)" class="badge-status-approved">APPROVED</span>
+                        <span *ngIf="s.currentProcessName && !isAppAllowed(s.currentProcessName)" class="badge-status-unapproved">RESTRICTED</span>
+                      </div>
+                      <span class="text-xs text-gray truncate max-w-xs block mt-1" *ngIf="s.currentWindowTitle">
+                        {{ cleanWindowTitle(s.currentWindowTitle) }}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="text-xs whitespace-nowrap text-gray">
+                    {{ formatTime(s.lastHeartbeat) }}
+                  </td>
+                  <td>
+                    <button *ngIf="!s.isLocked" (click)="toggleStationLock(s, true)" class="btn-table-lock" title="Lock PC">
+                      <span class="material-symbols-outlined text-sm">lock</span>
+                      <span>Lock</span>
+                    </button>
+                    <button *ngIf="s.isLocked" (click)="toggleStationLock(s, false)" class="btn-table-unlock" title="Unlock PC">
+                      <span class="material-symbols-outlined text-sm">lock_open</span>
+                      <span>Unlock</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -678,7 +806,141 @@ export interface ViolationLogItem {
       border-radius: 999px;
     }
 
-    /* Stations Grid */
+    /* Stations Grid & Status Pills */
+    .status-pills-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .pill-btn:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    .pill-btn.active {
+      background: #0f172a;
+      color: #ffffff;
+      border-color: #0f172a;
+    }
+    .pill-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .pill-btn.active .pill-badge {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+    .dot-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot-green { background: #16a34a; box-shadow: 0 0 6px rgba(22, 163, 74, 0.4); }
+    .dot-amber { background: #d97706; box-shadow: 0 0 6px rgba(217, 119, 6, 0.4); }
+    .dot-blue { background: #2563eb; box-shadow: 0 0 6px rgba(37, 99, 235, 0.4); }
+    .dot-red { background: #dc2626; box-shadow: 0 0 6px rgba(220, 38, 38, 0.4); }
+    .dot-gray { background: #94a3b8; }
+
+    .view-mode-toggle {
+      display: inline-flex;
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+    .view-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .view-btn span.material-symbols-outlined {
+      font-size: 17px;
+    }
+    .view-btn.active {
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    .badge-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .badge-status-pill.pill-active { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-status-pill.pill-idle { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+    .badge-status-pill.pill-break { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .badge-status-pill.pill-locked { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .badge-status-pill.pill-offline { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+
+    .btn-table-lock {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #b91c1c;
+      cursor: pointer;
+    }
+    .btn-table-lock:hover { background: #fee2e2; }
+    .btn-table-unlock {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #15803d;
+      cursor: pointer;
+    }
+    .btn-table-unlock:hover { background: #dcfce7; }
+    .row-locked {
+      background: #fff8f8;
+    }
+
     .toolbar-row {
       display: flex;
       justify-content: space-between;
@@ -1152,7 +1414,82 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
   violations: ViolationLogItem[] = [];
 
   stationSearch: string = '';
-  statusFilter: 'all' | 'online' | 'locked' = 'all';
+  viewMode: 'grid' | 'table' = 'grid';
+  statusFilter: 'all' | 'active' | 'idle' | 'break' | 'locked' | 'offline' = 'all';
+
+  getStationStatus(s: WorkstationItem): 'active' | 'idle' | 'break' | 'locked' | 'offline' {
+    if (s.isLocked) return 'locked';
+    if (!s.isOnline) return 'offline';
+    const proc = (s.currentProcessName || '').toLowerCase();
+    const title = (s.currentWindowTitle || '').toLowerCase();
+    if (proc.includes('break') || title.includes('break')) return 'break';
+    if (proc.includes('idle') || title.includes('idle') || proc === 'desktop idle') return 'idle';
+    return 'active';
+  }
+
+  get activeCount(): number {
+    return this.stations.filter(s => this.getStationStatus(s) === 'active').length;
+  }
+
+  get idleCount(): number {
+    return this.stations.filter(s => this.getStationStatus(s) === 'idle').length;
+  }
+
+  get breakCount(): number {
+    return this.stations.filter(s => this.getStationStatus(s) === 'break').length;
+  }
+
+  get lockedCount(): number {
+    return this.stations.filter(s => this.getStationStatus(s) === 'locked').length;
+  }
+
+  get offlineCount(): number {
+    return this.stations.filter(s => this.getStationStatus(s) === 'offline').length;
+  }
+
+  get filteredStations(): WorkstationItem[] {
+    const list = this.stations.filter(s => {
+      const status = this.getStationStatus(s);
+      if (this.statusFilter !== 'all' && status !== this.statusFilter) return false;
+      if (!this.stationSearch) return true;
+      const term = this.stationSearch.toLowerCase();
+      return (s.machineName && s.machineName.toLowerCase().includes(term)) ||
+             (s.stationKey && s.stationKey.toLowerCase().includes(term)) ||
+             (s.assignedUserName && s.assignedUserName.toLowerCase().includes(term)) ||
+             (s.currentProcessName && s.currentProcessName.toLowerCase().includes(term)) ||
+             (s.currentWindowTitle && s.currentWindowTitle.toLowerCase().includes(term));
+    });
+
+    // Priority sorting:
+    // 1. Restricted apps / warnings first
+    // 2. Locked stations
+    // 3. Active duty
+    // 4. Idle / Inactive
+    // 5. Break
+    // 6. Offline
+    const priorityWeight: Record<string, number> = {
+      'locked': 1,
+      'active': 2,
+      'idle': 3,
+      'break': 4,
+      'offline': 5
+    };
+
+    return list.sort((a, b) => {
+      const aRestricted = a.currentProcessName && !this.isAppAllowed(a.currentProcessName);
+      const bRestricted = b.currentProcessName && !this.isAppAllowed(b.currentProcessName);
+      if (aRestricted && !bRestricted) return -1;
+      if (!aRestricted && bRestricted) return 1;
+
+      const wA = priorityWeight[this.getStationStatus(a)] || 99;
+      const wB = priorityWeight[this.getStationStatus(b)] || 99;
+      if (wA !== wB) return wA - wB;
+
+      const tA = a.lastHeartbeat ? new Date(a.lastHeartbeat).getTime() : 0;
+      const tB = b.lastHeartbeat ? new Date(b.lastHeartbeat).getTime() : 0;
+      return tB - tA;
+    });
+  }
 
   newApp = {
     displayName: '',
@@ -1224,26 +1561,8 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     return this.stations.filter(s => s.isOnline).length;
   }
 
-  get lockedCount(): number {
-    return this.stations.filter(s => s.isLocked).length;
-  }
-
   get pendingRequestsCount(): number {
     return this.requests.filter(r => r.status === 'Pending').length;
-  }
-
-  get filteredStations(): WorkstationItem[] {
-    return this.stations.filter(s => {
-      if (this.statusFilter === 'online' && !s.isOnline) return false;
-      if (this.statusFilter === 'locked' && !s.isLocked) return false;
-      if (!this.stationSearch) return true;
-      const term = this.stationSearch.toLowerCase();
-      return (s.machineName && s.machineName.toLowerCase().includes(term)) ||
-             (s.stationKey && s.stationKey.toLowerCase().includes(term)) ||
-             (s.assignedUserName && s.assignedUserName.toLowerCase().includes(term)) ||
-             (s.currentProcessName && s.currentProcessName.toLowerCase().includes(term)) ||
-             (s.currentWindowTitle && s.currentWindowTitle.toLowerCase().includes(term));
-    });
   }
 
   isAppAllowed(processName?: string): boolean {

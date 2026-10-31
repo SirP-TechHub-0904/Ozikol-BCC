@@ -68,6 +68,7 @@ class WorkstationWatcherService extends ChangeNotifier {
 
   Timer? _watcherTimer;
   Timer? _heartbeatTimer;
+  Timer? _inactivityTicker;
 
   bool _isMonitoring = false;
   bool get isMonitoring => _isMonitoring;
@@ -80,6 +81,16 @@ class WorkstationWatcherService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // Workstation Inactivity & Idle Countdown Governance (45s idle trigger)
+  int _inactivitySeconds = 0;
+  int get inactivitySeconds => _inactivitySeconds;
+
+  bool _isIdleCountdownActive = false;
+  bool get isIdleCountdownActive => _isIdleCountdownActive;
+
+  int _idleCountdownSeconds = 15;
+  int get idleCountdownSeconds => _idleCountdownSeconds;
 
   String? _stationKey;
   String? get stationKey => _stationKey;
@@ -237,10 +248,44 @@ class WorkstationWatcherService extends ChangeNotifier {
     }
   }
 
-  /// Begins native process inspection and telemetry heartbeats.
+  /// Records user activity (mouse move, click, or keyboard) and resets idle timer.
+  void recordUserActivity() {
+    _inactivitySeconds = 0;
+    if (_isIdleCountdownActive) {
+      _isIdleCountdownActive = false;
+      _idleCountdownSeconds = 15;
+      notifyListeners();
+    }
+  }
+
+  /// Cancels the inactivity countdown overlay and resumes active duty.
+  void resumeFromIdleCountdown() {
+    recordUserActivity();
+  }
+
+  /// Locks the workstation due to inactivity and broadcasts to server.
+  Future<void> lockStationLocally(String reason) async {
+    _isLocked = true;
+    _lockReason = reason;
+    _isIdleCountdownActive = false;
+    _lockStateController.add(true);
+    notifyListeners();
+
+    try {
+      await _api.dio.post('/api/Workstations/lock', data: {
+        'stationKey': _stationKey ?? 'WS-${Platform.localHostname.toUpperCase()}',
+        'lock': true,
+        'reason': reason,
+      });
+    } catch (_) {}
+  }
+
+  /// Begins native process inspection, idle watchdog, and telemetry heartbeats.
   void startGuarding() {
     if (_isMonitoring) return;
     _isMonitoring = true;
+    _inactivitySeconds = 0;
+    _isIdleCountdownActive = false;
     notifyListeners();
 
     // Process guard inspection runs every 3.5 seconds
@@ -252,6 +297,43 @@ class WorkstationWatcherService extends ChangeNotifier {
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 12), (_) {
       _sendTelemetryHeartbeat();
     });
+
+    // Inactivity watchdog ticks every 1 second
+    _inactivityTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      _checkInactivityAndIdleLock();
+    });
+  }
+
+  /// Inactivity watchdog: if user is inactive for 45s, triggers a 15s countdown to lockdown.
+  void _checkInactivityAndIdleLock() {
+    if (!_isMonitoring || _isBreakActive || _isLocked) {
+      _inactivitySeconds = 0;
+      if (_isIdleCountdownActive) {
+        _isIdleCountdownActive = false;
+        notifyListeners();
+      }
+      return;
+    }
+
+    _inactivitySeconds++;
+
+    // When 45s of continuous inactivity is reached, trigger on-screen countdown warning
+    if (!_isIdleCountdownActive && _inactivitySeconds >= 45) {
+      _isIdleCountdownActive = true;
+      _idleCountdownSeconds = 15;
+      notifyListeners();
+      return;
+    }
+
+    // Tick the active countdown until lockdown
+    if (_isIdleCountdownActive) {
+      _idleCountdownSeconds--;
+      if (_idleCountdownSeconds <= 0) {
+        lockStationLocally('Locked due to 45s workstation inactivity');
+      } else {
+        notifyListeners();
+      }
+    }
   }
 
   /// Stops background monitoring.
@@ -260,6 +342,9 @@ class WorkstationWatcherService extends ChangeNotifier {
     _watcherTimer = null;
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
+    _inactivityTicker?.cancel();
+    _inactivityTicker = null;
+    _isIdleCountdownActive = false;
     _isMonitoring = false;
     notifyListeners();
   }
