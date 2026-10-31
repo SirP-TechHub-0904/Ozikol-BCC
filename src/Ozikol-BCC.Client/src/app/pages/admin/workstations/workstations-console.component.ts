@@ -571,13 +571,13 @@ export interface WorkstationActivityLogItem {
             </div>
           </div>
 
-          <div *ngIf="requests.length === 0" class="empty-state">
+          <div *ngIf="pendingRequestsList.length === 0" class="empty-state">
             <span class="material-symbols-outlined empty-icon">task_alt</span>
             <h3>No Pending Access Requests</h3>
-            <p>Whenever an employee encounters a blocked application and clicks "Request Access", their ticket will appear here in real time.</p>
+            <p>Whenever an employee encounters a blocked application and clicks "Request Access", their ticket will appear here in real time. Approved apps move automatically to the Approved Apps tab.</p>
           </div>
 
-          <div *ngIf="requests.length > 0" class="table-wrap">
+          <div *ngIf="pendingRequestsList.length > 0" class="table-wrap">
             <table class="policy-table">
               <thead>
                 <tr>
@@ -590,7 +590,7 @@ export interface WorkstationActivityLogItem {
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let r of requests">
+                <tr *ngFor="let r of pendingRequestsList">
                   <td>
                     <div class="staff-meta">
                       <strong>{{ r.userName }}</strong>
@@ -865,7 +865,7 @@ export interface WorkstationActivityLogItem {
             </button>
             <button class="modal-tab-btn" [class.active]="stationDetailTab === 'pending'" (click)="stationDetailTab = 'pending'">
               <span class="material-symbols-outlined">pending_actions</span>
-              <span>Pending & Requests ({{ getStationRequests(selectedStation).length }})</span>
+              <span>Pending Requests ({{ getStationPendingRequestsCount(selectedStation) }})</span>
               <span *ngIf="getStationPendingRequestsCount(selectedStation) > 0" class="badge-count">
                 {{ getStationPendingRequestsCount(selectedStation) }}
               </span>
@@ -956,8 +956,8 @@ export interface WorkstationActivityLogItem {
             <div *ngIf="stationDetailTab === 'pending'">
               <div *ngIf="getStationRequests(selectedStation).length === 0" class="empty-state">
                 <span class="material-symbols-outlined empty-icon">task_alt</span>
-                <h3>No Access Requests from {{ selectedStation.machineName }}</h3>
-                <p>When {{ selectedStation.assignedUserName || 'the operator' }} requests approval for an app on {{ selectedStation.machineName }}, it appears here immediately.</p>
+                <h3>No Pending Requests from {{ selectedStation.machineName }}</h3>
+                <p>All approved applications have been moved to the <strong>Approved Apps ({{ appPolicies.length }})</strong> tab. New requests from {{ selectedStation.assignedUserName || 'the operator' }} will appear here in real time.</p>
               </div>
 
               <div *ngIf="getStationRequests(selectedStation).length > 0" class="table-wrap">
@@ -2122,16 +2122,20 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     );
   }
 
+  get pendingRequestsList(): AccessRequestItem[] {
+    return this.requests.filter(r => r.status === 'Pending');
+  }
+
   getStationRequests(s: WorkstationItem): AccessRequestItem[] {
     const key = (s.machineName || '').trim().toLowerCase();
     return this.requests.filter(r =>
-      (r.machineName || '').trim().toLowerCase() === key ||
-      r.workstationId === s.id
+      r.status === 'Pending' &&
+      ((r.machineName || '').trim().toLowerCase() === key || r.workstationId === s.id)
     );
   }
 
   getStationPendingRequestsCount(s: WorkstationItem): number {
-    return this.getStationRequests(s).filter(r => r.status === 'Pending').length;
+    return this.getStationRequests(s).length;
   }
 
   getStationViolations(s: WorkstationItem): ViolationLogItem[] {
@@ -2393,6 +2397,40 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
 
               seen.add(key);
               cleanApps.push(app);
+            }
+
+            // Ensure every Approved request in this.requests is present in Approved Apps (cleanApps)
+            for (const req of (this.requests || [])) {
+              if (req.status !== 'Approved') continue;
+              const procKey = (req.requestedProcessName || '').toLowerCase().trim();
+              if (!procKey || seen.has(procKey)) continue;
+
+              seen.add(procKey);
+              let friendlyName = procKey.replace(/\.exe$/i, '');
+              const reasonMatch = (req.reason || '').match(/for\s+(.+)$/i);
+              if (reasonMatch && reasonMatch[1]) {
+                friendlyName = reasonMatch[1].trim();
+              } else if (friendlyName.length > 0) {
+                friendlyName = friendlyName.charAt(0).toUpperCase() + friendlyName.slice(1);
+              }
+
+              const syncedPolicy: AppPolicyItem = {
+                id: req.id,
+                displayName: friendlyName,
+                processName: procKey,
+                category: 'Approved Requests',
+                isAllowed: true
+              };
+              cleanApps.push(syncedPolicy);
+
+              if (!this.hasCleanedLegacyDuplicates) {
+                this.api.post<any>('/Workstations/policies/apps', {
+                  displayName: friendlyName,
+                  processName: procKey,
+                  category: 'Approved Requests',
+                  isAllowed: true
+                }).subscribe({ error: () => {} });
+              }
             }
 
             this.appPolicies = cleanApps;
