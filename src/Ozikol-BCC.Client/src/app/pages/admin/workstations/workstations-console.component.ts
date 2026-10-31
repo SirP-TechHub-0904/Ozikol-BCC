@@ -927,6 +927,7 @@ export interface WorkstationActivityLogItem {
                       <th>PROCESS (.EXE)</th>
                       <th>CATEGORY</th>
                       <th>STATUS ON {{ selectedStation.machineName }}</th>
+                      <th>ACTION</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -939,6 +940,11 @@ export interface WorkstationActivityLogItem {
                         <span *ngIf="selectedStation.currentProcessName && selectedStation.currentProcessName.toLowerCase() === p.processName.toLowerCase()" class="badge-live ml-2">
                           RUNNING NOW
                         </span>
+                      </td>
+                      <td>
+                        <button (click)="deleteAppPolicy(p.id)" class="btn-delete" title="Revoke / Remove from Approved Whitelist">
+                          <span class="material-symbols-outlined">delete</span>
+                        </button>
                       </td>
                     </tr>
                   </tbody>
@@ -2275,8 +2281,7 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     Promise.all([
       this.loadStations(true),
-      this.loadPolicies(),
-      this.loadRequests(),
+      this.loadRequests().then(() => this.loadPolicies()),
       this.loadViolations(),
       this.loadActivityLogs()
     ]).finally(() => {
@@ -2341,12 +2346,64 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
     });
   }
 
+  private hasCleanedLegacyDuplicates = false;
+
   loadPolicies(): Promise<void> {
     return new Promise(resolve => {
       this.api.get<any>('/Workstations/policies').subscribe({
         next: res => {
           if (res && res.success && res.data) {
-            this.appPolicies = res.data.apps || [];
+            const rawApps: AppPolicyItem[] = res.data.apps || [];
+            const seen = new Set<string>();
+            const unapprovedAutoSeedProcs = new Set([
+              'winword.exe',
+              'excel.exe',
+              'powerpnt.exe',
+              'acrord32.exe',
+              'calc.exe'
+            ]);
+            const approvedRequestProcs = new Set(
+              (this.requests || [])
+                .filter(r => r.status === 'Approved')
+                .map(r => (r.requestedProcessName || '').toLowerCase().trim())
+            );
+
+            const cleanApps: AppPolicyItem[] = [];
+            const duplicateIdsToDelete: string[] = [];
+
+            for (const app of rawApps) {
+              const key = (app.processName || '').toLowerCase().trim();
+              if (!key) continue;
+
+              // If this was one of the 5 hardcoded auto-seeded apps and never requested/approved, remove it
+              const isAutoSeededDefault =
+                unapprovedAutoSeedProcs.has(key) &&
+                !approvedRequestProcs.has(key) &&
+                app.category !== 'Approved Requests';
+
+              if (isAutoSeededDefault) {
+                duplicateIdsToDelete.push(app.id);
+                continue;
+              }
+
+              if (seen.has(key)) {
+                duplicateIdsToDelete.push(app.id);
+                continue;
+              }
+
+              seen.add(key);
+              cleanApps.push(app);
+            }
+
+            this.appPolicies = cleanApps;
+
+            if (!this.hasCleanedLegacyDuplicates && duplicateIdsToDelete.length > 0) {
+              this.hasCleanedLegacyDuplicates = true;
+              for (const id of duplicateIdsToDelete) {
+                this.api.delete<any>(`/Workstations/policies/apps/${id}`).subscribe({ error: () => {} });
+              }
+            }
+
             if (res.data.filePolicy) {
               this.filePolicy = res.data.filePolicy;
             }

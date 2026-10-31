@@ -338,10 +338,90 @@ namespace Ozikol_BCC.Api.Controllers
         [HttpGet("policies")]
         public async Task<IActionResult> GetPolicies()
         {
+            var allPolicies = await _db.BcpWorkstationAppPolicies
+                .OrderBy(p => p.CreatedAt)
+                .ToListAsync();
+
+            var approvedRequests = await _db.BcpWorkstationAccessRequests
+                .AsNoTracking()
+                .Where(r => r.Status == "Approved")
+                .ToListAsync();
+
+            var approvedProcessSet = approvedRequests
+                .Select(r => (r.RequestedProcessName ?? string.Empty).Trim().ToLowerInvariant())
+                .Where(s => !string.IsNullOrEmpty(s))
+                .ToHashSet();
+
+            var legacyAutoSeedIcons = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "description", "table_view", "slideshow", "picture_as_pdf", "calculate", "chat"
+            };
+
+            var seenProcesses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var toRemove = new List<BcpWorkstationAppPolicy>();
+
+            foreach (var policy in allPolicies)
+            {
+                var procKey = (policy.ProcessName ?? string.Empty).Trim().ToLowerInvariant();
+                if (string.IsNullOrEmpty(procKey))
+                {
+                    toRemove.Add(policy);
+                    continue;
+                }
+
+                // Remove legacy hardcoded auto-seeded presets if the admin never approved them
+                var isLegacyAutoSeed = !string.IsNullOrEmpty(policy.IconName) &&
+                                       legacyAutoSeedIcons.Contains(policy.IconName) &&
+                                       !approvedProcessSet.Contains(procKey);
+                if (isLegacyAutoSeed)
+                {
+                    toRemove.Add(policy);
+                    continue;
+                }
+
+                // Remove duplicate entries for the same executable
+                if (!seenProcesses.Add(procKey))
+                {
+                    toRemove.Add(policy);
+                }
+            }
+
+            // Ensure every explicitly Approved access request is present in the whitelist once
+            var addedAny = false;
+            foreach (var req in approvedRequests)
+            {
+                var procKey = (req.RequestedProcessName ?? string.Empty).Trim().ToLowerInvariant();
+                if (!string.IsNullOrEmpty(procKey) && seenProcesses.Add(procKey))
+                {
+                    var baseTitle = System.IO.Path.GetFileNameWithoutExtension(procKey);
+                    var friendlyName = !string.IsNullOrWhiteSpace(baseTitle)
+                        ? char.ToUpperInvariant(baseTitle[0]) + baseTitle.Substring(1)
+                        : procKey;
+
+                    _db.BcpWorkstationAppPolicies.Add(new BcpWorkstationAppPolicy
+                    {
+                        DisplayName = friendlyName,
+                        ProcessName = procKey,
+                        Category = "Approved Requests",
+                        IsAllowed = true,
+                        IconName = "apps"
+                    });
+                    addedAny = true;
+                }
+            }
+
+            if (toRemove.Count > 0 || addedAny)
+            {
+                if (toRemove.Count > 0)
+                {
+                    _db.BcpWorkstationAppPolicies.RemoveRange(toRemove);
+                }
+                await _db.SaveChangesAsync();
+            }
+
             var appPolicies = await _db.BcpWorkstationAppPolicies
                 .AsNoTracking()
-                .OrderBy(p => p.Category)
-                .ThenBy(p => p.DisplayName)
+                .OrderBy(p => p.DisplayName)
                 .ToListAsync();
 
             var filePolicy = await _db.BcpWorkstationFilePolicies
@@ -357,23 +437,6 @@ namespace Ozikol_BCC.Api.Controllers
                     UsbStoragePolicy = "Blocked",
                     EnforceDirectorySandbox = true
                 };
-            }
-
-            // Seed standard presets if whitelist is empty
-            if (!appPolicies.Any())
-            {
-                var defaults = new List<BcpWorkstationAppPolicy>
-                {
-                    new() { DisplayName = "Microsoft Word", ProcessName = "winword.exe", Category = "Productivity", IsAllowed = true, IconName = "description" },
-                    new() { DisplayName = "Microsoft Excel", ProcessName = "excel.exe", Category = "Productivity", IsAllowed = true, IconName = "table_view" },
-                    new() { DisplayName = "Microsoft PowerPoint", ProcessName = "powerpnt.exe", Category = "Productivity", IsAllowed = true, IconName = "slideshow" },
-                    new() { DisplayName = "Adobe Acrobat Reader", ProcessName = "acrord32.exe", Category = "Documents", IsAllowed = true, IconName = "picture_as_pdf" },
-                    new() { DisplayName = "Windows Calculator", ProcessName = "calc.exe", Category = "Utilities", IsAllowed = true, IconName = "calculate" },
-                    new() { DisplayName = "Microsoft Teams", ProcessName = "ms-teams.exe", Category = "Communication", IsAllowed = true, IconName = "chat" },
-                };
-                _db.BcpWorkstationAppPolicies.AddRange(defaults);
-                await _db.SaveChangesAsync();
-                appPolicies = defaults;
             }
 
             return Ok(new
