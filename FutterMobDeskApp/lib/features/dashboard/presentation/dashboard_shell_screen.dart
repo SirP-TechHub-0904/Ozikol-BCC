@@ -1951,41 +1951,42 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
         ],
       ),
 
-      // 2. FEATURES & WORKSPACE (Modular capabilities)
-      AppDrawerSection(
-        title: 'WORKSPACE',
-        onInfoTap: () {},
-        infoTooltip: 'Station Enforcement & Background Application Supervisor',
-        items: [
-          AppDrawerItem(
-            icon: Icons.desktop_windows_outlined,
-            title: 'Workspace Hub',
-            isSelected: _selectedNavIndex == 25,
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: (activeWs?.isFeatureActive('bcp-workspace') ?? false)
-                    ? const Color(0xFF10B981)
-                    : const Color(0xFF6B7280),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                (activeWs?.isFeatureActive('bcp-workspace') ?? false) ? 'LIVE' : 'ADD-ON',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
+      // 2. FEATURES & WORKSPACE (Desktop Workstation only — hidden on Android/iOS mobile)
+      if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
+        AppDrawerSection(
+          title: 'WORKSPACE',
+          onInfoTap: () {},
+          infoTooltip: 'Station Enforcement & Background Application Supervisor',
+          items: [
+            AppDrawerItem(
+              icon: Icons.desktop_windows_outlined,
+              title: 'Workspace Hub',
+              isSelected: _selectedNavIndex == 25,
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: (activeWs?.isFeatureActive('bcp-workspace') ?? false)
+                      ? const Color(0xFF10B981)
+                      : const Color(0xFF6B7280),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  (activeWs?.isFeatureActive('bcp-workspace') ?? false) ? 'LIVE' : 'ADD-ON',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
+              onTap: () {
+                _navigateToTab(25, clearHistory: true);
+                _closeMobileDrawer();
+              },
             ),
-            onTap: () {
-              _navigateToTab(25, clearHistory: true);
-              _closeMobileDrawer();
-            },
-          ),
-        ],
-      ),
+          ],
+        ),
 
       // 4. BILLING & SUBSCRIPTIONS
       AppDrawerSection(
@@ -2096,8 +2097,9 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       ),
     ];
 
-    // Modular Feature Suite: Only shows in Member menu if active on the Administrator end
-    if (activeWs != null && activeWs.isFeatureActive('bcp-workspace')) {
+    // Modular Feature Suite: Only shows in Member menu on Desktop OS if active on the Administrator end
+    final isDesktopOS = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+    if (isDesktopOS && activeWs != null && activeWs.isFeatureActive('bcp-workspace')) {
       memberItems.add(
         AppDrawerItem(
           icon: Icons.desktop_windows_outlined,
