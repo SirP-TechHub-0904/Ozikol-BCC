@@ -93,8 +93,8 @@ export interface ViolationLogItem {
         </div>
         <div class="header-right">
           <button (click)="refreshAll()" class="btn-refresh" [class.spinning]="isLoading">
-            <span class="material-symbols-outlined">sync</span>
-            <span>{{ 'btn.syncEndpoints' | translate:'Sync Endpoints' }}</span>
+            <span class="material-symbols-outlined">refresh</span>
+            <span>{{ 'btn.refresh' | translate:'Refresh' }}</span>
           </button>
         </div>
       </div>
