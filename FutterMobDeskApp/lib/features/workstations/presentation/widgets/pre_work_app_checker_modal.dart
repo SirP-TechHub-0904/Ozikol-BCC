@@ -103,6 +103,21 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     'git.exe',
     'esbuild.exe',
     'adskflex.exe',
+    'wtabletserviceisd.exe',
+    'dptf_helper.exe',
+    'tposd.exe',
+    'shtctky.exe',
+    'microsoftstartfeedprovider.exe',
+    'defendersessionhelper.exe',
+    'applemobiledeviceprocess.exe',
+    'xgtrayicon.exe',
+    'lenovovantage-(genericmessagingaddin).exe',
+    'lenovovantage-(generictelemetryaddin).exe',
+    'devhub.exe',
+    'servicehub.host.extensibility.x64.exe',
+    'useroobebroker.exe',
+    'crash_handler.exe',
+    'plugin_host-3.14.exe',
 
     // Ozikol suite & development IDE whitelist
     'ozikol_app.exe',
@@ -115,35 +130,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     'taskmgr.exe',
   };
 
-  static const Set<String> _ignoredWindowTitles = {
-    'n/a',
-    'olemainthreadwndname',
-    'olechannelwnd',
-    'desktopwindowxamlsource',
-    'dwm notification window',
-    'its_user_window',
-    'adb power notification window',
-    'microsoft onedrive sync service',
-    'battery notification window',
-    'network flyout',
-    'quick settings',
-    'start',
-    'search',
-    'windows widgets',
-    'new notification',
-    'task host window',
-    'pwrmgrbkgndwindow',
-    'crossdeviceresumewindow',
-    'realtekaudioadminbackgroundprocessclass',
-    'realtekaudiobackgroundprocessclass',
-    'windows push notifications platform',
-    'the event manager dashboard',
-    'etdctrl',
-    'wisptis',
-    'rtc video pnp listener',
-    'windows default lock screen',
-    'windows input experience',
-  };
+  // Whitelist of Windows system shells, runtime daemons, and Ozikol app itself
 
   @override
   void initState() {
@@ -151,49 +138,50 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     _scanRunningApplications();
   }
 
-  DetectedRunningApp _mapProcessToApp(String proc, String windowTitle) {
+  DetectedRunningApp _mapProcessToApp(String proc, [String? windowTitle]) {
+    final title = (windowTitle != null && windowTitle.trim().isNotEmpty) ? windowTitle.trim() : proc;
     final lower = proc.toLowerCase().trim();
     switch (lower) {
       case 'sublime_text.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Sublime Text',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.code_rounded,
         );
       case 'chrome.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Google Chrome',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.public_rounded,
         );
       case 'msedge.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Microsoft Edge',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.public_rounded,
         );
       case 'firefox.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Mozilla Firefox',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.public_rounded,
         );
       case 'brave.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Brave Browser',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.public_rounded,
         );
       case 'snippingtool.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Snipping Tool',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.content_cut_rounded,
         );
       case 'whatsapp.exe':
@@ -201,7 +189,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
         return DetectedRunningApp(
           processName: proc,
           displayName: 'WhatsApp Desktop',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.chat_bubble_outline_rounded,
         );
       case 'windowsterminal.exe':
@@ -209,98 +197,98 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Windows Terminal',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.terminal_rounded,
         );
       case 'devenv.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Visual Studio',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.integration_instructions_rounded,
         );
       case 'code.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Visual Studio Code',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.code_rounded,
         );
       case 'telegram.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Telegram Messenger',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.send_rounded,
         );
       case 'discord.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Discord',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.sports_esports_rounded,
         );
       case 'spotify.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Spotify Music',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.music_note_rounded,
         );
       case 'steam.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Steam Game Client',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.games_rounded,
         );
       case 'winword.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Microsoft Word',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.description_rounded,
         );
       case 'excel.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Microsoft Excel',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.table_chart_rounded,
         );
       case 'powerpnt.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Microsoft PowerPoint',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.slideshow_rounded,
         );
       case 'onenote.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Microsoft OneNote',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.note_alt_rounded,
         );
       case 'notepad.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Windows Notepad',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.notes_rounded,
         );
       case 'vlc.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'VLC Media Player',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.play_circle_outline_rounded,
         );
       case 'zoom.exe':
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Zoom Meetings',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.videocam_rounded,
         );
       case 'teams.exe':
@@ -308,7 +296,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
         return DetectedRunningApp(
           processName: proc,
           displayName: 'Microsoft Teams',
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.groups_rounded,
         );
       default:
@@ -316,7 +304,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
         return DetectedRunningApp(
           processName: proc,
           displayName: cleanName[0].toUpperCase() + cleanName.substring(1),
-          windowTitle: windowTitle,
+          windowTitle: title,
           icon: Icons.apps_rounded,
         );
     }
@@ -354,38 +342,33 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
 
     if (!kIsWeb && Platform.isWindows) {
       try {
-        final result = await Process.run('tasklist', ['/V', '/FO', 'CSV', '/NH']);
+        final result = await Process.run(
+          'tasklist',
+          ['/FI', 'STATUS eq RUNNING', '/FI', 'SESSIONNAME eq Console', '/FO', 'CSV', '/NH'],
+        ).timeout(const Duration(seconds: 3));
+
         if (result.exitCode == 0) {
           final lines = result.stdout.toString().split('\n');
           for (final line in lines) {
             final trimmed = line.trim();
             if (trimmed.isEmpty) continue;
             final fields = _parseCsvRow(trimmed);
-            if (fields.length < 9) continue;
+            if (fields.isEmpty) continue;
 
-            final procName = fields[0];
-            final sessionName = fields[2].toLowerCase();
-            final windowTitle = fields[8];
+            final procName = fields[0].replaceAll('"', '').trim();
+            final sessionName = fields.length >= 3 ? fields[2].replaceAll('"', '').trim().toLowerCase() : '';
             final procLower = procName.toLowerCase();
-            final titleLower = windowTitle.toLowerCase();
 
-            // 1. MUST be in the interactive console session (not Session 0 background services)
-            if (sessionName != 'console') continue;
+            // 1. MUST be in the interactive console session
+            if (sessionName.isNotEmpty && sessionName != 'console') continue;
 
-            // 2. MUST have a real, visible taskbar window title (not background task without UI)
-            if (windowTitle.isEmpty || titleLower == 'n/a') continue;
-
-            // 3. Skip system and internal framework window handles
-            if (_ignoredWindowTitles.contains(titleLower)) continue;
-            if (titleLower.startsWith('.net-broadcasteventwindow')) continue;
-
-            // 4. Skip whitelisted Windows system shells, runtime daemons, and Ozikol app itself
+            // 2. Skip whitelisted Windows system shells, runtime daemons, and Ozikol app itself
             if (_systemShellProcesses.contains(procLower)) continue;
 
             if (seen.contains(procLower)) continue;
             seen.add(procLower);
 
-            apps.add(_mapProcessToApp(procName, windowTitle));
+            apps.add(_mapProcessToApp(procName));
           }
         }
       } catch (e) {
