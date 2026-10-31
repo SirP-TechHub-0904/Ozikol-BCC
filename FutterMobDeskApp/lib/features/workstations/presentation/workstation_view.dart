@@ -8,6 +8,7 @@ import '../services/workstation_watcher_service.dart';
 import '../state/workstation_shift_state.dart';
 import 'widgets/close_from_work_modal.dart';
 import 'widgets/pre_work_app_checker_modal.dart';
+import 'widgets/take_break_modal.dart';
 
 /// <summary>
 /// Workstation & Shift Tracker Screen (bcp-workspace).
@@ -110,11 +111,11 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
   @override
   void initState() {
     super.initState();
-    // Live UI tick to refresh elapsed counter
+    // Live UI tick to refresh elapsed work and break counter
     _tickerTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         final shiftState = ref.read(workstationShiftProvider);
-        if (shiftState.isAtWork) {
+        if (shiftState.isAtWork || shiftState.isOnBreak) {
           setState(() {});
         }
       }
@@ -167,15 +168,43 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
     }
   }
 
-  void _handleToggleBreak() {
-    ref.read(workstationShiftProvider.notifier).toggleBreak();
-    final shiftState = ref.read(workstationShiftProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(shiftState.isOnBreak ? 'Break started. Work timer paused.' : 'Break ended. Work timer resumed!'),
-        backgroundColor: shiftState.isOnBreak ? const Color(0xFFD97706) : const Color(0xFF16A34A),
-      ),
-    );
+  Future<void> _handleTakeBreak() async {
+    final started = await showTakeBreakModal(context, ref);
+    if (started == true && mounted) {
+      final shiftState = ref.read(workstationShiftProvider);
+      setState(() {
+        _workHistory[0]['status'] = 'On Break';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${shiftState.currentBreakType} started! Work timer paused & desktop unlocked.'),
+          backgroundColor: const Color(0xFFD97706),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleResumeFromBreak() async {
+    final domain = widget.workspace?.primaryDomain ?? widget.workspace?.tenantDomain;
+    final confirmed = await showPreWorkAppCheckerModal(context, ref, primaryDomain: domain);
+    if (!mounted) return;
+    if (confirmed == true) {
+      ref.read(workstationWatcherProvider).isBreakActive = false;
+      await ref.read(workstationShiftProvider.notifier).endBreakAndResumeWork(primaryDomain: domain);
+      if (!mounted) return;
+      final shiftState = ref.read(workstationShiftProvider);
+      setState(() {
+        _workHistory[0]['status'] = 'In Progress';
+        _workHistory[0]['breakDuration'] = '${shiftState.breakMinutesTaken} mins';
+        _workHistory[0]['breakRange'] = shiftState.lastBreakTimeRange;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Break concluded! Fullscreen re-engaged & active work logging resumed.'),
+          backgroundColor: Color(0xFF16A34A),
+        ),
+      );
+    }
   }
 
   Future<void> _handleCloseWork() async {
@@ -411,16 +440,16 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'SESSION TIMER',
+                    isOnBreak ? 'BREAK TIMER' : 'SESSION TIMER',
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: textSecondary, letterSpacing: 0.5),
                   ),
                   Text(
-                    _formatDuration(_elapsedGrossDuration),
+                    isOnBreak ? _formatDuration(shiftState.currentBreakDuration) : _formatDuration(_elapsedGrossDuration),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       fontFamily: 'monospace',
-                      color: textPrimary,
+                      color: isOnBreak ? const Color(0xFFD97706) : textPrimary,
                     ),
                   ),
                 ],
@@ -431,14 +460,38 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
           // Right: Action Control Buttons
           Row(
             children: [
-              if (isShiftActive) ...[
+              if (isOnBreak) ...[
+                ElevatedButton.icon(
+                  onPressed: _handleResumeFromBreak,
+                  icon: const Icon(Icons.play_circle_filled_rounded, size: 16),
+                  label: const Text('End Break & Resume Work'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16A34A),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                ),
+                const SizedBox(width: 10),
                 OutlinedButton.icon(
-                  onPressed: _handleToggleBreak,
-                  icon: Icon(isOnBreak ? Icons.play_arrow_rounded : Icons.coffee_rounded, size: 16),
-                  label: Text(isOnBreak ? 'Resume Work' : 'Take Break'),
+                  onPressed: _handleCloseWork,
+                  icon: const Icon(Icons.stop_circle_rounded, size: 16),
+                  label: const Text('Close Work'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: isOnBreak ? const Color(0xFF16A34A) : const Color(0xFFD97706),
-                    side: BorderSide(color: isOnBreak ? const Color(0xFF86EFAC) : const Color(0xFFFDE68A)),
+                    foregroundColor: const Color(0xFFDC2626),
+                    side: const BorderSide(color: Color(0xFFFCA5A5)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
+                ),
+              ] else if (isShiftActive) ...[
+                OutlinedButton.icon(
+                  onPressed: _handleTakeBreak,
+                  icon: const Icon(Icons.coffee_rounded, size: 16),
+                  label: const Text('Take Break'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFD97706),
+                    side: const BorderSide(color: Color(0xFFFDE68A)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   ),

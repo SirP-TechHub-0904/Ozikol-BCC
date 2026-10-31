@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import '../../features/workstations/presentation/widgets/close_from_work_modal.dart';
+import '../../features/workstations/presentation/widgets/pre_work_app_checker_modal.dart';
+import '../../features/workstations/services/workstation_watcher_service.dart';
 import '../../features/workstations/state/workstation_shift_state.dart';
 import '../theme/app_colors.dart';
 import 'tenant_cached_image.dart';
@@ -114,6 +116,14 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
     if (mounted) setState(() => _isFullScreen = false);
   }
 
+  Future<void> _handleResumeFromBreak() async {
+    final confirmed = await showPreWorkAppCheckerModal(context, ref);
+    if (confirmed == true) {
+      ref.read(workstationWatcherProvider).isBreakActive = false;
+      await ref.read(workstationShiftProvider.notifier).endBreakAndResumeWork();
+    }
+  }
+
   Future<void> _toggleMaximize() async {
     if (_isMaximized) {
       await windowManager.unmaximize();
@@ -220,7 +230,36 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
                             decoration: TextDecoration.none,
                           ),
                         ),
-                        if (isAtWork) ...[
+                        if (shiftState.isOnBreak) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD97706).withAlpha(25),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: const Color(0xFFD97706).withAlpha(120),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.coffee_rounded, size: 9, color: Color(0xFFD97706)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'ON BREAK (PAUSED)',
+                                  style: TextStyle(
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFFD97706),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ] else if (isAtWork) ...[
                           const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
@@ -324,6 +363,31 @@ class _DesktopTitleBarState extends ConsumerState<DesktopTitleBar> with WindowLi
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (shiftState.isOnBreak) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ElevatedButton.icon(
+                        onPressed: _handleResumeFromBreak,
+                        icon: const Icon(Icons.play_circle_filled_rounded, size: 14),
+                        label: const Text(
+                          'On Break • Resume Work',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD97706),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          minimumSize: const Size(0, 26),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
                   _CaptionButton(
                     icon: Icons.remove_rounded,
                     tooltip: context.trc('sh.minimize', fallback: 'Minimize'),

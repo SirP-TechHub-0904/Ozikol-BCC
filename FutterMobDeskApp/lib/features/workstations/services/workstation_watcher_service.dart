@@ -72,6 +72,15 @@ class WorkstationWatcherService extends ChangeNotifier {
   bool _isMonitoring = false;
   bool get isMonitoring => _isMonitoring;
 
+  bool _isBreakActive = false;
+  bool get isBreakActive => _isBreakActive;
+  set isBreakActive(bool val) {
+    if (_isBreakActive != val) {
+      _isBreakActive = val;
+      notifyListeners();
+    }
+  }
+
   String? _stationKey;
   String? get stationKey => _stationKey;
 
@@ -251,7 +260,8 @@ class WorkstationWatcherService extends ChangeNotifier {
 
   /// Inspects currently running tasks using native Windows tasklist.
   Future<void> _inspectRunningProcesses() async {
-    if (!Platform.isWindows || _rules.isEmpty) return;
+    // Process guard interception is suspended while the employee is on an authorized break
+    if (!Platform.isWindows || _rules.isEmpty || _isBreakActive) return;
 
     try {
       // Run Windows tasklist in CSV mode: tasklist /FO CSV /NH

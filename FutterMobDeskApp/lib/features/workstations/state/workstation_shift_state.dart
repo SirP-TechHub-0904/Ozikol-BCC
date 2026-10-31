@@ -34,6 +34,8 @@ class WorkstationShiftState {
   final bool isAtWork;
   final bool hasStartedToday;
   final bool isOnBreak;
+  final String currentBreakType;
+  final String lastBreakTimeRange;
   final DateTime shiftStartTime;
   final DateTime? shiftEndTime;
   final DateTime? breakStartTime;
@@ -46,6 +48,8 @@ class WorkstationShiftState {
     required this.isAtWork,
     required this.hasStartedToday,
     required this.isOnBreak,
+    this.currentBreakType = 'Lunch Break',
+    this.lastBreakTimeRange = '12:30 PM – 01:15 PM',
     required this.shiftStartTime,
     this.shiftEndTime,
     this.breakStartTime,
@@ -59,6 +63,8 @@ class WorkstationShiftState {
     bool? isAtWork,
     bool? hasStartedToday,
     bool? isOnBreak,
+    String? currentBreakType,
+    String? lastBreakTimeRange,
     DateTime? shiftStartTime,
     DateTime? shiftEndTime,
     DateTime? breakStartTime,
@@ -71,6 +77,8 @@ class WorkstationShiftState {
       isAtWork: isAtWork ?? this.isAtWork,
       hasStartedToday: hasStartedToday ?? this.hasStartedToday,
       isOnBreak: isOnBreak ?? this.isOnBreak,
+      currentBreakType: currentBreakType ?? this.currentBreakType,
+      lastBreakTimeRange: lastBreakTimeRange ?? this.lastBreakTimeRange,
       shiftStartTime: shiftStartTime ?? this.shiftStartTime,
       shiftEndTime: shiftEndTime ?? this.shiftEndTime,
       breakStartTime: breakStartTime ?? this.breakStartTime,
@@ -86,6 +94,13 @@ class WorkstationShiftState {
       return shiftEndTime!.difference(shiftStartTime);
     }
     return DateTime.now().difference(shiftStartTime);
+  }
+
+  Duration get currentBreakDuration {
+    if (isOnBreak && breakStartTime != null) {
+      return DateTime.now().difference(breakStartTime!);
+    }
+    return Duration.zero;
   }
 
   Duration get netEffectiveDuration {
@@ -175,6 +190,59 @@ class WorkstationShiftNotifier extends StateNotifier<WorkstationShiftState> {
 
     // Exit Fullscreen to standard desktop window
     await _enforceFullScreen(false);
+  }
+
+  /// Begins official break:
+  /// 1. Pauses active billable work timer and starts break timer
+  /// 2. Exits Fullscreen mode and restores standard desktop window controls (- □ ✕)
+  /// 3. Employee is free to minimize window and use any personal apps
+  Future<void> startBreak({String breakType = 'Lunch Break'}) async {
+    final now = DateTime.now();
+    state = state.copyWith(
+      isOnBreak: true,
+      breakStartTime: now,
+      currentBreakType: breakType,
+    );
+
+    // Release fullscreen lock: allow window minimizing & free desktop usage
+    await _enforceFullScreen(false);
+  }
+
+  /// Ends official break and resumes active work shift:
+  /// 1. Calculates exact break duration and logs to break minutes
+  /// 2. Re-enters Fullscreen mode and restores workstation lock
+  Future<void> endBreakAndResumeWork({String? primaryDomain}) async {
+    final now = DateTime.now();
+    int additionalBreak = 0;
+    String newRange = state.lastBreakTimeRange;
+
+    if (state.breakStartTime != null) {
+      final diff = now.difference(state.breakStartTime!).inMinutes;
+      additionalBreak = diff > 0 ? diff : 1;
+      newRange = '${_formatTime12(state.breakStartTime!)} – ${_formatTime12(now)}';
+    }
+
+    state = state.copyWith(
+      isOnBreak: false,
+      breakStartTime: null,
+      breakMinutesTaken: state.breakMinutesTaken + additionalBreak,
+      lastBreakTimeRange: newRange,
+      isAtWork: true,
+    );
+
+    // Re-engage Fullscreen mode & lock
+    await _enforceFullScreen(true);
+
+    // Auto-launch Google Chrome default browser if needed
+    await launchChromeBrowser(primaryDomain ?? 'https://app.ozikol.cloud');
+  }
+
+  static String _formatTime12(DateTime dt) {
+    final h = dt.hour;
+    final m = dt.minute;
+    final ampm = h >= 12 ? 'PM' : 'AM';
+    final displayH = h % 12 == 0 ? 12 : h % 12;
+    return '${displayH.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')} $ampm';
   }
 
   /// Toggles official break (pauses work timer).
