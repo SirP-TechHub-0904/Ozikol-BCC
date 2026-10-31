@@ -258,14 +258,17 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
       ref.read(realtimeSyncServiceProvider).connect();
 
       // Initialize Workstation Gatekeeper background monitor on Windows Desktop
+      // Strictly enforced: ONLY activates if licensed/active on the administrator end
       if (!kIsWeb && Platform.isWindows) {
         final activeWs = ref.read(workspaceStateProvider).activeWorkspace;
         final watcher = ref.read(workstationWatcherProvider);
-        watcher.initializeAndStart(
-          userId: activeWs?.tenantKey,
-          userName: activeWs?.organizationName,
-          userEmail: activeWs?.tenantKey,
-        );
+        if (activeWs != null && activeWs.isFeatureActive('bcp-workspace')) {
+          watcher.initializeAndStart(
+            userId: activeWs.tenantKey,
+            userName: activeWs.organizationName,
+            userEmail: activeWs.tenantKey,
+          );
+        }
         _violationSub = watcher.onViolationIntercepted.listen((event) {
           if (mounted) {
             setState(() {
@@ -370,6 +373,24 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeWs = state.activeWorkspace;
     final watcher = ref.watch(workstationWatcherProvider);
+    final isWorkspaceLicensed = activeWs != null && activeWs.isFeatureActive('bcp-workspace');
+
+    // Dynamic Workstation Guard sync based on active administrator licensing
+    if (!kIsWeb && Platform.isWindows) {
+      if (isWorkspaceLicensed && !watcher.isMonitoring) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          watcher.initializeAndStart(
+            userId: activeWs.tenantKey,
+            userName: activeWs.organizationName,
+            userEmail: activeWs.tenantKey,
+          );
+        });
+      } else if (!isWorkspaceLicensed && watcher.isMonitoring) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          watcher.stopGuarding();
+        });
+      }
+    }
     final metrics = metricsAsync.value ?? DashboardMetrics.empty();
     final isTelemetryLoading = metricsAsync.isLoading;
 
@@ -530,16 +551,16 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             child: _buildOziAiFloatingButton(isDark, isMobile: false),
           ),
 
-          // Slide-down Workplace Policy Restriction Intercept Notification Banner
-          if (_activeViolation != null)
+          // Slide-down Workplace Policy Restriction Intercept Notification Banner (only if active)
+          if (_activeViolation != null && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned(
               top: 72,
               right: 24,
               child: _buildViolationSlideBanner(isDark, _activeViolation!),
             ),
 
-          // Workstation Remote Force-Lock Full-Screen Kiosk Overlay
-          if (watcher.isLocked)
+          // Workstation Remote Force-Lock Full-Screen Kiosk Overlay (only if active)
+          if (watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned.fill(
               child: _buildWorkstationKioskLockOverlay(isDark, watcher),
             ),
@@ -785,8 +806,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             child: _buildOziAiFloatingButton(isDark, isMobile: true),
           ),
 
-          // Workstation Remote Force-Lock Full-Screen Kiosk Overlay
-          if (watcher.isLocked)
+          // Workstation Remote Force-Lock Full-Screen Kiosk Overlay (only if active)
+          if (watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
             Positioned.fill(
               child: _buildWorkstationKioskLockOverlay(isDark, watcher),
             ),
@@ -1992,12 +2013,14 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFF10B981),
+                color: (activeWs?.isFeatureActive('bcp-workspace') ?? false)
+                    ? const Color(0xFF10B981)
+                    : const Color(0xFF6B7280),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Text(
-                'LIVE',
-                style: TextStyle(
+              child: Text(
+                (activeWs?.isFeatureActive('bcp-workspace') ?? false) ? 'LIVE' : 'ADD-ON',
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 10,
                   fontWeight: FontWeight.w800,
@@ -2015,101 +2038,110 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     ];
   }
 
-  /// Builds the exact 2-Feature Personal Workspace Hub navigation tree for members:
-  /// 1. Workspace Home (single item)
-  /// 2. Manage My Account (5 sub-items)
+  /// Builds the Personal Workspace Hub navigation tree for members.
+  /// Strict Enterprise Architecture:
+  /// - Default Menus: ONLY Dashboard ('Workspace Home') and 'Manage My Account'
+  /// - Modular Features: NEVER show in member menu unless active/licensed on the administrator end
   List<AppDrawerSection> _buildUsersWorkspaceSections(bool isDark, Workspace? activeWs) {
     final memberIndex = _selectedNavIndex >= 100 ? _selectedNavIndex - 100 : _selectedNavIndex;
+
+    final memberItems = <AppDrawerItem>[
+      // 1. Workspace Home (Dashboard) - ALWAYS present by default
+      AppDrawerItem(
+        icon: Icons.space_dashboard_outlined,
+        title: 'nav.workspace_home'.tr(ref, fallback: 'Workspace Home'),
+        isSelected: memberIndex == 0,
+        onTap: () {
+          _navigateToTab(0, clearHistory: true);
+          _closeMobileDrawer();
+        },
+      ),
+    ];
+
+    // Modular Feature Suite: Only shows in Member menu if active on the Administrator end
+    if (activeWs != null && activeWs.isFeatureActive('bcp-workspace')) {
+      memberItems.add(
+        AppDrawerItem(
+          icon: Icons.desktop_windows_outlined,
+          title: 'Workspace (Desktop only)',
+          isSelected: memberIndex == 7,
+          onTap: () {
+            _navigateToTab(7, clearHistory: true);
+            _closeMobileDrawer();
+          },
+        ),
+      );
+    }
+
+    // 2. Manage My Account (expandable) - ALWAYS present by default
+    memberItems.add(
+      AppDrawerItem(
+        icon: Icons.manage_accounts_outlined,
+        title: 'profile.manage_account'.tr(ref, fallback: 'Manage My Account'),
+        initiallyExpanded: memberIndex >= 1 && memberIndex <= 6,
+        subItems: [
+          AppDrawerSubItem(
+            icon: Icons.person_outline,
+            title: 'nav.my_profile'.tr(ref, fallback: 'My Profile & Dossier'),
+            isSelected: memberIndex == 1,
+            onTap: () {
+              _navigateToTab(1, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+          AppDrawerSubItem(
+            icon: Icons.password_outlined,
+            title: 'account.tab_password'.tr(ref, fallback: 'Change Password'),
+            isSelected: memberIndex == 2,
+            onTap: () {
+              _navigateToTab(2, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+          AppDrawerSubItem(
+            icon: Icons.security_outlined,
+            title: 'account.tab_2fa'.tr(ref, fallback: '2FA Security'),
+            isSelected: memberIndex == 3,
+            onTap: () {
+              _navigateToTab(3, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+          AppDrawerSubItem(
+            icon: Icons.devices_outlined,
+            title: 'account.tab_devices'.tr(ref, fallback: 'Manage Devices'),
+            isSelected: memberIndex == 4,
+            onTap: () {
+              _navigateToTab(4, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+          AppDrawerSubItem(
+            icon: Icons.history_outlined,
+            title: 'account.tab_activity'.tr(ref, fallback: 'My Activity'),
+            isSelected: memberIndex == 5,
+            onTap: () {
+              _navigateToTab(5, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+          AppDrawerSubItem(
+            icon: Icons.verified_user_outlined,
+            title: 'account.tab_roles'.tr(ref, fallback: 'Roles & Privileges'),
+            isSelected: memberIndex == 6,
+            onTap: () {
+              _navigateToTab(6, clearHistory: true);
+              _closeMobileDrawer();
+            },
+          ),
+        ],
+      ),
+    );
 
     return [
       AppDrawerSection(
         title: 'shell.users_workspace'.tr(ref, fallback: 'PERSONAL WORKSPACE HUB').toUpperCase(),
-        items: [
-          // 1. Workspace Home (single top-level item)
-          AppDrawerItem(
-            icon: Icons.space_dashboard_outlined,
-            title: 'nav.workspace_home'.tr(ref, fallback: 'Workspace Home'),
-            isSelected: memberIndex == 0,
-            onTap: () {
-              _navigateToTab(0, clearHistory: true);
-              _closeMobileDrawer();
-            },
-          ),
-
-          // 2. Workspace Gatekeeper (Desktop Only)
-          AppDrawerItem(
-            icon: Icons.desktop_windows_outlined,
-            title: 'Workspace (Desktop only)',
-            isSelected: memberIndex == 7,
-            onTap: () {
-              _navigateToTab(7, clearHistory: true);
-              _closeMobileDrawer();
-            },
-          ),
-
-          // 2. Manage My Account (expandable)
-          AppDrawerItem(
-            icon: Icons.manage_accounts_outlined,
-            title: 'profile.manage_account'.tr(ref, fallback: 'Manage My Account'),
-            initiallyExpanded: memberIndex >= 1 && memberIndex <= 6,
-            subItems: [
-              AppDrawerSubItem(
-                icon: Icons.person_outline,
-                title: 'nav.my_profile'.tr(ref, fallback: 'My Profile & Dossier'),
-                isSelected: memberIndex == 1,
-                onTap: () {
-                  _navigateToTab(1, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.password_outlined,
-                title: 'account.tab_password'.tr(ref, fallback: 'Change Password'),
-                isSelected: memberIndex == 2,
-                onTap: () {
-                  _navigateToTab(2, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.security_outlined,
-                title: 'account.tab_2fa'.tr(ref, fallback: '2FA Security'),
-                isSelected: memberIndex == 3,
-                onTap: () {
-                  _navigateToTab(3, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.devices_outlined,
-                title: 'account.tab_devices'.tr(ref, fallback: 'Manage Devices'),
-                isSelected: memberIndex == 4,
-                onTap: () {
-                  _navigateToTab(4, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.history_outlined,
-                title: 'account.tab_activity'.tr(ref, fallback: 'My Activity'),
-                isSelected: memberIndex == 5,
-                onTap: () {
-                  _navigateToTab(5, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
-              AppDrawerSubItem(
-                icon: Icons.verified_user_outlined,
-                title: 'account.tab_roles'.tr(ref, fallback: 'Roles & Privileges'),
-                isSelected: memberIndex == 6,
-                onTap: () {
-                  _navigateToTab(6, clearHistory: true);
-                  _closeMobileDrawer();
-                },
-              ),
-            ],
-          ),
-        ],
+        items: memberItems,
       ),
     ];
   }
@@ -2334,7 +2366,13 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             onSelectTab: _handleAccountTabMember,
           );
         case 7:
-          return WorkstationView(workspace: activeWs);
+          if (activeWs != null && activeWs.isFeatureActive('bcp-workspace')) {
+            return WorkstationView(workspace: activeWs);
+          }
+          return WorkspaceHomeView(
+            workspace: activeWs,
+            onNavigate: (idx) => _navigateToTab(idx >= 100 ? idx - 100 : idx),
+          );
         default:
           return WorkspaceHomeView(
             workspace: activeWs,
