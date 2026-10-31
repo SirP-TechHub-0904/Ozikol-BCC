@@ -265,7 +265,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                       Text(
                         'workstation.subtitle'.tr(
                           ref,
-                          fallback: 'Track daily shift hours, monitor breaks and mid-shift closures with automated station auditing.',
+                          fallback: 'Track today\'s shift hours, monitor breaks and mid-shift closures with automated station auditing.',
                         ),
                         style: TextStyle(fontSize: 13, color: textSecondary),
                       ),
@@ -560,7 +560,7 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                 child: _buildTimeMetricBlock(
                   title: 'CLOSE WORK TIME',
                   timeValue: _isShiftActive ? '05:00 PM (Projected)' : '05:00 PM (Logged)',
-                  subtitle: _isShiftActive ? 'Expected daily dismissal' : 'Work concluded',
+                  subtitle: _isShiftActive ? 'Expected close today' : 'Concluded today',
                   icon: Icons.logout_rounded,
                   accentColor: const Color(0xFF6366F1),
                   isDark: isDark,
