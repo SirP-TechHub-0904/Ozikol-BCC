@@ -4,15 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/workstation_shift_state.dart';
 
-/// Models an active user-facing process running on the host OS.
+/// Models an active user-facing process running on the host OS with an active taskbar/desktop window.
 class DetectedRunningApp {
   final String processName;
   final String displayName;
+  final String windowTitle;
   final IconData icon;
 
   const DetectedRunningApp({
     required this.processName,
     required this.displayName,
+    required this.windowTitle,
     required this.icon,
   });
 }
@@ -45,22 +47,102 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
   bool _isClosingAll = false;
   List<DetectedRunningApp> _detectedApps = [];
 
-  static const Set<String> _systemBypass = {
-    'system idle process', 'system', 'secure system', 'registry', 'smss.exe', 'csrss.exe',
-    'wininit.exe', 'winlogon.exe', 'services.exe', 'lsaiso.exe', 'lsass.exe', 'fontdrvhost.exe',
-    'svchost.exe', 'wudfhost.exe', 'dwm.exe', 'spoolsv.exe', 'wmiprvse.exe', 'taskhostw.exe',
-    'applicationframehost.exe', 'searchindexer.exe', 'sihost.exe', 'ctfmon.exe', 'explorer.exe',
-    'cmd.exe', 'powershell.exe', 'conhost.exe', 'openconsole.exe', 'tasklist.exe', 'taskkill.exe',
-    'dart.exe', 'dartvm.exe', 'dartaotruntime.exe', 'flutter.exe', 'ozikol_app.exe', 'ozikol.exe',
-    'ozikol.central.exe', 'ozikol-bcc.api.exe', 'antigravity ide.exe', 'antigravity.exe', 'agy.exe',
-    'node.exe', 'esbuild.exe', 'git.exe', 'dotnet.exe', 'onedrive.exe', 'onedrive.sync.service.exe',
-    'adskflex.exe', 'adb.exe', 'crash_handler.exe', 'plugin_host-3.14.exe', 'epdservice.exe',
-    'epdctrl.exe', 'wtabletserviceisd.exe', 'intelcphdpsvc.exe', 'igfxcuiservicen.exe',
-    'vmms.exe', 'vmcompute.exe', 'mdnsresponder.exe', 'dax3api.exe', 'fnplicensingservice.exe',
-    'fnplicensingservice64.exe', 'fmservice64.exe', 'hpprintscandoctorservice.exe', 'ibmpmsvc.exe',
-    'lenovo.modern.imcontroller.exe', 'managerservice.exe', 'licenseservice.exe',
-    'endpointservice.exe', 'intelaudioservice.exe', 'esif_uf.exe', 'servicehub.host.extensibility.x64.exe',
-    'devhub.exe', 'useroobebroker.exe', 'officeclicktorun.exe', 'appvshnotify.exe', 'litssvc.exe'
+  static const Set<String> _systemShellProcesses = {
+    // Windows internal system/shell UI hosts
+    'textinputhost.exe',
+    'startmenuexperiencehost.exe',
+    'shellexperiencehost.exe',
+    'shellhost.exe',
+    'searchhost.exe',
+    'searchapp.exe',
+    'lockapp.exe',
+    'widgetboard.exe',
+    'widgetservice.exe',
+    'tabtip.exe',
+    'powermgr.exe',
+    'crossdeviceresume.exe',
+    'crossdeviceservice.exe',
+    'phoneexperiencehost.exe',
+    'monotificationux.exe',
+    'runtimebroker.exe',
+    'applicationframehost.exe',
+    'systemsettings.exe',
+    'dllhost.exe',
+    'taskhostw.exe',
+    'svchost.exe',
+    'dwm.exe',
+    'ctfmon.exe',
+    'sihost.exe',
+    'msedgewebview2.exe',
+    'perfwatson2.exe',
+    'appactions.exe',
+    'messagingplugin.exe',
+    'screenrecorderplus.recoveryagent.exe',
+    'unsecapp.exe',
+    'copilotapp.exe',
+    'litssvc.exe',
+    'epdctrl.exe',
+    'epdservice.exe',
+    'rtkauduservice64.exe',
+    'igfxemn.exe',
+    'onedrive.sync.service.exe',
+    'adb.exe',
+    'cmd.exe',
+    'powershell.exe',
+    'conhost.exe',
+    'openconsole.exe',
+    'explorer.exe',
+
+    // Developer & Build toolchain daemons
+    'dotnet.exe',
+    'node.exe',
+    'dart.exe',
+    'dartvm.exe',
+    'dartaotruntime.exe',
+    'flutter.exe',
+    'git.exe',
+    'esbuild.exe',
+    'adskflex.exe',
+
+    // Ozikol suite & development IDE whitelist
+    'ozikol_app.exe',
+    'ozikol.exe',
+    'ozikol.central.exe',
+    'ozikol-bcc.api.exe',
+    'antigravity ide.exe',
+    'antigravity.exe',
+    'agy.exe',
+    'taskmgr.exe',
+  };
+
+  static const Set<String> _ignoredWindowTitles = {
+    'n/a',
+    'olemainthreadwndname',
+    'olechannelwnd',
+    'desktopwindowxamlsource',
+    'dwm notification window',
+    'its_user_window',
+    'adb power notification window',
+    'microsoft onedrive sync service',
+    'battery notification window',
+    'network flyout',
+    'quick settings',
+    'start',
+    'search',
+    'windows widgets',
+    'new notification',
+    'task host window',
+    'pwrmgrbkgndwindow',
+    'crossdeviceresumewindow',
+    'realtekaudioadminbackgroundprocessclass',
+    'realtekaudiobackgroundprocessclass',
+    'windows push notifications platform',
+    'the event manager dashboard',
+    'etdctrl',
+    'wisptis',
+    'rtc video pnp listener',
+    'windows default lock screen',
+    'windows input experience',
   };
 
   @override
@@ -69,54 +151,200 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     _scanRunningApplications();
   }
 
-  DetectedRunningApp _mapProcessToApp(String proc) {
+  DetectedRunningApp _mapProcessToApp(String proc, String windowTitle) {
     final lower = proc.toLowerCase().trim();
     switch (lower) {
       case 'sublime_text.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Sublime Text Editor', icon: Icons.code_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Sublime Text',
+          windowTitle: windowTitle,
+          icon: Icons.code_rounded,
+        );
       case 'chrome.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Google Chrome', icon: Icons.public_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Google Chrome',
+          windowTitle: windowTitle,
+          icon: Icons.public_rounded,
+        );
       case 'msedge.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Microsoft Edge', icon: Icons.public_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Microsoft Edge',
+          windowTitle: windowTitle,
+          icon: Icons.public_rounded,
+        );
       case 'firefox.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Mozilla Firefox', icon: Icons.public_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Mozilla Firefox',
+          windowTitle: windowTitle,
+          icon: Icons.public_rounded,
+        );
       case 'brave.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Brave Browser', icon: Icons.public_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Brave Browser',
+          windowTitle: windowTitle,
+          icon: Icons.public_rounded,
+        );
       case 'snippingtool.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Windows Snipping Tool', icon: Icons.content_cut_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Snipping Tool',
+          windowTitle: windowTitle,
+          icon: Icons.content_cut_rounded,
+        );
       case 'whatsapp.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'WhatsApp Desktop', icon: Icons.chat_bubble_outline_rounded);
+      case 'whatsapp.root.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'WhatsApp Desktop',
+          windowTitle: windowTitle,
+          icon: Icons.chat_bubble_outline_rounded,
+        );
+      case 'windowsterminal.exe':
+      case 'terminal.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Windows Terminal',
+          windowTitle: windowTitle,
+          icon: Icons.terminal_rounded,
+        );
+      case 'devenv.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Visual Studio',
+          windowTitle: windowTitle,
+          icon: Icons.integration_instructions_rounded,
+        );
+      case 'code.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Visual Studio Code',
+          windowTitle: windowTitle,
+          icon: Icons.code_rounded,
+        );
       case 'telegram.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Telegram Messenger', icon: Icons.send_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Telegram Messenger',
+          windowTitle: windowTitle,
+          icon: Icons.send_rounded,
+        );
       case 'discord.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Discord', icon: Icons.sports_esports_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Discord',
+          windowTitle: windowTitle,
+          icon: Icons.sports_esports_rounded,
+        );
       case 'spotify.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Spotify Music', icon: Icons.music_note_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Spotify Music',
+          windowTitle: windowTitle,
+          icon: Icons.music_note_rounded,
+        );
       case 'steam.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Steam Game Client', icon: Icons.games_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Steam Game Client',
+          windowTitle: windowTitle,
+          icon: Icons.games_rounded,
+        );
       case 'winword.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Microsoft Word', icon: Icons.description_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Microsoft Word',
+          windowTitle: windowTitle,
+          icon: Icons.description_rounded,
+        );
       case 'excel.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Microsoft Excel', icon: Icons.table_chart_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Microsoft Excel',
+          windowTitle: windowTitle,
+          icon: Icons.table_chart_rounded,
+        );
       case 'powerpnt.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Microsoft PowerPoint', icon: Icons.slideshow_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Microsoft PowerPoint',
+          windowTitle: windowTitle,
+          icon: Icons.slideshow_rounded,
+        );
+      case 'onenote.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Microsoft OneNote',
+          windowTitle: windowTitle,
+          icon: Icons.note_alt_rounded,
+        );
       case 'notepad.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Windows Notepad', icon: Icons.notes_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Windows Notepad',
+          windowTitle: windowTitle,
+          icon: Icons.notes_rounded,
+        );
       case 'vlc.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'VLC Media Player', icon: Icons.play_circle_outline_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'VLC Media Player',
+          windowTitle: windowTitle,
+          icon: Icons.play_circle_outline_rounded,
+        );
       case 'zoom.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Zoom Meetings', icon: Icons.videocam_rounded);
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Zoom Meetings',
+          windowTitle: windowTitle,
+          icon: Icons.videocam_rounded,
+        );
       case 'teams.exe':
-        return DetectedRunningApp(processName: proc, displayName: 'Microsoft Teams', icon: Icons.groups_rounded);
+      case 'ms-teams.exe':
+        return DetectedRunningApp(
+          processName: proc,
+          displayName: 'Microsoft Teams',
+          windowTitle: windowTitle,
+          icon: Icons.groups_rounded,
+        );
       default:
-        // Format e.g. "my_app.exe" -> "My App"
         final cleanName = proc.replaceAll(RegExp(r'\.exe$', caseSensitive: false), '');
         return DetectedRunningApp(
           processName: proc,
           displayName: cleanName[0].toUpperCase() + cleanName.substring(1),
+          windowTitle: windowTitle,
           icon: Icons.apps_rounded,
         );
     }
+  }
+
+  List<String> _parseCsvRow(String line) {
+    final List<String> cells = [];
+    final buffer = StringBuffer();
+    bool inQuotes = false;
+
+    for (int i = 0; i < line.length; i++) {
+      final char = line[i];
+      if (char == '"') {
+        if (inQuotes && i + 1 < line.length && line[i + 1] == '"') {
+          buffer.write('"');
+          i++; // skip escaped quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char == ',' && !inQuotes) {
+        cells.add(buffer.toString());
+        buffer.clear();
+      } else {
+        buffer.write(char);
+      }
+    }
+    cells.add(buffer.toString());
+    return cells.map((c) => c.trim()).toList();
   }
 
   Future<void> _scanRunningApplications() async {
@@ -126,23 +354,38 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
 
     if (!kIsWeb && Platform.isWindows) {
       try {
-        final result = await Process.run('tasklist', ['/FO', 'CSV', '/NH']);
+        final result = await Process.run('tasklist', ['/V', '/FO', 'CSV', '/NH']);
         if (result.exitCode == 0) {
           final lines = result.stdout.toString().split('\n');
           for (final line in lines) {
             final trimmed = line.trim();
             if (trimmed.isEmpty) continue;
-            final parts = trimmed.split('","');
-            if (parts.isEmpty) continue;
+            final fields = _parseCsvRow(trimmed);
+            if (fields.length < 9) continue;
 
-            final procName = parts[0].replaceAll('"', '').trim();
+            final procName = fields[0];
+            final sessionName = fields[2].toLowerCase();
+            final windowTitle = fields[8];
             final procLower = procName.toLowerCase();
+            final titleLower = windowTitle.toLowerCase();
 
-            if (_systemBypass.contains(procLower)) continue;
+            // 1. MUST be in the interactive console session (not Session 0 background services)
+            if (sessionName != 'console') continue;
+
+            // 2. MUST have a real, visible taskbar window title (not background task without UI)
+            if (windowTitle.isEmpty || titleLower == 'n/a') continue;
+
+            // 3. Skip system and internal framework window handles
+            if (_ignoredWindowTitles.contains(titleLower)) continue;
+            if (titleLower.startsWith('.net-broadcasteventwindow')) continue;
+
+            // 4. Skip whitelisted Windows system shells, runtime daemons, and Ozikol app itself
+            if (_systemShellProcesses.contains(procLower)) continue;
+
             if (seen.contains(procLower)) continue;
-
             seen.add(procLower);
-            apps.add(_mapProcessToApp(procName));
+
+            apps.add(_mapProcessToApp(procName, windowTitle));
           }
         }
       } catch (e) {
@@ -309,7 +552,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${_detectedApps.length} Open Application(s) Detected',
+                              '${_detectedApps.length} Open Taskbar Application(s) Detected',
                               style: const TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
@@ -487,11 +730,13 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
                                               color: textPrimary,
                                             ),
                                           ),
+                                          const SizedBox(height: 2),
                                           Text(
-                                            app.processName,
+                                            app.windowTitle.isNotEmpty ? app.windowTitle : app.processName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontSize: 11,
-                                              fontFamily: 'monospace',
                                               color: textSecondary,
                                             ),
                                           ),
