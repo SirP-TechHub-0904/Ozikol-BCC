@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../../workstations/presentation/workstation_view.dart';
 import '../../workstations/services/workstation_watcher_service.dart';
+import '../../workstations/state/workstation_shift_state.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -380,24 +381,17 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeWs = state.activeWorkspace;
     final watcher = ref.watch(workstationWatcherProvider);
+    final shiftState = ref.watch(workstationShiftProvider);
     final isWorkspaceLicensed = activeWs != null && activeWs.isFeatureActive('bcp-workspace');
+    final isWorkModeActive = isWorkspaceLicensed && shiftState.isAtWork && !shiftState.isOnBreak;
 
-    // Dynamic Workstation Guard sync based on active administrator licensing
+    // Strict Work-Mode Gate: ONLY monitor, log activity, or run inactivity timers when Work Mode is actively running
     if (!kIsWeb && Platform.isWindows) {
-      if (isWorkspaceLicensed && !watcher.isMonitoring) {
+      if (isWorkModeActive && !watcher.isMonitoring) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          watcher.initializeAndStart(
-            userId: (activeWs.userId != null && activeWs.userId!.trim().isNotEmpty)
-                ? activeWs.userId
-                : (activeWs.userEmail ?? activeWs.tenantKey),
-            userName: (activeWs.userFullName != null && activeWs.userFullName!.trim().isNotEmpty)
-                ? activeWs.userFullName
-                : (activeWs.userEmail ?? activeWs.organizationName),
-            userEmail: activeWs.userEmail ?? activeWs.tenantKey,
-            organizationName: activeWs.organizationName,
-          );
+          watcher.startGuarding();
         });
-      } else if (!isWorkspaceLicensed && watcher.isMonitoring) {
+      } else if (!isWorkModeActive && watcher.isMonitoring) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           watcher.stopGuarding();
         });
@@ -574,16 +568,16 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             child: _buildOziAiFloatingButton(isDark, isMobile: false),
           ),
 
-          // Slide-down Workplace Policy Restriction Intercept Notification Banner (only if active)
-          if (_activeViolation != null && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
+          // Slide-down Workplace Policy Restriction Intercept Notification Banner (only if Work Mode is active)
+          if (isWorkModeActive && _activeViolation != null)
             Positioned(
               top: 72,
               right: 24,
               child: _buildViolationSlideBanner(isDark, _activeViolation!, watcher),
             ),
 
-          // Workstation Inactivity Countdown Warning Overlay (45s idle trigger)
-          if (watcher.isIdleCountdownActive && !watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
+          // Workstation Inactivity Countdown Warning Overlay (only when Work Mode is active)
+          if (isWorkModeActive && watcher.isIdleCountdownActive && !watcher.isLocked)
             Positioned.fill(
               child: _buildInactivityCountdownOverlay(isDark, watcher),
             ),
@@ -837,8 +831,8 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             child: _buildOziAiFloatingButton(isDark, isMobile: true),
           ),
 
-          // Workstation Inactivity Countdown Warning Overlay (45s idle trigger)
-          if (watcher.isIdleCountdownActive && !watcher.isLocked && (activeWs?.isFeatureActive('bcp-workspace') ?? false))
+          // Workstation Inactivity Countdown Warning Overlay (only when Work Mode is active)
+          if (isWorkModeActive && watcher.isIdleCountdownActive && !watcher.isLocked)
             Positioned.fill(
               child: _buildInactivityCountdownOverlay(isDark, watcher),
             ),

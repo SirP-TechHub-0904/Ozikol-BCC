@@ -55,31 +55,35 @@ namespace Ozikol_BCC.Api.Controllers
                 .OrderByDescending(s => s.LastHeartbeat)
                 .ToListAsync();
 
-            // Refresh online status based on 45-second heartbeat window
+            // Refresh online status based on active Work Mode 18-second heartbeat window
             var deduplicated = stations.GroupBy(s => (!string.IsNullOrEmpty(s.StationKey) ? s.StationKey : s.MachineName).Trim().ToUpperInvariant()).Select(g => g.OrderByDescending(x => x.LastHeartbeat ?? x.CreatedAt).First()).ToList();
-            var result = deduplicated.Select(s => new
+            var result = deduplicated.Select(s =>
             {
-                s.Id,
-                s.StationKey,
-                s.MachineName,
-                s.HardwareGuid,
-                s.AssignedUserId,
-                s.AssignedUserName,
-                s.AssignedUserEmail,
-                s.Department,
-                s.IpAddress,
-                s.OsVersion,
-                s.ClientVersion,
-                IsOnline = s.LastHeartbeat.HasValue && (now - s.LastHeartbeat.Value).TotalSeconds <= 45,
-                s.LastHeartbeat,
-                s.CurrentProcessName,
-                s.CurrentWindowTitle,
-                s.CurrentDocumentPath,
-                s.IsLocked,
-                s.LockReason,
-                s.KioskEnforced,
-                s.CreatedAt,
-                s.UpdatedAt
+                var online = s.IsOnline && s.LastHeartbeat.HasValue && (now - s.LastHeartbeat.Value).TotalSeconds <= 18;
+                return new
+                {
+                    s.Id,
+                    s.StationKey,
+                    s.MachineName,
+                    s.HardwareGuid,
+                    s.AssignedUserId,
+                    s.AssignedUserName,
+                    s.AssignedUserEmail,
+                    s.Department,
+                    s.IpAddress,
+                    s.OsVersion,
+                    s.ClientVersion,
+                    IsOnline = online,
+                    s.LastHeartbeat,
+                    CurrentProcessName = online ? s.CurrentProcessName : null,
+                    CurrentWindowTitle = online ? s.CurrentWindowTitle : null,
+                    CurrentDocumentPath = online ? s.CurrentDocumentPath : null,
+                    s.IsLocked,
+                    s.LockReason,
+                    s.KioskEnforced,
+                    s.CreatedAt,
+                    s.UpdatedAt
+                };
             });
 
             return Ok(new { success = true, data = result });
@@ -126,8 +130,8 @@ namespace Ozikol_BCC.Api.Controllers
                     IpAddress = clientIp,
                     OsVersion = dto.OsVersion,
                     ClientVersion = dto.ClientVersion,
-                    IsOnline = true,
-                    LastHeartbeat = DateTime.UtcNow,
+                    IsOnline = false,
+                    LastHeartbeat = null,
                     KioskEnforced = dto.KioskEnforced
                 };
                 _db.BcpWorkstations.Add(existing);
@@ -143,52 +147,14 @@ namespace Ozikol_BCC.Api.Controllers
                 existing.IpAddress = clientIp;
                 existing.OsVersion = dto.OsVersion ?? existing.OsVersion;
                 existing.ClientVersion = dto.ClientVersion ?? existing.ClientVersion;
-                existing.IsOnline = true;
-                existing.LastHeartbeat = DateTime.UtcNow;
                 existing.UpdatedAt = DateTime.UtcNow;
             }
 
             await _db.SaveChangesAsync();
 
-            // Record desktop login & PC binding audit log
+            // Notify administrators if a different operator signed into this physical PC
             try
             {
-                await EnsureActivityLogTableExistsAsync();
-                var cutoff = DateTime.UtcNow.AddMinutes(-2);
-                var recentDuplicate = await _db.BcpWorkstationActivityLogs
-                    .AsNoTracking()
-                    .AnyAsync(l => l.StationKey == existing.StationKey &&
-                                   l.UserName == existing.AssignedUserName &&
-                                   (l.EventType == "USER_LOGIN" || l.EventType == "USER_SWITCHED") &&
-                                   l.Timestamp >= cutoff);
-
-                if (!recentDuplicate)
-                {
-                    var loginType = isDifferentUserOnPc ? "USER_SWITCHED" : "USER_LOGIN";
-                    var emailPart = !string.IsNullOrWhiteSpace(existing.AssignedUserEmail) ? $" ({existing.AssignedUserEmail})" : "";
-                    var detailsText = isDifferentUserOnPc
-                        ? $"Account switched on PC {existing.MachineName} ({existing.StationKey}): {existing.AssignedUserName}{emailPart} signed into desktop app (previous operator: {previousUserName}) • IP: {clientIp ?? "127.0.0.1"}"
-                        : $"Signed into desktop app as {existing.AssignedUserName ?? "Operator"}{emailPart} on PC {existing.MachineName} ({existing.StationKey}) • IP: {clientIp ?? "127.0.0.1"}";
-
-                    _db.BcpWorkstationActivityLogs.Add(new BcpWorkstationActivityLog
-                    {
-                        WorkstationId = existing.Id,
-                        StationKey = existing.StationKey,
-                        MachineName = existing.MachineName,
-                        UserId = existing.AssignedUserId,
-                        UserName = existing.AssignedUserName ?? "Operator",
-                        UserEmail = existing.AssignedUserEmail,
-                        EventType = loginType,
-                        ProcessName = "Desktop Session",
-                        AppDisplayName = $"PC: {existing.MachineName} ({existing.StationKey})",
-                        WindowTitle = existing.OsVersion,
-                        StartedAt = DateTime.UtcNow,
-                        Details = detailsText,
-                        Timestamp = DateTime.UtcNow
-                    });
-                    await _db.SaveChangesAsync();
-                }
-
                 if (isDifferentUserOnPc)
                 {
                     await DispatchWorkstationNotificationAsync(
@@ -204,7 +170,7 @@ namespace Ozikol_BCC.Api.Controllers
             }
             catch
             {
-                // Non-blocking audit log
+                // Non-blocking notification
             }
 
             // Return active station state along with active app whitelist and file rules
@@ -251,11 +217,22 @@ namespace Ozikol_BCC.Api.Controllers
                 return NotFound(new { success = false, message = "Station not found." });
             }
 
-            station.IsOnline = true;
-            station.LastHeartbeat = DateTime.UtcNow;
-            station.CurrentProcessName = dto.CurrentProcessName;
-            station.CurrentWindowTitle = dto.CurrentWindowTitle;
-            station.CurrentDocumentPath = dto.CurrentDocumentPath;
+            if (string.Equals(dto.CurrentProcessName, "SHIFT_CLOSED", StringComparison.OrdinalIgnoreCase))
+            {
+                station.IsOnline = false;
+                station.LastHeartbeat = null;
+                station.CurrentProcessName = null;
+                station.CurrentWindowTitle = null;
+                station.CurrentDocumentPath = null;
+            }
+            else
+            {
+                station.IsOnline = true;
+                station.LastHeartbeat = DateTime.UtcNow;
+                station.CurrentProcessName = dto.CurrentProcessName;
+                station.CurrentWindowTitle = dto.CurrentWindowTitle;
+                station.CurrentDocumentPath = dto.CurrentDocumentPath;
+            }
             if (!string.IsNullOrEmpty(dto.IpAddress)) station.IpAddress = dto.IpAddress;
 
             await _db.SaveChangesAsync();

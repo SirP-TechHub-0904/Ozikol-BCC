@@ -296,7 +296,7 @@ class WorkstationWatcherService extends ChangeNotifier {
       _userName = userName;
       _userEmail = userEmail;
 
-      // 1. Handshake with server
+      // 1. Handshake with server (registers PC & operator metadata only; no activity logs or timers start until Work Mode)
       final response = await _api.dio.post('/api/Workstations/register', data: {
         'stationKey': _stationKey,
         'machineName': machineName,
@@ -308,17 +308,6 @@ class WorkstationWatcherService extends ChangeNotifier {
         'clientVersion': '2.0.0',
         'kioskEnforced': false,
       });
-
-      // Log desktop login & PC identity explicitly to activity logs
-      await logWorkstationActivity(
-        eventType: isSwitchedUser ? 'USER_SWITCHED' : 'USER_LOGIN',
-        processName: 'Desktop Session',
-        appDisplayName: 'PC: $machineName ($_stationKey)',
-        windowTitle: 'Windows User: $winOsUser • ${Platform.operatingSystemVersion}',
-        details: isSwitchedUser
-            ? 'Account switched on PC $machineName ($_stationKey): ${userName ?? userEmail} (${userEmail ?? ""}) signed into desktop app (previous user: $prevUserName ${prevUserEmail != null ? "($prevUserEmail)" : ""}, Windows OS user: $winOsUser)'
-            : 'Signed into desktop app as ${userName ?? userEmail} (${userEmail ?? ""}) on PC $machineName ($_stationKey, Windows OS user: $winOsUser)',
-      );
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data['data'];
@@ -457,7 +446,8 @@ class WorkstationWatcherService extends ChangeNotifier {
     } catch (_) {}
   }
 
-  /// Begins native process inspection, idle watchdog, periodic screenshot capture, and telemetry heartbeats.
+  /// Begins native process inspection, idle watchdog, periodic screenshot capture, and telemetry heartbeats
+  /// ONLY when the user enters active Work Mode ("Start Active Work Duty").
   void startGuarding() {
     if (_isMonitoring) return;
     _isMonitoring = true;
@@ -465,9 +455,15 @@ class WorkstationWatcherService extends ChangeNotifier {
     _isIdleCountdownActive = false;
     notifyListeners();
 
+    final machineName = Platform.isWindows ? Platform.localHostname : 'Workstation';
+    final winOsUser = Platform.isWindows ? (Platform.environment['USERNAME'] ?? 'WindowsUser') : 'User';
+
     logWorkstationActivity(
       eventType: 'SHIFT_STARTED',
-      details: 'Workstation compliance guard and active work session started.',
+      processName: 'Work Mode Active',
+      appDisplayName: 'PC: $machineName (${_stationKey ?? "WS-$machineName"})',
+      windowTitle: 'Operator: ${_userName ?? _userEmail ?? "Staff"} • Windows User: $winOsUser',
+      details: 'Work Mode started by ${_userName ?? _userEmail ?? "Operator"} (${_userEmail ?? ""}) on PC $machineName (${_stationKey ?? "WS-$machineName"}, Windows OS user: $winOsUser).',
     );
 
     // Process guard inspection runs every 3.5 seconds
@@ -570,6 +566,12 @@ class WorkstationWatcherService extends ChangeNotifier {
             ? 'Active work shift closed ($reason). Workstation monitoring stopped.'
             : 'Active work shift closed. Workstation monitoring stopped.',
       );
+      if (_stationKey != null) {
+        _api.dio.post('/api/Workstations/heartbeat', data: {
+          'stationKey': _stationKey,
+          'currentProcessName': 'SHIFT_CLOSED',
+        }).ignore();
+      }
     }
   }
 
@@ -1016,6 +1018,8 @@ class WorkstationWatcherService extends ChangeNotifier {
   }
 
   /// Sends a structured workstation activity log entry to the backend API.
+  /// Strictly gated: only records events when Work Mode (_isMonitoring) is active
+  /// (or when closing Work Mode / unlocking from a Work Mode lock).
   Future<void> logWorkstationActivity({
     required String eventType,
     String? processName,
@@ -1030,6 +1034,9 @@ class WorkstationWatcherService extends ChangeNotifier {
     String? details,
   }) async {
     if (!Platform.isWindows) return;
+    if (!_isMonitoring && eventType != 'SHIFT_CLOSED' && eventType != 'PASSWORD_RESUMED') {
+      return;
+    }
     try {
       await _api.dio.post('/api/Workstations/activity-logs', data: {
         'stationKey': _stationKey ?? 'WS-${Platform.localHostname.toUpperCase()}',
