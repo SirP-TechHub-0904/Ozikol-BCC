@@ -46,7 +46,6 @@ class PreWorkAppCheckerDialog extends ConsumerStatefulWidget {
 
 class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialog> {
   bool _isScanning = true;
-  bool _isClosingAll = false;
   List<DetectedRunningApp> _detectedApps = [];
   final Set<String> _pendingApprovalApps = {};
   Timer? _liveSyncTimer;
@@ -136,7 +135,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     super.initState();
     _scanRunningApplications();
     _liveSyncTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (mounted && !_isScanning && !_isClosingAll) {
+      if (mounted && !_isScanning) {
         _scanRunningApplications(silent: true);
       }
     });
@@ -480,84 +479,6 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
         _detectedApps = apps;
         _isScanning = false;
       });
-    }
-  }
-
-  /// Closes all open File Explorer folder windows cleanly via Shell.Application COM + Win32 WM_CLOSE
-  /// without killing the Windows Desktop/Taskbar shell process.
-  Future<void> _closeOpenFileExplorerWindows() async {
-    await Process.run('powershell', [
-      '-NoProfile',
-      '-NonInteractive',
-      '-Command',
-      r'''
-try {
-  (New-Object -ComObject Shell.Application).Windows() | Where-Object { $_.FullName -like '*explorer.exe' } | ForEach-Object { $_.Quit() }
-} catch {}
-try {
-  Add-Type @"
-  using System;
-  using System.Runtime.InteropServices;
-  public class WinExpClose {
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern IntPtr FindWindowEx(IntPtr parentHandle, IntPtr childAfter, string className, string windowTitle);
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
-  }
-"@
-  $h = [IntPtr]::Zero
-  while (($h = [WinExpClose]::FindWindowEx([IntPtr]::Zero, $h, "CabinetWClass", $null)) -ne [IntPtr]::Zero) {
-    [WinExpClose]::PostMessage($h, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
-  }
-} catch {}
-''',
-    ]);
-  }
-
-  /// Sends a graceful close signal first so apps with unsaved work (Word, Excel, IDE)
-  /// can prompt the user to save changes before closing.
-  Future<void> _closeSingleApp(String procName) async {
-    if (!kIsWeb && Platform.isWindows) {
-      try {
-        if (procName.toLowerCase().trim() == 'explorer.exe') {
-          await _closeOpenFileExplorerWindows();
-        } else {
-          final graceful = await Process.run('taskkill', ['/IM', procName]);
-          if (graceful.exitCode != 0) {
-            await Process.run('taskkill', ['/F', '/T', '/IM', procName]);
-          }
-        }
-      } catch (e) {
-        debugPrint('[PreWorkAppChecker] Taskkill error: $e');
-      }
-    }
-    // Refresh scan after closing
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      await _scanRunningApplications();
-    }
-  }
-
-  Future<void> _closeAllDetectedApps() async {
-    setState(() => _isClosingAll = true);
-    if (!kIsWeb && Platform.isWindows) {
-      for (final app in _detectedApps) {
-        try {
-          if (app.processName.toLowerCase().trim() == 'explorer.exe') {
-            await _closeOpenFileExplorerWindows();
-          } else {
-            final graceful = await Process.run('taskkill', ['/IM', app.processName]);
-            if (graceful.exitCode != 0) {
-              await Process.run('taskkill', ['/F', '/T', '/IM', app.processName]);
-            }
-          }
-        } catch (_) {}
-      }
-    }
-    await Future.delayed(const Duration(milliseconds: 700));
-    if (mounted) {
-      setState(() => _isClosingAll = false);
-      await _scanRunningApplications();
     }
   }
 
@@ -1045,16 +966,28 @@ try {
                                           ),
                                         ],
                                         const SizedBox(width: 8),
-                                        ElevatedButton(
-                                          onPressed: () => _closeSingleApp(app.processName),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFFFEE2E2),
-                                            foregroundColor: const Color(0xFFDC2626),
-                                            elevation: 0,
-                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFEE2E2),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: const Color(0xFFFCA5A5)),
                                           ),
-                                          child: const Text('Close App', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700)),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: const [
+                                              Icon(Icons.close_fullscreen_rounded, size: 12, color: Color(0xFFDC2626)),
+                                              SizedBox(width: 4),
+                                              Text(
+                                                'Close App Manually',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Color(0xFF991B1B),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -1099,30 +1032,6 @@ try {
                           side: const BorderSide(color: Color(0xFFA5B4FC)),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    if (hasApps)
-                      ElevatedButton.icon(
-                        onPressed: _isClosingAll ? null : _closeAllDetectedApps,
-                        icon: _isClosingAll
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : const Icon(Icons.close_rounded, size: 15),
-                        label: Text(
-                          _isClosingAll
-                              ? 'Closing Apps...'
-                              : 'Close All Apps (${_detectedApps.length})',
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFDC2626),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          elevation: 0,
                         ),
                       ),
                     ElevatedButton.icon(
