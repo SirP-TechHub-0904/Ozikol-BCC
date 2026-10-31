@@ -81,7 +81,7 @@ class WorkstationWatcherService extends ChangeNotifier {
   String? _lockReason;
   String? get lockReason => _lockReason;
 
-  String _approvedDirectory = r'C:\Ozikol-Workspace';
+  String _approvedDirectory = '';
   String get approvedDirectory => _approvedDirectory;
 
   bool _blockUsbStorage = true;
@@ -144,6 +144,7 @@ class WorkstationWatcherService extends ChangeNotifier {
     String? userName,
     String? userEmail,
     String? department,
+    String? organizationName,
   }) async {
     if (!kIsWeb && !Platform.isWindows) {
       // Station watcher runs natively on Windows Desktop
@@ -172,7 +173,13 @@ class WorkstationWatcherService extends ChangeNotifier {
         if (data != null) {
           _isLocked = data['isLocked'] as bool? ?? false;
           _lockReason = data['lockReason'] as String?;
-          _approvedDirectory = data['approvedDirectory'] as String? ?? r'C:\Ozikol-Workspace';
+          final safeOrg = (organizationName != null && organizationName.trim().isNotEmpty)
+              ? organizationName.trim().replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '')
+              : 'Workspace';
+          final dynamicFallback = 'C:\\${safeOrg.isNotEmpty ? safeOrg : "Workspace"}-Workspace';
+          _approvedDirectory = (data['approvedDirectory'] as String?)?.isNotEmpty == true
+              ? data['approvedDirectory'] as String
+              : dynamicFallback;
           _blockUsbStorage = data['blockUsbStorage'] as bool? ?? true;
         }
       }

@@ -155,7 +155,7 @@ namespace Ozikol_BCC.Api.Controllers
                     lockReason = existing.LockReason,
                     kioskEnforced = existing.KioskEnforced,
                     allowedProcesses = appPolicies,
-                    approvedDirectory = filePolicy?.ApprovedDirectoryPath ?? @"C:\Ozikol-Workspace",
+                    approvedDirectory = !string.IsNullOrWhiteSpace(filePolicy?.ApprovedDirectoryPath) ? filePolicy.ApprovedDirectoryPath : await ResolveDefaultApprovedDirectoryAsync(),
                     blockUsbStorage = filePolicy?.BlockUsbStorage ?? true
                 }
             });
@@ -270,7 +270,7 @@ namespace Ozikol_BCC.Api.Controllers
             {
                 filePolicy = new BcpWorkstationFilePolicy
                 {
-                    ApprovedDirectoryPath = @"C:\Ozikol-Workspace",
+                    ApprovedDirectoryPath = await ResolveDefaultApprovedDirectoryAsync(),
                     BlockUsbStorage = true,
                     UsbStoragePolicy = "Blocked",
                     EnforceDirectorySandbox = true
@@ -644,5 +644,17 @@ namespace Ozikol_BCC.Api.Controllers
         public bool AddToPermanentWhitelist { get; set; }
         public string? DisplayName { get; set; }
     }
-}
+        /// <summary>
+        /// Dynamically resolves the approved company document path from the tenant's brand name.
+        /// Guaranteed 100% white-label: uses the tenant's brand name (e.g. C:\AcmeGlobal-Workspace) instead of any hardcoded vendor name.
+        /// </summary>
+        private async Task<string> ResolveDefaultApprovedDirectoryAsync()
+        {
+            var siteSetting = await _db.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var brand = siteSetting?.BrandName ?? siteSetting?.SiteName ?? "Workspace";
+            var safeBrand = System.Text.RegularExpressions.Regex.Replace(brand, @"[^a-zA-Z0-9_\-]", "");
+            if (string.IsNullOrWhiteSpace(safeBrand)) safeBrand = "Workspace";
+            return $@"C:\{safeBrand}-Workspace";
+        }
 
+}

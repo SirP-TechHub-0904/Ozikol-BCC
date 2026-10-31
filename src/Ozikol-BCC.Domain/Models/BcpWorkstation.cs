@@ -183,10 +183,10 @@ namespace Ozikol_BCC.Domain.Models
         public Guid Id { get; set; } = Guid.CreateVersion7();
 
         /// <summary>
-        /// Approved work root path on disk (e.g. "C:\Ozikol-Workspace" or network path).
+        /// Approved work root path on disk (e.g. "C:\<TenantName>-Workspace" or network path).
         /// </summary>
         [StringLength(500)]
-        public string ApprovedDirectoryPath { get; set; } = @"C:\Ozikol-Workspace";
+        public string ApprovedDirectoryPath { get; set; } = string.Empty;
 
         /// <summary>
         /// USB storage rule: "Allowed", "ReadOnly", "Blocked".

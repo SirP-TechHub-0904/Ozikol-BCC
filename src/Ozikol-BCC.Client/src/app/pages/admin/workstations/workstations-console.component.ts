@@ -331,7 +331,7 @@ export interface ViolationLogItem {
 
               <div class="form-group">
                 <label>Approved Corporate Document Directory</label>
-                <input type="text" [(ngModel)]="filePolicy.approvedDirectoryPath" class="input-text" placeholder="e.g. C:\\Ozikol-Workspace" />
+                <input type="text" [(ngModel)]="filePolicy.approvedDirectoryPath" class="input-text" [placeholder]="'e.g. C:\\\\' + (brandName || 'Company') + '-Workspace'" />
                 <span class="helper-text">Documents opened from outside this folder (e.g. personal folders or downloads) trigger a security audit alert.</span>
               </div>
 
@@ -1158,7 +1158,7 @@ export class WorkstationsConsoleComponent implements OnInit, OnDestroy {
   stations: WorkstationItem[] = [];
   appPolicies: AppPolicyItem[] = [];
   filePolicy: FilePolicyItem = {
-    approvedDirectoryPath: 'C:\\Ozikol-Workspace',
+    approvedDirectoryPath: '',
     usbStoragePolicy: 'Blocked',
     blockUsbStorage: true,
     enforceDirectorySandbox: true

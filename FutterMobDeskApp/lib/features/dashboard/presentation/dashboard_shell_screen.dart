@@ -267,6 +267,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             userId: activeWs.tenantKey,
             userName: activeWs.organizationName,
             userEmail: activeWs.tenantKey,
+            organizationName: activeWs.organizationName,
           );
         }
         _violationSub = watcher.onViolationIntercepted.listen((event) {
@@ -383,6 +384,7 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
             userId: activeWs.tenantKey,
             userName: activeWs.organizationName,
             userEmail: activeWs.tenantKey,
+            organizationName: activeWs.organizationName,
           );
         });
       } else if (!isWorkspaceLicensed && watcher.isMonitoring) {
