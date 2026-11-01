@@ -209,9 +209,40 @@ class WorkstationWatcherService extends ChangeNotifier {
   final Set<String> _serverPendingRequests = {};
   final Set<String> _serverDeniedRequests = {};
 
-  /// Returns true if the process is approved via whitelist policies, approved access requests, or temporary session grant.
+  /// Strict Local Development Clause (ONLY active in Flutter debug mode or when API points to localhost):
+  /// Allows Antigravity IDE, Chrome (hosting Admin Web Console), and CMD/PowerShell/Windows Terminal
+  /// to remain open on the developer's machine during local testing without blocking "Start Work"
+  /// or being terminated by the background guard, while still tracking their file paths & browser links.
+  bool get isLocalDevEnvironment {
+    if (kDebugMode) return true;
+    final baseUrl = _api.dio.options.baseUrl.toLowerCase();
+    return baseUrl.contains('localhost') || baseUrl.contains('127.0.0.1');
+  }
+
+  static const Set<String> localDevTestingExemptProcesses = {
+    'antigravity.exe',
+    'code.exe',
+    'chrome.exe',
+    'cmd.exe',
+    'powershell.exe',
+    'pwsh.exe',
+    'windowsterminal.exe',
+  };
+
+  /// Returns true ONLY on local development when the process is part of the local test harness
+  /// (Antigravity IDE, Google Chrome, CMD / PowerShell / Windows Terminal).
+  bool isLocalDevExemptProcess(String procName) {
+    if (!isLocalDevEnvironment) return false;
+    return localDevTestingExemptProcesses.contains(procName.toLowerCase().trim());
+  }
+
+  /// Returns true if the process is approved via whitelist policies, approved access requests,
+  /// temporary session grant, or the local-only development testing clause.
   bool isProcessApproved(String procName) {
     final clean = procName.toLowerCase().trim();
+    if (isLocalDevExemptProcess(clean)) {
+      return true;
+    }
     if (_temporaryApprovals.contains(clean) || _serverApprovedRequests.contains(clean)) {
       return true;
     }

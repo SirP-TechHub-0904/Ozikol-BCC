@@ -394,6 +394,7 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     if (!silent) {
       setState(() => _isScanning = true);
     }
+    final watcher = ref.read(workstationWatcherProvider);
     final Set<String> seen = {};
     final List<DetectedRunningApp> apps = [];
 
@@ -423,6 +424,8 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
 
             // Allow explorer.exe when emitted explicitly by the Shell.Application folder window check
             if (procLower != 'explorer.exe' && _systemShellProcesses.contains(procLower)) continue;
+            // Local-only development testing clause: allow Antigravity, Chrome, and CMD/PowerShell on local
+            if (watcher.isLocalDevExemptProcess(procLower)) continue;
             if (seen.contains(procLower)) continue;
             seen.add(procLower);
 
@@ -459,6 +462,8 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
 
               // Skip system shells and daemons
               if (_systemShellProcesses.contains(procLower)) continue;
+              // Local-only development testing clause: allow Antigravity, Chrome, and CMD/PowerShell on local
+              if (watcher.isLocalDevExemptProcess(procLower)) continue;
 
               if (seen.contains(procLower)) continue;
               seen.add(procLower);
