@@ -352,53 +352,6 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
                     ),
                     Tooltip(
                       message: isStrictlyAtWork
-                          ? 'Capture a manual desktop screenshot now and log it to the Workspace Activity Ledger'
-                          : 'Locked — Start Work first to capture a manual screenshot',
-                      child: OutlinedButton.icon(
-                        onPressed: isStrictlyAtWork
-                            ? () async {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Capturing desktop screenshot...'),
-                                    duration: Duration(seconds: 2),
-                                  ),
-                                );
-                                final ok = await watcher.captureAndUploadScreenshot(
-                                  reason: 'Manual screenshot captured from Workstation Desktop App',
-                                );
-                                if (!context.mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      ok
-                                          ? 'Screenshot captured and uploaded to Workspace Activity Logs!'
-                                          : 'Could not capture screenshot right now.',
-                                    ),
-                                    backgroundColor: ok ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
-                                  ),
-                                );
-                              }
-                            : () => showNotAtWorkAlert('Manual Screenshot Capture'),
-                        icon: Icon(
-                          isStrictlyAtWork ? Icons.screenshot_monitor_rounded : Icons.lock_outline_rounded,
-                          size: 16,
-                        ),
-                        label: Text(isStrictlyAtWork ? 'Capture Screenshot' : 'Screenshot (Locked)'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: isStrictlyAtWork ? const Color(0xFF0F766E) : const Color(0xFF64748B),
-                          backgroundColor: isStrictlyAtWork
-                              ? (isDark ? const Color(0xFF134E4A).withValues(alpha: 0.35) : const Color(0xFFF0FDFA))
-                              : (isDark ? const Color(0xFF1E293B).withValues(alpha: 0.5) : const Color(0xFFF1F5F9)),
-                          side: BorderSide(
-                            color: isStrictlyAtWork ? const Color(0xFF99F6E4) : const Color(0xFFCBD5E1),
-                          ),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                        ),
-                      ),
-                    ),
-                    Tooltip(
-                      message: isStrictlyAtWork
                           ? 'View and launch approved work applications'
                           : 'Locked — Start Work first to unlock Approved Apps',
                       child: ElevatedButton.icon(
