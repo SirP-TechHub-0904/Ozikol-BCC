@@ -4511,6 +4511,74 @@ class _DashboardShellScreenState extends ConsumerState<DashboardShellScreen>
                             ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isKioskUnlocking
+                              ? null
+                              : () async {
+                                  await ref
+                                      .read(workstationShiftProvider.notifier)
+                                      .closeFromWork(reason: 'Logged out from locked workstation screen');
+                                  await watcher.unlockStationAfterPasswordVerified();
+                                  watcher.stopGuarding(
+                                    reason: 'Logged out from locked workstation screen (different user)',
+                                  );
+                                  if (mounted) {
+                                    _kioskUnlockPinCtrl.clear();
+                                    _kioskUnlockError = null;
+                                    await _handleSignOut(activeWs);
+                                  }
+                                },
+                          icon: const Icon(Icons.logout_rounded, size: 15),
+                          label: const Text(
+                            'Log Out (Switch User)',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFE2E8F0),
+                            side: const BorderSide(color: Color(0xFF475569)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isKioskUnlocking
+                              ? null
+                              : () async {
+                                  await ref
+                                      .read(workstationShiftProvider.notifier)
+                                      .closeFromWork(reason: 'Workspace app closed from locked screen');
+                                  await watcher.unlockStationAfterPasswordVerified();
+                                  watcher.stopGuarding(
+                                    reason: 'Workspace app closed from locked workstation screen',
+                                  );
+                                  if (!kIsWeb && Platform.isWindows) {
+                                    exit(0);
+                                  }
+                                },
+                          icon: const Icon(Icons.power_settings_new_rounded, size: 15),
+                          label: const Text(
+                            'Close Workspace App',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFFCA5A5),
+                            side: const BorderSide(color: Color(0xFF7F1D1D)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'Station Host: ${Platform.isWindows ? Platform.localHostname : "Workstation"}',

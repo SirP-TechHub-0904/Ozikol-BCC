@@ -46,6 +46,7 @@ class PreWorkAppCheckerDialog extends ConsumerStatefulWidget {
 
 class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialog> {
   bool _isScanning = true;
+  bool _isScanInFlight = false;
   List<DetectedRunningApp> _detectedApps = [];
   final Set<String> _pendingApprovalApps = {};
   Timer? _liveSyncTimer;
@@ -391,6 +392,8 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
   }
 
   Future<void> _scanRunningApplications({bool silent = false}) async {
+    if (!mounted || _isScanInFlight) return;
+    _isScanInFlight = true;
     if (!silent) {
       setState(() => _isScanning = true);
     }
@@ -398,92 +401,97 @@ class _PreWorkAppCheckerDialogState extends ConsumerState<PreWorkAppCheckerDialo
     final Set<String> seen = {};
     final List<DetectedRunningApp> apps = [];
 
-    if (!kIsWeb && Platform.isWindows) {
-      bool scannedWithTaskbarFilter = false;
+    try {
+      if (!kIsWeb && Platform.isWindows) {
+        bool scannedWithTaskbarFilter = false;
 
-      // 1. Primary Scan: Filter ONLY interactive applications with visible windows on the Windows Taskbar
-      // PLUS open File Explorer folder windows via Shell.Application COM object.
-      try {
-        final psResult = await Process.run('powershell', [
-          '-NoProfile',
-          '-NonInteractive',
-          '-Command',
-          "Get-Process | Where-Object { \$_.MainWindowHandle -ne 0 -and \$_.MainWindowTitle.Trim() -ne '' } | ForEach-Object { \$_.ProcessName + '.exe|' + \$_.MainWindowTitle }; "
-          "try { \$expWins = @((New-Object -ComObject Shell.Application).Windows() | Where-Object { \$_.FullName -like '*explorer.exe' } | ForEach-Object { \$_.LocationName }); if (\$expWins.Count -gt 0) { Write-Output ('explorer.exe|File Explorer (' + (\$expWins -join ', ') + ')') } } catch {}",
-        ]).timeout(const Duration(seconds: 8));
-
-        if (psResult.exitCode == 0 && psResult.stdout.toString().trim().isNotEmpty) {
-          final lines = psResult.stdout.toString().split(RegExp(r'[\r\n]+'));
-          for (final line in lines) {
-            final trimmed = line.trim();
-            if (trimmed.isEmpty || !trimmed.contains('|')) continue;
-            final parts = trimmed.split('|');
-            final procName = parts[0].trim();
-            final title = parts.length > 1 ? parts.sublist(1).join('|').trim() : '';
-            final procLower = procName.toLowerCase();
-
-            // Allow explorer.exe when emitted explicitly by the Shell.Application folder window check
-            if (procLower != 'explorer.exe' && _systemShellProcesses.contains(procLower)) continue;
-            // Local-only development testing clause: allow Antigravity, Chrome, and CMD/PowerShell on local
-            if (watcher.isLocalDevExemptProcess(procLower)) continue;
-            if (seen.contains(procLower)) continue;
-            seen.add(procLower);
-
-            apps.add(_mapProcessToApp(procName, title));
-          }
-          scannedWithTaskbarFilter = true;
-        }
-      } catch (e) {
-        debugPrint('[PreWorkAppChecker] Taskbar window scan error: $e');
-      }
-
-      // 2. Fallback to fast tasklist (without slow /FI STATUS WMI query) if PowerShell failed
-      if (!scannedWithTaskbarFilter) {
+        // 1. Primary Scan: Filter ONLY interactive applications with visible windows on the Windows Taskbar
+        // PLUS open File Explorer folder windows via Shell.Application COM object.
         try {
-          final result = await Process.run(
-            'tasklist',
-            ['/FI', 'SESSIONNAME eq Console', '/FO', 'CSV', '/NH'],
-          ).timeout(const Duration(seconds: 6));
+          final psResult = await Process.run('powershell', [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            "Get-Process | Where-Object { \$_.MainWindowHandle -ne 0 -and \$_.MainWindowTitle.Trim() -ne '' } | ForEach-Object { \$_.ProcessName + '.exe|' + \$_.MainWindowTitle }; "
+            "try { \$expWins = @((New-Object -ComObject Shell.Application).Windows() | Where-Object { \$_.FullName -like '*explorer.exe' } | ForEach-Object { \$_.LocationName }); if (\$expWins.Count -gt 0) { Write-Output ('explorer.exe|File Explorer (' + (\$expWins -join ', ') + ')') } } catch {}",
+          ]).timeout(const Duration(seconds: 8));
 
-          if (result.exitCode == 0) {
-            final lines = result.stdout.toString().split('\n');
+          if (psResult.exitCode == 0) {
+            final lines = psResult.stdout.toString().split(RegExp(r'[\r\n]+'));
             for (final line in lines) {
               final trimmed = line.trim();
-              if (trimmed.isEmpty) continue;
-              final fields = _parseCsvRow(trimmed);
-              if (fields.isEmpty) continue;
-
-              final procName = fields[0].replaceAll('"', '').trim();
-              final sessionName = fields.length >= 3 ? fields[2].replaceAll('"', '').trim().toLowerCase() : '';
+              if (trimmed.isEmpty || !trimmed.contains('|')) continue;
+              final parts = trimmed.split('|');
+              final procName = parts[0].trim();
+              final title = parts.length > 1 ? parts.sublist(1).join('|').trim() : '';
               final procLower = procName.toLowerCase();
 
-              // MUST be in the interactive console session
-              if (sessionName.isNotEmpty && sessionName != 'console') continue;
-
-              // Skip system shells and daemons
-              if (_systemShellProcesses.contains(procLower)) continue;
+              // Allow explorer.exe when emitted explicitly by the Shell.Application folder window check
+              if (procLower != 'explorer.exe' && _systemShellProcesses.contains(procLower)) continue;
               // Local-only development testing clause: allow Antigravity, Chrome, and CMD/PowerShell on local
               if (watcher.isLocalDevExemptProcess(procLower)) continue;
-
               if (seen.contains(procLower)) continue;
               seen.add(procLower);
 
-              apps.add(_mapProcessToApp(procName));
+              apps.add(_mapProcessToApp(procName, title));
             }
+            scannedWithTaskbarFilter = true;
           }
         } catch (e) {
-          debugPrint('[PreWorkAppChecker] Tasklist fallback scan error: $e');
+          debugPrint('[PreWorkAppChecker] Taskbar window scan error: $e');
+        }
+
+        // 2. Fallback to fast tasklist (without slow /FI STATUS WMI query) if PowerShell failed
+        if (!scannedWithTaskbarFilter) {
+          try {
+            final result = await Process.run(
+              'tasklist',
+              ['/FI', 'SESSIONNAME eq Console', '/FO', 'CSV', '/NH'],
+            ).timeout(const Duration(seconds: 6));
+
+            if (result.exitCode == 0) {
+              final lines = result.stdout.toString().split('\n');
+              for (final line in lines) {
+                final trimmed = line.trim();
+                if (trimmed.isEmpty) continue;
+                final fields = _parseCsvRow(trimmed);
+                if (fields.isEmpty) continue;
+
+                final procName = fields[0].replaceAll('"', '').trim();
+                final sessionName = fields.length >= 3 ? fields[2].replaceAll('"', '').trim().toLowerCase() : '';
+                final procLower = procName.toLowerCase();
+
+                // MUST be in the interactive console session
+                if (sessionName.isNotEmpty && sessionName != 'console') continue;
+
+                // Skip system shells and daemons
+                if (_systemShellProcesses.contains(procLower)) continue;
+                // Local-only development testing clause: allow Antigravity, Chrome, and CMD/PowerShell on local
+                if (watcher.isLocalDevExemptProcess(procLower)) continue;
+
+                if (seen.contains(procLower)) continue;
+                seen.add(procLower);
+
+                apps.add(_mapProcessToApp(procName));
+              }
+            }
+          } catch (e) {
+            debugPrint('[PreWorkAppChecker] Tasklist fallback scan error: $e');
+          }
         }
       }
-    }
 
-    await ref.read(workstationWatcherProvider).refreshPolicies();
+      if (!mounted) return;
+      await watcher.refreshPolicies();
 
-    if (mounted) {
-      setState(() {
-        _detectedApps = apps;
-        _isScanning = false;
-      });
+      if (mounted) {
+        setState(() {
+          _detectedApps = apps;
+          _isScanning = false;
+        });
+      }
+    } finally {
+      _isScanInFlight = false;
     }
   }
 

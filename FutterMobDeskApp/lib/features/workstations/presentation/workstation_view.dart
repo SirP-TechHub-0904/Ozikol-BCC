@@ -467,138 +467,146 @@ class _WorkstationViewState extends ConsumerState<WorkstationView> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Left: Live Status Pill & Timer Counter
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusBg,
-                  borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            // Left: Live Status Pill & Timer Counter
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 14,
+              runSpacing: 8,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusBg,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(statusIcon, color: statusFg, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        statusText,
+                        style: TextStyle(
+                          color: statusFg,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(statusIcon, color: statusFg, size: 16),
-                    const SizedBox(width: 6),
                     Text(
-                      statusText,
+                      isOnBreak ? 'BREAK TIMER' : 'SESSION TIMER',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: textSecondary, letterSpacing: 0.5),
+                    ),
+                    Text(
+                      isOnBreak ? _formatDuration(shiftState.currentBreakDuration) : _formatDuration(_elapsedGrossDuration),
                       style: TextStyle(
-                        color: statusFg,
-                        fontSize: 12,
+                        fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
+                        fontFamily: 'monospace',
+                        color: isOnBreak ? const Color(0xFFD97706) : textPrimary,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    isOnBreak ? 'BREAK TIMER' : 'SESSION TIMER',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: textSecondary, letterSpacing: 0.5),
+              ],
+            ),
+
+            // Right: Action Control Buttons
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (isOnBreak) ...[
+                  ElevatedButton.icon(
+                    onPressed: _handleResumeFromBreak,
+                    icon: const Icon(Icons.play_circle_filled_rounded, size: 16),
+                    label: const Text('End Break & Resume Work'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF16A34A),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
                   ),
-                  Text(
-                    isOnBreak ? _formatDuration(shiftState.currentBreakDuration) : _formatDuration(_elapsedGrossDuration),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      fontFamily: 'monospace',
-                      color: isOnBreak ? const Color(0xFFD97706) : textPrimary,
+                  OutlinedButton.icon(
+                    onPressed: _handleCloseWork,
+                    icon: const Icon(Icons.stop_circle_rounded, size: 16),
+                    label: const Text('Close Work'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFDC2626),
+                      side: const BorderSide(color: Color(0xFFFCA5A5)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                  ),
+                ] else if (isShiftActive) ...[
+                  ElevatedButton.icon(
+                    onPressed: () => showApprovedAppsModal(context, ref),
+                    icon: const Icon(Icons.rocket_launch_rounded, size: 16),
+                    label: const Text('Open App'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      elevation: 0,
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _handleTakeBreak,
+                    icon: const Icon(Icons.coffee_rounded, size: 16),
+                    label: const Text('Take Break'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFD97706),
+                      side: const BorderSide(color: Color(0xFFFDE68A)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: _handleCloseWork,
+                    icon: const Icon(Icons.stop_circle_rounded, size: 16),
+                    label: const Text('Close Work'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    ),
+                  ),
+                ] else ...[
+                  ElevatedButton.icon(
+                    onPressed: _handleStartWork,
+                    icon: Icon(hasStartedToday ? Icons.replay_rounded : Icons.play_circle_filled_rounded, size: 16),
+                    label: Text(hasStartedToday ? 'Resume Work' : 'Start Work'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF16A34A),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                     ),
                   ),
                 ],
-              ),
-            ],
-          ),
-
-          // Right: Action Control Buttons
-          Row(
-            children: [
-              if (isOnBreak) ...[
-                ElevatedButton.icon(
-                  onPressed: _handleResumeFromBreak,
-                  icon: const Icon(Icons.play_circle_filled_rounded, size: 16),
-                  label: const Text('End Break & Resume Work'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF16A34A),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                OutlinedButton.icon(
-                  onPressed: _handleCloseWork,
-                  icon: const Icon(Icons.stop_circle_rounded, size: 16),
-                  label: const Text('Close Work'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFDC2626),
-                    side: const BorderSide(color: Color(0xFFFCA5A5)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  ),
-                ),
-              ] else if (isShiftActive) ...[
-                ElevatedButton.icon(
-                  onPressed: () => showApprovedAppsModal(context, ref),
-                  icon: const Icon(Icons.rocket_launch_rounded, size: 16),
-                  label: const Text('Open App'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    elevation: 0,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                OutlinedButton.icon(
-                  onPressed: _handleTakeBreak,
-                  icon: const Icon(Icons.coffee_rounded, size: 16),
-                  label: const Text('Take Break'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFD97706),
-                    side: const BorderSide(color: Color(0xFFFDE68A)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton.icon(
-                  onPressed: _handleCloseWork,
-                  icon: const Icon(Icons.stop_circle_rounded, size: 16),
-                  label: const Text('Close Work'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFDC2626),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                ),
-              ] else ...[
-                ElevatedButton.icon(
-                  onPressed: _handleStartWork,
-                  icon: Icon(hasStartedToday ? Icons.replay_rounded : Icons.play_circle_filled_rounded, size: 16),
-                  label: Text(hasStartedToday ? 'Resume Work' : 'Start Work'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF16A34A),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  ),
-                ),
               ],
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

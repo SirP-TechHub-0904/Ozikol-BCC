@@ -200,7 +200,38 @@ class WorkstationWatcherService extends ChangeNotifier {
   bool get blockUsbStorage => _blockUsbStorage;
 
   List<WorkstationAppRule> _rules = [];
-  List<WorkstationAppRule> get rules => List.unmodifiable(_rules);
+  List<WorkstationAppRule> get rules {
+    if (!isLocalDevEnvironment) {
+      return List.unmodifiable(_rules);
+    }
+    final merged = List<WorkstationAppRule>.from(_rules);
+    const localRules = [
+      WorkstationAppRule(
+        displayName: 'Antigravity IDE (Local Dev)',
+        processName: 'antigravity.exe',
+        category: 'Development',
+        isAllowed: true,
+      ),
+      WorkstationAppRule(
+        displayName: 'Google Chrome (Local Dev)',
+        processName: 'chrome.exe',
+        category: 'Productivity',
+        isAllowed: true,
+      ),
+      WorkstationAppRule(
+        displayName: 'Command Prompt (Local Dev)',
+        processName: 'cmd.exe',
+        category: 'Development',
+        isAllowed: true,
+      ),
+    ];
+    for (final lr in localRules) {
+      if (!merged.any((r) => r.processName.toLowerCase().trim() == lr.processName)) {
+        merged.add(lr);
+      }
+    }
+    return List.unmodifiable(merged);
+  }
 
   final Set<String> _temporaryApprovals = {};
   Set<String> get temporaryApprovals => Set.unmodifiable(_temporaryApprovals);
@@ -620,7 +651,12 @@ class WorkstationWatcherService extends ChangeNotifier {
     _historyAndFilesTimer = null;
     _isIdleCountdownActive = false;
     _isMonitoring = false;
+    _isLocked = false;
+    _isLocallyLocked = false;
+    _serverAcknowledgedLock = false;
+    _lockReason = null;
     _activeAppSessions.clear();
+    setWindowsKeyLockdown(false).ignore();
     notifyListeners();
 
     if (wasMonitoring) {
