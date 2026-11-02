@@ -298,17 +298,32 @@ dotnet run --project src/Ozikol.Central/Ozikol.Central.csproj
 # Launch Multi-Tenant Web API
 dotnet run --project src/Ozikol-BCC.Api/Ozikol-BCC.Api.csproj
 
-# Launch Angular Admin & Workspace Console
-cd src/Ozikol-BCC.Client && npm install && npm start
-```
+> **IMPORTANT**: Direct pushes and local merges to `master` are strictly disabled. All features, fixes, and updates must be pushed on dedicated task branches and merged via **GitHub Pull Requests**.
 
-#### 4. Build & Launch Native Desktop / Mobile App (`FutterMobDeskApp`)
-```bash
-cd FutterMobDeskApp
-flutter pub get
+### 1. Branch Naming Conventions
+Always create a descriptive branch off `master` before writing code or committing:
+* **Features**: `feat/<feature-name>` or `feature/<feature-name>`
+  * Example: `feat/templates-page-section`
+* **Bug Fixes**: `fix/<bug-name>`
+  * Example: `fix/online-tenant-cors-api-url`
+* **Refactoring & Maintenance**: `refactor/<name>` or `chore/<name>`
+  * Example: `chore/cleanup-python-scripts`
+* **Documentation**: `docs/<topic>`
+  * Example: `docs/git-branching-guidelines`
 
-# Run on Windows / macOS / Linux Desktop
-flutter run -d windows
+### 2. Pull Request & Deployment Workflow
+1. Work and commit strictly on your dedicated branch.
+2. Push your branch to GitHub: `git push -u origin <branch-name>`.
+3. Open a GitHub Pull Request into `master`.
+4. Review and merge the Pull Request on GitHub. GitHub Actions CI/CD workflows will automatically trigger to build and deploy the affected components (API, Client, Central) to the VPS.
+
+### 3. Commit Message Standards
+Follow the Conventional Commits specification:
+* **Format**: `<type>(<scope>): <concise summary>` followed by a bulleted body explaining what changed and why.
+* **Types**: `feat:`, `fix:`, `refactor:`, `style:`, `docs:`, `chore:`.
+* **Example**:
+  ```
+  feat(content): implement page section list templates
 
 # Build Production Native Releases
 flutter build windows --release
