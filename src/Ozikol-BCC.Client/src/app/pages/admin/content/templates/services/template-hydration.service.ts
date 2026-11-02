@@ -103,7 +103,6 @@ export class TemplateHydrationService {
     output = output.replace(mainMenuItemsRegex, (_match, innerTemplate) => {
       const items = ctx.topMenuItems || opts.previewMenuContent?.topMenuItems || [
         { title: 'Home', url: '/' },
-        { title: 'About Us', url: '/about' },
         { title: 'Blog', url: '/blog' },
         { title: 'Contact', url: '/contact' }
       ];
@@ -119,7 +118,6 @@ export class TemplateHydrationService {
     const menuCtaRegex = /\{\{#each\s+MenuCtaButtons\}\}([\s\S]*?)\{\{\/each\}\}/gi;
     output = output.replace(menuCtaRegex, (_match, innerTemplate) => {
       const ctas = ctx.menuCtaButtons || opts.previewMenuContent?.menuCtaButtons || (opts.editorTokens?.menuCtaButtons?.length ? opts.editorTokens.menuCtaButtons : [
-        { title: 'Sign In', url: '/login' },
         { title: 'Request a Service', url: '/request-service' }
       ]);
       return ctas.map((cta: any) => {
@@ -137,17 +135,18 @@ export class TemplateHydrationService {
         {
           title: 'Services',
           pages: [
-            { title: 'Commercial Cleaning', url: '/services/commercial-cleaning' },
-            { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
-            { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
+            { title: 'Strategic Consulting', url: '/strategic-advisory' },
+            { title: 'Systems Modernization', url: '/systems-modernization' },
+            { title: 'Performance & Scale', url: '/performance-scale' },
+            { title: 'Enterprise Advisory', url: '/enterprise-governance' }
           ]
         },
         {
           title: 'Company',
           pages: [
             { title: 'About Us', url: '/about' },
-            { title: 'Request a Service', url: '/request-service' },
-            { title: 'Contact Us', url: '/contact' }
+            { title: 'Our History', url: '/history' },
+            { title: 'Leadership Team', url: '/team' }
           ]
         }
       ]);
@@ -246,11 +245,13 @@ export class TemplateHydrationService {
           (p.showInFooter === undefined || p.showInFooter === true)
         );
       } else if (opts.availablePages && Array.isArray(opts.availablePages)) {
-        pages = opts.availablePages.filter((p: any) =>
-          p.publish !== false &&
-          p.showInFooter !== false &&
-          (p.pageCategory && p.pageCategory.toLowerCase().trim() === normalized)
-        );
+        pages = opts.availablePages.filter((p: any) => {
+          if (p.publish === false || p.showInFooter === false) return false;
+          const catStr = typeof p.pageCategory === 'string'
+            ? p.pageCategory
+            : (p.pageCategory?.categoryName || p.pageCategory?.name || p.categoryName || '');
+          return Boolean(catStr && catStr.toLowerCase().trim() === normalized);
+        });
       } else if (normalized.includes('service') || normalized.includes('solution')) {
         pages = [
           { title: 'Strategic Consulting', url: '/strategic-advisory' },
@@ -270,7 +271,8 @@ export class TemplateHydrationService {
       return pages.map((p: any) => {
         let rendered = innerTemplate;
         rendered = rendered.replace(/\{\{\s*Title\s*\}\}/gi, p.title || '');
-        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, p.url || p.slug || '#');
+        const targetUrl = p.url || (p.directUrl ? `/${p.directUrl}` : '') || (p.slug ? `/${p.slug}` : '#');
+        rendered = rendered.replace(/\{\{\s*Url\s*\}\}/gi, targetUrl);
         return rendered;
       }).join('\n');
     });
@@ -294,7 +296,7 @@ export class TemplateHydrationService {
         pages = opts.availablePages.filter((p: any) => {
           const isPublished = p.publish !== false && p.isPublished !== false;
           const isFooter = p.showInFooter !== false;
-          if (!isPublished || !isFooter || !p.tags) return false;
+          if (!isPublished || !isFooter || !p.tags || typeof p.tags !== 'string') return false;
 
           const tagsList = p.tags.toLowerCase().split(/[,;]/).map((t: string) => t.trim());
           return tagsList.includes(normalized);
@@ -393,24 +395,6 @@ export class TemplateHydrationService {
         rendered = rendered.replace(/\{\{\s*IconClass\s*\}\}/gi, s.iconClass);
         return rendered;
       }).join('\n');
-    });
-
-    // 6. Dynamic Form Embeds: {{ Form "Key" }} or {{ FormEmbed }}
-    const formRegex = /\{\{\s*Form\s+"([^"]+)"\s*\}\}|\{\{\s*FormEmbed\s*\}\}/gi;
-    output = output.replace(formRegex, (_match: string, formKey?: string) => {
-      const key = formKey || 'FormEmbed';
-      const isNewsletter = /newsletter|subscribe/i.test(key);
-
-      if (isNewsletter) {
-        return `<form class="oz-dynamic-form oz-form-newsletter d-flex gap-2" onsubmit="event.preventDefault();">
-          <input type="email" class="form-control form-control-sm rounded-pill px-3" placeholder="Your work email..." required />
-          <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3 fw-bold">Join</button>
-        </form>`;
-      }
-
-      return `<div class="oz-form-embed-preview p-2 border rounded bg-white text-center small text-muted">
-        <i class="fa-solid fa-file-lines text-primary me-1"></i> Form: <strong>${key}</strong>
-      </div>`;
     });
 
     // 6b. Articles Loop ({{#each Articles}}...{{/each}})
@@ -730,8 +714,8 @@ export class TemplateHydrationService {
     output = output.replace(/\{\{\s*BackgroundColor\s*\}\}/gi, ctx.backgroundColor || '');
     output = output.replace(/\{\{\s*(?:BadgeText|Badge|PillText)\s*\}\}/gi, ctx.miniTitle || ctx.badgeText || '');
     output = output.replace(/\{\{\s*IconText\s*\}\}/gi, ctx.iconText || '');
-    output = output.replace(/\{\{\s*Icon\s*\}\}/gi, ctx.icon || '');
-    const faviconUrl = ctx.FaviconUrl || ctx.faviconUrl || '/favicon.ico';
+    const rawFav = ctx.FaviconUrl || ctx.faviconUrl;
+    const faviconUrl = (rawFav && rawFav !== '/favicon.ico') ? rawFav : '';
     output = output.replace(/\{\{\s*FaviconUrl\s*\}\}/gi, faviconUrl);
 
     // Legal URLs
@@ -753,9 +737,18 @@ export class TemplateHydrationService {
     output = output.replace(/\{\{\s*Year\s*\}\}/gi, currentYear);
     output = output.replace(/\{\{\s*Email\s*\}\}/gi, ctx.email || 'contact@organization.com');
     output = output.replace(/\{\{\s*Phone\s*\}\}/gi, ctx.phone || '+1 (555) 019-2834');
-    output = output.replace(/\{\{\s*Address\s*\}\}/gi, ctx.address || 'Administrative Headquarters');
     output = output.replace(/\{\{\s*Copyright\s*\}\}/gi, ctx.copyright || `&copy; ${currentYear} ${brandName}. All rights reserved.`);
     output = output.replace(/\{\{\s*PoweredBy\s*\}\}/gi, ctx.poweredBy || 'Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: #0050e5 !important; font-weight: 700; text-decoration: none;">Ozikol</a>');
+
+    // Authentication, Portal & Role-Aware Placeholders (Console vs. My Workspace vs. Sign In)
+    const loginUrl = ctx.LoginUrl || ctx.loginUrl || '/auth/login';
+    const loginText = ctx.LoginText || ctx.loginText || ctx.LoginTitle || 'Sign In';
+    const loginBtnHtml = ctx.LoginButtonHtml || ctx.loginButtonHtml || 
+      `<a href="${loginUrl}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><span>${loginText}</span></a>`;
+
+    output = output.replace(/\{\{\s*(?:LoginUrl|AuthUrl|PortalUrl)\s*\}\}/gi, loginUrl);
+    output = output.replace(/\{\{\s*(?:LoginText|LoginTitle|AuthText|PortalText)\s*\}\}/gi, loginText);
+    output = output.replace(/\{\{\s*(?:LoginButton|LoginLink|AuthButton|PortalButton|PortalLink)\s*\}\}/gi, loginBtnHtml);
 
     // Clean up any remaining unhandled {{#each ...}} loops and leftover {{ Token }} placeholders to prevent visual leakage
     output = output.replace(/\{\{#each[\s\S]*?\{\{\/each\}\}/gi, '');

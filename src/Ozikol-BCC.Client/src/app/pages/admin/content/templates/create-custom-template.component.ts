@@ -509,6 +509,20 @@ export interface TokenDoc {
                   <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ PageUrl }}')" [innerText]="'{{ PageUrl }}'"></button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('PageUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('PageUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ LoginButton }}')" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In">
+                    <span class="material-symbols-outlined chip-icon">login</span>
+                    <span [innerText]="'+ {{ LoginButton }}'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('LoginButton', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('LoginButton', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ LoginUrl }}')" title="URL: /dashboard/console (Admin), /dashboard/workspace (User), or /auth/login">
+                    <span class="material-symbols-outlined chip-icon">link</span>
+                    <span [innerText]="'+ {{ LoginUrl }}'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('LoginUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('LoginUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
               </ng-container>
 
               <!-- Category: FOOTER COLUMNS -->
@@ -551,6 +565,20 @@ export interface TokenDoc {
                 <span class="token-chip-wrap">
                   <button type="button" class="token-chip chip-inner" (click)="insertTokenAtCursor('{{ DisplayTitle }}')" [innerText]="'{{ DisplayTitle }}'"></button>
                   <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('CategoryTitle', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('CategoryTitle', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ LoginButton }}')" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In">
+                    <span class="material-symbols-outlined chip-icon">login</span>
+                    <span [innerText]="'+ {{ LoginButton }}'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('LoginButton', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('LoginButton', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
+                </span>
+                <span class="token-chip-wrap">
+                  <button type="button" class="token-chip chip-core" (click)="insertTokenAtCursor('{{ LoginUrl }}')" title="URL: /dashboard/console (Admin), /dashboard/workspace (User), or /auth/login">
+                    <span class="material-symbols-outlined chip-icon">link</span>
+                    <span [innerText]="'+ {{ LoginUrl }}'"></span>
+                  </button>
+                  <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDoc('LoginUrl', $event)" (mouseleave)="hideTokenDocOnLeave()" (click)="toggleTokenDoc('LoginUrl', $event)" title="Information & CMS location"><span class="material-symbols-outlined">info</span></button>
                 </span>
               </ng-container>
 
@@ -761,28 +789,55 @@ export interface TokenDoc {
 
             <!-- CSS Editor -->
             <div class="code-area-wrap" *ngIf="activeEditorTab === 'css'">
-              <div class="css-info-pill">
-                <span class="material-symbols-outlined pill-icon">lightbulb</span>
-                <span>Styles defined here are scoped directly to this section.</span>
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="css-info-pill">
+                  <span class="material-symbols-outlined pill-icon">lightbulb</span>
+                  <span>Pure CSS only (no &lt;style&gt; tags). Styles defined here are scoped directly to this section.</span>
+                </div>
+                <button
+                  *ngIf="!cssStyles || !cssStyles.trim()"
+                  type="button"
+                  class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 py-1 px-2"
+                  (click)="insertStarterCss()"
+                >
+                  <span class="material-symbols-outlined fs-6">add</span>
+                  <span>Insert Starter CSS</span>
+                </button>
               </div>
               <textarea
                 #cssEditor
                 [(ngModel)]="cssStyles"
+                (ngModelChange)="updatePreviewSimulation()"
                 class="code-textarea font-mono"
                 rows="17"
-                placeholder="/* Scoped CSS */\n.oz-custom-section {\n  padding: 60px 24px;\n}"
+                [placeholder]="cssPlaceholderGuide"
                 spellcheck="false"
               ></textarea>
             </div>
 
             <!-- JS Editor -->
             <div class="code-area-wrap" *ngIf="activeEditorTab === 'js'">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="css-info-pill">
+                  <span class="material-symbols-outlined pill-icon">terminal</span>
+                  <span>Pure JavaScript only (no &lt;script&gt; tags). Wrap in (function() &#123; ... &#125;)(); for safe multi-function logic.</span>
+                </div>
+                <button
+                  *ngIf="!jsScript || !jsScript.trim()"
+                  type="button"
+                  class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 py-1 px-2"
+                  (click)="insertStarterJs()"
+                >
+                  <span class="material-symbols-outlined fs-6">add_code</span>
+                  <span>Insert Starter JS</span>
+                </button>
+              </div>
               <textarea
                 #jsEditor
                 [(ngModel)]="jsScript"
                 class="code-textarea font-mono"
-                rows="18"
-                placeholder="// Optional client-side script for interactive widgets"
+                rows="17"
+                [placeholder]="jsPlaceholderGuide"
                 spellcheck="false"
               ></textarea>
             </div>
@@ -3377,6 +3432,68 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
   cssStyles: string = '';
   jsScript: string = '';
 
+  public readonly cssPlaceholderGuide: string = `/* ==========================================================================
+ * SCOPED CSS STYLESHEET GUIDELINES:
+ * 1. PURE CSS ONLY: Do NOT include <style> or </style> tags.
+ * 2. SCOPING: Prefix all selectors with your unique section root class
+ *    (e.g., .my-hero-section .title) to prevent styles leaking to other sections.
+ * 3. CSS VARIABLES: Leverage theme tokens like var(--primary-color, #0050e5).
+ * 4. RESPONSIVE BREAKPOINTS:
+ *    @media (max-width: 991.98px) { /* Tablets & Mobile */ }
+ *    @media (max-width: 575.98px) { /* Small Phones */ }
+ *
+ * EXAMPLE (Safe reference - uncomment or customize for your section):
+ * .your-section-root-class {
+ *   padding: 60px 0;
+ *   background-color: var(--bg-light, #f8fafc);
+ * }
+ * ========================================================================== */`;
+
+  public readonly jsPlaceholderGuide: string = `/**
+ * ==========================================================================
+ * SECTION JAVASCRIPT LOGIC GUIDELINES:
+ * 1. PURE JAVASCRIPT ONLY: Do NOT include <script> or </script> tags.
+ * 2. NO CONFLICTS (IIFE): Keep code wrapped in (function() { 'use strict'; ... })();
+ *    This ensures variables do not conflict with other sections on the page.
+ * 3. MULTIPLE FUNCTIONS: You can define multiple functions freely inside this closure.
+ * 4. EXECUTION: Runs automatically in Zone 3 (before </body>) once DOM is ready.
+ * ==========================================================================
+ */
+(function() {
+  'use strict';
+
+  // Function 1: Initialization logic
+  function initSection() {
+    // Example: Select interactive elements inside this section
+    // const items = document.querySelectorAll('.oz-interactive-card');
+    // items.forEach(el => el.addEventListener('click', handleClick));
+  }
+
+  // Function 2: Event handler or calculation helper
+  function handleClick(event) {
+    // Custom interaction logic here
+  }
+
+  // Auto-run section initializer
+  initSection();
+})();`;
+
+  /**
+   * Inserts the default scoped CSS boilerplate into the CSS editor.
+   */
+  insertStarterCss(): void {
+    this.cssStyles = this.cssPlaceholderGuide;
+    this.updatePreviewSimulation();
+  }
+
+  /**
+   * Inserts the safe IIFE JavaScript boilerplate into the JS editor.
+   */
+  insertStarterJs(): void {
+    this.jsScript = this.jsPlaceholderGuide;
+    this.updatePreviewSimulation();
+  }
+
   // Active Tenant & Domain Resolution
   resolvedTenantKey: string = 'acme-global';
   domainInitials: string = 'AG';
@@ -3678,6 +3795,27 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
       description: 'Tenant organization brand name.',
       cmsPath: 'Admin Console > Settings > General / Branding',
       example: '<span>{{ BrandName }}</span>'
+    },
+    LoginButton: {
+      name: 'Dynamic Login / Portal Button',
+      token: '{{ LoginButton }}',
+      description: 'Role-aware portal button. Renders "Console" linking to /dashboard/console for Admins, "My Workspace" linking to /dashboard/workspace for Members, or "Sign In" linking to /auth/login for visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Authentication',
+      example: '{{ LoginButton }}'
+    },
+    LoginUrl: {
+      name: 'Dynamic Login / Portal URL',
+      token: '{{ LoginUrl }}',
+      description: 'Resolves to /dashboard/console for Admins, /dashboard/workspace for Members, or /auth/login for unauthenticated visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Authentication',
+      example: '<a href="{{ LoginUrl }}" class="btn btn-primary">{{ LoginText }}</a>'
+    },
+    LoginText: {
+      name: 'Dynamic Login / Portal Text',
+      token: '{{ LoginText }}',
+      description: 'Resolves to "Console" for Admins, "My Workspace" for Members, or configured loginButtonText for visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Login Button Text',
+      example: '<span>{{ LoginText }}</span>'
     },
     Copyright: {
       name: 'Copyright Notice',
@@ -6479,9 +6617,10 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
    */
   updatePreviewSimulation(): void {
     const hydratedHtml = this.hydrateMarkup(this.htmlTemplate);
+    const cleanStyles = (this.cssStyles || '').replace(/<\/?style[^>]*>/gi, '').trim();
     const combined = `
       <style>
-        ${this.cssStyles || ''}
+        ${cleanStyles}
       </style>
       <div class="oz-live-simulation-root">
         ${hydratedHtml}
@@ -6508,14 +6647,18 @@ export class CreateCustomTemplateComponent implements OnInit, AfterViewInit {
 
     this.savingTemplate = true;
 
+    // Defensively sanitize CSS and JS so pure code is persisted
+    const cleanCss = (this.cssStyles || '').replace(/<\/?style[^>]*>/gi, '').trim();
+    const cleanJs = (this.jsScript || '').replace(/<\/?script[^>]*>/gi, '').trim();
+
     const payload = {
       name: this.templateName.trim(),
       categoryKey: this.selectedCategory,
       variantCode: this.variantCode.trim(),
       description: this.description.trim() || `${this.currentPreset.name} crafted template`,
       htmlTemplate: this.htmlTemplate,
-      cssStyles: this.cssStyles,
-      jsScript: this.jsScript,
+      cssStyles: cleanCss,
+      jsScript: cleanJs,
       defaultContentJson: JSON.stringify(this.sampleContent)
     };
 

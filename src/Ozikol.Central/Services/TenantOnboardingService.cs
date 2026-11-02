@@ -549,7 +549,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     CompanyName = request.OrganizationName,
                     CompanyNameAbbreviation = abbreviation,
                     CompanyDescription = sectorDefaults.Description,
-                    CompanyIconUrl = "/favicon.ico",
+                    CompanyIconUrl = null,
                     WebsiteTitle = request.OrganizationName,
                     DashboardTitle = $"{request.OrganizationName} Command Center",
                     TemplateLayoutKey = "standard",
@@ -605,7 +605,8 @@ public class TenantOnboardingService : ITenantOnboardingService
             }
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            // 5b. Seed Default Web Pages (Home, About Us, Services, Request a Service, Contact Us)
+            // 5b. Seed Default Web Pages
+            // Top-Level Direct Menu Pages (Home, Blog, Contact)
             var homePage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "home", cancellationToken);
             if (homePage == null)
             {
@@ -623,24 +624,41 @@ public class TenantOnboardingService : ITenantOnboardingService
                 dbContext.WebPages.Add(homePage);
             }
 
-            var aboutPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "about", cancellationToken);
-            if (aboutPage == null)
+            var blogPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "blog", cancellationToken);
+            if (blogPage == null)
             {
-                aboutPage = new WebPage
+                blogPage = new WebPage
                 {
                     Id = Guid.NewGuid(),
-                    Title = "About Us",
-                    DirectUrl = "about",
-                    PageCategoryId = companyCategory.Id,
+                    Title = "Blog",
+                    DirectUrl = "blog",
                     ShowInMainMenu = true,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
                     SortOrder = 2
                 };
-                dbContext.WebPages.Add(aboutPage);
+                dbContext.WebPages.Add(blogPage);
             }
 
+            var contactPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "contact", cancellationToken);
+            if (contactPage == null)
+            {
+                contactPage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Contact",
+                    DirectUrl = "contact",
+                    ShowInMainMenu = true,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 3
+                };
+                dbContext.WebPages.Add(contactPage);
+            }
+
+            // Standalone Services Overview Page (referenced in footer)
             var servicesPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "services", cancellationToken);
             if (servicesPage == null)
             {
@@ -649,12 +667,11 @@ public class TenantOnboardingService : ITenantOnboardingService
                     Id = Guid.NewGuid(),
                     Title = "Services",
                     DirectUrl = "services",
-                    PageCategoryId = servicesCategory.Id,
-                    ShowInMainMenu = true,
+                    ShowInMainMenu = false,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
-                    SortOrder = 3
+                    SortOrder = 9
                 };
                 dbContext.WebPages.Add(servicesPage);
             }
@@ -670,6 +687,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     DirectUrl = "strategic-advisory",
                     PageCategoryId = servicesCategory.Id,
                     ShowInMenuDropDown = true,
+                    ShowInMainMenu = false,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
@@ -688,6 +706,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     DirectUrl = "systems-modernization",
                     PageCategoryId = servicesCategory.Id,
                     ShowInMenuDropDown = true,
+                    ShowInMainMenu = false,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
@@ -706,6 +725,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     DirectUrl = "performance-scale",
                     PageCategoryId = servicesCategory.Id,
                     ShowInMenuDropDown = true,
+                    ShowInMainMenu = false,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
@@ -724,6 +744,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     DirectUrl = "enterprise-governance",
                     PageCategoryId = servicesCategory.Id,
                     ShowInMenuDropDown = true,
+                    ShowInMainMenu = false,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
@@ -732,6 +753,65 @@ public class TenantOnboardingService : ITenantOnboardingService
                 dbContext.WebPages.Add(service4);
             }
 
+            // Seed 3 Child Pages under the Company Category for Dropdown Menu & Footer Column
+            var aboutPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "about", cancellationToken);
+            if (aboutPage == null)
+            {
+                aboutPage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "About Us",
+                    DirectUrl = "about",
+                    PageCategoryId = companyCategory.Id,
+                    ShowInMenuDropDown = true,
+                    ShowInMainMenu = false,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 20
+                };
+                dbContext.WebPages.Add(aboutPage);
+            }
+
+            var historyPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "history", cancellationToken);
+            if (historyPage == null)
+            {
+                historyPage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Our History",
+                    DirectUrl = "history",
+                    PageCategoryId = companyCategory.Id,
+                    ShowInMenuDropDown = true,
+                    ShowInMainMenu = false,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 21
+                };
+                dbContext.WebPages.Add(historyPage);
+            }
+
+            var teamPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "team", cancellationToken);
+            if (teamPage == null)
+            {
+                teamPage = new WebPage
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Leadership Team",
+                    DirectUrl = "team",
+                    PageCategoryId = companyCategory.Id,
+                    ShowInMenuDropDown = true,
+                    ShowInMainMenu = false,
+                    ShowInFooter = true,
+                    EnableDirectUrl = true,
+                    Publish = true,
+                    SortOrder = 22
+                };
+                dbContext.WebPages.Add(teamPage);
+            }
+
+            // Standalone Dedicated Page: Request a Service with IsMenuCTA enabled
             var requestServicePage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "request-service", cancellationToken);
             if (requestServicePage == null)
             {
@@ -740,36 +820,19 @@ public class TenantOnboardingService : ITenantOnboardingService
                     Id = Guid.NewGuid(),
                     Title = "Request a Service",
                     DirectUrl = "request-service",
-                    PageCategoryId = companyCategory.Id,
-                    ShowInMainMenu = true,
+                    PageCategoryId = null,
+                    ShowInMainMenu = false,
+                    ShowInMenuDropDown = false,
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
-                    SortOrder = 4,
+                    SortOrder = 30,
                     IsMenuCTA = true
                 };
                 dbContext.WebPages.Add(requestServicePage);
             }
 
-            var contactPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "contact", cancellationToken);
-            if (contactPage == null)
-            {
-                contactPage = new WebPage
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "Contact Us",
-                    DirectUrl = "contact",
-                    PageCategoryId = companyCategory.Id,
-                    ShowInMainMenu = true,
-                    ShowInFooter = true,
-                    EnableDirectUrl = true,
-                    Publish = true,
-                    SortOrder = 5
-                };
-                dbContext.WebPages.Add(contactPage);
-            }
-
-            // 5c. Seed 3 Turnkey Legal Compliance WebPages (Privacy Policy, Terms & Conditions, Cookie Policy)
+            // Seed 3 Turnkey Legal Compliance WebPages (Privacy Policy, Terms & Conditions, Cookie Policy)
             var privacyPage = await dbContext.WebPages.FirstOrDefaultAsync(p => p.DirectUrl == "privacy-policy", cancellationToken);
             if (privacyPage == null)
             {
@@ -783,7 +846,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
-                    SortOrder = 20
+                    SortOrder = 40
                 };
                 dbContext.WebPages.Add(privacyPage);
             }
@@ -801,7 +864,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
-                    SortOrder = 21
+                    SortOrder = 41
                 };
                 dbContext.WebPages.Add(termsPage);
             }
@@ -819,18 +882,22 @@ public class TenantOnboardingService : ITenantOnboardingService
                     ShowInFooter = true,
                     EnableDirectUrl = true,
                     Publish = true,
-                    SortOrder = 22
+                    SortOrder = 42
                 };
                 dbContext.WebPages.Add(cookiePage);
             }
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            // 5b. Seed Standard CMS Dynamic Forms (Contact Us, Newsletter, Service Request & Intake)
+            // 5c. Seed Standard CMS Dynamic Forms (Contact Us, Newsletter, Service Request & Intake)
             await SeedDefaultPageFormsAsync(dbContext, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            // 5c. Seed Structured Page Sections & Repeatable Child Lists
-            await SeedDefaultPageSectionsAsync(dbContext, request, sectorDefaults, abbreviation, homePage, aboutPage, servicesPage, requestServicePage, contactPage, cancellationToken);
+            // 5d. Seed Turnkey Blog Category & Articles
+            await SeedDefaultBlogsAsync(dbContext, cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            // 5e. Seed Structured Page Sections & Repeatable Child Lists
+            await SeedDefaultPageSectionsAsync(dbContext, request, sectorDefaults, abbreviation, homePage, aboutPage, historyPage, teamPage, servicesPage, requestServicePage, contactPage, cancellationToken);
 
             // 6. Seed Default Hero Slider
             if (!await dbContext.Sliders.AnyAsync(cancellationToken))
@@ -1011,6 +1078,93 @@ public class TenantOnboardingService : ITenantOnboardingService
         };
 
         dbContext.PageForms.AddRange(contactForm, newsletterForm, serviceRequestForm);
+    }
+
+    /// <summary>
+    /// Seeds foundational blog categories and turnkey news articles into the tenant database,
+    /// enabling an out-of-the-box newsroom with realistic editorial copy and Unsplash corporate imagery.
+    /// </summary>
+    /// <param name="dbContext">The tenant's dedicated DashboardDbContext instance.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>A Task representing the asynchronous operation.</returns>
+    private static async Task SeedDefaultBlogsAsync(DashboardDbContext dbContext, CancellationToken cancellationToken)
+    {
+        if (await dbContext.Blogs.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        var defaultCategory = await dbContext.BlogCategories.FirstOrDefaultAsync(c => c.Title == "Enterprise Insights & Strategy", cancellationToken);
+        if (defaultCategory == null)
+        {
+            defaultCategory = new BlogCategory
+            {
+                Id = Guid.NewGuid(),
+                Title = "Enterprise Insights & Strategy",
+                Publish = true
+            };
+            dbContext.BlogCategories.Add(defaultCategory);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+
+        var blog1 = new Blog
+        {
+            Id = Guid.NewGuid(),
+            Title = "Architecting Resilient Cloud Ecosystems for the Modern Enterprise",
+            Date = DateTime.UtcNow.AddDays(-3),
+            Publish = true,
+            SortOrder = 1,
+            AddToRibon = true,
+            BlogCategoryId = defaultCategory.Id,
+            ImageUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
+            Description = "A strategic blueprint for achieving high availability, fault tolerance, and multi-region data sovereignty across enterprise workloads.",
+            FullDescription = @"<p class=""lead fs-5 text-secondary"">As organizations accelerate digital transformation, engineering resilient architectures capable of withstanding distributed outages is no longer optional—it is a core operational mandate.</p>
+<h3 class=""fw-bold text-dark mt-4 mb-3"">1. Decentralized Fault Domains and Redundancy</h3>
+<p>Modern architectures require decoupled service boundaries where state and execution logic operate independently. By isolating workloads into discrete tenant partitions, systemic blast radiuses are mitigated, preventing localized failures from cascading across the entire ecosystem.</p>
+<blockquote class=""border-start border-primary border-4 ps-3 py-2 my-4 bg-light rounded"">
+<p class=""fst-italic text-dark mb-0"">""True resilience is designed from inception through immutable infrastructure, automated health verification, and continuous failover testing.""</p>
+</blockquote>
+<h3 class=""fw-bold text-dark mt-4 mb-3"">2. Continuous Observability and Automated Recovery</h3>
+<p>Proactive monitoring paired with synthetic transaction testing guarantees that performance degradations are identified and resolved before affecting mission-critical business transactions.</p>"
+        };
+
+        var blog2 = new Blog
+        {
+            Id = Guid.NewGuid(),
+            Title = "The Paradigm Shift to Zero-Downtime Migration Pipelines",
+            Date = DateTime.UtcNow.AddDays(-7),
+            Publish = true,
+            SortOrder = 2,
+            AddToRibon = true,
+            BlogCategoryId = defaultCategory.Id,
+            ImageUrl = "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=1200&auto=format&fit=crop&q=80",
+            Description = "How progressive engineering organizations execute mission-critical database cutovers and schema upgrades without interrupting active user sessions.",
+            FullDescription = @"<p class=""lead fs-5 text-secondary"">Performing live database migrations under heavy operational throughput requires disciplined schema versioning, dual-write pipelines, and backward-compatible data contracts.</p>
+<h3 class=""fw-bold text-dark mt-4 mb-3"">1. Phased Schema Evolution and Non-Breaking Contracts</h3>
+<p>The expand-and-contract methodology decouples code deployment from data migration. By introducing new columns and tables in advance of application logic updates, existing operational workloads maintain complete continuity.</p>
+<h3 class=""fw-bold text-dark mt-4 mb-3"">2. Automated Validation and Verification Gates</h3>
+<p>Real-time data reconciliation scripts ensure that transactional synchronization remains at 100% fidelity before traffic cutover, virtually eliminating rollback risks.</p>"
+        };
+
+        var blog3 = new Blog
+        {
+            Id = Guid.NewGuid(),
+            Title = "Next-Gen Identity Governance & Role-Based Access Control",
+            Date = DateTime.UtcNow.AddDays(-12),
+            Publish = true,
+            SortOrder = 3,
+            AddToRibon = true,
+            BlogCategoryId = defaultCategory.Id,
+            ImageUrl = "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1200&auto=format&fit=crop&q=80",
+            Description = "Balancing administrative agility with rigorous zero-trust security postures across sovereign multi-tenant workspaces.",
+            FullDescription = @"<p class=""lead fs-5 text-secondary"">Safeguarding enterprise assets demands granular authorization matrices, cryptographic session binding, and comprehensive audit trail logging across all administrative endpoints.</p>
+<h3 class=""fw-bold text-dark mt-4 mb-3"">1. Least Privilege Access Models</h3>
+<p>Dynamic permission assignment ensures staff members and collaborators receive strictly the access required to fulfill their duties, minimizing organizational attack surfaces.</p>
+<h3 class=""fw-bold text-dark mt-4 mb-3"">2. Immutable Audit Trails</h3>
+<p>Every administrative event, configuration change, and permission elevation is permanently logged in tamper-evident audit records to facilitate regulatory compliance and forensic oversight.</p>"
+        };
+
+        dbContext.Blogs.AddRange(blog1, blog2, blog3);
     }
 
     /// <summary>
@@ -1220,30 +1374,43 @@ public class TenantOnboardingService : ITenantOnboardingService
                 InstalledVersion = "1.0.0",
                 IsActive = true,
                 InstalledUtc = DateTime.UtcNow,
+                DefaultContentJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    miniTitle = "Enterprise Solutions",
+                    title = "Empowering Modern Enterprises to Scale with Confidence.",
+                    description = "Delivering innovative solutions, strategic consulting, and operational excellence to help your business achieve sustainable success.",
+                    buttonText = "Explore Services",
+                    buttonLink = "#services",
+                    secondaryButtonText = "Schedule Consultation",
+                    secondaryButtonLink = "#contact",
+                    imageUrl = "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"
+                }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-light border-bottom"">
   <div class=""container py-lg-4"">
     <div class=""row align-items-center g-5"">
       <div class=""col-lg-6"">
         <div class=""d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-primary-subtle text-primary border border-primary-subtle mb-3"">
-          <span class=""small fw-bold text-uppercase"">Enterprise Solutions</span>
+          <span class=""small fw-bold text-uppercase"">{{ MiniTitle }}</span>
         </div>
-        <h1 class=""display-5 fw-bolder text-dark mb-3 lh-sm"">Empowering Modern Enterprises to Scale with Confidence.</h1>
-        <p class=""lead text-muted mb-4 fs-6"">Delivering innovative solutions, strategic consulting, and operational excellence to help your business achieve sustainable success.</p>
+        <h1 class=""display-5 fw-bolder text-dark mb-3 lh-sm"">{{ Title }}</h1>
+        <p class=""lead text-muted mb-4 fs-6"">{{ Description }}</p>
         <div class=""d-flex flex-wrap gap-3"">
-          <a href=""#services"" class=""btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2"">
-            <span>Explore Services</span>
+          <a href=""{{ ButtonLink }}"" class=""btn btn-primary btn-lg rounded-pill px-4 py-2 fw-bold shadow-sm d-inline-flex align-items-center gap-2"">
+            <span>{{ ButtonText }}</span>
             <span style=""font-size: 16px;"">→</span>
           </a>
-          <a href=""#contact"" class=""btn btn-outline-secondary btn-lg rounded-pill px-4 py-2 fw-semibold bg-white"">
-            Schedule Consultation
+          {{#if SecondaryButtonText}}
+          <a href=""{{ SecondaryButtonLink }}"" class=""btn btn-outline-secondary btn-lg rounded-pill px-4 py-2 fw-semibold bg-white"">
+            {{ SecondaryButtonText }}
           </a>
+          {{/if}}
         </div>
       </div>
       <div class=""col-lg-6"">
         <div class=""rounded-4 overflow-hidden shadow-lg border border-light-subtle"">
-          <img src=""https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80"" 
-               alt=""Modern Corporate Architecture"" class=""img-fluid w-100 object-fit-cover"" style=""max-height: 420px;"" />
+          <img src=""{{ ImageUrl }}"" 
+               alt=""{{ Title }}"" class=""img-fluid w-100 object-fit-cover"" style=""max-height: 420px;"" />
         </div>
       </div>
     </div>
@@ -1699,9 +1866,12 @@ public class TenantOnboardingService : ITenantOnboardingService
                     title = "Send Us a Direct Message",
                     miniTitle = "Official Inquiries",
                     description = "Have questions regarding our services, partnerships, or operational support? Send us a message and our team will get back to you promptly.",
-                    address = "Administrative Headquarters, 742 Evergreen Terrace, Suite 500",
-                    phone = "+1 (800) 555-0199",
-                    email = "contact@organization.com"
+                    items = new[]
+                    {
+                        new { title = "Corporate Office", description = "Administrative Headquarters, 742 Evergreen Terrace, Suite 500", iconText = "fa-solid fa-location-dot" },
+                        new { title = "Official Inquiry Desk", description = "Direct corporate correspondence and information", iconText = "fa-solid fa-envelope" },
+                        new { title = "Business Hours", description = "Monday – Friday: 8:30 AM – 5:30 PM (LST)", iconText = "fa-solid fa-clock" }
+                    }
                 }),
                 HtmlTemplate = @"
 <section class=""py-5 bg-light border-bottom"" id=""contact"">
@@ -1714,45 +1884,19 @@ public class TenantOnboardingService : ITenantOnboardingService
         <p class=""text-muted mb-4 fs-6"">{{ Description }}</p>
 
         <div class=""d-flex flex-column gap-3 mb-4"">
-          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
-            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
-              <i class=""fa-solid fa-location-dot""></i>
+          {{#each PageSectionLists}}
+            <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
+              {{#if IconText}}
+                <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
+                  <i class=""{{ IconText }}""></i>
+                </div>
+              {{/if}}
+              <div>
+                <strong class=""text-dark small d-block"">{{ Title }}</strong>
+                <span class=""text-muted small"">{{ Description }}</span>
+              </div>
             </div>
-            <div>
-              <strong class=""text-dark small d-block"">Corporate Office</strong>
-              <span class=""text-muted small"">{{ Address }}</span>
-            </div>
-          </div>
-
-          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
-            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
-              <i class=""fa-solid fa-phone""></i>
-            </div>
-            <div>
-              <strong class=""text-dark small d-block"">Telephone Hotline</strong>
-              <span class=""text-muted small"">{{ Phone }}</span>
-            </div>
-          </div>
-
-          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
-            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
-              <i class=""fa-solid fa-envelope""></i>
-            </div>
-            <div>
-              <strong class=""text-dark small d-block"">Official Inquiry Desk</strong>
-              <span class=""text-muted small"">{{ Email }}</span>
-            </div>
-          </div>
-
-          <div class=""card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3"">
-            <div class=""rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center flex-shrink-0"" style=""width:44px; height:44px; font-size:18px;"">
-              <i class=""fa-solid fa-clock""></i>
-            </div>
-            <div>
-              <strong class=""text-dark small d-block"">Business Hours</strong>
-              <span class=""text-muted small"">Monday – Friday: 8:30 AM – 5:30 PM (LST)</span>
-            </div>
-          </div>
+          {{/each}}
         </div>
       </div>
 
@@ -1786,8 +1930,6 @@ public class TenantOnboardingService : ITenantOnboardingService
                     title = "Request a Tailored Enterprise Service",
                     miniTitle = "Service Consultation",
                     description = "Tell us about your organization's goals, operational challenges, or project timeline. Our advisory team will review your specifications and schedule a dedicated strategic consultation.",
-                    phone = "+1 (800) 555-0199",
-                    email = "advisory@organization.com",
                     items = new[]
                     {
                         new { title = "Dedicated Solutions Lead", description = "Direct engagement with an enterprise systems architect.", iconText = "fa-solid fa-check" },
@@ -1799,7 +1941,7 @@ public class TenantOnboardingService : ITenantOnboardingService
 <section class=""py-5 bg-light border-bottom"" id=""request-service"">
   <div class=""container py-4"">
     <div class=""row g-5"">
-      <!-- Left Column: Executive Consultation Scope & Hotline -->
+      <!-- Left Column: Executive Consultation Scope -->
       <div class=""col-lg-5"">
         <span class=""badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill text-uppercase fw-bold mb-2"">{{ MiniTitle }}</span>
         <h2 class=""fw-bold text-dark mb-3"">{{ Title }}</h2>
@@ -1820,11 +1962,6 @@ public class TenantOnboardingService : ITenantOnboardingService
               </div>
             {{/each}}
           </div>
-        </div>
-
-        <div class=""d-flex flex-column gap-2 text-muted small"">
-          <div class=""d-flex align-items-center gap-2""><i class=""fa-solid fa-phone text-primary""></i><span>Direct Hotline: {{ Phone }}</span></div>
-          <div class=""d-flex align-items-center gap-2""><i class=""fa-solid fa-envelope text-primary""></i><span>Advisory Desk: {{ Email }}</span></div>
         </div>
       </div>
 
@@ -2148,7 +2285,7 @@ public class TenantOnboardingService : ITenantOnboardingService
   </div>
 </footer>",
                 CssStyles = @"",
-                DefaultContentJson = @"{""title"":""Clean Light Corporate Footer"",""description"":""Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations."",""email"":""contact@organization.com"",""phone"":""+1 (555) 019-2834"",""categories"":[{""name"":""Services"",""displayTitle"":""Solutions"",""pages"":[{""title"":""Strategic Consulting"",""url"":""/strategic-advisory""},{""title"":""Systems Modernization"",""url"":""/systems-modernization""},{""title"":""Performance & Scale"",""url"":""/performance-scale""},{""title"":""Enterprise Advisory"",""url"":""/enterprise-governance""}]},{""name"":""Company"",""displayTitle"":""Company"",""pages"":[{""title"":""About Us"",""url"":""/about""},{""title"":""Request a Service"",""url"":""/request-service""},{""title"":""Contact Us"",""url"":""/contact""}]}],""legalPages"":[{""title"":""Privacy Policy"",""url"":""/privacy-policy""},{""title"":""Terms & Conditions"",""url"":""/terms-and-conditions""},{""title"":""Cookie Policy"",""url"":""/cookie-policy""}]}"
+                DefaultContentJson = @"{""title"":""Clean Light Corporate Footer"",""description"":""Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations."",""email"":""contact@organization.com"",""phone"":""+1 (555) 019-2834"",""categories"":[{""name"":""Services"",""displayTitle"":""Solutions"",""pages"":[{""title"":""Strategic Consulting"",""url"":""/strategic-advisory""},{""title"":""Systems Modernization"",""url"":""/systems-modernization""},{""title"":""Performance & Scale"",""url"":""/performance-scale""},{""title"":""Enterprise Advisory"",""url"":""/enterprise-governance""}]},{""name"":""Company"",""displayTitle"":""Company"",""pages"":[{""title"":""About Us"",""url"":""/about""},{""title"":""Our History"",""url"":""/history""},{""title"":""Leadership Team"",""url"":""/team""}]}],""legalPages"":[{""title"":""Privacy Policy"",""url"":""/privacy-policy""},{""title"":""Terms & Conditions"",""url"":""/terms-and-conditions""},{""title"":""Cookie Policy"",""url"":""/cookie-policy""}]}"
             }
         };
 
@@ -2244,7 +2381,7 @@ public class TenantOnboardingService : ITenantOnboardingService
     }
 
     /// <summary>
-    /// Seeds structured PageSection and PageSectionList entities across Home, Services, About Us, Request Service, and Contact Us web pages.
+    /// Seeds structured PageSection and PageSectionList entities across Home, Services, About Us, History, Team, Request Service, and Contact Us web pages.
     /// </summary>
     private static async Task SeedDefaultPageSectionsAsync(
         DashboardDbContext dbContext,
@@ -2253,6 +2390,8 @@ public class TenantOnboardingService : ITenantOnboardingService
         string abbreviation,
         WebPage homePage,
         WebPage aboutPage,
+        WebPage historyPage,
+        WebPage teamPage,
         WebPage servicesPage,
         WebPage requestServicePage,
         WebPage contactPage,
@@ -2276,9 +2415,9 @@ public class TenantOnboardingService : ITenantOnboardingService
             Id = Guid.NewGuid(),
             WebPageId = homePage.Id,
             TemplateKey = "Hero_CorporateSplit",
-            Title = request.OrganizationName,
+            Title = "Empowering Modern Organizations to Scale with Confidence.",
             MiniTitle = $"OFFICIAL PORTAL \u2022 {abbreviation}",
-            Description = sectorDefaults.Slogan,
+            Description = "Delivering innovative solutions, strategic consulting, and operational excellence to help your organization achieve sustainable, high-impact success.",
             FullDescription = sectorDefaults.Description,
             ButtonText = "Explore Services",
             ButtonLink = "/services",
@@ -2294,10 +2433,10 @@ public class TenantOnboardingService : ITenantOnboardingService
             Id = Guid.NewGuid(),
             WebPageId = homePage.Id,
             TemplateKey = "Body_FeatureGrid3",
-            Title = "Strategic Capabilities & Core Solutions",
-            MiniTitle = "WHAT WE OFFER",
-            Description = $"Comprehensive, reliable solutions built for modern {request.OrganizationName} operations.",
-            ButtonText = "View All Services",
+            Title = "Strategic Capabilities & High-Performance Solutions",
+            MiniTitle = "WHAT WE DELIVER",
+            Description = "Comprehensive, reliable frameworks engineered to streamline workflows, accelerate delivery, and unlock sustainable value.",
+            ButtonText = "Explore Services",
             ButtonLink = "/services",
             DirectUrl = "home-features",
             ShowInHome = true,
@@ -2305,9 +2444,9 @@ public class TenantOnboardingService : ITenantOnboardingService
             PageSortOrder = 2,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service1Title, Description = sectorDefaults.Service1Desc, IconText = "fa-solid fa-chart-line", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service2Title, Description = sectorDefaults.Service2Desc, IconText = "fa-solid fa-cubes", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service3Title, Description = sectorDefaults.Service3Desc, IconText = "fa-solid fa-shield-halved", SortOrder = 3 }
+                new() { Id = Guid.NewGuid(), Title = "Strategic Consulting & Advisory", Description = "Objective diagnosis, governance structuring, and actionable roadmaps aligned with long-term strategic targets.", IconText = "fa-solid fa-chart-pie", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Systems Modernization & Integration", Description = "Transforming legacy processes into resilient, interoperable digital architectures built for agility and scale.", IconText = "fa-solid fa-network-wired", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Operations & Performance Scaling", Description = "Disciplined execution frameworks, quality assurance benchmarks, and continuous operational optimization.", IconText = "fa-solid fa-sliders", SortOrder = 3 }
             }
         };
         sections.Add(homeFeatures);
@@ -2317,19 +2456,19 @@ public class TenantOnboardingService : ITenantOnboardingService
             Id = Guid.NewGuid(),
             WebPageId = homePage.Id,
             TemplateKey = "Body_StatsCounters",
-            Title = "Key Performance & Reliability Highlights",
-            MiniTitle = "PROVEN TRACK RECORD",
-            Description = "Empowering operations with dependable uptime, verified compliance, and end-to-end operational visibility.",
+            Title = "Institutional Standards & Measurable Impact",
+            MiniTitle = "PROVEN RELIABILITY",
+            Description = "Empowering organizations with verifiable uptime, rigorous compliance, and transparent operational oversight.",
             DirectUrl = "home-stats",
             ShowInHome = true,
             HomePageSortOrder = 3,
             PageSortOrder = 3,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = "99.9%", MiniTitle = "Uptime SLA", Description = "High-availability enterprise systems", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "24/7", MiniTitle = "Continuous Support", Description = "Dedicated response team", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "100%", MiniTitle = "Data Privacy", Description = "Encrypted communications & audit logs", SortOrder = 3 },
-                new() { Id = Guid.NewGuid(), Title = "Multi-Region", MiniTitle = "Global Sync", Description = "Real-time synchronization across channels", SortOrder = 4 }
+                new() { Id = Guid.NewGuid(), Title = "99.9%", MiniTitle = "Service Availability", Description = "Continuous uptime and resilient high-availability infrastructure", IconText = "fa-solid fa-gauge-high", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "24/7", MiniTitle = "Dedicated Support", Description = "Expert response team standing by around the clock", IconText = "fa-solid fa-headset", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "100%", MiniTitle = "Data Privacy", Description = "Enterprise-grade encryption and end-to-end audit compliance", IconText = "fa-solid fa-lock", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "Multi-Region", MiniTitle = "Global Sync", Description = "Real-time synchronization across operations and departments", IconText = "fa-solid fa-arrows-rotate", SortOrder = 4 }
             }
         };
         sections.Add(homeStats);
@@ -2339,19 +2478,19 @@ public class TenantOnboardingService : ITenantOnboardingService
             Id = Guid.NewGuid(),
             WebPageId = homePage.Id,
             TemplateKey = "Body_ProcessSteps",
-            Title = "Our Structured Engagement Process",
-            MiniTitle = "HOW WE WORK",
-            Description = "From initial consultation to seamless delivery, our structured methodology ensures precision and success.",
+            Title = "Our Four-Stage Delivery Methodology",
+            MiniTitle = "HOW WE ENGAGE",
+            Description = "From exploratory consultation to continuous support, our standardized methodology guarantees predictability and measurable outcomes.",
             DirectUrl = "home-process",
             ShowInHome = true,
             HomePageSortOrder = 4,
             PageSortOrder = 4,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = "1. Consultation", MiniTitle = "Step 01", Description = "Understanding objectives, operational parameters, and key requirements.", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "2. Architecture", MiniTitle = "Step 02", Description = "Formulating tailored solutions and disciplined milestone roadmaps.", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "3. Deployment", MiniTitle = "Step 03", Description = "Delivering execution with rigorous quality assurance and oversight.", SortOrder = 3 },
-                new() { Id = Guid.NewGuid(), Title = "4. Operations", MiniTitle = "Step 04", Description = "Providing continuous maintenance, monitoring, and ongoing optimization.", SortOrder = 4 }
+                new() { Id = Guid.NewGuid(), Title = "1. Discovery & Diagnosis", MiniTitle = "Stage 01", Description = "In-depth analysis of operational parameters, requirements, and organizational objectives.", IconText = "fa-solid fa-magnifying-glass", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "2. Solution Architecture", MiniTitle = "Stage 02", Description = "Formulating customized blueprints, milestone roadmaps, and stakeholder alignment.", IconText = "fa-solid fa-compass-drafting", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "3. Disciplined Deployment", MiniTitle = "Stage 03", Description = "Precision execution with rigorous quality assurance, milestone gating, and verification.", IconText = "fa-solid fa-rocket", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "4. Continuous Support", MiniTitle = "Stage 04", Description = "Proactive monitoring, maintenance governance, and ongoing optimization support.", IconText = "fa-solid fa-arrows-spin", SortOrder = 4 }
             }
         };
         sections.Add(homeProcess);
@@ -2362,10 +2501,10 @@ public class TenantOnboardingService : ITenantOnboardingService
             WebPageId = homePage.Id,
             TemplateKey = "Body_CtaSplit",
             Title = $"Partner with {request.OrganizationName} Today",
-            MiniTitle = "ACCELERATE YOUR INITIATIVES",
-            Description = "Connect with our experienced team to explore tailored solutions designed for your goals.",
-            ButtonText = "Get In Touch",
-            ButtonLink = "/contact",
+            MiniTitle = "READY TO COLLABORATE?",
+            Description = "Connect with our experienced specialists to explore tailored solutions engineered for your goals and timeline.",
+            ButtonText = "Request a Service",
+            ButtonLink = "/request-service",
             DirectUrl = "home-cta",
             ShowInHome = true,
             HomePageSortOrder = 5,
@@ -2381,9 +2520,9 @@ public class TenantOnboardingService : ITenantOnboardingService
             TemplateKey = "Hero_CorporateSplit",
             Title = "Specialized Professional Services",
             MiniTitle = $"SOLUTIONS BY {abbreviation}",
-            Description = sectorDefaults.Description,
+            Description = "Delivering strategic clarity, technical excellence, and sustainable results across complex enterprise domains.",
             ButtonText = "Request a Consultation",
-            ButtonLink = "/contact",
+            ButtonLink = "/request-service",
             DirectUrl = "services-hero",
             ShowInHome = false,
             PageSortOrder = 1
@@ -2405,9 +2544,10 @@ public class TenantOnboardingService : ITenantOnboardingService
             PageSortOrder = 2,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service1Title, Description = sectorDefaults.Service1Desc, IconText = "fa-solid fa-briefcase", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service2Title, Description = sectorDefaults.Service2Desc, IconText = "fa-solid fa-gears", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = sectorDefaults.Service3Title, Description = sectorDefaults.Service3Desc, IconText = "fa-solid fa-headset", SortOrder = 3 }
+                new() { Id = Guid.NewGuid(), Title = "Strategic Consulting & Advisory", Description = "Comprehensive organizational diagnosis, policy formulation, and growth governance.", IconText = "fa-solid fa-chart-pie", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Systems Modernization & Integration", Description = "High-availability cloud migrations, microservice restructuring, and workflow automation.", IconText = "fa-solid fa-network-wired", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Performance & Scale Engineering", Description = "Targeted throughput optimization, SLA safeguarding, and operational resilience.", IconText = "fa-solid fa-sliders", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "Enterprise Advisory & Governance", Description = "Statutory compliance frameworks, risk management, and administrative transparency.", IconText = "fa-solid fa-shield-halved", SortOrder = 4 }
             }
         };
         sections.Add(servicesGrid);
@@ -2425,10 +2565,10 @@ public class TenantOnboardingService : ITenantOnboardingService
             PageSortOrder = 3,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = "Phase 1: Needs Assessment", MiniTitle = "Step 01", Description = "In-depth review of specific goals, resource requirements, and deliverables.", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "Phase 2: Solution Design", MiniTitle = "Step 02", Description = "Detailed scoping, milestone scheduling, and architecture blueprints.", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "Phase 3: Agile Execution", MiniTitle = "Step 03", Description = "Iterative delivery with clear stakeholder check-ins and quality tests.", SortOrder = 3 },
-                new() { Id = Guid.NewGuid(), Title = "Phase 4: Ongoing Review", MiniTitle = "Step 04", Description = "Continuous performance monitoring and proactive client advisory.", SortOrder = 4 }
+                new() { Id = Guid.NewGuid(), Title = "Phase 1: Needs Assessment", MiniTitle = "Step 01", Description = "In-depth review of specific goals, resource requirements, and deliverables.", IconText = "fa-solid fa-magnifying-glass", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Phase 2: Solution Design", MiniTitle = "Step 02", Description = "Detailed scoping, milestone scheduling, and architecture blueprints.", IconText = "fa-solid fa-compass-drafting", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Phase 3: Agile Execution", MiniTitle = "Step 03", Description = "Iterative delivery with clear stakeholder check-ins and quality tests.", IconText = "fa-solid fa-rocket", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "Phase 4: Ongoing Review", MiniTitle = "Step 04", Description = "Continuous performance monitoring and proactive client advisory.", IconText = "fa-solid fa-arrows-spin", SortOrder = 4 }
             }
         };
         sections.Add(servicesProcess);
@@ -2455,10 +2595,10 @@ public class TenantOnboardingService : ITenantOnboardingService
             Id = Guid.NewGuid(),
             WebPageId = aboutPage.Id,
             TemplateKey = "Hero_CorporateSplit",
-            Title = $"About {request.OrganizationName}",
-            MiniTitle = "OUR MISSION & PURPOSE",
-            Description = $"{request.OrganizationName} was established to deliver outstanding standards of service, innovative solutions, and reliable operational value.",
-            ButtonText = "View Our Services",
+            Title = "Committed to Integrity, Excellence, and Lasting Value",
+            MiniTitle = $"ABOUT {abbreviation}",
+            Description = $"{request.OrganizationName} was established to deliver outstanding standards of service, innovative solutions, and reliable operational value to forward-thinking organizations.",
+            ButtonText = "View Our Capabilities",
             ButtonLink = "/services",
             DirectUrl = "about-hero",
             ShowInHome = false,
@@ -2471,7 +2611,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             Id = Guid.NewGuid(),
             WebPageId = aboutPage.Id,
             TemplateKey = "Body_FeatureGrid3",
-            Title = "Our Core Values & Principles",
+            Title = "Our Core Principles & Standards",
             MiniTitle = "GUIDING ETHICS",
             Description = "The bedrock principles that inform our decisions, guide our teamwork, and cultivate lasting trust.",
             DirectUrl = "about-values",
@@ -2479,9 +2619,9 @@ public class TenantOnboardingService : ITenantOnboardingService
             PageSortOrder = 2,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = "Integrity & Accountability", Description = "Upholding uncompromising ethical standards, clear communication, and transparency in all dealings.", IconText = "fa-solid fa-scale-balanced", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "Operational Excellence", Description = "Constantly refining methods, adopting industry best practices, and delivering dependable quality.", IconText = "fa-solid fa-medal", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "Client-Centric Commitment", Description = "Prioritizing client priorities, anticipating needs, and building collaborative partnerships.", IconText = "fa-solid fa-users", SortOrder = 3 }
+                new() { Id = Guid.NewGuid(), Title = "Integrity & Transparency", Description = "Upholding uncompromising ethical standards, honest communication, and accountability in all relationships.", IconText = "fa-solid fa-scale-balanced", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Operational Excellence", Description = "Constantly refining methodologies, embracing best practices, and delivering dependable, benchmark quality.", IconText = "fa-solid fa-award", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Collaborative Partnership", Description = "Prioritizing partner priorities, anticipating challenges, and building durable long-term trust.", IconText = "fa-solid fa-handshake", SortOrder = 3 }
             }
         };
         sections.Add(aboutValues);
@@ -2499,10 +2639,10 @@ public class TenantOnboardingService : ITenantOnboardingService
             PageSortOrder = 3,
             PageSectionLists = new List<PageSectionList>
             {
-                new() { Id = Guid.NewGuid(), Title = "100%", MiniTitle = "Commitment", Description = "Dedicated to partner objectives", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "Zero", MiniTitle = "Compromise", Description = "Strict quality standards", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "Trusted", MiniTitle = "Reputation", Description = "Proven track record of delivery", SortOrder = 3 },
-                new() { Id = Guid.NewGuid(), Title = "Continuous", MiniTitle = "Innovation", Description = "Evolving with modern standards", SortOrder = 4 }
+                new() { Id = Guid.NewGuid(), Title = "100%", MiniTitle = "Partner Commitment", Description = "Dedicated to partner objectives", IconText = "fa-solid fa-circle-check", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Zero", MiniTitle = "Compromise", Description = "Strict quality and safety standards", IconText = "fa-solid fa-shield-halved", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Multi-Year", MiniTitle = "Proven Record", Description = "Trusted track record of delivery", IconText = "fa-solid fa-calendar-check", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "Continuous", MiniTitle = "Innovation", Description = "Evolving with modern standards", IconText = "fa-solid fa-lightbulb", SortOrder = 4 }
             }
         };
         sections.Add(aboutStats);
@@ -2512,7 +2652,7 @@ public class TenantOnboardingService : ITenantOnboardingService
             Id = Guid.NewGuid(),
             WebPageId = aboutPage.Id,
             TemplateKey = "Body_CtaSplit",
-            Title = $"Connect with the {request.OrganizationName} Team",
+            Title = $"Connect with the {request.OrganizationName} Leadership Team",
             MiniTitle = "BUILDING MEANINGFUL PARTNERSHIPS",
             Description = "We welcome the opportunity to discuss your goals and demonstrate how our expertise can assist.",
             ButtonText = "Reach Out Today",
@@ -2523,7 +2663,114 @@ public class TenantOnboardingService : ITenantOnboardingService
         };
         sections.Add(aboutCta);
 
-        // 4. CONTACT US PAGE SECTIONS
+        // 4. OUR HISTORY PAGE SECTIONS
+        var historyHero = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = historyPage.Id,
+            TemplateKey = "Hero_CorporateSplit",
+            Title = "A Legacy of Discipline, Growth, and Innovation",
+            MiniTitle = "OUR HERITAGE",
+            Description = "From humble beginnings to a multi-disciplinary organization, explore the milestones that defined our trajectory.",
+            ButtonText = "Explore Milestones",
+            ButtonLink = "#history-milestones",
+            DirectUrl = "history-hero",
+            ShowInHome = false,
+            PageSortOrder = 1
+        };
+        sections.Add(historyHero);
+
+        var historyMilestones = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = historyPage.Id,
+            TemplateKey = "Body_ProcessSteps",
+            Title = "Key Milestones in Our Institutional Journey",
+            MiniTitle = "THE JOURNEY",
+            Description = "A timeline of strategic evolution, capability expansion, and lasting partnerships.",
+            DirectUrl = "history-milestones",
+            ShowInHome = false,
+            PageSortOrder = 2,
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = "1. Foundation & Core Vision", MiniTitle = "Milestone 01", Description = "Established with a commitment to bring rigorous standards and integrity to enterprise services.", IconText = "fa-solid fa-flag", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "2. Expanding Capabilities", MiniTitle = "Milestone 02", Description = "Broadened our service spectrum to include systems modernization and governance advisory.", IconText = "fa-solid fa-layer-group", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "3. Regional Scale & Recognition", MiniTitle = "Milestone 03", Description = "Surpassed key organizational benchmarks, serving clients across diverse sectors.", IconText = "fa-solid fa-trophy", SortOrder = 3 },
+                new() { Id = Guid.NewGuid(), Title = "4. Next-Gen Digital Platform", MiniTitle = "Milestone 04", Description = "Pioneered sovereign digital infrastructure, powering real-time client collaboration.", IconText = "fa-solid fa-microchip", SortOrder = 4 }
+            }
+        };
+        sections.Add(historyMilestones);
+
+        var historyCta = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = historyPage.Id,
+            TemplateKey = "Body_CtaSplit",
+            Title = "Be Part of Our Next Chapter",
+            MiniTitle = "LOOKING FORWARD",
+            Description = "Discover how our historical discipline and future-facing capabilities can support your enterprise.",
+            ButtonText = "Request a Service",
+            ButtonLink = "/request-service",
+            DirectUrl = "history-cta",
+            ShowInHome = false,
+            PageSortOrder = 3
+        };
+        sections.Add(historyCta);
+
+        // 5. LEADERSHIP TEAM PAGE SECTIONS
+        var teamHero = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = teamPage.Id,
+            TemplateKey = "Hero_CorporateSplit",
+            Title = "Guided by Experienced Industry Stewards",
+            MiniTitle = "GOVERNANCE & LEADERSHIP",
+            Description = "Our leadership brings decades of collective domain expertise, operational discipline, and visionary direction.",
+            ButtonText = "Connect with Our Team",
+            ButtonLink = "/contact",
+            DirectUrl = "team-hero",
+            ShowInHome = false,
+            PageSortOrder = 1
+        };
+        sections.Add(teamHero);
+
+        var teamGrid = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = teamPage.Id,
+            TemplateKey = "Body_FeatureGrid3",
+            Title = "Executive Leadership & Advisory Leads",
+            MiniTitle = "OUR STEWARDS",
+            Description = "Cross-functional leaders committed to operational integrity, client satisfaction, and sustainable excellence.",
+            DirectUrl = "team-grid",
+            ShowInHome = false,
+            PageSortOrder = 2,
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = "Executive Advisory & Strategy", Description = "Seasoned practitioners providing strategic oversight, corporate governance, and growth guidance.", IconText = "fa-solid fa-user-tie", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Operations & Solutions Delivery", Description = "Disciplined managers ensuring project precision, resource alignment, and timely milestones.", IconText = "fa-solid fa-user-gear", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Compliance & Quality Assurance", Description = "Dedicated specialists safeguarding institutional integrity, regulatory compliance, and security.", IconText = "fa-solid fa-user-shield", SortOrder = 3 }
+            }
+        };
+        sections.Add(teamGrid);
+
+        var teamCta = new PageSection
+        {
+            Id = Guid.NewGuid(),
+            WebPageId = teamPage.Id,
+            TemplateKey = "Body_CtaSplit",
+            Title = "Inquire About Advisory Engagements",
+            MiniTitle = "DIRECT ACCESS",
+            Description = "Connect directly with our leadership team for executive consultation and strategic guidance.",
+            ButtonText = "Schedule Consultation",
+            ButtonLink = "/contact",
+            DirectUrl = "team-cta",
+            ShowInHome = false,
+            PageSortOrder = 3
+        };
+        sections.Add(teamCta);
+
+        // 6. CONTACT US PAGE SECTIONS
         var contactHero = new PageSection
         {
             Id = Guid.NewGuid(),
@@ -2540,26 +2787,6 @@ public class TenantOnboardingService : ITenantOnboardingService
         };
         sections.Add(contactHero);
 
-        var contactChannels = new PageSection
-        {
-            Id = Guid.NewGuid(),
-            WebPageId = contactPage.Id,
-            TemplateKey = "Body_FeatureGrid3",
-            Title = "Communication Channels",
-            MiniTitle = "DIRECT ACCESS",
-            Description = "Choose the most convenient communication method to connect directly with our departments.",
-            DirectUrl = "contact-channels",
-            ShowInHome = false,
-            PageSortOrder = 2,
-            PageSectionLists = new List<PageSectionList>
-            {
-                new() { Id = Guid.NewGuid(), Title = "General Inquiries", Description = $"Direct correspondence and corporate information: {request.AdminEmail}", IconText = "fa-solid fa-envelope", SortOrder = 1 },
-                new() { Id = Guid.NewGuid(), Title = "Client Support", Description = "Dedicated customer assistance and operational inquiry resolution.", IconText = "fa-solid fa-headset", SortOrder = 2 },
-                new() { Id = Guid.NewGuid(), Title = "Operating Hours", Description = "Monday through Friday: 8:30 AM to 5:30 PM (Local Standard Time).", IconText = "fa-solid fa-clock", SortOrder = 3 }
-            }
-        };
-        sections.Add(contactChannels);
-
         var contactFormSection = new PageSection
         {
             Id = Guid.NewGuid(),
@@ -2570,9 +2797,15 @@ public class TenantOnboardingService : ITenantOnboardingService
             Description = "Have questions regarding our services, partnerships, or operational support? Send us a message and our team will get back to you promptly.",
             DirectUrl = "contact-form",
             ShowInHome = false,
-            PageSortOrder = 3,
+            PageSortOrder = 2,
             PageFormId = contactForm?.Id,
-            FormKey = "contact-us"
+            FormKey = "contact-us",
+            PageSectionLists = new List<PageSectionList>
+            {
+                new() { Id = Guid.NewGuid(), Title = "Corporate Headquarters", Description = "Administrative & Executive Offices", IconText = "fa-solid fa-location-dot", SortOrder = 1 },
+                new() { Id = Guid.NewGuid(), Title = "Direct Correspondence", Description = $"Official communications desk: {request.AdminEmail}", IconText = "fa-solid fa-envelope", SortOrder = 2 },
+                new() { Id = Guid.NewGuid(), Title = "Operating Hours", Description = "Monday through Friday: 8:30 AM to 5:30 PM (Local Standard Time)", IconText = "fa-solid fa-clock", SortOrder = 3 }
+            }
         };
         sections.Add(contactFormSection);
 
@@ -2588,11 +2821,11 @@ public class TenantOnboardingService : ITenantOnboardingService
             ButtonLink = $"mailto:{request.AdminEmail}",
             DirectUrl = "contact-cta",
             ShowInHome = false,
-            PageSortOrder = 4
+            PageSortOrder = 3
         };
         sections.Add(contactCta);
 
-        // 5. REQUEST A SERVICE PAGE SECTIONS
+        // 7. REQUEST A SERVICE PAGE SECTIONS
         var requestHero = new PageSection
         {
             Id = Guid.NewGuid(),
@@ -2625,7 +2858,7 @@ public class TenantOnboardingService : ITenantOnboardingService
         };
         sections.Add(requestIntakeSection);
 
-        // 6. PRE-FOOTER NEWSLETTER DISPATCH
+        // 8. PRE-FOOTER NEWSLETTER DISPATCH
         var newsletterSection = new PageSection
         {
             Id = Guid.NewGuid(),

@@ -1,1942 +1,1761 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ElementRef, ViewEncapsulation } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeHtml, Title, Meta } from '@angular/platform-browser';
+import { Subscription } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { CartService } from '../../core/services/cart.service';
 import { ToastService } from '../../core/services/toast.service';
+import { TemplateHydrationService } from '../admin/content/templates/services/template-hydration.service';
 
-interface BrandInfo {
-  companyName: string;
-  companyNameAbbreviation?: string;
-  companyLogoUrl?: string;
-  companyIconUrl?: string;
-  companyEmail?: string;
-  companyPhone?: string;
-  companyAddress?: string;
-  companySlogan?: string;
-  facebookUrl?: string;
-  twitterUrl?: string;
-  instagramUrl?: string;
-  linkedinUrl?: string;
-}
-
-interface StoreSettings {
-  storefrontEnabled: boolean;
-  storeTitle: string;
-  storeOperatingMode: string;
-  currencyCode: string;
-  currencySymbol: string;
-  showInNavbar: boolean;
-  showInFooter: boolean;
-  showOnHome: boolean;
-  homeProductsCount: number;
-}
-
-interface FaqItem {
-  id: number;
-  question: string;
-  answer: string;
-  expanded?: boolean;
-}
-
+/**
+ * Public dynamic website orchestration component.
+ * Faithfully implements the full web architecture:
+ * 1. Header Tags (<head>): Active SEO meta tags, Google Fonts, OpenGraph, Twitter cards, Favicons, and Bootstrap/FA CSS.
+ * 2. Body Open Tags (<body>): Injected immediately after <body> opening tag.
+ * 3. Modular Sections: Navbar (menu), Hero (hero) or Breadcrumb, ordered PageSections (body), and Footer (footer).
+ * 4. Footer Scripts (</body>): Injected immediately before </body> closing tag (Bootstrap JS bundle, section scripts).
+ * 5. Full Document Scrolling: Native responsive browser scrolling without viewport lock.
+ */
 @Component({
   selector: 'app-landing',
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
+  encapsulation: ViewEncapsulation.None,
   template: `
-    <div class="public-site-wrapper" [class.storefront-mode]="storeSettings.storeOperatingMode === 'ecommerce'">
-      
-      <!-- ============================================== -->
-      <!-- TOP NAVIGATION BAR                             -->
-      <!-- ============================================== -->
-      <header class="site-header">
-        <div class="header-inner">
-          <!-- Brand Logo & Title -->
-          <a routerLink="/" class="brand-area" [title]="brand.companyName">
-            <img [src]="brand.companyLogoUrl" [alt]="brand.companyName" class="brand-logo-img" *ngIf="brand.companyLogoUrl" />
-            <div class="brand-text-wrap" *ngIf="!brand.companyLogoUrl">
-              <span class="material-symbols-outlined brand-default-icon">hub</span>
-              <span class="brand-name-text">{{ brand.companyName || 'samson ceo' }}</span>
-            </div>
-          </a>
+    <!-- Top Progress / Loader -->
+    <div *ngIf="loading" class="public-site-loader">
+      <div class="loader-inner">
+        <div class="spinner-ring"></div>
+        <p class="loader-text">Loading {{ brandName || 'Website' }}...</p>
+      </div>
+    </div>
 
-          <!-- Desktop Navigation Menu -->
-          <nav class="desktop-nav">
-            <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link-item">Home</a>
-            
-            <a href="#about" class="nav-link-item" (click)="scrollToSection('about', $event)">About</a>
-            <a href="#features" class="nav-link-item" (click)="scrollToSection('features', $event)">Capabilities</a>
-
-            <!-- Storefront Link (if enabled) -->
-            <a routerLink="/store" class="nav-link-item store-link-highlight" *ngIf="storeSettings.storefrontEnabled && storeSettings.showInNavbar">
-              <span class="material-symbols-outlined nav-mini-icon">storefront</span>
-              <span>{{ storeSettings.storeTitle || 'Store' }}</span>
-              <span class="store-badge-new">Catalog</span>
-            </a>
-
-            <a href="#faqs" class="nav-link-item" (click)="scrollToSection('faqs', $event)">FAQs</a>
-            <a href="#contact" class="nav-link-item" (click)="scrollToSection('contact', $event)">Contact</a>
-          </nav>
-
-          <!-- Header Action Buttons -->
-          <div class="header-actions">
-            <!-- Shopping Cart Quick Access (if store enabled) -->
-            <a routerLink="/store/cart" class="header-cart-btn" *ngIf="storeSettings.storefrontEnabled" title="View Shopping Cart">
-              <span class="material-symbols-outlined">shopping_bag</span>
-              <span class="cart-badge-count" *ngIf="cartService.getItemCount() > 0">{{ cartService.getItemCount() }}</span>
-            </a>
-
-            <!-- Portal Login CTA Button -->
-            <a routerLink="/auth/login" class="btn-portal-login">
-              <span class="material-symbols-outlined">lock_open</span>
-              <span>Portal Login</span>
-            </a>
-
-            <!-- Mobile Hamburger Toggle -->
-            <button type="button" class="mobile-toggle-btn" (click)="mobileMenuOpen = !mobileMenuOpen" [attr.aria-expanded]="mobileMenuOpen">
-              <span class="material-symbols-outlined">{{ mobileMenuOpen ? 'close' : 'menu' }}</span>
-            </button>
-          </div>
+    <!-- Error State -->
+    <div *ngIf="error && !loading" class="public-site-error-container">
+      <div class="error-card">
+        <span class="material-symbols-outlined error-icon">cloud_off</span>
+        <h2>Website Under Construction</h2>
+        <p>{{ errorMessage || 'The website content is currently being initialized. Please check back shortly.' }}</p>
+        <div class="error-actions">
+          <button type="button" (click)="loadSiteData()" class="btn-retry">Retry Connection</button>
+          <a routerLink="/auth/login" class="btn-login-shortcut">Portal Sign In</a>
         </div>
+      </div>
+    </div>
 
-        <!-- Mobile Drawer Navigation -->
-        <div class="mobile-nav-drawer" [class.open]="mobileMenuOpen">
-          <div class="mobile-links">
-            <a routerLink="/" (click)="mobileMenuOpen = false" class="mobile-link-item">
-              <span class="material-symbols-outlined">home</span>
-              <span>Home</span>
-            </a>
-            <a href="#about" (click)="scrollToSection('about', $event); mobileMenuOpen = false;" class="mobile-link-item">
-              <span class="material-symbols-outlined">info</span>
-              <span>About Us</span>
-            </a>
-            <a href="#features" (click)="scrollToSection('features', $event); mobileMenuOpen = false;" class="mobile-link-item">
-              <span class="material-symbols-outlined">view_quilt</span>
-              <span>Platform Capabilities</span>
-            </a>
-            <a routerLink="/store" (click)="mobileMenuOpen = false" class="mobile-link-item store-mobile-link" *ngIf="storeSettings.storefrontEnabled">
-              <span class="material-symbols-outlined">storefront</span>
-              <span>{{ storeSettings.storeTitle || 'Online Storefront' }}</span>
-              <span class="badge-mini">Shop</span>
-            </a>
-            <a href="#faqs" (click)="scrollToSection('faqs', $event); mobileMenuOpen = false;" class="mobile-link-item">
-              <span class="material-symbols-outlined">help</span>
-              <span>Frequently Asked Questions</span>
-            </a>
-            <a href="#contact" (click)="scrollToSection('contact', $event); mobileMenuOpen = false;" class="mobile-link-item">
-              <span class="material-symbols-outlined">mail</span>
-              <span>Contact & Support</span>
-            </a>
-            <div class="mobile-portal-btn-wrap">
-              <a routerLink="/auth/login" (click)="mobileMenuOpen = false" class="btn btn-primary btn-block">
-                <span class="material-symbols-outlined">dashboard</span>
-                <span>Launch Admin / Member Portal</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
-
-
-      <!-- =================================================================== -->
-      <!-- MODE 1: STANDARD ORGANIZATION WEBSITE (DEFAULT)                    -->
-      <!-- =================================================================== -->
-      <main *ngIf="storeSettings.storeOperatingMode !== 'ecommerce'" class="main-content standard-website-layout">
-        
-        <!-- HERO SECTION -->
-        <section class="hero-master-banner">
-          <div class="hero-glow-blob"></div>
-          <div class="hero-container">
-            <div class="hero-text-col">
-              <div class="hero-eyebrow-chip">
-                <span class="pulse-dot"></span>
-                <span>OFFICIAL DIGITAL HUB &bull; {{ brand.companyName || 'ORGANIZATION' }}</span>
-              </div>
-              <h1 class="hero-main-title">
-                {{ brand.companySlogan || 'The Modern Operating System for Forward-Thinking Organizations' }}
-              </h1>
-              <p class="hero-main-subtitle">
-                Welcome to the digital gateway for {{ brand.companyName }}. Seamlessly unifying directory governance, real-time member collaboration channels, dynamic web content, and commerce in one trusted platform.
-              </p>
-              
-              <div class="hero-action-row">
-                <a routerLink="/auth/login" class="btn btn-hero-primary">
-                  <span class="material-symbols-outlined">login</span>
-                  <span>Access Member Portal</span>
-                </a>
-                <a routerLink="/store" class="btn btn-hero-secondary" *ngIf="storeSettings.storefrontEnabled">
-                  <span class="material-symbols-outlined">shopping_cart</span>
-                  <span>Explore Store Catalog</span>
-                </a>
-                <a href="#features" (click)="scrollToSection('features', $event)" class="btn btn-hero-secondary" *ngIf="!storeSettings.storefrontEnabled">
-                  <span class="material-symbols-outlined">explore</span>
-                  <span>Discover Features</span>
-                </a>
-              </div>
-
-              <!-- Trust Stats Row -->
-              <div class="hero-trust-row">
-                <div class="trust-stat-item">
-                  <strong class="stat-value">99.9%</strong>
-                  <span class="stat-label">Uptime SLA</span>
-                </div>
-                <div class="trust-stat-sep"></div>
-                <div class="trust-stat-item">
-                  <strong class="stat-value">256-Bit</strong>
-                  <span class="stat-label">Data Security</span>
-                </div>
-                <div class="trust-stat-sep"></div>
-                <div class="trust-stat-item">
-                  <strong class="stat-value">Real-Time</strong>
-                  <span class="stat-label">WebSocket Sync</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="hero-visual-col">
-              <div class="hero-glass-card">
-                <div class="glass-card-header">
-                  <div class="window-dots">
-                    <span class="dot dot-red"></span>
-                    <span class="dot dot-yellow"></span>
-                    <span class="dot dot-green"></span>
-                  </div>
-                  <span class="glass-header-title">{{ brand.companyName }} Digital Console</span>
-                  <span class="material-symbols-outlined glass-lock-icon">verified_user</span>
-                </div>
-                <div class="glass-card-body">
-                  <div class="glass-metric-box">
-                    <div class="metric-top">
-                      <span class="metric-label">Institutional Status</span>
-                      <span class="metric-badge-live">● Active & Secure</span>
-                    </div>
-                    <div class="metric-num">Verified Workspace</div>
-                  </div>
-                  <div class="glass-features-list">
-                    <div class="glass-feat-item">
-                      <span class="material-symbols-outlined feat-ico text-blue">shield</span>
-                      <div class="feat-txt">
-                        <strong>Granular RBAC Security</strong>
-                        <span>Role-isolated admin permissions & audit logging</span>
-                      </div>
-                    </div>
-                    <div class="glass-feat-item">
-                      <span class="material-symbols-outlined feat-ico text-purple">forum</span>
-                      <div class="feat-txt">
-                        <strong>Real-Time Community Channels</strong>
-                        <span>Instant WebSocket collaboration & messaging</span>
-                      </div>
-                    </div>
-                    <div class="glass-feat-item">
-                      <span class="material-symbols-outlined feat-ico text-emerald">storefront</span>
-                      <div class="feat-txt">
-                        <strong>Commercial Retail Engine</strong>
-                        <span>Multi-currency payments & digital fulfillment</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
-        <!-- VALUE PILLARS & CAPABILITIES SECTION -->
-        <section id="features" class="section-padded bg-subtle">
-          <div class="site-container">
-            <div class="section-heading text-center">
-              <span class="section-tag">CORE PLATFORM CAPABILITIES</span>
-              <h2 class="section-title">Engineered for Performance, Trust & Member Engagement</h2>
-              <p class="section-desc">Experience bank-grade reliability, real-time collaboration, and enterprise content publishing tailored for {{ brand.companyName }}.</p>
-            </div>
-
-            <div class="pillars-grid">
-              <div class="pillar-card">
-                <div class="pillar-icon-box bg-blue-subtle">
-                  <span class="material-symbols-outlined text-blue">groups_3</span>
-                </div>
-                <h3 class="pillar-title">Member & Directory Governance</h3>
-                <p class="pillar-desc">Comprehensive directory governance with customizable member categorizations, lifecycle status tracking, and automated digital onboarding.</p>
-              </div>
-
-              <div class="pillar-card">
-                <div class="pillar-icon-box bg-purple-subtle">
-                  <span class="material-symbols-outlined text-purple">mark_chat_unread</span>
-                </div>
-                <h3 class="pillar-title">Real-Time Group Channels</h3>
-                <p class="pillar-desc">Collaborative chat rooms and committee channels powered by SignalR socket pipelines with zero-polling latency.</p>
-              </div>
-
-              <div class="pillar-card">
-                <div class="pillar-icon-box bg-emerald-subtle">
-                  <span class="material-symbols-outlined text-emerald">web</span>
-                </div>
-                <h3 class="pillar-title">Dynamic Website CMS</h3>
-                <p class="pillar-desc">Fully database-driven layout sections, hero carousels, customizable component templates, and published institutional pages.</p>
-              </div>
-
-              <div class="pillar-card">
-                <div class="pillar-icon-box bg-amber-subtle">
-                  <span class="material-symbols-outlined text-amber">payments</span>
-                </div>
-                <h3 class="pillar-title">E-Commerce & Dues Fulfillment</h3>
-                <p class="pillar-desc">Integrated online store with digital software downloads, consulting session bookings, physical merchandise, and multi-currency checkout.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
-        <!-- ABOUT OUR ORGANIZATION SECTION -->
-        <section id="about" class="section-padded">
-          <div class="site-container">
-            <div class="about-grid">
-              <div class="about-content">
-                <span class="section-tag">ABOUT OUR INSTITUTION</span>
-                <h2 class="section-title">Two Decades of Trusted Leadership & Digital Innovation</h2>
-                <p class="about-paragraph">
-                  At <strong>{{ brand.companyName }}</strong>, we are committed to building high-integrity digital infrastructure that empowers member organizations, committee bodies, and stakeholder communities with transparent, reliable tools.
-                </p>
-                <div class="about-checklist">
-                  <div class="check-item">
-                    <span class="material-symbols-outlined check-icon">check_circle</span>
-                    <span>Bank-grade cryptographic security and immutable audit logging.</span>
-                  </div>
-                  <div class="check-item">
-                    <span class="material-symbols-outlined check-icon">check_circle</span>
-                    <span>Seamless Cloudinary media streaming with global CDN acceleration.</span>
-                  </div>
-                  <div class="check-item">
-                    <span class="material-symbols-outlined check-icon">check_circle</span>
-                    <span>24/7 dedicated support team and institutional SLA guarantees.</span>
-                  </div>
-                </div>
-                <div class="about-btn-row">
-                  <a routerLink="/auth/login" class="btn btn-primary">
-                    <span class="material-symbols-outlined">arrow_forward</span>
-                    <span>Learn More in Member Portal</span>
-                  </a>
-                </div>
-              </div>
-
-              <div class="about-media-card">
-                <div class="media-card-inner">
-                  <span class="material-symbols-outlined institution-icon">account_balance</span>
-                  <h3 class="media-card-title">{{ brand.companyName }}</h3>
-                  <p class="media-card-sub">{{ brand.companyAddress || 'Enterprise Headquarters' }}</p>
-                  <div class="media-contact-chips">
-                    <span class="chip-item" *ngIf="brand.companyEmail">
-                      <span class="material-symbols-outlined">mail</span>
-                      {{ brand.companyEmail }}
-                    </span>
-                    <span class="chip-item" *ngIf="brand.companyPhone">
-                      <span class="material-symbols-outlined">call</span>
-                      {{ brand.companyPhone }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
-        <!-- FEATURED STORE PRODUCTS SHOWCASE (WHEN STORE ENABLED & SHOW ON HOME) -->
-        <section id="store-showcase" class="section-padded bg-subtle" *ngIf="storeSettings.storefrontEnabled && storeSettings.showOnHome && featuredProducts.length > 0">
-          <div class="site-container">
-            <div class="section-heading-row">
-              <div>
-                <span class="section-tag">COMMERCIAL CATALOG</span>
-                <h2 class="section-title">Featured Products & Offerings</h2>
-                <p class="section-desc">Explore official merchandise, digital downloads, and premium consulting services from {{ brand.companyName }}.</p>
-              </div>
-              <a routerLink="/store" class="btn btn-outline">
-                <span>View Full Store Catalog</span>
-                <span class="material-symbols-outlined">arrow_forward</span>
-              </a>
-            </div>
-
-            <div class="products-showcase-grid">
-              <div *ngFor="let p of featuredProducts" class="home-product-card">
-                <div class="product-media" [routerLink]="['/store/product', p.slug]">
-                  <img *ngIf="p.coverImageUrl" [src]="p.coverImageUrl" [alt]="p.title" class="product-img" />
-                  <div *ngIf="!p.coverImageUrl" class="product-placeholder">
-                    <span class="material-symbols-outlined">shopping_bag</span>
-                  </div>
-                  <span class="product-type-badge">{{ p.typeName || 'Product' }}</span>
-                  <span *ngIf="p.isFeatured" class="badge-featured">★ Top Pick</span>
-                </div>
-                <div class="product-body">
-                  <span class="product-cat">{{ p.categoryTitle || 'General' }}</span>
-                  <h4 class="product-title">
-                    <a [routerLink]="['/store/product', p.slug]">{{ p.title }}</a>
-                  </h4>
-                  <div class="product-price-row">
-                    <div class="price-wrap">
-                      <span class="price-curr">{{ currencySymbol }}{{ p.price | number:'1.2-2' }}</span>
-                      <span *ngIf="p.compareAtPrice" class="price-old">{{ currencySymbol }}{{ p.compareAtPrice | number:'1.2-2' }}</span>
-                    </div>
-                    <button type="button" class="btn-quick-add" (click)="addToCart(p)" title="Add to Cart">
-                      <span class="material-symbols-outlined">add_shopping_cart</span>
-                      <span>Add</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
-        <!-- FREQUENTLY ASKED QUESTIONS SECTION -->
-        <section id="faqs" class="section-padded">
-          <div class="site-container">
-            <div class="section-heading text-center">
-              <span class="section-tag">HELP & SUPPORT</span>
-              <h2 class="section-title">Frequently Asked Questions</h2>
-              <p class="section-desc">Find quick answers to common questions regarding account governance, membership, and orders.</p>
-            </div>
-
-            <div class="faqs-accordion-wrapper">
-              <div *ngFor="let f of faqs" class="faq-item-card" [class.expanded]="f.expanded">
-                <button type="button" class="faq-question-btn" (click)="f.expanded = !f.expanded">
-                  <span class="faq-q-text">{{ f.question }}</span>
-                  <span class="material-symbols-outlined faq-chevron">{{ f.expanded ? 'expand_less' : 'expand_more' }}</span>
-                </button>
-                <div class="faq-answer-pane" *ngIf="f.expanded">
-                  <p>{{ f.answer }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-
-        <!-- NEWSLETTER / COMMUNITY ENGAGEMENT SECTION -->
-        <section class="section-padded newsletter-section">
-          <div class="site-container">
-            <div class="newsletter-card">
-              <div class="newsletter-content">
-                <span class="material-symbols-outlined newsletter-icon">forward_to_inbox</span>
-                <h3 class="newsletter-title">Stay Informed with {{ brand.companyName }}</h3>
-                <p class="newsletter-subtitle">Subscribe to receive institutional announcements, quarterly governance reports, and exclusive store discounts.</p>
-                <form (submit)="onSubscribeNewsletter($event)" class="newsletter-form">
-                  <input type="email" [(ngModel)]="newsletterEmail" name="nlEmail" placeholder="Enter your email address..." required class="newsletter-input" />
-                  <button type="submit" class="btn btn-primary newsletter-btn" [disabled]="newsletterSubscribed">
-                    <span class="material-symbols-outlined">send</span>
-                    <span>{{ newsletterSubscribed ? 'Subscribed!' : 'Subscribe' }}</span>
-                  </button>
-                </form>
-                <span class="newsletter-privacy-hint">🔒 We respect your privacy. Unsubscribe at any time with one click.</span>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-
-      <!-- =================================================================== -->
-      <!-- MODE 2: STOREFRONT FIRST / E-COMMERCE RETAIL HUB                   -->
-      <!-- =================================================================== -->
-      <main *ngIf="storeSettings.storeOperatingMode === 'ecommerce'" class="main-content storefront-first-layout">
-        
-        <!-- STOREFRONT PROMO HERO -->
-        <section class="store-promo-hero">
-          <div class="site-container store-hero-inner">
-            <div class="store-hero-left">
-              <span class="store-hero-eyebrow">🛍️ OFFICIAL E-COMMERCE STOREFRONT</span>
-              <h1 class="store-hero-h1">Explore Products, Software & Specialized Consulting</h1>
-              <p class="store-hero-sub">Official digital assets, software licenses, physical goods, and expert bookings with instant checkout and multi-currency support.</p>
-              <div class="store-hero-btns">
-                <a routerLink="/store" class="btn btn-hero-primary">
-                  <span class="material-symbols-outlined">shopping_bag</span>
-                  <span>Browse Full Store ({{ totalProductsCount }} Items)</span>
-                </a>
-                <a routerLink="/store/cart" class="btn btn-hero-secondary">
-                  <span class="material-symbols-outlined">shopping_cart</span>
-                  <span>View Shopping Cart ({{ cartService.getItemCount() }})</span>
-                </a>
-              </div>
-            </div>
-            <div class="store-hero-perks">
-              <div class="perk-box">
-                <span class="material-symbols-outlined text-blue">verified</span>
-                <strong>Direct Delivery</strong>
-                <p>Instant digital file access and trackable shipments.</p>
-              </div>
-              <div class="perk-box">
-                <span class="material-symbols-outlined text-emerald">lock</span>
-                <strong>Secure Payments</strong>
-                <p>Bank-grade SSL card & Paystack checkout.</p>
-              </div>
-              <div class="perk-box">
-                <span class="material-symbols-outlined text-purple">support_agent</span>
-                <strong>24/7 Support</strong>
-                <p>Direct assistance for orders and downloads.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- STOREFRONT PRODUCTS CATALOG -->
-        <section class="section-padded">
-          <div class="site-container">
-            <div class="section-heading text-center">
-              <span class="section-tag">CATALOG INVENTORY</span>
-              <h2 class="section-title">All Products & Digital Offerings</h2>
-              <p class="section-desc">Select an item below for complete specifications, deliverables, and instant checkout.</p>
-            </div>
-
-            <div class="products-showcase-grid">
-              <div *ngFor="let p of featuredProducts" class="home-product-card">
-                <div class="product-media" [routerLink]="['/store/product', p.slug]">
-                  <img *ngIf="p.coverImageUrl" [src]="p.coverImageUrl" [alt]="p.title" class="product-img" />
-                  <div *ngIf="!p.coverImageUrl" class="product-placeholder">
-                    <span class="material-symbols-outlined">inventory_2</span>
-                  </div>
-                  <span class="product-type-badge">{{ p.typeName || 'Item' }}</span>
-                </div>
-                <div class="product-body">
-                  <span class="product-cat">{{ p.categoryTitle || 'Catalog' }}</span>
-                  <h4 class="product-title">
-                    <a [routerLink]="['/store/product', p.slug]">{{ p.title }}</a>
-                  </h4>
-                  <p class="product-short-desc" *ngIf="p.shortDescription">{{ p.shortDescription }}</p>
-                  <div class="product-price-row">
-                    <div class="price-wrap">
-                      <span class="price-curr">{{ currencySymbol }}{{ p.price | number:'1.2-2' }}</span>
-                      <span *ngIf="p.compareAtPrice" class="price-old">{{ currencySymbol }}{{ p.compareAtPrice | number:'1.2-2' }}</span>
-                    </div>
-                    <button type="button" class="btn-quick-add" (click)="addToCart(p)">
-                      <span class="material-symbols-outlined">add_shopping_cart</span>
-                      <span>Add</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="text-center mt-5" *ngIf="featuredProducts.length === 0 && !isLoadingProducts">
-              <div class="empty-store-card">
-                <span class="material-symbols-outlined empty-icon">inventory_2</span>
-                <h3>Storefront Inventory Initializing</h3>
-                <p>New products and digital assets are currently being cataloged by the administration.</p>
-                <a routerLink="/auth/login" class="btn btn-primary mt-3">Admin Login to Add Products</a>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-
-      <!-- ============================================== -->
-      <!-- CORPORATE PUBLIC FOOTER                        -->
-      <!-- ============================================== -->
-      <footer id="contact" class="site-footer">
-        <div class="site-container">
-          <div class="footer-top-grid">
-            <!-- Brand Column -->
-            <div class="footer-brand-col">
-              <div class="footer-brand">
-                <img [src]="brand.companyLogoUrl" [alt]="brand.companyName" class="footer-logo-img" *ngIf="brand.companyLogoUrl" />
-                <div class="brand-text-wrap" *ngIf="!brand.companyLogoUrl">
-                  <span class="material-symbols-outlined brand-default-icon">hub</span>
-                  <span class="brand-name-text">{{ brand.companyName || 'samson ceo' }}</span>
-                </div>
-              </div>
-              <p class="footer-bio">
-                Empowering organizational leadership, member governance, and digital enterprise with cloud-native security and transparency.
-              </p>
-              <div class="footer-contact-list">
-                <div class="contact-line" *ngIf="brand.companyEmail">
-                  <span class="material-symbols-outlined">email</span>
-                  <a [href]="'mailto:' + brand.companyEmail">{{ brand.companyEmail }}</a>
-                </div>
-                <div class="contact-line" *ngIf="brand.companyPhone">
-                  <span class="material-symbols-outlined">call</span>
-                  <a [href]="'tel:' + brand.companyPhone">{{ brand.companyPhone }}</a>
-                </div>
-                <div class="contact-line" *ngIf="brand.companyAddress">
-                  <span class="material-symbols-outlined">location_on</span>
-                  <span>{{ brand.companyAddress }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Col 2: Navigation Links -->
-            <div class="footer-links-col">
-              <h4 class="footer-heading">Navigation</h4>
-              <ul class="footer-link-list">
-                <li><a routerLink="/">Home Page</a></li>
-                <li><a href="#about" (click)="scrollToSection('about', $event)">About Our Organization</a></li>
-                <li><a href="#features" (click)="scrollToSection('features', $event)">Platform Capabilities</a></li>
-                <li><a href="#faqs" (click)="scrollToSection('faqs', $event)">Frequently Asked Questions</a></li>
-                <li><a routerLink="/auth/login">Member & Admin Portal</a></li>
-              </ul>
-            </div>
-
-            <!-- Col 3: Solutions & Store Links -->
-            <div class="footer-links-col">
-              <h4 class="footer-heading">Solutions & Store</h4>
-              <ul class="footer-link-list">
-                <li *ngIf="storeSettings.storefrontEnabled"><a routerLink="/store">Online Storefront</a></li>
-                <li *ngIf="storeSettings.storefrontEnabled"><a routerLink="/store/cart">Shopping Cart ({{ cartService.getItemCount() }})</a></li>
-                <li><a routerLink="/auth/login">Identity & Security</a></li>
-                <li><a routerLink="/auth/login">Real-Time Group Channels</a></li>
-                <li><a routerLink="/auth/login">Committee Dues & Wallets</a></li>
-              </ul>
-            </div>
-
-            <!-- Col 4: Platform & Legal -->
-            <div class="footer-links-col">
-              <h4 class="footer-heading">Security & Platform</h4>
-              <ul class="footer-link-list">
-                <li><a routerLink="/auth/login">Zero-Trust RBAC Console</a></li>
-                <li><a routerLink="/auth/login">Cloudinary Media Vault</a></li>
-                <li><a routerLink="/auth/login">System Administrator Login</a></li>
-                <li><a href="#privacy">Privacy & Data Governance</a></li>
-                <li><a href="#terms">Terms of Service</a></li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Footer Bottom Bar -->
-          <div class="footer-bottom-bar">
-            <span class="copyright-text">
-              &copy; {{ currentYear }} {{ brand.companyName || 'samson ceo' }}. All rights reserved.
-            </span>
-            <div class="footer-bottom-badges">
-              <span class="badge-pill-sec">🔒 256-Bit SSL Encrypted</span>
-              <span class="badge-pill-sec">⚡ Powered by <a href="https://ozikol.cloud" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: none; font-weight: 700;">Ozikol</a>.</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+    <!-- Dynamic Live Hydrated Site -->
+    <div *ngIf="!loading && !error" class="public-dynamic-site-wrapper" [class.mobile-menu-active]="mobileMenuOpen">
+      <!-- Rendered HTML Blocks (Menu, Hero/Breadcrumb, Sections, Footer) -->
+      <main class="dynamic-rendered-content" [innerHTML]="safeRenderedHtml"></main>
     </div>
   `,
   styles: [`
-    .public-site-wrapper {
+    /* Universal Host and Reset */
+    :host {
+      display: block;
+      width: 100%;
       min-height: 100vh;
-      background: #090d16;
-      color: #f8fafc;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
+      background-color: #ffffff;
+      color: #1e293b;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* Container Utility */
-    .site-container {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 0 24px;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    .section-padded {
-      padding: 90px 0;
-      position: relative;
-    }
-    .bg-subtle {
-      background: #0f172a;
-    }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 24px;
-      border-radius: 9px;
-      font-size: 14px;
-      font-weight: 700;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      cursor: pointer;
-      border: none;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, #0050e5, #1f6bff);
-      color: #ffffff;
-      box-shadow: 0 4px 15px rgba(0, 80, 229, 0.35);
-    }
-    .btn-primary:hover {
-      background: linear-gradient(135deg, #1f6bff, #3b82f6);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.5);
-    }
-    .btn-outline {
-      background: rgba(255, 255, 255, 0.05);
-      color: #f8fafc;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-    .btn-outline:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(255, 255, 255, 0.3);
-      transform: translateY(-2px);
-    }
-    .btn-block { width: 100%; }
-
-    /* ============================================== */
-    /* HEADER / NAVBAR                                */
-    /* ============================================== */
-    .site-header {
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      background: rgba(9, 13, 22, 0.85);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .header-inner {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 0 24px;
-      height: 74px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-    .brand-area {
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      color: #ffffff;
-      gap: 10px;
-    }
-    .brand-logo-img {
-      max-height: 42px;
-      width: auto;
-      object-fit: contain;
-    }
-    .brand-text-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .brand-default-icon {
-      font-size: 28px;
-      color: #38bdf8;
-    }
-    .brand-name-text {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #ffffff;
-    }
-
-    .desktop-nav {
-      display: flex;
-      align-items: center;
-      gap: 28px;
-    }
-    .nav-link-item {
-      color: #94a3b8;
-      text-decoration: none;
-      font-size: 14px;
-      font-weight: 600;
-      transition: color 0.15s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .nav-link-item:hover, .nav-link-item.active {
-      color: #38bdf8;
-    }
-    .store-link-highlight {
-      color: #818cf8;
-    }
-    .store-badge-new {
-      background: rgba(129, 140, 248, 0.18);
-      color: #818cf8;
-      border: 1px solid rgba(129, 140, 248, 0.3);
-      font-size: 10px;
-      font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .header-cart-btn {
-      position: relative;
+    /* Modern Minimalist Preloader */
+    .public-site-loader {
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 42px;
-      height: 42px;
-      border-radius: 9px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: #ffffff;
-      text-decoration: none;
-      transition: all 0.2s;
+      min-height: 100vh;
+      background: #ffffff;
     }
-    .header-cart-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: rgba(56, 189, 248, 0.4);
-    }
-    .cart-badge-count {
-      position: absolute;
-      top: -4px;
-      right: -4px;
-      background: #0050e5;
-      color: #fff;
-      font-size: 10.5px;
-      font-weight: 800;
-      width: 19px;
-      height: 19px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 8px rgba(0, 80, 229, 0.8);
-    }
-    .btn-portal-login {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 18px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #0050e5, #1f6bff);
-      color: #ffffff;
-      font-size: 13.5px;
-      font-weight: 700;
-      text-decoration: none;
-      transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(0, 80, 229, 0.3);
-    }
-    .btn-portal-login:hover {
-      background: #1f6bff;
-      transform: translateY(-1px);
-    }
-    .mobile-toggle-btn {
-      display: none;
-      background: none;
-      border: none;
-      color: #ffffff;
-      cursor: pointer;
-      padding: 6px;
-    }
-    .mobile-nav-drawer {
-      display: none;
-    }
-
-    /* ============================================== */
-    /* HERO SECTION                                   */
-    /* ============================================== */
-    .hero-master-banner {
-      position: relative;
-      padding: 100px 0 110px;
-      overflow: hidden;
-    }
-    .hero-glow-blob {
-      position: absolute;
-      top: -100px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 700px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(0, 80, 229, 0.25) 0%, rgba(56, 189, 248, 0.08) 50%, transparent 70%);
-      pointer-events: none;
-    }
-    .hero-container {
-      max-width: 1240px;
-      margin: 0 auto;
-      padding: 0 24px;
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 50px;
-      align-items: center;
-      position: relative;
-      z-index: 2;
-    }
-    .hero-eyebrow-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      border-radius: 20px;
-      background: rgba(56, 189, 248, 0.1);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      color: #38bdf8;
-      font-size: 11.5px;
-      font-weight: 800;
-      letter-spacing: 0.05em;
-      margin-bottom: 20px;
-    }
-    .pulse-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #38bdf8;
-      box-shadow: 0 0 8px #38bdf8;
-    }
-    .hero-main-title {
-      font-size: 46px;
-      font-weight: 900;
-      line-height: 1.15;
-      letter-spacing: -0.025em;
-      margin: 0 0 20px 0;
-      color: #ffffff;
-    }
-    .hero-main-subtitle {
-      font-size: 16.5px;
-      line-height: 1.65;
-      color: #94a3b8;
-      margin: 0 0 34px 0;
-      max-width: 600px;
-    }
-    .hero-action-row {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 44px;
-    }
-    .btn-hero-primary {
-      background: linear-gradient(135deg, #0050e5, #1f6bff);
-      color: #fff;
-      padding: 14px 28px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 14.5px;
-      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.4);
-    }
-    .btn-hero-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px rgba(0, 80, 229, 0.6);
-    }
-    .btn-hero-secondary {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      color: #ffffff;
-      padding: 14px 26px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 14.5px;
-    }
-    .btn-hero-secondary:hover {
-      background: rgba(255, 255, 255, 0.12);
-      transform: translateY(-2px);
-    }
-
-    .hero-trust-row {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      padding-top: 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .trust-stat-item {
-      display: flex;
-      flex-direction: column;
-    }
-    .stat-value {
-      font-size: 18px;
-      font-weight: 800;
-      color: #ffffff;
-    }
-    .stat-label {
-      font-size: 12px;
-      color: #64748b;
-      font-weight: 600;
-    }
-    .trust-stat-sep {
-      width: 1px;
-      height: 28px;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    /* Glass Card Preview */
-    .hero-glass-card {
-      background: rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 18px;
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(20px);
-      overflow: hidden;
-    }
-    .glass-card-header {
-      padding: 14px 20px;
-      background: rgba(255, 255, 255, 0.03);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .window-dots {
-      display: flex;
-      gap: 6px;
-    }
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-    .dot-red { background: #ef4444; }
-    .dot-yellow { background: #f59e0b; }
-    .dot-green { background: #10b981; }
-    .glass-header-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: #94a3b8;
-    }
-    .glass-lock-icon {
-      font-size: 18px;
-      color: #38bdf8;
-    }
-    .glass-card-body {
-      padding: 24px;
-    }
-    .glass-metric-box {
-      background: rgba(30, 41, 59, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 18px;
-      margin-bottom: 20px;
-    }
-    .metric-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-    .metric-label {
-      font-size: 12px;
-      color: #94a3b8;
-      font-weight: 600;
-    }
-    .metric-badge-live {
-      font-size: 11px;
-      color: #10b981;
-      font-weight: 700;
-    }
-    .metric-num {
-      font-size: 20px;
-      font-weight: 800;
-      color: #ffffff;
-    }
-    .glass-features-list {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .glass-feat-item {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 12px;
-      background: rgba(255, 255, 255, 0.02);
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
-    }
-    .feat-ico {
-      font-size: 24px;
-    }
-    .feat-txt strong {
-      font-size: 13px;
-      color: #ffffff;
-      display: block;
-    }
-    .feat-txt span {
-      font-size: 11.5px;
-      color: #64748b;
-      display: block;
-    }
-
-    /* ============================================== */
-    /* VALUE PILLARS                                  */
-    /* ============================================== */
-    .section-heading {
-      max-width: 700px;
-      margin: 0 auto 56px auto;
-    }
-    .section-heading.text-center { text-align: center; }
-    .section-heading-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-bottom: 40px;
-      flex-wrap: wrap;
-      gap: 20px;
-    }
-    .section-tag {
-      font-size: 11.5px;
-      font-weight: 800;
-      color: #38bdf8;
-      letter-spacing: 0.08em;
-      display: block;
-      margin-bottom: 10px;
-    }
-    .section-title {
-      font-size: 32px;
-      font-weight: 900;
-      color: #ffffff;
-      margin: 0 0 12px 0;
-      letter-spacing: -0.02em;
-    }
-    .section-desc {
-      font-size: 15px;
-      color: #94a3b8;
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    .pillars-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 24px;
-    }
-    .pillar-card {
-      background: #090d16;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      padding: 30px 24px;
-      transition: all 0.25s ease;
-    }
-    .pillar-card:hover {
-      transform: translateY(-5px);
-      border-color: rgba(56, 189, 248, 0.35);
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-    }
-    .pillar-icon-box {
-      width: 50px;
-      height: 50px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-    .pillar-icon-box span { font-size: 26px; }
-    .bg-blue-subtle { background: rgba(56, 189, 248, 0.12); }
-    .bg-purple-subtle { background: rgba(168, 85, 247, 0.12); }
-    .bg-emerald-subtle { background: rgba(16, 185, 129, 0.12); }
-    .bg-amber-subtle { background: rgba(245, 158, 11, 0.12); }
-    .text-blue { color: #38bdf8; }
-    .text-purple { color: #c084fc; }
-    .text-emerald { color: #34d399; }
-    .text-amber { color: #fbbf24; }
-
-    .pillar-title {
-      font-size: 17.5px;
-      font-weight: 800;
-      color: #ffffff;
-      margin: 0 0 10px 0;
-    }
-    .pillar-desc {
-      font-size: 13.5px;
-      color: #94a3b8;
-      line-height: 1.6;
-      margin: 0;
-    }
-
-    /* ============================================== */
-    /* ABOUT US SECTION                               */
-    /* ============================================== */
-    .about-grid {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 50px;
-      align-items: center;
-    }
-    .about-paragraph {
-      font-size: 16px;
-      color: #cbd5e1;
-      line-height: 1.7;
-      margin: 0 0 28px 0;
-    }
-    .about-checklist {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      margin-bottom: 34px;
-    }
-    .check-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 14.5px;
-      color: #94a3b8;
-    }
-    .check-icon {
-      color: #10b981;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-    .about-media-card {
-      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 18px;
-      padding: 40px 30px;
+    .loader-inner {
       text-align: center;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     }
-    .institution-icon {
-      font-size: 54px;
-      color: #38bdf8;
+    .spinner-ring {
+      display: inline-block;
+      width: 46px;
+      height: 46px;
+      border: 3.5px solid #e2e8f0;
+      border-top-color: #0050e5;
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
       margin-bottom: 16px;
     }
-    .media-card-title {
-      font-size: 22px;
-      font-weight: 800;
-      color: #ffffff;
-      margin: 0 0 6px 0;
-    }
-    .media-card-sub {
-      font-size: 13.5px;
+    .loader-text {
       color: #64748b;
-      margin: 0 0 24px 0;
+      font-size: 14.5px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      margin: 0;
     }
-    .media-contact-chips {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: center;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
-    .chip-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 12.5px;
-      color: #94a3b8;
-    }
-    .chip-item span { font-size: 16px; color: #38bdf8; }
 
-    /* ============================================== */
-    /* PRODUCTS SHOWCASE GRID                         */
-    /* ============================================== */
-    .products-showcase-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 24px;
-    }
-    .home-product-card {
-      background: #090d16;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 14px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      transition: all 0.25s ease;
-    }
-    .home-product-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(56, 189, 248, 0.4);
-      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
-    }
-    .product-media {
-      position: relative;
-      height: 180px;
-      background: #1e293b;
+    /* Error / Offline State */
+    .public-site-error-container {
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
-      cursor: pointer;
+      min-height: 100vh;
+      padding: 30px 20px;
+      background: #f8fafc;
     }
-    .product-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.3s ease;
-    }
-    .home-product-card:hover .product-img {
-      transform: scale(1.05);
-    }
-    .product-placeholder {
-      font-size: 48px;
-      color: #64748b;
-    }
-    .product-type-badge {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #ffffff;
-      font-size: 10.5px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-    }
-    .badge-featured {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(245, 158, 11, 0.9);
-      color: #000;
-      font-size: 10px;
-      font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 6px;
-    }
-    .product-body {
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-    }
-    .product-cat {
-      font-size: 11px;
-      color: #64748b;
-      text-transform: uppercase;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-    .product-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin: 0 0 12px 0;
-      line-height: 1.4;
-    }
-    .product-title a {
-      color: #f8fafc;
-      text-decoration: none;
-    }
-    .product-title a:hover {
-      color: #38bdf8;
-    }
-    .product-short-desc {
-      font-size: 12.5px;
-      color: #94a3b8;
-      line-height: 1.4;
-      margin: 0 0 14px 0;
-    }
-    .product-price-row {
-      margin-top: auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .price-curr {
-      font-size: 17px;
-      font-weight: 800;
-      color: #38bdf8;
-    }
-    .price-old {
-      font-size: 12.5px;
-      color: #64748b;
-      text-decoration: line-through;
-      margin-left: 6px;
-    }
-    .btn-quick-add {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: #0050e5;
-      color: #ffffff;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .btn-quick-add:hover {
-      background: #1f6bff;
-    }
-    .btn-quick-add span { font-size: 16px; }
-
-    /* ============================================== */
-    /* FAQS ACCORDION                                 */
-    /* ============================================== */
-    .faqs-accordion-wrapper {
-      max-width: 800px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .faq-item-card {
-      background: #0f172a;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      overflow: hidden;
-      transition: border-color 0.2s;
-    }
-    .faq-item-card.expanded {
-      border-color: rgba(56, 189, 248, 0.4);
-    }
-    .faq-question-btn {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 18px 22px;
-      background: none;
-      border: none;
-      color: #f8fafc;
-      font-size: 15px;
-      font-weight: 700;
-      text-align: left;
-      cursor: pointer;
-    }
-    .faq-chevron {
-      color: #64748b;
-      font-size: 22px;
-    }
-    .faq-answer-pane {
-      padding: 0 22px 18px 22px;
-      font-size: 14px;
-      color: #94a3b8;
-      line-height: 1.6;
-    }
-    .faq-answer-pane p { margin: 0; }
-
-    /* ============================================== */
-    /* NEWSLETTER SECTION                             */
-    /* ============================================== */
-    .newsletter-card {
-      background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b1120 100%);
-      border: 1.5px solid rgba(56, 189, 248, 0.25);
-      border-radius: 20px;
-      padding: 50px 30px;
-      text-align: center;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    }
-    .newsletter-content {
-      max-width: 650px;
-      margin: 0 auto;
-    }
-    .newsletter-icon {
-      font-size: 44px;
-      color: #38bdf8;
-      margin-bottom: 12px;
-    }
-    .newsletter-title {
-      font-size: 28px;
-      font-weight: 800;
-      color: #ffffff;
-      margin: 0 0 10px 0;
-    }
-    .newsletter-subtitle {
-      font-size: 15px;
-      color: #94a3b8;
-      line-height: 1.6;
-      margin: 0 0 28px 0;
-    }
-    .newsletter-form {
-      display: flex;
-      gap: 10px;
-      max-width: 500px;
-      margin: 0 auto 16px auto;
-    }
-    .newsletter-input {
-      flex: 1;
-      background: #0f172a;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 8px;
-      padding: 12px 16px;
-      color: #ffffff;
-      font-size: 14px;
-    }
-    .newsletter-input:focus {
-      outline: none;
-      border-color: #38bdf8;
-    }
-    .newsletter-btn {
-      flex-shrink: 0;
-    }
-    .newsletter-privacy-hint {
-      font-size: 12px;
-      color: #64748b;
-    }
-
-    /* ============================================== */
-    /* STOREFRONT FIRST MODE LAYOUT                   */
-    /* ============================================== */
-    .store-promo-hero {
-      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #090d16 80%);
-      padding: 80px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .store-hero-inner {
-      display: grid;
-      grid-template-columns: 1.3fr 0.7fr;
-      gap: 40px;
-      align-items: center;
-    }
-    .store-hero-eyebrow {
-      font-size: 12px;
-      font-weight: 800;
-      color: #818cf8;
-      letter-spacing: 0.06em;
-      display: block;
-      margin-bottom: 12px;
-    }
-    .store-hero-h1 {
-      font-size: 40px;
-      font-weight: 900;
-      color: #ffffff;
-      line-height: 1.2;
-      margin: 0 0 16px 0;
-    }
-    .store-hero-sub {
-      font-size: 15.5px;
-      color: #94a3b8;
-      line-height: 1.6;
-      margin: 0 0 28px 0;
-    }
-    .store-hero-btns {
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-    .store-hero-perks {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .perk-box {
-      background: rgba(30, 41, 59, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      padding: 16px 20px;
-    }
-    .perk-box span { font-size: 24px; margin-bottom: 4px; }
-    .perk-box strong { font-size: 14px; color: #ffffff; display: block; }
-    .perk-box p { font-size: 12px; color: #94a3b8; margin: 2px 0 0 0; }
-    .empty-store-card {
-      background: #0f172a;
-      border: 1px dashed rgba(255, 255, 255, 0.15);
+    .error-card {
+      max-width: 480px;
+      background: #ffffff;
       border-radius: 16px;
-      padding: 50px 20px;
-      max-width: 500px;
-      margin: 0 auto;
+      padding: 40px 32px;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+      border: 1px solid #e2e8f0;
     }
-    .empty-icon { font-size: 48px; color: #64748b; margin-bottom: 12px; }
-
-    /* ============================================== */
-    /* FOOTER                                         */
-    /* ============================================== */
-    .site-footer {
-      background: #050811;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      padding: 70px 0 30px 0;
-      margin-top: auto;
-    }
-    .footer-top-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1.2fr;
-      gap: 40px;
-      margin-bottom: 50px;
-    }
-    .footer-brand {
+    .error-icon {
+      font-size: 54px;
+      color: #64748b;
       margin-bottom: 16px;
     }
-    .footer-logo-img {
-      max-height: 38px;
-      width: auto;
+    .error-card h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 10px;
     }
-    .footer-bio {
-      font-size: 13.5px;
-      color: #94a3b8;
-      line-height: 1.6;
-      max-width: 320px;
-      margin-bottom: 20px;
-    }
-    .footer-contact-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .contact-line {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      color: #94a3b8;
-    }
-    .contact-line a {
-      color: #94a3b8;
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-    .contact-line a:hover {
-      color: #38bdf8;
-    }
-    .contact-line span {
-      font-size: 16px;
-      color: #38bdf8;
-    }
-
-    .footer-heading {
-      font-size: 14px;
-      font-weight: 800;
-      color: #ffffff;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin: 0 0 20px 0;
-    }
-    .footer-link-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 11px;
-    }
-    .footer-link-list li a {
-      font-size: 13.5px;
-      color: #94a3b8;
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-    .footer-link-list li a:hover {
-      color: #38bdf8;
-    }
-
-    .footer-bottom-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 30px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-    .copyright-text {
-      font-size: 12.5px;
+    .error-card p {
       color: #64748b;
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 24px;
     }
-    .footer-bottom-badges {
+    .error-actions {
       display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
     }
-    .badge-pill-sec {
-      font-size: 11.5px;
-      color: #94a3b8;
-      background: rgba(255, 255, 255, 0.04);
-      padding: 4px 10px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
+    .btn-retry {
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .btn-retry:hover {
+      background: #003ebd;
+    }
+    .btn-login-shortcut {
+      background: transparent;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .btn-login-shortcut:hover {
+      background: #f1f5f9;
+      color: #0f172a;
     }
 
-    /* ============================================== */
-    /* RESPONSIVE MEDIA QUERIES                       */
-    /* ============================================== */
-    @media (max-width: 992px) {
-      .hero-container {
-        grid-template-columns: 1fr;
-        text-align: center;
-      }
-      .hero-main-subtitle { margin: 0 auto 34px auto; }
-      .hero-action-row { justify-content: center; }
-      .hero-trust-row { justify-content: center; }
-      .about-grid { grid-template-columns: 1fr; }
-      .footer-top-grid { grid-template-columns: 1fr 1fr; }
-      .store-hero-inner { grid-template-columns: 1fr; }
+    /* Core Public Layout & Interactive Dropdown Styles */
+    .public-dynamic-site-wrapper {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
     }
 
-    @media (max-width: 768px) {
-      .desktop-nav { display: none; }
-      .mobile-toggle-btn { display: block; }
-      .hero-main-title { font-size: 32px; }
-      .section-title { font-size: 26px; }
-      .footer-top-grid { grid-template-columns: 1fr; }
+    /* Navbar Dropdowns */
+    .dropdown {
+      position: relative !important;
+    }
+    .dropdown-menu {
+      display: none;
+    }
+    .dropdown-menu.show {
+      display: block !important;
+      position: absolute !important;
+      top: 100% !important;
+      left: 0 !important;
+      z-index: 99999 !important;
+      min-width: 15rem !important;
+      margin-top: 8px !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      background-color: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 10px !important;
+      box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
+      padding: 8px 0 !important;
+      animation: fadeInDropdown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeInDropdown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown-item {
+      cursor: pointer;
+      display: block !important;
+      padding: 9px 18px !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      color: #334155 !important;
+      text-decoration: none !important;
+      transition: background 0.15s ease, color 0.15s ease !important;
+    }
+    .dropdown-item:hover {
+      background-color: #f1f5f9 !important;
+      color: #0050e5 !important;
+    }
 
-      .mobile-nav-drawer {
-        display: block;
-        position: absolute;
-        top: 74px;
-        left: 0;
-        right: 0;
-        background: #090d16;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        transform: translateY(-100%);
-        opacity: 0;
-        pointer-events: none;
-        transition: all 0.25s ease;
-      }
-      .mobile-nav-drawer.open {
-        transform: translateY(0);
-        opacity: 1;
-        pointer-events: auto;
-      }
-      .mobile-links {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-      .mobile-link-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: #f8fafc;
-        text-decoration: none;
-        font-size: 15px;
-        font-weight: 600;
-        padding: 10px 14px;
-        border-radius: 8px;
-        background: rgba(255, 255, 255, 0.04);
-      }
-      .mobile-portal-btn-wrap {
-        margin-top: 10px;
-      }
+    /* Dynamic Form Input Focus & Styling */
+    .dynamic-rendered-content form .form-control:focus,
+    .dynamic-rendered-content form .form-select:focus {
+      border-color: #0050e5 !important;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.15) !important;
+    }
+    .dynamic-rendered-content form button[type="submit"]:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
     }
   `]
 })
-export class LandingComponent implements OnInit {
-  currentYear = new Date().getFullYear();
-  mobileMenuOpen = false;
-  newsletterEmail = '';
-  newsletterSubscribed = false;
-  isLoadingProducts = false;
-  totalProductsCount = 0;
+export class LandingComponent implements OnInit, OnDestroy {
+  // State Flags
+  loading: boolean = true;
+  error: boolean = false;
+  errorMessage: string = '';
+  mobileMenuOpen: boolean = false;
 
-  brand: BrandInfo = {
-    companyName: 'samson ceo',
-    companySlogan: 'The Modern Operating System for Forward-Thinking Organizations'
-  };
+  // Active Routing Context
+  currentSlug: string = '';
+  activeBlogId: string | null = null;
 
-  storeSettings: StoreSettings = {
-    storefrontEnabled: true,
-    storeTitle: 'Store',
-    storeOperatingMode: 'standard',
-    currencyCode: 'USD',
-    currencySymbol: '$',
-    showInNavbar: true,
-    showInFooter: true,
-    showOnHome: true,
-    homeProductsCount: 8
-  };
+  // Tenant Live Content & Theme Architecture
+  brandName: string = 'Organization';
+  brandLogoUrl: string = '';
+  brandInfo: any = {};
+  activeTemplates: any[] = [];
+  categories: any[] = [];
+  publishedPages: any[] = [];
+  sections: any[] = [];
+  sliders: any[] = [];
+  blogs: any[] = [];
+  codeInjections: { head: any[]; bodyOpen: any[]; footer: any[] } = { head: [], bodyOpen: [], footer: [] };
 
-  featuredProducts: any[] = [];
+  // Page Specific Resolution
+  currentPage: any = null;
+  currentArticle: any = null;
 
-  faqs: FaqItem[] = [
-    {
-      id: 1,
-      question: 'How do I access the Member & Administrative Portal?',
-      answer: 'Click on "Portal Login" at the top right of the navigation bar. Use your registered administrator or member email credentials to access your designated workspace, committee channels, and dashboard.',
-      expanded: true
-    },
-    {
-      id: 2,
-      question: 'How do electronic dues, wallet payments, and store purchases work?',
-      answer: 'Our platform supports secure bank-grade card processing, instant bank transfers, and automated wallet reconciliations. All transactions generate immediate digital receipts and update membership status in real time.',
-      expanded: false
-    },
-    {
-      id: 3,
-      question: 'Can I purchase digital software downloads or consulting packages directly?',
-      answer: 'Yes! Explore our integrated Storefront by clicking "Store" in the navigation bar. You can add digital assets, subscriptions, or consulting sessions to your cart and complete checkout with instant receipt generation.',
-      expanded: false
-    },
-    {
-      id: 4,
-      question: 'How is data security and identity management governed?',
-      answer: 'We utilize enterprise Zero-Trust Role-Based Access Control (RBAC), 256-bit encryption in transit and at rest, alongside multi-tenant database isolation to guarantee institutional data sovereignty.',
-      expanded: false
-    }
-  ];
+  // Render Pipeline
+  renderedStyles: string = '';
+  safeRenderedHtml: SafeHtml | null = null;
+
+  private routeSub: Subscription | null = null;
 
   constructor(
-    private api: ApiService,
+    private route: ActivatedRoute,
+    private router: Router,
+    private apiService: ApiService,
     public cartService: CartService,
-    private toast: ToastService
+    private toastService: ToastService,
+    private templateHydration: TemplateHydrationService,
+    private sanitizer: DomSanitizer,
+    private titleService: Title,
+    private metaService: Meta,
+    private elementRef: ElementRef
   ) {}
 
   ngOnInit(): void {
-    this.loadBrandSettings();
-    this.loadStoreSettings();
-    this.loadFeaturedProducts();
-    this.loadFaqs();
-    this.injectSiteCodeTags();
-  }
+    // Unlock native document scrolling for public website mode
+    document.body.classList.add('public-website-mode');
 
-  injectSiteCodeTags(): void {
-    this.api.get<any>('WebsiteContentApi/code-injections').subscribe({
-      next: (res) => {
-        const data = res?.data;
-        if (!data) return;
+    // Listen to route changes (slug changes) to support instant in-app navigation
+    this.routeSub = this.route.paramMap.subscribe(params => {
+      // 1. Check direct slug parameter
+      let slugParam = (params.get('slug') || '').trim().toLowerCase();
 
-        // 1. Head Zone (<head>)
-        if (Array.isArray(data.head)) {
-          data.head.forEach((tag: any) => {
-            const tagId = `oz-site-head-tag-${tag.id}`;
-            if (!document.getElementById(tagId)) {
-              const container = document.createElement('div');
-              container.id = tagId;
-              container.style.display = 'none';
-              container.innerHTML = tag.content || '';
-              while (container.firstChild) {
-                const child = container.firstChild as HTMLElement;
-                if (child.tagName === 'SCRIPT') {
-                  const s = document.createElement('script');
-                  Array.from(child.attributes).forEach(attr => s.setAttribute(attr.name, attr.value));
-                  s.textContent = child.textContent;
-                  document.head.appendChild(s);
-                  child.remove();
-                } else {
-                  if (child.tagName === 'LINK') {
-                    const rel = (child.getAttribute('rel') || '').toLowerCase();
-                    if ((rel.includes('icon') || rel.includes('shortcut')) && !child.getAttribute('href')) {
-                      const fallback = this.brand?.companyIconUrl || this.brand?.companyLogoUrl || '/favicon.ico';
-                      child.setAttribute('href', fallback);
-                    }
-                  }
-                  document.head.appendChild(child);
-                }
-              }
-            }
-          });
-        }
-
-        // 2. Body Open Zone (<body> start)
-        if (Array.isArray(data.bodyOpen)) {
-          data.bodyOpen.forEach((tag: any) => {
-            const tagId = `oz-site-body-open-tag-${tag.id}`;
-            if (!document.getElementById(tagId)) {
-              const wrap = document.createElement('div');
-              wrap.id = tagId;
-              wrap.className = 'oz-body-open-tag';
-              wrap.innerHTML = tag.content || '';
-              document.body.insertAdjacentElement('afterbegin', wrap);
-            }
-          });
-        }
-
-        // 3. Footer Zone (</body> before closing)
-        if (Array.isArray(data.footer)) {
-          data.footer.forEach((tag: any) => {
-            const tagId = `oz-site-footer-tag-${tag.id}`;
-            if (!document.getElementById(tagId)) {
-              const wrap = document.createElement('div');
-              wrap.id = tagId;
-              wrap.className = 'oz-footer-tag';
-              wrap.innerHTML = tag.content || '';
-              const scripts = wrap.querySelectorAll('script');
-              scripts.forEach(oldScript => {
-                const newScript = document.createElement('script');
-                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                newScript.textContent = oldScript.textContent;
-                oldScript.parentNode?.replaceChild(newScript, oldScript);
-              });
-              document.body.appendChild(wrap);
-            }
-          });
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  loadBrandSettings(): void {
-    this.api.get<any>('SettingsApi/brand').subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.brand = { ...this.brand, ...res.data };
-          if (this.brand.companyName) {
-            document.title = `${this.brand.companyName} - Official Portal`;
-          }
-          const activeIcon = this.brand.companyIconUrl || this.brand.companyLogoUrl || '/favicon.ico';
-          const favicons = document.querySelectorAll("link[rel*='icon']");
-          if (favicons.length > 0) {
-            favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon);
-          }
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  loadStoreSettings(): void {
-    this.api.get<any>('SettingsApi/ecommerce').subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.storeSettings = { ...this.storeSettings, ...res.data };
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  loadFeaturedProducts(): void {
-    this.isLoadingProducts = true;
-    this.api.get<any>('ProductsApi/public/catalog?pageSize=8').subscribe({
-      next: (res) => {
-        this.isLoadingProducts = false;
-        if (res?.data?.items) {
-          this.featuredProducts = res.data.items;
-          this.totalProductsCount = res.data.totalCount || this.featuredProducts.length;
-        }
-      },
-      error: () => {
-        this.isLoadingProducts = false;
+      // 2. Fallback to route URL segments (e.g. /blog, /blog/123, /about)
+      const urlSegments = this.route.snapshot.url.map(s => s.path.toLowerCase());
+      if (!slugParam && urlSegments.length > 0) {
+        slugParam = urlSegments[0];
       }
+
+      this.currentSlug = slugParam;
+
+      // Check if viewing blog by ID or slug
+      const blogIdParam = params.get('id') || (urlSegments[0] === 'blog' && urlSegments[1] ? urlSegments[1] : null);
+      this.activeBlogId = blogIdParam;
+
+      this.loadSiteData();
     });
   }
 
-  loadFaqs(): void {
-    this.api.get<any>('WebsiteContentApi/faqs').subscribe({
-      next: (res) => {
-        if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
-          this.faqs = res.data.slice(0, 6).map((f: any, idx: number) => ({
-            id: f.id,
-            question: f.question,
-            answer: f.answer,
-            expanded: idx === 0
-          }));
+  ngOnDestroy(): void {
+    // Re-lock or restore default dashboard mode
+    document.body.classList.remove('public-website-mode');
+
+    // Clean up dynamic tags injected into head and body
+    document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
+    document.getElementById('tenant-dynamic-theme-styles')?.remove();
+
+    if (this.routeSub) {
+      this.routeSub.unsubscribe();
+    }
+  }
+
+  /**
+   * Main data coordination pipeline:
+   * 1. Fetches active templates, categories, published pages, and branding from backend APIs.
+   * 2. Fetches page-specific sections or blog articles depending on activeSlug.
+   * 3. Executes TemplateHydrationService to assemble and sanitize the final HTML document.
+   */
+  loadSiteData(): void {
+    this.loading = true;
+    this.error = false;
+
+    // Concurrently fetch foundational website metadata
+    Promise.all([
+      this.fetchBrandSettings(),
+      this.fetchActiveTemplates(),
+      this.fetchNavigationCategories(),
+      this.fetchPublishedPages(),
+      this.fetchCodeInjections()
+    ])
+    .then(async () => {
+      // Route dispatch based on active slug
+      if (!this.currentSlug || this.currentSlug === 'home') {
+        // 1. Homepage Rendering
+        await Promise.all([
+          this.fetchHomeSections(),
+          this.fetchSliders(),
+          this.fetchRecentBlogs()
+        ]);
+        this.composeHomepage();
+      } else if (this.currentSlug === 'blog') {
+        // 2. Blog Archive or Single Article
+        if (this.activeBlogId) {
+          await this.fetchSingleBlog(this.activeBlogId);
+          this.composeBlogDetail();
+        } else {
+          await this.fetchAllBlogs();
+          this.composeBlogArchive();
         }
-      },
-      error: () => {}
+      } else {
+        // 3. Dynamic Page by Slug (e.g., about, request-service, privacy-policy, contact-us, etc.)
+        await this.fetchPageBySlug(this.currentSlug);
+        this.composeContentPage();
+      }
+
+      this.loading = false;
+      this.recordTelemetry();
+    })
+    .catch((err) => {
+      console.error('Failed to load website runtime:', err);
+      this.loading = false;
+      this.error = true;
+      this.errorMessage = err?.message || 'Could not connect to website delivery services.';
     });
   }
 
-  get currencySymbol(): string {
-    return this.storeSettings.currencySymbol || '$';
+  // ========================================================
+  // BACKEND API DATA RETRIEVAL
+  // ========================================================
+
+  private fetchBrandSettings(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('SettingsApi/brand').subscribe({
+        next: (res: any) => {
+          if (res?.data) {
+            this.brandInfo = res.data;
+            this.brandName = res.data.companyName || res.data.websiteTitle || 'Acme Global';
+            this.brandLogoUrl = res.data.companyLogoUrl || '';
+
+            // Apply tenant browser tab favicon to live storefront (leave blank if not uploaded)
+            const rawIcon = res.data.companyIconUrl;
+            const activeIcon = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
+            const favicons = document.querySelectorAll("link[rel*='icon']");
+            if (favicons.length > 0) {
+              favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon || 'data:,');
+            } else if (activeIcon) {
+              const link = document.createElement('link');
+              link.rel = 'shortcut icon';
+              link.type = 'image/x-icon';
+              link.href = activeIcon;
+              document.head.appendChild(link);
+            }
+          }
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
   }
 
-  addToCart(product: any): void {
-    this.cartService.addItem(product, 1);
-    this.toast.success(`"${product.title}" added to shopping cart.`);
+  private fetchActiveTemplates(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/theme/active-templates').subscribe({
+        next: (res: any) => {
+          this.activeTemplates = res?.data || [];
+          resolve();
+        },
+        error: () => {
+          // Fallback to installed templates if admin endpoint exists
+          this.apiService.get('ContentApi/templates/installed').subscribe({
+            next: (adminRes: any) => {
+              const all = adminRes?.data || [];
+              this.activeTemplates = all.filter((t: any) => t.isActive);
+              resolve();
+            },
+            error: () => resolve()
+          });
+        }
+      });
+    });
   }
 
-  onSubscribeNewsletter(event: Event): void {
-    event.preventDefault();
-    if (!this.newsletterEmail || !this.newsletterEmail.includes('@')) {
-      this.toast.error('Please provide a valid email address.');
+  private fetchNavigationCategories(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/categories').subscribe({
+        next: (res: any) => {
+          this.categories = res?.data || [];
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private fetchPublishedPages(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/pages').subscribe({
+        next: (res: any) => {
+          this.publishedPages = res?.data || [];
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private fetchCodeInjections(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/code-injections').subscribe({
+        next: (res: any) => {
+          const data = res?.data || {};
+          this.codeInjections = {
+            head: data.head || [],
+            bodyOpen: data.bodyOpen || [],
+            footer: data.footer || []
+          };
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private fetchHomeSections(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/sections?pageSet=home').subscribe({
+        next: (res: any) => {
+          this.sections = res?.data || [];
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private fetchSliders(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/sliders').subscribe({
+        next: (res: any) => {
+          this.sliders = res?.data || [];
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private fetchRecentBlogs(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/blogs?limit=3').subscribe({
+        next: (res: any) => {
+          this.blogs = res?.data || [];
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private fetchAllBlogs(): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get('WebsiteContentApi/blogs').subscribe({
+        next: (res: any) => {
+          this.blogs = res?.data || [];
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private fetchSingleBlog(id: string): Promise<void> {
+    return new Promise((resolve) => {
+      this.apiService.get(`WebsiteContentApi/blogs/${id}`).subscribe({
+        next: (res: any) => {
+          this.currentArticle = res?.data || null;
+          resolve();
+        },
+        error: () => resolve()
+      });
+    });
+  }
+
+  private fetchPageBySlug(slug: string): Promise<void> {
+    return new Promise((resolve) => {
+      const clean = (slug || '').trim().toLowerCase().replace(/^\/+/, '');
+      this.apiService.get(`WebsiteContentApi/pages/slug/${clean}`).subscribe({
+        next: (res: any) => {
+          this.currentPage = res?.data || null;
+          // In-memory fallback if not found via API
+          if (!this.currentPage) {
+            this.currentPage = this.publishedPages.find(p =>
+              (p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
+              (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
+              (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean)
+            ) || null;
+          }
+          resolve();
+        },
+        error: (err) => {
+          console.warn(`Could not load page with slug '${slug}':`, err);
+          this.currentPage = this.publishedPages.find(p =>
+            (p.directUrl && p.directUrl.toLowerCase().replace(/^\/+/, '') === clean) ||
+            (p.slug && p.slug.toLowerCase().replace(/^\/+/, '') === clean) ||
+            (p.title && p.title.toLowerCase().replace(/\s+/g, '-') === clean)
+          ) || null;
+          resolve();
+        }
+      });
+    });
+  }
+
+  // ========================================================
+  // COMPOSITION & TEMPLATE HYDRATION PIPELINE
+  // ========================================================
+
+  /**
+   * Assembles the Homepage:
+   * Menu + Hero + Home Body Sections in Order (without duplicate Hero) + Footer.
+   */
+  private composeHomepage(): void {
+    this.titleService.setTitle(`${this.brandName} | Official Website`);
+
+    const menuTemplate = this.findActiveTemplate('menu');
+    const heroTemplate = this.findActiveTemplate('hero');
+    const footerTemplate = this.findActiveTemplate('footer');
+
+    let combinedStyles = '';
+    let combinedHtml = '';
+    let combinedJs = '';
+
+    // 1. Menu Section
+    if (menuTemplate) {
+      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
+      const menuHtml = this.hydrateMenu(menuTemplate.htmlTemplate, 'home');
+      combinedHtml += `<!-- Navbar -->\n${menuHtml}\n`;
+      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
+    }
+
+    // 2. Hero Section
+    // Locate if a hero section was seeded in DB (directUrl == 'home-hero' or homePageSortOrder == 1)
+    const dbHeroSection = this.sections.find(s => s.directUrl === 'home-hero' || s.homePageSortOrder === 1);
+    if (heroTemplate) {
+      combinedStyles += `\n${heroTemplate.cssStyles || ''}\n`;
+      const heroData = this.buildHeroContext(dbHeroSection);
+      const heroHtml = this.templateHydration.hydrateTemplate(heroTemplate.htmlTemplate, heroData, this.getHydrationOptions());
+      combinedHtml += `<!-- Hero -->\n${heroHtml}\n`;
+      if (heroTemplate.jsScript) combinedJs += `\n${heroTemplate.jsScript}\n`;
+    }
+
+    // 3. Modular Body Sections (exclude section consumed as Hero to prevent duplicate display)
+    const bodySections = this.sections.filter(s => s !== dbHeroSection && s.directUrl !== 'home-hero');
+    for (const sec of bodySections) {
+      const secTemplate = this.findTemplateForSection(sec);
+      if (secTemplate) {
+        const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : (secTemplate.cssStyles || '');
+        if (activeCss && !combinedStyles.includes(activeCss)) {
+          combinedStyles += `\n${activeCss}\n`;
+        }
+        const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
+        const sectionData = this.buildSectionContext(sec);
+        const sectionHtml = this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions());
+        combinedHtml += `<!-- Section: ${sec.title || secTemplate.name} -->\n${sectionHtml}\n`;
+        const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : (secTemplate.jsScript || '');
+        if (activeJs && !combinedJs.includes(activeJs)) {
+          combinedJs += `\n${activeJs}\n`;
+        }
+      }
+    }
+
+    // 3b. Recent Blog Articles Showcase (matching Demo Preview sequence)
+    const blogTemplate = this.findActiveTemplate('blog');
+    const hasBlogSectionAlready = bodySections.some(s => s.templateKey?.toLowerCase()?.includes('blog'));
+    if (blogTemplate && !hasBlogSectionAlready && this.blogs && this.blogs.length > 0) {
+      if (blogTemplate.cssStyles && !combinedStyles.includes(blogTemplate.cssStyles)) {
+        combinedStyles += `\n${blogTemplate.cssStyles}\n`;
+      }
+      const blogData = {
+        title: 'Platform Insights & Case Studies',
+        miniTitle: 'LATEST KNOWLEDGE',
+        description: 'Read the latest updates, event reports, policy releases, and organizational announcements.',
+        articles: this.blogs.slice(0, 3).map(b => ({
+          id: b.id,
+          title: b.title,
+          excerpt: b.description || 'Comprehensive strategic analysis and insights.',
+          category: b.blogCategory?.categoryName || 'Strategy & Advisory',
+          date: new Date(b.date || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          author: 'Executive Advisory Desk',
+          imageUrl: b.imageUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
+          directUrl: `/blog/${b.id}`
+        }))
+      };
+      const blogHtml = this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogData, this.getHydrationOptions());
+      combinedHtml += `<!-- Section: Recent Blog Articles -->\n${blogHtml}\n`;
+      if (blogTemplate.jsScript && !combinedJs.includes(blogTemplate.jsScript)) {
+        combinedJs += `\n${blogTemplate.jsScript}\n`;
+      }
+    }
+
+    // 4. Footer Section
+    if (footerTemplate) {
+      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
+      const footerHtml = this.hydrateFooter(footerTemplate.htmlTemplate);
+      combinedHtml += `<!-- Footer -->\n${footerHtml}\n`;
+      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
+    }
+
+    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+  }
+
+  /**
+   * Assembles a dedicated Content Page:
+   * Menu + Breadcrumb Header + Page Sections (or Body Content) + Footer.
+   */
+  private composeContentPage(): void {
+    if (!this.currentPage) {
+      this.composeNotFoundPage();
       return;
     }
-    this.api.post<any>('WebsiteContentApi/forms/newsletter/submit', {
-      data: { email: this.newsletterEmail },
-      sourcePageUrl: typeof window !== 'undefined' ? window.location.href : ''
-    }).subscribe({
-      next: (res) => {
-        this.newsletterSubscribed = true;
-        this.toast.success(res?.message || 'Thank you for subscribing to our newsletter!');
-      },
-      error: () => {
-        this.newsletterSubscribed = true;
-        this.toast.success('Thank you for subscribing to our newsletter!');
+
+    this.titleService.setTitle(`${this.currentPage.title || 'Page'} | ${this.brandName}`);
+
+    const menuTemplate = this.findActiveTemplate('menu');
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    const footerTemplate = this.findActiveTemplate('footer');
+
+    let combinedStyles = '';
+    let combinedHtml = '';
+    let combinedJs = '';
+
+    // 1. Menu
+    if (menuTemplate) {
+      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
+      const menuHtml = this.hydrateMenu(menuTemplate.htmlTemplate, this.currentSlug);
+      combinedHtml += `<!-- Navbar -->\n${menuHtml}\n`;
+      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
+    }
+
+    // 2. Breadcrumb Header
+    const rawSections: any[] = this.currentPage.pageSections || [];
+    const heroSection = rawSections.find(
+      (sec: any) => (sec.templateKey || '').toLowerCase() === 'hero_corporatesplit' || sec.pageSortOrder === 1
+    );
+
+    if (breadcrumbTemplate) {
+      combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
+      const breadcrumbData = {
+        title: heroSection?.title || this.currentPage.title,
+        miniTitle: heroSection?.miniTitle || this.currentPage.pageCategory?.categoryName || 'Organization Overview',
+        description: heroSection?.description || this.currentPage.description || '',
+        backgroundImageUrl: heroSection?.imageUrl || this.currentPage.headerImageUrl || 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80',
+        breadcrumbTrail: [
+          { label: 'Home', url: '/', isActive: false },
+          { label: this.currentPage.title, url: '#', isActive: true }
+        ]
+      };
+      const breadcrumbHtml = this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
+      combinedHtml += `<!-- Breadcrumb Header -->\n${breadcrumbHtml}\n`;
+      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
+    }
+
+    // 3. Page Layout Sections (excluding hero consumed as breadcrumb header banner)
+    const pageSections = rawSections.filter(
+      (sec: any) => sec !== heroSection && (sec.templateKey || '').toLowerCase() !== 'hero_corporatesplit'
+    );
+    if (pageSections.length > 0) {
+      for (const sec of pageSections) {
+        const secTemplate = this.findTemplateForSection(sec);
+        if (secTemplate) {
+          const activeCss = (sec.isCustomized && sec.cssStyles) ? sec.cssStyles : (secTemplate.cssStyles || '');
+          if (activeCss && !combinedStyles.includes(activeCss)) {
+            combinedStyles += `\n${activeCss}\n`;
+          }
+          const activeHtml = (sec.isCustomized && sec.htmlTemplate) ? sec.htmlTemplate : secTemplate.htmlTemplate;
+          const sectionData = this.buildSectionContext(sec);
+          const sectionHtml = this.templateHydration.hydrateTemplate(activeHtml, sectionData, this.getHydrationOptions());
+          combinedHtml += `<!-- Section: ${sec.title || secTemplate.name} -->\n${sectionHtml}\n`;
+          const activeJs = (sec.isCustomized && sec.jsScript) ? sec.jsScript : (secTemplate.jsScript || '');
+          if (activeJs && !combinedJs.includes(activeJs)) {
+            combinedJs += `\n${activeJs}\n`;
+          }
+        }
+      }
+    } else {
+      // Fallback clean article content wrapper (including turnkey legal compliance content for legal pages)
+      const bodyContent = this.currentPage.fullDescription ||
+                          this.currentPage.description ||
+                          this.getTurnkeyLegalContent(this.currentSlug, this.currentPage.title);
+
+      combinedHtml += `
+        <section class="py-5 bg-white border-bottom">
+          <div class="container py-4">
+            <div class="row justify-content-center">
+              <div class="col-lg-9">
+                <article class="prose-content fs-5 leading-relaxed text-secondary">
+                  ${bodyContent}
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    // 4. Footer
+    if (footerTemplate) {
+      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
+      const footerHtml = this.hydrateFooter(footerTemplate.htmlTemplate);
+      combinedHtml += `<!-- Footer -->\n${footerHtml}\n`;
+      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
+    }
+
+    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+  }
+
+  /**
+   * Generates turnkey corporate compliance text for legal pages when no custom CMS sections exist.
+   */
+  private getTurnkeyLegalContent(slug: string, pageTitle?: string): string {
+    const norm = (slug || '').toLowerCase().trim();
+
+    if (norm.includes('privacy')) {
+      return `
+        <div class="legal-document">
+          <div class="mb-4 pb-3 border-bottom">
+            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Legal & Compliance</span>
+            <h2 class="fw-bold text-dark mt-2 mb-1">Privacy & Data Governance Policy</h2>
+            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
+          </div>
+          <p class="lead text-secondary mb-4">
+            This Privacy Policy explains how <strong>${this.brandName}</strong> collects, processes, stores, and safeguards personal data and institutional information when accessing our platform, services, and client portals.
+          </p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">1. Information We Collect</h4>
+          <p>We collect information necessary to deliver enterprise services, authenticate authorized personnel, and maintain platform security:</p>
+          <ul class="mb-4">
+            <li><strong>Account Identification:</strong> Full name, professional work email, corporate phone number, job title, and organization affiliation.</li>
+            <li><strong>Technical Telemetry:</strong> IP address, device telemetry, browser specifications, operating system parameters, and session access timestamps.</li>
+            <li><strong>Transactional & Service Inquiries:</strong> Engagement records, support ticket correspondence, service requests, and authorized billing profiles.</li>
+          </ul>
+          <h4 class="fw-bold text-dark mt-4 mb-3">2. How We Use Information</h4>
+          <p>We process collected data exclusively under legitimate business interests, contractual commitments, and legal obligations:</p>
+          <ul class="mb-4">
+            <li>To initialize, configure, and maintain sovereign tenant environments and user permissions.</li>
+            <li>To provide responsive technical support, incident escalation, and operational communications.</li>
+            <li>To monitor system resilience, prevent fraudulent access, and enforce SOC2/ISO 27001 compliance standards.</li>
+          </ul>
+          <h4 class="fw-bold text-dark mt-4 mb-3">3. Data Retention & Sovereign Storage</h4>
+          <p class="mb-4">Personal and institutional data is encrypted in transit via TLS 1.3 and at rest via AES-256 standards. Records are retained strictly for the duration of the commercial agreement plus standard statutory compliance periods.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">4. Individual Rights & Inquiries</h4>
+          <p class="mb-4">Depending on applicable jurisdictions (including GDPR and CCPA), individuals hold rights to request access, rectification, portability, or erasure of their personal data. Inquiries may be directed to our Privacy Officer at <code>${this.brandInfo?.companyEmail || 'privacy@organization.com'}</code>.</p>
+        </div>
+      `;
+    }
+
+    if (norm.includes('terms') || norm.includes('condition')) {
+      return `
+        <div class="legal-document">
+          <div class="mb-4 pb-3 border-bottom">
+            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Legal & Governance</span>
+            <h2 class="fw-bold text-dark mt-2 mb-1">Terms & Conditions of Service</h2>
+            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
+          </div>
+          <p class="lead text-secondary mb-4">
+            These Terms & Conditions govern access to and use of digital products, enterprise services, and web portals operated by <strong>${this.brandName}</strong>.
+          </p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">1. Acceptance of Terms</h4>
+          <p class="mb-4">By accessing our website or subscribing to our services, you confirm that you have read, understood, and agreed to be legally bound by these terms.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">2. Authorized Use & Account Governance</h4>
+          <p class="mb-4">Users are responsible for maintaining the confidentiality of their credentials and all activities executed under their authorized profiles. Unauthorized access, system reverse-engineering, or automated scraping is strictly prohibited.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">3. Intellectual Property Rights</h4>
+          <p class="mb-4">All trademarks, service designs, proprietary codebases, templates, and multimedia content hosted across this portal remain the exclusive intellectual property of <strong>${this.brandName}</strong> or its licensed ecosystem partners.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">4. Limitation of Liability</h4>
+          <p class="mb-4">To the maximum extent permitted by applicable law, <strong>${this.brandName}</strong> and its affiliates shall not be liable for indirect, incidental, or consequential damages arising from service disruption or data loss.</p>
+        </div>
+      `;
+    }
+
+    if (norm.includes('cookie')) {
+      return `
+        <div class="legal-document">
+          <div class="mb-4 pb-3 border-bottom">
+            <span class="badge bg-primary-subtle text-primary border px-3 py-1 rounded-pill fw-bold text-uppercase">Cookies & Tracking</span>
+            <h2 class="fw-bold text-dark mt-2 mb-1">Cookie & Tracking Technologies Policy</h2>
+            <span class="text-muted small">Effective Date: January 1, 2026 &bull; Last Revised: September 2026</span>
+          </div>
+          <p class="lead text-secondary mb-4">
+            This policy outlines how <strong>${this.brandName}</strong> utilizes cookies and analogous tracking technologies to provide seamless, secure website navigation.
+          </p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">1. Essential Operational Cookies</h4>
+          <p class="mb-4">These cookies are strictly required to ensure core portal security, tenant subdomain routing, authentication state management, and shopping cart persistence.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">2. Analytics & Performance Cookies</h4>
+          <p class="mb-4">We aggregate anonymized navigation metrics to understand visitor engagement, optimize page load speed, and improve overall content quality.</p>
+          <h4 class="fw-bold text-dark mt-4 mb-3">3. Managing Your Cookie Preferences</h4>
+          <p class="mb-4">You can modify or disable browser cookies at any time via your browser settings. Note that disabling essential cookies may impact system functionality.</p>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="general-page-content">
+        <p class="lead text-secondary mb-4">Welcome to <strong>${pageTitle || 'Page'}</strong> at <strong>${this.brandName}</strong>.</p>
+        <p class="text-muted">Content for this page is managed directly through the CMS Studio. Please check back shortly for upcoming publications, modules, and announcements.</p>
+      </div>
+    `;
+  }
+
+  /**
+   * Assembles the Blog Archive Page:
+   * Menu + Breadcrumb Header + Blog Grid + Footer.
+   */
+  private composeBlogArchive(): void {
+    this.titleService.setTitle(`Blog & Enterprise Insights | ${this.brandName}`);
+
+    const menuTemplate = this.findActiveTemplate('menu');
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    const blogTemplate = this.findActiveTemplate('blog') || this.findActiveTemplate('body');
+    const footerTemplate = this.findActiveTemplate('footer');
+
+    let combinedStyles = '';
+    let combinedHtml = '';
+    let combinedJs = '';
+
+    if (menuTemplate) {
+      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
+      combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, 'blog');
+      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
+    }
+
+    if (breadcrumbTemplate) {
+      combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
+      const breadcrumbData = {
+        title: 'Newsroom & Insights',
+        miniTitle: 'DISPATCHES',
+        description: 'Read the latest updates, event reports, policy releases, and organizational announcements.',
+        backgroundImageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=80',
+        breadcrumbTrail: [
+          { label: 'Home', url: '/', isActive: false },
+          { label: 'Newsroom & Insights', url: '#', isActive: true }
+        ]
+      };
+      combinedHtml += `<!-- Breadcrumb Header -->\n` + this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions()) + `\n`;
+      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
+    }
+
+    // Render Blog Grid
+    const blogContext = {
+      title: 'Platform Insights & Case Studies',
+      miniTitle: 'LATEST KNOWLEDGE',
+      description: 'Explore our latest releases and corporate updates directly from our research desks.',
+      articles: this.blogs.map(b => ({
+        id: b.id,
+        title: b.title,
+        excerpt: b.description || 'Comprehensive strategic analysis and insights.',
+        category: b.blogCategory?.categoryName || 'Strategy & Advisory',
+        date: new Date(b.date || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        author: 'Executive Advisory Desk',
+        imageUrl: b.imageUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
+        directUrl: `/blog/${b.id}`
+      }))
+    };
+
+    if (blogTemplate) {
+      if (!combinedStyles.includes(blogTemplate.cssStyles)) combinedStyles += `\n${blogTemplate.cssStyles || ''}\n`;
+      combinedHtml += `<!-- Blog Grid -->\n` + this.templateHydration.hydrateTemplate(blogTemplate.htmlTemplate, blogContext, this.getHydrationOptions()) + `\n`;
+      if (blogTemplate.jsScript) combinedJs += `\n${blogTemplate.jsScript}\n`;
+    }
+
+    // Newsletter Section (matching Demo Preview sequence)
+    const newsletterTemplate = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'news_minimalbar') ||
+                               this.activeTemplates.find(t => (t.variantCode || '').toLowerCase() === 'news_minimalbar');
+    if (newsletterTemplate) {
+      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
+      const newsContext = {
+        title: 'Subscribe to Executive Insights',
+        miniTitle: 'NEWSLETTER',
+        description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
+      };
+      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
+      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
+    }
+
+    if (footerTemplate) {
+      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
+      combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
+      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
+    }
+
+    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+  }
+
+  /**
+   * Assembles a single Blog Article Reader view:
+   * Menu + Breadcrumb Header + Article Details + Footer.
+   */
+  private composeBlogDetail(): void {
+    if (!this.currentArticle) {
+      this.composeNotFoundPage();
+      return;
+    }
+
+    this.titleService.setTitle(`${this.currentArticle.title} | ${this.brandName}`);
+
+    const menuTemplate = this.findActiveTemplate('menu');
+    const breadcrumbTemplate = this.findActiveTemplate('breadcrumb');
+    const footerTemplate = this.findActiveTemplate('footer');
+
+    let combinedStyles = '';
+    let combinedHtml = '';
+    let combinedJs = '';
+
+    if (menuTemplate) {
+      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
+      combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, 'blog');
+      if (menuTemplate.jsScript) combinedJs += `\n${menuTemplate.jsScript}\n`;
+    }
+
+    if (breadcrumbTemplate) {
+      combinedStyles += `\n${breadcrumbTemplate.cssStyles || ''}\n`;
+      const breadcrumbData = {
+        title: this.currentArticle.title,
+        miniTitle: this.currentArticle.blogCategory?.categoryName || 'Strategic Advisory',
+        description: `Published on ${new Date(this.currentArticle.date || Date.now()).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`,
+        backgroundImageUrl: this.currentArticle.imageUrl || 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1600&q=80',
+        breadcrumbTrail: [
+          { label: 'Home', url: '/', isActive: false },
+          { label: 'Blog', url: '/blog', isActive: false },
+          { label: this.currentArticle.title, url: '#', isActive: true }
+        ]
+      };
+      combinedHtml += this.templateHydration.hydrateTemplate(breadcrumbTemplate.htmlTemplate, breadcrumbData, this.getHydrationOptions());
+      if (breadcrumbTemplate.jsScript) combinedJs += `\n${breadcrumbTemplate.jsScript}\n`;
+    }
+
+    // Article Reader Layout
+    combinedHtml += `
+      <section class="py-5 bg-white">
+        <div class="container py-4">
+          <div class="row justify-content-center">
+            <div class="col-lg-8">
+              ${this.currentArticle.imageUrl ? `
+                <div class="mb-5 rounded-4 overflow-hidden shadow-sm">
+                  <img src="${this.currentArticle.imageUrl}" alt="${this.currentArticle.title}" class="w-100 object-fit-cover" style="max-height: 440px;" />
+                </div>
+              ` : ''}
+
+              <div class="article-body fs-5 text-secondary leading-relaxed mb-5">
+                ${this.currentArticle.fullDescription || this.currentArticle.description || '<p>Full publication content pending release.</p>'}
+              </div>
+
+              <div class="p-4 rounded-3 bg-light border d-flex align-items-center justify-content-between">
+                <div>
+                  <span class="text-muted small d-block">Published under</span>
+                  <span class="badge bg-primary fs-6 mt-1">${this.currentArticle.blogCategory?.categoryName || 'General Insights'}</span>
+                </div>
+                <a href="/blog" class="btn btn-outline-primary btn-sm px-3">Back to All Articles</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+
+    // Newsletter Section (matching Demo Preview sequence)
+    const newsletterTemplate = this.activeTemplates.find(t => (t.templateKey || '').toLowerCase() === 'news_minimalbar') ||
+                               this.activeTemplates.find(t => (t.variantCode || '').toLowerCase() === 'news_minimalbar');
+    if (newsletterTemplate) {
+      if (!combinedStyles.includes(newsletterTemplate.cssStyles)) combinedStyles += `\n${newsletterTemplate.cssStyles || ''}\n`;
+      const newsContext = {
+        title: 'Subscribe to Executive Insights',
+        miniTitle: 'NEWSLETTER',
+        description: 'Receive weekly briefings, technology advisories, and organization updates directly in your inbox.'
+      };
+      combinedHtml += `<!-- Section: Newsletter -->\n` + this.templateHydration.hydrateTemplate(newsletterTemplate.htmlTemplate, newsContext, this.getHydrationOptions()) + `\n`;
+      if (newsletterTemplate.jsScript) combinedJs += `\n${newsletterTemplate.jsScript}\n`;
+    }
+
+    if (footerTemplate) {
+      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
+      combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
+      if (footerTemplate.jsScript) combinedJs += `\n${footerTemplate.jsScript}\n`;
+    }
+
+    this.finalizeRender(combinedStyles, combinedHtml, combinedJs);
+  }
+
+  /**
+   * Fallback 404 handler for missing pages.
+   */
+  private composeNotFoundPage(): void {
+    this.titleService.setTitle(`Page Not Found | ${this.brandName}`);
+    const menuTemplate = this.findActiveTemplate('menu');
+    const footerTemplate = this.findActiveTemplate('footer');
+
+    let combinedStyles = '';
+    let combinedHtml = '';
+
+    if (menuTemplate) {
+      combinedStyles += `\n${menuTemplate.cssStyles || ''}\n`;
+      combinedHtml += this.hydrateMenu(menuTemplate.htmlTemplate, '');
+    }
+
+    combinedHtml += `
+      <section class="py-5 text-center bg-white my-5">
+        <div class="container py-5">
+          <span class="material-symbols-outlined display-1 text-primary opacity-50 mb-3">error_outline</span>
+          <h1 class="display-5 fw-bold text-dark mb-3">Page Not Found</h1>
+          <p class="lead text-muted mb-4">The page you requested does not exist or may have been relocated.</p>
+          <a href="/" class="btn btn-primary px-4 py-2 fw-semibold">Return to Homepage</a>
+        </div>
+      </section>
+    `;
+
+    if (footerTemplate) {
+      combinedStyles += `\n${footerTemplate.cssStyles || ''}\n`;
+      combinedHtml += this.hydrateFooter(footerTemplate.htmlTemplate);
+    }
+
+    this.finalizeRender(combinedStyles, combinedHtml);
+  }
+
+  // ========================================================
+  // HYDRATION CONTEXT HELPERS
+  // ========================================================
+
+  /**
+   * Hydrates the active Navbar template with live navigation categories, child links,
+   * top menu pages, CTA buttons, and active link highlights.
+   */
+  private hydrateMenu(rawHtml: string, activeSlug: string): string {
+    // 1. Top menu items (strictly pages configured for main menu, published, not legal, not category child, not CTA, and not home)
+    const topMenuItems = this.publishedPages
+      .filter(p => p.showInMainMenu && !p.isLegal && !p.pageCategoryId && !p.isMenuCTA && p.directUrl !== 'home' && p.directUrl !== '')
+      .map(p => ({
+        title: p.title,
+        url: `/${p.directUrl || p.slug}`
+      }));
+
+    // Ensure Home, Blog, and Contact exist if not already present
+    if (!topMenuItems.some(m => m.url === '/')) {
+      topMenuItems.unshift({ title: 'Home', url: '/' });
+    }
+    if (!topMenuItems.some(m => m.url === '/blog') && this.blogs.length > 0) {
+      topMenuItems.push({ title: 'Blog', url: '/blog' });
+    }
+
+    // 2. Navigation Dropdowns (PageCategories with their published child WebPages)
+    const dropdowns = this.categories
+      .filter(c => c.publish)
+      .map(c => {
+        const catTitle = c.title || c.categoryName || c.name || 'Menu';
+        const childPages = (c.webPages && c.webPages.length > 0)
+          ? c.webPages.filter((p: any) => p.publish)
+          : this.publishedPages.filter(p => p.publish && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
+
+        return {
+          title: catTitle,
+          categoryName: catTitle,
+          pages: childPages.map((p: any) => ({
+            title: p.title,
+            url: `/${p.directUrl || p.slug}`
+          }))
+        };
+      });
+
+    // 3. CTA Buttons (pages with isMenuCTA = true)
+    const menuCtaButtons: Array<{ title: string; url: string; isLoginBtn?: boolean }> = this.publishedPages
+      .filter(p => p.isMenuCTA)
+      .map(p => ({
+        title: p.title,
+        url: `/${p.directUrl || p.slug}`
+      }));
+
+    if (menuCtaButtons.length === 0) {
+      menuCtaButtons.push({ title: 'Request a Service', url: '/request-service' });
+    }
+
+    // Dynamic Live Sign-In Button in Navigation Menu
+    const isLoginActive = this.brandInfo?.activateLogin !== false;
+    const isLoginInMenu = this.brandInfo?.activateLoginInMenu !== false;
+    const authed = this.isUserAuthenticated();
+    const isAdmin = authed && this.isUserAdmin();
+    const isMember = authed && !isAdmin;
+
+    // Determine login label, URL, and icon based on auth & role
+    // Admin / SuperAdmin / Privileged -> Console (/dashboard/console)
+    // Normal User / Member -> My Workspace (/dashboard/workspace)
+    // Guest / Not logged in -> Custom label or "Sign In" (/auth/login)
+    const loginText = !authed 
+      ? (this.brandInfo?.loginButtonText || 'Sign In') 
+      : (isAdmin ? 'Console' : 'My Workspace');
+    const loginUrl = !authed 
+      ? '/auth/login' 
+      : (isAdmin ? '/dashboard/console' : '/dashboard/workspace');
+    const loginIcon = !authed 
+      ? 'fa-solid fa-arrow-right-to-bracket' 
+      : (isAdmin ? 'fa-solid fa-gauge-high' : 'fa-solid fa-user');
+
+    const loginButtonHtml = (isLoginActive && isLoginInMenu)
+      ? `<a href="${loginUrl}" class="btn btn-sm ${authed ? 'btn-primary' : 'btn-outline-primary'} rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><i class="${loginIcon}"></i> <span>${loginText}</span></a>`
+      : '';
+
+    if (isLoginActive && isLoginInMenu) {
+      menuCtaButtons.push({
+        title: loginText,
+        url: loginUrl,
+        isLoginBtn: true
+      });
+    }
+
+    const menuContext = {
+      topMenuItems,
+      dropdowns,
+      menuCtaButtons,
+      cartCount: this.cartService.getItemCount(),
+      BrandName: this.brandName,
+      LogoUrl: this.brandLogoUrl,
+      // Authentication & Role Tokens for Menu templates
+      IsAuthenticated: authed,
+      IsAdmin: isAdmin,
+      IsMember: isMember,
+      ActivateLoginInMenu: isLoginActive && isLoginInMenu,
+      LoginText: loginText,
+      LoginTitle: loginText,
+      LoginUrl: loginUrl,
+      LoginButtonHtml: loginButtonHtml,
+      LoginButton: loginButtonHtml,
+      LoginLink: loginButtonHtml
+    };
+
+    let html = this.templateHydration.hydrateTemplate(rawHtml, menuContext, this.getHydrationOptions());
+
+    // Highlight active link matching activeSlug
+    if (activeSlug) {
+      const activeNormalized = activeSlug === 'home' ? '/' : `/${activeSlug}`;
+      // Highlight exact match href
+      const regex = new RegExp(`(<a\\s+[^>]*href=["']${activeNormalized}["'][^>]*class=["'][^"']*)(["'])`, 'gi');
+      html = html.replace(regex, '$1 active fw-bold$2');
+    }
+
+    return html;
+  }
+
+  /**
+   * Helper to check if the current browser session has an active, unexpired JWT token.
+   */
+  private isUserAuthenticated(): boolean {
+    if (typeof window === 'undefined') return false;
+    const token = localStorage.getItem('access_token');
+    if (!token) return false;
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        return !!payload.exp && Date.now() < payload.exp * 1000;
+      }
+    } catch {}
+    return false;
+  }
+
+  /**
+   * Helper to check if the current user possesses administrative roles
+   * (SuperAdmin, Admin, IdentityManager, CmsManager, SystemAdministrator).
+   */
+  private isUserAdmin(): boolean {
+    if (typeof window === 'undefined') return false;
+    const rolesJson = localStorage.getItem('user_roles');
+    if (!rolesJson) return false;
+    try {
+      const roles = JSON.parse(rolesJson);
+      if (Array.isArray(roles)) {
+        const adminRoles = ['superadmin', 'admin', 'identitymanager', 'cmsmanager', 'systemadministrator'];
+        return roles.some((r: any) => typeof r === 'string' && adminRoles.includes(r.toLowerCase()));
+      }
+    } catch {}
+    return false;
+  }
+
+  /**
+   * Hydrates the active Footer template with legal pages, categorized links, brand details,
+   * and enforces the official Ozikol credit bar.
+   */
+  private hydrateFooter(rawHtml: string): string {
+    // Prepare categorized links for footer columns
+    const footerCategories = this.categories
+      .filter(c => c.publish && c.showInFooter !== false)
+      .map(c => {
+        const catTitle = c.title || c.categoryName || c.name || 'Category';
+        const displayTitle = c.footerDisplayTitle || catTitle;
+        const childPages = (c.webPages && c.webPages.length > 0)
+          ? c.webPages.filter((p: any) => p.publish && p.showInFooter !== false)
+          : this.publishedPages.filter(p => p.publish && p.showInFooter !== false && (p.pageCategoryId === c.id || p.pageCategory?.id === c.id || p.pageCategory?.title === catTitle));
+
+        return {
+          name: catTitle,
+          title: catTitle,
+          displayTitle: displayTitle,
+          pages: childPages.map((p: any) => ({
+            title: p.title,
+            url: `/${p.directUrl || p.slug || ''}`
+          }))
+        };
+      });
+
+    const legalPages = this.publishedPages
+      .filter(p => p.isLegal)
+      .map(p => ({
+        title: p.title,
+        url: `/${p.directUrl || p.slug}`
+      }));
+
+    // Dynamic Live Sign-In Button in Website Footer
+    const isLoginActive = this.brandInfo?.activateLogin !== false;
+    const isLoginInFooter = this.brandInfo?.activateLoginInFooter !== false;
+    const authed = this.isUserAuthenticated();
+    const isAdmin = authed && this.isUserAdmin();
+    const isMember = authed && !isAdmin;
+
+    const loginText = !authed 
+      ? (this.brandInfo?.loginButtonText || 'Sign In') 
+      : (isAdmin ? 'Console' : 'My Workspace');
+    const loginUrl = !authed 
+      ? '/auth/login' 
+      : (isAdmin ? '/dashboard/console' : '/dashboard/workspace');
+    const loginIcon = !authed 
+      ? 'fa-solid fa-arrow-right-to-bracket' 
+      : (isAdmin ? 'fa-solid fa-gauge-high' : 'fa-solid fa-user');
+
+    const loginButtonHtml = (isLoginActive && isLoginInFooter)
+      ? `<a href="${loginUrl}" class="btn btn-sm ${authed ? 'btn-primary' : 'btn-outline-primary'} rounded-pill px-3 fw-bold d-inline-flex align-items-center gap-2 oz-login-btn"><i class="${loginIcon}"></i> <span>${loginText}</span></a>`
+      : '';
+
+    if (isLoginActive && isLoginInFooter) {
+      legalPages.push({
+        title: loginText,
+        url: loginUrl
+      });
+      if (footerCategories.length > 0) {
+        footerCategories[footerCategories.length - 1].pages.push({
+          title: loginText,
+          url: loginUrl
+        });
+      }
+    }
+
+    const footerContext = {
+      BrandName: this.brandName,
+      LogoUrl: this.brandLogoUrl,
+      Year: new Date().getFullYear().toString(),
+      Description: this.brandInfo?.companyDescription || 'Empowering enterprises and modern organizations with strategic advisory, integrated solutions, and high-performance operations.',
+      Email: this.brandInfo?.companyEmail || 'contact@organization.com',
+      Phone: this.brandInfo?.companyPhone || '+1 (555) 019-2834',
+      Address: this.brandInfo?.companyAddress || 'Corporate Headquarters',
+      Copyright: `&copy; ${new Date().getFullYear()} ${this.brandName}. All rights reserved.`,
+      categories: footerCategories,
+      legalPages: legalPages,
+      // Authentication & Role Tokens for Footer templates
+      IsAuthenticated: authed,
+      IsAdmin: isAdmin,
+      IsMember: isMember,
+      ActivateLoginInFooter: isLoginActive && isLoginInFooter,
+      LoginText: loginText,
+      LoginTitle: loginText,
+      LoginUrl: loginUrl,
+      LoginButtonHtml: loginButtonHtml,
+      LoginButton: loginButtonHtml,
+      LoginLink: loginButtonHtml
+    };
+
+    let html = this.templateHydration.hydrateTemplate(rawHtml, footerContext, this.getHydrationOptions());
+    return this.templateHydration.enforceOzikolCredit(html);
+  }
+
+  /**
+   * Builds Hero hydration data from active DB section or sliders or defaults.
+   */
+  private buildHeroContext(dbHeroSection?: any): any {
+    if (dbHeroSection) {
+      return {
+        title: dbHeroSection.title || 'Driving Next-Generation Enterprise Growth',
+        miniTitle: dbHeroSection.miniTitle || 'Strategic Modernization',
+        description: dbHeroSection.description || 'Empowering institutional leaders with mission-critical systems and advisory.',
+        imageUrl: dbHeroSection.imageUrl || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
+        buttonText: dbHeroSection.buttonText || 'Explore Services',
+        buttonLink: dbHeroSection.buttonLink || '/services',
+        secondaryButtonText: 'Schedule Consultation',
+        secondaryButtonLink: '/contact-us'
+      };
+    }
+
+    if (this.sliders && this.sliders.length > 0) {
+      const activeSlider = this.sliders[0];
+      return {
+        title: activeSlider.title || 'Driving Next-Generation Enterprise Growth',
+        miniTitle: activeSlider.miniTitle || 'Strategic Modernization',
+        description: activeSlider.description || 'Empowering institutional leaders with mission-critical systems and advisory.',
+        imageUrl: activeSlider.imageUrl || 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
+        buttonText: activeSlider.buttonText || 'Explore Services',
+        buttonLink: activeSlider.buttonLink || '/services',
+        secondaryButtonText: activeSlider.secondaryButtonText || 'Schedule Consultation',
+        secondaryButtonLink: activeSlider.secondaryButtonLink || '/contact-us'
+      };
+    }
+
+    return {
+      title: 'Pioneering Scalable Enterprise Infrastructure & Solutions',
+      miniTitle: 'Next-Generation Technology & Consulting',
+      description: 'We orchestrate robust operational frameworks, modern digital architecture, and resilient systems for global industry leaders.',
+      imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1400&q=80',
+      buttonText: 'Explore Services',
+      buttonLink: '/services',
+      secondaryButtonText: 'Schedule Consultation',
+      secondaryButtonLink: '/contact-us'
+    };
+  }
+
+  /**
+   * Formats a PageSection database entity into the token context expected by TemplateHydrationService.
+   */
+  private buildSectionContext(sec: any): any {
+    const listItems = (sec.pageSectionLists || []).map((item: any, idx: number) => ({
+      id: item.id,
+      title: item.title || `Capability ${idx + 1}`,
+      Title: item.title || `Capability ${idx + 1}`,
+      miniTitle: item.miniTitle || '',
+      MiniTitle: item.miniTitle || '',
+      description: item.description || '',
+      Description: item.description || '',
+      moreDescription: item.moreDescription || '',
+      MoreDescription: item.moreDescription || '',
+      iconText: item.iconText || item.icon || 'fa-solid fa-arrow-right',
+      IconText: item.iconText || item.icon || 'fa-solid fa-arrow-right',
+      icon: item.iconText || item.icon || 'fa-solid fa-arrow-right',
+      imageUrl: item.imageUrl || '',
+      ImageUrl: item.imageUrl || '',
+      buttonText: item.buttonText || '',
+      ButtonText: item.buttonText || '',
+      buttonLink: item.buttonLink || '#',
+      ButtonLink: item.buttonLink || '#',
+      sortOrder: item.sortOrder || idx + 1
+    }));
+
+    return {
+      title: sec.title || '',
+      Title: sec.title || '',
+      miniTitle: sec.miniTitle || '',
+      MiniTitle: sec.miniTitle || '',
+      description: sec.description || '',
+      Description: sec.description || '',
+      moreDescription: sec.moreDescription || '',
+      MoreDescription: sec.moreDescription || '',
+      imageUrl: sec.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80',
+      ImageUrl: sec.imageUrl || 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80',
+      buttonText: sec.buttonText || 'Explore Details',
+      ButtonText: sec.buttonText || 'Explore Details',
+      buttonLink: sec.buttonLink || '#',
+      ButtonLink: sec.buttonLink || '#',
+      secondaryButtonText: sec.secondaryButtonText || 'Contact Our Team',
+      SecondaryButtonText: sec.secondaryButtonText || 'Contact Our Team',
+      secondaryButtonLink: sec.secondaryButtonLink || '/contact-us',
+      SecondaryButtonLink: sec.secondaryButtonLink || '/contact-us',
+      videoUrl: sec.videoUrl || '',
+      pageSectionLists: listItems,
+      PageSectionLists: listItems,
+      items: listItems
+    };
+  }
+
+  private findActiveTemplate(category: string): any {
+    return this.activeTemplates.find(t => (t.categoryKey || t.category || '').toLowerCase() === category.toLowerCase());
+  }
+
+  private findTemplateForSection(sec: any): any {
+    if (sec.templateKey) {
+      // 1. Exact match by TemplateKey or VariantCode
+      const exactMatch = this.activeTemplates.find(t => 
+        (t.templateKey || '').toLowerCase() === sec.templateKey.toLowerCase() ||
+        (t.variantCode || '').toLowerCase() === sec.templateKey.toLowerCase()
+      );
+      if (exactMatch) return exactMatch;
+
+      // 2. Smart alias mapping between seeded template keys and installed theme keys
+      const keyAliases: { [key: string]: string[] } = {
+        'body_splitshowcase': ['body_missionsplit', 'body_featuregrid3'],
+        'body_statscounters': ['body_metricscounter', 'body_statscounter4'],
+        'body_metricscounter': ['body_metricscounter'],
+        'body_processsteps': ['body_missionsplit', 'body_featuregrid3'],
+        'body_missionsplit': ['body_missionsplit'],
+        'body_ctasplit': ['body_ctabanner', 'body_ctabannerfull'],
+        'body_ctabanner': ['body_ctabanner'],
+        'news_minimalbar': ['news_minimalbar'],
+        'contact_splitdetails': ['contact_splitdetails'],
+        'body_requestservice': ['body_requestservice'],
+        'body_featuregrid3': ['body_featuregrid3'],
+        'body_testimonials': ['body_testimonials'],
+        'body_faqaccordion': ['body_faqaccordion']
+      };
+
+      const normalizedKey = sec.templateKey.toLowerCase();
+      const aliases = keyAliases[normalizedKey];
+      if (aliases) {
+        for (const alias of aliases) {
+          const aliasMatch = this.activeTemplates.find(t => 
+            (t.templateKey || '').toLowerCase() === alias ||
+            (t.variantCode || '').toLowerCase() === alias
+          );
+          if (aliasMatch) return aliasMatch;
+        }
+      }
+    }
+    // Fallback to active body template
+    return this.findActiveTemplate('body');
+  }
+
+  private getHydrationOptions(): any {
+    return {
+      currentTenantBrandName: this.brandName,
+      availablePages: this.publishedPages
+    };
+  }
+
+  /**
+   * Finalizes document rendering by:
+   * 1. Injecting CSS styles into <head> via a dedicated style tag.
+   * 2. Sanitizing HTML for Angular DOM rendering.
+   * 3. Executing the complete 3-zone tag injection pipeline (head, body_open, footer) + section scripts.
+   */
+  private finalizeRender(styles: string, html: string, combinedJs?: string): void {
+    // 1. Inject Scoped Template CSS into <head>
+    let styleTag = document.getElementById('tenant-dynamic-theme-styles') as HTMLStyleElement;
+    if (!styleTag) {
+      styleTag = document.createElement('style');
+      styleTag.id = 'tenant-dynamic-theme-styles';
+      document.head.appendChild(styleTag);
+    }
+    // Defensively strip any accidental <style> or </style> wrappers so pure CSS is injected
+    const cleanStyles = (styles || '').replace(/<\/?style[^>]*>/gi, '').trim();
+
+    // Base framework CSS (Bootstrap 5.3.3, FontAwesome 6, Inter Font) ensuring 100% parity with Demo Preview
+    const baseFrameworkStyles = `
+      @import url('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
+      @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+      body.public-website-mode {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        background: #ffffff;
+      }
+      body.public-website-mode a {
+        text-decoration: none;
+        cursor: pointer;
+      }
+      body.public-website-mode button {
+        cursor: pointer;
+      }
+      .dropdown {
+        position: relative !important;
+      }
+      .dropdown-menu {
+        display: none;
+      }
+      .dropdown:hover .dropdown-menu {
+        display: block;
+      }
+      /* Active Navigation Link Highlighting */
+      .oz-nav-header .nav-link.active {
+        color: #0050e5 !important;
+        font-weight: 700 !important;
+      }
+      .oz-nav-header .nav-link:not(.active) {
+        color: #64748b !important;
+        font-weight: 500 !important;
+      }
+      .oz-nav-header .btn.active {
+        box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.4) !important;
+        transform: translateY(-1px);
+      }
+    `;
+
+    styleTag.textContent = `${baseFrameworkStyles}\n${cleanStyles}`;
+
+    // 2. Set Safe HTML for main page layout
+    this.safeRenderedHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+
+    // 3. Inject Full 3-Zone Architecture (Head tags, Body Open tags, Footer scripts, Section scripts)
+    this.injectCodeTags(combinedJs);
+  }
+
+  /**
+   * Injects code tags into all 3 document zones according to CMS architecture:
+   * - Zone 1: <head> -> external CSS stylesheets, meta tags, Google Fonts, OpenGraph, JSON-LD, Favicons
+   * - Zone 2: <body> -> immediately after opening body tag
+   * - Zone 3: </body> -> immediately before closing body tag (Bootstrap JS bundle, section scripts)
+   */
+  private injectCodeTags(combinedJs?: string): void {
+    // Clean up previously injected dynamic tags
+    document.querySelectorAll('.ozikol-injected-tag').forEach(el => el.remove());
+
+    // 1. Guaranteed Baseline Head Assets (Bootstrap 5.3 CSS, FA 6, Google Fonts)
+    this.ensureBaselineHeadTags();
+
+    // 2. Inject CMS Header Tags (<head>)
+    if (this.codeInjections.head && this.codeInjections.head.length > 0) {
+      for (const tag of this.codeInjections.head) {
+        if (!tag.content) continue;
+        this.appendHtmlToContainer(document.head, tag.content, 'head');
+      }
+    }
+
+    // 3. Inject CMS Body Open Tags (immediately after <body>)
+    if (this.codeInjections.bodyOpen && this.codeInjections.bodyOpen.length > 0) {
+      for (const tag of this.codeInjections.bodyOpen) {
+        if (!tag.content) continue;
+        this.prependHtmlToBody(tag.content);
+      }
+    }
+
+    // 4. Inject CMS Footer Scripts (right before </body>)
+    if (this.codeInjections.footer && this.codeInjections.footer.length > 0) {
+      for (const tag of this.codeInjections.footer) {
+        if (!tag.content) continue;
+        this.appendHtmlToContainer(document.body, tag.content, 'footer');
+      }
+    }
+
+    // 5. Guaranteed Baseline Footer Scripts (Bootstrap 5.3 JS Bundle)
+    this.ensureBootstrapJsScript();
+
+    // 6. Section JavaScript Execution
+    if (combinedJs && combinedJs.trim()) {
+      const script = document.createElement('script');
+      script.className = 'ozikol-injected-tag ozikol-section-scripts';
+      // Defensively strip any accidental <script> or </script> tags to ensure valid pure JS execution
+      const cleanJs = combinedJs.replace(/<\/?script[^>]*>/gi, '').trim();
+      script.textContent = cleanJs;
+      document.body.appendChild(script);
+    }
+  }
+
+  private ensureBaselineHeadTags(): void {
+    if (!document.querySelector('link[href*="bootstrap"]')) {
+      const bsCss = document.createElement('link');
+      bsCss.rel = 'stylesheet';
+      bsCss.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css';
+      bsCss.className = 'ozikol-injected-tag';
+      document.head.appendChild(bsCss);
+    }
+    if (!document.querySelector('link[href*="font-awesome"]')) {
+      const faCss = document.createElement('link');
+      faCss.rel = 'stylesheet';
+      faCss.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
+      faCss.className = 'ozikol-injected-tag';
+      document.head.appendChild(faCss);
+    }
+  }
+
+  private ensureBootstrapJsScript(): void {
+    if (!document.querySelector('script[src*="bootstrap"]')) {
+      const bsJs = document.createElement('script');
+      bsJs.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js';
+      bsJs.className = 'ozikol-injected-tag';
+      document.body.appendChild(bsJs);
+    }
+  }
+
+  private appendHtmlToContainer(container: HTMLElement, htmlString: string, zone: string): void {
+    const temp = document.createElement('div');
+    temp.innerHTML = htmlString.trim();
+
+    Array.from(temp.children).forEach(child => {
+      const el = child as HTMLElement;
+      el.classList.add('ozikol-injected-tag', `ozikol-zone-${zone}`);
+
+      if (el.tagName.toLowerCase() === 'script') {
+        const script = document.createElement('script');
+        script.className = el.className;
+        Array.from(el.attributes).forEach(attr => script.setAttribute(attr.name, attr.value));
+        script.textContent = el.textContent || '';
+        container.appendChild(script);
+      } else {
+        container.appendChild(el);
       }
     });
   }
 
-  scrollToSection(sectionId: string, event: Event): void {
-    event.preventDefault();
-    const el = document.getElementById(sectionId);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  private prependHtmlToBody(htmlString: string): void {
+    const temp = document.createElement('div');
+    temp.innerHTML = htmlString.trim();
+
+    Array.from(temp.children).reverse().forEach(child => {
+      const el = child as HTMLElement;
+      el.classList.add('ozikol-injected-tag', 'ozikol-zone-body-open');
+      if (document.body.firstChild) {
+        document.body.insertBefore(el, document.body.firstChild);
+      } else {
+        document.body.appendChild(el);
+      }
+    });
+  }
+
+  private recordTelemetry(): void {
+    try {
+      this.apiService.post('WebsiteContentApi/track-view', {
+        pageUrl: window.location.pathname || '/',
+        pageTitle: this.titleService.getTitle() || this.brandName
+      }).subscribe({
+        next: () => {},
+        error: () => {}
+      });
+    } catch {
+      // Telemetry failures are non-blocking
     }
+  }
+
+  // ========================================================
+  // INTERACTIVE EVENT DELEGATION (Dropdowns, Links, Forms)
+  // ========================================================
+
+  @HostListener('click', ['$event'])
+  onGlobalClick(e: MouseEvent): void {
+    const target = e.target as HTMLElement;
+    if (!target) return;
+
+    // 1. Dropdown Toggle Click Handler
+    const dropdownToggle = target.closest('.dropdown-toggle, [data-bs-toggle="dropdown"]') as HTMLElement;
+    if (dropdownToggle) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const parentDropdown = dropdownToggle.closest('.dropdown');
+      const menu = parentDropdown?.querySelector('.dropdown-menu');
+
+      if (menu) {
+        const isAlreadyOpen = menu.classList.contains('show');
+        document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(t => t.setAttribute('aria-expanded', 'false'));
+
+        if (!isAlreadyOpen) {
+          menu.classList.add('show');
+          dropdownToggle.setAttribute('aria-expanded', 'true');
+        }
+      }
+      return;
+    }
+
+    // 2. Click Outside Closes All Dropdowns
+    if (!target.closest('.dropdown')) {
+      document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+      document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(t => t.setAttribute('aria-expanded', 'false'));
+    }
+
+    // 3. Dropdown Items & Internal Navigation Links
+    const anchor = target.closest('a') as HTMLAnchorElement;
+    if (anchor && !anchor.classList.contains('dropdown-toggle')) {
+      const href = (anchor.getAttribute('href') || '').trim();
+
+      if (href && !href.startsWith('http') && !href.startsWith('mailto:') && !href.startsWith('tel:') && !href.startsWith('javascript:')) {
+        if (href.startsWith('#')) {
+          e.preventDefault();
+          const element = document.querySelector(href);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+          return;
+        }
+
+        // Seamless In-App Routing via Angular Router
+        e.preventDefault();
+        document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+        this.router.navigateByUrl(href);
+        return;
+      }
+    }
+
+    // 4. Dynamic Form Submit Button Delegator
+    const submitBtn = target.closest('button[type="submit"], input[type="submit"]') as HTMLElement;
+    if (submitBtn) {
+      const form = submitBtn.closest('form') as HTMLFormElement;
+      if (form) {
+        e.preventDefault();
+        this.submitDynamicForm(form, submitBtn);
+      }
+    }
+  }
+
+  /**
+   * Submits a public interactive form (e.g., Contact Us, Newsletter, Service Request)
+   * to WebsiteContentApi/forms/{formKey}/submit.
+   */
+  private submitDynamicForm(form: HTMLFormElement, submitBtn: HTMLElement): void {
+    const formKey = form.getAttribute('data-form-key') || form.id || 'contact-us';
+    const formData = new FormData(form);
+    const dataPayload: Record<string, any> = {};
+
+    formData.forEach((value, key) => {
+      dataPayload[key] = value;
+    });
+
+    const originalText = submitBtn.innerHTML;
+    submitBtn.setAttribute('disabled', 'true');
+    submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Submitting...`;
+
+    this.apiService.post(`WebsiteContentApi/forms/${formKey}/submit`, {
+      data: dataPayload,
+      sourcePageUrl: window.location.pathname
+    }).subscribe({
+      next: (res: any) => {
+        submitBtn.removeAttribute('disabled');
+        submitBtn.innerHTML = originalText;
+        const successMsg = res?.message || 'Thank you! Your submission has been received.';
+        this.toastService.success(successMsg);
+        form.reset();
+      },
+      error: (err: any) => {
+        submitBtn.removeAttribute('disabled');
+        submitBtn.innerHTML = originalText;
+        const errorMsg = err?.error?.message || 'Unable to submit your request. Please check all fields.';
+        this.toastService.error(errorMsg);
+      }
+    });
   }
 }

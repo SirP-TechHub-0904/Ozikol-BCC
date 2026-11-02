@@ -636,7 +636,10 @@
               <span>Contact Us</span>
             </button>
             <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'blog'" (click)="setModalPreviewPage('blog')">
-              <span>Blog</span>
+              <span>Blog (List)</span>
+            </button>
+            <button type="button" class="sim-pill-btn" [class.active]="modalPreviewPageSlug === 'blog-detail'" (click)="setModalPreviewPage('blog-detail')">
+              <span>Blog (Detail)</span>
             </button>
           </div>
         </div>
@@ -1124,48 +1127,50 @@
               <div class="form-group full-width" style="background: rgba(0, 80, 229, 0.04); border: 1px solid rgba(0, 80, 229, 0.15); border-radius: 8px; padding: 12px 16px;">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                   <span class="material-symbols-outlined text-primary" style="font-size: 18px;">widgets</span>
-                  <h5 style="margin: 0; color: #0050e5; font-size: 13.5px; font-weight: 700;">PageSection & PageSectionList Content Engine</h5>
+                  <h5 style="margin: 0; color: #0050e5; font-size: 13.5px; font-weight: 700;">{{ activePreviewItem ? activePreviewItem.name : 'Body Section Content Engine' }}</h5>
                 </div>
                 <p style="margin: 0; font-size: 11.5px; color: #64748b; line-height: 1.4;">
-                  Configure section-level headlines, extended descriptions, CTAs, and repeatable list items. Fully synchronized with your CMS and database models.
+                  Configure section headlines, narratives, repeatable cards, and contact points tailored specifically for this section.
                 </p>
               </div>
 
-              <!-- Main Title & Eyebrow -->
-              <div class="form-group">
+              <!-- Main Title (Always present in all 9 body templates) -->
+              <div class="form-group" *ngIf="templateUses('Title')">
                 <label class="form-lbl" [innerText]="'MAIN TITLE ({{ Title }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl fw-bold" placeholder="e.g. Empowering Modern Organizations" />
               </div>
 
-              <div class="form-group">
+              <!-- Mini Title / Eyebrow (Only shown if template uses MiniTitle) -->
+              <div class="form-group" *ngIf="templateUses('MiniTitle')">
                 <label class="form-lbl" [innerText]="'MINI TITLE / EYEBROW ({{ MiniTitle }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="e.g. NEXT-GENERATION PLATFORM" />
               </div>
 
-              <!-- Primary & Extended Descriptions -->
-              <div class="form-group full-width">
+              <!-- Primary Description (Only shown if template uses Description) -->
+              <div class="form-group full-width" *ngIf="templateUses('Description')">
                 <label class="form-lbl" [innerText]="'SECTION DESCRIPTION ({{ Description }})'"></label>
                 <textarea [(ngModel)]="previewContent.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" placeholder="Primary overview narrative..."></textarea>
               </div>
 
-              <div class="form-group full-width">
+              <!-- Full Extended Description (Only shown if template uses FullDescription) -->
+              <div class="form-group full-width" *ngIf="templateUses('FullDescription')">
                 <label class="form-lbl" [innerText]="'FULL EXTENDED DESCRIPTION ({{ FullDescription }})'"></label>
-                <textarea [(ngModel)]="previewContent.fullDescription" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Secondary extended narrative (used in split sections and mission overviews)..."></textarea>
+                <textarea [(ngModel)]="previewContent.fullDescription" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="3" placeholder="Secondary extended narrative..."></textarea>
               </div>
 
-              <!-- Images -->
-              <div class="form-group">
+              <!-- Images (Only shown if template uses ImageUrl / SecondImageUrl) -->
+              <div class="form-group" *ngIf="templateUses('ImageUrl')">
                 <label class="form-lbl" [innerText]="'PRIMARY IMAGE URL ({{ ImageUrl }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.imageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://..." />
               </div>
 
-              <div class="form-group">
+              <div class="form-group" *ngIf="templateUses('SecondImageUrl') || templateUses('SecondUrl')">
                 <label class="form-lbl" [innerText]="'SECONDARY IMAGE / OVERLAY URL ({{ SecondImageUrl }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.secondImageUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://..." />
               </div>
 
-              <!-- Action Buttons -->
-              <div class="form-group">
+              <!-- Action Buttons (Only shown if template uses ButtonText) -->
+              <div class="form-group" *ngIf="templateUses('ButtonText') || templateUses('ButtonLink')">
                 <div style="display: flex; gap: 10px;">
                   <div style="flex: 1;">
                     <label class="form-lbl" [innerText]="'PRIMARY BUTTON TEXT ({{ ButtonText }})'"></label>
@@ -1178,7 +1183,8 @@
                 </div>
               </div>
 
-              <div class="form-group">
+              <!-- Secondary Action Buttons (Only shown if template uses SecondaryButtonText) -->
+              <div class="form-group" *ngIf="templateUses('SecondaryButtonText') || templateUses('SecondaryButtonLink')">
                 <div style="display: flex; gap: 10px;">
                   <div style="flex: 1;">
                     <label class="form-lbl" [innerText]="'SECONDARY BUTTON TEXT ({{ SecondaryButtonText }})'"></label>
@@ -1191,46 +1197,46 @@
                 </div>
               </div>
 
-              <!-- Direct Link & YouTube Video -->
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'DIRECT URL LINK ({{ DirectUrl }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.directUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://external-resource.com" />
-              </div>
-
-              <div class="form-group">
-                <label class="form-lbl" [innerText]="'YOUTUBE VIDEO EMBED ({{ YoutubeUrlLink }})'"></label>
-                <input type="text" [(ngModel)]="previewContent.youtubeUrlLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://www.youtube.com/embed/..." />
-              </div>
-
-              <!-- Contact & Office Information -->
-              <div class="form-group">
+              <!-- Contact & Office Information (Only shown if template uses Email, Phone, Address, WorkingHours) -->
+              <div class="form-group" *ngIf="templateUses('Email')">
                 <label class="form-lbl" [innerText]="'CONTACT EMAIL ({{ Email }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.email" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="contact@organization.com" />
               </div>
 
-              <div class="form-group">
+              <div class="form-group" *ngIf="templateUses('Phone')">
                 <label class="form-lbl" [innerText]="'PHONE NUMBER ({{ Phone }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.phone" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="+1 (555) 019-2834" />
               </div>
 
-              <div class="form-group">
+              <div class="form-group" *ngIf="templateUses('Address')">
                 <label class="form-lbl" [innerText]="'OFFICE ADDRESS ({{ Address }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.address" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="100 Innovation Parkway, Suite 400" />
               </div>
 
-              <div class="form-group">
+              <div class="form-group" *ngIf="templateUses('WorkingHours')">
                 <label class="form-lbl" [innerText]="'WORKING HOURS ({{ WorkingHours }})'"></label>
                 <input type="text" [(ngModel)]="previewContent.workingHours" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="Monday - Friday: 8:00 AM - 6:00 PM" />
               </div>
 
+              <!-- Direct Link & YouTube Video (Only shown if template uses them) -->
+              <div class="form-group" *ngIf="templateUses('DirectUrl')">
+                <label class="form-lbl" [innerText]="'DIRECT URL LINK ({{ DirectUrl }})'"></label>
+                <input type="text" [(ngModel)]="previewContent.directUrl" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://external-resource.com" />
+              </div>
+
+              <div class="form-group" *ngIf="templateUses('YoutubeUrlLink') || templateUses('YoutubeVideo')">
+                <label class="form-lbl" [innerText]="'YOUTUBE VIDEO EMBED ({{ YoutubeUrlLink }})'"></label>
+                <input type="text" [(ngModel)]="previewContent.youtubeUrlLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" placeholder="https://www.youtube.com/embed/..." />
+              </div>
+
               <!-- Repeatable Card Loop (PageSectionLists) -->
-              <div class="form-group full-width">
+              <div class="form-group full-width" *ngIf="templateUses('PageSectionLists')">
                 <div class="lbl-with-note">
                   <div>
-                    <label class="form-lbl" style="margin-bottom: 2px;">REPEATABLE CARDS / SUB-ITEMS (PageSectionLists Loop)</label>
-                    <span style="font-size: 11px; color: #64748b;">Powers 3-column feature grids, metric counters, testimonials, and FAQ accordion items.</span>
+                    <label class="form-lbl text-primary fw-bold" style="margin-bottom: 2px;">{{ getRepeatableSectionTitle() | uppercase }}</label>
+                    <span style="font-size: 11px; color: #64748b;">Live repeatable list items. Add, edit, or remove items to customize the layout.</span>
                   </div>
-                  <button type="button" class="btn-add-subitem" (click)="addPreviewSubItem()">+ Add List Item</button>
+                  <button type="button" class="btn-add-subitem" (click)="addPreviewSubItem()">+ Add Item</button>
                 </div>
 
                 <div class="subitems-list">
@@ -1239,7 +1245,7 @@
                       <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="subitem-badge">#{{ i + 1 }}</span>
                         <span *ngIf="item.iconText" class="badge bg-light text-dark border d-inline-flex align-items-center gap-1" style="font-size: 11px; padding: 2px 8px;">
-                          <i class="material-symbols-outlined" style="font-size: 14px;">{{ item.iconText }}</i>
+                          <i [ngClass]="item.iconText.startsWith('fa-') ? item.iconText : 'material-symbols-outlined'" style="font-size: 14px;">{{ item.iconText.startsWith('fa-') ? '' : item.iconText }}</i>
                           <span>{{ item.iconText }}</span>
                         </span>
                         <span *ngIf="item.miniTitle" class="badge bg-primary-subtle text-primary" style="font-size: 10.5px;">{{ item.miniTitle }}</span>
@@ -1250,38 +1256,34 @@
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                      <div>
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Icon Glyph / Class (IconText)</label>
-                        <input type="text" [(ngModel)]="item.iconText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. verified_user, sync, rocket" />
+                      <div *ngIf="templateUses('IconText') || templateUses('Icon')">
+                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Icon Glyph or Class (IconText)</label>
+                        <input type="text" [(ngModel)]="item.iconText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. fa-solid fa-check or verified_user" />
                       </div>
-                      <div>
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Eyebrow / Subtitle / Metric Unit (MiniTitle)</label>
+                      <div *ngIf="templateUses('MiniTitle')">
+                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Eyebrow / Subtitle / Metric (MiniTitle)</label>
                         <input type="text" [(ngModel)]="item.miniTitle" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. 01, 99.9%, SECURITY" />
                       </div>
                     </div>
 
                     <div style="margin-bottom: 8px;">
-                      <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Card Title / Headline (Title)</label>
-                      <input type="text" [(ngModel)]="item.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12.5px; font-weight: 600; height: 34px;" placeholder="Card Title or Question" />
+                      <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Item Headline / Title (Title)</label>
+                      <input type="text" [(ngModel)]="item.title" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12.5px; font-weight: 600; height: 34px;" placeholder="Item Title, Metric Number, or Question" />
                     </div>
 
-                    <div style="margin-bottom: 8px;">
-                      <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Card Narrative / Answer (Description)</label>
-                      <textarea [(ngModel)]="item.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" style="font-size: 12px;" placeholder="Card description or FAQ answer..."></textarea>
+                    <div style="margin-bottom: 8px;" *ngIf="templateUses('Description')">
+                      <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Item Narrative / Details (Description)</label>
+                      <textarea [(ngModel)]="item.description" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" rows="2" style="font-size: 12px;" placeholder="Item description, metric label, or FAQ answer..."></textarea>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
-                      <div>
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Extra Detail / Footnote (MoreDescription)</label>
-                        <input type="text" [(ngModel)]="item.moreDescription" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. Verified by ISO audit" />
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;" *ngIf="templateUses('MoreDescription') || templateUses('ButtonText')">
+                      <div *ngIf="templateUses('MoreDescription')">
+                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Role / Company / Extra (MoreDescription)</label>
+                        <input type="text" [(ngModel)]="item.moreDescription" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. Managing Director" />
                       </div>
-                      <div>
+                      <div *ngIf="templateUses('ButtonText')">
                         <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Button Text (ButtonText)</label>
                         <input type="text" [(ngModel)]="item.buttonText" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="e.g. Learn More" />
-                      </div>
-                      <div>
-                        <label style="font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase;">Button Link (ButtonLink)</label>
-                        <input type="text" [(ngModel)]="item.buttonLink" (ngModelChange)="onPreviewContentChange()" class="form-ctrl" style="font-size: 12px; height: 32px;" placeholder="# or /service" />
                       </div>
                     </div>
                   </div>
@@ -1427,6 +1429,14 @@
                 </button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('MenuCtaButtons', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('MenuCtaButtons', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginButton }}')" [innerText]="'+ {{ LoginButton }}'" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginButton', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginButton', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginUrl }}')" [innerText]="'+ {{ LoginUrl }}'" title="URL: /dashboard/console (Admin), /dashboard/workspace (User), or /auth/login"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
             </ng-container>
 
             <!-- Hero Category Ribbon (Slider Model) -->
@@ -1528,6 +1538,14 @@
                   <span>+ Form Embed</span>
                 </button>
                 <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('Form', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('Form', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginButton }}')" [innerText]="'+ {{ LoginButton }}'" title="Renders role-aware button: Console for Admin, My Workspace for User, or Sign In"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginButton', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginButton', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
+              </span>
+              <span class="token-chip-wrap">
+                <button type="button" class="token-chip chip-core" (click)="insertTokenAtModalCursor('{{ LoginUrl }}')" [innerText]="'+ {{ LoginUrl }}'" title="URL: /dashboard/console (Admin), /dashboard/workspace (User), or /auth/login"></button>
+                <button type="button" class="token-info-icon-btn" (mouseenter)="showTokenDocModal('LoginUrl', $event)" (mouseleave)="hideTokenDocModal()" (click)="toggleTokenDocModal('LoginUrl', $event)" title="Information"><span class="material-symbols-outlined">info</span></button>
               </span>
             </ng-container>
 
@@ -1805,10 +1823,20 @@
               <span class="material-symbols-outlined">style</span>
               <span>Scoped CSS Stylesheet</span>
             </div>
-            <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.cssStyles, 'CSS')">
-              <span class="material-symbols-outlined">content_copy</span>
-              <span>Copy CSS</span>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+              <button *ngIf="!activePreviewItem.cssStyles || !activePreviewItem.cssStyles.trim()" type="button" class="btn-copy-code" (click)="initializeTemplateCss()">
+                <span class="material-symbols-outlined">add</span>
+                <span>Add Starter CSS</span>
+              </button>
+              <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.cssStyles, 'CSS')">
+                <span class="material-symbols-outlined">content_copy</span>
+                <span>Copy CSS</span>
+              </button>
+            </div>
+          </div>
+          <div class="code-guideline-bar">
+            <span class="material-symbols-outlined guideline-icon">lightbulb</span>
+            <span>Write pure CSS only (do NOT include <code>&lt;style&gt;</code> tags). Scope class names to your section to prevent global leaks.</span>
           </div>
           <div class="monaco-host-wrap">
             <div #monacoCssContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
@@ -1823,10 +1851,20 @@
               <span class="material-symbols-outlined">terminal</span>
               <span>JavaScript Logic Script</span>
             </div>
-            <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.jsScript || '', 'JavaScript')" [disabled]="!activePreviewItem.jsScript">
-              <span class="material-symbols-outlined">content_copy</span>
-              <span>Copy JS</span>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+              <button *ngIf="!activePreviewItem.jsScript" type="button" class="btn-copy-code" (click)="initializeTemplateJs()">
+                <span class="material-symbols-outlined">add_code</span>
+                <span>Initialize JS</span>
+              </button>
+              <button type="button" class="btn-copy-code" (click)="copyCode(activePreviewItem.jsScript || '', 'JavaScript')" [disabled]="!activePreviewItem.jsScript">
+                <span class="material-symbols-outlined">content_copy</span>
+                <span>Copy JS</span>
+              </button>
+            </div>
+          </div>
+          <div class="code-guideline-bar">
+            <span class="material-symbols-outlined guideline-icon">info</span>
+            <span>Write pure JavaScript only (do NOT include <code>&lt;script&gt;</code> tags). Keep code wrapped in an IIFE <code>(function() &#123; ... &#125;)();</code> so multiple functions don't collide.</span>
           </div>
           <div class="monaco-host-wrap" *ngIf="activePreviewItem.jsScript">
             <div #monacoJsContainer class="monaco-editor-canvas" [style.display]="monacoReady ? 'block' : 'none'"></div>
@@ -1834,7 +1872,11 @@
           </div>
           <div class="code-empty-state" *ngIf="!activePreviewItem.jsScript">
             <span class="material-symbols-outlined empty-code-icon">data_object</span>
-            <p>This template is pure HTML/CSS and does not require an external JavaScript bundle.</p>
+            <p>This template is pure HTML/CSS and does not currently have custom JavaScript logic.</p>
+            <button type="button" class="btn btn-sm btn-primary mt-2 d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill shadow-sm" (click)="initializeTemplateJs()">
+              <span class="material-symbols-outlined fs-6">add_code</span>
+              <span>Add Custom JavaScript</span>
+            </button>
           </div>
         </div>
 
@@ -1964,6 +2006,79 @@
           </div>
         </div>
 
+        <!-- Page Navigation Switcher Toolbar -->
+        <div class="page-sim-toolbar" style="border-bottom: 1.5px solid #e2e8f0; padding: 10px 24px; background: #f8fafc;">
+          <div class="sim-brand-badge">
+            <span class="material-symbols-outlined fs-6">web</span>
+            <span>Switch Page:</span>
+          </div>
+          <div class="sim-pills-wrap">
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'home'"
+              (click)="setPreviewPage('home')"
+            >
+              <span class="material-symbols-outlined fs-6">home</span>
+              <span>Home</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'about'"
+              (click)="setPreviewPage('about')"
+            >
+              <span class="material-symbols-outlined fs-6">info</span>
+              <span>About Us</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'services'"
+              (click)="setPreviewPage('services')"
+            >
+              <span class="material-symbols-outlined fs-6">design_services</span>
+              <span>Services</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'request-service'"
+              (click)="setPreviewPage('request-service')"
+            >
+              <span class="material-symbols-outlined fs-6">assignment_turned_in</span>
+              <span>Request a Service</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'blog'"
+              (click)="setPreviewPage('blog')"
+            >
+              <span class="material-symbols-outlined fs-6">grid_view</span>
+              <span>Blog (List)</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'blog-detail'"
+              (click)="setPreviewPage('blog-detail')"
+            >
+              <span class="material-symbols-outlined fs-6">article</span>
+              <span>Blog (Single Article)</span>
+            </button>
+            <button
+              type="button"
+              class="sim-pill-btn"
+              [class.active]="previewActivePageSlug === 'contact'"
+              (click)="setPreviewPage('contact')"
+            >
+              <span class="material-symbols-outlined fs-6">contact_support</span>
+              <span>Contact Us</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Rendered Full Page Canvas -->
         <div class="full-demo-body" [class.viewport-mobile]="fullDemoViewport === 'mobile'" [class.viewport-tablet]="fullDemoViewport === 'tablet'">
           <div class="full-demo-canvas-wrapper">
@@ -2079,7 +2194,9 @@
               <select [(ngModel)]="tagForm.tagType" class="form-ctrl" (change)="onTagTypeChanged()">
                 <!-- Header Zone Types -->
                 <ng-container *ngIf="tagFormZone === 'head'">
-                  <option value="meta_tag">SEO / Social Meta Tag (&lt;meta&gt;)</option>
+                  <option value="meta_tag">
+                    SEO / Social Meta Tag (&lt;meta&gt;){{ getExistingSingletonTag('meta_tag', 'head') ? ' — [Already Added]' : '' }}
+                  </option>
                   <option value="link_stylesheet">External Stylesheet (&lt;link rel="stylesheet"&gt;) / Upload CSS</option>
                   <option value="inline_css">Inline Custom CSS (&lt;style&gt;)</option>
                   <option value="google_fonts">Google Fonts Link &amp; Preconnect</option>
@@ -2090,10 +2207,18 @@
 
                 <!-- Body Open Zone Types -->
                 <ng-container *ngIf="tagFormZone === 'body_open'">
-                  <option value="gtm_noscript">Google Tag Manager (&lt;noscript&gt; iframe)</option>
-                  <option value="pixel_noscript">Meta / Facebook Pixel (&lt;noscript&gt; img)</option>
-                  <option value="page_loader">Page Splash / Preloader Screen</option>
-                  <option value="svg_sprites">SVG Icon Sprite Sheet (&lt;symbol&gt;)</option>
+                  <option value="gtm_noscript">
+                    Google Tag Manager (&lt;noscript&gt; iframe){{ getExistingSingletonTag('gtm_noscript', 'body_open') ? ' — [Already Added]' : '' }}
+                  </option>
+                  <option value="pixel_noscript">
+                    Meta / Facebook Pixel (&lt;noscript&gt; img){{ getExistingSingletonTag('pixel_noscript', 'body_open') ? ' — [Already Added]' : '' }}
+                  </option>
+                  <option value="page_loader">
+                    Page Splash / Preloader Screen{{ getExistingSingletonTag('page_loader', 'body_open') ? ' — [Already Added]' : '' }}
+                  </option>
+                  <option value="svg_sprites">
+                    SVG Icon Sprite Sheet (&lt;symbol&gt;){{ getExistingSingletonTag('svg_sprites', 'body_open') ? ' — [Already Added]' : '' }}
+                  </option>
                   <option value="raw_html">Raw HTML / Code Snippet</option>
                 </ng-container>
 
@@ -2101,10 +2226,29 @@
                 <ng-container *ngIf="tagFormZone === 'footer'">
                   <option value="script_url">External Vendor JS (&lt;script src="" defer&gt;)</option>
                   <option value="inline_script">Inline JavaScript (&lt;script&gt; DOMContentLoaded)</option>
-                  <option value="live_chat">Live Chat / Helpdesk Widget</option>
+                  <option value="live_chat">
+                    Live Chat / Helpdesk Widget{{ getExistingSingletonTag('live_chat', 'footer') ? ' — [Already Added]' : '' }}
+                  </option>
                   <option value="raw_html">Raw HTML / Footer Snippet</option>
                 </ng-container>
               </select>
+            </div>
+
+            <!-- Singleton Tag Warning Banner (shown when a singleton tag that already exists is selected) -->
+            <div class="form-group full-width" *ngIf="currentZoneExistingSingleton">
+              <div class="singleton-alert-banner">
+                <div class="singleton-alert-content">
+                  <span class="material-symbols-outlined icon-warn">warning</span>
+                  <div>
+                    <strong>This tag cannot be added twice (Singleton).</strong>
+                    <small>A '{{ currentZoneExistingSingleton.name }}' is already active in the {{ getZoneShortTitle(tagFormZone) }} zone.</small>
+                  </div>
+                </div>
+                <button type="button" class="btn-switch-edit" (click)="switchToEditSingleton(currentZoneExistingSingleton)">
+                  <span class="material-symbols-outlined">edit</span>
+                  <span>Edit Existing Tag</span>
+                </button>
+              </div>
             </div>
 
             <!-- Meta & Icon Preset Dropdown (Shown when meta_tag is selected) -->
@@ -2171,17 +2315,47 @@
               </div>
             </div>
 
-            <!-- CSS File Upload & Link Studio (Shown when stylesheet or css is selected in head) -->
-            <div class="form-group full-width" *ngIf="tagFormZone === 'head' && (tagForm.tagType === 'link_stylesheet' || tagForm.tagType === 'inline_css')">
-              <div class="css-upload-studio-card">
-                <div class="css-upload-header">
-                  <div class="css-upload-title-box">
-                    <div class="css-icon-badge">
-                      <span class="material-symbols-outlined">upload_file</span>
+            <!-- 1-Click Popular Framework & CDN Presets -->
+            <div class="form-group full-width" *ngIf="tagFormZone === 'head' && (tagForm.tagType === 'link_stylesheet' || tagForm.tagType === 'external_js' || tagForm.tagType === 'google_fonts')">
+              <div class="framework-presets-studio-card">
+                <div class="presets-header">
+                  <div class="presets-title-box">
+                    <div class="preset-icon-badge">
+                      <span class="material-symbols-outlined">bolt</span>
                     </div>
                     <div>
-                      <strong>Upload Custom CSS File &amp; Link It</strong>
-                      <small>Select a .css file from your computer to host and link via &lt;link rel="stylesheet"&gt; or embed inline.</small>
+                      <strong>1-Click Popular Framework &amp; CDN Presets</strong>
+                      <small>Instantly inject pre-configured production CDN stylesheets, fonts, and icon packs.</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="preset-chips-scroll">
+                  <button type="button" 
+                          class="framework-preset-chip" 
+                          *ngFor="let preset of frameworkPresets" 
+                          (click)="applyFrameworkPreset(preset)">
+                    <span class="material-symbols-outlined preset-chip-icon">{{ preset.icon }}</span>
+                    <span class="preset-chip-name">{{ preset.name }}</span>
+                    <span class="preset-chip-badge">{{ preset.badge }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cloudflare R2 + Cloudflare CDN Custom CSS Studio -->
+            <div class="form-group full-width" *ngIf="tagFormZone === 'head' && (tagForm.tagType === 'link_stylesheet' || tagForm.tagType === 'inline_css')">
+              <div class="cloudflare-r2-studio-card">
+                <div class="cloudflare-header">
+                  <div class="cloudflare-title-box">
+                    <div class="cloudflare-icon-badge">
+                      <span class="material-symbols-outlined">cloud_upload</span>
+                    </div>
+                    <div>
+                      <div class="cloudflare-pill-row">
+                        <strong>Cloudflare R2 + Global CDN</strong>
+                        <span class="cf-badge-tag">Zero-Egress Edge Storage</span>
+                      </div>
+                      <small>Upload your stylesheet to Cloudflare R2 for worldwide edge distribution and sub-millisecond asset caching.</small>
                     </div>
                   </div>
                   <input type="file" #cssFileInput accept=".css" (change)="onCssFileSelected($event)" style="display: none;" />
@@ -2191,6 +2365,7 @@
                   </button>
                 </div>
 
+                <!-- Selected File Status Bar -->
                 <div class="css-file-status-bar" *ngIf="selectedCssFileName">
                   <div class="css-file-info">
                     <span class="material-symbols-outlined icon-file">css</span>
@@ -2199,12 +2374,36 @@
                   </div>
                   <div class="css-action-buttons">
                     <button type="button" class="btn-action-link-css" (click)="uploadAndLinkCssFile()" [disabled]="uploadingCss">
-                      <span class="material-symbols-outlined">{{ uploadingCss ? 'sync' : 'link' }}</span>
-                      <span>{{ uploadingCss ? 'Uploading...' : 'Upload &amp; Link (&lt;link rel="stylesheet"&gt;)' }}</span>
+                      <span class="material-symbols-outlined">{{ uploadingCss ? 'sync' : 'rocket_launch' }}</span>
+                      <span>{{ uploadingCss ? 'Uploading to R2...' : 'Upload to Cloudflare R2 &amp; Link' }}</span>
                     </button>
                     <button type="button" class="btn-action-import-css" (click)="importCssAsInlineStyle()" [disabled]="uploadingCss">
                       <span class="material-symbols-outlined">code</span>
                       <span>Import as Inline CSS (&lt;style&gt;)</span>
+                    </button>
+                    <button type="button" class="btn-dismiss-bar" (click)="resetCssUploadState()" title="Remove chosen file">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Uploaded CDN URL Ribbon -->
+                <div class="cloudflare-cdn-result-bar" *ngIf="uploadedCssUrl">
+                  <div class="cdn-url-info">
+                    <span class="material-symbols-outlined icon-edge">cloud_done</span>
+                    <span class="cdn-label">CDN Edge URL:</span>
+                    <a [href]="uploadedCssUrl" target="_blank" rel="noopener noreferrer" class="cdn-url-link" title="Open stylesheet directly in new tab">
+                      <span>{{ uploadedCssUrl }}</span>
+                      <span class="material-symbols-outlined icon-external">open_in_new</span>
+                    </a>
+                  </div>
+                  <div class="cdn-action-btns">
+                    <button type="button" class="btn-copy-cdn-url" (click)="copyCdnUrl(uploadedCssUrl)">
+                      <span class="material-symbols-outlined">content_copy</span>
+                      <span>Copy URL</span>
+                    </button>
+                    <button type="button" class="btn-dismiss-bar" (click)="uploadedCssUrl = ''" title="Dismiss CDN ribbon">
+                      <span class="material-symbols-outlined">close</span>
                     </button>
                   </div>
                 </div>
@@ -2212,8 +2411,8 @@
             </div>
           </div>
 
-          <!-- Placeholder Tokens Quick Ribbon -->
-          <div class="token-quick-ribbon" style="margin-top: 14px;">
+          <!-- Placeholder Tokens Quick Ribbon (Only displayed for Meta Tags and dynamic Raw HTML) -->
+          <div class="token-quick-ribbon" style="margin-top: 14px;" *ngIf="tagForm.tagType === 'meta_tag' || tagForm.tagType === 'raw_html'">
             <div class="token-ribbon-heading">
               <span class="material-symbols-outlined icon-token">token</span>
               <span>Available Placeholders (Click to insert):</span>
@@ -2236,9 +2435,12 @@
           <div class="form-group" style="margin-top: 10px;">
             <div class="lbl-with-note">
               <label class="form-lbl">TAG / SCRIPT CODE CONTENT *</label>
-              <span class="note-pill"><i class="fa-solid fa-bolt text-warning me-1"></i> Auto-generated sample boilerplate with placeholders. Customize as needed!</span>
+              <span class="note-pill" *ngIf="tagForm.tagType === 'meta_tag' || tagForm.tagType === 'raw_html'">
+                <i class="fa-solid fa-bolt text-warning me-1"></i> Auto-generated sample boilerplate with placeholders. Customize as needed!
+              </span>
             </div>
-            <textarea [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="9" placeholder="Paste your HTML, script, or link snippet here..."></textarea>
+            <textarea [(ngModel)]="tagForm.content" class="form-ctrl code-editor" rows="9"
+              [placeholder]="tagForm.tagType === 'link_stylesheet' ? 'Upload your CSS file above to Cloudflare R2, choose a 1-click preset, or paste a <link rel=&quot;stylesheet&quot; href=&quot;...&quot; /> tag here...' : (tagForm.tagType === 'script_url' ? 'Paste an external script tag here, e.g. <script src=&quot;https://...&quot; async></script>' : 'Paste your HTML, script, or link snippet here...')"></textarea>
           </div>
         </div>
 

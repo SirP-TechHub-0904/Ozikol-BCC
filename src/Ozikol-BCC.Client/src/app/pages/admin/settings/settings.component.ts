@@ -436,6 +436,73 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               <label class="form-label">Login Instructions & Help Note Body</label>
               <textarea [(ngModel)]="brand.loginNote" rows="3" class="form-control" placeholder="Please sign in with your institutional credentials or single sign-on..."></textarea>
             </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label class="form-label">Login Screen Footer Note & Compliance Disclaimer</label>
+              <textarea [(ngModel)]="brand.loginNoteFooter" rows="2" class="form-control" placeholder="By accessing this portal, you agree to the organizational terms of use and information security standards."></textarea>
+              <span class="field-hint">Displayed at the base of the authentication screen below the forms</span>
+            </div>
+
+            <!-- Brand Logo Preference for Auth Screen -->
+            <div class="form-divider" style="margin: 20px 0 16px;"><span>AUTHENTICATION SCREEN BRAND LOGO PREFERENCE</span></div>
+            <div class="form-grid-2" style="margin-bottom: 14px;">
+              <div class="toggle-card" [class.active-toggle]="brand.useNormalLogoInLogin" (click)="brand.useNormalLogoInLogin = true; brand.useWhiteLogoInLogin = false;" style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; background: #ffffff;">
+                <input type="radio" name="loginLogoPref" [checked]="brand.useNormalLogoInLogin" />
+                <div>
+                  <strong style="font-size: 13px; display: block; color: #0f172a;">Use Standard Logo</strong>
+                  <span style="font-size: 11.5px; color: #64748b;">Displays the primary corporate logo on authentication screens</span>
+                </div>
+              </div>
+
+              <div class="toggle-card" [class.active-toggle]="brand.useWhiteLogoInLogin" (click)="brand.useWhiteLogoInLogin = true; brand.useNormalLogoInLogin = false;" style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; background: #ffffff;">
+                <input type="radio" name="loginLogoPref" [checked]="brand.useWhiteLogoInLogin" />
+                <div>
+                  <strong style="font-size: 13px; display: block; color: #0f172a;">Use White Contrast Logo</strong>
+                  <span style="font-size: 11.5px; color: #64748b;">Displays the white contrast logo (recommended for dark wallpapers)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Website Sign-In Button Placement & Custom Label -->
+            <div class="form-divider" style="margin: 24px 0 16px;"><span>LIVE WEBSITE SIGN-IN BUTTON & GATEWAY SETTINGS</span></div>
+
+            <div class="form-grid-2" style="margin-bottom: 16px;">
+              <div class="form-group">
+                <label class="form-label">Sign-In Button Custom Label</label>
+                <input type="text" [(ngModel)]="brand.loginButtonText" class="form-control" placeholder="e.g. Sign In, Member Portal, Console" />
+                <span class="field-hint">Button text displayed on the public website (displays 'Console' when authenticated)</span>
+              </div>
+
+              <div class="form-group" style="display: flex; flex-direction: column; justify-content: center;">
+                <label class="form-label">Sign-In Gateway Status</label>
+                <label class="custom-toggle-label" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding-top: 6px;">
+                  <input type="checkbox" [(ngModel)]="brand.activateLogin" style="width: 18px; height: 18px; accent-color: #0050e5; cursor: pointer;" />
+                  <div>
+                    <strong style="font-size: 13px; color: #0f172a;">Enable Public Sign-In Buttons</strong>
+                    <span style="display: block; font-size: 11.5px; color: #64748b;">Master switch to display sign-in entry points across the live website</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Placement Checkboxes (Menu, Footer, Both) -->
+            <div class="form-grid-2" style="margin-bottom: 10px;">
+              <div class="toggle-card" style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; background: #ffffff;">
+                <input type="checkbox" [(ngModel)]="brand.activateLoginInMenu" style="width: 18px; height: 18px; accent-color: #0050e5; margin-top: 2px; cursor: pointer;" />
+                <div>
+                  <strong style="font-size: 13px; display: block; color: #0f172a;">Navigation Menu Header</strong>
+                  <span style="font-size: 11.5px; color: #64748b;">Display sign-in button in top navigation bar alongside primary menu links & CTA</span>
+                </div>
+              </div>
+
+              <div class="toggle-card" style="border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; background: #ffffff;">
+                <input type="checkbox" [(ngModel)]="brand.activateLoginInFooter" style="width: 18px; height: 18px; accent-color: #0050e5; margin-top: 2px; cursor: pointer;" />
+                <div>
+                  <strong style="font-size: 13px; display: block; color: #0f172a;">Website Footer Links</strong>
+                  <span style="font-size: 11.5px; color: #64748b;">Display member portal / sign-in link in website footer columns and legal bar</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -2546,7 +2613,11 @@ export class SettingsComponent implements OnInit {
     loginTitle: '',
     loginNoteTitle: '',
     loginNote: '',
-    loginNoteFooter: ''
+    loginNoteFooter: '',
+    activateLogin: true,
+    activateLoginInMenu: true,
+    activateLoginInFooter: true,
+    loginButtonText: 'Sign In'
   };
 
   // Tab 2: Terminology Aliases
@@ -2922,12 +2993,17 @@ export class SettingsComponent implements OnInit {
         } else {
           localStorage.removeItem('tenant_logo');
         }
-        const activeIcon = this.brand.companyIconUrl || this.brand.companyLogoUrl || '/favicon.ico';
-        localStorage.setItem('tenant_icon', activeIcon);
+        const rawIcon = this.brand.companyIconUrl;
+        const activeIcon = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : '';
+        if (activeIcon) {
+          localStorage.setItem('tenant_icon', activeIcon);
+        } else {
+          localStorage.removeItem('tenant_icon');
+        }
         const favicons = document.querySelectorAll("link[rel*='icon']");
         if (favicons.length > 0) {
-          favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon);
-        } else {
+          favicons.forEach(el => (el as HTMLLinkElement).href = activeIcon || 'data:,');
+        } else if (activeIcon) {
           const link = document.createElement('link');
           link.rel = 'shortcut icon';
           link.type = 'image/x-icon';

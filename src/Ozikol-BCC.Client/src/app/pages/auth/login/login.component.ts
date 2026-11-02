@@ -13,9 +13,9 @@ import { ApiService } from '../../../core/services/api.service';
       <div class="login-card">
         <!-- Logo & Header -->
         <div class="card-header">
-          <div class="brand-avatar">
-            <img *ngIf="brandLogoUrl" [src]="brandLogoUrl" alt="Brand Logo" class="brand-logo-main" />
-            <span *ngIf="!brandLogoUrl" class="material-symbols-outlined">lock</span>
+          <div class="brand-avatar" *ngIf="brandIconUrl || brandInitials">
+            <img *ngIf="brandIconUrl" [src]="brandIconUrl" [alt]="brandCompanyName" class="brand-logo-main" />
+            <span *ngIf="!brandIconUrl && brandInitials" class="brand-initials">{{ brandInitials }}</span>
           </div>
           <h2 class="title">Sign In to Workspace</h2>
           <p class="subtitle">Enter your credentials to access your organization portal.</p>
@@ -48,7 +48,7 @@ import { ApiService } from '../../../core/services/api.service';
           <div class="form-group">
             <div class="label-row">
               <label for="password">Password</label>
-              <a routerLink="/reset-password" class="forgot-link">Forgot password?</a>
+              <a routerLink="/auth/reset-password" class="forgot-link">Forgot password?</a>
             </div>
             <div class="input-wrapper">
               <span class="material-symbols-outlined input-icon">key</span>
@@ -90,10 +90,10 @@ import { ApiService } from '../../../core/services/api.service';
         </form>
 
         <div class="card-footer">
-          <p class="signup-prompt">Need a new account? <a routerLink="/register" class="register-link">Register here</a></p>
+          <p class="signup-prompt">Need a new account? <a routerLink="/auth/register" class="register-link">Register here</a></p>
           <a routerLink="/" class="back-link">
             <span class="material-symbols-outlined">arrow_back</span>
-            Back to Public Website
+            Return to Home
           </a>
         </div>
       </div>
@@ -104,7 +104,7 @@ import { ApiService } from '../../../core/services/api.service';
           <div class="force-modal-header">
             <div class="force-modal-avatar">
               <img *ngIf="brandLogoUrl" [src]="brandLogoUrl" alt="Brand Logo" class="brand-logo-img" />
-              <span *ngIf="!brandLogoUrl" class="material-symbols-outlined">shield_person</span>
+              <span *ngIf="!brandLogoUrl" class="material-symbols-outlined">lock_reset</span>
             </div>
             <h3 class="force-modal-title">Temporary Password Detected</h3>
             <p class="force-modal-subtitle">For your security, please update your temporary credentials to a permanent password before accessing the portal.</p>
@@ -264,8 +264,8 @@ import { ApiService } from '../../../core/services/api.service';
                   type="text" 
                   [(ngModel)]="mfaCode" 
                   name="mfaCode" 
-                  placeholder="123456" 
-                  style="letter-spacing:4px; font-size:18px; font-weight:700; text-align:center;" 
+                  placeholder="6-digit code or backup key" 
+                  style="letter-spacing:2px; font-size:16px; font-weight:700; text-align:center;" 
                   required 
                 />
               </div>
@@ -279,7 +279,7 @@ import { ApiService } from '../../../core/services/api.service';
               </label>
             </div>
 
-            <button type="submit" [disabled]="mfaLoading || mfaCode.length < 6" class="force-btn-submit" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; background: #0050e5; color: #fff; border: none; cursor: pointer; margin-bottom: 8px;">
+            <button type="submit" [disabled]="mfaLoading || !mfaCode || mfaCode.trim().length < 4" class="force-btn-submit" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; background: #0050e5; color: #fff; border: none; cursor: pointer; margin-bottom: 8px;">
               <span *ngIf="mfaLoading" class="spinner"></span>
               <span *ngIf="!mfaLoading" class="material-symbols-outlined">verified_user</span>
               <span>{{ mfaLoading ? 'Verifying...' : 'Verify & Sign In' }}</span>
@@ -315,30 +315,21 @@ import { ApiService } from '../../../core/services/api.service';
   `,
   styles: [`
     .login-container {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      min-height: 100vh;
+      width: 100%;
       display: flex;
-      align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at 50% 10%, #1e293b 0%, #0f172a 100%);
-      padding: 24px;
-      font-family: 'Roboto', 'Inter', sans-serif;
       box-sizing: border-box;
-      overflow-y: auto;
-      z-index: 100;
+      padding: 0;
     }
     .login-card {
-      background: rgba(30, 41, 59, 0.85);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 20px;
-      padding: 40px;
+      padding: 36px 32px;
       width: 100%;
       max-width: 440px;
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
-      color: #f8fafc;
+      box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+      color: #0f172a;
       box-sizing: border-box;
     }
     .card-header {
@@ -346,60 +337,67 @@ import { ApiService } from '../../../core/services/api.service';
       flex-direction: column;
       align-items: center;
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
       width: 100%;
     }
     .brand-avatar {
       width: 58px;
       height: 58px;
       border-radius: 16px;
-      background: linear-gradient(135deg, #0050e5, #38bdf8);
+      background: #eff6ff;
+      border: 1.5px solid #dbeafe;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 16px;
-      box-shadow: 0 8px 22px rgba(0, 80, 229, 0.35);
+      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.08);
+      overflow: hidden;
     }
-    .brand-avatar span {
+    .brand-avatar span.material-symbols-outlined {
       font-size: 28px;
-      color: #fff;
+      color: #0050e5;
+    }
+    .brand-initials {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0050e5;
+      letter-spacing: -0.02em;
     }
     .brand-logo-main {
       max-width: 44px;
       max-height: 44px;
       object-fit: contain;
-      border-radius: 10px;
     }
     .title {
       font-size: 22px;
       font-weight: 800;
-      color: #ffffff;
+      color: #0f172a;
       margin: 0 0 6px;
       text-align: center;
     }
     .subtitle {
-      font-size: 13px;
-      color: #94a3b8;
+      font-size: 13.5px;
+      color: #64748b;
       margin: 0;
       text-align: center;
       line-height: 1.45;
     }
     .error-banner {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
-      padding: 12px 14px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 11px 14px;
       border-radius: 10px;
       font-size: 13px;
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
     .login-form {
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 16px;
     }
     .form-group {
       display: flex;
@@ -414,13 +412,13 @@ import { ApiService } from '../../../core/services/api.service';
     .form-group label {
       font-size: 11.5px;
       font-weight: 700;
-      color: #cbd5e1;
+      color: #475569;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
     .forgot-link {
-      font-size: 11.5px;
-      color: #38bdf8;
+      font-size: 12px;
+      color: #0050e5;
       text-decoration: none;
       font-weight: 600;
     }
@@ -430,14 +428,14 @@ import { ApiService } from '../../../core/services/api.service';
     .remember-row {
       display: flex;
       align-items: center;
-      margin-top: -4px;
+      margin-top: -2px;
     }
     .remember-label {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 12.5px;
-      color: #94a3b8;
+      font-size: 13px;
+      color: #475569;
       cursor: pointer;
       user-select: none;
     }
@@ -449,42 +447,44 @@ import { ApiService } from '../../../core/services/api.service';
     .input-icon {
       position: absolute;
       left: 14px;
-      color: #64748b;
+      color: #94a3b8;
       font-size: 20px;
       pointer-events: none;
     }
     .input-wrapper input {
       width: 100%;
-      background: rgba(15, 23, 42, 0.7);
-      border: 1.5px solid rgba(255, 255, 255, 0.14);
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
       border-radius: 10px;
       padding: 12px 42px 12px 44px;
-      color: #ffffff;
+      color: #0f172a;
       font-size: 14px;
+      font-weight: 500;
       outline: none;
       box-sizing: border-box;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: all 0.2s ease;
     }
     .input-wrapper input:focus {
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+      background: #ffffff;
+      border-color: #0050e5;
+      box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.15);
     }
     .toggle-pwd-btn {
       position: absolute;
       right: 12px;
       background: none;
       border: none;
-      color: #64748b;
+      color: #94a3b8;
       cursor: pointer;
       display: flex;
       align-items: center;
       padding: 4px;
     }
     .toggle-pwd-btn:hover {
-      color: #cbd5e1;
+      color: #0050e5;
     }
     .btn-submit {
-      margin-top: 8px;
+      margin-top: 6px;
       background: linear-gradient(135deg, #0050e5, #1f6bff);
       color: #ffffff;
       border: none;
@@ -498,14 +498,14 @@ import { ApiService } from '../../../core/services/api.service';
       justify-content: center;
       gap: 8px;
       transition: all 0.2s;
-      box-shadow: 0 4px 15px rgba(0, 80, 229, 0.35);
+      box-shadow: 0 4px 14px rgba(0, 80, 229, 0.3);
     }
     .btn-submit:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.45);
+      box-shadow: 0 6px 20px rgba(0, 80, 229, 0.4);
     }
     .btn-submit:disabled {
-      opacity: 0.7;
+      opacity: 0.65;
       cursor: not-allowed;
     }
     .spinner {
@@ -518,22 +518,22 @@ import { ApiService } from '../../../core/services/api.service';
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .card-footer {
-      margin-top: 24px;
+      margin-top: 20px;
       text-align: center;
     }
-    .signup-prompt { font-size: 13px; color: #94a3b8; margin: 0 0 10px; }
-    .register-link { color: #38bdf8; text-decoration: none; font-weight: 600; }
+    .signup-prompt { font-size: 13px; color: #64748b; margin: 0 0 10px; }
+    .register-link { color: #0050e5; text-decoration: none; font-weight: 700; }
     .register-link:hover { text-decoration: underline; }
     .back-link {
       color: #64748b;
-      font-size: 12.5px;
+      font-size: 13px;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: color 0.2s;
+      transition: color 0.15s;
     }
-    .back-link:hover { color: #cbd5e1; }
+    .back-link:hover { color: #0050e5; }
 
     /* Modal Backdrop */
     .modal-backdrop {
@@ -803,9 +803,11 @@ export class LoginComponent implements OnInit {
   loading = false;
   errorMessage = '';
 
-  // Brand Logo & Name
+  // Brand Logo, Icon & Name
   brandLogoUrl = '';
+  brandIconUrl = '';
   brandCompanyName = '';
+  brandInitials = '';
 
   // Forced Password Change State
   showForceChangeModal = false;
@@ -862,11 +864,12 @@ export class LoginComponent implements OnInit {
     // Load Brand Identity if available
     this.api.get<any>('SettingsApi/brand').subscribe({
       next: (res) => {
-        if (res?.data?.companyLogoUrl) {
-          this.brandLogoUrl = res.data.companyLogoUrl;
-        }
-        if (res?.data?.companyName) {
-          this.brandCompanyName = res.data.companyName;
+        if (res?.data) {
+          this.brandCompanyName = res.data.companyName || '';
+          this.brandLogoUrl = res.data.companyLogoUrl || res.data.companyWhiteLogoUrl || '';
+          const rawIcon = res.data.companyIconUrl;
+          this.brandIconUrl = (rawIcon && rawIcon !== '/favicon.ico') ? rawIcon : (this.brandLogoUrl || '');
+          this.brandInitials = res.data.companyNameAbbreviation || (this.brandCompanyName ? this.brandCompanyName.substring(0, 2).toUpperCase() : '');
         }
       },
       error: () => {}
@@ -968,7 +971,7 @@ export class LoginComponent implements OnInit {
   }
 
   onVerifyLoginMfa(): void {
-    if (!this.mfaCode || this.mfaCode.length < 6) return;
+    if (!this.mfaCode || this.mfaCode.trim().length < 4) return;
 
     this.mfaLoading = true;
     this.mfaError = '';

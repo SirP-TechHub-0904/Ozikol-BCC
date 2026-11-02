@@ -426,7 +426,7 @@ namespace Ozikol_BCC.Api.Controllers
             bool isValid = false;
 
             // 1. Check if backup codes matches
-            if (request.Code.Length == 6 && _dbContext != null)
+            if (!string.IsNullOrWhiteSpace(request.Code) && _dbContext != null)
             {
                 var hashedInput = Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(request.Code.Trim())));
                 var backupCode = await _dbContext.BcpUserMfaBackupCodes

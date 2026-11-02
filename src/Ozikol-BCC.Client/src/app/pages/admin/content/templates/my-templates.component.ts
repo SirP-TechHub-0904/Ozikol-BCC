@@ -69,7 +69,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   ];
 
   selectedGroup: string = 'all';
-  previewActivePageSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact' = 'home';
+  previewActivePageSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'blog-detail' | 'contact' = 'home';
   previewCartCount: number = 0;
   currentTenantBrandName: string = localStorage.getItem('tenant_name') || localStorage.getItem('tenant_company_name') || 'Enterprise Workspace';
   currentTenantSubdomain: string = localStorage.getItem('tenant_key') || localStorage.getItem('tenant_subdomain') || 'portal';
@@ -116,12 +116,88 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   customMetaAttrName: string = '';
   customMetaAttrContent: string = '';
 
-  // CSS File Upload State
+  // CSS File Upload State (Cloudflare R2 + CDN)
+  @ViewChild('cssFileInput') cssFileInput?: ElementRef<HTMLInputElement>;
   selectedCssFile: File | null = null;
   selectedCssFileName: string = '';
   selectedCssFileSize: string = '';
   uploadingCss: boolean = false;
   uploadedCssUrl: string = '';
+  uploadedCssStorage: string = '';
+
+  // 1-Click Popular Framework & CDN Presets
+  readonly frameworkPresets: Array<{
+    name: string;
+    description: string;
+    tagType: string;
+    icon: string;
+    badge: string;
+    content: string;
+  }> = [
+    {
+      name: 'Bootstrap 5.3.3 (CSS)',
+      description: 'Official production CSS with responsive grid and utility classes.',
+      tagType: 'link_stylesheet',
+      icon: 'grid_view',
+      badge: 'CSS Framework',
+      content: '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">'
+    },
+    {
+      name: 'FontAwesome 6.5.1 (Icons)',
+      description: 'Global icon library with thousands of web icons.',
+      tagType: 'link_stylesheet',
+      icon: 'category',
+      badge: 'Icon Suite',
+      content: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />'
+    },
+    {
+      name: 'Bootstrap Icons 1.11.3',
+      description: 'Over 2,000 official SVG font icons for Bootstrap.',
+      tagType: 'link_stylesheet',
+      icon: 'token',
+      badge: 'Icon Suite',
+      content: '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">'
+    },
+    {
+      name: 'Tailwind CSS (Play CDN)',
+      description: 'Utility-first CSS runtime engine via script tag for rapid development.',
+      tagType: 'external_js',
+      icon: 'palette',
+      badge: 'Utility CSS',
+      content: '<script src="https://cdn.tailwindcss.com"></script>'
+    },
+    {
+      name: 'Google Font (Inter)',
+      description: 'Modern, highly legible sans-serif typography for clean interfaces.',
+      tagType: 'link_stylesheet',
+      icon: 'text_fields',
+      badge: 'Typography',
+      content: '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">'
+    },
+    {
+      name: 'Google Font (Poppins)',
+      description: 'Geometric sans-serif with friendly curves and multiple weights.',
+      tagType: 'link_stylesheet',
+      icon: 'format_size',
+      badge: 'Typography',
+      content: '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">'
+    },
+    {
+      name: 'Animate.css 4.1.1',
+      description: 'Cross-browser CSS animations library for entrance and attention effects.',
+      tagType: 'link_stylesheet',
+      icon: 'animation',
+      badge: 'Animations',
+      content: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />'
+    }
+  ];
+
+  // Singleton Tag Types that must not be added more than once per zone
+  readonly singletonTagTypes: Record<string, string[]> = {
+    head: ['meta_tag'],
+    body_open: ['gtm_noscript', 'pixel_noscript', 'page_loader', 'svg_sprites'],
+    footer: ['live_chat']
+  };
 
   readonly metaPresets: Record<string, { name: string; icon: string; content: string }> = {
     full_suite: {
@@ -240,8 +316,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   };
 
   private readonly tagBoilerplates: Record<string, string> = {
-    // Head zone
-    link_stylesheet: '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />',
+    // Head zone - empty by default so user is not confused by sample third-party links
+    link_stylesheet: '',
     inline_css: '<style>\n  /* Custom CSS Overrides */\n  :root {\n    --theme-accent: #0050e5;\n  }\n</style>',
     google_fonts: '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">',
     meta_tag: `<!-- Primary SEO Meta Tags -->
@@ -276,7 +352,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 <link rel="icon" type="image/png" sizes="16x16" href="{{ Icon16Url }}" />
 <link rel="apple-touch-icon" sizes="180x180" href="{{ AppleTouchIconUrl }}" />
 <meta name="theme-color" content="{{ ThemeColor }}" />`,
-    script_url: '<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js" async></script>',
+    script_url: '',
     inline_script: '<script>\n  // Google Tag Manager / Analytics Head Snippet\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n</script>',
     // Body open zone
     gtm_noscript: '<!-- Google Tag Manager (noscript) -->\n<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX"\nheight="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>\n<!-- End Google Tag Manager (noscript) -->',
@@ -295,7 +371,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   activePreviewItem: InstalledTemplateItem | null = null;
   previewViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   previewModalTab: 'preview' | 'content' | 'html' | 'css' | 'js' = 'preview';
-  modalPreviewPageSlug: 'isolated' | 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' = 'isolated';
+  modalPreviewPageSlug: 'isolated' | 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' | 'blog-detail' = 'isolated';
   safeSinglePreviewHtml: SafeHtml = '';
   safeSinglePreviewSrcDoc: SafeHtml | string = '';
 
@@ -417,7 +493,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     logoUrl: '',
     topMenuItems: [
       { title: 'Home', url: '/' },
-      { title: 'About Us', url: '/about' },
       { title: 'Blog', url: '/blog' },
       { title: 'Contact', url: '/contact' }
     ],
@@ -425,22 +500,22 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       {
         title: 'Services',
         pages: [
-          { title: 'Commercial Cleaning', url: '/services/commercial-cleaning' },
-          { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
-          { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
+          { title: 'Strategic Consulting', url: '/strategic-advisory' },
+          { title: 'Systems Modernization', url: '/systems-modernization' },
+          { title: 'Performance & Scale', url: '/performance-scale' },
+          { title: 'Enterprise Advisory', url: '/enterprise-governance' }
         ]
       },
       {
         title: 'Company',
         pages: [
           { title: 'About Us', url: '/about' },
-          { title: 'Request a Service', url: '/request-service' },
-          { title: 'Contact Us', url: '/contact' }
+          { title: 'Our History', url: '/history' },
+          { title: 'Leadership Team', url: '/team' }
         ]
       }
     ],
     menuCtaButtons: [
-      { title: 'Sign In', url: '/login' },
       { title: 'Request a Service', url: '/request-service' }
     ]
   };
@@ -548,6 +623,27 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       description: 'Dynamic header call-to-action buttons configured on published pages with IsMenuCTA enabled.',
       cmsPath: 'Admin Console > Web Pages > Edit Page > Enable "Show as Menu CTA"',
       example: '{{#each MenuCtaButtons}}<a href="{{ Url }}" class="btn btn-primary">{{ Title }}</a>{{/each}}'
+    },
+    LoginButton: {
+      name: 'Dynamic Login / Portal Button',
+      token: '{{ LoginButton }}',
+      description: 'Role-aware portal button. Renders "Console" linking to /dashboard/console for Admins, "My Workspace" linking to /dashboard/workspace for Members, or "Sign In" linking to /auth/login for visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Authentication',
+      example: '{{ LoginButton }}'
+    },
+    LoginUrl: {
+      name: 'Dynamic Login / Portal URL',
+      token: '{{ LoginUrl }}',
+      description: 'Resolves to /dashboard/console for Admins, /dashboard/workspace for Members, or /auth/login for unauthenticated visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Authentication',
+      example: '<a href="{{ LoginUrl }}" class="btn btn-primary">{{ LoginText }}</a>'
+    },
+    LoginText: {
+      name: 'Dynamic Login / Portal Text',
+      token: '{{ LoginText }}',
+      description: 'Resolves to "Console" for Admins, "My Workspace" for Members, or configured loginButtonText for visitors.',
+      cmsPath: 'Admin Console > Brand & Identity > Login Button Text',
+      example: '<span>{{ LoginText }}</span>'
     },
     Title: {
       name: 'Headline / Title',
@@ -966,7 +1062,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     ]
   };
 
-  // Full-Site Demo Modal
+  // Full-Site Demo Modal & Multi-Page Simulation State
   showFullSiteDemoModal: boolean = false;
   fullDemoViewport: 'desktop' | 'tablet' | 'mobile' = 'desktop';
   safeFullDemoHtml: SafeHtml = '';
@@ -1053,7 +1149,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       const href = (event.data.href || '').trim().toLowerCase();
       const text = (event.data.text || '').trim().toLowerCase();
       if (!href || href === '#' || href.startsWith('javascript:')) return;
-      let targetSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact' = 'home';
+      let targetSlug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'blog-detail' | 'contact' = 'home';
 
       if (href.includes('request') || text.includes('request')) {
         targetSlug = 'request-service';
@@ -1061,7 +1157,15 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         targetSlug = 'about';
       } else if (href.includes('services') || text.includes('service') || text.includes('solution')) {
         targetSlug = 'services';
-      } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article')) {
+      } else if (
+        href.includes('/blog/') ||
+        href.includes('detail') ||
+        text.includes('read article') ||
+        text.includes('view article') ||
+        text.includes('read more')
+      ) {
+        targetSlug = 'blog-detail';
+      } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article') || text.includes('insights')) {
         targetSlug = 'blog';
       } else if (href.includes('contact') || text.includes('contact')) {
         targetSlug = 'contact';
@@ -1201,8 +1305,24 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Resets any active CSS upload selection and CDN URL status to ensure clean modal sessions.
+   */
+  resetCssUploadState(): void {
+    this.selectedCssFile = null;
+    this.selectedCssFileName = '';
+    this.selectedCssFileSize = '';
+    this.uploadedCssUrl = '';
+    this.uploadedCssStorage = '';
+    this.uploadingCss = false;
+    if (this.cssFileInput?.nativeElement) {
+      this.cssFileInput.nativeElement.value = '';
+    }
+  }
+
   openCreateTagModal(zone?: 'head' | 'body_open' | 'footer' | string): void {
     this.isEditingTag = false;
+    this.resetCssUploadState();
     const targetZone: 'head' | 'body_open' | 'footer' =
       (zone === 'head' || zone === 'body_open' || zone === 'footer')
         ? zone
@@ -1229,6 +1349,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   openEditTagModal(tag: CodeInjectionTag): void {
     this.isEditingTag = true;
+    this.resetCssUploadState();
     this.tagFormZone = tag.zone;
     this.tagForm = { ...tag };
     this.showTagModal = true;
@@ -1236,9 +1357,12 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   closeTagModal(): void {
     this.showTagModal = false;
+    this.resetCssUploadState();
   }
 
   onTagTypeChanged(): void {
+    this.resetCssUploadState();
+
     if (this.tagForm.tagType === 'meta_tag') {
       this.selectedMetaPreset = 'full_suite';
       this.tagForm.content = this.metaPresets['full_suite'].content;
@@ -1248,8 +1372,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (this.tagBoilerplates[this.tagForm.tagType]) {
+    if (this.tagBoilerplates[this.tagForm.tagType] !== undefined) {
       this.tagForm.content = this.tagBoilerplates[this.tagForm.tagType];
+    } else {
+      this.tagForm.content = '';
     }
   }
 
@@ -1305,7 +1431,33 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Uploads the selected CSS file to the backend and links it via <link rel="stylesheet">.
+   * Applies a popular 1-click CDN framework or icon preset.
+   */
+  applyFrameworkPreset(preset: any): void {
+    this.tagForm.name = preset.name;
+    this.tagForm.tagType = preset.tagType;
+    this.tagForm.content = preset.content;
+    this.toast.success(`Applied ${preset.name} CDN template!`);
+  }
+
+  /**
+   * Copies the generated Cloudflare CDN URL to the clipboard.
+   */
+  copyCdnUrl(url: string): void {
+    if (!url) return;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        this.toast.success('Cloudflare CDN URL copied to clipboard!');
+      }).catch(() => {
+        this.toast.info(`CDN URL: ${url}`);
+      });
+    } else {
+      this.toast.info(`CDN URL: ${url}`);
+    }
+  }
+
+  /**
+   * Uploads the selected CSS file to Cloudflare R2 Object Storage and links it via Cloudflare CDN.
    */
   uploadAndLinkCssFile(): void {
     if (!this.selectedCssFile) {
@@ -1321,20 +1473,22 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.uploadingCss = false;
         const url = res?.data?.url;
+        const storage = res?.data?.storage || 'Cloudflare R2 + CDN';
         if (url) {
           this.uploadedCssUrl = url;
+          this.uploadedCssStorage = storage;
           this.tagForm.content = `<link rel="stylesheet" href="${url}" />`;
           this.tagForm.name = `Stylesheet: ${this.selectedCssFileName}`;
           this.tagForm.tagType = 'link_stylesheet';
-          this.toast.success('CSS uploaded and stylesheet link generated successfully!');
+          this.toast.success(`Uploaded to ${storage} and edge CDN link generated!`);
         } else {
           this.toast.error('Failed to resolve uploaded CSS URL.');
         }
       },
-      error: () => {
+      error: (err) => {
         this.uploadingCss = false;
-        this.toast.warning('Remote upload failed. Automatically importing as inline <style> directly.');
-        this.importCssAsInlineStyle();
+        const errMsg = err?.error?.message || err?.message || 'Remote Cloudflare R2 upload failed.';
+        this.toast.error(errMsg);
       }
     });
   }
@@ -1362,10 +1516,47 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     reader.readAsText(this.selectedCssFile);
   }
 
+  /**
+   * Checks if a singleton tag type already exists in the specified zone.
+   */
+  getExistingSingletonTag(tagType: string, zone?: string): CodeInjectionTag | undefined {
+    const activeZone = (zone || this.tagFormZone) as 'head' | 'body_open' | 'footer';
+    const singletons = this.singletonTagTypes[activeZone] || [];
+    if (!singletons.includes(tagType)) return undefined;
+
+    const list = activeZone === 'head' ? this.headTags : activeZone === 'body_open' ? this.bodyOpenTags : this.footerTags;
+    return list.find(t => t.tagType === tagType && (!this.isEditingTag || t.id !== this.tagForm.id));
+  }
+
+  /**
+   * Gets the existing singleton tag matching the currently selected tagType in the current zone.
+   */
+  get currentZoneExistingSingleton(): CodeInjectionTag | undefined {
+    if (this.isEditingTag) return undefined;
+    return this.getExistingSingletonTag(this.tagForm.tagType, this.tagFormZone);
+  }
+
+  /**
+   * Switches the active modal directly into edit mode for an existing singleton tag.
+   */
+  switchToEditSingleton(tag: CodeInjectionTag): void {
+    this.openEditTagModal(tag);
+    this.toast.info(`Switched to editing existing '${tag.name}'.`);
+  }
+
   saveTag(): void {
     if (!this.tagForm.name?.trim() || !this.tagForm.content?.trim()) {
       this.toast.error('Please enter a tag name and snippet content.');
       return;
+    }
+
+    // Singleton Duplicate Guard
+    if (!this.isEditingTag) {
+      const existing = this.getExistingSingletonTag(this.tagForm.tagType, this.tagFormZone);
+      if (existing) {
+        this.toast.warning(`A '${this.getTagTypeLabel(this.tagForm.tagType)}' tag already exists in the ${this.getZoneShortTitle(this.tagFormZone)} zone. You cannot add it twice.`);
+        return;
+      }
     }
 
     this.savingTag = true;
@@ -1686,6 +1877,11 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     return this.installedTemplates.find(t => t.category === 'body');
   }
 
+  /**
+   * Returns all installed content section templates belonging strictly to the 'body' category,
+   * isolating them from header navigation, hero banners, footers, breadcrumbs, ecommerce, and single-article blog details.
+   * @returns Array of installed body template items.
+   */
   getAllBodyBlocks(): InstalledTemplateItem[] {
     const singletonIds = new Set<string>();
     const menu = this.getActiveMenu();
@@ -1697,9 +1893,22 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
     return this.installedTemplates.filter(t => 
       !singletonIds.has(t.id) &&
-      t.category !== 'menu' &&
-      t.category !== 'hero' &&
-      t.category !== 'footer'
+      t.category === 'body' &&
+      !this.isBlogDetailTemplate(t) &&
+      t.variantCode !== 'Breadcrumb_PageHeader'
+    );
+  }
+
+  /**
+   * Returns the curated sequence of body sections that belong specifically on the Home page.
+   * Strictly excludes dedicated landing/intake forms (e.g. Body_RequestService, Contact_SplitDetails)
+   * and single-article blog detail views.
+   * @returns Array of body blocks designated for the Home page.
+   */
+  getHomeBodyBlocks(): InstalledTemplateItem[] {
+    return this.getAllBodyBlocks().filter(t => 
+      t.variantCode !== 'Body_RequestService' &&
+      t.variantCode !== 'Contact_SplitDetails'
     );
   }
 
@@ -1872,6 +2081,31 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     this.previewViewport = 'desktop';
     this.previewModalTab = 'preview';
 
+    // 1. Fully reset previewContent to clean blanks so unused properties from previous templates never leak
+    this.previewContent = {
+      title: '',
+      miniTitle: '',
+      description: '',
+      fullDescription: '',
+      imageUrl: '',
+      secondImageUrl: '',
+      buttonText: '',
+      buttonLink: '',
+      secondaryButtonText: '',
+      secondaryButtonLink: '',
+      directUrl: '',
+      youtubeUrlLink: '',
+      quote: '',
+      email: '',
+      phone: '',
+      address: '',
+      workingHours: '',
+      formKey: '',
+      customClass: '',
+      backgroundColor: '',
+      items: []
+    };
+
     // Populate initial sample content from template's unique DefaultContentJson if available
     let hydratedFromBlueprint = false;
     if (item.defaultContentJson) {
@@ -1989,7 +2223,6 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           ? JSON.parse(JSON.stringify(this.editorTokens.topMenuItems))
           : [
               { title: 'Home', url: '/' },
-              { title: 'About Us', url: '/about' },
               { title: 'Blog', url: '/blog' },
               { title: 'Contact', url: '/contact' }
             ],
@@ -1999,24 +2232,24 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
               {
                 title: 'Services',
                 pages: [
-                  { title: 'Commercial Cleaning', url: '/services/commercial-cleaning' },
-                  { title: 'Residential Cleaning', url: '/services/residential-cleaning' },
-                  { title: 'Deep Sanitization', url: '/services/deep-sanitization' }
+                  { title: 'Strategic Consulting', url: '/strategic-advisory' },
+                  { title: 'Systems Modernization', url: '/systems-modernization' },
+                  { title: 'Performance & Scale', url: '/performance-scale' },
+                  { title: 'Enterprise Advisory', url: '/enterprise-governance' }
                 ]
               },
               {
                 title: 'Company',
                 pages: [
                   { title: 'About Us', url: '/about' },
-                  { title: 'Request a Service', url: '/request-service' },
-                  { title: 'Contact Us', url: '/contact' }
+                  { title: 'Our History', url: '/history' },
+                  { title: 'Leadership Team', url: '/team' }
                 ]
               }
             ],
         menuCtaButtons: (this.editorTokens?.menuCtaButtons && this.editorTokens.menuCtaButtons.length > 0)
           ? JSON.parse(JSON.stringify(this.editorTokens.menuCtaButtons)).map((b: any) => ({ title: b.title, url: b.url }))
           : [
-              { title: 'Sign In', url: '/login' },
               { title: 'Request a Service', url: '/request-service' }
             ]
       };
@@ -2044,14 +2277,55 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       };
     }
 
-    if (!hydratedFromBlueprint) {
+    if (!this.previewContent.title) {
       if (item.previewTitle) this.previewContent.title = item.previewTitle;
       else if (item.name) this.previewContent.title = item.name;
+    }
 
+    if (!this.previewContent.description) {
       if (item.previewBody) this.previewContent.description = item.previewBody;
       else if (item.description) this.previewContent.description = item.description;
+    }
 
-      if (item.previewSubtitle) this.previewContent.miniTitle = item.previewSubtitle.toUpperCase();
+    if (!this.previewContent.miniTitle && item.previewSubtitle) {
+      this.previewContent.miniTitle = item.previewSubtitle.toUpperCase();
+    }
+
+    // Ensure list items are populated if this section template uses PageSectionLists
+    if (this.previewContent.items.length === 0 && this.templateUses('PageSectionLists')) {
+      const v = (item.variantCode || item.name || '').toLowerCase();
+      if (v.includes('requestservice')) {
+        this.previewContent.items = [
+          { title: 'Dedicated Solutions Lead', description: 'Direct engagement with an enterprise systems architect.', iconText: 'fa-solid fa-check', sortOrder: 1 },
+          { title: 'Feasibility & Scope Assessment', description: 'Actionable roadmap, architectural fit, and resource modeling.', iconText: 'fa-solid fa-check', sortOrder: 2 },
+          { title: 'Client Confidentiality & NDA', description: 'Strict confidentiality agreements and secure communication channels guaranteed.', iconText: 'fa-solid fa-check', sortOrder: 3 }
+        ];
+      } else if (v.includes('metric') || v.includes('counter')) {
+        this.previewContent.items = [
+          { title: '12,500+', description: 'Verified Members', iconText: 'fa-solid fa-users text-primary', sortOrder: 1 },
+          { title: '99.98%', description: 'System Reliability', iconText: 'fa-solid fa-server text-success', sortOrder: 2 },
+          { title: '45+', description: 'Global Chapters', iconText: 'fa-solid fa-earth-americas text-info', sortOrder: 3 },
+          { title: '24/7', description: 'Priority Support', iconText: 'fa-solid fa-headset text-warning', sortOrder: 4 }
+        ];
+      } else if (v.includes('faq') || v.includes('accordion')) {
+        this.previewContent.items = [
+          { title: 'How does our organization tailor its services to your business needs?', description: 'We begin with an in-depth discovery consultation to assess your unique goals, timelines, and operational requirements.', sortOrder: 1 },
+          { title: 'What kind of ongoing support and collaboration can you expect?', description: 'Every client is paired with a dedicated account lead and receives regular milestone reviews and responsive technical support.', sortOrder: 2 },
+          { title: 'What are your standard compliance and data security standards?', description: 'We enforce enterprise-grade AES-256 encryption, strict role-based authorization protocols, and SOC2-compliant handling.', sortOrder: 3 }
+        ];
+      } else if (v.includes('testimonial') || v.includes('review')) {
+        this.previewContent.items = [
+          { title: 'Sarah Adams', miniTitle: 'SA', description: 'Working with our partners transformed our operational efficiency. Their team delivered outstanding results from day one.', moreDescription: 'Chief Operating Officer', sortOrder: 1 },
+          { title: 'Marcus Kim', miniTitle: 'MK', description: 'Their professionalism, deep industry expertise, and responsive support have made them an indispensable partner.', moreDescription: 'Managing Director', sortOrder: 2 },
+          { title: 'Elena Rostova', miniTitle: 'EL', description: 'The quality of execution and attention to detail exceeded our expectations. They consistently deliver on time.', moreDescription: 'VP of Business Development', sortOrder: 3 }
+        ];
+      } else {
+        this.previewContent.items = [
+          { title: 'Data Security & Privacy', description: 'Enterprise-grade encryption, role-based access management, and proactive compliance protection.', iconText: 'fa-solid fa-shield-halved', sortOrder: 1 },
+          { title: 'Collaboration Hub', description: 'Unified communication channels, real-time dispatches, and organizational announcements.', iconText: 'fa-solid fa-comments', sortOrder: 2 },
+          { title: 'Operational Efficiency', description: 'Modern automated workflows engineered to eliminate administrative bottlenecks and elevate team productivity.', iconText: 'fa-solid fa-bolt', sortOrder: 3 }
+        ];
+      }
     }
 
     this.previewModalTab = 'preview';
@@ -2065,7 +2339,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
    * Sets the active page preview simulation inside the Single Preview Modal for Menu components.
    * @param slug Target page slug or 'isolated' for standalone navigation bar.
    */
-  setModalPreviewPage(slug: 'isolated' | 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog'): void {
+  setModalPreviewPage(slug: 'isolated' | 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' | 'blog-detail'): void {
     this.modalPreviewPageSlug = slug;
     this.updateSinglePreviewHtml();
   }
@@ -2119,7 +2393,10 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       combinedJs = this.activePreviewItem.jsScript || '';
     }
 
-    const combined = `<style>${combinedStyles}</style>\n${combinedHtml}`;
+    const cleanCombinedStyles = (combinedStyles || '').replace(/<\/?style[^>]*>/gi, '').trim();
+    const cleanCombinedJs = (combinedJs || '').replace(/<\/?script[^>]*>/gi, '').trim();
+
+    const combined = `<style>${cleanCombinedStyles}</style>\n${combinedHtml}`;
     this.safeSinglePreviewHtml = this.sanitizer.bypassSecurityTrustHtml(combined);
 
     const singleIframeDoc = `<!DOCTYPE html>
@@ -2140,23 +2417,36 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     .dropdown {
       position: relative !important;
     }
-    .dropdown-menu.show {
-      display: block !important;
+    .dropdown-menu {
       position: absolute !important;
       top: 100% !important;
       left: 0 !important;
-      z-index: 9999 !important;
-      min-width: 13rem !important;
-      margin-top: 4px !important;
+      z-index: 99999 !important;
+      min-width: 14rem !important;
+      margin-top: 6px !important;
       opacity: 1 !important;
       visibility: visible !important;
       background-color: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 8px !important;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+      padding: 6px 0 !important;
     }
     .dropdown-item {
       cursor: pointer;
+      display: block !important;
+      padding: 8px 16px !important;
+      font-size: 13.5px !important;
+      font-weight: 500 !important;
+      color: #334155 !important;
+      text-decoration: none !important;
+      transition: background 0.15s ease, color 0.15s ease !important;
     }
-    ${combinedStyles}
+    .dropdown-item:hover {
+      background-color: #f1f5f9 !important;
+      color: #0050e5 !important;
+    }
+    ${cleanCombinedStyles}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -2166,41 +2456,54 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (dropdownToggle) {
         e.preventDefault();
         e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
         var parentDropdown = dropdownToggle.closest('.dropdown');
         var menu = parentDropdown ? parentDropdown.querySelector('.dropdown-menu') : null;
         if (menu) {
-          var isAlreadyOpen = menu.classList.contains('show');
-          // Close any open dropdowns first
+          var isAlreadyOpen = menu.classList.contains('show') && menu.style.display !== 'none';
           document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
             m.classList.remove('show');
-            m.removeAttribute('data-bs-popper');
+            m.style.display = 'none';
           });
           document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
             t.setAttribute('aria-expanded', 'false');
           });
           if (!isAlreadyOpen) {
             menu.classList.add('show');
-            menu.setAttribute('data-bs-popper', 'static');
+            menu.style.display = 'block';
             dropdownToggle.setAttribute('aria-expanded', 'true');
           }
         }
         return;
       }
 
-      // 2. Click Outside Closes Dropdown
-      if (!e.target.closest('.dropdown-menu')) {
+      // 2. Dropdown Item Click Handler
+      var dropdownItem = e.target.closest('.dropdown-item');
+      if (dropdownItem) {
+        var itemHref = (dropdownItem.getAttribute('href') || '').trim();
+        if (itemHref && itemHref !== '#' && !itemHref.startsWith('javascript:')) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+          window.parent.postMessage({ type: 'DEMO_NAV', href: itemHref, text: dropdownItem.textContent || '' }, '*');
+          return;
+        }
+      }
+
+      // 3. Click Outside Closes Dropdown
+      if (!e.target.closest('.dropdown')) {
         document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
           m.classList.remove('show');
-          m.removeAttribute('data-bs-popper');
+          m.style.display = 'none';
         });
         document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
           t.setAttribute('aria-expanded', 'false');
         });
       }
 
-      // 3. Regular Navigation Links
+      // 4. Regular Navigation Links
       var a = e.target.closest('a');
-      if (a) {
+      if (a && !a.classList.contains('dropdown-toggle')) {
         var href = (a.getAttribute('href') || '').trim();
         if (!href || href === '#' || href.startsWith('javascript:')) {
           e.preventDefault();
@@ -2225,7 +2528,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 </head>
 <body>
   ${combinedHtml}
-  ${combinedJs ? `\n  <script>\n    ${combinedJs}\n  <\/script>` : ''}
+  ${cleanCombinedJs ? `\n  <script>\n    ${cleanCombinedJs}\n  <\/script>` : ''}
 </body>
 </html>`;
     this.safeSinglePreviewSrcDoc = this.sanitizer.bypassSecurityTrustHtml(singleIframeDoc);
@@ -2233,6 +2536,33 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
 
   onPreviewContentChange(): void {
     this.updateSinglePreviewHtml();
+  }
+
+  /**
+   * Checks whether the currently active template uses a specific placeholder or loop token.
+   * @param token The token or pattern to test (e.g. 'ButtonText', 'ImageUrl', 'PageSectionLists', 'Phone').
+   * @returns True if the active template HTML contains the token.
+   */
+  templateUses(token: string): boolean {
+    if (!this.activePreviewItem?.htmlTemplate) return false;
+    const t = this.activePreviewItem.htmlTemplate;
+    const regex = new RegExp(`\\{\\{\\s*(?:#each\\s+|#if\\s+|#unless\\s+)?(?:PageSectionLists\\.)?\\s*${token}\\b`, 'i');
+    return regex.test(t);
+  }
+
+  /**
+   * Returns a human-friendly label for the PageSectionLists repeater matching the active template variant.
+   * @returns Context-specific section title.
+   */
+  getRepeatableSectionTitle(): string {
+    const code = this.activePreviewItem?.variantCode || this.activePreviewItem?.name || '';
+    if (code.includes('RequestService')) return 'Engagement Standards / Deliverables';
+    if (code.includes('MetricsCounter') || code.includes('Counter') || code.includes('Metric')) return 'Key Performance Metrics & Stat Counters';
+    if (code.includes('Faq') || code.includes('Accordion')) return 'Frequently Asked Questions & Answers';
+    if (code.includes('Testimonial') || code.includes('Review')) return 'Client Testimonials & Ratings';
+    if (code.includes('FeatureGrid') || code.includes('Capability')) return 'Core Capabilities & Feature Cards';
+    if (code.includes('Mission') || code.includes('Split')) return 'Strategic Pillars & Standards';
+    return 'Repeatable Cards / Section List Items';
   }
 
   /**
@@ -2563,11 +2893,64 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     }, 60);
   }
 
+  public readonly DEFAULT_CSS_GUIDE: string = `/* ==========================================================================
+ * SCOPED CSS STYLESHEET GUIDELINES:
+ * 1. PURE CSS ONLY: Do NOT include <style> or </style> tags.
+ * 2. SCOPING: Prefix all selectors with your unique section root class
+ *    (e.g., .my-hero-section .title) to prevent styles leaking to other sections.
+ * 3. CSS VARIABLES: Leverage theme tokens like var(--primary-color, #0050e5).
+ * 4. RESPONSIVE BREAKPOINTS:
+ *    @media (max-width: 991.98px) { /* Tablets & Mobile */ }
+ *    @media (max-width: 575.98px) { /* Small Phones */ }
+ *
+ * EXAMPLE (Safe reference - uncomment or customize for your section):
+ * .your-section-root-class {
+ *   padding: 60px 0;
+ *   background-color: var(--bg-light, #f8fafc);
+ * }
+ * ========================================================================== */
+`;
+
+  public readonly DEFAULT_JS_GUIDE: string = `/**
+ * ==========================================================================
+ * SECTION JAVASCRIPT LOGIC GUIDELINES:
+ * 1. PURE JAVASCRIPT ONLY: Do NOT include <script> or </script> tags.
+ * 2. NO CONFLICTS (IIFE): Keep code wrapped in (function() { 'use strict'; ... })();
+ *    This ensures variables do not conflict with other sections on the page.
+ * 3. MULTIPLE FUNCTIONS: You can define multiple functions freely inside this closure.
+ * 4. EXECUTION: Runs automatically in Zone 3 (before </body>) once DOM is ready.
+ * ==========================================================================
+ */
+(function() {
+  'use strict';
+
+  // Function 1: Initialization logic
+  function initSection() {
+    // Example: Select interactive elements inside this section
+    // const interactiveItems = document.querySelectorAll('.oz-interactive-card');
+    // interactiveItems.forEach(item => {
+    //   item.addEventListener('click', handleCardClick);
+    // });
+  }
+
+  // Function 2: Event handler or calculation helper
+  function handleCardClick(event) {
+    // Custom interaction logic here
+  }
+
+  // Auto-run section initializer
+  initSection();
+})();
+`;
+
   /**
    * Initializes or updates the Monaco Editor instance for inspecting scoped CSS with code folding.
    */
   initMonacoCssEditor(): void {
     if (!this.activePreviewItem) return;
+    if (!this.activePreviewItem.cssStyles || !this.activePreviewItem.cssStyles.trim()) {
+      this.activePreviewItem.cssStyles = this.DEFAULT_CSS_GUIDE;
+    }
     setTimeout(() => {
       const container = this.monacoCssContainer?.nativeElement;
       if (!container || !container.isConnected) return;
@@ -2669,6 +3052,32 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         console.warn('Monaco JS editor load error:', err);
       });
     }, 60);
+  }
+
+  /**
+   * Initializes starter scoped CSS with architectural guidance
+   * and mounts or refreshes the Monaco CSS editor.
+   */
+  initializeTemplateCss(): void {
+    if (!this.activePreviewItem) return;
+    this.activePreviewItem.cssStyles = this.DEFAULT_CSS_GUIDE;
+    if (this.monacoInstanceCss) {
+      this.monacoInstanceCss.setValue(this.activePreviewItem.cssStyles);
+    } else {
+      this.initMonacoCssEditor();
+    }
+    this.updateSinglePreviewHtml();
+  }
+
+  /**
+   * Initializes boilerplate JavaScript with architectural guidance
+   * and mounts the Monaco JS editor.
+   */
+  initializeTemplateJs(): void {
+    if (!this.activePreviewItem) return;
+    this.activePreviewItem.jsScript = this.DEFAULT_JS_GUIDE;
+    this.initMonacoJsEditor();
+    this.updateSinglePreviewHtml();
   }
 
   /**
@@ -3440,7 +3849,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   // Full-Site Demo Modal & Multi-Page Engine
-  setPreviewPage(slug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'contact'): void {
+  setPreviewPage(slug: 'home' | 'about' | 'services' | 'request-service' | 'blog' | 'blog-detail' | 'contact'): void {
     this.previewActivePageSlug = slug;
     this.renderFullSitePreview();
   }
@@ -3453,35 +3862,38 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Composes a complete simulated page containing Menu, Hero/Breadcrumbs, Body sections, Blog/Contact/Request-Service, and Footer.
+   * Composes a complete simulated page containing Menu, Hero/Breadcrumbs, designated Body sections, and Footer.
    * Enables 100% sample-content fidelity and live navigation simulation across all pages.
-   * @param pageSlug The target route slug ('home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog').
+   * @param pageSlug The target route slug ('home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' | 'blog-detail').
    * @param menuBlockOverride Optional menu template item to override the active installed menu (used in modal preview).
    * @param menuContextOverride Optional menu data context to override sample data.
-   * @returns An object containing combined CSS styles and combined HTML markup.
+   * @returns An object containing combined CSS styles, combined HTML markup, and JavaScript.
    */
   composePageSimulation(
-    pageSlug: 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog',
+    pageSlug: 'home' | 'about' | 'services' | 'request-service' | 'contact' | 'blog' | 'blog-detail',
     menuBlockOverride?: InstalledTemplateItem,
     menuContextOverride?: any
   ): { combinedStyles: string; combinedHtml: string; combinedJs: string } {
     const menuBlock = menuBlockOverride || this.getActiveMenu();
     const heroBlock = this.getActiveHero();
+    const homeBodyBlocks = this.getHomeBodyBlocks();
     const allBodyBlocks = this.getAllBodyBlocks();
     const footerBlock = this.getActiveFooter();
 
     const breadcrumbBlock = this.installedTemplates.find(t => t.category === 'breadcrumb') || this.installedTemplates.find(t => t.variantCode === 'Breadcrumb_PageHeader');
-    const blogBlock = this.installedTemplates.find(t => t.category === 'blog') || this.installedTemplates.find(t => t.variantCode === 'Blog_CardGrid3');
+    const blogListBlock = this.installedTemplates.find(t => t.variantCode === 'Blog_CardGrid3') || this.installedTemplates.find(t => t.category === 'blog' && !this.isBlogDetailTemplate(t));
+    const blogDetailBlock = this.installedTemplates.find(t => this.isBlogDetailTemplate(t)) || this.installedTemplates.find(t => t.variantCode === 'Blog_ArticleDetail');
     const contactBlock = this.installedTemplates.find(t => t.variantCode === 'Contact_SplitDetails') || this.installedTemplates.find(t => t.category === 'contact');
     const requestServiceBlock = this.installedTemplates.find(t => t.variantCode === 'Body_RequestService');
+    const newsletterBlock = this.installedTemplates.find(t => t.variantCode === 'News_MinimalBar');
 
     let activeBlocks: { block: InstalledTemplateItem; contextOverride?: any }[] = [];
 
     if (pageSlug === 'home') {
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
       if (heroBlock) activeBlocks.push({ block: heroBlock });
-      allBodyBlocks.forEach(b => activeBlocks.push({ block: b }));
-      if (blogBlock) activeBlocks.push({ block: blogBlock });
+      homeBodyBlocks.forEach(b => activeBlocks.push({ block: b }));
+      if (blogListBlock) activeBlocks.push({ block: blogListBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
     } else if (pageSlug === 'about') {
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
@@ -3557,7 +3969,27 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
           }
         });
       }
-      if (blogBlock) activeBlocks.push({ block: blogBlock });
+      if (blogListBlock) activeBlocks.push({ block: blogListBlock });
+      if (newsletterBlock) activeBlocks.push({ block: newsletterBlock });
+      if (footerBlock) activeBlocks.push({ block: footerBlock });
+    } else if (pageSlug === 'blog-detail') {
+      if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
+      if (breadcrumbBlock) {
+        activeBlocks.push({
+          block: breadcrumbBlock,
+          contextOverride: {
+            title: this.previewBlogDetailContent.title || 'Article Detail',
+            miniTitle: (this.previewBlogDetailContent.category || 'ARTICLE').toUpperCase(),
+            description: 'Deep-dive analysis, technical breakdown, and enterprise reference implementation.'
+          }
+        });
+      }
+      if (blogDetailBlock) {
+        activeBlocks.push({ block: blogDetailBlock });
+      } else if (blogListBlock) {
+        activeBlocks.push({ block: blogListBlock });
+      }
+      if (newsletterBlock) activeBlocks.push({ block: newsletterBlock });
       if (footerBlock) activeBlocks.push({ block: footerBlock });
     } else if (pageSlug === 'contact') {
       if (menuBlock) activeBlocks.push({ block: menuBlock, contextOverride: menuContextOverride });
@@ -3706,7 +4138,7 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
         );
 
         // Dynamically synchronize active navbar link highlighting with the current page slug
-        const activeSlug = pageSlug;
+        const activeSlug = pageSlug === 'blog-detail' ? 'blog' : pageSlug;
 
         // 1. Strip hardcoded active / text-dark classes from all nav-links
         hydratedBlockHtml = hydratedBlockHtml
@@ -3777,21 +4209,38 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     .dropdown {
       position: relative !important;
     }
+    .dropdown-menu {
+      display: none;
+    }
     .dropdown-menu.show {
       display: block !important;
       position: absolute !important;
       top: 100% !important;
       left: 0 !important;
-      z-index: 9999 !important;
-      min-width: 13rem !important;
-      margin-top: 4px !important;
+      z-index: 99999 !important;
+      min-width: 14rem !important;
+      margin-top: 6px !important;
       opacity: 1 !important;
       visibility: visible !important;
       background-color: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 8px !important;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+      padding: 6px 0 !important;
     }
     .dropdown-item {
       cursor: pointer;
+      display: block !important;
+      padding: 8px 16px !important;
+      font-size: 13.5px !important;
+      font-weight: 500 !important;
+      color: #334155 !important;
+      text-decoration: none !important;
+      transition: background 0.15s ease, color 0.15s ease !important;
+    }
+    .dropdown-item:hover {
+      background-color: #f1f5f9 !important;
+      color: #0050e5 !important;
     }
     ${combinedStyles}
   </style>
@@ -3803,41 +4252,60 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       if (dropdownToggle) {
         e.preventDefault();
         e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
         var parentDropdown = dropdownToggle.closest('.dropdown');
         var menu = parentDropdown ? parentDropdown.querySelector('.dropdown-menu') : null;
         if (menu) {
-          var isAlreadyOpen = menu.classList.contains('show');
-          // Close any open dropdowns first
+          var isAlreadyOpen = menu.classList.contains('show') && menu.style.display !== 'none';
           document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
             m.classList.remove('show');
-            m.removeAttribute('data-bs-popper');
+            m.style.display = 'none';
           });
           document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
             t.setAttribute('aria-expanded', 'false');
           });
           if (!isAlreadyOpen) {
             menu.classList.add('show');
-            menu.setAttribute('data-bs-popper', 'static');
+            menu.style.display = 'block';
             dropdownToggle.setAttribute('aria-expanded', 'true');
           }
         }
         return;
       }
 
-      // 2. Click Outside Closes Dropdown
-      if (!e.target.closest('.dropdown-menu')) {
+      // 2. Dropdown Item Click Handler
+      var dropdownItem = e.target.closest('.dropdown-item');
+      if (dropdownItem) {
+        var itemHref = (dropdownItem.getAttribute('href') || '').trim();
         document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
           m.classList.remove('show');
-          m.removeAttribute('data-bs-popper');
+          m.style.display = 'none';
+        });
+        document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
+          t.setAttribute('aria-expanded', 'false');
+        });
+        if (itemHref && itemHref !== '#' && !itemHref.startsWith('javascript:')) {
+          e.preventDefault();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+          window.parent.postMessage({ type: 'DEMO_NAV', href: itemHref, text: dropdownItem.textContent || '' }, '*');
+          return;
+        }
+      }
+
+      // 3. Click Outside Closes Dropdown
+      if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu.show').forEach(function(m) {
+          m.classList.remove('show');
+          m.style.display = 'none';
         });
         document.querySelectorAll('.dropdown-toggle[aria-expanded="true"]').forEach(function(t) {
           t.setAttribute('aria-expanded', 'false');
         });
       }
 
-      // 3. Regular Navigation Links
+      // 4. Regular Navigation Links
       var a = e.target.closest('a');
-      if (a) {
+      if (a && !a.classList.contains('dropdown-toggle')) {
         var href = (a.getAttribute('href') || '').trim();
         if (!href || href === '#' || href.startsWith('javascript:')) {
           e.preventDefault();
@@ -3873,7 +4341,8 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
     let count = 0;
     if (this.getActiveMenu()) count++;
     if (this.getActiveHero()) count++;
-    count += this.getAllBodyBlocks().length;
+    count += this.getHomeBodyBlocks().length;
+    if (this.installedTemplates.some(t => t.category === 'blog' && !this.isBlogDetailTemplate(t))) count++;
     if (this.getActiveFooter()) count++;
     return count;
   }
@@ -3898,7 +4367,16 @@ export class MyTemplatesComponent implements OnInit, OnDestroy {
       } else if (href.includes('services') || text.includes('service') || text.includes('solution')) {
         this.setPreviewPage('services');
         this.toast.info('Navigated to Services & Solutions in live preview.');
-      } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article')) {
+      } else if (
+        href.includes('/blog/') ||
+        href.includes('detail') ||
+        text.includes('read article') ||
+        text.includes('view article') ||
+        text.includes('read more')
+      ) {
+        this.setPreviewPage('blog-detail');
+        this.toast.info('Navigated to Blog Article Detail in live preview.');
+      } else if (href.includes('blog') || text.includes('blog') || text.includes('news') || text.includes('article') || text.includes('insights')) {
         this.setPreviewPage('blog');
         this.toast.info('Navigated to News & Insights in live preview.');
       } else if (href.includes('contact') || text.includes('contact')) {

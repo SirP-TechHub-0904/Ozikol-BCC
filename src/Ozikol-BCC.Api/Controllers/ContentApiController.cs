@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Ozikol_BCC.Api.Models;
 using Ozikol_BCC.Application.Services.Cloudinary;
+using Ozikol_BCC.Application.Services.Cloudflare;
+using Ozikol_BCC.Infrastructure.TenantSupport;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Persistence.EF.SQL;
 using System.IO;
@@ -23,15 +25,21 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly DashboardDbContext _context;
         private readonly IMediator _mediator;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly ICloudflareR2StorageService _r2Storage;
+        private readonly ITenantProvider? _tenantProvider;
 
         public ContentApiController(
             DashboardDbContext context, 
             IMediator mediator, 
-            ICloudinaryService cloudinaryService)
+            ICloudinaryService cloudinaryService,
+            ICloudflareR2StorageService r2Storage,
+            ITenantProvider? tenantProvider = null)
         {
             _context = context;
             _mediator = mediator;
             _cloudinaryService = cloudinaryService;
+            _r2Storage = r2Storage;
+            _tenantProvider = tenantProvider;
         }
 
         // ==========================================
@@ -68,14 +76,15 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         // ==========================================
-        // 0.1. CSS ASSET UPLOAD & HOSTING
+        // 0.1. CSS ASSET UPLOAD & CLOUDFLARE R2 + CDN HOSTING
         // ==========================================
 
         /// <summary>
-        /// Uploads a custom CSS stylesheet file, saves it to persistent storage, and returns the direct stylesheet URL and raw CSS content.
+        /// Uploads a custom CSS stylesheet file to Cloudflare R2 Object Storage with Cloudflare Global CDN distribution.
+        /// Returns the high-speed global CDN stylesheet URL, metadata, and raw CSS content.
         /// </summary>
         /// <param name="file">The .css stylesheet file to upload.</param>
-        /// <returns>JSON payload containing the public stylesheet URL and raw CSS content.</returns>
+        /// <returns>JSON payload containing the public Cloudflare CDN stylesheet URL, metadata, and raw CSS content.</returns>
         [HttpPost("upload-css")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadCss([FromForm] IFormFile file)
@@ -93,44 +102,43 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
-                // Create storage directory under AppContext.BaseDirectory / uploads / css
-                var uploadsDir = Path.Combine(AppContext.BaseDirectory, "uploads", "css");
-                if (!Directory.Exists(uploadsDir))
+                // Verify Cloudflare R2 storage credentials
+                if (!_r2Storage.IsConfigured())
                 {
-                    Directory.CreateDirectory(uploadsDir);
+                    // If not yet configured in .env, read content so user can embed inline and inform them
+                    using var inlineReader = new StreamReader(file.OpenReadStream());
+                    var rawContent = await inlineReader.ReadToEndAsync();
+
+                    return BadRequest(ApiResponse<object>.FailureResponse(
+                        "Cloudflare R2 storage is not configured. Please define CloudflareR2__AccountId, CloudflareR2__AccessKeyId, CloudflareR2__SecretAccessKey, CloudflareR2__BucketName, and CloudflareR2__PublicCdnUrl in your .env or environment variables. You can also click 'Import as Inline CSS' to embed the stylesheet directly without third-party storage."));
                 }
 
-                // Sanitize file name and create unique persistent file
-                var rawBaseName = Path.GetFileNameWithoutExtension(file.FileName).Replace(" ", "-").ToLowerInvariant();
-                var safeBaseName = Regex.Replace(rawBaseName, @"[^a-z0-9\-_]", "");
-                if (string.IsNullOrWhiteSpace(safeBaseName)) safeBaseName = "stylesheet";
-                var uniqueFileName = $"{safeBaseName}-{Guid.NewGuid().ToString("N")[..8]}.css";
-                var filePath = Path.Combine(uploadsDir, uniqueFileName);
+                // Resolve tenant slug for multi-tenant asset folder isolation
+                var tenantSlug = _tenantProvider?.CurrentTenant;
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // Upload to Cloudflare R2 with automatic edge CDN caching headers
+                await using var stream = file.OpenReadStream();
+                var result = await _r2Storage.UploadCssAsync(stream, file.FileName, tenantSlug);
+
+                if (!result.Success)
                 {
-                    await file.CopyToAsync(stream);
+                    return StatusCode(500, ApiResponse<object>.FailureResponse(result.Message));
                 }
-
-                // Read file content for preview and inline style usage
-                var cssContent = await System.IO.File.ReadAllTextAsync(filePath);
-
-                // Compute public accessible URL
-                var baseUrl = $"{Request.Scheme}://{Request.Host}";
-                var stylesheetUrl = $"{baseUrl}/api/ContentApi/css/{uniqueFileName}";
 
                 return Ok(ApiResponse<object>.SuccessResponse(new
                 {
-                    url = stylesheetUrl,
-                    fileName = file.FileName,
-                    safeName = uniqueFileName,
-                    size = file.Length,
-                    content = cssContent
-                }, "CSS stylesheet uploaded and hosted successfully."));
+                    url = result.Url,
+                    key = result.Key,
+                    fileName = result.OriginalFileName,
+                    safeName = result.SafeFileName,
+                    size = result.FileSizeBytes,
+                    storage = "Cloudflare R2 + Cloudflare CDN",
+                    content = result.ContentPreview
+                }, "CSS stylesheet uploaded to Cloudflare R2 and distributed via Cloudflare CDN successfully."));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to process CSS upload: {ex.Message}"));
+                return StatusCode(500, ApiResponse<object>.FailureResponse($"Failed to process Cloudflare R2 CSS upload: {ex.Message}"));
             }
         }
 
