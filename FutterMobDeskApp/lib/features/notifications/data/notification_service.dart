@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/storage/tenant_cache_service.dart';
 import '../../workspace_auth/state/workspace_state.dart';
@@ -58,9 +59,20 @@ class NotificationState {
 /// with multi-tenant partitioned caching and stale-while-revalidate resilience.
 class NotificationNotifier extends StateNotifier<NotificationState> {
   final Ref _ref;
+  Timer? _periodicPollTimer;
 
   NotificationNotifier(this._ref) : super(const NotificationState()) {
     loadFeed();
+    // Proactive background polling keeps bell counts and notifications synchronized
+    _periodicPollTimer = Timer.periodic(const Duration(seconds: 45), (_) {
+      loadFeed();
+    });
+  }
+
+  @override
+  void dispose() {
+    _periodicPollTimer?.cancel();
+    super.dispose();
   }
 
   /// Loads feed using Stale-While-Revalidate:
@@ -202,9 +214,11 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
   /// Ingests a live incoming notification received from SignalR or push notification.
   void ingestLiveNotification(NotificationItem item) {
+    if (state.items.any((n) => n.id == item.id)) return;
     final updated = [item, ...state.items];
     final unread = updated.where((n) => !n.isRead).length;
     state = state.copyWith(items: updated, unreadCount: unread);
+    _syncCache();
   }
 }
 

@@ -33,6 +33,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly IHubContext<NotificationHub>? _notificationHub;
         private readonly ITenantFeatureGateService? _featureGateService;
         private readonly ITenantProvider? _tenantProvider;
+        private readonly Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher? _notificationDispatcher;
 
         public SettingsApiController(
             IMediator mediator,
@@ -41,7 +42,8 @@ namespace Ozikol_BCC.Api.Controllers
             Ozikol_BCC.Application.Interfaces.Services.ITenantActivityLogger? activityLogger = null,
             IHubContext<NotificationHub>? notificationHub = null,
             ITenantFeatureGateService? featureGateService = null,
-            ITenantProvider? tenantProvider = null)
+            ITenantProvider? tenantProvider = null,
+            Ozikol_BCC.Application.Interfaces.Services.ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _mediator = mediator;
             _db = db;
@@ -50,6 +52,7 @@ namespace Ozikol_BCC.Api.Controllers
             _notificationHub = notificationHub;
             _featureGateService = featureGateService;
             _tenantProvider = tenantProvider;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         private string? ResolveCurrentTenantKey()
@@ -74,6 +77,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Resolves the tenant's custom Cloudinary storage if configured; otherwise utilizes the platform default Cloudinary.
         /// </summary>
         [HttpPost("upload-asset")]
+        [Authorize]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<object>), 200)]
         public async Task<IActionResult> UploadAsset([FromForm] BrandAssetUploadRequest request)
@@ -126,6 +130,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves the active media storage provider configuration for this tenant.
         /// </summary>
         [HttpGet("storage-settings")]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<StorageSettingsResponseDto>), 200)]
         public async Task<IActionResult> GetStorageSettings()
         {
@@ -604,7 +609,8 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves upcoming modular capability expiration notices.
+        /// Retrieves upcoming modular capability expiration notices within the 30-day renewal window (or already expired/overdue),
+        /// and synchronizes consolidated in-app notifications (every 24h) and automated reminder emails (every 7 days + final 24h alert).
         /// Strictly visible to tenant administrators (SuperAdmin, Admin).
         /// </summary>
         [HttpGet("feature-expirations")]
@@ -618,8 +624,254 @@ namespace Ozikol_BCC.Api.Controllers
                 return Ok(ApiResponse<List<FeatureExpirationNoticeDto>>.SuccessResponse(new List<FeatureExpirationNoticeDto>(), "No feature expirations detected."));
             }
 
-            var notices = await _featureGateService.GetExpiringFeaturesAsync(tenantKey, daysThreshold: 14, cancellationToken);
+            var notices = await _featureGateService.GetExpiringFeaturesAsync(tenantKey, daysThreshold: 30, cancellationToken);
+            if (notices.Count > 0)
+            {
+                await SyncConsolidatedExpirationNotificationsAsync(tenantKey, notices, cancellationToken);
+            }
+
             return Ok(ApiResponse<List<FeatureExpirationNoticeDto>>.SuccessResponse(notices, "Feature expirations retrieved."));
+        }
+
+        /// <summary>
+        /// Synchronizes a single consolidated In-App Notification (every 24 hours) and dispatches automated
+        /// renewal reminder emails (every 7 days within the 30-day window + urgent 24-hour alert before expiry)
+        /// containing the itemized list of expiring capabilities and the Total Amount to Pay.
+        /// </summary>
+        private async Task SyncConsolidatedExpirationNotificationsAsync(
+            string tenantKey,
+            List<FeatureExpirationNoticeDto> notices,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+                var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+
+                string currSymbol = notices.FirstOrDefault()?.CurrencySymbol ?? "$";
+                string currCode = notices.FirstOrDefault()?.CurrencyCode ?? "USD";
+                decimal totalAmountDue = notices.Sum(n => n.RenewalPrice);
+                int minDays = notices.Min(n => n.DaysRemaining);
+                bool anyUrgent24h = notices.Any(n => n.DaysRemaining <= 1);
+                bool anyExpired = notices.Any(n => n.DaysRemaining <= 0);
+
+                // Build consolidated headline and itemized list
+                string title = notices.Count == 1
+                    ? (anyExpired
+                        ? $"Capability Subscription Expired: {notices[0].FeatureName} — Total Due: {currSymbol}{totalAmountDue:N2}"
+                        : $"Capability Renewal Notice: {notices[0].FeatureName} ({notices[0].DaysRemaining}d left) — {currSymbol}{totalAmountDue:N2}")
+                    : (anyExpired
+                        ? $"{notices.Count} Workspace Capabilities Expiring / Overdue — Total Amount to Pay: {currSymbol}{totalAmountDue:N2}"
+                        : $"{notices.Count} Workspace Capabilities Expiring Within 30 Days — Total Amount to Pay: {currSymbol}{totalAmountDue:N2}");
+
+                var itemLines = notices.Select((n, idx) =>
+                {
+                    string typeLabel = n.IsTrialPeriod ? "Free Trial" : "Subscription";
+                    string daysLabel = n.DaysRemaining < 0
+                        ? $"{Math.Abs(n.DaysRemaining)}d overdue"
+                        : (n.DaysRemaining == 0 ? "Due today" : $"{n.DaysRemaining}d left");
+                    return $"{idx + 1}. {n.FeatureName} ({typeLabel} • {daysLabel}) — {currSymbol}{n.RenewalPrice:N2}/{n.BillingCadence}";
+                }).ToList();
+
+                string consolidatedMessage =
+                    $"{string.Join(" | ", itemLines)} — Total Amount to Pay ({notices.Count} {(notices.Count == 1 ? "Capability" : "Capabilities")}): {currSymbol}{totalAmountDue:N2} {currCode}.";
+
+                string stateFingerprint = string.Join(";", notices.Select(n => $"{n.FeatureCode}:{n.DaysRemaining}:{n.RenewalPrice:F2}"));
+
+                // 1. Consolidated In-App Notification (Every 24 Hours in Notifications Page & Bell Feed)
+                var recentInApp = await _db.BcpNotifications
+                    .Where(n => n.Module == "BillingExpiry" && n.CreatedAt >= now.AddHours(-24))
+                    .OrderByDescending(n => n.CreatedAt)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (recentInApp == null)
+                {
+                    if (_notificationDispatcher != null && !string.IsNullOrWhiteSpace(userId))
+                    {
+                        await _notificationDispatcher.DispatchAsync(new Ozikol_BCC.Application.Interfaces.Services.NotificationDispatchPayload
+                        {
+                            TargetType = Ozikol_BCC.Application.Interfaces.Services.NotificationDispatchTarget.SingleUser,
+                            TargetUserId = userId,
+                            TenantKey = tenantKey,
+                            Title = title,
+                            Message = consolidatedMessage,
+                            ActionUrl = "/billing/subscriptions",
+                            Module = "BillingExpiry",
+                            Icon = anyExpired ? "error" : "warning",
+                            Category = Ozikol_BCC.Domain.Enum.Enum.BcpMessageCategory.Account,
+                            Priority = anyUrgent24h ? Ozikol_BCC.Domain.Enum.Enum.BcpMessagePriority.Urgent : Ozikol_BCC.Domain.Enum.Enum.BcpMessagePriority.High,
+                            Severity = anyExpired
+                                ? Ozikol_BCC.Domain.Enum.Enum.NotificationSeverity.Error
+                                : Ozikol_BCC.Domain.Enum.Enum.NotificationSeverity.Maintenance,
+                            Channels = Ozikol_BCC.Domain.Enum.Enum.NotificationChannels.InApp,
+                            MetadataJson = System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                fingerprint = stateFingerprint,
+                                count = notices.Count,
+                                totalAmountDue,
+                                currencySymbol = currSymbol,
+                                currencyCode = currCode
+                            })
+                        }, cancellationToken);
+                    }
+                    else
+                    {
+                        _db.BcpNotifications.Add(new BcpNotification
+                        {
+                            UserId = userId,
+                            Title = title,
+                            Message = consolidatedMessage,
+                            ActionUrl = "/billing/subscriptions",
+                            Module = "BillingExpiry",
+                            Icon = anyExpired ? "error" : "warning",
+                            Category = Ozikol_BCC.Domain.Enum.Enum.BcpMessageCategory.Account,
+                            Priority = anyUrgent24h ? Ozikol_BCC.Domain.Enum.Enum.BcpMessagePriority.Urgent : Ozikol_BCC.Domain.Enum.Enum.BcpMessagePriority.High,
+                            Severity = anyExpired
+                                ? Ozikol_BCC.Domain.Enum.Enum.NotificationSeverity.Error
+                                : Ozikol_BCC.Domain.Enum.Enum.NotificationSeverity.Maintenance,
+                            IsBroadcast = string.IsNullOrWhiteSpace(userId),
+                            MetadataJson = System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                fingerprint = stateFingerprint,
+                                count = notices.Count,
+                                totalAmountDue,
+                                currencySymbol = currSymbol,
+                                currencyCode = currCode
+                            }),
+                            CreatedAt = now
+                        });
+                        await _db.SaveChangesAsync(cancellationToken);
+                    }
+                }
+                else if (recentInApp.MetadataJson == null || !recentInApp.MetadataJson.Contains(stateFingerprint))
+                {
+                    // Update the existing 24-hour notification in-place when features or remaining days change
+                    recentInApp.Title = title;
+                    recentInApp.Message = consolidatedMessage;
+                    recentInApp.ActionUrl = "/billing/subscriptions";
+                    recentInApp.IsRead = false;
+                    recentInApp.MetadataJson = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        fingerprint = stateFingerprint,
+                        count = notices.Count,
+                        totalAmountDue,
+                        currencySymbol = currSymbol,
+                        currencyCode = currCode
+                    });
+                    await _db.SaveChangesAsync(cancellationToken);
+                }
+
+                // 2. Automated Email Schedule:
+                //    - Every 7 days within the 30-day window ("BillingExpiryEmail7d")
+                //    - Urgent 24 hours before expiry ("BillingExpiryEmail24h" when any feature has DaysRemaining <= 1)
+                if (_notificationDispatcher != null && (!string.IsNullOrWhiteSpace(userId) || !string.IsNullOrWhiteSpace(userEmail)))
+                {
+                    bool sent7dRecently = await _db.BcpNotifications
+                        .AnyAsync(n => n.Module == "BillingExpiryEmail7d" && n.CreatedAt >= now.AddDays(-7), cancellationToken);
+
+                    bool shouldSend24hAlert = anyUrgent24h && !await _db.BcpNotifications
+                        .AnyAsync(n => n.Module == "BillingExpiryEmail24h" && n.CreatedAt >= now.AddHours(-24), cancellationToken);
+
+                    if (!sent7dRecently || shouldSend24hAlert)
+                    {
+                        string emailModuleMarker = shouldSend24hAlert ? "BillingExpiryEmail24h" : "BillingExpiryEmail7d";
+                        string emailSubject = shouldSend24hAlert
+                            ? $"Urgent 24-Hour Renewal Notice: {notices.Count} Workspace {(notices.Count == 1 ? "Capability" : "Capabilities")} — Total Due {currSymbol}{totalAmountDue:N2}"
+                            : $"7-Day Capability Renewal Summary ({notices.Count} Expiring Within 30 Days) — Total Due {currSymbol}{totalAmountDue:N2}";
+
+                        var htmlRows = string.Concat(notices.Select((n, idx) =>
+                        {
+                            string badge = n.IsTrialPeriod ? "Free Trial" : "Subscription";
+                            string remText = n.DaysRemaining < 0
+                                ? $"<strong style='color:#dc2626;'>{Math.Abs(n.DaysRemaining)}d Overdue</strong>"
+                                : (n.DaysRemaining == 0
+                                    ? "<strong style='color:#dc2626;'>Expires Today (24h)</strong>"
+                                    : (n.DaysRemaining == 1
+                                        ? "<strong style='color:#d97706;'>1 Day Left (24h)</strong>"
+                                        : $"{n.DaysRemaining} Days Left"));
+                            return $@"
+                                <tr>
+                                    <td style='padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;'>{idx + 1}. {System.Net.WebUtility.HtmlEncode(n.FeatureName)}</td>
+                                    <td style='padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;'>{badge}</td>
+                                    <td style='padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:12.5px;'>{remText}</td>
+                                    <td style='padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:800;text-align:right;'>{System.Net.WebUtility.HtmlEncode(currSymbol)}{n.RenewalPrice:N2} / {n.BillingCadence}</td>
+                                </tr>";
+                        }));
+
+                        string emailHtml = $@"
+                            <div style='font-family:Inter,system-ui,sans-serif;color:#0f172a;line-height:1.6;'>
+                                <h2 style='margin:0 0 8px 0;font-size:18px;color:#0f172a;'>{System.Net.WebUtility.HtmlEncode(title)}</h2>
+                                <p style='margin:0 0 16px 0;font-size:14px;color:#475569;'>
+                                    {(shouldSend24hAlert
+                                        ? "One or more modular capabilities in your workspace will expire within 24 hours (or are currently overdue). Please review the summary below and complete renewal payment to avoid service interruption."
+                                        : "Here is your 7-day automated renewal schedule for workspace capabilities expiring within the next 30 days:")}
+                                </p>
+                                <table style='width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:16px;'>
+                                    <thead>
+                                        <tr style='background:#f8fafc;text-align:left;'>
+                                            <th style='padding:10px 12px;font-size:11px;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0;'>Capability</th>
+                                            <th style='padding:10px 12px;font-size:11px;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0;'>Type</th>
+                                            <th style='padding:10px 12px;font-size:11px;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0;'>Remaining</th>
+                                            <th style='padding:10px 12px;font-size:11px;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0;text-align:right;'>Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {htmlRows}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style='background:#eff6ff;'>
+                                            <td colspan='3' style='padding:12px;font-size:13.5px;font-weight:800;color:#0050e5;'>Total Amount to Pay ({notices.Count} {(notices.Count == 1 ? "Capability" : "Capabilities")})</td>
+                                            <td style='padding:12px;font-size:15px;font-weight:900;color:#0050e5;text-align:right;'>{System.Net.WebUtility.HtmlEncode(currSymbol)}{totalAmountDue:N2} {System.Net.WebUtility.HtmlEncode(currCode)}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>";
+
+                        await _notificationDispatcher.DispatchAsync(new Ozikol_BCC.Application.Interfaces.Services.NotificationDispatchPayload
+                        {
+                            TargetType = Ozikol_BCC.Application.Interfaces.Services.NotificationDispatchTarget.SingleUser,
+                            TargetUserId = userId,
+                            RecipientEmail = userEmail,
+                            TenantKey = tenantKey,
+                            Title = emailSubject,
+                            Message = consolidatedMessage,
+                            EmailSubject = emailSubject,
+                            EmailHtmlBody = emailHtml,
+                            ActionUrl = "/billing/subscriptions",
+                            Module = emailModuleMarker,
+                            Category = Ozikol_BCC.Domain.Enum.Enum.BcpMessageCategory.Account,
+                            Priority = shouldSend24hAlert ? Ozikol_BCC.Domain.Enum.Enum.BcpMessagePriority.Urgent : Ozikol_BCC.Domain.Enum.Enum.BcpMessagePriority.High,
+                            Severity = shouldSend24hAlert
+                                ? Ozikol_BCC.Domain.Enum.Enum.NotificationSeverity.Error
+                                : Ozikol_BCC.Domain.Enum.Enum.NotificationSeverity.Maintenance,
+                            Channels = Ozikol_BCC.Domain.Enum.Enum.NotificationChannels.Email,
+                            SendEmailCopy = true
+                        }, cancellationToken);
+
+                        // Record marker timestamp so 7-day and 24-hour schedules are strictly respected
+                        _db.BcpNotifications.Add(new BcpNotification
+                        {
+                            UserId = userId,
+                            Title = emailSubject,
+                            Message = consolidatedMessage,
+                            ActionUrl = "/billing/subscriptions",
+                            Module = emailModuleMarker,
+                            Icon = "mail",
+                            Category = Ozikol_BCC.Domain.Enum.Enum.BcpMessageCategory.Account,
+                            Priority = shouldSend24hAlert ? Ozikol_BCC.Domain.Enum.Enum.BcpMessagePriority.Urgent : Ozikol_BCC.Domain.Enum.Enum.BcpMessagePriority.Normal,
+                            Severity = Ozikol_BCC.Domain.Enum.Enum.NotificationSeverity.Update,
+                            IsRead = true,
+                            CreatedAt = now
+                        });
+                        await _db.SaveChangesAsync(cancellationToken);
+                    }
+                }
+            }
+            catch
+            {
+                // Never block feature-expirations response if notification or email queue persistence encounters a transient error
+            }
         }
 
         /// <summary>

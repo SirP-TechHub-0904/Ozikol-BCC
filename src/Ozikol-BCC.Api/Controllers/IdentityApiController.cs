@@ -15,6 +15,7 @@ using static Ozikol_BCC.Domain.Enum.Enum;
 
 using Microsoft.AspNetCore.SignalR;
 using Ozikol_BCC.Api.Hubs;
+using Ozikol_BCC.Application.Hubs;
 using Ozikol_BCC.Application.Common;
 using Ozikol_BCC.Application.Interfaces.Services;
 
@@ -33,6 +34,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly UserManager<Profile> _userManager;
         private readonly DashboardDbContext _dbContext;
         private readonly IHubContext<GroupChatHub>? _hubContext;
+        private readonly IHubContext<NotificationHub>? _notificationHubContext;
         private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         public IdentityApiController(
@@ -40,12 +42,14 @@ namespace Ozikol_BCC.Api.Controllers
             UserManager<Profile> userManager,
             DashboardDbContext dbContext,
             IHubContext<GroupChatHub>? hubContext = null,
+            IHubContext<NotificationHub>? notificationHubContext = null,
             ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _roleManager = roleManager;
             _userManager = userManager;
             _dbContext = dbContext;
             _hubContext = hubContext;
+            _notificationHubContext = notificationHubContext;
             _notificationDispatcher = notificationDispatcher;
         }
 
@@ -702,6 +706,118 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
+        /// Resends an existing pending invitation email and refreshes the token expiration window.
+        /// </summary>
+        /// <param name="id">Unique identifier of the invitation to resend.</param>
+        /// <returns>A response indicating whether the email was re-enqueued.</returns>
+        [HttpPost("invitations/{id}/resend")]
+        public async Task<IActionResult> ResendInvitation([FromRoute] string id)
+        {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or Identity Managers can manage invitations."));
+            }
+
+            if (!Guid.TryParse(id, out var invitationId))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Invalid invitation identifier format."));
+            }
+
+            var invitation = await _dbContext.BcpUserInvitations.FirstOrDefaultAsync(i => i.Id == invitationId);
+            if (invitation == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Invitation record not found."));
+            }
+
+            if (invitation.IsAccepted)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("This invitation has already been accepted and activated."));
+            }
+
+            // Refresh expiration duration by another 7 days
+            invitation.ExpiresAt = DateTime.UtcNow.AddDays(7);
+
+            var origin = Request.Headers.Origin.FirstOrDefault() 
+                ?? Request.Headers.Referer.FirstOrDefault() 
+                ?? $"{Request.Scheme}://{Request.Host}";
+
+            var registrationUrl = $"{origin.TrimEnd('/')}/auth/register?token={invitation.Token}&email={Uri.EscapeDataString(invitation.Email)}";
+
+            var tenantSettings = await _dbContext.MisWebsiteSettings.AsNoTracking().FirstOrDefaultAsync();
+            var tenantBrand = !string.IsNullOrWhiteSpace(tenantSettings?.BrandName)
+                ? tenantSettings.BrandName.Trim()
+                : (!string.IsNullOrWhiteSpace(tenantSettings?.CompanyName) ? tenantSettings.CompanyName.Trim() : "Workspace");
+
+            var baseRole = invitation.RoleName?.Split(':')[0] ?? "Member";
+
+            var emailBody = $@"
+                <p style='color:#334155; font-size:14.5px; line-height:1.6; margin-top:0; margin-bottom:18px;'>
+                    You have been invited to join the <strong>{System.Net.WebUtility.HtmlEncode(tenantBrand)}</strong> workspace as a <strong>{baseRole}</strong>. This is a reminder to establish your account credentials and access the workspace.
+                </p>
+                <div style='margin:28px 0; text-align:center;'>
+                    <a href='{registrationUrl}' 
+                       style='background-color:#0050e5; color:#ffffff; padding:13px 28px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block; font-size:14px; box-shadow:0 4px 6px -1px rgba(0, 80, 229, 0.2);'>
+                        Accept Invitation & Register
+                    </a>
+                </div>
+                <p style='color:#64748b; font-size:12px; line-height:1.5; border-top:1px solid #f1f5f9; padding-top:16px; margin-bottom:0;'>
+                    This invitation is secure and will expire in 7 days. If you did not request this invitation, you can safely ignore this message.
+                </p>";
+
+            var emailQueueItem = new BcpEmailQueue
+            {
+                Id = Guid.CreateVersion7(),
+                RecipientEmail = invitation.Email,
+                RecipientName = invitation.Email.Split('@')[0],
+                Subject = $"Reminder: You are invited to join {tenantBrand} Workspace",
+                HtmlBody = emailBody,
+                Category = BcpMessageCategory.General,
+                Priority = BcpMessagePriority.High,
+                Status = BcpQueueStatus.Queued,
+                CreatedAt = DateTime.UtcNow
+            };
+            _dbContext.BcpEmailQueue.Add(emailQueueItem);
+
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                invitationUrl = registrationUrl,
+                expiresAt = invitation.ExpiresAt
+            }, $"Invitation email successfully re-enqueued for '{invitation.Email}'."));
+        }
+
+        /// <summary>
+        /// Revokes an existing invitation token, preventing prospective user registration.
+        /// </summary>
+        /// <param name="id">Unique identifier of the invitation to revoke.</param>
+        /// <returns>A response indicating whether the token was revoked.</returns>
+        [HttpDelete("invitations/{id}")]
+        public async Task<IActionResult> RevokeInvitation([FromRoute] string id)
+        {
+            if (!await CallerCanAssignRolesAsync())
+            {
+                return StatusCode(403, ApiResponse<object>.FailureResponse("Access Denied: Only administrators or Identity Managers can revoke invitations."));
+            }
+
+            if (!Guid.TryParse(id, out var invitationId))
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("Invalid invitation identifier format."));
+            }
+
+            var invitation = await _dbContext.BcpUserInvitations.FirstOrDefaultAsync(i => i.Id == invitationId);
+            if (invitation == null)
+            {
+                return NotFound(ApiResponse<object>.FailureResponse("Invitation record not found."));
+            }
+
+            _dbContext.BcpUserInvitations.Remove(invitation);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(null, "Invitation token successfully revoked."));
+        }
+
+        /// <summary>
         /// Retrieves the real-time security login audit stream.
         /// When the calling user is not a SuperAdmin, audit records associated with SuperAdmin accounts are strictly filtered out.
         /// </summary>
@@ -770,7 +886,348 @@ namespace Ozikol_BCC.Api.Controllers
                 .Take(250) // Limit to latest 250 rows for performance
                 .ToListAsync();
 
-            return Ok(ApiResponse<object>.SuccessResponse(logs, "Login audit logs retrieved."));
+            var parsedLogs = logs.Select(l =>
+            {
+                var parsed = UserAgentParser.Parse(l.UserAgent);
+                return new
+                {
+                    l.Id,
+                    l.UserId,
+                    l.Email,
+                    l.IpAddress,
+                    l.SystemId,
+                    l.Status,
+                    l.UserAgent,
+                    Device = parsed.FriendlyDeviceTitle,
+                    Browser = parsed.FriendlyBrowserDetails,
+                    BrowserName = parsed.BrowserName,
+                    ClientType = parsed.ClientType,
+                    Icon = parsed.Icon,
+                    IsTrusted = l.Status != null && l.Status.Contains("Trusted", StringComparison.OrdinalIgnoreCase),
+                    l.Timestamp
+                };
+            }).ToList();
+
+            return Ok(ApiResponse<object>.SuccessResponse(parsedLogs, "Login audit logs retrieved."));
+        }
+
+        /// <summary>
+        /// Retrieves the unified workspace-wide activity and login audit stream across all users (no 30-day restriction).
+        /// Supports server-side pagination, search, module filtering, and SuperAdmin shielding.
+        /// </summary>
+        /// <param name="page">1-based page number.</param>
+        /// <param name="pageSize">Records per page.</param>
+        /// <param name="search">Optional search term (user name, email, action, description, IP).</param>
+        /// <param name="module">Optional module filter.</param>
+        /// <returns>Paged collection of unified activity and authentication audit logs.</returns>
+        [HttpGet("security-audit")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+        public async Task<IActionResult> GetWorkspaceSecurityAuditLogs(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 25,
+            [FromQuery] string? search = null,
+            [FromQuery] string? module = null)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 5) pageSize = 5;
+            if (pageSize > 200) pageSize = 200;
+
+            var isSuperAdmin = User.IsInRole("SuperAdmin") ||
+                               User.Claims.Any(c => (c.Type == ClaimTypes.Role || c.Type == "role" || c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role") &&
+                                                    string.Equals(c.Value, "SuperAdmin", StringComparison.OrdinalIgnoreCase));
+
+            var superAdminUserIds = new List<string>();
+            var superAdminEmails = new List<string>();
+
+            if (!isSuperAdmin)
+            {
+                var superAdminRole = await _dbContext.Roles
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Name == "SuperAdmin" || r.NormalizedName == "SUPERADMIN");
+
+                if (superAdminRole != null)
+                {
+                    superAdminUserIds = await _dbContext.UserRoles
+                        .AsNoTracking()
+                        .Where(ur => ur.RoleId == superAdminRole.Id)
+                        .Select(ur => ur.UserId)
+                        .ToListAsync();
+
+                    if (superAdminUserIds.Count > 0)
+                    {
+                        superAdminEmails = await _dbContext.Users
+                            .AsNoTracking()
+                            .Where(u => superAdminUserIds.Contains(u.Id) && !string.IsNullOrEmpty(u.Email))
+                            .Select(u => u.Email!)
+                            .ToListAsync();
+                    }
+                }
+            }
+
+            var emailFilterSet = new HashSet<string>(superAdminEmails, StringComparer.OrdinalIgnoreCase);
+            var idFilterSet = new HashSet<string>(superAdminUserIds, StringComparer.OrdinalIgnoreCase);
+
+            // Load user directory map to enrich logs with FullName
+            var usersMap = await _dbContext.Users
+                .AsNoTracking()
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Email,
+                    FullName = ((u.FirstName ?? "") + " " + (u.LastName ?? "")).Trim()
+                })
+                .ToListAsync();
+
+            var nameByEmail = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var nameById = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var u in usersMap)
+            {
+                if (!string.IsNullOrWhiteSpace(u.Id) && !string.IsNullOrWhiteSpace(u.FullName))
+                    nameById[u.Id] = u.FullName;
+                if (!string.IsNullOrWhiteSpace(u.Email) && !string.IsNullOrWhiteSpace(u.FullName))
+                    nameByEmail[u.Email] = u.FullName;
+            }
+
+            // 1. Fetch all operational activity logs across the workspace
+            var rawActivities = await _dbContext.BcpActivityLogs
+                .AsNoTracking()
+                .OrderByDescending(a => a.Date)
+                .Take(2000)
+                .ToListAsync();
+
+            // 2. Fetch all login authentication logs across the workspace
+            var rawLogins = await _dbContext.BcpLoginAuditLogs
+                .AsNoTracking()
+                .OrderByDescending(l => l.Timestamp)
+                .Take(2000)
+                .ToListAsync();
+
+            var unified = new List<(
+                Guid Id,
+                string LogSource,
+                string? UserId,
+                string FullName,
+                string Email,
+                string ActionType,
+                string Description,
+                string Module,
+                string IpAddress,
+                string UserAgent,
+                DateTime Timestamp)>();
+
+            foreach (var a in rawActivities)
+            {
+                if (IsFollowComeSeedActivity(a))
+                    continue;
+
+                if (!isSuperAdmin)
+                {
+                    if (!string.IsNullOrEmpty(a.PerformedByProfileId) && idFilterSet.Contains(a.PerformedByProfileId))
+                        continue;
+                    if (!string.IsNullOrEmpty(a.PerformedByUserEmail) && (emailFilterSet.Contains(a.PerformedByUserEmail) || a.PerformedByUserEmail.Contains("superadmin", StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                }
+
+                var email = a.PerformedByUserEmail ?? "";
+                var fullName = a.PerformedByFullName;
+                if ((string.IsNullOrWhiteSpace(fullName) || fullName.Contains('@')) && !string.IsNullOrWhiteSpace(a.PerformedByProfileId) && nameById.TryGetValue(a.PerformedByProfileId, out var resolvedById))
+                    fullName = resolvedById;
+                if ((string.IsNullOrWhiteSpace(fullName) || fullName.Contains('@')) && !string.IsNullOrWhiteSpace(email) && nameByEmail.TryGetValue(email, out var resolvedByEmail))
+                    fullName = resolvedByEmail;
+
+                var (cleanAction, cleanDesc, cleanModule) = FormatActivityDisplay(a.ActionType, a.Description, a.Module);
+
+                unified.Add((
+                    a.Id,
+                    "activity",
+                    a.PerformedByProfileId,
+                    !string.IsNullOrWhiteSpace(fullName) ? fullName : (!string.IsNullOrWhiteSpace(email) ? email : "System"),
+                    !string.IsNullOrWhiteSpace(email) ? email : "system@workspace.local",
+                    cleanAction,
+                    cleanDesc,
+                    cleanModule,
+                    a.IpAddress ?? "127.0.0.1",
+                    a.UserAgent ?? "Web Browser",
+                    a.Date
+                ));
+            }
+
+            foreach (var l in rawLogins)
+            {
+                if (!isSuperAdmin)
+                {
+                    if (!string.IsNullOrEmpty(l.UserId) && idFilterSet.Contains(l.UserId))
+                        continue;
+                    if (!string.IsNullOrEmpty(l.Email) && (emailFilterSet.Contains(l.Email) || l.Email.Contains("superadmin", StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                }
+
+                var email = l.Email ?? "";
+                string? fullName = null;
+                if (!string.IsNullOrWhiteSpace(l.UserId) && nameById.TryGetValue(l.UserId, out var resolvedById))
+                    fullName = resolvedById;
+                if (string.IsNullOrWhiteSpace(fullName) && !string.IsNullOrWhiteSpace(email) && nameByEmail.TryGetValue(email, out var resolvedByEmail))
+                    fullName = resolvedByEmail;
+
+                var desc = l.Status != null && l.Status.Contains("Success", StringComparison.OrdinalIgnoreCase)
+                    ? "Successful authentication sign-in"
+                    : (l.Status ?? "Authentication event");
+
+                unified.Add((
+                    l.Id,
+                    "login",
+                    l.UserId,
+                    !string.IsNullOrWhiteSpace(fullName) ? fullName : (!string.IsNullOrWhiteSpace(email) ? email : "Member"),
+                    !string.IsNullOrWhiteSpace(email) ? email : "account@domain.com",
+                    l.Status ?? "Sign-in",
+                    desc,
+                    "Authentication",
+                    l.IpAddress ?? "127.0.0.1",
+                    l.UserAgent ?? "Web Browser",
+                    l.Timestamp
+                ));
+            }
+
+            // Collect distinct modules for filter dropdown
+            var modules = unified
+                .Select(x => x.Module)
+                .Where(m => !string.IsNullOrWhiteSpace(m))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(m => m)
+                .ToList();
+
+            // Apply module filter
+            if (!string.IsNullOrWhiteSpace(module) && !string.Equals(module, "all", StringComparison.OrdinalIgnoreCase))
+            {
+                var cleanMod = module.Trim();
+                unified = unified
+                    .Where(x => string.Equals(x.Module, cleanMod, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            // Apply search filter
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                unified = unified
+                    .Where(x =>
+                        x.FullName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.Email.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.ActionType.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.Description.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.Module.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        x.IpAddress.Contains(term, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            var ordered = unified
+                .OrderByDescending(x => x.Timestamp)
+                .ToList();
+
+            var totalCount = ordered.Count;
+            var paged = ordered
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(h =>
+                {
+                    var parsed = UserAgentParser.Parse(h.UserAgent);
+                    return new
+                    {
+                        Id = h.Id.ToString(),
+                        h.LogSource,
+                        h.UserId,
+                        h.FullName,
+                        h.Email,
+                        h.ActionType,
+                        Status = h.ActionType,
+                        h.Description,
+                        h.Module,
+                        h.IpAddress,
+                        h.UserAgent,
+                        Device = parsed.FriendlyDeviceTitle,
+                        Browser = parsed.FriendlyBrowserDetails,
+                        BrowserName = parsed.BrowserName,
+                        ClientType = parsed.ClientType,
+                        Icon = parsed.Icon,
+                        IsTrusted = h.ActionType != null && h.ActionType.Contains("Trusted", StringComparison.OrdinalIgnoreCase),
+                        Date = h.Timestamp,
+                        h.Timestamp
+                    };
+                })
+                .ToList();
+
+            var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+            if (totalPages < 1) totalPages = 1;
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                items = paged,
+                totalCount,
+                page,
+                pageSize,
+                totalPages,
+                modules
+            }, "Workspace security audit logs retrieved."));
+        }
+
+        /// <summary>
+        /// Deletes a single audit log entry (from either <c>BcpActivityLogs</c> or <c>BcpLoginAuditLogs</c>) when requested by an administrator.
+        /// </summary>
+        /// <param name="id">Audit log GUID.</param>
+        /// <returns>Deletion result.</returns>
+        [HttpDelete("security-audit/{id:guid}")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+        public async Task<IActionResult> DeleteSecurityAuditLog(Guid id)
+        {
+            var activity = await _dbContext.BcpActivityLogs.FirstOrDefaultAsync(a => a.Id == id);
+            if (activity != null)
+            {
+                _dbContext.BcpActivityLogs.Remove(activity);
+                await _dbContext.SaveChangesAsync();
+                return Ok(ApiResponse<object>.SuccessResponse(null, "Audit log record deleted."));
+            }
+
+            var loginLog = await _dbContext.BcpLoginAuditLogs.FirstOrDefaultAsync(l => l.Id == id);
+            if (loginLog != null)
+            {
+                _dbContext.BcpLoginAuditLogs.Remove(loginLog);
+                await _dbContext.SaveChangesAsync();
+                return Ok(ApiResponse<object>.SuccessResponse(null, "Login audit record deleted."));
+            }
+
+            return NotFound(ApiResponse<object>.FailureResponse("Audit log record not found."));
+        }
+
+        /// <summary>
+        /// Deletes multiple selected audit log entries in bulk when requested by an administrator.
+        /// </summary>
+        /// <param name="ids">List of audit log GUIDs to delete.</param>
+        /// <returns>Bulk deletion result.</returns>
+        [HttpPost("security-audit/bulk-delete")]
+        [Authorize(Roles = "SuperAdmin,Admin,Identity Manager,IdentityManager")]
+        public async Task<IActionResult> BulkDeleteSecurityAuditLogs([FromBody] List<Guid> ids)
+        {
+            if (ids == null || ids.Count == 0)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse("No log IDs specified for deletion."));
+            }
+
+            var activities = await _dbContext.BcpActivityLogs.Where(a => ids.Contains(a.Id)).ToListAsync();
+            var logins = await _dbContext.BcpLoginAuditLogs.Where(l => ids.Contains(l.Id)).ToListAsync();
+
+            if (activities.Count > 0)
+            {
+                _dbContext.BcpActivityLogs.RemoveRange(activities);
+            }
+            if (logins.Count > 0)
+            {
+                _dbContext.BcpLoginAuditLogs.RemoveRange(logins);
+            }
+
+            var deletedCount = activities.Count + logins.Count;
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(ApiResponse<object>.SuccessResponse(new { deletedCount }, $"Deleted {deletedCount} audit log record(s)."));
         }
 
         [HttpGet("password-policy")]
@@ -856,16 +1313,87 @@ namespace Ozikol_BCC.Api.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
 
-            var currentJti = User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
-                ?? User.FindFirstValue("jti");
+            string? tokenJti = null;
+            var authHeader = Request.Headers.Authorization.ToString();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                var rawToken = authHeader.Substring(7).Trim();
+                try
+                {
+                    var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                    if (tokenHandler.CanReadToken(rawToken))
+                    {
+                        var jwt = tokenHandler.ReadJwtToken(rawToken);
+                        tokenJti = jwt.Claims.FirstOrDefault(c => c.Type == "jti" || c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+                    }
+                }
+                catch { }
+            }
+
+            var currentJti = tokenJti
+                ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
+                ?? User.FindFirstValue("jti")
+                ?? User.Claims.FirstOrDefault(c => c.Type.EndsWith("/jti") || c.Type == "jti")?.Value;
+
+            // Reject if this calling session has been explicitly revoked/terminated
+            if (!string.IsNullOrEmpty(currentJti))
+            {
+                var isExplicitlyDeactivated = await _dbContext.BcpUserDevices
+                    .AsNoTracking()
+                    .AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && !d.IsActiveSession)
+                    && !await _dbContext.BcpUserDevices
+                        .AsNoTracking()
+                        .AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && d.IsActiveSession);
+
+                if (isExplicitlyDeactivated)
+                {
+                    return Unauthorized(ApiResponse<object>.FailureResponse("This device session has been terminated. Please sign in again."));
+                }
+            }
 
             var deviceEntities = await _dbContext.BcpUserDevices
                 .Where(d => d.UserId == userId && d.IsActiveSession)
                 .OrderByDescending(d => d.LastUsedAt)
                 .ToListAsync();
 
+            // Automatic de-duplication: deactivate older duplicate sessions for the same physical device/browser
+            var seenDeviceKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var duplicatesToDeactivate = new List<BcpUserDevice>();
+            var uniqueDeviceEntities = new List<BcpUserDevice>();
+
+            foreach (var dev in deviceEntities)
+            {
+                var parsedDev = UserAgentParser.Parse(dev.DeviceName);
+                var deviceKey = $"{parsedDev.FriendlyDeviceTitle}";
+                if (seenDeviceKeys.Add(deviceKey))
+                {
+                    uniqueDeviceEntities.Add(dev);
+                }
+                else
+                {
+                    dev.IsActiveSession = false;
+                    duplicatesToDeactivate.Add(dev);
+                }
+            }
+
+            if (duplicatesToDeactivate.Count > 0)
+            {
+                await _dbContext.SaveChangesAsync();
+                deviceEntities = uniqueDeviceEntities;
+            }
+
             if (deviceEntities.Count == 0)
             {
+                // Check if user already had sessions that were terminated; if so, do not resurrect a new session!
+                var wasTerminated = !string.IsNullOrEmpty(currentJti) &&
+                    await _dbContext.BcpUserDevices.AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && !d.IsActiveSession)
+                    && !await _dbContext.BcpUserDevices.AnyAsync(d => d.UserId == userId && d.JwtId == currentJti && d.IsActiveSession);
+
+                if (wasTerminated)
+                {
+                    return Unauthorized(ApiResponse<object>.FailureResponse("This device session has been terminated. Please sign in again."));
+                }
+
                 var userAgent = Request.Headers["User-Agent"].ToString();
                 if (string.IsNullOrEmpty(userAgent)) userAgent = "Current Browser Session";
                 var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()
@@ -890,18 +1418,73 @@ namespace Ozikol_BCC.Api.Controllers
                 deviceEntities.Add(newDevice);
             }
 
+            var callerUserAgent = Request.Headers.UserAgent.ToString();
+            var callerParsed = UserAgentParser.Parse(callerUserAgent);
+
+            // Priority 1: Match device by exact JWT JTI
+            var currentDevice = !string.IsNullOrEmpty(currentJti)
+                ? deviceEntities.FirstOrDefault(d => d.JwtId == currentJti)
+                : null;
+
+            // Priority 2: Match by exact caller User-Agent
+            if (currentDevice == null && !string.IsNullOrEmpty(callerUserAgent))
+            {
+                currentDevice = deviceEntities.FirstOrDefault(d => d.DeviceName == callerUserAgent);
+            }
+
+            // Priority 3: Match by matching parsed client application type & operating system (e.g. Web Browser vs Desktop App)
+            if (currentDevice == null)
+            {
+                currentDevice = deviceEntities.FirstOrDefault(d =>
+                {
+                    var dParsed = UserAgentParser.Parse(d.DeviceName);
+                    return dParsed.ClientType == callerParsed.ClientType && dParsed.OperatingSystem == callerParsed.OperatingSystem;
+                });
+            }
+
+            // Touch current device's LastUsedAt, synchronize latest User-Agent (e.g. Edge vs Chrome), and link token if matched
+            if (currentDevice != null)
+            {
+                currentDevice.LastUsedAt = DateTime.UtcNow;
+                if (!string.IsNullOrEmpty(currentJti) && currentDevice.JwtId != currentJti)
+                {
+                    currentDevice.JwtId = currentJti;
+                }
+                if (!string.IsNullOrWhiteSpace(callerUserAgent) && currentDevice.DeviceName != callerUserAgent)
+                {
+                    currentDevice.DeviceName = callerUserAgent;
+                }
+                await _dbContext.SaveChangesAsync();
+            }
+
             var sessions = deviceEntities.Select(d =>
             {
                 var parsed = UserAgentParser.Parse(d.DeviceName);
+                var isCurrent = currentDevice != null && d.Id == currentDevice.Id;
+
+                var utcLastActive = d.LastUsedAt.Kind == DateTimeKind.Utc
+                    ? d.LastUsedAt
+                    : DateTime.SpecifyKind(d.LastUsedAt, DateTimeKind.Utc);
+                var utcCreatedAt = d.CreatedAt.Kind == DateTimeKind.Utc
+                    ? d.CreatedAt
+                    : DateTime.SpecifyKind(d.CreatedAt, DateTimeKind.Utc);
+
                 return new
                 {
                     SessionId = d.Id,
                     Device = parsed.FriendlyDeviceTitle,
                     Browser = parsed.FriendlyBrowserDetails,
+                    BrowserName = parsed.BrowserName,
+                    ClientType = parsed.ClientType,
+                    OperatingSystem = parsed.OperatingSystem,
+                    DeviceType = parsed.DeviceType,
+                    Icon = parsed.Icon,
                     RawDevice = d.DeviceName,
                     IpAddress = d.IpAddress,
-                    LastActive = d.LastUsedAt,
-                    IsCurrent = (!string.IsNullOrEmpty(currentJti) && d.JwtId == currentJti) || (d == deviceEntities[0])
+                    LastActive = utcLastActive,
+                    IsCurrent = isCurrent,
+                    IsTrusted = d.IsTrusted,
+                    CreatedAt = utcCreatedAt
                 };
             }).ToList();
 
@@ -974,9 +1557,73 @@ namespace Ozikol_BCC.Api.Controllers
                     CreatedAt = DateTime.UtcNow
                 };
                 _dbContext.BcpEmailQueue.Add(emailQueueItem);
+
+                // Dispatch real-time In-App security notification
+                if (_notificationDispatcher != null)
+                {
+                    var terminatedParsed = UserAgentParser.Parse(session.DeviceName);
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        Title = "Security Alert: Session Terminated",
+                        Message = $"Your active session on '{terminatedParsed.FriendlyDeviceTitle}' was terminated.",
+                        Severity = NotificationSeverity.Warning,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/account?tab=devices",
+                        Module = "Security",
+                        Icon = "phonelink_erase",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Normal
+                    });
+                }
+
+                _dbContext.BcpActivityLogs.Add(new BcpActivityLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    ActionType = "SESSION_TERMINATED",
+                    Description = $"Active session on '{UserAgentParser.Parse(session.DeviceName).FriendlyDeviceTitle}' was terminated.",
+                    Module = "Security",
+                    PerformedByProfileId = user.Id,
+                    PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    PerformedByUserEmail = user.Email,
+                    Date = DateTime.UtcNow,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    UserAgent = Request.Headers.UserAgent.ToString()
+                });
             }
 
             await _dbContext.SaveChangesAsync();
+
+            // Broadcast real-time session termination event over SignalR so connected sockets disconnect immediately
+            var singleTerminatedPayload = new
+            {
+                userId = session.UserId,
+                terminatedSessionIds = new[] { session.Id },
+                terminatedJwtIds = !string.IsNullOrEmpty(session.JwtId) ? new[] { session.JwtId } : Array.Empty<string>(),
+                timestamp = DateTime.UtcNow
+            };
+
+            if (_hubContext != null)
+            {
+                try
+                {
+                    await _hubContext.Clients.Group($"user-{session.UserId}").SendAsync("SessionRevoked", singleTerminatedPayload);
+                    await _hubContext.Clients.Group($"user_{session.UserId}").SendAsync("SessionRevoked", singleTerminatedPayload);
+                }
+                catch { }
+            }
+
+            if (_notificationHubContext != null)
+            {
+                try
+                {
+                    await _notificationHubContext.Clients.Group($"user-{session.UserId}").SendAsync("SessionRevoked", singleTerminatedPayload);
+                    await _notificationHubContext.Clients.Group($"user_{session.UserId}").SendAsync("SessionRevoked", singleTerminatedPayload);
+                }
+                catch { }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(null, $"Session '{sessionId}' successfully terminated."));
         }
 
@@ -991,13 +1638,56 @@ namespace Ozikol_BCC.Api.Controllers
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized(ApiResponse<object>.FailureResponse("Unauthorized access."));
 
-            var currentJti = User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
-                ?? User.FindFirstValue("jti");
+            string? tokenJti = null;
+            var authHeader = Request.Headers.Authorization.ToString();
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                var rawToken = authHeader.Substring(7).Trim();
+                try
+                {
+                    var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+                    if (tokenHandler.CanReadToken(rawToken))
+                    {
+                        var jwt = tokenHandler.ReadJwtToken(rawToken);
+                        tokenJti = jwt.Claims.FirstOrDefault(c => c.Type == "jti" || c.Type == System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+                    }
+                }
+                catch { }
+            }
 
-            // Fetch all other active devices for this user
-            var otherSessions = await _dbContext.BcpUserDevices
-                .Where(d => d.UserId == userId && d.IsActiveSession && (string.IsNullOrEmpty(currentJti) || d.JwtId != currentJti))
+            var currentJti = tokenJti
+                ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)
+                ?? User.FindFirstValue("jti")
+                ?? User.Claims.FirstOrDefault(c => c.Type.EndsWith("/jti") || c.Type == "jti")?.Value;
+
+            // Fetch all active devices for this user
+            var allUserSessions = await _dbContext.BcpUserDevices
+                .Where(d => d.UserId == userId && d.IsActiveSession)
+                .OrderByDescending(d => d.LastUsedAt)
                 .ToListAsync();
+
+            var callerUserAgent = Request.Headers.UserAgent.ToString();
+            var callerParsed = UserAgentParser.Parse(callerUserAgent);
+
+            var currentDevice = !string.IsNullOrEmpty(currentJti)
+                ? allUserSessions.FirstOrDefault(d => d.JwtId == currentJti)
+                : null;
+
+            if (currentDevice == null && !string.IsNullOrEmpty(callerUserAgent))
+            {
+                currentDevice = allUserSessions.FirstOrDefault(d => d.DeviceName == callerUserAgent);
+            }
+
+            if (currentDevice == null)
+            {
+                currentDevice = allUserSessions.FirstOrDefault(d =>
+                {
+                    var dParsed = UserAgentParser.Parse(d.DeviceName);
+                    return dParsed.ClientType == callerParsed.ClientType && dParsed.OperatingSystem == callerParsed.OperatingSystem;
+                });
+            }
+
+            var otherSessions = allUserSessions.Where(d => currentDevice != null ? d.Id != currentDevice.Id : d != allUserSessions.FirstOrDefault()).ToList();
 
             if (!otherSessions.Any())
             {
@@ -1021,17 +1711,82 @@ namespace Ozikol_BCC.Api.Controllers
             };
             _dbContext.BcpLoginAuditLogs.Add(log);
 
+            // Record operational activity log
+            _dbContext.BcpActivityLogs.Add(new BcpActivityLog
+            {
+                Id = Guid.CreateVersion7(),
+                ActionType = "SESSIONS_REVOKED",
+                Description = $"{otherSessions.Count} other active device sessions were remotely revoked.",
+                Module = "Security",
+                PerformedByProfileId = userId,
+                PerformedByFullName = currentUserEmail,
+                PerformedByUserEmail = currentUserEmail,
+                Date = DateTime.UtcNow,
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                UserAgent = callerUserAgent
+            });
+
+            // Dispatch in-app security alert
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = userId,
+                    Title = "Security Alert: Other Sessions Revoked",
+                    Message = $"{otherSessions.Count} other active login session(s) were revoked.",
+                    Severity = NotificationSeverity.Warning,
+                    Channels = NotificationChannels.InApp,
+                    ActionUrl = "/identity/console/account?tab=devices",
+                    Module = "Security",
+                    Icon = "phonelink_erase",
+                    Category = BcpMessageCategory.Security,
+                    Priority = BcpMessagePriority.Normal
+                });
+            }
+
             await _dbContext.SaveChangesAsync();
+
+            // Broadcast real-time session termination event over SignalR so all other connected sockets disconnect immediately
+            var allOtherTerminatedPayload = new
+            {
+                userId = userId,
+                terminatedSessionIds = otherSessions.Select(s => s.Id).ToList(),
+                terminatedJwtIds = otherSessions.Select(s => s.JwtId).Where(j => !string.IsNullOrEmpty(j)).ToList(),
+                timestamp = DateTime.UtcNow
+            };
+
+            if (_hubContext != null)
+            {
+                try
+                {
+                    await _hubContext.Clients.Group($"user-{userId}").SendAsync("SessionRevoked", allOtherTerminatedPayload);
+                    await _hubContext.Clients.Group($"user_{userId}").SendAsync("SessionRevoked", allOtherTerminatedPayload);
+                }
+                catch { }
+            }
+
+            if (_notificationHubContext != null)
+            {
+                try
+                {
+                    await _notificationHubContext.Clients.Group($"user-{userId}").SendAsync("SessionRevoked", allOtherTerminatedPayload);
+                    await _notificationHubContext.Clients.Group($"user_{userId}").SendAsync("SessionRevoked", allOtherTerminatedPayload);
+                }
+                catch { }
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(new { TerminatedCount = otherSessions.Count }, $"{otherSessions.Count} other session(s) successfully terminated."));
         }
 
         /// <summary>
-        /// Retrieves the personal login audit and security activity history for the authenticated user with server-side pagination.
+        /// Retrieves the personal activity audit trail and security history for the authenticated user with a 30-day retention window and server-side pagination.
         /// </summary>
         /// <param name="page">Current 1-based page index (defaults to 1).</param>
         /// <param name="pageSize">Number of records per page (defaults to 10, max 100).</param>
-        /// <returns>Paged collection of login events and pagination metadata.</returns>
+        /// <returns>Paged collection of operational tasks, security events, and retention metadata.</returns>
         [HttpGet("account/login-history")]
+        [HttpGet("account/my-activity")]
         [Authorize]
         public async Task<IActionResult> GetPersonalLoginHistory(
             [FromQuery] int page = 1,
@@ -1047,65 +1802,138 @@ namespace Ozikol_BCC.Api.Controllers
             if (pageSize < 5) pageSize = 5;
             if (pageSize > 100) pageSize = 100;
 
-            var baseQuery = _dbContext.BcpLoginAuditLogs
+            // Strict 30-day retention boundary for personal activity view
+            var cutoffDate = DateTime.UtcNow.AddDays(-30);
+
+            // 1. Query operational activities performed by this user
+            var activityQuery = _dbContext.BcpActivityLogs
+                .AsNoTracking()
+                .Where(a => (userId != null && a.PerformedByProfileId == userId) || (userEmail != null && a.PerformedByUserEmail == userEmail));
+
+            // 2. Query login authentication events for this user
+            var loginQuery = _dbContext.BcpLoginAuditLogs
                 .AsNoTracking()
                 .Where(l => (userId != null && l.UserId == userId) || (userEmail != null && l.Email == userEmail));
 
-            var totalCount = await baseQuery.CountAsync();
+            // Check if older records exist beyond 30 days
+            var hasOlderActivity = await activityQuery.AnyAsync(a => a.Date < cutoffDate);
+            var hasOlderLogin = await loginQuery.AnyAsync(l => l.Timestamp < cutoffDate);
+            var hasOlderRecords = hasOlderActivity || hasOlderLogin;
 
-            // Guarantee at least current session activity log exists if history is empty
-            if (totalCount == 0)
+            // Filter to last 30 days and strip out automatic "follow-come" starter seed rows
+            var rawRecentActivities = await activityQuery
+                .Where(a => a.Date >= cutoffDate)
+                .OrderByDescending(a => a.Date)
+                .Take(500)
+                .ToListAsync();
+
+            var recentActivities = rawRecentActivities
+                .Where(a => !IsFollowComeSeedActivity(a))
+                .Take(200)
+                .Select(a =>
+                {
+                    var (cleanAction, cleanDesc, cleanModule) = FormatActivityDisplay(a.ActionType, a.Description, a.Module);
+                    return new
+                    {
+                        Id = a.Id.ToString(),
+                        Email = a.PerformedByUserEmail ?? userEmail ?? "account@domain.com",
+                        Status = cleanAction,
+                        Description = cleanDesc,
+                        Module = cleanModule,
+                        IpAddress = a.IpAddress ?? "127.0.0.1",
+                        UserAgent = a.UserAgent ?? "Web Browser",
+                        Timestamp = a.Date
+                    };
+                })
+                .ToList();
+
+            var recentLogins = await loginQuery
+                .Where(l => l.Timestamp >= cutoffDate)
+                .OrderByDescending(l => l.Timestamp)
+                .Take(200)
+                .Select(l => new
+                {
+                    Id = l.Id.ToString(),
+                    Email = l.Email,
+                    Status = l.Status ?? "Sign-in",
+                    Description = l.Status != null && l.Status.Contains("Success", StringComparison.OrdinalIgnoreCase)
+                        ? "Successful authentication sign-in"
+                        : (l.Status ?? "Authentication challenge"),
+                    Module = "Authentication",
+                    IpAddress = l.IpAddress ?? "127.0.0.1",
+                    UserAgent = l.UserAgent ?? "Web Browser",
+                    Timestamp = l.Timestamp
+                })
+                .ToListAsync();
+
+            // Unified chronological feed
+            var combinedFeed = recentActivities
+                .Concat(recentLogins)
+                .OrderByDescending(x => x.Timestamp)
+                .ToList();
+
+            // If empty, guarantee at least the current session is registered
+            if (!combinedFeed.Any())
             {
-                var userAgent = Request.Headers["User-Agent"].ToString();
-                if (string.IsNullOrEmpty(userAgent)) userAgent = "Web Browser";
+                var callerUserAgent = Request.Headers.UserAgent.ToString();
+                if (string.IsNullOrEmpty(callerUserAgent)) callerUserAgent = "Web Browser";
                 var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()
                     ?? HttpContext.Connection.RemoteIpAddress?.ToString()
                     ?? "127.0.0.1";
 
-                var currentLog = new BcpLoginAuditLog
+                var initialLog = new BcpLoginAuditLog
                 {
                     Id = Guid.CreateVersion7(),
                     UserId = userId ?? string.Empty,
                     Email = userEmail ?? "account@domain.com",
                     IpAddress = ip,
-                    SystemId = "BCC-Web",
+                    SystemId = "BCC-Client",
                     Status = "Success",
-                    UserAgent = userAgent,
+                    UserAgent = callerUserAgent,
                     Timestamp = DateTime.UtcNow
                 };
-                _dbContext.BcpLoginAuditLogs.Add(currentLog);
+                _dbContext.BcpLoginAuditLogs.Add(initialLog);
                 await _dbContext.SaveChangesAsync();
 
-                totalCount = 1;
+                combinedFeed.Add(new
+                {
+                    Id = initialLog.Id.ToString(),
+                    Email = initialLog.Email,
+                    Status = "Success",
+                    Description = "Initial session authenticated",
+                    Module = "Authentication",
+                    IpAddress = initialLog.IpAddress,
+                    UserAgent = initialLog.UserAgent,
+                    Timestamp = initialLog.Timestamp
+                });
             }
 
-            var pagedLogs = await baseQuery
-                .OrderByDescending(l => l.Timestamp)
+            var totalCount = combinedFeed.Count;
+            var pagedItems = combinedFeed
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(l => new
-                {
-                    l.Id,
-                    l.Email,
-                    l.Status,
-                    l.IpAddress,
-                    l.UserAgent,
-                    l.Timestamp
-                })
-                .ToListAsync();
+                .ToList();
 
-            var formatted = pagedLogs.Select(h =>
+            var formatted = pagedItems.Select(h =>
             {
                 var parsed = UserAgentParser.Parse(h.UserAgent);
                 return new
                 {
                     h.Id,
                     h.Email,
+                    ActionType = h.Status,
                     h.Status,
+                    h.Description,
+                    h.Module,
                     h.IpAddress,
                     h.UserAgent,
                     Device = parsed.FriendlyDeviceTitle,
                     Browser = parsed.FriendlyBrowserDetails,
+                    BrowserName = parsed.BrowserName,
+                    ClientType = parsed.ClientType,
+                    Icon = parsed.Icon,
+                    IsTrusted = h.Status != null && h.Status.Contains("Trusted", StringComparison.OrdinalIgnoreCase),
+                    Date = h.Timestamp,
                     h.Timestamp
                 };
             }).ToList();
@@ -1119,8 +1947,128 @@ namespace Ozikol_BCC.Api.Controllers
                 totalCount,
                 page,
                 pageSize,
-                totalPages
-            }, "Personal login history retrieved."));
+                totalPages,
+                hasOlderRecords,
+                retentionDays = 30,
+                retentionNotice = "Showing activity records from the last 30 days. For archival records older than 1 month, please contact your workspace Administrator."
+            }, "Personal activity history retrieved."));
+        }
+
+        /// <summary>
+        /// Determines whether an activity log record was generated by automatic background or lazy "follow-come" starter seeding
+        /// (e.g., default message templates, default KPI indicators, default registration fields, default user categories, or system bootstrap rows).
+        /// </summary>
+        private static bool IsFollowComeSeedActivity(BcpActivityLog log)
+        {
+            var action = (log.ActionType ?? string.Empty).Trim();
+            var desc = (log.Description ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(action) && string.IsNullOrWhiteSpace(desc))
+                return true;
+
+            // Auto-seeded "follow-come" entity creation codes captured previously by SaveChangesAsync during GET endpoints
+            string[] followComeActionCodes =
+            {
+                "CREATE_BCPMESSAGETEMPLATE",
+                "UPDATE_BCPMESSAGETEMPLATE",
+                "DELETE_BCPMESSAGETEMPLATE",
+                "CREATE_BCPKPIINDICATOR",
+                "CREATE_BCPREGISTRATIONFORMFIELD",
+                "CREATE_BCPUSERCATEGORY",
+                "CREATE_APPROLE",
+                "CREATE_IDENTITYROLE",
+                "CREATE_MISCONFIGURATIONSETTING",
+                "CREATE_MISWEBSITESETTING",
+                "CREATE_TEMPLATECATEGORY",
+                "CREATE_TEMPLATETAG",
+                "CREATE_PAGESECTION",
+                "CREATE_WEBPAGE",
+                "CREATE_BCPNOTIFICATION",
+                "UPDATE_BCPNOTIFICATION",
+                "CREATE_BCPUSERFEATUREROLE"
+            };
+
+            foreach (var code in followComeActionCodes)
+            {
+                if (string.Equals(action, code, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            // Also filter out noisy LastLogin / SecurityStamp-only profile updates that are already represented as Login events
+            if (string.Equals(action, "UPDATE_PROFILE", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(action, "UPDATE_APPLICATIONUSER", StringComparison.OrdinalIgnoreCase))
+            {
+                if (desc.Contains("LastLogin:", StringComparison.OrdinalIgnoreCase) && !desc.Contains("FirstName:", StringComparison.OrdinalIgnoreCase) && !desc.Contains("LastName:", StringComparison.OrdinalIgnoreCase) && !desc.Contains("PhoneNumber:", StringComparison.OrdinalIgnoreCase) && !desc.Contains("AvatarUrl:", StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            if (desc.StartsWith("Created BcpMessageTemplate", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created BcpKpiIndicator", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created BcpRegistrationFormField", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created BcpUserCategory", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created AppRole", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created MisConfigurationSetting", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created MisWebsiteSetting", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created TemplateCategory", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created TemplateTag", StringComparison.OrdinalIgnoreCase) ||
+                desc.StartsWith("Created BcpNotification", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // Filter out passive WebPage / Blog ViewCount-only increment updates (e.g. Updated Web Page 'Home': [ViewCount: '1' -> '2'])
+            if (desc.Contains("[ViewCount:", StringComparison.OrdinalIgnoreCase) && !desc.Contains(", ", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Formats raw database activity codes and descriptions into human-friendly titles and modules for UI presentation.
+        /// </summary>
+        private static (string ActionType, string Description, string Module) FormatActivityDisplay(string? rawAction, string? rawDescription, string? rawModule)
+        {
+            var action = (rawAction ?? "Activity").Trim();
+            var desc = (rawDescription ?? action).Trim();
+            var mod = !string.IsNullOrWhiteSpace(rawModule) ? rawModule.Trim() : "Workspace";
+
+            var cleanAction = action.ToUpperInvariant() switch
+            {
+                "UPDATE_PROFILE" or "UPDATE_APPLICATIONUSER" => "Profile Updated",
+                "CREATE_PROFILE" or "CREATE_APPLICATIONUSER" => "Member Registered",
+                "DELETE_PROFILE" or "DELETE_APPLICATIONUSER" => "Member Removed",
+                "UPDATE_MISWEBSITESETTING" => "Brand & Settings Updated",
+                "UPDATE_WEBPAGE" => "Web Page Updated",
+                "DELETE_WEBPAGE" => "Web Page Deleted",
+                "UPDATE_PAGESECTION" => "Page Section Updated",
+                "CREATE_BLOG" or "CREATE_BLOGPOST" => "Blog Post Created",
+                "UPDATE_BLOG" or "UPDATE_BLOGPOST" => "Blog Post Updated",
+                "DELETE_BLOG" or "DELETE_BLOGPOST" => "Blog Post Deleted",
+                "CREATE_CUSTOMFORM" => "Custom Form Created",
+                "UPDATE_CUSTOMFORM" => "Custom Form Updated",
+                "DELETE_CUSTOMFORM" => "Custom Form Deleted",
+                "CREATE_BCPUSERINVITATION" => "Member Invited",
+                "DELETE_BCPUSERINVITATION" => "Invitation Revoked",
+                "SESSION_REVOKED" => "Device Session Revoked",
+                "SESSIONS_REVOKED" => "Other Sessions Revoked",
+                "PASSWORD_CHANGED" or "PASSWORD_UPDATED" => "Password Updated",
+                "MFA_ENABLED" or "2FA_ENABLED" => "2FA Security Enabled",
+                "MFA_DISABLED" or "2FA_DISABLED" => "2FA Security Disabled",
+                "FEATURE_INSTALLED" => "Feature Installed",
+                "FEATURE_DEACTIVATED" => "Feature Deactivated",
+                _ => action.Replace('_', ' ')
+            };
+
+            desc = desc
+                .Replace("Modified Profile ", "Updated profile ")
+                .Replace("Modified MisWebsiteSetting ", "Updated brand & website settings ")
+                .Replace("Modified WebPage ", "Updated web page ")
+                .Replace("Modified PageSection ", "Updated page section ")
+                .Replace("Created BcpUserInvitation ", "Sent member invitation ");
+
+            return (cleanAction, desc, mod);
         }
 
         /// <summary>
@@ -1503,8 +2451,10 @@ namespace Ozikol_BCC.Api.Controllers
                 PerformedByFullName = currentUserEmail,
                 TargetProfileId = user.Id,
                 TargetFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                PerformedByUserEmail = currentUserEmail,
                 Date = DateTime.UtcNow,
-                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1"
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                UserAgent = Request.Headers.UserAgent.ToString()
             };
             _dbContext.BcpActivityLogs.Add(activityLog);
 

@@ -1,3 +1,4 @@
+import '../localization/language_provider.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -80,7 +81,7 @@ class ExitConfirmationDialog extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Quit Application?',
+                          context.trc('sh.quit_title', fallback: 'Quit Application?'),
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -90,7 +91,7 @@ class ExitConfirmationDialog extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Ozikol Business Command Center',
+                          'Business Command Center',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -107,8 +108,7 @@ class ExitConfirmationDialog extends StatelessWidget {
 
               // Description Text
               Text(
-                'Are you sure you want to close and exit the application? '
-                'Active duplex telemetry streams and real-time push subscriptions will be gracefully paused.',
+                context.trc('sh.quit_body', fallback: 'Are you sure you want to close and exit the application? Active duplex telemetry streams and real-time push subscriptions will be gracefully paused.'),
                 style: TextStyle(
                   fontSize: 13.5,
                   height: 1.5,
@@ -137,7 +137,7 @@ class ExitConfirmationDialog extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Your enrolled workspaces, session credentials, and offline caches are safely preserved on your device.',
+                        context.trc('sh.quit_note', fallback: 'Your enrolled workspaces, session credentials, and offline caches are safely preserved on your device.'),
                         style: TextStyle(
                           fontSize: 12,
                           height: 1.4,
@@ -165,7 +165,7 @@ class ExitConfirmationDialog extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      'Stay in App',
+                      context.trc('sh.stay', fallback: 'Stay in App'),
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -185,13 +185,13 @@ class ExitConfirmationDialog extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.exit_to_app_rounded, size: 16, color: Colors.white),
                         SizedBox(width: 8),
                         Text(
-                          'Close App',
+                          context.trc('sh.close_app', fallback: 'Close App'),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,

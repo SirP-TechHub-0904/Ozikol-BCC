@@ -264,6 +264,19 @@ body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, p, a, span {
     transition: border-color 0.2s ease;
 }
 
+.form-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: var(--ozikol-bg-white);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 14px 10px;
+    padding-right: 40px;
+    cursor: pointer;
+}
+
 .form-input:focus, .form-select:focus {
     border-color: var(--ozikol-primary);
 }

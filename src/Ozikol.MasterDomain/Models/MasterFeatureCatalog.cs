@@ -30,10 +30,34 @@ namespace Ozikol.MasterDomain.Models
         [MaxLength(60)]
         public string FeatureCode { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Full descriptive title of the feature displayed in tables, cards, modals, and the Feature Details page.
+        /// </summary>
         [Required]
         [MaxLength(120)]
         public string Name { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Concise title displayed in the tenant sidebar navigation menu so it never truncates with ellipsis
+        /// (e.g. "Whistleblowing" for "Anonymous Whistleblowing & Feedback").
+        /// </summary>
+        [MaxLength(60)]
+        public string MenuTitle { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Optional foreign key linking this feature to its parent <see cref="MasterFeatureSuite"/> in MasterFeatureSuites.
+        /// </summary>
+        public Guid? MasterFeatureSuiteId { get; set; }
+
+        /// <summary>
+        /// Navigation property to the parent <see cref="MasterFeatureSuite"/>.
+        /// </summary>
+        [ForeignKey(nameof(MasterFeatureSuiteId))]
+        public MasterFeatureSuite? Suite { get; set; }
+
+        /// <summary>
+        /// Full suite name synchronized with <see cref="MasterFeatureSuite.Name"/> for backward compatibility.
+        /// </summary>
         [MaxLength(60)]
         public string Category { get; set; } = "Operations";
 
@@ -95,8 +119,27 @@ namespace Ozikol.MasterDomain.Models
         /// </summary>
         public int IncludedFreeUnits { get; set; } = 0;
 
+        /// <summary>
+        /// Number of free trial days granted to a tenant the first time they activate and test this capability
+        /// before recurring payment is required (General Mode default, e.g. 14 days; 0 = no free trial).
+        /// </summary>
+        public int FreeTrialDays { get; set; } = 14;
+
         public bool IsActive { get; set; } = true;
         public bool IsInBeta { get; set; } = false;
+
+        /// <summary>
+        /// Indicates whether the capability is published and visible in tenant billing consoles and onboarding directories
+        /// (true = Published / Visible, false = Unpublished / Hidden).
+        /// </summary>
+        public bool IsPublished { get; set; } = true;
+
+        /// <summary>
+        /// Indicates whether the capability is fully implemented and available for immediate use in tenant workspaces
+        /// (true = Available for Use, false = Coming Soon while in active engineering).
+        /// </summary>
+        public bool IsAvailableForUse { get; set; } = false;
+
         public int SortOrder { get; set; } = 0;
         public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 

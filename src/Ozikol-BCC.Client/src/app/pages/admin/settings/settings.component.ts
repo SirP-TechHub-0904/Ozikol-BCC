@@ -17,7 +17,7 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         eyebrow="WORKSPACE CONFIGURATION"
         icon="tune"
         title="Workspace Configuration & Branding Studio"
-        subtitle="Manage custom brand assets, system-wide terminology aliases, color aesthetics, security policies, and communication templates."
+        subtitle="Manage custom brand assets, website operating modes, interactive widgets, and custom domains."
         [buttons]="headerButtons"
       ></app-page-header>
 
@@ -50,46 +50,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         <button
           type="button"
           class="studio-nav-btn"
-          [class.active]="activeTab === 'aliases'"
-          (click)="setTab('aliases')"
-        >
-          <span class="material-symbols-outlined nav-tab-icon">label</span>
-          <div class="nav-tab-text">
-            <span class="tab-title">Terminology & Aliases</span>
-            <span class="tab-sub">Departments, Committees, etc.</span>
-          </div>
-        </button>
-
-
-        <button
-          type="button"
-          class="studio-nav-btn"
-          [class.active]="activeTab === 'member-id'"
-          (click)="setTab('member-id')"
-        >
-          <span class="material-symbols-outlined nav-tab-icon">badge</span>
-          <div class="nav-tab-text">
-            <span class="tab-title">Member ID & Security</span>
-            <span class="tab-sub">10 Formats & Auth Rules</span>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          class="studio-nav-btn"
-          [class.active]="activeTab === 'templates'"
-          (click)="setTab('templates')"
-        >
-          <span class="material-symbols-outlined nav-tab-icon">dynamic_feed</span>
-          <div class="nav-tab-text">
-            <span class="tab-title">Message Templates</span>
-            <span class="tab-sub">Email, SMS & Push Studio</span>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          class="studio-nav-btn"
           [class.active]="activeTab === 'ecommerce'"
           (click)="setTab('ecommerce')"
         >
@@ -102,24 +62,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
               </span>
             </div>
             <span class="tab-sub">Standard Site vs. Online Store</span>
-          </div>
-        </button>
-
-        <button
-          type="button"
-          class="studio-nav-btn"
-          [class.active]="activeTab === 'storage'"
-          (click)="setTab('storage')"
-        >
-          <span class="material-symbols-outlined nav-tab-icon">cloud_sync</span>
-          <div class="nav-tab-text">
-            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-              <span class="tab-title">Media &amp; Cloud Storage</span>
-              <span class="tab-mode-mini-pill" [class.pill-store]="storageSettings.useCustomStorage" [style.background]="storageSettings.useCustomStorage ? '#dcfce7' : '#eff6ff'" [style.color]="storageSettings.useCustomStorage ? '#15803d' : '#2563eb'">
-                {{ storageSettings.useCustomStorage ? 'Custom Cloudinary' : 'Platform Default' }}
-              </span>
-            </div>
-            <span class="tab-sub">BYOS Cloudinary Credentials</span>
           </div>
         </button>
 
@@ -471,541 +413,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
       </div>
 
       <!-- =================================================================== -->
-      <!-- TAB 2: SYSTEM TERMINOLOGY & INSTITUTIONAL ALIASES                    -->
-      <!-- =================================================================== -->
-      <div *ngIf="activeTab === 'aliases'" class="tab-content-pane">
-        <section class="console-widget">
-          <div class="widget-head">
-            <div class="widget-title-wrap">
-              <span class="material-symbols-outlined header-widget-icon text-green">label</span>
-              <div>
-                <h2 class="widget-title">System-Wide Nomenclature & Terminology Aliases</h2>
-                <p class="widget-subtitle">Rename core platform modules (Categories, Groups, Sub-Categories, Alumni) to match your organization's exact institutional structure.</p>
-              </div>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveAliases()" [disabled]="savingAliases">
-              <span class="material-symbols-outlined" *ngIf="!savingAliases">save</span>
-              <span>{{ savingAliases ? 'Applying...' : 'Save Terminology' }}</span>
-            </button>
-          </div>
-
-          <div class="widget-body">
-            <div class="aliases-grid">
-              <!-- Category Alias Card -->
-              <div class="alias-config-card">
-                <div class="alias-card-head">
-                  <span class="material-symbols-outlined alias-card-icon text-blue">folder_open</span>
-                  <div>
-                    <h3 class="alias-card-title">User Category Title</h3>
-                    <span class="alias-card-scope">Default Concept: "User Category"</span>
-                  </div>
-                </div>
-                <p class="alias-card-desc">How member divisions or organisational departments are titled across user management, menus, and filters.</p>
-                <div class="form-group">
-                  <label class="form-label">Custom Terminology (Singular / Plural)</label>
-                  <input type="text" [(ngModel)]="aliases.categoryAlias" class="form-control" placeholder="e.g. Department" />
-                </div>
-                <div class="alias-presets-bar">
-                  <span class="presets-label">Quick Presets:</span>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Department'">Department</button>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Faculty'">Faculty</button>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Staff Cadre'">Staff Cadre</button>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Directorate'">Directorate</button>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Branch'">Branch</button>
-                  <button type="button" class="preset-chip" (click)="aliases.categoryAlias = 'Membership Tier'">Tier</button>
-                </div>
-              </div>
-
-              <!-- Sub-Category Alias Card -->
-              <div class="alias-config-card">
-                <div class="alias-card-head">
-                  <span class="material-symbols-outlined alias-card-icon text-indigo">account_tree</span>
-                  <div>
-                    <h3 class="alias-card-title">Sub-Category Title</h3>
-                    <span class="alias-card-scope">Default Concept: "Sub-Category"</span>
-                  </div>
-                </div>
-                <p class="alias-card-desc">How secondary branches or operational teams under a parent category are titled.</p>
-                <div class="form-group">
-                  <label class="form-label">Custom Terminology</label>
-                  <input type="text" [(ngModel)]="aliases.subCategoryAlias" class="form-control" placeholder="e.g. Unit" />
-                </div>
-                <div class="alias-presets-bar">
-                  <span class="presets-label">Quick Presets:</span>
-                  <button type="button" class="preset-chip" (click)="aliases.subCategoryAlias = 'Unit'">Unit</button>
-                  <button type="button" class="preset-chip" (click)="aliases.subCategoryAlias = 'Sub-Department'">Sub-Department</button>
-                  <button type="button" class="preset-chip" (click)="aliases.subCategoryAlias = 'Team'">Team</button>
-                  <button type="button" class="preset-chip" (click)="aliases.subCategoryAlias = 'Division'">Division</button>
-                  <button type="button" class="preset-chip" (click)="aliases.subCategoryAlias = 'Section'">Section</button>
-                </div>
-              </div>
-
-              <!-- Group Alias Card -->
-              <div class="alias-config-card">
-                <div class="alias-card-head">
-                  <span class="material-symbols-outlined alias-card-icon text-amber">groups</span>
-                  <div>
-                    <h3 class="alias-card-title">Groups & Communities Title</h3>
-                    <span class="alias-card-scope">Default Concept: "Group / Community"</span>
-                  </div>
-                </div>
-                <p class="alias-card-desc">How collaborative spaces, channels, and working bodies are named across the sidebar, chat, and hub.</p>
-                <div class="form-group">
-                  <label class="form-label">Custom Terminology</label>
-                  <input type="text" [(ngModel)]="aliases.groupAlias" class="form-control" placeholder="e.g. Committee" />
-                </div>
-                <div class="alias-presets-bar">
-                  <span class="presets-label">Quick Presets:</span>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Committees'">Committees</button>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Chapters'">Chapters</button>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Guilds'">Guilds</button>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Working Groups'">Working Groups</button>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Clubs'">Clubs</button>
-                  <button type="button" class="preset-chip" (click)="aliases.groupAlias = 'Units'">Units</button>
-                </div>
-              </div>
-
-              <!-- Alumni Alias Card -->
-              <div class="alias-config-card">
-                <div class="alias-card-head">
-                  <span class="material-symbols-outlined alias-card-icon text-teal">school</span>
-                  <div>
-                    <h3 class="alias-card-title">Alumni Network Title</h3>
-                    <span class="alias-card-scope">Default Concept: "Alumni"</span>
-                  </div>
-                </div>
-                <p class="alias-card-desc">How past graduates, honorary fellows, or former members are designated.</p>
-                <div class="form-group">
-                  <label class="form-label">Custom Terminology</label>
-                  <input type="text" [(ngModel)]="aliases.alumniAlias" class="form-control" placeholder="e.g. Past Members" />
-                </div>
-                <div class="alias-presets-bar">
-                  <span class="presets-label">Quick Presets:</span>
-                  <button type="button" class="preset-chip" (click)="aliases.alumniAlias = 'Past Members'">Past Members</button>
-                  <button type="button" class="preset-chip" (click)="aliases.alumniAlias = 'Alumni Network'">Alumni Network</button>
-                  <button type="button" class="preset-chip" (click)="aliases.alumniAlias = 'Fellows'">Fellows</button>
-                  <button type="button" class="preset-chip" (click)="aliases.alumniAlias = 'Emeritus Members'">Emeritus</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Dynamic UI Simulation Box -->
-            <div class="live-terminology-simulation">
-              <div class="sim-header">
-                <span class="material-symbols-outlined text-green">preview</span>
-                <span class="sim-title">LIVE NAVIGATION & LABEL PREVIEW SIMULATION</span>
-              </div>
-              <div class="sim-body">
-                <div class="sim-item">
-                  <span class="sim-label">Sidebar Menu Item:</span>
-                  <strong class="sim-value">Manage {{ aliases.categoryAlias || 'User Categories' }}</strong>
-                </div>
-                <div class="sim-item">
-                  <span class="sim-label">Communities Hub Header:</span>
-                  <strong class="sim-value">Active {{ aliases.groupAlias || 'Groups & Communities' }}</strong>
-                </div>
-                <div class="sim-item">
-                  <span class="sim-label">Member Filter Dropdown:</span>
-                  <strong class="sim-value">Filter by {{ aliases.categoryAlias || 'Category' }} / {{ aliases.subCategoryAlias || 'Unit' }}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-
-
-      <!-- =================================================================== -->
-      <!-- TAB 4: MEMBER ID CODING RULES & 10 FORMAT SELECTOR                  -->
-      <!-- =================================================================== -->
-      <div *ngIf="activeTab === 'member-id'" class="tab-content-pane">
-        <section class="console-widget member-id-widget">
-          <div class="widget-head">
-            <div class="widget-title-wrap">
-              <span class="material-symbols-outlined header-widget-icon text-blue">badge</span>
-              <div>
-                <h2 class="widget-title">Member ID Auto-Generation & Security Rules</h2>
-                <p class="widget-subtitle">Select from 10 standard institutional coding formats and configure authentication policies.</p>
-              </div>
-            </div>
-            <button type="button" class="btn btn-primary btn-sm" (click)="onSaveMemberIdConfig()" [disabled]="savingIdConfig">
-              <span class="material-symbols-outlined" *ngIf="!savingIdConfig">save</span>
-              <span>{{ savingIdConfig ? 'Applying...' : 'Save Format Rule' }}</span>
-            </button>
-          </div>
-
-          <div class="widget-body">
-            <!-- Top Row: Dropdown Selector & Dynamic Live Preview -->
-            <div class="format-selection-grid">
-              <div class="form-group format-dropdown-group">
-                <label class="form-label">
-                  <span>Select Member ID Format (10 Standard Formats)</span>
-                  <span class="badge-pill-soft">Immediate Effect</span>
-                </label>
-                <select [(ngModel)]="idConfig.activeFormat" (ngModelChange)="onFormatParamChange()" class="form-control format-select">
-                  <option *ngFor="let f of idConfig.previews; let i = index" [value]="f.key">
-                    Format {{ i + 1 }}: {{ f.name }} (e.g. {{ f.previewExample }})
-                  </option>
-                </select>
-                <span class="field-hint">{{ getActiveFormatDescription() }}</span>
-              </div>
-
-              <!-- Dynamic Live Preview Box -->
-              <div class="live-preview-box">
-                <div class="preview-header">
-                  <span class="material-symbols-outlined preview-icon">visibility</span>
-                  <span class="preview-label">NEXT GENERATED MEMBER ID PREVIEW</span>
-                </div>
-                <div class="preview-badge-display">
-                  <span class="preview-id-text">{{ getActivePreviewSample() }}</span>
-                </div>
-                <div class="preview-footer-note">
-                  <span class="material-symbols-outlined" style="font-size:14px; color:#10b981;">check_circle</span>
-                  <span>{{ isCurrentFormatSequential() ? 'Strict Serial Auto-Incrementing Sequence (1, 2, 3...)' : 'Cryptographic Random Secure Format' }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Configuration Controls: Prefix, Starting Counter, Padding, Delimiter -->
-            <div class="format-params-grid">
-              <div class="form-group">
-                <label class="form-label">Custom Prefix Code</label>
-                <input type="text" [(ngModel)]="idConfig.prefix" (ngModelChange)="onFormatParamChange()" class="form-control" placeholder="e.g. CC, BCC, MEM, ORG" />
-                <span class="field-hint">Organization code prepended to ID</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Next Serial Counter Number</label>
-                <input type="number" [(ngModel)]="idConfig.nextNumber" (ngModelChange)="onFormatParamChange()" class="form-control" placeholder="1" min="1" />
-                <span class="field-hint">Current sequential auto-increment value</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Zero Padding Length</label>
-                <select [(ngModel)]="idConfig.padding" (ngModelChange)="onFormatParamChange()" class="form-control">
-                  <option [ngValue]="3">3 Digits (e.g. 001)</option>
-                  <option [ngValue]="4">4 Digits (e.g. 0001)</option>
-                  <option [ngValue]="5">5 Digits (e.g. 00001)</option>
-                  <option [ngValue]="6">6 Digits (e.g. 000001)</option>
-                </select>
-                <span class="field-hint">Leading zeros for serial numbers</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">Delimiter Separator</label>
-                <select [(ngModel)]="idConfig.delimiter" (ngModelChange)="onFormatParamChange()" class="form-control">
-                  <option value="-">- Dash (e.g. CC-2026-0001)</option>
-                  <option value="/">/ Slash (e.g. CC/2026/0001)</option>
-                  <option value=".">. Dot (e.g. CC.2026.0001)</option>
-                </select>
-                <span class="field-hint">Separator between tokens</span>
-              </div>
-            </div>
-
-            <!-- Security & Access Policy 1: Email Confirmation -->
-            <div class="security-policy-box" style="margin-top: 16px; padding: 14px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-              <div style="display: flex; align-items: flex-start; gap: 12px;">
-                <span class="material-symbols-outlined" style="font-size: 22px; color: #0050e5; margin-top: 2px;">verified_user</span>
-                <div>
-                  <strong style="font-size: 13px; color: #0f172a; display: block;">Enforce Email Verification Before Login</strong>
-                  <p style="margin: 2px 0 0; font-size: 12px; color: #64748b;">
-                    When enabled, members cannot sign into the workspace until their email address is confirmed via the 6-digit OTP code.
-                  </p>
-                </div>
-              </div>
-              <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;">
-                <input type="checkbox" [(ngModel)]="idConfig.requireConfirmedEmailToLogin" style="opacity: 0; width: 0; height: 0;" />
-                <span class="toggle-slider" [class.toggle-on]="idConfig.requireConfirmedEmailToLogin" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .2s; border-radius: 24px;"></span>
-              </label>
-            </div>
-
-            <!-- Security & Access Policy 2: Allow User Account Deletion -->
-            <div class="security-policy-box" style="margin-top: 12px; padding: 14px 18px; background: #fff5f5; border: 1px solid #fed7d7; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
-              <div style="display: flex; align-items: flex-start; gap: 12px;">
-                <span class="material-symbols-outlined" style="font-size: 22px; color: #e53e3e; margin-top: 2px;">person_remove</span>
-                <div>
-                  <strong style="font-size: 13px; color: #9b2c2c; display: block;">Allow Administrator User Account Deletion</strong>
-                  <p style="margin: 2px 0 0; font-size: 12px; color: #742a2a;">
-                    When enabled, administrators are permitted to permanently delete user accounts from the portal.
-                  </p>
-                </div>
-              </div>
-              <label class="toggle-switch" style="position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;">
-                <input type="checkbox" [(ngModel)]="idConfig.enableUserDeletion" style="opacity: 0; width: 0; height: 0;" />
-                <span class="toggle-slider" [class.toggle-on]="idConfig.enableUserDeletion" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .2s; border-radius: 24px;"></span>
-              </label>
-            </div>
-
-            <!-- All 10 Formats Overview Grid -->
-            <div class="formats-matrix-section">
-              <div class="matrix-header">
-                <span class="matrix-title">All 10 Available Format Patterns Quick Reference</span>
-                <span class="matrix-hint">Click any card below to instantly select that format</span>
-              </div>
-
-              <div class="formats-cards-grid">
-                <div
-                  class="format-card-mini"
-                  *ngFor="let f of idConfig.previews; let idx = index"
-                  [class.selected]="idConfig.activeFormat === f.key"
-                  (click)="selectFormat(f.key)"
-                >
-                  <div class="card-mini-top">
-                    <span class="format-number">Format {{ idx + 1 }}</span>
-                    <span class="format-type-tag" [class.type-serial]="f.isSequential" [class.type-random]="!f.isSequential">
-                      {{ f.isSequential ? 'Serial (1,2,3..)' : 'Random' }}
-                    </span>
-                  </div>
-                  <h4 class="format-card-title">{{ f.name }}</h4>
-                  <div class="format-preview-chip">{{ f.previewExample }}</div>
-                  <p class="format-card-desc">{{ f.description }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- =================================================================== -->
-      <!-- TAB 5: MULTI-CHANNEL MESSAGE TEMPLATES (Email, SMS & In-App)        -->
-      <!-- =================================================================== -->
-      <div *ngIf="activeTab === 'templates'" class="tab-content-pane">
-        <section class="console-widget message-templates-widget">
-          <div class="widget-head">
-            <div class="widget-title-wrap">
-              <span class="material-symbols-outlined header-widget-icon text-indigo">dynamic_feed</span>
-              <div>
-                <h2 class="widget-title">Multi-Channel Communication & Message Templates</h2>
-                <p class="widget-subtitle">Customize copy, HTML layouts, and dynamic merge tags for Email, SMS, and In-App Notifications.</p>
-              </div>
-            </div>
-
-            <!-- Channel Filter Tabs -->
-            <div class="channel-tabs-bar">
-              <button
-                type="button"
-                class="channel-tab-btn"
-                [class.active]="activeChannel === 0"
-                (click)="setChannel(0)"
-              >
-                <span class="material-symbols-outlined tab-icon">mail</span>
-                <span>Email Templates</span>
-              </button>
-              <button
-                type="button"
-                class="channel-tab-btn"
-                [class.active]="activeChannel === 1"
-                (click)="setChannel(1)"
-              >
-                <span class="material-symbols-outlined tab-icon">sms</span>
-                <span>SMS Templates</span>
-              </button>
-              <button
-                type="button"
-                class="channel-tab-btn"
-                [class.active]="activeChannel === 2"
-                (click)="setChannel(2)"
-              >
-                <span class="material-symbols-outlined tab-icon">notifications_active</span>
-                <span>In-App Notifications</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="widget-body">
-            <div *ngIf="loadingTemplates" style="text-align:center; padding:32px; color:#64748b;">
-              <span class="material-symbols-outlined" style="font-size:32px; animation:spin 1s linear infinite;">sync</span>
-              <p style="margin-top:8px; font-size:13px;">Loading templates...</p>
-            </div>
-
-            <div class="template-studio-layout" *ngIf="!loadingTemplates && selectedTemplate">
-              <!-- Left Panel: Event List -->
-              <div class="template-events-sidebar">
-                <span class="sidebar-label">Select System Trigger Event</span>
-                <div class="events-list">
-                  <div
-                    class="event-nav-item"
-                    *ngFor="let t of getTemplatesForActiveChannel()"
-                    [class.active]="selectedTemplate?.id === t.id"
-                    (click)="selectTemplate(t)"
-                  >
-                    <div class="event-nav-left">
-                      <span class="material-symbols-outlined event-nav-icon">{{ getEventIcon(t.eventType) }}</span>
-                      <div>
-                        <strong class="event-nav-name">{{ getEventCleanName(t.eventType) }}</strong>
-                        <span class="event-nav-channel">{{ t.channel === 0 ? 'Rich HTML Email' : (t.channel === 1 ? 'SMS Message' : 'In-App Banner') }}</span>
-                      </div>
-                    </div>
-                    <span class="status-indicator-dot" [class.dot-active]="t.isActive"></span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Middle Panel: Template Editor -->
-              <div class="template-editor-panel">
-                <div class="editor-header">
-                  <div class="editor-title-group">
-                    <div class="editor-title-badge-row">
-                      <h3 class="editor-title">{{ selectedTemplate.name }}</h3>
-                      <label class="active-status-toggle" [class.is-active]="selectedTemplate.isActive">
-                        <input type="checkbox" [(ngModel)]="selectedTemplate.isActive" (ngModelChange)="generatePreview()" />
-                        <span>{{ selectedTemplate.isActive ? 'Active' : 'Inactive' }}</span>
-                      </label>
-                    </div>
-                    <p class="editor-sub">{{ getEventDescription(selectedTemplate.eventType) }}</p>
-                  </div>
-                  <div class="editor-actions-group">
-                    <button type="button" class="btn btn-outline btn-sm" (click)="resetCurrentTemplate()" title="Reset to default copy">
-                      <span class="material-symbols-outlined">restart_alt</span>
-                      <span>Reset</span>
-                    </button>
-                    <button type="button" class="btn btn-primary btn-sm" (click)="saveCurrentTemplate()" [disabled]="savingTemplate">
-                      <span class="material-symbols-outlined">save</span>
-                      <span>{{ savingTemplate ? 'Saving...' : 'Save' }}</span>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Subject Line (Email & In-App) -->
-                <div class="form-group" *ngIf="selectedTemplate.channel !== 1" style="margin-bottom:12px;">
-                  <label class="form-label">
-                    <span>{{ selectedTemplate.channel === 0 ? 'Email Subject Line' : 'Notification Title' }}</span>
-                    <span class="field-hint">Supports merge tags</span>
-                  </label>
-                  <input
-                    type="text"
-                    [(ngModel)]="selectedTemplate.subjectTemplate"
-                    (ngModelChange)="generatePreview()"
-                    class="form-control"
-                    [placeholder]="'e.g. Welcome to {{OrganizationName}}'"
-                  />
-                </div>
-
-                <!-- Merge Tag Chips Inserter -->
-                <div class="merge-tags-box">
-                  <span class="merge-tags-label">Available Merge Tags (Click to Insert):</span>
-                  <div class="merge-tags-chips">
-                    <button
-                      type="button"
-                      class="tag-chip"
-                      *ngFor="let tag of getPlaceholdersList(selectedTemplate.availablePlaceholders)"
-                      (click)="insertPlaceholder(tag)"
-                    >
-                      {{ tag }}
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Body Editor (Dual-Mode: Plain Text Copy vs Raw HTML) -->
-                <div class="form-group">
-                  <div class="body-editor-header-bar">
-                    <label class="form-label" style="margin-bottom:0;">
-                      <span>{{ selectedTemplate.channel === 0 ? (templateEditorMode === 'text' ? 'Email Message Copy (Plain Text)' : 'Email HTML Source Code') : (selectedTemplate.channel === 1 ? 'SMS Message Body' : 'In-App Notification Body') }}</span>
-                    </label>
-
-                    <!-- Plain Text vs HTML Mode Switcher (Email Only) -->
-                    <div *ngIf="selectedTemplate.channel === 0" class="editor-mode-toggle-group">
-                      <button
-                        type="button"
-                        class="mode-toggle-btn"
-                        [class.active]="templateEditorMode === 'text'"
-                        (click)="setEditorMode('text')"
-                        title="Edit readable text copy without HTML tags"
-                      >
-                        <span class="material-symbols-outlined" style="font-size:15px;">text_fields</span>
-                        <span>Plain Text</span>
-                      </button>
-                      <button
-                        type="button"
-                        class="mode-toggle-btn"
-                        [class.active]="templateEditorMode === 'html'"
-                        (click)="setEditorMode('html')"
-                        title="Edit raw HTML source code and inline styles"
-                      >
-                        <span class="material-symbols-outlined" style="font-size:15px;">code</span>
-                        <span>HTML Code</span>
-                      </button>
-                    </div>
-
-                    <!-- SMS Character & Segment Counter -->
-                    <span *ngIf="selectedTemplate.channel === 1" class="sms-counter-badge" [class.sms-warn]="selectedTemplate.bodyTemplate.length > 160">
-                      {{ selectedTemplate.bodyTemplate.length }} chars ({{ getSmsSegmentCount(selectedTemplate.bodyTemplate.length) }} SMS segment)
-                    </span>
-                  </div>
-
-                  <!-- 1. Plain Text Editor (For Easy Human Editing) -->
-                  <textarea
-                    *ngIf="selectedTemplate.channel === 0 && templateEditorMode === 'text'"
-                    [(ngModel)]="plainTextBody"
-                    (ngModelChange)="onPlainTextChange()"
-                    rows="10"
-                    class="form-control plain-text-editor-textarea"
-                    placeholder="Type your plain email message copy here (paragraphs will format automatically)..."
-                  ></textarea>
-
-                  <!-- 2. Raw HTML / SMS / In-App Editor -->
-                  <textarea
-                    *ngIf="selectedTemplate.channel !== 0 || templateEditorMode === 'html'"
-                    [(ngModel)]="selectedTemplate.bodyTemplate"
-                    (ngModelChange)="generatePreview()"
-                    rows="10"
-                    class="form-control code-editor-textarea"
-                    placeholder="Write your template copy with dynamic tags here..."
-                  ></textarea>
-                </div>
-              </div>
-
-              <!-- Right Panel: Live Visual Simulator / Previewer -->
-              <div class="template-preview-panel">
-                <div class="preview-panel-head">
-                  <span class="material-symbols-outlined text-blue" style="font-size:18px;">visibility</span>
-                  <span class="preview-panel-title">Live Preview Simulator</span>
-                  <span class="preview-sample-badge">Sample Data</span>
-                </div>
-
-                <!-- EMAIL SIMULATOR -->
-                <div *ngIf="selectedTemplate.channel === 0" class="email-mockup-frame">
-                  <div class="email-mockup-header">
-                    <div class="email-mockup-row">
-                      <span class="email-meta-label">Subject:</span>
-                      <strong class="email-meta-value">{{ previewData.subject || 'No Subject' }}</strong>
-                    </div>
-                    <div class="email-mockup-row">
-                      <span class="email-meta-label">To:</span>
-                      <span class="email-meta-value">Dr. Alexander Wright &lt;alexander.wright&#64;company.com&gt;</span>
-                    </div>
-                  </div>
-                  <div class="email-mockup-body" [innerHTML]="previewData.body"></div>
-                </div>
-
-                <!-- SMS SIMULATOR -->
-                <div *ngIf="selectedTemplate.channel === 1" class="sms-phone-mockup">
-                  <div class="phone-speaker-notch"></div>
-                  <div class="sms-chat-bubble">
-                    <p class="sms-chat-text">{{ previewData.body || 'No SMS body entered.' }}</p>
-                    <span class="sms-time">Now · SMS</span>
-                  </div>
-                </div>
-
-                <!-- IN-APP NOTIFICATION SIMULATOR -->
-                <div *ngIf="selectedTemplate.channel === 2" class="inapp-card-mockup">
-                  <div class="inapp-mockup-icon-box">
-                    <span class="material-symbols-outlined inapp-mockup-icon">{{ getEventIcon(selectedTemplate.eventType) }}</span>
-                  </div>
-                  <div class="inapp-mockup-content">
-                    <h5 class="inapp-mockup-title">{{ previewData.subject || 'Notification Title' }}</h5>
-                    <p class="inapp-mockup-body">{{ previewData.body || 'Notification message content...' }}</p>
-                    <span class="inapp-mockup-time">Just now</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- =================================================================== -->
       <!-- TAB 6: WEBSITE OPERATING MODE & STOREFRONT STUDIO                   -->
       <!-- =================================================================== -->
       <div *ngIf="activeTab === 'ecommerce'" class="tab-content-pane">
@@ -1340,144 +747,6 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                 <span class="field-hint">Store or warehouse location for in-person order pickups</span>
               </div>
             </ng-container>
-          </div>
-        </section>
-      </div>
-
-      <!-- =================================================================== -->
-      <!-- TAB 6: MEDIA & CLOUD STORAGE (BYOS CLOUDINARY)                     -->
-      <!-- =================================================================== -->
-      <div *ngIf="activeTab === 'storage'" class="tab-content-pane">
-        <section class="console-widget full-width-widget">
-          <div class="widget-head">
-            <div class="widget-title-wrap">
-              <span class="material-symbols-outlined header-widget-icon text-indigo">cloud_sync</span>
-              <div>
-                <h2 class="widget-title">Media &amp; Cloud Storage Configuration</h2>
-                <p class="widget-subtitle">
-                  By default, your uploads use our high-speed Platform Cloudinary storage. You can optionally connect your own free Cloudinary account.
-                </p>
-              </div>
-            </div>
-            <div style="display:flex; gap:10px; align-items:center;">
-              <button
-                *ngIf="storageSettings.useCustomStorage"
-                type="button"
-                class="btn btn-outline-secondary btn-sm"
-                (click)="revertToPlatformStorage()"
-                [disabled]="connectingStorage"
-                title="Switch back to the Platform Default Cloudinary storage"
-              >
-                <span class="material-symbols-outlined">restart_alt</span>
-                <span>Revert to Platform Default</span>
-              </button>
-              <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                (click)="onConnectCustomStorage()"
-                [disabled]="connectingStorage"
-              >
-                <span class="material-symbols-outlined" *ngIf="!connectingStorage">verified_user</span>
-                <span>{{ connectingStorage ? 'Verifying &amp; Saving...' : 'Test &amp; Connect Storage' }}</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="widget-body">
-            <!-- Active Status Banner -->
-            <div
-              style="padding:16px 20px; border-radius:12px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; gap:16px;"
-              [style.background]="storageSettings.useCustomStorage ? 'rgba(34,197,94,0.08)' : 'rgba(59,130,246,0.08)'"
-              [style.border]="storageSettings.useCustomStorage ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(59,130,246,0.3)'"
-            >
-              <div style="display:flex; align-items:center; gap:14px;">
-                <span
-                  class="material-symbols-outlined"
-                  style="font-size:28px;"
-                  [style.color]="storageSettings.useCustomStorage ? '#16a34a' : '#2563eb'"
-                >
-                  {{ storageSettings.useCustomStorage ? 'check_circle' : 'cloud_done' }}
-                </span>
-                <div>
-                  <div style="font-weight:700; font-size:14px;" [style.color]="storageSettings.useCustomStorage ? '#15803d' : '#1d4ed8'">
-                    Current Storage Mode: {{ storageSettings.useCustomStorage ? 'Custom Cloudinary Account (Connected)' : 'Platform Master Cloudinary (Default)' }}
-                  </div>
-                  <p style="margin:2px 0 0; font-size:12px; color:#64748b;">
-                    {{ storageSettings.useCustomStorage
-                        ? 'All website images, logos, and media files for your portal are stored directly inside your own Cloudinary bucket (' + storageSettings.customCloudName + ').'
-                        : 'Your portal is currently using our high-speed platform Cloudinary storage. You can start uploading right away or connect your own account below.' }}
-                  </p>
-                </div>
-              </div>
-              <span
-                style="font-size:12px; font-weight:700; padding:6px 12px; border-radius:20px; white-space:nowrap;"
-                [style.background]="storageSettings.useCustomStorage ? '#dcfce7' : '#dbeafe'"
-                [style.color]="storageSettings.useCustomStorage ? '#166534' : '#1e40af'"
-              >
-                {{ storageSettings.useCustomStorage ? 'BYOS ACTIVE' : 'DEFAULT ACTIVE' }}
-              </span>
-            </div>
-
-            <!-- Explanatory Guide Box -->
-            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:16px; margin-bottom:24px;">
-              <h4 style="margin:0 0 8px; font-size:13px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:6px;">
-                <span class="material-symbols-outlined" style="font-size:18px; color:#f59e0b;">info</span>
-                <span>Why connect your own free Cloudinary storage?</span>
-              </h4>
-              <p style="margin:0; font-size:12px; line-height:1.6; color:#475569;">
-                Cloudinary offers a generous <strong>free plan with 25 GB of CDN storage and transformations</strong> every month. By connecting your own account, all media assets remain under your full ownership and direct control.
-                <a href="https://cloudinary.com/users/register_free" target="_blank" rel="noopener noreferrer" style="color:#2563eb; font-weight:600; text-decoration:underline; margin-left:4px;">
-                  Create a Free Cloudinary Account &rarr;
-                </a>
-              </p>
-            </div>
-
-            <!-- Credentials Form -->
-            <div class="form-row-2">
-              <div class="form-group">
-                <label class="form-label">
-                  <span>Cloudinary Cloud Name</span>
-                  <span class="field-req">*</span>
-                </label>
-                <input
-                  type="text"
-                  [(ngModel)]="customStorageForm.cloudName"
-                  class="form-control"
-                  placeholder="e.g. dxyz123ab"
-                />
-                <span class="field-hint">Found at the top of your Cloudinary Dashboard.</span>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">
-                  <span>API Key</span>
-                  <span class="field-req">*</span>
-                </label>
-                <input
-                  type="text"
-                  [(ngModel)]="customStorageForm.apiKey"
-                  class="form-control"
-                  placeholder="e.g. 123456789012345"
-                />
-                <span class="field-hint" *ngIf="storageSettings.maskedApiKey">
-                  Current: {{ storageSettings.maskedApiKey }}
-                </span>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">
-                <span>API Secret</span>
-                <span class="field-req">*</span>
-              </label>
-              <input
-                type="password"
-                [(ngModel)]="customStorageForm.apiSecret"
-                class="form-control"
-                placeholder="Enter your Cloudinary API Secret"
-              />
-              <span class="field-hint">Encrypted securely; never exposed in client responses.</span>
-            </div>
           </div>
         </section>
       </div>
@@ -3717,12 +2986,10 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
   `]
 })
 export class SettingsComponent implements OnInit {
-  activeTab: 'brand' | 'aliases' | 'colors' | 'member-id' | 'templates' | 'ecommerce' | 'storage' | 'domain' | 'widgets' = 'brand';
+  activeTab: 'brand' | 'colors' | 'templates' | 'ecommerce' | 'storage' | 'domain' | 'widgets' = 'brand';
 
   savingBrand = false;
-  savingAliases = false;
   savingColors = false;
-  savingIdConfig = false;
   savingStore = false;
   connectingStorage = false;
   successMessage = '';
@@ -3854,19 +3121,6 @@ export class SettingsComponent implements OnInit {
     whatsAppWidgetSubtitle: 'Typically replies within minutes'
   };
 
-  // Tab 2: Terminology Aliases
-  aliases: {
-    categoryAlias: string;
-    subCategoryAlias: string;
-    groupAlias: string;
-    alumniAlias: string;
-  } = {
-    categoryAlias: 'Department',
-    subCategoryAlias: 'Unit',
-    groupAlias: 'Committees',
-    alumniAlias: 'Past Members'
-  };
-
   // Tab 3: Colors & Appearance
   appearance: {
     primaryColor: string;
@@ -3876,26 +3130,6 @@ export class SettingsComponent implements OnInit {
     secondaryColor: '#1f6bff'
   };
 
-  // Tab 4: Member ID & Security
-  idConfig: {
-    activeFormat: string;
-    prefix: string;
-    nextNumber: number;
-    padding: number;
-    delimiter: string;
-    requireConfirmedEmailToLogin: boolean;
-    enableUserDeletion: boolean;
-    previews: any[];
-  } = {
-    activeFormat: 'PrefixYearMonthRandom',
-    prefix: 'CC',
-    nextNumber: 1,
-    padding: 4,
-    delimiter: '-',
-    requireConfirmedEmailToLogin: false,
-    enableUserDeletion: false,
-    previews: []
-  };
 
   // Tab 5: Message Templates
   activeChannel: number = 0; // 0: Email, 1: SMS, 2: In-App
@@ -3977,12 +3211,8 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadBrandSettings();
-    this.loadAliases();
     this.loadAppearance();
-    this.loadMemberIdConfig();
-    this.loadTemplates();
     this.loadStoreSettings();
-    this.loadStorageSettings();
     this.loadDomainSettings();
     this.loadRegistrationSettings();
 
@@ -3994,16 +3224,14 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  setTab(tab: 'brand' | 'aliases' | 'colors' | 'member-id' | 'templates' | 'ecommerce' | 'storage' | 'domain' | 'widgets'): void {
+  setTab(tab: 'brand' | 'colors' | 'templates' | 'ecommerce' | 'storage' | 'domain' | 'widgets'): void {
     this.activeTab = tab;
     this.updateHeaderButtonText();
   }
 
   updateHeaderButtonText(): void {
     let btnText = 'Save Brand Settings';
-    if (this.activeTab === 'aliases') btnText = 'Save Terminology';
-    else if (this.activeTab === 'colors') btnText = 'Save Colors';
-    else if (this.activeTab === 'member-id') btnText = 'Save Format Rule';
+    if (this.activeTab === 'colors') btnText = 'Save Colors';
     else if (this.activeTab === 'templates') btnText = 'Save Template';
     else if (this.activeTab === 'ecommerce') btnText = 'Save Store Settings';
     else if (this.activeTab === 'storage') btnText = 'Test & Connect Storage';
@@ -4022,9 +3250,7 @@ export class SettingsComponent implements OnInit {
 
   onSaveActiveTab(): void {
     if (this.activeTab === 'brand') this.onSaveBrandSettings();
-    else if (this.activeTab === 'aliases') this.onSaveAliases();
     else if (this.activeTab === 'colors') this.onSaveAppearance();
-    else if (this.activeTab === 'member-id') this.onSaveMemberIdConfig();
     else if (this.activeTab === 'templates') this.saveCurrentTemplate();
     else if (this.activeTab === 'ecommerce') this.onSaveStoreSettings();
     else if (this.activeTab === 'storage') this.onConnectCustomStorage();
@@ -4451,49 +3677,6 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  loadAliases(): void {
-    this.api.get<any>('SettingsApi/aliases').subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.aliases = {
-            categoryAlias: res.data.categoryAlias || 'Department',
-            subCategoryAlias: res.data.subCategoryAlias || 'Unit',
-            groupAlias: res.data.groupAlias || 'Committees',
-            alumniAlias: res.data.alumniAlias || 'Past Members'
-          };
-          localStorage.setItem('alias_category', this.aliases.categoryAlias);
-          localStorage.setItem('alias_subcategory', this.aliases.subCategoryAlias);
-          localStorage.setItem('alias_group', this.aliases.groupAlias);
-          localStorage.setItem('alias_alumni', this.aliases.alumniAlias);
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  onSaveAliases(): void {
-    this.savingAliases = true;
-    this.successMessage = '';
-
-    this.api.put<any>('SettingsApi/aliases', this.aliases).subscribe({
-      next: () => {
-        this.savingAliases = false;
-        localStorage.setItem('alias_category', this.aliases.categoryAlias);
-        localStorage.setItem('alias_subcategory', this.aliases.subCategoryAlias);
-        localStorage.setItem('alias_group', this.aliases.groupAlias);
-        localStorage.setItem('alias_alumni', this.aliases.alumniAlias);
-        window.dispatchEvent(new CustomEvent('brand_settings_updated'));
-        this.toast.success('Terminology aliases applied system-wide!');
-        this.successMessage = 'System-wide nomenclature aliases updated.';
-        setTimeout(() => this.successMessage = '', 4000);
-      },
-      error: (err) => {
-        this.savingAliases = false;
-        this.toast.error(err?.error?.message || 'Failed to update terminology aliases.');
-      }
-    });
-  }
-
   loadAppearance(): void {
     this.api.get<any>('SettingsApi/appearance').subscribe({
       next: (res) => {
@@ -4524,87 +3707,6 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  loadMemberIdConfig(): void {
-    this.api.get<any>('UsersApi/member-id-config').subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.idConfig = {
-            activeFormat: res.data.activeFormat || 'PrefixYearMonthRandom',
-            prefix: res.data.prefix || 'CC',
-            nextNumber: res.data.nextNumber || 1,
-            padding: res.data.padding || 4,
-            delimiter: res.data.delimiter || '-',
-            requireConfirmedEmailToLogin: res.data.requireConfirmedEmailToLogin === true,
-            enableUserDeletion: res.data.enableUserDeletion === true,
-            previews: res.data.previews || []
-          };
-        }
-      },
-      error: () => {
-        this.toast.error('Failed to load Member ID configuration.');
-      }
-    });
-  }
-
-  onFormatParamChange(): void {
-    const params = `prefix=${encodeURIComponent(this.idConfig.prefix || 'CC')}&startNumber=${this.idConfig.nextNumber || 1}&padding=${this.idConfig.padding || 4}&delimiter=${encodeURIComponent(this.idConfig.delimiter || '-')}`;
-    this.api.get<any>(`UsersApi/member-id-config/preview?${params}`).subscribe({
-      next: (res) => {
-        if (res?.data) {
-          this.idConfig.previews = res.data;
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  selectFormat(formatKey: string): void {
-    this.idConfig.activeFormat = formatKey;
-  }
-
-  getActivePreviewSample(): string {
-    const active = this.idConfig.previews.find(p => p.key === this.idConfig.activeFormat);
-    return active ? active.previewExample : `${this.idConfig.prefix}${this.idConfig.delimiter}0001`;
-  }
-
-  getActiveFormatDescription(): string {
-    const active = this.idConfig.previews.find(p => p.key === this.idConfig.activeFormat);
-    return active ? active.description : 'Standard organizational member coding format.';
-  }
-
-  isCurrentFormatSequential(): boolean {
-    const active = this.idConfig.previews.find(p => p.key === this.idConfig.activeFormat);
-    return active ? active.isSequential : true;
-  }
-
-  onSaveMemberIdConfig(): void {
-    this.savingIdConfig = true;
-    const payload = {
-      activeFormat: this.idConfig.activeFormat,
-      prefix: this.idConfig.prefix,
-      nextNumber: this.idConfig.nextNumber,
-      padding: this.idConfig.padding,
-      delimiter: this.idConfig.delimiter,
-      requireConfirmedEmailToLogin: this.idConfig.requireConfirmedEmailToLogin,
-      enableUserDeletion: this.idConfig.enableUserDeletion
-    };
-
-    this.api.put<any>('UsersApi/member-id-config', payload).subscribe({
-      next: (res) => {
-        this.savingIdConfig = false;
-        if (res?.data?.previews) {
-          this.idConfig.previews = res.data.previews;
-        }
-        this.toast.success('Member ID & verification policies applied successfully!');
-        this.successMessage = 'Member ID format and verification policies updated.';
-        setTimeout(() => this.successMessage = '', 4000);
-      },
-      error: (err) => {
-        this.savingIdConfig = false;
-        this.toast.error(err?.error?.message || 'Failed to save configuration.');
-      }
-    });
-  }
 
   loadTemplates(): void {
     this.loadingTemplates = true;
@@ -4777,7 +3879,7 @@ export class SettingsComponent implements OnInit {
       PortalUrl: 'https://cocacola.localhost:4200',
       OrganizationName: this.brand.companyName || 'Coca Cola Workspace',
       Designation: 'Principal Architect',
-      CategoryName: this.aliases.categoryAlias || 'Senior Management',
+      CategoryName: 'Senior Management',
       Status: 'Active',
       IndicatorTitle: 'Quarterly Governance Score',
       Score: '94.5',

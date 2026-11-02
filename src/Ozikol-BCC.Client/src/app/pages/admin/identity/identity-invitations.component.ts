@@ -4,19 +4,21 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 @Component({
   selector: 'app-identity-invitations',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="identity-page">
       <app-page-header
-        eyebrow="ONBOARDING REGISTRY"
+        [eyebrow]="'identity.invite.eyebrow' | translate:'ONBOARDING REGISTRY'"
         icon="mail"
-        title="Administrative User Invitations"
-        subtitle="Issue secure onboarding tokens to administrators, editors, or moderators with pre-assigned workspace roles."
+        [title]="'identity.invite.title' | translate:'Administrative User Invitations'"
+        [subtitle]="'identity.invite.subtitle' | translate:'Issue secure onboarding tokens to administrators, editors, or moderators with pre-assigned workspace roles.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -26,32 +28,32 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
         <div class="widget-head">
           <div class="widget-title-wrap">
             <span class="material-symbols-outlined text-purple">list_alt</span>
-            <h2 class="widget-title">Onboarding Token Registry</h2>
+            <h2 class="widget-title">{{ 'identity.invite.registry_title' | translate:'Onboarding Token Registry' }}</h2>
           </div>
           <a routerLink="/identity/console/invitations/create" class="btn btn-primary btn-sm">
             <span class="material-symbols-outlined">add</span>
-            <span>Issue New Invitation</span>
+            <span>{{ 'identity.invite.btn_issue_new' | translate:'Issue New Invitation' }}</span>
           </a>
         </div>
         <div class="widget-body" style="padding:0;">
           <div *ngIf="invitations.length === 0 && !isLoading" class="empty-state">
             <span class="material-symbols-outlined empty-state-icon">drafts</span>
-            <p>No invitations issued yet. Click "Issue New Invitation" to onboard a new workspace member.</p>
+            <p>{{ 'identity.invite.empty_desc' | translate:'No invitations issued yet. Click "Issue New Invitation" to onboard a new workspace member.' }}</p>
             <a routerLink="/identity/console/invitations/create" class="btn btn-primary btn-sm" style="margin-top: 14px;">
               <span class="material-symbols-outlined btn-icon">send</span>
-              <span>Issue First Invitation</span>
+              <span>{{ 'identity.invite.btn_issue_first' | translate:'Issue First Invitation' }}</span>
             </a>
           </div>
 
           <table class="table-clean" *ngIf="invitations.length > 0">
             <thead>
               <tr>
-                <th>Recipient Email</th>
-                <th>Assigned Role &amp; Scope</th>
-                <th>Sent Date</th>
-                <th>Expiration Date</th>
-                <th>Onboarding Status</th>
-                <th style="text-align: right;">Action</th>
+                <th>{{ 'identity.invite.th_email' | translate:'Recipient Email' }}</th>
+                <th>{{ 'identity.invite.th_role_scope' | translate:'Assigned Role & Scope' }}</th>
+                <th>{{ 'identity.invite.th_sent' | translate:'Sent Date' }}</th>
+                <th>{{ 'identity.invite.th_expires' | translate:'Expiration Date' }}</th>
+                <th>{{ 'identity.invite.th_status' | translate:'Onboarding Status' }}</th>
+                <th style="text-align: right;">{{ 'identity.invite.th_action' | translate:'Action' }}</th>
               </tr>
             </thead>
             <tbody>
@@ -79,10 +81,10 @@ import { PageHeaderComponent, PageHeaderButton } from '../../../shared/component
                     title="Copy direct registration link"
                   >
                     <span class="material-symbols-outlined">content_copy</span>
-                    <span>Copy Link</span>
+                    <span>{{ 'identity.invite.btn_copy_link' | translate:'Copy Link' }}</span>
                   </button>
                   <span *ngIf="invite.status !== 'Pending'" class="text-muted-status">
-                    {{ invite.status === 'Accepted' ? 'Enrolled' : 'Expired' }}
+                    {{ invite.status === 'Accepted' ? ('identity.invite.status_enrolled' | translate:'Enrolled') : ('identity.invite.status_expired' | translate:'Expired') }}
                   </span>
                 </td>
               </tr>
@@ -284,21 +286,27 @@ export class IdentityInvitationsComponent implements OnInit {
   isLoading = false;
   invitations: any[] = [];
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'Send Onboarding Invite',
-      icon: 'send',
-      isPrimary: true,
-      routerLink: '/identity/console/invitations/create'
-    },
-    {
-      text: 'Refresh Registry',
-      icon: 'refresh',
-      action: () => { this.loadInvitations(); }
-    }
-  ];
+  constructor(
+    private api: ApiService,
+    private toast: ToastService,
+    private translationService: TranslationService
+  ) {}
 
-  constructor(private api: ApiService, private toast: ToastService) {}
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('identity.invite.btn_send_invite', 'Send Onboarding Invite'),
+        icon: 'send',
+        isPrimary: true,
+        routerLink: '/identity/console/invitations/create'
+      },
+      {
+        text: this.translationService.translate('identity.invite.btn_refresh', 'Refresh Registry'),
+        icon: 'refresh',
+        action: () => { this.loadInvitations(); }
+      }
+    ];
+  }
 
   ngOnInit(): void {
     this.loadInvitations();

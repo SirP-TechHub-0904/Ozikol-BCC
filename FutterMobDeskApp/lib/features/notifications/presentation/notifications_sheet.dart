@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
@@ -8,11 +9,14 @@ import '../domain/notification_model.dart';
 
 /// Comprehensive notification center sheet rendered as an adaptive slide-over drawer
 /// on desktop and a bottom modal sheet on mobile devices.
-class NotificationsSheet extends ConsumerWidget {
-  const NotificationsSheet({super.key});
+class NotificationsSheet extends ConsumerStatefulWidget {
+  /// Optional navigation callback invoked when a notification with an ActionUrl is tapped.
+  final void Function(String actionUrl)? onNavigate;
+
+  const NotificationsSheet({super.key, this.onNavigate});
 
   /// Displays the notifications sheet adaptively based on screen width.
-  static void show(BuildContext context) {
+  static void show(BuildContext context, {void Function(String actionUrl)? onNavigate}) {
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
     if (isDesktop) {
@@ -28,9 +32,9 @@ class NotificationsSheet extends ConsumerWidget {
             child: SizedBox(
               width: 460,
               height: double.infinity,
-              child: const Material(
+              child: Material(
                 color: Colors.transparent,
-                child: NotificationsSheet(),
+                child: NotificationsSheet(onNavigate: onNavigate),
               ),
             ),
           );
@@ -52,14 +56,43 @@ class NotificationsSheet extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         builder: (_) => SizedBox(
           height: MediaQuery.of(context).size.height * 0.88,
-          child: const NotificationsSheet(),
+          child: NotificationsSheet(onNavigate: onNavigate),
         ),
       );
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsSheet> createState() => _NotificationsSheetState();
+}
+
+class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
+  Timer? _tickerTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // 1. Immediately revalidate and load live notifications feed from the server
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(notificationProvider.notifier).loadFeed();
+      }
+    });
+
+    // 2. Live ticking timer every 10 seconds to update relative timestamps ('Just now', '1m ago', etc.) in real time
+    _tickerTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tickerTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(notificationProvider);
     final notifier = ref.read(notificationProvider.notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -136,6 +169,17 @@ class NotificationsSheet extends ConsumerWidget {
                     ),
                   const Spacer(),
                   IconButton(
+                    icon: state.isLoading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                          )
+                        : const Icon(Icons.refresh_rounded, size: 20),
+                    tooltip: 'account.refresh_logs'.tr(ref, fallback: 'Refresh'),
+                    onPressed: state.isLoading ? null : () => notifier.loadFeed(),
+                  ),
+                  IconButton(
                     icon: const Icon(Icons.done_all_rounded, size: 20),
                     tooltip: 'notif.mark_all_read'.tr(ref, fallback: 'Mark all as read'),
                     onPressed: state.unreadCount > 0 ? () => notifier.markAllAsRead() : null,
@@ -188,14 +232,19 @@ class NotificationsSheet extends ConsumerWidget {
             Expanded(
               child: state.filteredItems.isEmpty
                   ? _buildEmptyState(state.activeFilter, isDark, ref)
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(20),
-                      itemCount: state.filteredItems.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final notif = state.filteredItems[index];
-                        return _buildNotificationCard(notif, notifier, isDark, ref);
-                      },
+                  : RefreshIndicator(
+                      onRefresh: () => notifier.loadFeed(),
+                      color: AppColors.primary,
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        itemCount: state.filteredItems.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final notif = state.filteredItems[index];
+                          return _buildNotificationCard(context, notif, notifier, isDark, ref);
+                        },
+                      ),
                     ),
             ),
           ],
@@ -245,7 +294,13 @@ class NotificationsSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotificationCard(NotificationItem notif, NotificationNotifier notifier, bool isDark, WidgetRef ref) {
+  Widget _buildNotificationCard(
+    BuildContext context,
+    NotificationItem notif,
+    NotificationNotifier notifier,
+    bool isDark,
+    WidgetRef ref,
+  ) {
     final sev = notif.severity;
     final timeAgo = _formatTimeAgo(notif.createdAt);
 
@@ -254,19 +309,28 @@ class NotificationsSheet extends ConsumerWidget {
         if (!notif.isRead) {
           notifier.markAsRead(notif.id);
         }
+        if (notif.actionUrl != null && notif.actionUrl!.isNotEmpty) {
+          Navigator.of(context).pop();
+          widget.onNavigate?.call(notif.actionUrl!);
+        }
       },
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: notif.isRead
+                ? (isDark ? AppColors.outlineDark : AppColors.outlineLight)
+                : AppColors.primary.withAlpha(isDark ? 90 : 70),
+            width: notif.isRead ? 1 : 1.2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(isDark ? 30 : 8),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
+              color: Colors.black.withAlpha(isDark ? 25 : 6),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -274,124 +338,136 @@ class NotificationsSheet extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 4px Severity Accent Stripe
-              Container(width: 4, color: sev.color),
+              // 3.5px Severity Accent Stripe
+              Container(width: 3.5, color: sev.color),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Severity Pill + Module Badge + Timestamp + Unread Dot
                       Row(
                         children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: sev.color.withAlpha(isDark ? 45 : 25),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: sev.color.withAlpha(120), width: 0.8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(sev.icon, size: 12, color: sev.color),
-                      const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: sev.color.withAlpha(isDark ? 45 : 25),
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(color: sev.color.withAlpha(120), width: 0.8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(sev.icon, size: 11, color: sev.color),
+                                const SizedBox(width: 3.5),
+                                Text(
+                                  sev.label.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: sev.color,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              notif.module ?? 'General',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            timeAgo,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            ),
+                          ),
+                          if (!notif.isRead) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+
+                      const SizedBox(height: 5),
+
+                      // Title (Crisp, max 2 lines)
                       Text(
-                        sev.label.toUpperCase(),
+                        notif.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: sev.color,
-                          letterSpacing: 0.5,
+                          fontSize: 13.5,
+                          fontWeight: notif.isRead ? FontWeight.w600 : FontWeight.w700,
+                          color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
+                          height: 1.25,
                         ),
                       ),
+
+                      if (notif.message.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        // Message (max 2 lines, clean secondary styling)
+                        Text(
+                          notif.message,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            height: 1.35,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
+                          ),
+                        ),
+                      ],
+
+                      if (notif.actionUrl != null && notif.actionUrl!.isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              'notif.view_action'.tr(ref, fallback: 'View Action'),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: sev.color,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Icon(Icons.arrow_forward_rounded, size: 12, color: sev.color),
+                          ],
+                        ),
+                      ],
                     ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  notif.module ?? 'General',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  timeAgo,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                  ),
-                ),
-                if (!notif.isRead) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-
-            const SizedBox(height: 10),
-
-            // Title
-            Text(
-              notif.title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: notif.isRead ? FontWeight.w600 : FontWeight.w700,
-                color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
-              ),
-            ),
-
-            const SizedBox(height: 6),
-
-            // Message
-            Text(
-              notif.message,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.45,
-                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569),
-              ),
-            ),
-
-            if (notif.actionUrl != null && notif.actionUrl!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () {
-                    if (!notif.isRead) notifier.markAsRead(notif.id);
-                  },
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 14),
-                  label: Text('notif.view_action'.tr(ref, fallback: 'View Action'), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                  style: TextButton.styleFrom(
-                    foregroundColor: sev.color,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    visualDensity: VisualDensity.compact,
                   ),
                 ),
               ),
             ],
-          ],
+          ),
         ),
       ),
-    ),
-  ],
-),
-),
-),
-);
-}
+    );
+  }
 
   Widget _buildEmptyState(String filter, bool isDark, WidgetRef ref) {
     return Center(
@@ -435,11 +511,14 @@ class NotificationsSheet extends ConsumerWidget {
   }
 
   static String _formatTimeAgo(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inSeconds < 60) return 'Just now';
+    final now = DateTime.now();
+    final localDt = dt.toLocal();
+    final diff = now.difference(localDt);
+    if (diff.isNegative || diff.inSeconds < 45) return 'Just now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Yesterday';
     if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${dt.day}/${dt.month}';
+    return '${localDt.day.toString().padLeft(2, '0')}/${localDt.month.toString().padLeft(2, '0')}';
   }
 }

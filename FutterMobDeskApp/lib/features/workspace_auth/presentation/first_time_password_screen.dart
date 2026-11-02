@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/localization/language_provider.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/auth_header.dart';
+import '../../../core/widgets/desktop_auth_layout.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../dashboard/presentation/dashboard_shell_screen.dart';
@@ -72,17 +73,17 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
     final confirmPassword = _confirmPasswordController.text;
 
     if (!_hasMinLength || !_hasUppercase || !_hasNumber || !_hasSpecialChar) {
-      setState(() => _errorMessage = 'Password does not satisfy all security requirements.');
+      setState(() => _errorMessage = 'auth.err_complexity'.tr(ref, fallback: 'Password does not satisfy all security requirements.'));
       return;
     }
 
     if (newPassword != confirmPassword) {
-      setState(() => _errorMessage = 'New password and confirmation do not match.');
+      setState(() => _errorMessage = 'account.passwords_do_not_match'.tr(ref, fallback: 'New password and confirmation do not match.'));
       return;
     }
 
     if (newPassword == widget.temporaryPassword) {
-      setState(() => _errorMessage = 'New password cannot be identical to your temporary password.');
+      setState(() => _errorMessage = 'auth.err_identical_password'.tr(ref, fallback: 'New password cannot be identical to your temporary password.'));
       return;
     }
 
@@ -116,7 +117,7 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
     } catch (e) {
       setState(() {
         _isSubmitting = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
+        _errorMessage = WorkspaceNotifier.sanitizeError(e);
       });
     }
   }
@@ -149,56 +150,30 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: SingleChildScrollView(
+    return DesktopAuthLayout(
+      workspace: widget.workspace,
+      title: 'auth.change_initial_password'.tr(ref, fallback: 'Change Initial Password'),
+      subtitle: 'auth.change_initial_password_desc'.tr(ref, fallback: 'For your security, please replace your temporary password with a personalized, strong password.'),
+      onBackTap: () => Navigator.of(context).pop(),
+      cardAvatar: Center(
+        child: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.key_rounded,
+            size: 26,
+            color: AppColors.primary,
+          ),
+        ),
+      ),
+      child: AutofillGroup(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const AuthHeader(
-              title: 'Change Initial Password',
-              subtitle: 'For your security, please replace your temporary password with a personalized, strong password.',
-            ),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  child: Container(
-                    padding: const EdgeInsets.all(28),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Key Avatar
-                        Center(
-                          child: Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.key_rounded,
-                              size: 32,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
 
                         // Error Banner
                         if (_errorMessage != null) ...[
@@ -228,10 +203,12 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
                         // New Password Field
                         CustomTextField(
                           controller: _newPasswordController,
-                          label: 'New Personalized Password',
-                          placeholder: 'Enter new password',
+                          label: 'auth.new_personalized_password'.tr(ref, fallback: 'New Personalized Password'),
+                          placeholder: 'auth.enter_new_password'.tr(ref, fallback: 'Enter new password'),
                           prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                           isPassword: true,
+                          showPasteButton: true,
+                          autofillHints: const [AutofillHints.newPassword],
                         ),
                         const SizedBox(height: 12),
 
@@ -246,7 +223,7 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Password Requirements:',
+                                '${'account.password_requirements'.tr(ref, fallback: 'Password Requirements')}:',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -254,10 +231,10 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              _buildComplexityRow('At least 8 characters', _hasMinLength),
-                              _buildComplexityRow('At least one uppercase letter (A-Z)', _hasUppercase),
-                              _buildComplexityRow('At least one numeric digit (0-9)', _hasNumber),
-                              _buildComplexityRow('At least one special symbol (!@#\$%)', _hasSpecialChar),
+                              _buildComplexityRow('account.req_length'.tr(ref, fallback: 'At least 8 characters'), _hasMinLength),
+                              _buildComplexityRow('account.req_uppercase'.tr(ref, fallback: 'At least one uppercase letter (A-Z)'), _hasUppercase),
+                              _buildComplexityRow('account.req_number'.tr(ref, fallback: 'At least one numeric digit (0-9)'), _hasNumber),
+                              _buildComplexityRow('account.req_special'.tr(ref, fallback: r'At least one special symbol (!@#$%)'), _hasSpecialChar),
                             ],
                           ),
                         ),
@@ -266,28 +243,24 @@ class _FirstTimePasswordScreenState extends ConsumerState<FirstTimePasswordScree
                         // Confirm Password Field
                         CustomTextField(
                           controller: _confirmPasswordController,
-                          label: 'Confirm New Password',
-                          placeholder: 'Re-enter your new password',
+                          label: 'account.confirm_password'.tr(ref, fallback: 'Confirm New Password'),
+                          placeholder: 'auth.reenter_new_password'.tr(ref, fallback: 'Re-enter your new password'),
                           prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
                           isPassword: true,
+                          showPasteButton: true,
+                          autofillHints: const [AutofillHints.newPassword],
                           onSubmitted: (_) => _handleForceChange(),
                         ),
                         const SizedBox(height: 24),
 
                         // Submit Button
                         PrimaryButton(
-                          text: 'Save Password & Enter Workspace',
+                          text: 'auth.save_password_enter_workspace'.tr(ref, fallback: 'Save Password & Enter Workspace'),
                           isLoading: _isSubmitting,
                           onPressed: _handleForceChange,
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

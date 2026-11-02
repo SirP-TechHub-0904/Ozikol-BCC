@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { Chart, registerables } from 'chart.js';
 import { ApiService } from '../../../core/services/api.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 Chart.register(...registerables);
@@ -10,15 +12,15 @@ Chart.register(...registerables);
 @Component({
   selector: 'app-identity-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="identity-page">
       <!-- Header -->
       <app-page-header
-        eyebrow="IDENTITY SECURITY CONTROL"
+        [eyebrow]="'identity.dash.eyebrow' | translate:'IDENTITY SECURITY CONTROL'"
         icon="security"
-        title="Security Console Overview"
-        subtitle="Real-time telemetry, 2FA adoption metrics, brute-force retry flags, and remote session controls."
+        [title]="'identity.dash.title' | translate:'Security Console Overview'"
+        [subtitle]="'identity.dash.subtitle' | translate:'Real-time telemetry, 2FA adoption metrics, brute-force retry flags, and remote session controls.'"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -34,11 +36,11 @@ Chart.register(...registerables);
           title="Click to view all registered members in User Directory"
         >
           <div class="metric-card-header">
-            <span class="metric-label">Total Users</span>
+            <span class="metric-label">{{ 'identity.dash.total_users' | translate:'Total Users' }}</span>
             <span class="material-symbols-outlined metric-link-icon">arrow_forward</span>
           </div>
           <div class="metric-value">{{ telemetry.totalUsers }}</div>
-          <span class="metric-trend text-blue">Registered Members</span>
+          <span class="metric-trend text-blue">{{ 'identity.dash.registered_members' | translate:'Registered Members' }}</span>
         </div>
 
         <!-- Card 2: Locked Accounts -> Filtered User Directory (Suspended) -->
@@ -51,12 +53,12 @@ Chart.register(...registerables);
           title="Click to inspect locked and suspended user accounts in User Directory"
         >
           <div class="metric-card-header">
-            <span class="metric-label">Locked Accounts</span>
+            <span class="metric-label">{{ 'identity.dash.locked_accounts' | translate:'Locked Accounts' }}</span>
             <span class="material-symbols-outlined metric-link-icon">arrow_forward</span>
           </div>
           <div class="metric-value" [class.text-red]="telemetry.lockedOutCount > 0">{{ telemetry.lockedOutCount }}</div>
           <span class="metric-trend" [class.text-red]="telemetry.lockedOutCount > 0" [class.text-green]="telemetry.lockedOutCount === 0">
-            {{ telemetry.lockedOutCount > 0 ? 'Requires Attention' : 'Active Safeguard' }}
+            {{ telemetry.lockedOutCount > 0 ? ('identity.dash.requires_attention' | translate:'Requires Attention') : ('identity.dash.active_safeguard' | translate:'Active Safeguard') }}
           </span>
         </div>
 
@@ -69,12 +71,12 @@ Chart.register(...registerables);
           title="Click to inspect brute-force retry flags and authentication events in Security Logs"
         >
           <div class="metric-card-header">
-            <span class="metric-label">Brute-Force Retries</span>
+            <span class="metric-label">{{ 'identity.dash.brute_force_retries' | translate:'Brute-Force Retries' }}</span>
             <span class="material-symbols-outlined metric-link-icon">arrow_forward</span>
           </div>
           <div class="metric-value" [class.text-amber]="telemetry.retryAlertsCount > 0">{{ telemetry.retryAlertsCount }}</div>
           <span class="metric-trend" [class.text-amber]="telemetry.retryAlertsCount > 0" [class.text-green]="telemetry.retryAlertsCount === 0">
-            {{ telemetry.retryAlertsCount > 0 ? 'Suspicious Retries' : 'Clean Audit Stream' }}
+            {{ telemetry.retryAlertsCount > 0 ? ('identity.dash.suspicious_retries' | translate:'Suspicious Retries') : ('identity.dash.clean_audit_stream' | translate:'Clean Audit Stream') }}
           </span>
         </div>
 
@@ -87,11 +89,11 @@ Chart.register(...registerables);
           title="Click to configure two-factor authentication and global security policies"
         >
           <div class="metric-card-header">
-            <span class="metric-label">MFA Enrolled</span>
+            <span class="metric-label">{{ 'identity.dash.mfa_enrolled' | translate:'MFA Enrolled' }}</span>
             <span class="material-symbols-outlined metric-link-icon">arrow_forward</span>
           </div>
           <div class="metric-value text-green">{{ mfaPercentage }}%</div>
-          <span class="metric-trend text-green">Preferred Authentication</span>
+          <span class="metric-trend text-green">{{ 'identity.dash.preferred_auth' | translate:'Preferred Authentication' }}</span>
         </div>
       </div>
 
@@ -102,7 +104,7 @@ Chart.register(...registerables);
           <div class="widget-head">
             <div class="widget-title-wrap">
               <span class="material-symbols-outlined text-blue">phonelink_lock</span>
-              <h2 class="widget-title">MFA Verification Method Distribution</h2>
+              <h2 class="widget-title">{{ 'identity.dash.mfa_distribution' | translate:'MFA Verification Method Distribution' }}</h2>
             </div>
           </div>
           <div class="widget-body">
@@ -117,7 +119,7 @@ Chart.register(...registerables);
           <div class="widget-head">
             <div class="widget-title-wrap">
               <span class="material-symbols-outlined text-purple">gpp_maybe</span>
-              <h2 class="widget-title">Identity Operational Overview</h2>
+              <h2 class="widget-title">{{ 'identity.dash.operational_overview' | translate:'Identity Operational Overview' }}</h2>
             </div>
           </div>
           <div class="widget-body">
@@ -129,27 +131,27 @@ Chart.register(...registerables);
       </div>
 
       <!-- Quick Shortcuts Console Grid -->
-      <h3 style="color: var(--md-sys-color-on-surface); font-size: 15px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.02em;">Identity Control Panels</h3>
+      <h3 style="color: var(--md-sys-color-on-surface); font-size: 15px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.02em;">{{ 'identity.dash.control_panels' | translate:'Identity Control Panels' }}</h3>
       <div class="console-actions" style="margin-bottom: 30px;">
         <div class="action-card card-hover" routerLink="/identity/console/roles">
           <div class="action-icon-bg" style="background:#0050e5;"><span class="material-symbols-outlined">shield_person</span></div>
-          <span class="action-label">Roles & Scopes</span>
-          <span class="action-desc">Assign fine-grained feature editing permissions.</span>
+          <span class="action-label">{{ 'identity.dash.roles_scopes' | translate:'Roles & Scopes' }}</span>
+          <span class="action-desc">{{ 'identity.dash.roles_scopes_desc' | translate:'Assign fine-grained feature editing permissions.' }}</span>
         </div>
         <div class="action-card card-hover" routerLink="/identity/console/invitations">
           <div class="action-icon-bg" style="background:#a855f7;"><span class="material-symbols-outlined">mail</span></div>
-          <span class="action-label">User Invitations</span>
-          <span class="action-desc">Issue secure registration tokens to admins & members.</span>
+          <span class="action-label">{{ 'identity.dash.user_invitations' | translate:'User Invitations' }}</span>
+          <span class="action-desc">{{ 'identity.dash.user_invitations_desc' | translate:'Issue secure registration tokens to admins & members.' }}</span>
         </div>
         <div class="action-card card-hover" routerLink="/identity/console/audit-logs">
           <div class="action-icon-bg" style="background:#22c55e;"><span class="material-symbols-outlined">history</span></div>
-          <span class="action-label">Security Logs</span>
-          <span class="action-desc">Analyze login audit stream and tracking events.</span>
+          <span class="action-label">{{ 'identity.dash.security_logs' | translate:'Security Logs' }}</span>
+          <span class="action-desc">{{ 'identity.dash.security_logs_desc' | translate:'Analyze login audit stream and tracking events.' }}</span>
         </div>
         <div class="action-card card-hover" routerLink="/identity/console/policies">
           <div class="action-icon-bg" style="background:#f59e0b;"><span class="material-symbols-outlined">password</span></div>
-          <span class="action-label">Global Policies</span>
-          <span class="action-desc">Set global password complexity and MFA triggers.</span>
+          <span class="action-label">{{ 'identity.dash.global_policies' | translate:'Global Policies' }}</span>
+          <span class="action-desc">{{ 'identity.dash.global_policies_desc' | translate:'Set global password complexity and MFA triggers.' }}</span>
         </div>
       </div>
     </div>
@@ -372,15 +374,21 @@ export class IdentityDashboardComponent implements OnInit, AfterViewInit {
 
   mfaPercentage = 0;
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'Refresh Telemetry',
-      icon: 'refresh',
-      action: () => { this.loadTelemetry(); }
-    }
-  ];
+  constructor(
+    private api: ApiService,
+    private router: Router,
+    private translationService: TranslationService
+  ) {}
 
-  constructor(private api: ApiService, private router: Router) {}
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('btn.refresh_telemetry', 'Refresh Telemetry'),
+        icon: 'refresh',
+        action: () => { this.loadTelemetry(); }
+      }
+    ];
+  }
 
   ngOnInit(): void {
     this.loadTelemetry();

@@ -39,9 +39,14 @@ namespace Ozikol_BCC.Application.Common
         public string FriendlyBrowserDetails { get; set; } = "Desktop Browser";
 
         /// <summary>
-        /// Gets or sets the canonical Material Symbols icon name (e.g. "desktop_windows", "laptop_mac", "smartphone", "tablet").
+        /// Gets or sets the client application classification: "Web Browser", "Desktop App", or "Mobile App".
         /// </summary>
-        public string Icon { get; set; } = "computer";
+        public string ClientType { get; set; } = "Web Browser";
+
+        /// <summary>
+        /// Gets or sets the canonical Material Symbols icon name (e.g. "language", "desktop_windows", "laptop_mac", "smartphone", "tablet").
+        /// </summary>
+        public string Icon { get; set; } = "language";
     }
 
     /// <summary>
@@ -84,20 +89,34 @@ namespace Ozikol_BCC.Application.Common
                          ua.Contains("Linux", StringComparison.OrdinalIgnoreCase) ? "Linux" : "Device";
 
                 info.BrowserName = isMobile ? "Mobile App" : "Desktop App";
+                info.ClientType = isMobile ? "Mobile App" : "Desktop App";
                 info.OperatingSystem = os;
                 info.DeviceType = isMobile ? "Mobile" : "Desktop";
                 info.FriendlyDeviceTitle = $"{info.BrowserName} on {os}";
                 info.FriendlyBrowserDetails = $"{info.BrowserName} • {info.DeviceType}";
-                info.Icon = isMobile ? "smartphone" : (isApple ? "laptop_mac" : "desktop_windows");
+                info.Icon = isMobile ? "smartphone" : (isApple ? "laptop_mac" : (os == "Linux" ? "terminal" : "desktop_windows"));
                 return info;
             }
 
-            // Already friendly format check (e.g. "Google Chrome on Windows 10/11")
+            // Already friendly format check (e.g. "Google Chrome on Windows 10/11", "Desktop App on Windows")
             if (!ua.StartsWith("Mozilla/", StringComparison.OrdinalIgnoreCase) && ua.Contains(" on "))
             {
+                var parts = ua.Split(" on ", 2, StringSplitOptions.TrimEntries);
+                var firstPart = parts[0];
+                var secondPart = parts.Length > 1 ? parts[1] : "Device";
+
+                var isDesktopApp = firstPart.Contains("Desktop App", StringComparison.OrdinalIgnoreCase);
+                var isMobileApp = firstPart.Contains("Mobile App", StringComparison.OrdinalIgnoreCase);
+                var isMobile = isMobileApp || ua.Contains("Mobile", StringComparison.OrdinalIgnoreCase) || ua.Contains("Android", StringComparison.OrdinalIgnoreCase) || ua.Contains("iOS", StringComparison.OrdinalIgnoreCase);
+
+                info.BrowserName = firstPart;
+                info.OperatingSystem = secondPart;
+                info.DeviceType = isMobile ? "Mobile" : "Desktop";
+                info.ClientType = isDesktopApp ? "Desktop App" : (isMobileApp ? "Mobile App" : "Web Browser");
                 info.FriendlyDeviceTitle = ua;
-                info.FriendlyBrowserDetails = ua;
-                info.Icon = ua.Contains("Mobile", StringComparison.OrdinalIgnoreCase) ? "smartphone" : "computer";
+                info.FriendlyBrowserDetails = $"{firstPart} • {info.DeviceType}";
+                info.Icon = isDesktopApp ? (secondPart.Contains("macOS", StringComparison.OrdinalIgnoreCase) ? "laptop_mac" : "desktop_windows") :
+                            (isMobileApp ? "smartphone" : "language");
                 return info;
             }
 
@@ -222,7 +241,9 @@ namespace Ozikol_BCC.Application.Common
 
             var verSnippet = !string.IsNullOrEmpty(info.BrowserVersion) ? $" {info.BrowserVersion}" : string.Empty;
             info.FriendlyDeviceTitle = $"{info.BrowserName} on {info.OperatingSystem}";
-            info.FriendlyBrowserDetails = $"{info.BrowserName}{verSnippet} • {info.DeviceType}";
+            info.FriendlyBrowserDetails = $"{info.BrowserName}{verSnippet} • {info.DeviceType} Browser";
+            info.ClientType = "Web Browser";
+            info.Icon = info.DeviceType == "Mobile" ? "smartphone" : (info.DeviceType == "Tablet" ? "tablet" : "language");
 
             return info;
         }

@@ -2,6 +2,9 @@
 
 This document serves as the permanent memory bank and behavioral guidelines for all AI coding agents working in this repository. These rules apply to every prompt and session.
 
+> [!IMPORTANT]
+> **Active Rule Set**: This master memory bank is also modularized into `.agents/rules/` (`01-architecture-database-ai.md`, `02-translation-localization.md`, `03-ui-ux-design-standards.md`, `04-git-workflow-code-quality.md`, `05-notifications-communications.md`, `06-error-codes-handling.md`, `07-sidebar-navigation-hierarchy.md`) to guarantee 100% prompt injection with zero byte truncation across all AI agent sessions. Always adhere strictly to all rules in this document and in `.agents/rules/`.
+
 ---
 
 ## 1. Code Documentation & Comments (Mandatory)
@@ -215,22 +218,46 @@ This document serves as the permanent memory bank and behavioral guidelines for 
   * **SMS Alerts**: Enqueued into `[dbo].[BcpSmsQueue]` with sender ID compliance, character count validation, and transaction tracking.
   * **WhatsApp Alerts**: Managed through the unified notification queue with template verification and status tracking.
 * **Audit & Idempotency Protection**: Every notification pool entry MUST record the originating `TenantKey`, `UserId`, `SystemId`, `Category`, `Priority`, and timestamp to guarantee zero message loss, deduplication, and complete delivery telemetry.
+* **Mandatory Notifications for High-Impact & Serious Activities (Permanent Rule)**:
+  * Whenever an authentication, security, credential, permission, or serious operational action occurs, the system MUST automatically dispatch an in-app and real-time socket notification to the affected user(s) via `ICentralNotificationDispatcher.DispatchAsync`.
+  * **Mandatory Trigger Events**:
+    1. **New Device / Browser Sign-in**: Alert user of unrecognized device access, IP address, and timestamp with action link to Manage Devices (`/identity/console/account?tab=devices`).
+    2. **Password Updates & Resets**: Immediate confirmation of self-service or administrative password alterations (`/identity/console/account?tab=password`).
+    3. **Two-Factor Authentication (2FA)**: Enabling, disabling, or regenerating recovery codes (`/identity/console/account?tab=2fa`).
+    4. **Session Termination**: Notification when an active device session is revoked remotely (`/identity/console/account?tab=devices`).
+    5. **Role & Privilege Adjustments**: Granting, upgrading, or revoking administrative roles and scopes.
+    6. **Account Status & Membership Changes**: Activation, suspension, category transfers, or administrative profile updates.
+  * **Clickable Deep Linking Requirement**: Every notification MUST populate `ActionUrl` with a clean route (e.g. `/identity/console/account?tab=devices`) enabling users across Web, Mobile, and Desktop to click the notification and immediately navigate to the exact tab/screen.
+  * **Future Feature Mandate**: All future features, modules, and administrative workflows MUST proactively identify high-impact actions and implement corresponding notification dispatches as part of their initial delivery.
 
 ---
 
 ## 17. Multi-Language Localization & Translation Engine Standards (Mandatory)
-* **Strict Universal Translation Adherence**:
-  * Every user-facing UI text, title, header, button, subtitle, form field label, placeholder, tooltip, table column header, filter pill, status badge, empty-state illustration note, confirmation dialog, contextual help guide, and notification in both the **Administration Console** and **Users Workspace** MUST strictly use the translation engine.
-  * **Zero Hardcoded Text (Strict Prohibition)**: NEVER write raw English string literals directly inside HTML templates, Razor views, or Flutter widget trees. Every string MUST be bound via standard translation tokens:
-    * **Web (Angular)**: Use the `| translate` pipe in templates (e.g. `{{ 'nav.console_dashboard' | translate }}` or `[placeholder]="'shell.search_placeholder' | translate"`).
-    * **Desktop & Mobile (Flutter)**: Use the reactive Riverpod translation extension (e.g. `'nav.console_dashboard'.tr(ref, fallback: 'Console Dashboard')`).
+* **All Activities Must Consider Translation (Universal Mandate)**:
+  * **Every single activity, feature, screen, modal, form, table, audit log, activity timeline, billing checkout, toast alert, and notification** created or modified by any agent MUST proactively consider and implement multi-language translation from the very beginning—never as an afterthought.
+  * Every user-facing UI text, title, eyebrow, header, button, subtitle, form field label, placeholder, tooltip, table column header, filter pill, status badge, empty-state illustration headline/description, confirmation dialog, contextual help guide, audit log entry label, and custom notification in both the **Administration Console** and **Users Workspace** MUST strictly use the translation engine.
+  * **Zero Hardcoded Text (Absolute Prohibition)**: NEVER write raw English string literals directly inside HTML templates, TypeScript toast calls, Razor views, or Flutter widget trees. Every string MUST be bound via standard translation tokens or `translateDynamic(...)`:
+    * **Web (Angular)**: Use the `| translate` pipe in templates (e.g. `{{ 'nav.console_dashboard' | translate }}` or `[placeholder]="'shell.search_placeholder' | translate"`), `this.translationService.translate('token', 'Fallback')` in TypeScript toast/alert calls, and `this.translationService.translateDynamic(text)` for system-generated descriptions, audit log actions/statuses/modules, and dynamic catalog labels. In standalone components, always import `TranslatePipe` in the component's `imports: [...]` array.
+    * **Desktop & Mobile (Flutter)**: Use the reactive Riverpod translation extension (e.g. `'btn.update_password'.tr(ref, fallback: 'Update Password')`).
+* **Audit Logs & Activity Feeds Translation Standard**:
+  * Both the **Security Audit & Log Activity** console (`/identity/console/audit-logs`) and **My Activity** timeline (`/identity/console/account?tab=activity` on Web and `MyActivityView` on Flutter) MUST translate:
+    1. All static UI chrome (page headers, search placeholders, module filter options, table headers, pagination counters, action buttons, and toasts) via `| translate` / `.tr(ref)`.
+    2. All system-generated audit fields (`actionType`, `status`, `description`, `module`, and device/browser summaries) via `translationService.translateDynamic(...)` or localized status/action token mappers, while preserving user-identifiable literals (user names, emails, IP addresses, and timestamps).
+* **Clear Distinction: UI Chrome vs Dynamic Database Entities**:
+  * **UI Chrome & Framework Controls (100% Translated)**: All application buttons, table headers, form inputs, dialogs, validation notices, empty states, and in-app notifications MUST resolve through translation tokens.
+  * **Dynamic Database Records (Stored as User Content)**: Only live data values originating from the database (e.g., user-entered names, tenant organization names, user bio text, custom message bodies) are rendered as persisted. If a French-speaking administrator writes in French, their database content will naturally be French, and the entire BCC UI surrounding it will seamlessly match in French.
+* **Pluggable Multi-Language Architecture (Drop-In New Languages)**:
+  * The translation architecture across Web, Desktop, and Mobile is strictly decoupled so that introducing a new language (e.g. Italian, Arabic, Portuguese, Chinese) requires only TWO steps:
+    1. Add the dictionary file / map containing the translated token keys for the new ISO code.
+    2. Register the language entry (code, name, nativeName, flag emoji) in the supported languages catalog (`AppTranslations.supportedLanguages` in Flutter, `translation.service.ts` in Angular).
+  * Once registered, the language switcher automatically displays the new option, and selecting it immediately executes the entire application in that language without modifying any screen, widget, or template.
 * **Central Pattern `.oz-lang-switcher` Component Parity**:
   * The language switcher UI across all applications MUST faithfully replicate the **Ozikol Central** design system:
     * **Pill Trigger Button**: Features a rounded pill (`border-radius: 9999px`), frosted glass background (`rgba(255, 255, 255, 0.75)` on light, `rgba(30, 41, 59, 0.75)` on dark), subtle borders, country flag emoji, uppercase ISO code (e.g. `🇬🇧 EN`, `🇫🇷 FR`, `🇪🇸 ES`, `🇩🇪 DE`), and a 180° animated rotating chevron arrow.
-    * **Desktop Viewports**: Floating frosted glass dropdown menu with flags, native names, subtle hover transitions, and Royal Blue (`#0050E5`) active checkmark indicators.
+    * **Desktop Viewports**: Floating frosted glass dropdown menu anchored directly beneath the trigger button (`RelativeRect.fromRect`), featuring flags, native names, subtle hover transitions, and Royal Blue (`#0050E5`) active checkmark indicators.
     * **Mobile Viewports**: Adaptive modal bottom sheet (`showModalBottomSheet`) with a grab handle bar, translated header (`Select Language`), language list with flags, native names, English subtitles, and Royal Blue active checkmarks.
     * **Local Persistence**: Language selections MUST persist locally across restarts (`localStorage.getItem('bcp_language')` on Web, `SecureStorageService.getLanguage()` on Mobile/Desktop).
-* **Four Canonical Supported Languages**:
+* **Four Canonical Base Languages (Extensible)**:
   * **English (`en`)**: `🇬🇧 EN` (`English`) — Default base language.
   * **French (`fr`)**: `🇫🇷 FR` (`Français`).
   * **Spanish (`es`)**: `🇪🇸 ES` (`Español`).
@@ -238,14 +265,17 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **Standard Hierarchical Token Namespaces**:
   * `shell.*`: Shell labels, mode switcher (`shell.console`, `shell.workspace`), topbar search placeholders, user menu actions, footer credits.
   * `nav.*`: Navigation groups, sidebar sections, menu categories, screen headers.
-  * `btn.*`: Action triggers (e.g. `btn.refresh_telemetry`, `btn.register_new_member`, `btn.save_changes`, `btn.cancel`, `btn.continue`).
-  * `billing.*`: Central subscription notices, entitlements review triggers, license status notices.
-  * `kpi.*`: Performance counters, health scores, audit trail headings, active subscriber metrics.
-  * `badge.*`: Role indicators (`badge.superadmin`, `badge.admin`, `badge.member`), service states (`badge.operational`, `badge.live`, `badge.active`).
-  * `form.*` & `modal.*`: Form labels, validation error alerts, dialog titles, prompt instructions.
+  * `btn.*`: Action triggers (e.g. `btn.refresh_telemetry`, `btn.register_new_member`, `btn.save_changes`, `btn.cancel`, `btn.continue`, `btn.terminate_other_sessions`, `btn.export_csv`).
+  * `account.*`: Account & Security suite titles, tabs, descriptions, credentials, device sessions, and login history.
+  * `table.*`: Table column headers (e.g. `table.device_name`, `table.ip_address`, `table.last_active`, `table.status`, `table.actions`).
+  * `form.*` & `modal.*`: Form labels, input placeholders, validation error alerts, dialog titles, prompt instructions.
+  * `notif.*`: In-app custom notification titles, category labels, severity badges, and notification feed actions.
+  * `badge.*` & `status.*`: Service states, role indicators, and verification pill labels.
 * **Fail-Safe Fallback Contract**:
   * If a token is not defined in the active language dictionary, the engine MUST automatically fall back to the English dictionary.
   * If absent from English as well, it MUST gracefully fall back to the provided fallback argument or token key, preventing runtime crashes or blank UI elements.
+* **Pre-Commit Translation Verification**:
+  * Every code change or feature addition MUST verify that all newly added user-facing strings are bound via translation tokens across all target platforms before creating a commit.
 
 ---
 
@@ -285,6 +315,97 @@ This document serves as the permanent memory bank and behavioral guidelines for 
 * **Zero Direct Third-Party Client Coupling**:
   * Domain services and controllers must NEVER directly call external Postmark/Twilio/Meta HTTP endpoints. All events must be enqueued into the tenant database queues to ensure retry resilience, idempotency, and complete telemetry logging.
 
+---
+
+## 20. Clean, User-Friendly Error Messaging & Strict Sanitization (Mandatory)
+* **Strict Prohibition of Brand & Internal Infrastructure in Errors**:
+  * User-facing error messages, alerts, banners, dialogs, form feedback, and toasts across ALL platforms (Web Client, Flutter Desktop/Mobile, API responses) MUST NEVER expose:
+    * **Brand Names in Errors**: NEVER include `"Ozikol"` in error messages, failure notices, or alert descriptions. System failures must never associate negative user experiences with the brand name.
+    * **Internal Architecture & Infrastructure Jargon**: NEVER expose internal terms such as `"server"`, `"server error"`, `"sql"`, `"sql error"`, `"database"`, `"db"`, `"master catalog"`, `"catalog db"`, `"exception"`, `"stack trace"`, `"null reference"`, `"endpoint"`, `"http 500"`, or table/column schema details.
+* **Friendly, Human, Actionable Error Standards**:
+  * Error messages must be clean, simple, empathetic, and actionable so users immediately know what to do without being confused or alarmed by technical jargon.
+  * **Canonical Examples**:
+    * Instead of `"Ozikol Server error: SQL connection failed"` or `"Cannot connect to Ozikol server"` -> `"Unable to connect. Please check your network connection and try again."`
+    * Instead of `"Tenant not found in Ozikol Master Catalog DB"` or `"Resolution failed for Ozikol"` -> `"Workspace could not be found."`
+    * Instead of `"Internal server error 500: SQL query timeout"` -> `"Something went wrong. Please try again in a few moments."`
+    * Instead of `"Invalid credentials in user database"` -> `"Invalid email or password. Please verify your details."`
+    * Instead of `"Request timed out by server"` -> `"Unable to connect. Please check your connection and try again."`
+    * Instead of `"Active members still assigned, or server rejected request"` -> `"Could not delete category. Active members may still be assigned, or the request could not be completed."`
+* **Automated Sanitization Pipeline**:
+  * Network interceptors and repositories MUST pass all raw exceptions and error payloads through a central sanitizer (`sanitizeError`) before setting UI state or presenting snackbars, banners, or toast alerts.
+  * The sanitizer must strip or replace any raw technical or branded terms with canonical, user-friendly language.
+
+---
+
+## 21. Mobile Infinite Scroll vs. Desktop Pagination Standard (Mandatory)
+* **Adaptive Viewport Data Loading Pattern**:
+  * Feeds, timelines, audit logs, and data lists across all applications MUST dynamically adapt their loading pattern based on the client viewport / device form factor:
+    * **Mobile Screens (`isMobile` / viewport width < 600px)**:
+      * **Infinite Scroll (Scroll Down to Load More)**: As the user scrolls down towards the bottom of the viewport (`pixels >= maxScrollExtent - 250`), automatically fetch the subsequent page of records and append them (`items.addAll(newItems)`) without interrupting the user's scroll position or requiring manual taps.
+      * **No Pagination Buttons on Mobile**: Do NOT render `Previous` / `Page X of Y` / `Next` pagination button strips on mobile screens. Pagination buttons consume valuable vertical screen estate and disrupt natural touch gesture navigation.
+      * **Loading Indicator & End of Feed**: When fetching older records on scroll, display an unobtrusive inline loading spinner (`"Loading older activity..."` or `"Loading more..."`). Once the final page is reached, show a subtle end-of-feed label (e.g. `"Showing all X records from the last 30 days"`).
+    * **Desktop & Large Tablets (`!isMobile` / viewport width >= 600px)**:
+      * **Structured Server-Side Pagination**: Maintain full server-side pagination bars with record counters (`"Showing X of Y records"`), page indicators (`"Page X of Y"`), and `Previous` / `Next` buttons for rapid jumping and precise operational data navigation.
+* **Debounce & Guard Against Duplicate Network Queries**:
+  * Infinite scroll listeners MUST guard with `!isLoading && !isLoadingMore && currentPage < totalPages` to guarantee zero duplicate network round-trips when reaching the bottom of the list.
+* **Refresh / Filter Reset Guarantee**:
+  * Pull-to-refresh, filter chips, or search queries must reset `currentPage = 1` and replace the collection with fresh page-1 results, resetting the infinite scroll state cleanly.
+
+---
+
+## 22. Strict Prohibition of Emojis & Iconography Standard (Mandatory)
+* **Zero Raw Emojis in UI**: NEVER use raw Unicode emojis (e.g., 🚀, ⚡, 🎉, 💡, 🔥, 👍, ❌, 📅, ⚠️, etc.) in UI buttons, call-to-actions, headers, titles, placeholders, banners, alerts, badges, table columns, or menu navigation across all applications (Central Web Razor, Angular Client, Flutter Desktop/Mobile).
+* **Mandatory Vector / Font Icons**: Always use crisp, scalable, professional vector/font icons matching the platform design system:
+  * **Central Web (Razor Pages)**: Use Google Material Symbols (`<span class="material-symbols-outlined">icon_name</span>`).
+  * **Angular Client**: Use official Angular Material / Material Symbols / FontAwesome or custom SVG icons.
+  * **Flutter Desktop & Mobile**: Use Flutter `Icons.<icon_name>` (e.g. `Icons.rocket_launch`, `Icons.bolt`, `Icons.calendar_month`, `Icons.warning_amber`).
+* **Design Rationale**: Raw Unicode emojis render inconsistently across operating systems (Windows, macOS, iOS, Android, Linux), disrupt typography baselines, and convey an informal/unprofessional appearance incompatible with an enterprise Business Command Center. Vector icons ensure 100% theme color fidelity, responsive scaling, and unified cross-platform aesthetics.
 
 
+---
+
+## 23. Standardized API Error Codes, Custom Error vs. Real Error Isolation (Mandatory)
+* **Strict Client vs. Central Error Separation**:
+  * **Client / Tenant Response Contract**: Every non-success API response (`IsSuccess == false` or `HTTP >= 400`) returned to a client (Angular Web, Flutter Desktop/Mobile) MUST return ONLY:
+    1. **`ErrorCode`**: A standard catalog code (`ERR-XXXX`, e.g., `ERR-3001`).
+    2. **`Message` (Custom Error)**: A simple, clean, translated user-friendly message (e.g., `"Paystack unavailable."`).
+    3. **`TraceId`**: The correlation identifier for support lookup.
+  * **Zero Raw / Real Error Exposure to Clients**: NEVER expose raw gateway messages (e.g., `"Paystack: Integration has been deactivated"`), SQL exception messages, stack traces, internal class names, or third-party HTTP error payloads to the client UI or API response JSON (`[JsonIgnore] public string? RealError { get; set; }`).
+* **Central-Only Real Error Telemetry (`MasterApiErrorLogs`)**:
+  * Whenever any API request fails or returns a non-success response, the backend (`ApiErrorTrackingResultFilter` & `GlobalExceptionHandlingMiddleware`) automatically records the full diagnostic record in `MasterApiErrorLogs`:
+    * `ErrorCode` (`ERR-XXXX`)
+    * `CustomError` (the clean message shown to the client)
+    * `RealError` (the exact underlying error, raw gateway response, or exception message)
+    * `StackTrace`, `Endpoint`, `HttpMethod`, `HttpStatusCode`, `MasterTenantCatalogId`, `TenantKey`, `UserId`, `UserEmail`, `IpAddress`, and `TraceId`.
+  * **Central Inspection (`/centralwks/error-logs` & `/centralwks/tenants/details`)**:
+    * Only Central administrators can view the **Custom Error + Real Error + Error Code**, organized into **By Tenant**, **By Central**, and **All Tenant List** views, as well as inside each individual Tenant's Details page.
+* **Client Admin Error Codes Directory (`/identity/console/error-codes`)**:
+  * Under **Audit Logs** in the Client Admin, provide the **Error Codes** reference page displaying only the **Error Code (`ERR-XXXX`)**, **Category**, **Custom Error**, and **Plain-Language Meaning / Recommended Action** (100% translated via `TranslationService`), never the `RealError`.
+* **Full Catalog Reference**: See `.agents/rules/06-error-codes-handling.md` for the complete `ERR-1000` through `ERR-9999` standard error code registry.
+
+---
+
+## 24. Canonical Sidebar Navigation Hierarchy & Feature Gating Standards (Mandatory)
+* **Absolute Sidebar Sequence (Top-to-Bottom across all platforms)**:
+  1. **Core Navigation & User Management**:
+     * `Dashboard Overview` / `Workspace Home`
+     * `User Directory` (`All Members`, `Categories`, `KPIs`, `User Settings`)
+     * `Identity & Access Control`
+     * `Manage Account & Profile` (`My Account`)
+  2. **Subscribed Modular Features**:
+     * Appears immediately after User Management / My Account.
+     * Includes `Workspace (Desktop Stations)`, `Messenger`, `Groups`, `Alumni`, etc.
+  3. **Billing & Subscriptions** (Admin / Tenant level only):
+     * `Subscription Plans`
+     * `Subscriptions & Invoices`
+  4. **Security, Audit & System Logs** (Admin / Tenant level only):
+     * `Security Audit` & Activity Logs
+     * `Error Codes`
+* **Strict Member Menu Isolation**:
+  * Members ONLY ever have `Dashboard (Workspace Home)` and `Manage My Account` by default.
+  * Modular features appear in the member menu ONLY if actively subscribed and enabled by the tenant administrator.
+  * Billing & Subscriptions and Security Logs are strictly prohibited from appearing in the member menu.
+* **Direct URL Protection (`feature.guard.ts`)**:
+  * Typing or deep-linking to an unsubscribed feature route (e.g. `/workspace/stations`) must be blocked by `FeatureGuard` and redirect to `/feature-unavailable` showing the unavailable advisory.
+* **Full Specification Reference**: See `.agents/rules/07-sidebar-navigation-hierarchy.md`.
 

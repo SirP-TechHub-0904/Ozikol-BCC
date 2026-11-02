@@ -10,10 +10,14 @@ import { AiAssistantContextService } from '../../core/services/ai-assistant-cont
 import { FirstRunSetupModalComponent } from '../../shared/components/first-run-setup-modal/first-run-setup-modal.component';
 import { TranslationService, SupportedLanguage, LanguageOption, SUPPORTED_LANGUAGES } from '../../core/services/translation.service';
 import { TranslatePipe } from '../../core/pipes/translate.pipe';
+import { MultiWorkspaceService, EnrolledWorkspaceSession } from '../../core/services/multi-workspace.service';
 import { 
   getStoredUserRoles, 
   canAccessConsole, 
   isGlobalAdmin, 
+  isGlobalEditor,
+  isReadOnlyUser,
+  hasFeatureScope,
   hasUserRole, 
   getUserPrimaryRoleName 
 } from '../../core/utils/user-role.utils';
@@ -60,7 +64,7 @@ export interface SuiteInfoDetail {
         <!-- Section: PIN NAVIGATION -->
         <div id="pinned-sidebar-section" *ngIf="pinnedItems.length > 0">
           <div class="menu-title" style="display:flex; justify-content:space-between; align-items:center;">
-            <span>Pin Navigation</span>
+            <span>{{ 'adm.pin_navigation' | translate:'Pin Navigation' }}</span>
             <span class="badge-pill" style="background:#0050e5;">{{ pinnedItems.length }}</span>
           </div>
           <div class="nav-item" *ngFor="let item of pinnedItems">
@@ -69,7 +73,7 @@ export interface SuiteInfoDetail {
                 <span class="material-symbols-outlined">{{ item.icon }}</span>
                 <span>{{ item.title }}</span>
               </div>
-              <button type="button" class="pin-btn pinned" (click)="togglePin(item.title, item.url, item.icon); $event.preventDefault(); $event.stopPropagation();" title="Unpin Task">
+              <button type="button" class="pin-btn pinned" (click)="togglePin(item.title, item.url, item.icon); $event.preventDefault(); $event.stopPropagation();" [title]="'adm.unpin_task' | translate:'Unpin Task'">
                 <span class="material-symbols-outlined">keep_off</span>
               </button>
             </a>
@@ -83,7 +87,7 @@ export interface SuiteInfoDetail {
           <!-- 1. Executive Command -->
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.core_command' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('core_command', $event)" title="Executive Command Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('core_command', $event)" [title]="'adm.executive_command_overview' | translate:'Executive Command Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -102,8 +106,8 @@ export interface SuiteInfoDetail {
             <a routerLink="/dashboard/console/analytics" [class.active]="isCurrentRoute('/dashboard/console/analytics')" class="nav-link">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">analytics</span>
-                <span>Analytics & Telemetry</span>
-                <span class="badge-pill badge-hot">Live</span>
+                <span>{{ 'adm.analytics_telemetry' | translate:'Analytics & Telemetry' }}</span>
+                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/dashboard/console/analytics')" (click)="togglePin('Analytics', '/dashboard/console/analytics', 'analytics'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/dashboard/console/analytics') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/dashboard/console/analytics') ? 'keep_off' : 'push_pin' }}</span>
@@ -115,7 +119,7 @@ export interface SuiteInfoDetail {
           <ng-container *ngIf="canAccessSuite('cms')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.website_cms' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('website_cms', $event)" title="Website & CMS Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('website_cms', $event)" [title]="'adm.website_cms_overview' | translate:'Website & CMS Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -125,7 +129,7 @@ export interface SuiteInfoDetail {
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">dynamic_feed</span>
                 <span>{{ 'nav.cms_studio' | translate }}</span>
-                <span class="badge-pill badge-new">Live</span>
+                <span class="badge-pill badge-new">{{ 'adm.live' | translate:'Live' }}</span>
               </div>
               <span class="material-symbols-outlined arrow-icon">chevron_right</span>
             </a>
@@ -181,7 +185,7 @@ export interface SuiteInfoDetail {
                 </div>
               </li>
               <li class="sub-nav-divider">
-                <span class="sub-divider-text">Form Inquiries & Leads</span>
+                <span class="sub-divider-text">{{ 'adm.form_inquiries_leads' | translate:'Form Inquiries & Leads' }}</span>
               </li>
               <li *ngFor="let formItem of sidebarForms">
                 <div class="sub-nav-wrapper">
@@ -210,7 +214,7 @@ export interface SuiteInfoDetail {
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">palette</span>
                 <span>{{ 'nav.brand_settings' | translate }}</span>
-                <span class="badge-pill badge-hot">Hot</span>
+                <span class="badge-pill badge-hot">{{ 'adm.hot' | translate:'Hot' }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/settings/console')" (click)="togglePin('Brand Settings', '/settings/console', 'palette'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/settings/console') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/settings/console') ? 'keep_off' : 'push_pin' }}</span>
@@ -229,6 +233,7 @@ export interface SuiteInfoDetail {
             </a>
           </div>
           </ng-container>
+          <ng-container *ngIf="canAccessSuite('cms') || canAccessSuite('forms_intelligence')">
           <div class="nav-item">
             <a routerLink="/content/console/forms" routerLinkActive="active" class="nav-link">
               <div class="nav-link-content">
@@ -267,17 +272,18 @@ export interface SuiteInfoDetail {
             <a [href]="liveWebsiteUrl" target="_blank" class="nav-link" [title]="hasCustomDomain ? 'Visit ' + customDomain + ' in new tab' : 'Visit live public website in new tab'">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">open_in_browser</span>
-                <span>Live Public Site</span>
+                <span>{{ 'adm.live_public_site' | translate:'Live Public Site' }}</span>
               </div>
               <span class="material-symbols-outlined nav-external-hint">open_in_new</span>
             </a>
           </div>
+          </ng-container>
 
           <!-- Suite 2: User Management -->
           <ng-container *ngIf="canAccessSuite('user_management')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.user_management' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('user_management', $event)" title="User Management Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('user_management', $event)" [title]="'adm.user_management_overview' | translate:'User Management Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -293,7 +299,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/dashboard" [class.active]="isCurrentRoute('/users/console/dashboard')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Dashboard Overview</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>{{ 'adm.dashboard_overview' | translate:'Dashboard Overview' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/dashboard')" (click)="togglePin('User Dashboard', '/users/console/dashboard', 'analytics')" [title]="isPinned('/users/console/dashboard') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/console/dashboard') ? 'keep_off' : 'push_pin' }}</span>
@@ -313,9 +319,9 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/categories" [class.active]="isUserCategoriesActive()" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">category</span>{{ categoryAlias || 'User Categories' }}</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">category</span>{{ 'nav.user_categories' | translate:'User Categories' }}</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/categories')" (click)="togglePin(categoryAlias || 'User Categories', '/users/console/categories', 'category')" [title]="isPinned('/users/console/categories') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/categories')" (click)="togglePin('User Categories', '/users/console/categories', 'category')" [title]="isPinned('/users/console/categories') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/console/categories') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
@@ -333,7 +339,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/auth-setup" [class.active]="isCurrentRoute('/users/console/auth-setup')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">branding_watermark</span>Auth Page Setup</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">branding_watermark</span>{{ 'adm.auth_page_setup' | translate:'Auth Page Setup' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/auth-setup')" (click)="togglePin('Auth Page Setup', '/users/console/auth-setup', 'branding_watermark')" [title]="isPinned('/users/console/auth-setup') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/console/auth-setup') ? 'keep_off' : 'push_pin' }}</span>
@@ -353,7 +359,7 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/settings" [class.active]="isCurrentRoute('/users/console/settings')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>User Settings</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">tune</span>{{ 'adm.user_settings' | translate:'User Settings' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/settings')" (click)="togglePin('User Settings', '/users/console/settings', 'tune')" [title]="isPinned('/users/console/settings') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/console/settings') ? 'keep_off' : 'push_pin' }}</span>
@@ -472,7 +478,7 @@ export interface SuiteInfoDetail {
                   <a routerLink="/identity/console/account" [queryParams]="{ tab: 'activity' }" [class.active]="isCurrentRouteWithQuery('/identity/console/account', 'activity')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history</span>{{ 'nav.login_history' | translate }}</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account?tab=activity')" (click)="togglePin('Login History', '/identity/console/account?tab=activity', 'history')" [title]="isPinned('/identity/console/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/account?tab=activity')" (click)="togglePin('Log Activity', '/identity/console/account?tab=activity', 'history')" [title]="isPinned('/identity/console/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/identity/console/account?tab=activity') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
@@ -480,27 +486,50 @@ export interface SuiteInfoDetail {
             </ul>
           </div>
 
-          <!-- Suite 3: People & Community -->
-          <ng-container *ngIf="canAccessSuite('people_community')">
-          <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.people_community' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('people_community', $event)" title="People & Community Overview">
-              <span class="material-symbols-outlined suite-info-icon">info</span>
-            </button>
+          <!-- Dynamic Suites & Capabilities strictly ordered by Suite SortOrder & Feature SortOrder from Central -->
+          <ng-container *ngFor="let suite of orderedSidebarSuites">
+            <ng-container *ngIf="canAccessSuite(suite.suiteAccessKey || suite.infoKey || suite.categoryName) && isAnyFeatureVisible(suite.featureCodes)">
+              <div class="menu-title suite-header-row">
+                <span class="suite-header-text">{{ getSuiteMenuTitle(suite.categoryName, suite.defaultMenuTitle) }}</span>
+                <button *ngIf="suite.infoKey" type="button" class="suite-info-trigger" (click)="openSuiteInfo(suite.infoKey, $event)" [title]="(suite.infoTitleKey || '') | translate:(suite.infoTitleFallback || '')">
+                  <span class="material-symbols-outlined suite-info-icon">info</span>
+                </button>
+              </div>
+              <ng-container *ngFor="let featCode of suite.featureCodes">
+                <ng-container *ngIf="isFeatureVisible(featCode)" [ngSwitch]="featCode">
+          <div class="nav-item" *ngSwitchCase="'bcp-community-messenger'">
+            <a [routerLink]="isFeatureActive('bcp-community-messenger') ? '/admin/messenger' : null" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-community-messenger') && (isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat'))" [class.feature-locked]="!isFeatureActive('bcp-community-messenger')" (click)="onFeatureMenuClick('bcp-community-messenger', getFeatureFullTitle('bcp-community-messenger', 'Community Messenger & Team Chat'), $event)" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">chat</span>
+                <span>{{ getFeatureMenuTitle('bcp-community-messenger', 'Chat Messenger') }}</span>
+                <span class="badge-pill badge-hot" *ngIf="isFeatureActive('bcp-community-messenger')">{{ 'adm.live' | translate:'Live' }}</span>
+              </div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-community-messenger') && !isFeatureActive('bcp-community-messenger')" title="Available — Click to view details & install">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-community-messenger')">{{ 'badge.soon' | translate }}</span>
+              <button *ngIf="isFeatureActive('bcp-community-messenger')" type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/admin/messenger') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('groups')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/groups/console') || isParentActive('/admin/groups')" (click)="toggleMenu('groups')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-committees') && isMenuOpen('groups')" *ngSwitchCase="'bcp-committees'">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-committees') && (isParentActive('/groups/console') || isParentActive('/admin/groups'))" [class.feature-locked]="!isFeatureActive('bcp-committees')" (click)="onFeatureMenuClick('bcp-committees', getFeatureFullTitle('bcp-committees', 'Committees & Sub-Groups'), $event, 'groups')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">diversity_3</span>
-                <span>{{ groupAlias || 'Groups & Committees' }}</span>
+                <span>{{ getFeatureMenuTitle('bcp-committees', 'Groups & Committees') }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-committees') && !isFeatureActive('bcp-committees')" title="Available — Click to view details & install">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-committees')">{{ 'badge.soon' | translate }}</span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-committees')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('groups')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-committees') && isMenuOpen('groups')">
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/groups/console" [class.active]="isParentActive('/groups/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Groups Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.groups_dashboard' | translate:'Groups Dashboard' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/groups/console')" (click)="togglePin('Groups Dashboard', '/groups/console', 'space_dashboard')" [title]="isPinned('/groups/console') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/groups/console') ? 'keep_off' : 'push_pin' }}</span>
@@ -510,33 +539,29 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/groups/console" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">diversity_3</span>Manage Groups</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">diversity_3</span>{{ 'adm.manage_groups' | translate:'Manage Groups' }}</span>
                   </a>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Groups Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
                 </div>
               </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('alumni')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/admin/alumni') || isParentActive('/users/workspace/alumni')" (click)="toggleMenu('alumni')">
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-alumni-directory') && isMenuOpen('alumni')" *ngSwitchCase="'bcp-alumni-directory'">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-alumni-directory') && (isParentActive('/admin/alumni') || isParentActive('/users/workspace/alumni'))" [class.feature-locked]="!isFeatureActive('bcp-alumni-directory')" (click)="onFeatureMenuClick('bcp-alumni-directory', getFeatureFullTitle('bcp-alumni-directory', 'Alumni Network & Directory'), $event, 'alumni')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">school</span>
-                <span>{{ alumniAlias || 'Alumni Network' }}</span>
+                <span>{{ getFeatureMenuTitle('bcp-alumni-directory', 'Alumni Network') }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-alumni-directory') && !isFeatureActive('bcp-alumni-directory')" title="Available — Click to view details & install">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-alumni-directory')">{{ 'badge.soon' | translate }}</span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-alumni-directory')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('alumni')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-alumni-directory') && isMenuOpen('alumni')">
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/admin/alumni" [class.active]="isCurrentRoute('/admin/alumni')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Alumni Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.alumni_dashboard' | translate:'Alumni Dashboard' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni')" (click)="togglePin('Alumni Dashboard', '/admin/alumni', 'space_dashboard')" [title]="isPinned('/admin/alumni') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/admin/alumni') ? 'keep_off' : 'push_pin' }}</span>
@@ -546,184 +571,162 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/admin/alumni/cohorts" [class.active]="isCurrentRoute('/admin/alumni/cohorts')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>Manage Alumni & Cohorts</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">calendar_month</span>{{ 'adm.manage_alumni_cohorts' | translate:'Manage Alumni & Cohorts' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/alumni/cohorts')" (click)="togglePin('Alumni Cohorts', '/admin/alumni/cohorts', 'calendar_month')" [title]="isPinned('/admin/alumni/cohorts') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/admin/alumni/cohorts') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
               </li>
+            </ul>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-whistleblowing'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-whistleblowing')" (click)="onFeatureMenuClick('bcp-whistleblowing', getFeatureFullTitle('bcp-whistleblowing', 'Anonymous Whistleblowing & Feedback'), $event)">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">feedback</span>
+                <span>{{ getFeatureMenuTitle('bcp-whistleblowing', 'Whistleblowing') }}</span>
+              </div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-whistleblowing') && !isFeatureActive('bcp-whistleblowing')" title="Available — Click to view details & install">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-whistleblowing')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-staff-rota'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-staff-rota')" (click)="onFeatureMenuClick('bcp-staff-rota', getFeatureFullTitle('bcp-staff-rota', 'Staff & Volunteer Rota Scheduling'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">event_note</span><span>{{ getFeatureMenuTitle('bcp-staff-rota', 'Staff & Volunteer Rota') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-staff-rota') && !isFeatureActive('bcp-staff-rota')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-staff-rota')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-shift-swaps'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-shift-swaps')" (click)="onFeatureMenuClick('bcp-shift-swaps', getFeatureFullTitle('bcp-shift-swaps', 'Shift Swaps & Leave Management'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">swap_horiz</span><span>{{ getFeatureMenuTitle('bcp-shift-swaps', 'Shift Swaps & Leave') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-shift-swaps') && !isFeatureActive('bcp-shift-swaps')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-shift-swaps')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-attendance-tracking'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-attendance-tracking')" (click)="onFeatureMenuClick('bcp-attendance-tracking', getFeatureFullTitle('bcp-attendance-tracking', 'Biometric & QR Attendance Tracking'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">timer</span><span>{{ getFeatureMenuTitle('bcp-attendance-tracking', 'Attendance & QR') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-attendance-tracking') && !isFeatureActive('bcp-attendance-tracking')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-attendance-tracking')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-appointment-booking'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-appointment-booking')" (click)="onFeatureMenuClick('bcp-appointment-booking', getFeatureFullTitle('bcp-appointment-booking', 'Appointment & Facility Booking'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">book_online</span><span>{{ getFeatureMenuTitle('bcp-appointment-booking', 'Appointment Booking') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-appointment-booking') && !isFeatureActive('bcp-appointment-booking')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-appointment-booking')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-calendar-followups'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-calendar-followups')" (click)="onFeatureMenuClick('bcp-calendar-followups', getFeatureFullTitle('bcp-calendar-followups', 'Calendar & Automated Follow-Up Routine'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">event_repeat</span><span>{{ getFeatureMenuTitle('bcp-calendar-followups', 'Calendar & Follow-Ups') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-calendar-followups') && !isFeatureActive('bcp-calendar-followups')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-calendar-followups')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-interval-reporting'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-interval-reporting')" (click)="onFeatureMenuClick('bcp-interval-reporting', getFeatureFullTitle('bcp-interval-reporting', 'Interval & Periodic Reporting'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">assessment</span><span>{{ getFeatureMenuTitle('bcp-interval-reporting', 'Periodic Reports') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-interval-reporting') && !isFeatureActive('bcp-interval-reporting')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-interval-reporting')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-form-builder') && isMenuOpen('forms')" *ngSwitchCase="'bcp-form-builder'">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-form-builder') && isCurrentRoute('/content/console/forms')" [class.feature-locked]="!isFeatureActive('bcp-form-builder')" (click)="onFeatureMenuClick('bcp-form-builder', getFeatureFullTitle('bcp-form-builder', 'Custom Dynamic Form Builder'), $event, 'forms')">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">dynamic_form</span>
+                <span>{{ getFeatureMenuTitle('bcp-form-builder', 'Forms & Surveys') }}</span>
+              </div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-form-builder') && !isFeatureActive('bcp-form-builder')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-form-builder')">{{ 'badge.soon' | translate }}</span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-form-builder')">chevron_right</span>
+            </a>
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-form-builder') && isMenuOpen('forms')">
               <li>
                 <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Alumni Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
+                  <a routerLink="/content/console/forms" [class.active]="isCurrentRoute('/content/console/forms')" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.forms_dashboard' | translate:'Forms Dashboard' }}</span>
+                  </a>
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/forms')" (click)="togglePin('Forms Dashboard', '/content/console/forms', 'dynamic_form')" [title]="isPinned('/content/console/forms') ? 'Unpin Task' : 'Pin Task'">
+                    <span class="material-symbols-outlined">{{ isPinned('/content/console/forms') ? 'keep_off' : 'push_pin' }}</span>
+                  </button>
+                </div>
+              </li>
+              <li>
+                <div class="sub-nav-wrapper">
+                  <a routerLink="/content/console/forms" class="sub-nav-item">
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">edit_note</span>{{ 'adm.form_builder_responses' | translate:'Form Builder & Responses' }}</span>
+                  </a>
                 </div>
               </li>
             </ul>
           </div>
-          <div class="nav-item">
-            <a routerLink="/admin/messenger" [class.active]="isCurrentRoute('/admin/messenger') || isCurrentRoute('/users/workspace/chat')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">chat</span>
-                <span>{{ 'nav.chat_messenger' | translate }}</span>
-                <span class="badge-pill badge-hot">Live</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/admin/messenger')" (click)="togglePin('Chat Messenger', '/admin/messenger', 'chat'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/admin/messenger') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/admin/messenger') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
+          <div class="nav-item" *ngSwitchCase="'bcp-survey-analytics'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-survey-analytics')" (click)="onFeatureMenuClick('bcp-survey-analytics', getFeatureFullTitle('bcp-survey-analytics', 'Survey & Opinion Poll Analytics'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">poll</span><span>{{ getFeatureMenuTitle('bcp-survey-analytics', 'Opinion Polls') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-survey-analytics') && !isFeatureActive('bcp-survey-analytics')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-survey-analytics')">{{ 'badge.soon' | translate }}</span>
             </a>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">feedback</span><span>{{ 'nav.whistleblowing' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          </ng-container>
-
-          <!-- Suite 4: Workforce & Shifts -->
-          <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.workforce_shifts' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('workforce_shifts', $event)" title="Workforce & Shifts Overview">
-              <span class="material-symbols-outlined suite-info-icon">info</span>
-            </button>
-          </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('workforce')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('workforce')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">calendar_month</span>
-                <span>Workforce & Shifts</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          <div class="nav-item" *ngSwitchCase="'bcp-reference-forms'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-reference-forms')" (click)="onFeatureMenuClick('bcp-reference-forms', getFeatureFullTitle('bcp-reference-forms', 'Reference Form & Referee Verification'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">fact_check</span><span>{{ getFeatureMenuTitle('bcp-reference-forms', 'Reference Forms') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-reference-forms') && !isFeatureActive('bcp-reference-forms')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-reference-forms')">{{ 'badge.soon' | translate }}</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('workforce')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Workforce Dashboard</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event_note</span>Staff & Volunteer Rota</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">swap_horiz</span>Shift Swaps & Leave</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">timer</span>Attendance & Clock-In</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Workforce Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">event_repeat</span><span>{{ 'nav.calendar_followups' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-
-          <!-- Suite 5: Events & Ticketing -->
-          <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.events_ticketing' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('events_ticketing', $event)" title="Events & Ticketing Overview">
-              <span class="material-symbols-outlined suite-info-icon">info</span>
-            </button>
-          </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('events')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('events')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">confirmation_number</span>
-                <span>Events & Ticketing</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          <div class="nav-item" *ngSwitchCase="'bcp-event-ticketing'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-event-ticketing')" (click)="onFeatureMenuClick('bcp-event-ticketing', getFeatureFullTitle('bcp-event-ticketing', 'Event Registration & Ticketing'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">confirmation_number</span><span>{{ getFeatureMenuTitle('bcp-event-ticketing', 'Events & Passes') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-event-ticketing') && !isFeatureActive('bcp-event-ticketing')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-event-ticketing')">{{ 'badge.soon' | translate }}</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('events')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Events Dashboard</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">event</span>Manage Events & Passes</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">mic</span>Speaker & Session Tracks</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">how_to_reg</span>Attendee Management & Check-In</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Events Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
           </div>
-
-          <!-- Suite 6: Commerce & Store -->
-          <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.commerce_store' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('commerce_store', $event)" title="Commerce & Store Overview">
-              <span class="material-symbols-outlined suite-info-icon">info</span>
-            </button>
+          <div class="nav-item" *ngSwitchCase="'bcp-speaker-sessions'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-speaker-sessions')" (click)="onFeatureMenuClick('bcp-speaker-sessions', getFeatureFullTitle('bcp-speaker-sessions', 'Speaker & Session Lineup Management'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">mic</span><span>{{ getFeatureMenuTitle('bcp-speaker-sessions', 'Speaker & Sessions') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-speaker-sessions') && !isFeatureActive('bcp-speaker-sessions')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-speaker-sessions')">{{ 'badge.soon' | translate }}</span>
+            </a>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('commerce')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isParentActive('/products/console')" (click)="toggleMenu('commerce')">
+          <div class="nav-item" *ngSwitchCase="'bcp-attendee-management'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-attendee-management')" (click)="onFeatureMenuClick('bcp-attendee-management', getFeatureFullTitle('bcp-attendee-management', 'Attendee Badges & Check-In Kiosk'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">how_to_reg</span><span>{{ getFeatureMenuTitle('bcp-attendee-management', 'Attendee Check-In') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-attendee-management') && !isFeatureActive('bcp-attendee-management')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-attendee-management')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-invoicing-dues'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-invoicing-dues')" (click)="onFeatureMenuClick('bcp-invoicing-dues', getFeatureFullTitle('bcp-invoicing-dues', 'Membership Dues & Recurring Invoicing'), $event)">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+                <span>{{ getFeatureMenuTitle('bcp-invoicing-dues', 'Invoicing & Dues') }}</span>
+              </div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-invoicing-dues') && !isFeatureActive('bcp-invoicing-dues')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-invoicing-dues')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-store-ecommerce') && isMenuOpen('commerce')" *ngSwitchCase="'bcp-store-ecommerce'">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-store-ecommerce') && isParentActive('/products/console')" [class.feature-locked]="!isFeatureActive('bcp-store-ecommerce')" (click)="onFeatureMenuClick('bcp-store-ecommerce', getFeatureFullTitle('bcp-store-ecommerce', 'Store & E-Commerce Catalog'), $event, 'commerce')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">storefront</span>
-                <span>{{ 'nav.commerce_studio' | translate }}</span>
-                <span class="badge-pill badge-new">New</span>
+                <span>{{ getFeatureMenuTitle('bcp-store-ecommerce', 'Commerce Studio') }}</span>
+                <span class="badge-pill badge-new" *ngIf="isFeatureActive('bcp-store-ecommerce')">{{ 'adm.new' | translate:'New' }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-store-ecommerce') && !isFeatureActive('bcp-store-ecommerce')" title="Available — Click to view details & install">
+                <span class="material-symbols-outlined">lock</span>
+              </span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-store-ecommerce')">{{ 'badge.soon' | translate }}</span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-store-ecommerce')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('commerce')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-store-ecommerce') && isMenuOpen('commerce')">
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console" [class.active]="isCurrentRoute('/products/console')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Store Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>{{ 'adm.store_dashboard' | translate:'Store Dashboard' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console')" (click)="togglePin('Store Dashboard', '/products/console', 'space_dashboard')" [title]="isPinned('/products/console') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/products/console') ? 'keep_off' : 'push_pin' }}</span>
@@ -740,39 +743,22 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console/categories" [class.active]="isParentActive('/products/console/categories')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">category</span>Product Categories</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">category</span>{{ 'adm.product_categories' | translate:'Product Categories' }}</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/categories')" (click)="togglePin('Product Categories', '/products/console/categories', 'category')" [title]="isPinned('/products/console/categories') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/products/console/categories') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
                 </div>
               </li>
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console/orders" [class.active]="isCurrentRoute('/products/console/orders')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">local_shipping</span>Customer Orders & Fulfillment</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">local_shipping</span>{{ 'adm.customer_orders_fulfillment' | translate:'Customer Orders & Fulfillment' }}</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/orders')" (click)="togglePin('Customer Orders', '/products/console/orders', 'local_shipping')" [title]="isPinned('/products/console/orders') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/products/console/orders') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
                 </div>
               </li>
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/products/console/transactions" [class.active]="isCurrentRoute('/products/console/transactions')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">receipt_long</span>Financial Settlement Ledger</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">receipt_long</span>{{ 'adm.financial_settlement_ledger' | translate:'Financial Settlement Ledger' }}</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/transactions')" (click)="togglePin('Financial Ledger', '/products/console/transactions', 'receipt_long')" [title]="isPinned('/products/console/transactions') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/products/console/transactions') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Store Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
                 </div>
               </li>
               <li>
@@ -784,112 +770,94 @@ export interface SuiteInfoDetail {
               </li>
             </ul>
           </div>
-
-          <!-- Suite 7: Finance & Banking -->
-          <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.finance_banking' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('finance_banking', $event)" title="Finance & Banking Overview">
-              <span class="material-symbols-outlined suite-info-icon">info</span>
-            </button>
-          </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('invoicing')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('invoicing')">
+          <div class="nav-item" *ngSwitchCase="'bcp-proposal-pipeline'">
+            <a [routerLink]="isFeatureActive('bcp-proposal-pipeline') ? '/products/console/transactions' : null" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-proposal-pipeline') && isCurrentRoute('/products/console/transactions')" [class.feature-locked]="!isFeatureActive('bcp-proposal-pipeline')" (click)="onFeatureMenuClick('bcp-proposal-pipeline', getFeatureFullTitle('bcp-proposal-pipeline', 'Commercial Proposals & Bidding Pipeline'), $event)" class="nav-link">
               <div class="nav-link-content">
-                <span class="material-symbols-outlined">account_balance_wallet</span>
-                <span>{{ 'nav.invoicing_dues' | translate }}</span>
+                <span class="material-symbols-outlined">request_quote</span>
+                <span>{{ getFeatureMenuTitle('bcp-proposal-pipeline', 'Proposals & Pipeline') }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-proposal-pipeline') && !isFeatureActive('bcp-proposal-pipeline')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-proposal-pipeline')">{{ 'badge.soon' | translate }}</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('invoicing')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Invoicing Dashboard</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">receipt</span>Manage Invoices & Dues</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Invoicing Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('banking')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('banking')">
+          <div class="nav-item" *ngSwitchCase="'bcp-grant-ledger'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-grant-ledger')" (click)="onFeatureMenuClick('bcp-grant-ledger', getFeatureFullTitle('bcp-grant-ledger', 'Grants, Donations & Fund Accounting'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">volunteer_activism</span><span>{{ getFeatureMenuTitle('bcp-grant-ledger', 'Grants & Donations') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-grant-ledger') && !isFeatureActive('bcp-grant-ledger')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-grant-ledger')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-embedded-banking'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-embedded-banking')" (click)="onFeatureMenuClick('bcp-embedded-banking', getFeatureFullTitle('bcp-embedded-banking', 'Virtual Wallets & Payout Treasury'), $event)">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">account_balance</span>
-                <span>{{ 'nav.embedded_banking' | translate }}</span>
+                <span>{{ getFeatureMenuTitle('bcp-embedded-banking', 'Wallets & Treasury') }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('banking')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">hub</span>Connected Gateways & Payouts</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Payment Rail Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">request_quote</span><span>{{ 'nav.grant_ledger' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <div class="nav-item">
-            <a routerLink="/products/console/transactions" [class.active]="isCurrentRoute('/products/console/transactions')" class="nav-link">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">receipt_long</span>
-                <span>Financial Ledger</span>
-              </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/products/console/transactions')" (click)="togglePin('Financial Ledger', '/products/console/transactions', 'receipt_long')" [title]="isPinned('/products/console/transactions') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/products/console/transactions') ? 'keep_off' : 'push_pin' }}</span>
-              </button>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-embedded-banking') && !isFeatureActive('bcp-embedded-banking')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-embedded-banking')">{{ 'badge.soon' | translate }}</span>
             </a>
           </div>
 
-          <!-- Suite 8: Communication & Support -->
-          <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.communication_support' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('communication_support', $event)" title="Communication & Support Overview">
-              <span class="material-symbols-outlined suite-info-icon">info</span>
-            </button>
+          <div class="nav-item" *ngSwitchCase="'bcp-recruitment-hiring'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-recruitment-hiring')" (click)="onFeatureMenuClick('bcp-recruitment-hiring', getFeatureFullTitle('bcp-recruitment-hiring', 'Applicant Tracking & Talent Recruitment'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">work</span><span>{{ getFeatureMenuTitle('bcp-recruitment-hiring', 'Recruitment & Hiring') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-recruitment-hiring') && !isFeatureActive('bcp-recruitment-hiring')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-recruitment-hiring')">{{ 'badge.soon' | translate }}</span>
+            </a>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('notifications')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/users/console/notifications')" (click)="toggleMenu('notifications')">
+          <div class="nav-item" *ngSwitchCase="'bcp-elections-evoting'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-elections-evoting')" (click)="onFeatureMenuClick('bcp-elections-evoting', getFeatureFullTitle('bcp-elections-evoting', 'Secure E-Voting & Elections Center'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">how_to_vote</span><span>{{ getFeatureMenuTitle('bcp-elections-evoting', 'E-Voting & Elections') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-elections-evoting') && !isFeatureActive('bcp-elections-evoting')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-elections-evoting')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-equipment-fleet'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-equipment-fleet')" (click)="onFeatureMenuClick('bcp-equipment-fleet', getFeatureFullTitle('bcp-equipment-fleet', 'Equipment & Vehicle Logistics'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">local_shipping</span><span>{{ getFeatureMenuTitle('bcp-equipment-fleet', 'Equipment Logistics') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-equipment-fleet') && !isFeatureActive('bcp-equipment-fleet')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-equipment-fleet')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-company-assets'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-company-assets')" (click)="onFeatureMenuClick('bcp-company-assets', getFeatureFullTitle('bcp-company-assets', 'IT & Fixed Asset Inventory Register'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">inventory_2</span><span>{{ getFeatureMenuTitle('bcp-company-assets', 'Asset Inventory') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-company-assets') && !isFeatureActive('bcp-company-assets')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-company-assets')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-project-tasks'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-project-tasks')" (click)="onFeatureMenuClick('bcp-project-tasks', getFeatureFullTitle('bcp-project-tasks', 'Project Kanban & Milestone Tracker'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">view_kanban</span><span>{{ getFeatureMenuTitle('bcp-project-tasks', 'Projects & Tasks') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-project-tasks') && !isFeatureActive('bcp-project-tasks')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-project-tasks')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-ai-smart-assist'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-ai-smart-assist')" (click)="onFeatureMenuClick('bcp-ai-smart-assist', getFeatureFullTitle('bcp-ai-smart-assist', 'AI Smart Assist & Workflows'), $event)">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">smart_toy</span>
+                <span>{{ getFeatureMenuTitle('bcp-ai-smart-assist', 'AI Smart Assist') }}</span>
+              </div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-ai-smart-assist') && !isFeatureActive('bcp-ai-smart-assist')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-ai-smart-assist')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item has-sub" [class.open]="isFeatureActive('bcp-mass-communication') && isMenuOpen('notifications')" *ngSwitchCase="'bcp-mass-communication'">
+            <a class="nav-link" href="javascript:void(0)" [class.active]="isFeatureActive('bcp-mass-communication') && isCurrentRoute('/users/console/notifications')" [class.feature-locked]="!isFeatureActive('bcp-mass-communication')" (click)="onFeatureMenuClick('bcp-mass-communication', getFeatureFullTitle('bcp-mass-communication', 'Mass Multi-Channel SMS & Email'), $event, 'notifications')">
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">campaign</span>
-                <span>{{ 'nav.notification_studio' | translate }}</span>
+                <span>{{ getFeatureMenuTitle('bcp-mass-communication', 'Notification Studio') }}</span>
               </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-mass-communication') && !isFeatureActive('bcp-mass-communication')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-mass-communication')">{{ 'badge.soon' | translate }}</span>
+              <span class="material-symbols-outlined arrow-icon" *ngIf="isFeatureActive('bcp-mass-communication')">chevron_right</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('notifications')">
+            <ul class="nav-submenu" *ngIf="isFeatureActive('bcp-mass-communication') && isMenuOpen('notifications')">
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/notifications" [class.active]="isCurrentRoute('/users/console/notifications')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>Broadcasts Dashboard</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">analytics</span>{{ 'adm.broadcasts_dashboard' | translate:'Broadcasts Dashboard' }}</span>
                   </a>
                   <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/console/notifications')" (click)="togglePin('Notification Studio', '/users/console/notifications', 'campaign')" [title]="isPinned('/users/console/notifications') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/console/notifications') ? 'keep_off' : 'push_pin' }}</span>
@@ -899,433 +867,182 @@ export interface SuiteInfoDetail {
               <li>
                 <div class="sub-nav-wrapper">
                   <a routerLink="/users/console/notifications" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">send</span>Compose Broadcast</span>
+                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">send</span>{{ 'adm.compose_broadcast' | translate:'Compose Broadcast' }}</span>
                   </a>
                 </div>
               </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">security</span>Anti-Spam Scanner</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Delivery Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
             </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('helpdesk')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('helpdesk')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">support_agent</span>
-                <span>{{ 'nav.helpdesk_support' | translate }}</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          <div class="nav-item" *ngSwitchCase="'bcp-helpdesk-support'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-helpdesk-support')" (click)="onFeatureMenuClick('bcp-helpdesk-support', getFeatureFullTitle('bcp-helpdesk-support', 'Helpdesk & Ticketing Support'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">support_agent</span><span>{{ getFeatureMenuTitle('bcp-helpdesk-support', 'Helpdesk Support') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-helpdesk-support') && !isFeatureActive('bcp-helpdesk-support')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-helpdesk-support')">{{ 'badge.soon' | translate }}</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('helpdesk')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Support Dashboard</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">confirmation_number</span>Manage Tickets</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">chat_bubble</span>Live Chat Widget Control</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Helpdesk & SLA Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">link</span><span>Bio Link-Tree Builder</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-
-          <!-- Suite 9: Forms & Intelligence -->
-          <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.forms_intelligence' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('forms_intelligence', $event)" title="Forms & Intelligence Overview">
-              <span class="material-symbols-outlined suite-info-icon">info</span>
-            </button>
-          </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('forms')">
-            <a class="nav-link" href="javascript:void(0)" [class.active]="isCurrentRoute('/content/console/forms')" (click)="toggleMenu('forms')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">dynamic_form</span>
-                <span>{{ 'nav.forms_surveys' | translate }}</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          <div class="nav-item" *ngSwitchCase="'bcp-live-chat'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-live-chat')" (click)="onFeatureMenuClick('bcp-live-chat', getFeatureFullTitle('bcp-live-chat', 'Live Chat & Widget Messenger'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">forum</span><span>{{ getFeatureMenuTitle('bcp-live-chat', 'Live Chat Widget') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-live-chat') && !isFeatureActive('bcp-live-chat')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-live-chat')">{{ 'badge.soon' | translate }}</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('forms')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/content/console/forms" [class.active]="isCurrentRoute('/content/console/forms')" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Forms Dashboard</span>
-                  </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/content/console/forms')" (click)="togglePin('Forms Dashboard', '/content/console/forms', 'dynamic_form')" [title]="isPinned('/content/console/forms') ? 'Unpin Task' : 'Pin Task'">
-                    <span class="material-symbols-outlined">{{ isPinned('/content/console/forms') ? 'keep_off' : 'push_pin' }}</span>
-                  </button>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <a routerLink="/content/console/forms" class="sub-nav-item">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">edit_note</span>Form Builder & Responses</span>
-                  </a>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">schema</span>Custom Field Schemas</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Form Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>Survey Analytics & Reports</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-
-          <!-- Suite 10: Academy & Training -->
-          <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.academy_training' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('academy_training', $event)" title="Academy & Training Overview">
-              <span class="material-symbols-outlined suite-info-icon">info</span>
-            </button>
-          </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('lms')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('lms')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">school</span>
-                <span>{{ 'nav.lms_training' | translate }}</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          <div class="nav-item" *ngSwitchCase="'bcp-social-media'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-social-media')" (click)="onFeatureMenuClick('bcp-social-media', getFeatureFullTitle('bcp-social-media', 'Social Media Publisher & Queue'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">share</span><span>{{ getFeatureMenuTitle('bcp-social-media', 'Social Publisher') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-social-media') && !isFeatureActive('bcp-social-media')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-social-media')">{{ 'badge.soon' | translate }}</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('lms')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>LMS Dashboard</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">menu_book</span>Manage Courses & Lessons</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">quiz</span>Quizzes & Assessment</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Course Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('certificates')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('certificates')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">verified</span>
-                <span>{{ 'nav.certificate_verification' | translate }}</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          <div class="nav-item" *ngSwitchCase="'bcp-bio-link'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-bio-link')" (click)="onFeatureMenuClick('bcp-bio-link', getFeatureFullTitle('bcp-bio-link', 'Bio Link Hub & Public Microsite'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">link</span><span>{{ getFeatureMenuTitle('bcp-bio-link', 'Bio Link Hub') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-bio-link') && !isFeatureActive('bcp-bio-link')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-bio-link')">{{ 'badge.soon' | translate }}</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('certificates')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">design_services</span>Certificate Designer</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history_edu</span>Issued Certificates</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">qr_code</span>Public QR Verification</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Credential Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-gocall-ai'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-gocall-ai')" (click)="onFeatureMenuClick('bcp-gocall-ai', getFeatureFullTitle('bcp-gocall-ai', 'Voice & Video Conferencing Rooms'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">video_call</span><span>{{ getFeatureMenuTitle('bcp-gocall-ai', 'Video Conferencing') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-gocall-ai') && !isFeatureActive('bcp-gocall-ai')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-gocall-ai')">{{ 'badge.soon' | translate }}</span>
+            </a>
           </div>
 
-          <!-- Suite 11: Compliance & Governance -->
-          <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.compliance_governance' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('compliance_governance', $event)" title="Compliance & Governance Overview">
-              <span class="material-symbols-outlined suite-info-icon">info</span>
-            </button>
-          </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('vault')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('vault')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">folder_zip</span>
-                <span>{{ 'nav.document_vault' | translate }}</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          <div class="nav-item" *ngSwitchCase="'bcp-document-management'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-document-management')" (click)="onFeatureMenuClick('bcp-document-management', getFeatureFullTitle('bcp-document-management', 'Document Vault & Revision Control'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">folder_zip</span><span>{{ getFeatureMenuTitle('bcp-document-management', 'Document Vault') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-document-management') && !isFeatureActive('bcp-document-management')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-document-management')">{{ 'badge.soon' | translate }}</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('vault')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">space_dashboard</span>Vault Overview</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">lock</span>Secure Documents & Folders</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Permissions & Retention</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('kyc')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('kyc')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">badge</span>
-                <span>{{ 'nav.kyc_verification' | translate }}</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          <div class="nav-item" *ngSwitchCase="'bcp-learning-management'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-learning-management')" (click)="onFeatureMenuClick('bcp-learning-management', getFeatureFullTitle('bcp-learning-management', 'Learning Management & Course LMS'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">school</span><span>{{ getFeatureMenuTitle('bcp-learning-management', 'LMS & Courses') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-learning-management') && !isFeatureActive('bcp-learning-management')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-learning-management')">{{ 'badge.soon' | translate }}</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('kyc')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pending_actions</span>Verification Queue</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Verification Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
           </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('visitor')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('visitor')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">door_front</span>
-                <span>Visitor & Gate Passes</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
+          <div class="nav-item" *ngSwitchCase="'bcp-certificate-verification'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-certificate-verification')" (click)="onFeatureMenuClick('bcp-certificate-verification', getFeatureFullTitle('bcp-certificate-verification', 'Certificate Issuance & Verification'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">verified</span><span>{{ getFeatureMenuTitle('bcp-certificate-verification', 'Certificates') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-certificate-verification') && !isFeatureActive('bcp-certificate-verification')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-certificate-verification')">{{ 'badge.soon' | translate }}</span>
             </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('visitor')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pin</span>Active Passes & Check-In</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Gate Pass Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
           </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-visitor-gate'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-visitor-gate')" (click)="onFeatureMenuClick('bcp-visitor-gate', getFeatureFullTitle('bcp-visitor-gate', 'Visitor & Gate Pass Management'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">door_front</span><span>{{ getFeatureMenuTitle('bcp-visitor-gate', 'Visitor Gate Passes') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-visitor-gate') && !isFeatureActive('bcp-visitor-gate')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-visitor-gate')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-kyc-verification'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-kyc-verification')" (click)="onFeatureMenuClick('bcp-kyc-verification', getFeatureFullTitle('bcp-kyc-verification', 'Identity KYC & Background Vetting'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>{{ getFeatureMenuTitle('bcp-kyc-verification', 'KYC Verification') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-kyc-verification') && !isFeatureActive('bcp-kyc-verification')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-kyc-verification')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-community-census'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-community-census')" (click)="onFeatureMenuClick('bcp-community-census', getFeatureFullTitle('bcp-community-census', 'Household & Community Census Registry'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">map</span><span>{{ getFeatureMenuTitle('bcp-community-census', 'Community Census') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-community-census') && !isFeatureActive('bcp-community-census')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-community-census')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-field-surveyor'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-field-surveyor')" (click)="onFeatureMenuClick('bcp-field-surveyor', getFeatureFullTitle('bcp-field-surveyor', 'Offline Field Enumeration App'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">explore</span><span>{{ getFeatureMenuTitle('bcp-field-surveyor', 'Field Surveyor') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-field-surveyor') && !isFeatureActive('bcp-field-surveyor')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-field-surveyor')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-resident-id-cards'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-resident-id-cards')" (click)="onFeatureMenuClick('bcp-resident-id-cards', getFeatureFullTitle('bcp-resident-id-cards', 'Digital & Printable Member ID Cards'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">badge</span><span>{{ getFeatureMenuTitle('bcp-resident-id-cards', 'Digital Member IDs') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-resident-id-cards') && !isFeatureActive('bcp-resident-id-cards')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-resident-id-cards')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-demographic-analytics'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-demographic-analytics')" (click)="onFeatureMenuClick('bcp-demographic-analytics', getFeatureFullTitle('bcp-demographic-analytics', 'Demographic & Population Intelligence'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>{{ getFeatureMenuTitle('bcp-demographic-analytics', 'Population Analytics') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-demographic-analytics') && !isFeatureActive('bcp-demographic-analytics')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-demographic-analytics')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-digital-memorials'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-digital-memorials')" (click)="onFeatureMenuClick('bcp-digital-memorials', getFeatureFullTitle('bcp-digital-memorials', 'Digital Memorials & Funeral Tributes'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">local_fire_department</span><span>{{ getFeatureMenuTitle('bcp-digital-memorials', 'Digital Memorials') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-digital-memorials') && !isFeatureActive('bcp-digital-memorials')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-digital-memorials')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-wedding-portals'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-wedding-portals')" (click)="onFeatureMenuClick('bcp-wedding-portals', getFeatureFullTitle('bcp-wedding-portals', 'Weddings & Celebration Portals'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">celebration</span><span>{{ getFeatureMenuTitle('bcp-wedding-portals', 'Wedding Portals') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-wedding-portals') && !isFeatureActive('bcp-wedding-portals')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-wedding-portals')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-digital-brochures'">
+            <a href="javascript:void(0)" class="nav-link" [class.feature-locked]="!isFeatureActive('bcp-digital-brochures')" (click)="onFeatureMenuClick('bcp-digital-brochures', getFeatureFullTitle('bcp-digital-brochures', 'Digital Brochures & Magazine Publishing'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">auto_stories</span><span>{{ getFeatureMenuTitle('bcp-digital-brochures', 'Digital Brochures') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-digital-brochures') && !isFeatureActive('bcp-digital-brochures')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-digital-brochures')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+          <div class="nav-item" *ngSwitchCase="'bcp-workspace'">
+            <a [routerLink]="isFeatureActive('bcp-workspace') ? '/workspace/stations' : null" href="javascript:void(0)" class="nav-link" [class.active]="isFeatureActive('bcp-workspace') && (isCurrentRoute('/workspace/stations') || isCurrentRoute('/admin/workspace/stations'))" [class.feature-locked]="!isFeatureActive('bcp-workspace')" (click)="onFeatureMenuClick('bcp-workspace', getFeatureFullTitle('bcp-workspace', 'Workspace (Desktop only)'), $event)">
+              <div class="nav-link-content"><span class="material-symbols-outlined">desktop_windows</span><span>{{ getFeatureMenuTitle('bcp-workspace', 'Workspace (Desktop only)') }}</span></div>
+              <span class="feature-lock-pill" *ngIf="isFeatureAvailable('bcp-workspace') && !isFeatureActive('bcp-workspace')"><span class="material-symbols-outlined">lock</span></span>
+              <span class="badge-pill badge-soon" *ngIf="!isFeatureAvailable('bcp-workspace')">{{ 'badge.soon' | translate }}</span>
+            </a>
+          </div>
+                </ng-container>
+              </ng-container>
+            </ng-container>
+          </ng-container>
 
-          <!-- Suite 12: Demographics & Census -->
-          <div class="menu-title suite-header-row">
-            <span class="suite-header-text">{{ 'suite.demographics_census' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('demographics_census', $event)" title="Demographics & Census Overview">
-              <span class="material-symbols-outlined suite-info-icon">info</span>
-            </button>
-          </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('census')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('census')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">map</span>
-                <span>{{ 'nav.community_census' | translate }}</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('census')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">pin_drop</span>Census Map & Heatmap</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">home</span>Household Units</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>Census Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </div>
-          <div class="nav-item has-sub" [class.open]="isMenuOpen('resident_id')">
-            <a class="nav-link" href="javascript:void(0)" (click)="toggleMenu('resident_id')">
-              <div class="nav-link-content">
-                <span class="material-symbols-outlined">badge</span>
-                <span>Digital Resident IDs</span>
-              </div>
-              <span class="material-symbols-outlined arrow-icon">chevron_right</span>
-            </a>
-            <ul class="nav-submenu" *ngIf="isMenuOpen('resident_id')">
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">contact_emergency</span>Manage Issued ID Cards</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">design_services</span>Card Template Designer</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-              <li>
-                <div class="sub-nav-wrapper">
-                  <span class="sub-nav-item disabled">
-                    <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">settings</span>ID Card Settings</span>
-                    <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-                  </span>
-                </div>
-              </li>
-            </ul>
-          </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">query_stats</span><span>Demographic Analytics</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-
-          <!-- Suite 13: Billing & Subscriptions (Platform Governance) -->
+          <!-- Suite 13: Billing & Subscriptions (Fixed System Menu at Bottom) -->
+          <ng-container *ngIf="canAccessSuite('billing_subscriptions')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.billing_subscriptions' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('billing_subscriptions', $event)" title="Billing & Subscriptions Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('billing_subscriptions', $event)" [title]="'adm.billing_subscriptions_overview' | translate:'Billing & Subscriptions Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">credit_card</span><span>Subscription Plans</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">account_balance_wallet</span><span>Payment Methods & Contacts</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">calculate</span><span>Usage Bill Calculator</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">extension</span><span>{{ 'nav.feature_billing' | translate }}</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
+          <div class="nav-item">
+            <a routerLink="/billing/features" [class.active]="isCurrentRoute('/billing/features') || isCurrentRoute('/billing/plans') || isCurrentRoute('/billing/console')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">extension</span>
+                <span>{{ 'adm.subscription_plans' | translate:'Features & Capabilities' }}</span>
+                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/features')" (click)="togglePin('Features & Capabilities', '/billing/features', 'extension'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/features') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/billing/features') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          <div class="nav-item">
+            <a routerLink="/billing/subscriptions" [class.active]="isCurrentRoute('/billing/subscriptions') || isCurrentRoute('/billing/invoices')" class="nav-link">
+              <div class="nav-link-content">
+                <span class="material-symbols-outlined">receipt_long</span>
+                <span>{{ 'adm.invoices_receipts' | translate:'Subscriptions & Invoices' }}</span>
+              </div>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/billing/subscriptions')" (click)="togglePin('Subscriptions & Invoices', '/billing/subscriptions', 'receipt_long'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/billing/subscriptions') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/billing/subscriptions') ? 'keep_off' : 'push_pin' }}</span>
+              </button>
+            </a>
+          </div>
+          </ng-container>
 
           <!-- Suite 14: Security & Audit (Platform Protection) -->
+          <ng-container *ngIf="canAccessSuite('security_audit')">
           <div class="menu-title suite-header-row">
             <span class="suite-header-text">{{ 'suite.security_audit' | translate }}</span>
-            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" title="Security & Audit Overview">
+            <button type="button" class="suite-info-trigger" (click)="openSuiteInfo('security_audit', $event)" [title]="'adm.security_audit_overview' | translate:'Security & Audit Overview'">
               <span class="material-symbols-outlined suite-info-icon">info</span>
             </button>
           </div>
@@ -1334,32 +1051,25 @@ export interface SuiteInfoDetail {
               <div class="nav-link-content">
                 <span class="material-symbols-outlined">security</span>
                 <span>{{ 'nav.security_audit' | translate }}</span>
-                <span class="badge-pill badge-hot">Live</span>
+                <span class="badge-pill badge-hot">{{ 'adm.live' | translate:'Live' }}</span>
               </div>
               <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/audit-logs')" (click)="togglePin('Security Logs', '/identity/console/audit-logs', 'security'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/audit-logs') ? 'Unpin Task' : 'Pin Task'">
                 <span class="material-symbols-outlined">{{ isPinned('/identity/console/audit-logs') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">manage_accounts</span><span>Login & Access History</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
-          <span class="nav-link disabled">
-            <span class="nav-link-content"><span class="material-symbols-outlined">devices</span><span>Active Sessions & Remote Kill</span></span>
-            <span class="badge-pill badge-soon">{{ 'badge.soon' | translate }}</span>
-          </span>
           <div class="nav-item">
-            <a routerLink="/identity/console/policies" [class.active]="isCurrentRoute('/identity/console/policies')" class="nav-link">
+            <a routerLink="/identity/console/error-codes" [class.active]="isCurrentRoute('/identity/console/error-codes')" class="nav-link">
               <div class="nav-link-content">
-                <span class="material-symbols-outlined">password</span>
-                <span>{{ 'nav.global_policies' | translate }}</span>
+                <span class="material-symbols-outlined">menu_book</span>
+                <span>{{ 'nav.error_codes' | translate:'Error Codes' }}</span>
               </div>
-              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/policies')" (click)="togglePin('Global Policies', '/identity/console/policies', 'password')" [title]="isPinned('/identity/console/policies') ? 'Unpin Task' : 'Pin Task'">
-                <span class="material-symbols-outlined">{{ isPinned('/identity/console/policies') ? 'keep_off' : 'push_pin' }}</span>
+              <button type="button" class="pin-btn" [class.pinned]="isPinned('/identity/console/error-codes')" (click)="togglePin('Error Codes', '/identity/console/error-codes', 'menu_book'); $event.preventDefault(); $event.stopPropagation();" [title]="isPinned('/identity/console/error-codes') ? 'Unpin Task' : 'Pin Task'">
+                <span class="material-symbols-outlined">{{ isPinned('/identity/console/error-codes') ? 'keep_off' : 'push_pin' }}</span>
               </button>
             </a>
           </div>
+          </ng-container>
         </ng-container>
 
         <!-- ============================================== -->
@@ -1433,7 +1143,7 @@ export interface SuiteInfoDetail {
                   <a routerLink="/users/workspace/account" [queryParams]="{ tab: 'activity' }" [class.active]="isCurrentRouteWithQuery('/users/workspace/account', 'activity')" class="sub-nav-item">
                     <span class="sub-nav-content"><span class="material-symbols-outlined sub-icon">history</span>{{ 'nav.login_history' | translate }}</span>
                   </a>
-                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=activity')" (click)="togglePin('Login History', '/users/workspace/account?tab=activity', 'history')" [title]="isPinned('/users/workspace/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
+                  <button type="button" class="pin-btn" [class.pinned]="isPinned('/users/workspace/account?tab=activity')" (click)="togglePin('Log Activity', '/users/workspace/account?tab=activity', 'history')" [title]="isPinned('/users/workspace/account?tab=activity') ? 'Unpin Task' : 'Pin Task'">
                     <span class="material-symbols-outlined">{{ isPinned('/users/workspace/account?tab=activity') ? 'keep_off' : 'push_pin' }}</span>
                   </button>
                 </div>
@@ -1453,9 +1163,9 @@ export interface SuiteInfoDetail {
           </div>
         </div>
         <div class="sidebar-footer-actions">
-          <a href="javascript:void(0)" (click)="showHelpModal = true" title="Help & Support">
+          <a href="javascript:void(0)" (click)="showHelpModal = true" [title]="'adm.help_support' | translate:'Help & Support'">
             <span class="material-symbols-outlined">help_outline</span>
-            <span>Help & Support</span>
+            <span>{{ 'adm.help_support' | translate:'Help & Support' }}</span>
           </a>
         </div>
       </div>
@@ -1469,19 +1179,66 @@ export interface SuiteInfoDetail {
           <a routerLink="/admin/dashboard" class="topbar-brand-logo" [title]="brandName" *ngIf="brandIconUrl">
             <img [src]="brandIconUrl" [alt]="brandName" class="topbar-brand-img">
           </a>
-          <button type="button" class="topbar-action-btn" id="toggle-sidebar" (click)="toggleSidebar()" title="Toggle Navigation">
+          <button type="button" class="topbar-action-btn" id="toggle-sidebar" (click)="toggleSidebar()" [title]="'adm.toggle_navigation' | translate:'Toggle Navigation'">
             <span class="material-symbols-outlined">menu</span>
           </button>
           <div class="topbar-search-box">
             <span class="material-symbols-outlined search-icon">search</span>
-            <input type="text" [placeholder]="'shell.search_placeholder' | translate" aria-label="Search">
+            <input type="text" [placeholder]="'shell.search_placeholder' | translate" [attr.aria-label]="'adm.search' | translate:'Search'">
           </div>
         </div>
 
         <div class="topbar-right">
+          <!-- Multi-Workspace Switcher Dropdown Trigger -->
+          <div class="workspace-switcher-wrapper" *ngIf="enrolledWorkspaces.length > 0">
+            <button type="button" class="topbar-action-btn workspace-badge-btn" (click)="toggleDropdown('workspaces', $event)" [title]="'Current: ' + (brandName || tenantKey) + ' (Switch Organization)'">
+              <span class="material-symbols-outlined">domain</span>
+              <span class="workspace-short-pill" *ngIf="enrolledWorkspaces.length > 1">{{ enrolledWorkspaces.length }}</span>
+            </button>
+            <div class="workspace-switch-dropdown" *ngIf="activeDropdown === 'workspaces'">
+              <div class="dropdown-header">
+                <span>{{ 'adm.switch_organization' | translate:'Switch Organization' }}</span>
+                <span class="badge-pill" style="background: #10b981;">{{ activeWorkspacesCount }} Active</span>
+              </div>
+              <div class="workspace-list">
+                <div 
+                  *ngFor="let ws of enrolledWorkspaces" 
+                  class="workspace-item" 
+                  [class.current]="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()"
+                  (click)="onSelectWorkspace(ws)"
+                >
+                  <div class="ws-item-avatar">
+                    <img *ngIf="ws.brandIconUrl || ws.brandLogoUrl" [src]="ws.brandIconUrl || ws.brandLogoUrl" class="ws-avatar-img" />
+                    <span *ngIf="!ws.brandIconUrl && !ws.brandLogoUrl" class="material-symbols-outlined">domain</span>
+                  </div>
+                  <div class="ws-item-info">
+                    <div class="ws-item-name">{{ ws.organizationName || ws.tenantKey }}</div>
+                    <div class="ws-item-sub">
+                      <span *ngIf="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()" class="ws-current-tag">{{ 'adm.current' | translate:'Current' }}</span>
+                      <span *ngIf="ws.tenantKey.toLowerCase() !== (tenantKey || '').toLowerCase() && ws.authToken" class="ws-active-tag">● Logged In</span>
+                      <span *ngIf="!ws.authToken" class="ws-signed-out-tag">{{ 'adm.signed_out' | translate:'Signed Out' }}</span>
+                      <span class="ws-item-email" *ngIf="ws.userEmail">&bull; {{ ws.userEmail }}</span>
+                    </div>
+                  </div>
+                  <div class="ws-item-action">
+                    <span class="material-symbols-outlined" *ngIf="ws.tenantKey.toLowerCase() === (tenantKey || '').toLowerCase()">check</span>
+                    <span class="material-symbols-outlined" *ngIf="ws.tenantKey.toLowerCase() !== (tenantKey || '').toLowerCase() && ws.authToken">swap_horiz</span>
+                    <span class="material-symbols-outlined" *ngIf="!ws.authToken">login</span>
+                  </div>
+                </div>
+              </div>
+              <div class="dropdown-footer" style="padding: 8px 12px; border-top: 1px solid var(--md-sys-color-outline); display: flex; justify-content: space-between; align-items: center;">
+                <a routerLink="/auth/login" (click)="closeDropdowns()" class="view-all-link" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #0050e5; text-decoration: none; font-weight: 600;">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">add_business</span>
+                  Connect Another Workspace
+                </a>
+              </div>
+            </div>
+          </div>
+
           <!-- Central Pattern Multi-Language Switcher Component -->
           <div class="oz-lang-switcher" id="ozLangSwitcher" (click)="$event.stopPropagation()">
-            <button type="button" class="oz-lang-btn" (click)="toggleDropdown('language', $event)" [attr.aria-expanded]="activeDropdown === 'language'" aria-label="Select Language" [title]="'Select Language (' + currentLangOption.name + ')'">
+            <button type="button" class="oz-lang-btn" (click)="toggleDropdown('language', $event)" [attr.aria-expanded]="activeDropdown === 'language'" [attr.aria-label]="'adm.select_language' | translate:'Select Language'" [title]="'Select Language (' + currentLangOption.name + ')'">
               <span class="oz-lang-flag">{{ currentLangOption.shortLabel }}</span>
               <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 1L5 5L9 1"/>
@@ -1498,55 +1255,55 @@ export interface SuiteInfoDetail {
 
           <!-- 12-App Grid Launcher -->
           <div class="apps-grid-wrapper">
-            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('apps', $event)" title="Apps Launcher">
+            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('apps', $event)" [title]="'adm.apps_launcher' | translate:'Apps Launcher'">
               <span class="material-symbols-outlined">grid_view</span>
             </button>
             <div class="apps-grid-dropdown" *ngIf="activeDropdown === 'apps'">
-              <div class="apps-grid-header">Workspace Apps & Features</div>
+              <div class="apps-grid-header">{{ 'adm.workspace_apps_features' | translate:'Workspace Apps & Features' }}</div>
               <div class="apps-grid-container">
                 <a routerLink="/admin/dashboard" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#0050e5"><span class="material-symbols-outlined">space_dashboard</span></div>
-                  <span>Console</span>
+                  <span>{{ 'adm.console' | translate:'Console' }}</span>
                 </a>
                 <a routerLink="/admin/content" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#1f6bff"><span class="material-symbols-outlined">dynamic_feed</span></div>
-                  <span>CMS Studio</span>
+                  <span>{{ 'adm.cms_studio' | translate:'CMS Studio' }}</span>
                 </a>
                 <a routerLink="/admin/users" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#22c55e"><span class="material-symbols-outlined">groups</span></div>
-                  <span>Users</span>
+                  <span>{{ 'adm.users' | translate:'Users' }}</span>
                 </a>
                 <a routerLink="/admin/identity" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#ef4444"><span class="material-symbols-outlined">admin_panel_settings</span></div>
-                  <span>Identity</span>
+                  <span>{{ 'adm.identity' | translate:'Identity' }}</span>
                 </a>
                 <a routerLink="/admin/groups" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#a855f7"><span class="material-symbols-outlined">forum</span></div>
-                  <span>Channels</span>
+                  <span>{{ 'adm.channels' | translate:'Channels' }}</span>
                 </a>
                 <a routerLink="/admin/settings" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#f59e0b"><span class="material-symbols-outlined">palette</span></div>
-                  <span>Brand</span>
+                  <span>{{ 'adm.brand' | translate:'Brand' }}</span>
                 </a>
                 <a routerLink="/" target="_blank" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#14b8a6"><span class="material-symbols-outlined">language</span></div>
-                  <span>Public Site</span>
+                  <span>{{ 'adm.public_site' | translate:'Public Site' }}</span>
                 </a>
                 <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#64748b"><span class="material-symbols-outlined">summarize</span></div>
-                  <span>Reports</span>
+                  <span>{{ 'adm.reports' | translate:'Reports' }}</span>
                 </a>
                 <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#3b82f6"><span class="material-symbols-outlined">edit_document</span></div>
-                  <span>Forms</span>
+                  <span>{{ 'adm.forms' | translate:'Forms' }}</span>
                 </a>
                 <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#ca8a04"><span class="material-symbols-outlined">payments</span></div>
-                  <span>Financials</span>
+                  <span>{{ 'adm.financials' | translate:'Financials' }}</span>
                 </a>
                 <a href="javascript:void(0)" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#8b5cf6"><span class="material-symbols-outlined">calendar_month</span></div>
-                  <span>Events</span>
+                  <span>{{ 'adm.events' | translate:'Events' }}</span>
                 </a>
                 <a routerLink="/admin/settings" (click)="closeDropdowns()" class="app-grid-item">
                   <div class="app-icon-bg" style="background:#0f172a"><span class="material-symbols-outlined">settings</span></div>
@@ -1558,7 +1315,7 @@ export interface SuiteInfoDetail {
 
           <!-- Calendar Popover -->
           <div class="calendar-wrapper">
-            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('calendar', $event)" title="Calendar">
+            <button type="button" class="topbar-action-btn" (click)="toggleDropdown('calendar', $event)" [title]="'adm.calendar' | translate:'Calendar'">
               <span class="material-symbols-outlined">calendar_today</span>
             </button>
             <div class="calendar-dropdown-menu" *ngIf="activeDropdown === 'calendar'">
@@ -1584,12 +1341,12 @@ export interface SuiteInfoDetail {
           </div>
 
           <!-- Help Trigger -->
-          <button type="button" class="topbar-action-btn" (click)="showHelpModal = true" title="Contextual Help">
+          <button type="button" class="topbar-action-btn" (click)="showHelpModal = true" [title]="'adm.contextual_help' | translate:'Contextual Help'">
             <span class="material-symbols-outlined">help_outline</span>
           </button>
 
           <!-- Fullscreen Toggle -->
-          <button type="button" class="topbar-action-btn" (click)="toggleFullscreen()" title="Toggle Fullscreen">
+          <button type="button" class="topbar-action-btn" (click)="toggleFullscreen()" [title]="'adm.toggle_fullscreen' | translate:'Toggle Fullscreen'">
             <span class="material-symbols-outlined">fullscreen</span>
           </button>
 
@@ -1600,18 +1357,18 @@ export interface SuiteInfoDetail {
 
           <!-- Notifications Bell -->
           <div class="notifications-wrapper">
-            <button type="button" class="topbar-action-btn notification-circle-btn" (click)="toggleDropdown('notifications', $event)" title="Notifications">
+            <button type="button" class="topbar-action-btn notification-circle-btn" (click)="toggleDropdown('notifications', $event)" [title]="'adm.notifications' | translate:'Notifications'">
               <span class="material-symbols-outlined">notifications</span>
               <sup class="notif-badge-sup" *ngIf="unreadNotifCount > 0">{{ unreadNotifCount > 9 ? '9+' : unreadNotifCount }}</sup>
             </button>
             <div class="notifications-dropdown" *ngIf="activeDropdown === 'notifications'">
               <div class="dropdown-header">
-                <span>System Notifications</span>
+                <span>{{ 'adm.system_notifications' | translate:'System Notifications' }}</span>
                 <div class="dropdown-hdr-actions">
-                  <button type="button" class="hdr-mini-btn" (click)="markAllNotificationsRead(); $event.stopPropagation();" title="Mark all as read" *ngIf="unreadNotifCount > 0">
+                  <button type="button" class="hdr-mini-btn" (click)="markAllNotificationsRead(); $event.stopPropagation();" [title]="'adm.mark_all_as_read' | translate:'Mark all as read'" *ngIf="unreadNotifCount > 0">
                     <span class="material-symbols-outlined">done_all</span>
                   </button>
-                  <button type="button" class="hdr-mini-btn danger" (click)="clearAllNotifications(); $event.stopPropagation();" title="Clear all">
+                  <button type="button" class="hdr-mini-btn danger" (click)="clearAllNotifications(); $event.stopPropagation();" [title]="'adm.clear_all' | translate:'Clear all'">
                     <span class="material-symbols-outlined">delete_sweep</span>
                   </button>
                 </div>
@@ -1624,13 +1381,13 @@ export interface SuiteInfoDetail {
                   <div class="notif-content">
                     <div class="notif-title">{{ notif.title }}</div>
                     <div class="notif-desc">{{ notif.message }}</div>
-                    <div class="notif-time">{{ notif.createdAt | date:'short' }}</div>
+                    <div class="notif-time">{{ formatTimeAgo(notif.createdAt) }}</div>
                   </div>
                   <span class="unread-dot" *ngIf="!notif.isRead"></span>
                 </div>
                 <div class="notification-empty" *ngIf="!notificationFeed?.length">
                   <span class="material-symbols-outlined empty-icon">notifications_off</span>
-                  <p>No notifications</p>
+                  <p>{{ 'adm.no_notifications' | translate:'No notifications' }}</p>
                 </div>
               </div>
               <div class="dropdown-footer">
@@ -1676,12 +1433,36 @@ export interface SuiteInfoDetail {
               </a>
               <a routerLink="/admin/settings" (click)="closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
                 <span class="material-symbols-outlined">settings</span>
-                <span>Workspace Settings</span>
+                <span>{{ 'adm.workspace_settings' | translate:'Workspace Settings' }}</span>
               </a>
               <a routerLink="/products/console/queues" (click)="closeDropdowns()" class="dropdown-item" *ngIf="isAdmin">
                 <span class="material-symbols-outlined">sync_alt</span>
-                <span>Queue Monitor</span>
+                <span>{{ 'adm.queue_monitor' | translate:'Queue Monitor' }}</span>
               </a>
+              <!-- Multi-Workspace Quick Switch in Profile Dropdown -->
+              <ng-container *ngIf="otherActiveWorkspaces.length > 0">
+                <div class="dropdown-divider"></div>
+                <div class="profile-dropdown-section-title" style="padding: 6px 16px 4px; font-size: 10px; font-weight: 700; color: var(--sidebar-header-color); letter-spacing: 0.5px; text-transform: uppercase;">
+                  Switch Workspace
+                </div>
+                <button 
+                  type="button" 
+                  *ngFor="let other of otherActiveWorkspaces" 
+                  (click)="onSelectWorkspace(other)"
+                  class="dropdown-item"
+                  style="display: flex; align-items: center; justify-content: space-between;"
+                >
+                  <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                    <span class="material-symbols-outlined" style="color: #0050e5; font-size: 18px;">domain</span>
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600;">
+                      {{ other.organizationName || other.tenantKey }}
+                    </span>
+                  </div>
+                  <span style="font-size: 9px; font-weight: 700; color: #10b981; background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 1px 5px; border-radius: 9999px;">
+                    Active
+                  </span>
+                </button>
+              </ng-container>
               <div class="dropdown-divider"></div>
               <button type="button" (click)="onLogout()" class="dropdown-item text-danger">
                 <span class="material-symbols-outlined">logout</span>
@@ -1692,17 +1473,44 @@ export interface SuiteInfoDetail {
         </div>
       </header>
 
-      <!-- Central Feature Expiration Notice Banner (Strictly visible to BCC Admins in Admin Console) -->
-      <div class="central-feature-expiration-banner" *ngIf="isAdmin && isConsoleActive && expiringFeatures.length > 0">
-        <div class="banner-content">
-          <span class="material-symbols-outlined banner-icon">warning</span>
-          <div class="banner-text">
-            <span class="banner-title">{{ 'billing.notice_title' | translate }}</span>
-            <span class="banner-desc">{{ getExpirationBannerText() }}</span>
+      <!-- Central Feature Expiration Notice Banner (Strictly visible to BCC Admins in Admin Console, re-shows every 24h after dismissal) -->
+      <div class="central-feature-expiration-banner" *ngIf="isAdmin && isConsoleActive && expiringFeatures.length > 0 && !isExpirationBannerDismissed" style="align-items: flex-start;">
+        <div class="banner-content" style="flex: 1; min-width: 0; align-items: flex-start;">
+          <span class="material-symbols-outlined banner-icon" style="margin-top: 2px;">warning</span>
+          <div class="banner-text" style="display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="banner-title" style="font-weight: 800;">{{ 'billing.notice_title' | translate:'Subscription & Free Trial Renewal Notice:' }}</span>
+              <span class=" banner-desc">{{ getExpirationBannerText() }}</span>
+              <span *ngIf="getTotalExpirationAmountDue() > 0" style="display: inline-flex; align-items: center; gap: 4px; background: rgba(180, 83, 9, 0.14); color: #78350f; border: 1px solid rgba(180, 83, 9, 0.3); padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 800;">
+                <span>{{ 'billing.total_due' | translate:'Total Amount to Pay:' }}</span>
+                <span>{{ getExpirationCurrencySymbol() }}{{ getTotalExpirationAmountDue() | number:'1.2-2' }}</span>
+              </span>
+            </div>
+
+            <!-- Consolidated Multi-Feature Itemized List (shown when 1 or more features are expiring within 30 days) -->
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px;">
+              <span *ngFor="let f of expiringFeatures; let idx = index"
+                    style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.78); border: 1px solid rgba(217, 119, 6, 0.35); border-radius: 6px; padding: 3px 9px; font-size: 11.5px; color: #78350f; font-weight: 600;">
+                <strong style="color: #451a03;">{{ idx + 1 }}. {{ (f.featureName || f.featureCode) | translate:(f.featureName || f.featureCode) }}</strong>
+                <span style="padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: 800; background: rgba(124, 58, 237, 0.12); color: #6d28d9;" *ngIf="f.isTrialPeriod">Free Trial</span>
+                <span style="color: #b45309; font-weight: 700;">
+                  ({{ (f.daysRemaining ?? 0) < 0 ? ((f.daysRemaining * -1) + 'd overdue') : ((f.daysRemaining ?? 0) === 0 ? 'Due today' : (f.daysRemaining + 'd left')) }})
+                </span>
+                <strong style="color: #0f172a;" *ngIf="(f.renewalPrice ?? 0) > 0">
+                  &bull; {{ f.currencySymbol || getExpirationCurrencySymbol() }}{{ (f.renewalPrice || 0) | number:'1.2-2' }}
+                </strong>
+              </span>
+            </div>
           </div>
         </div>
-        <div class="banner-actions">
-          <a routerLink="/settings/console" class="banner-btn">{{ 'billing.review_entitlements' | translate }}</a>
+        <div class="banner-actions" style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+          <a routerLink="/billing/subscriptions" class="banner-btn">{{ 'billing.review_entitlements' | translate:'Review & Pay Now' }}</a>
+          <button type="button"
+                  (click)="dismissExpirationBanner()"
+                  title="Close notice (will remind you again in 24 hours and remains in Notifications)"
+                  style="background: rgba(180, 83, 9, 0.12); border: 1px solid rgba(180, 83, 9, 0.28); color: #78350f; width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
+          </button>
         </div>
       </div>
 
@@ -1723,17 +1531,17 @@ export interface SuiteInfoDetail {
         <div class="modal-header">
           <div class="modal-title-group">
             <span class="material-symbols-outlined text-blue">help_outline</span>
-            <h3>BCP Contextual Help & Guide</h3>
+            <h3>{{ 'adm.bcp_contextual_help_guide' | translate:'BCP Contextual Help & Guide' }}</h3>
           </div>
           <button (click)="showHelpModal = false" class="btn-close">&times;</button>
         </div>
         <div class="modal-body">
-          <h4>Welcome to Ozikol BCP Multi-Tenant Workspace</h4>
-          <p>This system allows you to manage members, collaborative chat channels, dynamic database-driven website pages, and brand customizations.</p>
+          <h4>{{ 'adm.welcome_to_ozikol_bcp_multi_tenant_workspace' | translate:'Welcome to Ozikol BCP Multi-Tenant Workspace' }}</h4>
+          <p>{{ 'adm.this_system_allows_you_to_manage_members_col' | translate:'This system allows you to manage members, collaborative chat channels, dynamic database-driven website pages, and brand customizations.' }}</p>
           <ul>
-            <li><strong>Taskbar Tabs:</strong> As you navigate, pages stay open as browser-like tabs in the header for quick multitasking.</li>
-            <li><strong>Pin Navigation:</strong> Click the push-pin icon on any sidebar item to pin it to your personal favorites bar.</li>
-            <li><strong>Theme Engine:</strong> Toggle between the crisp Light Theme and Dark Mode at any time using the moon/sun icon in the topbar.</li>
+            <li><strong>{{ 'adm.taskbar_tabs' | translate:'Taskbar Tabs:' }}</strong> {{ 'adm.as_you_navigate_pages_stay_open_as_browser_l' | translate:'As you navigate, pages stay open as browser-like tabs in the header for quick multitasking.' }}</li>
+            <li><strong>{{ 'adm.pin_navigation' | translate:'Pin Navigation:' }}</strong> {{ 'adm.click_the_push_pin_icon_on_any_sidebar_item' | translate:'Click the push-pin icon on any sidebar item to pin it to your personal favorites bar.' }}</li>
+            <li><strong>{{ 'adm.theme_engine' | translate:'Theme Engine:' }}</strong> {{ 'adm.toggle_between_the_crisp_light_theme_and_dar' | translate:'Toggle between the crisp Light Theme and Dark Mode at any time using the moon/sun icon in the topbar.' }}</li>
           </ul>
         </div>
       </div>
@@ -1795,7 +1603,7 @@ export interface SuiteInfoDetail {
           </div>
         </div>
         <div class="modal-footer privileges-footer">
-          <button type="button" class="btn-primary" (click)="closePrivilegesModal()">Done</button>
+          <button type="button" class="btn-primary" (click)="closePrivilegesModal()">{{ 'adm.done' | translate:'Done' }}</button>
         </div>
       </div>
     </div>
@@ -1811,7 +1619,7 @@ export interface SuiteInfoDetail {
             <div class="suite-info-kicker">{{ activeSuiteInfo.badge }}</div>
             <h3 class="suite-info-title">{{ activeSuiteInfo.title }}</h3>
           </div>
-          <button (click)="closeSuiteInfoModal()" class="btn-close" aria-label="Close">&times;</button>
+          <button (click)="closeSuiteInfoModal()" class="btn-close" [attr.aria-label]="'adm.close' | translate:'Close'">&times;</button>
         </div>
 
         <div class="modal-body suite-info-modal-body" *ngIf="activeSuiteInfo">
@@ -1820,7 +1628,7 @@ export interface SuiteInfoDetail {
           <div class="suite-info-section">
             <div class="suite-info-section-title">
               <span class="material-symbols-outlined">group</span>
-              <span>Target Organizations & Users</span>
+              <span>{{ 'adm.target_organizations_users' | translate:'Target Organizations & Users' }}</span>
             </div>
             <div class="suite-info-target-box">
               {{ activeSuiteInfo.whoUsesIt }}
@@ -1830,7 +1638,7 @@ export interface SuiteInfoDetail {
           <div class="suite-info-section">
             <div class="suite-info-section-title">
               <span class="material-symbols-outlined">verified</span>
-              <span>Key Capabilities & Features Unlocked</span>
+              <span>{{ 'adm.key_capabilities_features_unlocked' | translate:'Key Capabilities & Features Unlocked' }}</span>
             </div>
             <ul class="suite-capabilities-list">
               <li *ngFor="let cap of activeSuiteInfo.capabilities">
@@ -1843,7 +1651,7 @@ export interface SuiteInfoDetail {
           <div class="suite-info-section" *ngIf="activeSuiteInfo.impact">
             <div class="suite-info-section-title">
               <span class="material-symbols-outlined">trending_up</span>
-              <span>Operational & Business Impact</span>
+              <span>{{ 'adm.operational_business_impact' | translate:'Operational & Business Impact' }}</span>
             </div>
             <div class="suite-info-impact-box">
               <span class="material-symbols-outlined impact-icon">lightbulb</span>
@@ -1853,7 +1661,7 @@ export interface SuiteInfoDetail {
         </div>
 
         <div class="modal-footer suite-info-modal-footer">
-          <button type="button" class="btn-secondary" (click)="closeSuiteInfoModal()">Dismiss</button>
+          <button type="button" class="btn-secondary" (click)="closeSuiteInfoModal()">{{ 'adm.dismiss' | translate:'Dismiss' }}</button>
         </div>
       </div>
     </div>
@@ -1864,8 +1672,84 @@ export interface SuiteInfoDetail {
       [brandName]="brandName"
       (completed)="onFirstRunCompleted($event)">
     </app-first-run-setup-modal>
+
+    <!-- Language Change Confirmation Modal -->
+    <div class="modal-backdrop oz-lang-modal-backdrop" *ngIf="showLanguageConfirmModal" (click)="cancelLanguageChange()">
+      <div class="oz-lang-modal-card" (click)="$event.stopPropagation()">
+        <div class="oz-lang-modal-icon-wrap">
+          <span class="material-symbols-outlined">translate</span>
+        </div>
+        <h3 class="oz-lang-modal-title">{{ 'shell.confirm_lang_title' | translate }}</h3>
+        <p class="oz-lang-modal-desc">{{ 'shell.confirm_lang_desc' | translate }}</p>
+
+        <div class="oz-lang-modal-target-pill" *ngIf="pendingLanguage">
+          <span class="oz-flag-lg">{{ pendingLanguage.flag }}</span>
+          <div class="oz-lang-modal-target-names">
+            <span class="oz-lang-modal-target-native">{{ pendingLanguage.nativeName }}</span>
+            <span class="oz-lang-modal-target-en">({{ pendingLanguage.name }})</span>
+          </div>
+        </div>
+
+        <div class="oz-lang-modal-actions">
+          <button type="button" class="btn-lang-modal-cancel" (click)="cancelLanguageChange()">
+            {{ 'btn.cancel' | translate }}
+          </button>
+          <button type="button" class="btn-lang-modal-confirm" (click)="confirmLanguageChange()">
+            <span class="material-symbols-outlined">check</span>
+            <span>{{ 'shell.confirm_lang_btn' | translate }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature Not Active / Coming Soon Modal -->
+    <div class="modal-backdrop oz-lang-modal-backdrop" *ngIf="showLockedFeatureModal" (click)="closeLockedFeatureModal()">
+      <div class="oz-lang-modal-card" (click)="$event.stopPropagation()">
+        <div class="oz-lang-modal-icon-wrap"
+             [style.background]="lockedFeatureIsAvailable ? 'rgba(0, 80, 229, 0.10)' : 'rgba(245, 158, 11, 0.12)'"
+             [style.color]="lockedFeatureIsAvailable ? '#0050E5' : '#d97706'">
+          <span class="material-symbols-outlined">{{ lockedFeatureIsAvailable ? 'lock' : 'schedule' }}</span>
+        </div>
+        <h3 class="oz-lang-modal-title">
+          {{ lockedFeatureTitle || 'Feature' }} &mdash; {{ lockedFeatureIsAvailable ? 'Not Active' : 'Coming Soon' }}
+        </h3>
+        <p class="oz-lang-modal-desc" *ngIf="lockedFeatureIsAvailable">
+          This modular capability is <strong>Available</strong> for your workspace, but is currently <strong>Not Active</strong> (Locked). Open the Feature Details page to review what it does, its suite, and install &amp; activate it in one click.
+        </p>
+        <p class="oz-lang-modal-desc" *ngIf="!lockedFeatureIsAvailable">
+          This modular capability is currently in <strong>Coming Soon</strong> status on our product roadmap. Open the Feature Details page to preview its suite, specification, and capabilities we are building for your workspace.
+        </p>
+        <div class="oz-lang-modal-actions" style="margin-top: 18px;">
+          <button type="button" class="btn-lang-modal-cancel" (click)="closeLockedFeatureModal()">
+            Dismiss
+          </button>
+          <button type="button" class="btn-lang-modal-confirm" (click)="goToActivateFeature()">
+            <span class="material-symbols-outlined">{{ lockedFeatureIsAvailable ? 'bolt' : 'visibility' }}</span>
+            <span>{{ lockedFeatureIsAvailable ? 'View Details & Install' : 'View Feature Details' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
   `,
   styles: [`
+    .feature-locked {
+      opacity: 0.78;
+    }
+    .feature-lock-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: rgba(100, 116, 139, 0.12);
+      color: #64748b;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .feature-lock-pill .material-symbols-outlined {
+      font-size: 14px !important;
+    }
     :host {
       display: flex;
       width: 100vw;
@@ -1971,8 +1855,123 @@ export interface SuiteInfoDetail {
     }
     .tab-close-btn:hover { color: var(--md-sys-color-error); }
 
-    .apps-grid-wrapper, .calendar-wrapper, .notifications-wrapper, .user-profile-wrapper {
+    .apps-grid-wrapper, .calendar-wrapper, .notifications-wrapper, .user-profile-wrapper, .workspace-switcher-wrapper {
       position: relative;
+    }
+    .workspace-badge-btn {
+      position: relative;
+    }
+    .workspace-short-pill {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: #0050e5;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      min-width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+      line-height: 1;
+    }
+    .workspace-switch-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 320px;
+      background: var(--md-sys-color-surface);
+      border: 1px solid var(--md-sys-color-outline);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      z-index: 1000;
+      overflow: hidden;
+    }
+    .workspace-list {
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 6px;
+    }
+    .workspace-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .workspace-item:hover {
+      background: var(--sidebar-hover-bg);
+    }
+    .workspace-item.current {
+      background: rgba(0, 80, 229, 0.08);
+    }
+    .ws-item-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid var(--md-sys-color-outline);
+    }
+    .ws-avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .ws-item-avatar span {
+      font-size: 18px;
+      color: #0050e5;
+    }
+    .ws-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .ws-item-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ws-item-sub {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      margin-top: 2px;
+    }
+    .ws-current-tag {
+      font-weight: 700;
+      color: #0050e5;
+    }
+    .ws-active-tag {
+      font-weight: 700;
+      color: #10b981;
+    }
+    .ws-signed-out-tag {
+      font-weight: 600;
+      color: #94a3b8;
+    }
+    .ws-item-email {
+      color: var(--sidebar-header-color);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 130px;
+    }
+    .ws-item-action span {
+      font-size: 18px;
+      color: var(--sidebar-header-color);
     }
     .apps-grid-dropdown {
       position: absolute;
@@ -2963,6 +2962,150 @@ export interface SuiteInfoDetail {
       cursor: pointer;
       transition: background 0.15s ease;
     }
+
+    /* Language Change Confirmation Modal */
+    .oz-lang-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 10005;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .oz-lang-modal-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      max-width: 440px;
+      width: 100%;
+      padding: 28px 24px 24px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    }
+    :host-context(.dark-mode) .oz-lang-modal-card {
+      background: #1e293b;
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+    .oz-lang-modal-icon-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(0, 80, 229, 0.1);
+      color: #0050e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .oz-lang-modal-icon-wrap .material-symbols-outlined {
+      font-size: 28px;
+    }
+    .oz-lang-modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 8px;
+    }
+    :host-context(.dark-mode) .oz-lang-modal-title {
+      color: #f8fafc;
+    }
+    .oz-lang-modal-desc {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #64748b;
+      margin: 0 0 20px;
+    }
+    :host-context(.dark-mode) .oz-lang-modal-desc {
+      color: #94a3b8;
+    }
+    .oz-lang-modal-target-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 18px;
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    :host-context(.dark-mode) .oz-lang-modal-target-pill {
+      background: #0f172a;
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+    .oz-flag-lg {
+      font-size: 24px;
+    }
+    .oz-lang-modal-target-names {
+      text-align: left;
+    }
+    .oz-lang-modal-target-native {
+      display: block;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    :host-context(.dark-mode) .oz-lang-modal-target-native {
+      color: #f8fafc;
+    }
+    .oz-lang-modal-target-en {
+      display: block;
+      font-size: 11.5px;
+      color: #64748b;
+    }
+    :host-context(.dark-mode) .oz-lang-modal-target-en {
+      color: #94a3b8;
+    }
+    .oz-lang-modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .btn-lang-modal-cancel {
+      flex: 1;
+      padding: 10px 16px;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    :host-context(.dark-mode) .btn-lang-modal-cancel {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+    }
+    .btn-lang-modal-cancel:hover {
+      background: #e2e8f0;
+      color: #1e293b;
+    }
+    .btn-lang-modal-confirm {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: #0050e5;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0, 80, 229, 0.25);
+    }
+    .btn-lang-modal-confirm:hover {
+      background: #003db3;
+    }
+    .btn-lang-modal-confirm .material-symbols-outlined {
+      font-size: 18px;
+    }
     .btn-secondary:hover {
       background: #cbd5e1;
     }
@@ -3289,7 +3432,36 @@ export class AdminLayoutComponent implements OnInit {
     this.activeSuiteInfo = null;
   }
 
-  brandName = localStorage.getItem('tenant_name') || 'Workspace';
+  brandName = this.resolveInitialBrandName();
+  currentPageTitle = 'Dashboard';
+
+  private resolveInitialBrandName(): string {
+    const saved = localStorage.getItem('tenant_name');
+    if (saved && !saved.toLowerCase().includes('ozikol')) {
+      return saved;
+    }
+    const host = window.location.hostname;
+    const parts = host.split('.');
+    if (parts.length >= 2 && parts[0] !== 'www' && parts[0] !== 'localhost' && !parts[0].toLowerCase().includes('ozikol')) {
+      return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+    }
+    return 'Workspace';
+  }
+
+  /**
+   * Central page title template synchronization: "<Page Title> | <Tenant BrandName>"
+   */
+  syncDocumentTitle(pageTitle?: string): void {
+    if (pageTitle && pageTitle !== 'Page') {
+      this.currentPageTitle = pageTitle;
+    }
+    const cleanBrand = (this.brandName && !this.brandName.toLowerCase().includes('ozikol'))
+      ? this.brandName
+      : this.resolveInitialBrandName();
+    document.title = this.currentPageTitle
+      ? `${this.currentPageTitle} | ${cleanBrand}`
+      : `${cleanBrand} | Workspace Portal`;
+  }
   brandAbbreviation = this.computeAbbreviation(localStorage.getItem('tenant_abbreviation') && localStorage.getItem('tenant_abbreviation') !== 'CC' ? localStorage.getItem('tenant_abbreviation')! : (localStorage.getItem('tenant_name') || 'Workspace'));
   brandLogoUrl = localStorage.getItem('tenant_logo') || '';
   brandIconUrl = localStorage.getItem('tenant_icon') || '';
@@ -3328,26 +3500,67 @@ export class AdminLayoutComponent implements OnInit {
 
   /**
    * Evaluates if the current authenticated user has permission to see and access a management suite.
+   * If the user is not SuperAdmin or Admin (or Global Editor), ONLY the suites matching their
+   * assigned role / feature scope (`BcpUserFeatureRoles`) are visible.
    * 
-   * @param suiteKey - Identifier of the suite ('user_management', 'identity', 'cms', 'settings', 'people_community')
+   * @param suiteKey - Identifier or category name of the suite
    * @returns True if the suite should be visible and accessible in the sidebar
    */
   canAccessSuite(suiteKey: string): boolean {
-    if (this.isGlobalAdmin) return true;
+    const cleanKey = (suiteKey || '').trim().toLowerCase().replace(/[\s\-_,&]/g, '');
 
-    switch (suiteKey) {
-      case 'user_management':
-        return hasUserRole('UserManager', this.userRoles) || hasUserRole('IdentityManager', this.userRoles);
+    if (this.isGlobalAdmin) {
+      return true;
+    }
+
+    if (cleanKey === 'settings' || cleanKey === 'billingsubscriptions') {
+      return false;
+    }
+
+    if (isGlobalEditor(this.userRoles)) {
+      return true;
+    }
+
+    switch (cleanKey) {
+      case 'usermanagement':
+        return hasFeatureScope('usermanager', this.userRoles);
       case 'identity':
-        return hasUserRole('IdentityManager', this.userRoles);
+      case 'securityaudit':
+      case 'compliancegovernance':
+      case 'compliancelearningcertification':
+      case 'academylearning':
+        return hasFeatureScope('identitymanager', this.userRoles);
       case 'cms':
-        return hasUserRole('CmsManager', this.userRoles);
-      case 'settings':
-        return this.isGlobalAdmin;
-      case 'people_community':
-        return hasUserRole('UserManager', this.userRoles) || hasUserRole('IdentityManager', this.userRoles);
+      case 'websitecms':
+      case 'lifeeventspublications':
+        return hasFeatureScope('contentmanager', this.userRoles);
+      case 'formsintelligence':
+      case 'reportsformsanalytics':
+        return hasFeatureScope('formsmanager', this.userRoles) ||
+               hasFeatureScope('contentmanager', this.userRoles);
+      case 'peoplecommunity':
+      case 'peoplecommunitycollaboration':
+      case 'workforceshifts':
+      case 'workforcerotascheduling':
+      case 'communicationsupport':
+      case 'communicationaisupport':
+      case 'operationsworkflows':
+        return hasFeatureScope('crmmanager', this.userRoles) ||
+               hasFeatureScope('usermanager', this.userRoles);
+      case 'eventsticketing':
+      case 'eventstrainingmanagement':
+        return hasFeatureScope('eventsmanager', this.userRoles);
+      case 'financebanking':
+      case 'financecommercialrevenue':
+      case 'commercestore':
+        return hasFeatureScope('storemanager', this.userRoles) ||
+               hasFeatureScope('billingmanager', this.userRoles);
+      case 'demographicscensus':
+      case 'demographicsciviccensus':
+        return hasFeatureScope('telemetrymanager', this.userRoles) ||
+               hasFeatureScope('usermanager', this.userRoles);
       default:
-        return true;
+        return hasFeatureScope(cleanKey, this.userRoles);
     }
   }
 
@@ -3428,6 +3641,7 @@ export class AdminLayoutComponent implements OnInit {
 
   currentConsoleMode: 'console' | 'workspace' = (localStorage.getItem('bcp_console_mode') as any) || 'console';
   expiringFeatures: any[] = [];
+  isExpirationBannerDismissed = false;
 
   get isConsoleActive(): boolean {
     return this.isAdmin && this.currentConsoleMode === 'console';
@@ -3453,12 +3667,68 @@ export class AdminLayoutComponent implements OnInit {
     this.setConsoleMode(next);
   }
 
+  private getExpirationBannerStorageKey(): string {
+    const tKey = (this.tenantKey || localStorage.getItem('tenant_key') || 'workspace').toLowerCase();
+    return `bcp_exp_banner_dismissed_${tKey}`;
+  }
+
+  private computeExpirationFingerprint(items: any[]): string {
+    if (!Array.isArray(items) || items.length === 0) return '';
+    return items
+      .map(f => `${f.featureCode || f.featureName}:${f.daysRemaining ?? 0}`)
+      .sort()
+      .join('|');
+  }
+
+  checkExpirationBannerDismissal(): void {
+    try {
+      const raw = localStorage.getItem(this.getExpirationBannerStorageKey());
+      if (!raw) {
+        this.isExpirationBannerDismissed = false;
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      const dismissedAt = Number(parsed?.dismissedAt || 0);
+      const savedFp = String(parsed?.fingerprint || '');
+      const currentFp = this.computeExpirationFingerprint(this.expiringFeatures);
+      const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+
+      // Re-show the banner if 24 hours have passed OR if the expiring feature list / remaining days changed
+      if (!dismissedAt || (Date.now() - dismissedAt) >= twentyFourHoursMs || (savedFp && savedFp !== currentFp)) {
+        this.isExpirationBannerDismissed = false;
+      } else {
+        this.isExpirationBannerDismissed = true;
+      }
+    } catch {
+      this.isExpirationBannerDismissed = false;
+    }
+  }
+
+  /**
+   * Dismisses the top-of-page expiration banner for 24 hours.
+   * Automatically re-displays after 24 hours if capabilities are still within 30 days of expiring.
+   */
+  dismissExpirationBanner(): void {
+    this.isExpirationBannerDismissed = true;
+    try {
+      localStorage.setItem(
+        this.getExpirationBannerStorageKey(),
+        JSON.stringify({
+          dismissedAt: Date.now(),
+          fingerprint: this.computeExpirationFingerprint(this.expiringFeatures)
+        })
+      );
+    } catch {}
+  }
+
   loadFeatureExpirations(): void {
-    if (!this.isAdmin) return;
+    if (!this.isGlobalAdmin) return;
     this.api.get<any>('SettingsApi/feature-expirations').subscribe({
       next: (res) => {
         if (res && res.isSuccess && Array.isArray(res.data)) {
           this.expiringFeatures = res.data;
+          this.checkExpirationBannerDismissal();
+          this.loadNotificationFeed();
         }
       },
       error: () => {
@@ -3467,14 +3737,38 @@ export class AdminLayoutComponent implements OnInit {
     });
   }
 
+  getTotalExpirationAmountDue(): number {
+    if (!this.expiringFeatures || this.expiringFeatures.length === 0) return 0;
+    return this.expiringFeatures.reduce((sum, f) => sum + (Number(f.renewalPrice) || 0), 0);
+  }
+
+  getExpirationCurrencySymbol(): string {
+    if (!this.expiringFeatures || this.expiringFeatures.length === 0) return '$';
+    const first = this.expiringFeatures.find(f => f.currencySymbol);
+    return first?.currencySymbol || '$';
+  }
+
   getExpirationBannerText(): string {
     if (!this.expiringFeatures || this.expiringFeatures.length === 0) return '';
-    const names = this.expiringFeatures.map(f => f.featureName || f.featureCode).join(', ');
+    const count = this.expiringFeatures.length;
     const minDays = Math.min(...this.expiringFeatures.map(f => f.daysRemaining ?? 0));
-    if (minDays <= 0) {
-      return `${names} capability subscription has expired. Renew immediately to restore full feature access.`;
+    if (count === 1) {
+      const f = this.expiringFeatures[0];
+      const name = f.featureName || f.featureCode;
+      const typeLabel = f.isTrialPeriod ? 'free trial' : 'capability subscription';
+      if (minDays < 0) {
+        return `${name} ${typeLabel} is ${Math.abs(minDays)} day${Math.abs(minDays) === 1 ? '' : 's'} overdue. Renew immediately to restore full feature access.`;
+      }
+      if (minDays === 0) {
+        return `${name} ${typeLabel} expires today. Renew immediately to maintain uninterrupted platform capabilities.`;
+      }
+      return `${name} ${typeLabel} expires in ${minDays} day${minDays === 1 ? '' : 's'}. Renew to maintain uninterrupted platform capabilities.`;
     }
-    return `${names} capability subscription expires in ${minDays} day${minDays === 1 ? '' : 's'}. Renew to maintain uninterrupted platform capabilities.`;
+
+    if (minDays <= 0) {
+      return `${count} workspace capabilities are expiring or overdue (within 30 days). Review the list below and complete renewal payment.`;
+    }
+    return `${count} workspace capabilities are expiring within 30 days (soonest in ${minDays} day${minDays === 1 ? '' : 's'}). Review the list below to renew.`;
   }
 
   showHelpModal = false;
@@ -3539,8 +3833,31 @@ export class AdminLayoutComponent implements OnInit {
     private toast: ToastService,
     private signalR: SignalRService,
     private aiAssistantService: AiAssistantContextService,
-    public translation: TranslationService
+    public translation: TranslationService,
+    private multiWorkspace: MultiWorkspaceService
   ) {}
+
+  /// <summary>
+  /// Gets all enrolled workspace sessions stored in the browser's persistent storage.
+  /// </summary>
+  public get enrolledWorkspaces(): EnrolledWorkspaceSession[] {
+    return this.multiWorkspace.getEnrolledWorkspaces();
+  }
+
+  /// <summary>
+  /// Gets other enrolled workspace sessions with active tokens excluding the currently active workspace.
+  /// </summary>
+  public get otherActiveWorkspaces(): EnrolledWorkspaceSession[] {
+    const cur = (this.tenantKey || localStorage.getItem('tenant_key') || '').toLowerCase();
+    return this.enrolledWorkspaces.filter(w => w.tenantKey.toLowerCase() !== cur && !!w.authToken);
+  }
+
+  /// <summary>
+  /// Gets total count of active authenticated workspaces.
+  /// </summary>
+  public get activeWorkspacesCount(): number {
+    return this.enrolledWorkspaces.filter(w => !!w.authToken).length;
+  }
 
   public get currentLang(): SupportedLanguage {
     return this.translation.currentLanguage;
@@ -3554,8 +3871,28 @@ export class AdminLayoutComponent implements OnInit {
     return this.translation.supportedLanguages;
   }
 
+  public pendingLanguage: LanguageOption | null = null;
+  public showLanguageConfirmModal = false;
+
   public selectLanguage(lang: SupportedLanguage): void {
-    this.translation.setLanguage(lang);
+    if (lang === this.currentLang) return;
+    const target = this.supportedLanguages.find(l => l.code === lang);
+    if (!target) return;
+    this.pendingLanguage = target;
+    this.showLanguageConfirmModal = true;
+  }
+
+  public confirmLanguageChange(): void {
+    if (this.pendingLanguage) {
+      this.translation.setLanguage(this.pendingLanguage.code);
+    }
+    this.showLanguageConfirmModal = false;
+    this.pendingLanguage = null;
+  }
+
+  public cancelLanguageChange(): void {
+    this.showLanguageConfirmModal = false;
+    this.pendingLanguage = null;
   }
 
   ngOnInit(): void {
@@ -3572,13 +3909,31 @@ export class AdminLayoutComponent implements OnInit {
       this.verifyAndRefreshSession();
     });
 
+    this.signalR.sessionRevoked$.subscribe((data: any) => {
+      console.log('[AdminLayout] Live real-time session revocation received via SignalR:', data);
+      const token = localStorage.getItem('access_token');
+      if (token && data?.terminatedJwtIds?.length) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const myJti = payload?.jti;
+          if (myJti && data.terminatedJwtIds.includes(myJti)) {
+            console.warn('[AdminLayout] Current session JTI was terminated remotely. Logging out immediately...');
+            this.toast.warning('Your session was terminated remotely from another device. Please sign in again.', 'Session Terminated');
+            localStorage.removeItem('access_token');
+            this.router.navigate(['/auth/login'], { queryParams: { sessionTerminated: 'true' } });
+            return;
+          }
+        } catch {}
+      }
+    });
+
     this.signalR.brandUpdated$.subscribe((data: any) => {
       console.log('[AdminLayout] Live real-time brand update received via SignalR -> Syncing brand...', data);
       if (data) {
         if (data.companyName) {
           this.brandName = data.companyName;
-          document.title = `${this.brandName} - Console`;
           localStorage.setItem('tenant_name', data.companyName);
+          this.syncDocumentTitle();
         }
         if (data.companyNameAbbreviation) {
           this.brandAbbreviation = data.companyNameAbbreviation;
@@ -3632,11 +3987,30 @@ export class AdminLayoutComponent implements OnInit {
     this.loadTenantInfo();
     this.loadNotificationFeed();
     this.loadSidebarForms();
+    this.loadActiveBillingFeatures();
     this.checkFirstRunSetupStatus();
 
     if (this.isAdmin) {
       this.loadFeatureExpirations();
     }
+
+    // Listen for real-time SignalR billing/feature updates from Central or tenant billing console
+    this.signalR.billingUpdated$.subscribe((incoming: any) => {
+      if (incoming && (incoming.included || incoming.subscribed || incoming.available)) {
+        this.applyBillingSnapshot(incoming);
+      } else {
+        this.loadActiveBillingFeatures();
+      }
+    });
+
+    // Listen for instant feature activation/deactivation from /billing/features
+    window.addEventListener('tenant_features_updated', (e: any) => {
+      if (e?.detail && (e.detail.included || e.detail.subscribed || e.detail.available)) {
+        this.applyBillingSnapshot(e.detail);
+      } else {
+        this.loadActiveBillingFeatures();
+      }
+    });
 
     // Listen for live brand settings updates from the Settings page
     window.addEventListener('brand_settings_updated', () => {
@@ -3659,6 +4033,631 @@ export class AdminLayoutComponent implements OnInit {
     window.addEventListener('forms_updated', () => {
       this.loadSidebarForms();
     });
+  }
+
+  /**
+   * Canonical list of all 46 published capability codes matching MasterCatalogDbContext and the sidebar template
+   * so the sidebar immediately renders all published features before the async billing snapshot response returns.
+   */
+  private static readonly DEFAULT_PUBLISHED_FEATURE_CODES: string[] = [
+    // Suite A: People, Community & Collaboration
+    'bcp-community-messenger', 'bcp-committees', 'bcp-alumni-directory', 'bcp-whistleblowing',
+    // Suite B: Workforce, Rota & Scheduling
+    'bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups',
+    // Suite C: Reports, Forms & Analytics
+    'bcp-interval-reporting', 'bcp-form-builder', 'bcp-survey-analytics', 'bcp-reference-forms',
+    // Suite D: Events & Training Management
+    'bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management',
+    // Suite E: Finance & Commercial Revenue
+    'bcp-invoicing-dues', 'bcp-store-ecommerce', 'bcp-proposal-pipeline', 'bcp-grant-ledger', 'bcp-embedded-banking',
+    // Suite F: Operations & Workflows
+    'bcp-recruitment-hiring', 'bcp-elections-evoting', 'bcp-equipment-fleet', 'bcp-company-assets', 'bcp-project-tasks',
+    // Suite G: Communication, AI & Support
+    'bcp-ai-smart-assist', 'bcp-mass-communication', 'bcp-helpdesk-support', 'bcp-live-chat', 'bcp-social-media', 'bcp-bio-link', 'bcp-gocall-ai',
+    // Suite H: Compliance, Learning & Certification
+    'bcp-document-management', 'bcp-learning-management', 'bcp-certificate-verification', 'bcp-visitor-gate', 'bcp-kyc-verification',
+    // Suite I: Demographics & Civic Census
+    'bcp-community-census', 'bcp-field-surveyor', 'bcp-resident-id-cards', 'bcp-demographic-analytics',
+    // Suite J: Life Events & Publications
+    'bcp-digital-memorials', 'bcp-wedding-portals', 'bcp-digital-brochures',
+    // Suite K: Workspace
+    'bcp-workspace'
+  ];
+
+  /**
+   * Baseline available capability codes before the first billing snapshot sync completes.
+   */
+  private static readonly DEFAULT_AVAILABLE_FEATURE_CODES: string[] = [];
+
+  /**
+   * Canonical short sidebar MenuTitle lookup by FeatureCode (matching MasterFeatureCatalogs.MenuTitle).
+   */
+  private static readonly DEFAULT_FEATURE_MENU_TITLES: Record<string, string> = {
+    'bcp-community-messenger': 'Chat Messenger',
+    'bcp-committees': 'Groups & Committees',
+    'bcp-alumni-directory': 'Alumni Network',
+    'bcp-whistleblowing': 'Whistleblowing',
+    'bcp-staff-rota': 'Staff & Volunteer Rota',
+    'bcp-shift-swaps': 'Shift Swaps & Leave',
+    'bcp-attendance-tracking': 'Attendance & Clock-In',
+    'bcp-appointment-booking': 'Appointment Booking',
+    'bcp-calendar-followups': 'Calendar & Follow-Ups',
+    'bcp-interval-reporting': 'Interval Reports',
+    'bcp-form-builder': 'Form Builder',
+    'bcp-survey-analytics': 'Surveys & Polls',
+    'bcp-reference-forms': 'Reference Forms',
+    'bcp-event-ticketing': 'Events & Ticketing',
+    'bcp-speaker-sessions': 'Speakers & Sessions',
+    'bcp-attendee-management': 'Attendee Check-In',
+    'bcp-invoicing-dues': 'Invoicing & Dues',
+    'bcp-store-ecommerce': 'Commerce Studio',
+    'bcp-proposal-pipeline': 'Proposals & Pipeline',
+    'bcp-grant-ledger': 'Grants & Donations',
+    'bcp-embedded-banking': 'Embedded Banking',
+    'bcp-recruitment-hiring': 'Recruitment & Hiring',
+    'bcp-elections-evoting': 'Elections & E-Voting',
+    'bcp-equipment-fleet': 'Equipment & Logistics',
+    'bcp-company-assets': 'Company Assets',
+    'bcp-project-tasks': 'Projects & Tasks',
+    'bcp-ai-smart-assist': 'AI Smart Assist',
+    'bcp-mass-communication': 'Broadcasts & Alerts',
+    'bcp-helpdesk-support': 'Helpdesk & Support',
+    'bcp-live-chat': 'Live Chat Widget',
+    'bcp-social-media': 'Social Publisher',
+    'bcp-bio-link': 'Bio Link Pages',
+    'bcp-gocall-ai': 'GoCall Video & Voice',
+    'bcp-document-management': 'Document Vault',
+    'bcp-learning-management': 'Courses & LMS',
+    'bcp-certificate-verification': 'Certificates & Badges',
+    'bcp-visitor-gate': 'Visitor & Gate Pass',
+    'bcp-kyc-verification': 'KYC & Verification',
+    'bcp-community-census': 'Community Census',
+    'bcp-field-surveyor': 'Field Surveyor App',
+    'bcp-resident-id-cards': 'Digital ID Cards',
+    'bcp-demographic-analytics': 'Demographic Analytics',
+    'bcp-digital-memorials': 'Digital Memorials',
+    'bcp-wedding-portals': 'Wedding & Celebrations',
+    'bcp-digital-brochures': 'Digital Brochures',
+    'bcp-workspace': 'Workspace (Desktop only)'
+  };
+
+  /**
+   * Canonical short sidebar section header MenuTitle lookup by Suite Full Name (matching MasterFeatureSuites.MenuTitle).
+   */
+  private static readonly DEFAULT_SUITE_MENU_TITLES: Record<string, string> = {
+    'People, Community & Collaboration': 'People & Community',
+    'Workforce, Rota & Scheduling': 'Workforce & Shifts',
+    'Reports, Forms & Analytics': 'Reports & Forms',
+    'Events & Training Management': 'Events & Ticketing',
+    'Finance & Commercial Revenue': 'Finance & Commerce',
+    'Operations & Workflows': 'Operations & Workflows',
+    'Communication, AI & Support': 'Communication & AI',
+    'Compliance, Learning & Certification': 'Compliance & Learning',
+    'Demographics & Civic Census': 'Demographics & Census',
+    'Life Events & Publications': 'Life Events & Media',
+    'Workspace': 'Workspace'
+  };
+
+  /**
+   * Dynamic map of FeatureCode -> concise Sidebar MenuTitle loaded from the Master Catalog billing snapshot.
+   */
+  featureMenuTitles: Record<string, string> = { ...AdminLayoutComponent.DEFAULT_FEATURE_MENU_TITLES };
+
+  /**
+   * Dynamic map of FeatureCode -> Full Feature Name loaded from the Master Catalog billing snapshot.
+   */
+  featureFullTitles: Record<string, string> = {};
+
+  /**
+   * Dynamic map of Suite Full Name -> concise Sidebar Section Header MenuTitle loaded from the Master Catalog billing snapshot.
+   */
+  suiteMenuTitles: Record<string, string> = { ...AdminLayoutComponent.DEFAULT_SUITE_MENU_TITLES };
+
+  /**
+   * Resolves the concise sidebar menu label for a modular capability so sidebar items never truncate with "...".
+   * @param featureCode Canonical feature code (e.g. 'bcp-community-messenger').
+   * @param fallback Fallback label if not yet loaded.
+   * @returns Concise sidebar menu label.
+   */
+  getFeatureMenuTitle(featureCode: string, fallback: string = ''): string {
+    if (!featureCode) return this.translation.translateDynamic(fallback);
+    const key = featureCode.toLowerCase();
+    const raw = this.featureMenuTitles[key] || AdminLayoutComponent.DEFAULT_FEATURE_MENU_TITLES[key] || fallback;
+    return this.translation.translateDynamic(raw);
+  }
+
+  /**
+   * Resolves the full descriptive title for a modular capability (used in the Locked/Coming Soon modal and Feature Details page).
+   * @param featureCode Canonical feature code (e.g. 'bcp-community-messenger').
+   * @param fallback Fallback full title if not yet loaded.
+   * @returns Full descriptive capability title.
+   */
+  getFeatureFullTitle(featureCode: string, fallback: string = ''): string {
+    if (!featureCode) return this.translation.translateDynamic(fallback);
+    const key = featureCode.toLowerCase();
+    const raw = this.featureFullTitles[key] || fallback;
+    return this.translation.translateDynamic(raw);
+  }
+
+  /**
+   * Resolves the concise uppercase sidebar section header label for a feature suite.
+   * @param suiteFullTitle Canonical suite full name (e.g. 'Suite A: People, Community & Collaboration').
+   * @param fallback Fallback uppercase suite header label.
+   * @returns Concise sidebar section header label.
+   */
+  getSuiteMenuTitle(suiteFullTitle: string, fallback: string = ''): string {
+    if (!suiteFullTitle) return this.translation.translateDynamic(fallback);
+    const raw = this.suiteMenuTitles[suiteFullTitle] || AdminLayoutComponent.DEFAULT_SUITE_MENU_TITLES[suiteFullTitle] || fallback;
+    return this.translation.translateDynamic(raw);
+  }
+
+  /**
+   * Set of lowercase FeatureCodes that are visible to the tenant (Published in Central).
+   */
+  visibleFeatureCodes: Set<string> = new Set<string>(
+    (() => {
+      try {
+        const raw = localStorage.getItem('bcp_visible_feature_codes_v4');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+        return AdminLayoutComponent.DEFAULT_PUBLISHED_FEATURE_CODES;
+      } catch {
+        return AdminLayoutComponent.DEFAULT_PUBLISHED_FEATURE_CODES;
+      }
+    })()
+  );
+
+  /**
+   * Set of lowercase FeatureCodes that are Available for use (either via general availability or custom tenant availability).
+   * Features not in this set are shown as "Coming Soon" in the sidebar.
+   */
+  availableFeatureCodes: Set<string> = new Set<string>(
+    (() => {
+      try {
+        const raw = localStorage.getItem('bcp_available_feature_codes_v4');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) return parsed;
+        }
+        return AdminLayoutComponent.DEFAULT_AVAILABLE_FEATURE_CODES;
+      } catch {
+        return AdminLayoutComponent.DEFAULT_AVAILABLE_FEATURE_CODES;
+      }
+    })()
+  );
+
+  /**
+   * Set of lowercase FeatureCodes that are currently installed and active for the tenant workspace.
+   */
+  activeFeatureCodes: Set<string> = new Set<string>(
+    (() => {
+      try {
+        const raw = localStorage.getItem('bcp_active_feature_codes');
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    })()
+  );
+
+  /**
+   * Canonical baseline sidebar suites and their default feature order before or alongside live snapshot sync.
+   */
+  private static readonly DEFAULT_SIDEBAR_SUITES: Array<{
+    categoryName: string;
+    defaultMenuTitle: string;
+    suiteAccessKey?: string;
+    infoKey?: string;
+    infoTitleKey?: string;
+    infoTitleFallback?: string;
+    suiteSortOrder: number;
+    featureCodes: string[];
+  }> = [
+    {
+      categoryName: 'People, Community & Collaboration',
+      defaultMenuTitle: 'People & Community',
+      suiteAccessKey: 'people_community',
+      infoKey: 'people_community',
+      infoTitleKey: 'adm.people_community_overview',
+      infoTitleFallback: 'People & Community Overview',
+      suiteSortOrder: 1,
+      featureCodes: ['bcp-community-messenger', 'bcp-committees', 'bcp-alumni-directory', 'bcp-whistleblowing']
+    },
+    {
+      categoryName: 'Workforce, Rota & Scheduling',
+      defaultMenuTitle: 'Workforce & Shifts',
+      infoKey: 'workforce_shifts',
+      infoTitleKey: 'adm.workforce_shifts_overview',
+      infoTitleFallback: 'Workforce & Shifts Overview',
+      suiteSortOrder: 2,
+      featureCodes: ['bcp-staff-rota', 'bcp-shift-swaps', 'bcp-attendance-tracking', 'bcp-appointment-booking', 'bcp-calendar-followups']
+    },
+    {
+      categoryName: 'Reports, Forms & Analytics',
+      defaultMenuTitle: 'Reports & Forms',
+      infoKey: 'forms_intelligence',
+      infoTitleKey: 'adm.forms_intelligence_overview',
+      infoTitleFallback: 'Forms & Intelligence Overview',
+      suiteSortOrder: 3,
+      featureCodes: ['bcp-interval-reporting', 'bcp-form-builder', 'bcp-survey-analytics', 'bcp-reference-forms']
+    },
+    {
+      categoryName: 'Events & Training Management',
+      defaultMenuTitle: 'Events & Ticketing',
+      infoKey: 'events_ticketing',
+      infoTitleKey: 'adm.events_ticketing_overview',
+      infoTitleFallback: 'Events & Ticketing Overview',
+      suiteSortOrder: 4,
+      featureCodes: ['bcp-event-ticketing', 'bcp-speaker-sessions', 'bcp-attendee-management']
+    },
+    {
+      categoryName: 'Finance & Commercial Revenue',
+      defaultMenuTitle: 'Finance & Commerce',
+      infoKey: 'finance_banking',
+      infoTitleKey: 'adm.finance_banking_overview',
+      infoTitleFallback: 'Finance & Banking Overview',
+      suiteSortOrder: 5,
+      featureCodes: ['bcp-invoicing-dues', 'bcp-store-ecommerce', 'bcp-proposal-pipeline', 'bcp-grant-ledger', 'bcp-embedded-banking']
+    },
+    {
+      categoryName: 'Operations & Workflows',
+      defaultMenuTitle: 'Operations & Workflows',
+      suiteSortOrder: 6,
+      featureCodes: ['bcp-recruitment-hiring', 'bcp-elections-evoting', 'bcp-equipment-fleet', 'bcp-company-assets', 'bcp-project-tasks']
+    },
+    {
+      categoryName: 'Communication, AI & Support',
+      defaultMenuTitle: 'Communication & AI',
+      infoKey: 'communication_support',
+      infoTitleKey: 'adm.communication_support_overview',
+      infoTitleFallback: 'Communication & Support Overview',
+      suiteSortOrder: 7,
+      featureCodes: ['bcp-ai-smart-assist', 'bcp-mass-communication', 'bcp-helpdesk-support', 'bcp-live-chat', 'bcp-social-media', 'bcp-bio-link', 'bcp-gocall-ai']
+    },
+    {
+      categoryName: 'Compliance, Learning & Certification',
+      defaultMenuTitle: 'Compliance & Learning',
+      infoKey: 'compliance_governance',
+      infoTitleKey: 'adm.compliance_governance_overview',
+      infoTitleFallback: 'Compliance & Governance Overview',
+      suiteSortOrder: 8,
+      featureCodes: ['bcp-document-management', 'bcp-learning-management', 'bcp-certificate-verification', 'bcp-visitor-gate', 'bcp-kyc-verification']
+    },
+    {
+      categoryName: 'Demographics & Civic Census',
+      defaultMenuTitle: 'Demographics & Census',
+      infoKey: 'demographics_census',
+      infoTitleKey: 'adm.demographics_census_overview',
+      infoTitleFallback: 'Demographics & Census Overview',
+      suiteSortOrder: 9,
+      featureCodes: ['bcp-community-census', 'bcp-field-surveyor', 'bcp-resident-id-cards', 'bcp-demographic-analytics']
+    },
+    {
+      categoryName: 'Life Events & Publications',
+      defaultMenuTitle: 'Life Events & Media',
+      suiteSortOrder: 10,
+      featureCodes: ['bcp-digital-memorials', 'bcp-wedding-portals', 'bcp-digital-brochures']
+    },
+    {
+      categoryName: 'Workspace',
+      defaultMenuTitle: 'Workspace',
+      suiteSortOrder: 11,
+      featureCodes: ['bcp-workspace']
+    }
+  ];
+
+  /**
+   * Dynamically ordered sidebar suites and feature codes respecting MasterFeatureSuites.SortOrder and MasterFeatureCatalogs.SortOrder.
+   */
+  orderedSidebarSuites: Array<{
+    categoryName: string;
+    defaultMenuTitle: string;
+    suiteAccessKey?: string;
+    infoKey?: string;
+    infoTitleKey?: string;
+    infoTitleFallback?: string;
+    suiteSortOrder: number;
+    featureCodes: string[];
+  }> = (() => {
+    try {
+      const raw = localStorage.getItem('bcp_ordered_sidebar_suites_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      return AdminLayoutComponent.DEFAULT_SIDEBAR_SUITES.map(s => ({ ...s, featureCodes: [...s.featureCodes] }));
+    } catch {
+      return AdminLayoutComponent.DEFAULT_SIDEBAR_SUITES.map(s => ({ ...s, featureCodes: [...s.featureCodes] }));
+    }
+  })();
+
+  /**
+   * Controls the "Feature Not Active / Coming Soon" modal when a user clicks a non-active capability in the sidebar.
+   */
+  showLockedFeatureModal = false;
+  lockedFeatureCode = '';
+  lockedFeatureTitle = '';
+  lockedFeatureIsAvailable = true;
+
+  /**
+   * Applies a BillingFeaturesSnapshot payload to update visibleFeatureCodes, availableFeatureCodes, activeFeatureCodes,
+   * dynamic sidebar MenuTitles, and dynamic Suite + Feature SortOrder strictly from Central Master DB.
+   * @param d BillingFeaturesSnapshot payload.
+   */
+  applyBillingSnapshot(d: any): void {
+    if (!d) return;
+    const all = [
+      ...(d.included || []),
+      ...(d.subscribed || []),
+      ...(d.available || [])
+    ];
+    const visible = new Set<string>();
+    const available = new Set<string>();
+    const active = new Set<string>();
+
+    const suiteMap = new Map<string, {
+      categoryName: string;
+      defaultMenuTitle: string;
+      suiteAccessKey?: string;
+      infoKey?: string;
+      infoTitleKey?: string;
+      infoTitleFallback?: string;
+      suiteSortOrder: number;
+      features: Array<{ code: string; sortOrder: number }>;
+    }>();
+
+    // Seed baseline metadata lookup
+    const defaultMetaByCat = new Map<string, typeof AdminLayoutComponent.DEFAULT_SIDEBAR_SUITES[0]>();
+    for (const def of AdminLayoutComponent.DEFAULT_SIDEBAR_SUITES) {
+      defaultMetaByCat.set(def.categoryName.toLowerCase(), def);
+    }
+
+    const dynamicTexts: string[] = [
+      ...Object.values(AdminLayoutComponent.DEFAULT_FEATURE_MENU_TITLES),
+      ...Object.values(AdminLayoutComponent.DEFAULT_SUITE_MENU_TITLES)
+    ];
+
+    for (const item of all) {
+      if (!item || !item.featureCode) continue;
+      const code = String(item.featureCode).toLowerCase();
+      if (item.menuTitle) {
+        this.featureMenuTitles[code] = String(item.menuTitle);
+        dynamicTexts.push(String(item.menuTitle));
+      }
+      if (item.name) {
+        this.featureFullTitles[code] = String(item.name);
+        dynamicTexts.push(String(item.name));
+      }
+      if (item.description) {
+        dynamicTexts.push(String(item.description));
+      }
+      const catName = String(item.category || 'Operations').trim();
+      if (catName) {
+        dynamicTexts.push(catName);
+      }
+      if (catName && item.suiteMenuTitle) {
+        this.suiteMenuTitles[catName] = String(item.suiteMenuTitle);
+        dynamicTexts.push(String(item.suiteMenuTitle));
+      }
+      if (item.isPublished === false) {
+        continue;
+      }
+      visible.add(code);
+      if (item.isAvailableForUse === true) {
+        available.add(code);
+      }
+      if (item.isActive && item.isAvailableForUse === true) {
+        active.add(code);
+      }
+
+      const catKey = catName.toLowerCase();
+      const defMeta = defaultMetaByCat.get(catKey);
+      const suiteOrder = (typeof item.suiteSortOrder === 'number' && item.suiteSortOrder > 0)
+        ? item.suiteSortOrder
+        : (defMeta?.suiteSortOrder ?? 99);
+      const featOrder = (typeof item.sortOrder === 'number' && item.sortOrder > 0)
+        ? item.sortOrder
+        : 999;
+
+      let group = suiteMap.get(catKey);
+      if (!group) {
+        group = {
+          categoryName: catName,
+          defaultMenuTitle: item.suiteMenuTitle || defMeta?.defaultMenuTitle || catName,
+          suiteAccessKey: defMeta?.suiteAccessKey,
+          infoKey: defMeta?.infoKey,
+          infoTitleKey: defMeta?.infoTitleKey,
+          infoTitleFallback: defMeta?.infoTitleFallback,
+          suiteSortOrder: suiteOrder,
+          features: []
+        };
+        suiteMap.set(catKey, group);
+      } else if (suiteOrder < group.suiteSortOrder) {
+        group.suiteSortOrder = suiteOrder;
+      }
+
+      if (!group.features.some(f => f.code === code)) {
+        group.features.push({ code, sortOrder: featOrder });
+      }
+    }
+
+    if (suiteMap.size > 0) {
+      const sortedSuites = Array.from(suiteMap.values())
+        .sort((a, b) => a.suiteSortOrder - b.suiteSortOrder)
+        .map(g => ({
+          categoryName: g.categoryName,
+          defaultMenuTitle: g.defaultMenuTitle,
+          suiteAccessKey: g.suiteAccessKey,
+          infoKey: g.infoKey,
+          infoTitleKey: g.infoTitleKey,
+          infoTitleFallback: g.infoTitleFallback,
+          suiteSortOrder: g.suiteSortOrder,
+          featureCodes: g.features
+            .sort((x, y) => x.sortOrder - y.sortOrder)
+            .map(x => x.code)
+        }));
+      this.orderedSidebarSuites = sortedSuites;
+      localStorage.setItem('bcp_ordered_sidebar_suites_v1', JSON.stringify(sortedSuites));
+    }
+
+    this.visibleFeatureCodes = visible;
+    this.availableFeatureCodes = available;
+    this.activeFeatureCodes = active;
+    localStorage.setItem('bcp_visible_feature_codes_v4', JSON.stringify(Array.from(visible)));
+    localStorage.setItem('bcp_available_feature_codes_v4', JSON.stringify(Array.from(available)));
+    localStorage.setItem('bcp_active_feature_codes', JSON.stringify(Array.from(active)));
+    if (Array.isArray(d.notices)) {
+      this.expiringFeatures = d.notices;
+      this.checkExpirationBannerDismissal();
+    }
+    this.translation.registerDynamicCatalogStrings(dynamicTexts);
+  }
+
+  /**
+   * Fetches the tenant's published features from the Master Catalog billing snapshot
+   * and updates sidebar visibility, availability, and lock states in real time.
+   */
+  loadActiveBillingFeatures(): void {
+    this.api.get<any>('billing/features').subscribe({
+      next: (res) => {
+        if (res && (res.success || res.isSuccess) && res.data) {
+          this.applyBillingSnapshot(res.data);
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  /**
+   * Checks whether a modular capability is visible to the tenant (Published in Central).
+   * @param featureCode Canonical feature code (e.g. 'bcp-committees').
+   * @returns True when the feature should appear in the sidebar.
+   */
+  isFeatureVisible(featureCode: string): boolean {
+    if (!featureCode) return false;
+    return this.visibleFeatureCodes.has(featureCode.toLowerCase());
+  }
+
+  /**
+   * Checks whether at least one of the specified modular capability codes is visible to the tenant.
+   * @param featureCodes Array of canonical feature codes belonging to the suite.
+   * @returns True when one or more features in the list are visible.
+   */
+  isAnyFeatureVisible(featureCodes: string[]): boolean {
+    if (!featureCodes || featureCodes.length === 0) return false;
+    return featureCodes.some(code => this.isFeatureVisible(code));
+  }
+
+  /**
+   * Checks whether a modular capability is Available for use (either via general Central release or custom tenant release).
+   * When false, the feature is displayed with a "SOON" badge in the sidebar.
+   * @param featureCode Canonical feature code (e.g. 'bcp-committees').
+   * @returns True when the feature is available to be installed and activated.
+   */
+  isFeatureAvailable(featureCode: string): boolean {
+    if (!featureCode) return false;
+    return this.availableFeatureCodes.has(featureCode.toLowerCase());
+  }
+
+  /**
+   * Checks whether at least one of the specified modular capability codes is Available for use.
+   * @param featureCodes Array of canonical feature codes belonging to the group.
+   * @returns True when one or more features in the list are available for use.
+   */
+  isAnyFeatureAvailable(featureCodes: string[]): boolean {
+    if (!featureCodes || featureCodes.length === 0) return false;
+    return featureCodes.some(code => this.isFeatureAvailable(code));
+  }
+
+  /**
+   * Checks whether a specific modular capability code is currently installed and active for the tenant.
+   * @param featureCode Canonical feature code (e.g. 'bcp-committees').
+   * @returns True when the feature is active for the tenant.
+   */
+  isFeatureActive(featureCode: string): boolean {
+    if (!featureCode) return false;
+    return this.activeFeatureCodes.has(featureCode.toLowerCase());
+  }
+
+  /**
+   * Checks whether at least one of the specified modular capability codes is installed and active.
+   * @param featureCodes Array of canonical feature codes belonging to the suite.
+   * @returns True when one or more features in the list are active.
+   */
+  isAnyFeatureActive(featureCodes: string[]): boolean {
+    if (!featureCodes || featureCodes.length === 0) return false;
+    return featureCodes.some(code => this.isFeatureActive(code));
+  }
+
+  /**
+   * Handles clicking a modular capability menu item in the sidebar.
+   * If the capability is Not Active or Coming Soon, prevents navigation and opens the modal.
+   * @param featureCode Canonical feature code.
+   * @param featureTitle Human-readable title of the capability.
+   * @param event DOM click event.
+   * @param menuKeyToToggle Optional submenu key to toggle when the capability is active.
+   */
+  onFeatureMenuClick(featureCode: string, featureTitle: string, event: Event, menuKeyToToggle?: string): void {
+    if (!this.isFeatureActive(featureCode)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.lockedFeatureCode = featureCode;
+      this.lockedFeatureTitle = featureTitle;
+      this.lockedFeatureIsAvailable = this.isFeatureAvailable(featureCode);
+      this.showLockedFeatureModal = true;
+      return;
+    }
+    if (menuKeyToToggle) {
+      this.toggleMenu(menuKeyToToggle);
+    }
+  }
+
+  /**
+   * Handles clicking a grouped parent submenu item in the sidebar.
+   * If none of the group's capabilities are active, opens the modal.
+   * @param featureCodes Array of canonical feature codes in the group.
+   * @param groupTitle Human-readable group title.
+   * @param event DOM click event.
+   * @param menuKeyToToggle Optional submenu key to toggle when at least one capability is active.
+   */
+  onFeatureGroupMenuClick(featureCodes: string[], groupTitle: string, event: Event, menuKeyToToggle?: string): void {
+    if (!this.isAnyFeatureActive(featureCodes)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.lockedFeatureCode = featureCodes[0] || '';
+      this.lockedFeatureTitle = groupTitle;
+      this.lockedFeatureIsAvailable = this.isAnyFeatureAvailable(featureCodes);
+      this.showLockedFeatureModal = true;
+      return;
+    }
+    if (menuKeyToToggle) {
+      this.toggleMenu(menuKeyToToggle);
+    }
+  }
+
+  /**
+   * Closes the "Feature Not Active / Coming Soon" modal.
+   */
+  closeLockedFeatureModal(): void {
+    this.showLockedFeatureModal = false;
+    this.lockedFeatureCode = '';
+    this.lockedFeatureTitle = '';
+  }
+
+  /**
+   * Navigates the administrator to the dedicated Feature Details view on /billing/features?feature=<code >
+   * to inspect what the feature does, its suite, description, and install button.
+   */
+  goToActivateFeature(): void {
+    const code = this.lockedFeatureCode;
+    this.closeLockedFeatureModal();
+    if (code) {
+      this.router.navigate(['/billing/features'], { queryParams: { feature: code } });
+    } else {
+      this.router.navigate(['/billing/features']);
+    }
   }
 
   loadSidebarForms(): void {
@@ -3703,13 +4702,37 @@ export class AdminLayoutComponent implements OnInit {
             localStorage.setItem('user_email', freshData.email);
           }
 
-          // If user was demoted and is no longer an administrator
-          if (freshData.isAdmin) {
+          // Persist and keep active workspace session in sync for seamless multi-workspace switching
+          this.multiWorkspace.saveSession({
+            tenantKey: this.tenantKey || localStorage.getItem('tenant_key') || '',
+            token: freshData.token || token,
+            fullName: freshData.fullName || this.userFullName,
+            email: freshData.email || this.userEmail,
+            roles: freshData.roles,
+            organizationName: this.brandName,
+            brandLogoUrl: this.brandLogoUrl,
+            brandIconUrl: this.brandIconUrl
+          });
+
+          // If user is a global administrator, load administrative feature expirations
+          if (this.isGlobalAdmin) {
             this.loadFeatureExpirations();
-          } else {
-            console.warn('[AdminLayout] User is no longer an Administrator. Evicting from admin dashboard...');
-            this.toast.error('Your administrator permissions have been updated. Redirecting...', 'Access Revoked');
-            this.router.navigate(['/portal']);
+          }
+
+          // Only redirect to personal workspace if the user has NO console-level roles at all (Member only)
+          if (!canAccessConsole(freshData.roles || this.userRoles)) {
+            const activeUrl = this.router.url || this.currentRoute || '';
+            const isWorkspaceRoute = activeUrl.includes('/workspace');
+            const isOnAdminRoute = !isWorkspaceRoute && (
+              activeUrl.startsWith('/dashboard/console') ||
+              activeUrl.includes('/console') ||
+              activeUrl.startsWith('/admin')
+            );
+
+            if (isOnAdminRoute) {
+              console.warn('[AdminLayout] Member-only user on console route -> Redirecting to workspace:', activeUrl);
+              this.router.navigate(['/dashboard/workspace']);
+            }
           }
         }
       },
@@ -3815,11 +4838,11 @@ export class AdminLayoutComponent implements OnInit {
       next: (res) => {
         if (res?.data) {
           const name = res.data.companyName || this.brandName;
-          if (res.data.companyName) {
+          if (res.data.companyName && !res.data.companyName.toLowerCase().includes('ozikol')) {
             this.brandName = res.data.companyName;
             localStorage.setItem('tenant_name', res.data.companyName);
-            document.title = `${this.brandName} - Console`;
           }
+          this.syncDocumentTitle();
           if (res.data.companyNameAbbreviation && res.data.companyNameAbbreviation !== 'CC') {
             this.brandAbbreviation = res.data.companyNameAbbreviation;
             localStorage.setItem('tenant_abbreviation', res.data.companyNameAbbreviation);
@@ -4042,6 +5065,7 @@ export class AdminLayoutComponent implements OnInit {
     let tabIcon = 'description';
 
     if (url.includes('/dashboard/mxmails') || url.includes('/admin/mxmails') || url.includes('/mxmails')) { tabTitle = 'MX Email Logs'; tabIcon = 'mark_email_read'; }
+    else if (url.includes('/dashboard/mxsms') || url.includes('/admin/mxsms') || url.includes('/mxsms')) { tabTitle = 'MX SMS Logs'; tabIcon = 'sms'; }
     else if (url.includes('/users/console/notifications')) { tabTitle = 'Notification Studio'; tabIcon = 'campaign'; }
     else if (url.includes('/users/workspace/notifications')) { tabTitle = 'Notifications'; tabIcon = 'notifications'; }
     else if (url.includes('/dashboard/workspace')) { tabTitle = 'Workspace Home'; tabIcon = 'space_dashboard'; }
@@ -4063,7 +5087,13 @@ export class AdminLayoutComponent implements OnInit {
     else if (url.includes('/users/workspace/profile/biography')) { tabTitle = 'My CV Biography'; tabIcon = 'assignment_ind'; }
     else if (url.includes('/users/workspace/profile')) { tabTitle = 'My Account'; tabIcon = 'account_circle'; }
     else if (url.includes('/groups')) { tabTitle = 'Group Channels'; tabIcon = 'diversity_3'; }
+    else if (url.includes('/billing/features') || url.includes('/billing/plans') || url.includes('/billing/console')) { tabTitle = 'Features & Capabilities'; tabIcon = 'extension'; }
+    else if (url.includes('/billing/paymentmethod') || url.includes('/billing/payment-methods')) { tabTitle = 'Payment Methods'; tabIcon = 'account_balance_wallet'; }
+    else if (url.includes('/billing/subscriptions') || url.includes('/billing/invoices')) { tabTitle = 'Subscriptions & Invoices'; tabIcon = 'receipt_long'; }
+    else if (url.includes('/workspace/stations')) { tabTitle = 'Workstations & Gatekeeper'; tabIcon = 'desktop_windows'; }
     else if (url.includes('/settings')) { tabTitle = 'Brand Settings'; tabIcon = 'palette'; }
+
+    this.syncDocumentTitle(tabTitle !== 'Page' ? tabTitle : 'Workspace');
 
     const exists = this.openTabs.some(t => t.url === url);
     if (!exists) {
@@ -4148,9 +5178,55 @@ export class AdminLayoutComponent implements OnInit {
     return 'notif-icon-blue';
   }
 
+  formatTimeAgo(dateStr: any): string {
+    if (!dateStr) return '';
+    const dt = new Date(dateStr);
+    if (isNaN(dt.getTime())) return '';
+    const now = new Date();
+    const diffMs = now.getTime() - dt.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHours = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSec < 45 || diffMs < 0) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return '1d ago';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    const day = dt.getDate().toString().padStart(2, '0');
+    const month = (dt.getMonth() + 1).toString().padStart(2, '0');
+    return `${day}/${month}`;
+  }
+
+  /// <summary>
+  /// Signs out of the current active workspace while preserving its enrollment configuration.
+  /// </summary>
   onLogout(): void {
-    localStorage.removeItem('access_token');
-    this.router.navigate(['/auth/login']);
+    const current = this.tenantKey || localStorage.getItem('tenant_key') || '';
+    if (current) {
+      this.multiWorkspace.signOutWorkspace(current);
+    } else {
+      localStorage.removeItem('access_token');
+      this.router.navigate(['/auth/login']);
+    }
+  }
+
+  /// <summary>
+  /// Switches active workspace context to target enrolled session without asking for credentials if already authenticated.
+  /// </summary>
+  /// <param name="session">Target enrolled workspace session</param>
+  onSelectWorkspace(session: EnrolledWorkspaceSession): void {
+    this.closeDropdowns();
+    const current = (this.tenantKey || localStorage.getItem('tenant_key') || '').toLowerCase();
+    if (session.tenantKey.toLowerCase() === current) {
+      return;
+    }
+    if (session.authToken) {
+      this.multiWorkspace.switchWorkspace(session.tenantKey);
+    } else {
+      this.router.navigate(['/auth/login'], { queryParams: { tenant: session.tenantKey } });
+    }
   }
 
   /**

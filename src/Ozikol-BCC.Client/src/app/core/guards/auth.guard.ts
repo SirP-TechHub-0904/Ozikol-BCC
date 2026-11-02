@@ -61,8 +61,12 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot, state: R
     }
   }
 
-  // Evaluate role permissions for this specific route
-  const requiredRoles = route.data?.['roles'] as string[] | undefined;
+  // Evaluate role permissions for this specific route (resolving deepest child route data when triggered on parent shell)
+  let deepestRoute: ActivatedRouteSnapshot = route;
+  while (deepestRoute.firstChild) {
+    deepestRoute = deepestRoute.firstChild;
+  }
+  const requiredRoles = (deepestRoute.data?.['roles'] ?? route.data?.['roles']) as string[] | undefined;
   const isAuthorized = canAccessRoute(requiredRoles, state.url, userRoles);
 
   if (!isAuthorized) {

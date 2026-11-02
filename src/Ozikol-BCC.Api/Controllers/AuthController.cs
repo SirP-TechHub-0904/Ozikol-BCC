@@ -17,6 +17,8 @@ using Microsoft.IdentityModel.Tokens;
 using Ozikol_BCC.Api.Models;
 using Ozikol.MasterDomain.Models;
 using Ozikol.MasterPersistence.EF.MasterSQL;
+using Ozikol_BCC.Application.Common;
+using Ozikol_BCC.Application.Interfaces.Services;
 using Ozikol_BCC.Domain.Models;
 using Ozikol_BCC.Infrastructure.Services.Recaptcha;
 using Ozikol_BCC.Infrastructure.TenantSupport;
@@ -44,6 +46,7 @@ namespace Ozikol_BCC.Api.Controllers
         private readonly IServiceScopeFactory? _serviceScopeFactory;
         private readonly IRecaptchaService? _recaptchaService;
         private readonly ITenantFeatureGateService? _featureGateService;
+        private readonly ICentralNotificationDispatcher? _notificationDispatcher;
 
         public AuthController(
             IMediator mediator,
@@ -58,7 +61,8 @@ namespace Ozikol_BCC.Api.Controllers
             Ozikol_BCC.Application.Services.IOtpVerificationService? otpService = null,
             IServiceScopeFactory? serviceScopeFactory = null,
             IRecaptchaService? recaptchaService = null,
-            ITenantFeatureGateService? featureGateService = null)
+            ITenantFeatureGateService? featureGateService = null,
+            ICentralNotificationDispatcher? notificationDispatcher = null)
         {
             _mediator = mediator;
             _userManager = userManager;
@@ -73,13 +77,18 @@ namespace Ozikol_BCC.Api.Controllers
             _serviceScopeFactory = serviceScopeFactory;
             _recaptchaService = recaptchaService;
             _featureGateService = featureGateService;
+            _notificationDispatcher = notificationDispatcher;
         }
 
         private static EffectiveUserPermissionsDto ComputeEffectivePermissions(List<string> roles)
         {
             var isSuperAdmin = roles.Any(r => string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase));
             var isAdmin = isSuperAdmin || roles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase));
-            var hasGlobalEdit = isSuperAdmin || isAdmin || roles.Any(r => string.Equals(r, "GlobalEdit", StringComparison.OrdinalIgnoreCase) || string.Equals(r, "Global Edit", StringComparison.OrdinalIgnoreCase));
+            var hasGlobalEdit = isSuperAdmin || isAdmin || roles.Any(r =>
+                string.Equals(r, "GlobalEditor", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r, "Global Editor", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r, "GlobalEdit", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(r, "Global Edit", StringComparison.OrdinalIgnoreCase));
 
             var features = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
@@ -121,7 +130,16 @@ namespace Ozikol_BCC.Api.Controllers
                 }
             }
 
-            var canAccessAdminConsole = isSuperAdmin || isAdmin || hasGlobalEdit || features.Count > 0 || roles.Any(r => new[] { "IdentityManager", "CmsManager", "Editor" }.Contains(r, StringComparer.OrdinalIgnoreCase));
+            var canAccessAdminConsole = isSuperAdmin || isAdmin || hasGlobalEdit || features.Count > 0 || roles.Any(r => new[]
+            {
+                "IdentityManager", "Identity Manager",
+                "UserManager", "User Manager",
+                "CmsManager", "ContentManager", "CommerceManager",
+                "GlobalEditor", "Global Editor",
+                "FeatureEditor", "Feature Editor",
+                "ReadOnly", "Read Only",
+                "Editor"
+            }.Contains(r, StringComparer.OrdinalIgnoreCase));
 
             return new EffectiveUserPermissionsDto
             {
@@ -436,26 +454,51 @@ namespace Ozikol_BCC.Api.Controllers
                     .OrderBy(d => d.LastUsedAt)
                     .ToListAsync();
 
-                if (activeSessions.Count >= 3)
-                {
-                    // terminate oldest
-                    activeSessions[0].IsActiveSession = false;
-                }
+                var targetIp = ipAddress ?? "127.0.0.1";
+                var parsedCaller = UserAgentParser.Parse(userAgent);
 
-                // Add current session
-                activeDbContext.BcpUserDevices.Add(new BcpUserDevice
+                // Match existing session by exact userAgent or parsed device title
+                var existingDevice = activeSessions.FirstOrDefault(d =>
+                    (d.DeviceName == userAgent || UserAgentParser.Parse(d.DeviceName).FriendlyDeviceTitle == parsedCaller.FriendlyDeviceTitle)
+                    && (d.IpAddress == targetIp || d.IpAddress == "127.0.0.1" || targetIp == "127.0.0.1" || d.IpAddress == "::1" || targetIp == "::1"));
+
+                if (existingDevice != null)
                 {
-                    Id = Guid.CreateVersion7(),
-                    UserId = user.Id,
-                    DeviceName = userAgent,
-                    IpAddress = ipAddress ?? "127.0.0.1",
-                    TrustToken = Guid.NewGuid().ToString("N"),
-                    JwtId = jwtId,
-                    IsTrusted = skipMfa, // trusted if bypassed
-                    CreatedAt = DateTime.UtcNow,
-                    LastUsedAt = DateTime.UtcNow,
-                    IsActiveSession = true
-                });
+                    existingDevice.JwtId = jwtId;
+                    existingDevice.LastUsedAt = DateTime.UtcNow;
+                    existingDevice.IsTrusted = existingDevice.IsTrusted || skipMfa;
+
+                    // Clean up any stale duplicate active records for this device
+                    var staleDuplicates = activeSessions
+                        .Where(d => d.Id != existingDevice.Id && UserAgentParser.Parse(d.DeviceName).FriendlyDeviceTitle == parsedCaller.FriendlyDeviceTitle);
+                    foreach (var dup in staleDuplicates)
+                    {
+                        dup.IsActiveSession = false;
+                    }
+                }
+                else
+                {
+                    if (activeSessions.Count >= 3)
+                    {
+                        // Terminate oldest
+                        activeSessions[0].IsActiveSession = false;
+                    }
+
+                    // Add current session
+                    activeDbContext.BcpUserDevices.Add(new BcpUserDevice
+                    {
+                        Id = Guid.CreateVersion7(),
+                        UserId = user.Id,
+                        DeviceName = userAgent,
+                        IpAddress = targetIp,
+                        TrustToken = Guid.NewGuid().ToString("N"),
+                        JwtId = jwtId,
+                        IsTrusted = skipMfa, // trusted if bypassed
+                        CreatedAt = DateTime.UtcNow,
+                        LastUsedAt = DateTime.UtcNow,
+                        IsActiveSession = true
+                    });
+                }
 
                 activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                 {
@@ -464,7 +507,7 @@ namespace Ozikol_BCC.Api.Controllers
                     Email = user.Email!,
                     IpAddress = ipAddress,
                     SystemId = systemId,
-                    Status = "Success",
+                    Status = skipMfa ? "Success (Trusted Device)" : "Success",
                     UserAgent = userAgent,
                     Timestamp = DateTime.UtcNow
                 });
@@ -485,20 +528,39 @@ namespace Ozikol_BCC.Api.Controllers
                     UserAgent = userAgent
                 });
 
-                // In-App Notification about new device sign in
-                if (!skipMfa)
+                // Real-time security alert notification for account sign-in
+                var friendlyDevice = UserAgentParser.Parse(userAgent).FriendlyDeviceTitle;
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        TenantKey = resolvedTenantKey,
+                        Title = "Security Alert: New Sign-in Detected",
+                        Message = $"Your account was accessed from '{friendlyDevice}' via IP {ipAddress}.",
+                        Severity = NotificationSeverity.Info,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/account?tab=devices",
+                        Module = "Security",
+                        Icon = "devices",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Normal
+                    });
+                }
+                else
                 {
                     activeDbContext.BcpNotifications.Add(new BcpNotification
                     {
                         Id = Guid.CreateVersion7(),
                         UserId = user.Id,
-                        Title = "New Login Detected",
-                        Message = $"A new sign-in was recorded from '{userAgent}' (IP: {ipAddress}) on {DateTime.UtcNow:MMM dd, yyyy HH:mm} UTC.",
-                        ActionUrl = "/users/workspace/security",
+                        Title = "Security Alert: New Sign-in Detected",
+                        Message = $"Your account was accessed from '{friendlyDevice}' via IP {ipAddress}.",
+                        ActionUrl = "/identity/console/account?tab=devices",
                         Module = "Security",
-                        Icon = "phonelink_lock",
+                        Icon = "devices",
                         Category = BcpMessageCategory.Security,
-                        Priority = BcpMessagePriority.High,
+                        Priority = BcpMessagePriority.Normal,
                         CreatedAt = DateTime.UtcNow
                     });
                 }
@@ -723,36 +785,105 @@ namespace Ozikol_BCC.Api.Controllers
                     .OrderBy(d => d.LastUsedAt)
                     .ToListAsync();
 
-                if (activeSessions.Count >= 3)
-                {
-                    activeSessions[0].IsActiveSession = false;
-                }
+                var targetIp = ipAddress ?? "127.0.0.1";
+                var parsedCaller = UserAgentParser.Parse(userAgent);
+
+                // Match existing session by exact userAgent or parsed device title
+                var existingDevice = activeSessions.FirstOrDefault(d =>
+                    (d.DeviceName == userAgent || UserAgentParser.Parse(d.DeviceName).FriendlyDeviceTitle == parsedCaller.FriendlyDeviceTitle)
+                    && (d.IpAddress == targetIp || d.IpAddress == "127.0.0.1" || targetIp == "127.0.0.1" || d.IpAddress == "::1" || targetIp == "::1"));
 
                 newDeviceTrustToken = Guid.NewGuid().ToString("N");
 
-                activeDbContext.BcpUserDevices.Add(new BcpUserDevice
+                if (existingDevice != null)
                 {
-                    Id = Guid.CreateVersion7(),
-                    UserId = user.Id,
-                    DeviceName = userAgent,
-                    IpAddress = ipAddress ?? "127.0.0.1",
-                    TrustToken = newDeviceTrustToken,
-                    JwtId = jwtId,
-                    IsTrusted = request.TrustDevice, // save trust choice
-                    CreatedAt = DateTime.UtcNow,
-                    LastUsedAt = DateTime.UtcNow,
-                    IsActiveSession = true
-                });
+                    existingDevice.JwtId = jwtId;
+                    existingDevice.LastUsedAt = DateTime.UtcNow;
+                    existingDevice.IsTrusted = existingDevice.IsTrusted || request.TrustDevice;
+                    if (request.TrustDevice && string.IsNullOrEmpty(existingDevice.TrustToken))
+                    {
+                        existingDevice.TrustToken = newDeviceTrustToken;
+                    }
+                    else if (!string.IsNullOrEmpty(existingDevice.TrustToken))
+                    {
+                        newDeviceTrustToken = existingDevice.TrustToken;
+                    }
+
+                    // Clean up any stale duplicate active records for this device
+                    var staleDuplicates = activeSessions
+                        .Where(d => d.Id != existingDevice.Id && UserAgentParser.Parse(d.DeviceName).FriendlyDeviceTitle == parsedCaller.FriendlyDeviceTitle);
+                    foreach (var dup in staleDuplicates)
+                    {
+                        dup.IsActiveSession = false;
+                    }
+                }
+                else
+                {
+                    if (activeSessions.Count >= 3)
+                    {
+                        activeSessions[0].IsActiveSession = false;
+                    }
+
+                    activeDbContext.BcpUserDevices.Add(new BcpUserDevice
+                    {
+                        Id = Guid.CreateVersion7(),
+                        UserId = user.Id,
+                        DeviceName = userAgent,
+                        IpAddress = targetIp,
+                        TrustToken = newDeviceTrustToken,
+                        JwtId = jwtId,
+                        IsTrusted = request.TrustDevice, // save trust choice
+                        CreatedAt = DateTime.UtcNow,
+                        LastUsedAt = DateTime.UtcNow,
+                        IsActiveSession = true
+                    });
+                }
 
                 activeDbContext.BcpLoginAuditLogs.Add(new BcpLoginAuditLog
                 {
                     Id = Guid.CreateVersion7(),
+                    UserId = user.Id,
                     Email = user.Email!,
                     IpAddress = ipAddress,
-                    Status = "Success",
+                    Status = request.TrustDevice ? "Success (Trusted Device)" : "Success",
                     UserAgent = userAgent,
                     Timestamp = DateTime.UtcNow
                 });
+
+                // Record operational activity log
+                activeDbContext.BcpActivityLogs.Add(new BcpActivityLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    ActionType = "LOGIN_MFA_SUCCESS",
+                    Description = $"User '{user.Email}' signed in via two-factor verification ({user.PreferredTwoFactorProvider}).",
+                    Module = "Authentication",
+                    PerformedByProfileId = user.Id,
+                    PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    PerformedByUserEmail = user.Email,
+                    Date = DateTime.UtcNow,
+                    IpAddress = ipAddress,
+                    UserAgent = userAgent
+                });
+
+                var parsedCallerDevice = UserAgentParser.Parse(userAgent);
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        TenantKey = resolvedTenantKey,
+                        Title = "Security Alert: Sign-in Verified",
+                        Message = $"Two-factor authentication sign-in verified from '{parsedCallerDevice.FriendlyDeviceTitle}' via IP {ipAddress}.",
+                        Severity = NotificationSeverity.Info,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/account?tab=devices",
+                        Module = "Security",
+                        Icon = "devices",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Normal
+                    });
+                }
 
                 await activeDbContext.SaveChangesAsync();
             }
@@ -763,6 +894,21 @@ namespace Ozikol_BCC.Api.Controllers
             var userRoles = (await activeUserManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
             var token = await GenerateJwtTokenAsync(user, resolvedTenantKey, userRoles, jwtId);
 
+            var effectivePermsOnLogin = ComputeEffectivePermissions(userRoles);
+            var licensedFeaturesOnLogin = new List<string>();
+            if (!string.IsNullOrEmpty(resolvedTenantKey) && _featureGateService != null)
+            {
+                try
+                {
+                    var ent = await _featureGateService.GetTenantFeatureEntitlementsAsync(resolvedTenantKey);
+                    licensedFeaturesOnLogin = ent.ActiveFeatureCodes.ToList();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not resolve dynamic tenant features on MFA login for {TenantKey}", resolvedTenantKey);
+                }
+            }
+
             var responseData = new LoginResponseModel
             {
                 Token = token,
@@ -772,7 +918,9 @@ namespace Ozikol_BCC.Api.Controllers
                 AvatarUrl = user.AvatarUrl,
                 TenantKey = resolvedTenantKey,
                 MustChangePassword = user.MustChangePassword,
-                Roles = userRoles
+                Roles = userRoles,
+                EffectivePermissions = effectivePermsOnLogin,
+                LicensedTenantFeatures = licensedFeaturesOnLogin
             };
 
             // Set secure custom response header for trust token if selected
@@ -1628,6 +1776,45 @@ namespace Ozikol_BCC.Api.Controllers
                 return BadRequest(ApiResponse<object>.FailureResponse(string.Join(", ", changeResult.Errors.Select(e => e.Description))));
             }
 
+            // Record operational activity log
+            if (_dbContext != null)
+            {
+                _dbContext.BcpActivityLogs.Add(new BcpActivityLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    ActionType = "PASSWORD_CHANGED",
+                    Description = $"User '{user.Email}' updated their account password.",
+                    Module = "Security",
+                    PerformedByProfileId = user.Id,
+                    PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    PerformedByUserEmail = user.Email,
+                    Date = DateTime.UtcNow,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    UserAgent = Request.Headers.UserAgent.ToString()
+                });
+                await _dbContext.SaveChangesAsync();
+            }
+
+            // Dispatch real-time security alert notification
+            if (_notificationDispatcher != null)
+            {
+                await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                {
+                    TargetType = NotificationDispatchTarget.SingleUser,
+                    TargetUserId = user.Id,
+                    TenantKey = _tenantProvider?.CurrentTenant,
+                    Title = "Security Alert: Password Changed",
+                    Message = "Your account password was successfully updated.",
+                    Severity = NotificationSeverity.Success,
+                    Channels = NotificationChannels.InApp,
+                    ActionUrl = "/identity/console/account?tab=password",
+                    Module = "Security",
+                    Icon = "lock_reset",
+                    Category = BcpMessageCategory.Security,
+                    Priority = BcpMessagePriority.High
+                });
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(null, "Password changed successfully."));
         }
 
@@ -1663,6 +1850,44 @@ namespace Ozikol_BCC.Api.Controllers
                 user.TwoFactorEnabled = false;
                 user.PreferredTwoFactorProvider = BcpTwoFactorProvider.None;
                 await _userManager.UpdateAsync(user);
+
+                if (_dbContext != null)
+                {
+                    _dbContext.BcpActivityLogs.Add(new BcpActivityLog
+                    {
+                        Id = Guid.CreateVersion7(),
+                        ActionType = "MFA_DISABLED",
+                        Description = $"User '{user.Email}' disabled two-factor authentication.",
+                        Module = "Security",
+                        PerformedByProfileId = user.Id,
+                        PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                        PerformedByUserEmail = user.Email,
+                        Date = DateTime.UtcNow,
+                        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                        UserAgent = Request.Headers.UserAgent.ToString()
+                    });
+                    await _dbContext.SaveChangesAsync();
+                }
+
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        TenantKey = _tenantProvider?.CurrentTenant,
+                        Title = "Security Alert: Two-Factor Disabled",
+                        Message = "Two-factor authentication has been disabled on your account. Your account security may be reduced.",
+                        Severity = NotificationSeverity.Warning,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/account?tab=2fa",
+                        Module = "Security",
+                        Icon = "warning",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.High
+                    });
+                }
+
                 return Ok(ApiResponse<object>.SuccessResponse(null, "Two-Factor authentication disabled successfully."));
             }
 
@@ -1840,6 +2065,42 @@ namespace Ozikol_BCC.Api.Controllers
                     });
                 }
                 await _dbContext.SaveChangesAsync();
+
+                // Record operational activity log
+                _dbContext.BcpActivityLogs.Add(new BcpActivityLog
+                {
+                    Id = Guid.CreateVersion7(),
+                    ActionType = "MFA_ENABLED",
+                    Description = $"User '{user.Email}' configured and enabled two-factor authentication ({user.PreferredTwoFactorProvider}).",
+                    Module = "Security",
+                    PerformedByProfileId = user.Id,
+                    PerformedByFullName = $"{user.FirstName} {user.LastName}".Trim(),
+                    PerformedByUserEmail = user.Email,
+                    Date = DateTime.UtcNow,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                    UserAgent = Request.Headers.UserAgent.ToString()
+                });
+                await _dbContext.SaveChangesAsync();
+
+                // Dispatch real-time security alert notification
+                if (_notificationDispatcher != null)
+                {
+                    await _notificationDispatcher.DispatchAsync(new NotificationDispatchPayload
+                    {
+                        TargetType = NotificationDispatchTarget.SingleUser,
+                        TargetUserId = user.Id,
+                        TenantKey = _tenantProvider?.CurrentTenant,
+                        Title = "Security Update: Two-Factor Enabled",
+                        Message = "Two-factor authentication has been successfully configured and activated on your account.",
+                        Severity = NotificationSeverity.Success,
+                        Channels = NotificationChannels.InApp,
+                        ActionUrl = "/identity/console/account?tab=2fa",
+                        Module = "Security",
+                        Icon = "verified_user",
+                        Category = BcpMessageCategory.Security,
+                        Priority = BcpMessagePriority.Normal
+                    });
+                }
             }
 
             return Ok(ApiResponse<object>.SuccessResponse(new { backupCodes = codes }, "Two-factor authentication successfully configured and verified."));
@@ -1847,7 +2108,10 @@ namespace Ozikol_BCC.Api.Controllers
 
         private async Task<string> GenerateJwtTokenAsync(Profile user, string? tenantKey = null, IEnumerable<string>? rolesList = null, string? jwtId = null)
         {
-            var jwtKey = _configuration["Jwt:Key"] ?? "OzikolBCC_SuperSecretJwtEncryptionKey_2026_MustBe32BytesOrMore!";
+            var jwtKey = Environment.GetEnvironmentVariable("Jwt__Key")
+                ?? Environment.GetEnvironmentVariable("JWT_KEY")
+                ?? _configuration["Jwt:Key"]
+                ?? throw new InvalidOperationException("CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is missing. Configure 'Jwt__Key' in your .env file.");
             var jwtIssuer = _configuration["Jwt:Issuer"] ?? "Ozikol-BCC.Api";
             var jwtAudience = _configuration["Jwt:Audience"] ?? "Ozikol-BCC.Client";
 
@@ -1871,13 +2135,64 @@ namespace Ozikol_BCC.Api.Controllers
 
             try
             {
-                var roles = rolesList?.ToList() ?? (await _userManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
+                var roles = (rolesList as List<string>) ?? rolesList?.ToList() ?? (await _userManager.GetRolesAsync(user))?.ToList() ?? new List<string>();
+                if (_dbContext != null)
+                {
+                    try
+                    {
+                        var featureRoles = await _dbContext.BcpUserFeatureRoles
+                            .AsNoTracking()
+                            .Where(f => f.ProfileId == user.Id && f.IsActive && !string.IsNullOrEmpty(f.FeatureAreaKey))
+                            .ToListAsync();
+                        foreach (var fr in featureRoles)
+                        {
+                            var actionName = fr.ActionRole.ToString();
+                            var composite = $"FeatureEditor:{fr.FeatureAreaKey}:{actionName}";
+                            if (!roles.Contains(composite, StringComparer.OrdinalIgnoreCase))
+                            {
+                                roles.Add(composite);
+                            }
+                            var shortTag = fr.ActionRole == BcpActionRole.Readonly
+                                ? $"ReadOnly:{fr.FeatureAreaKey}"
+                                : $"FeatureEdit:{fr.FeatureAreaKey}";
+                            if (!roles.Contains(shortTag, StringComparer.OrdinalIgnoreCase))
+                            {
+                                roles.Add(shortTag);
+                            }
+
+                            if (fr.ActionRole == BcpActionRole.GlobalEditor && !roles.Contains("Global Editor", StringComparer.OrdinalIgnoreCase))
+                            {
+                                roles.Add("Global Editor");
+                            }
+                            else if (fr.ActionRole == BcpActionRole.FeatureEditor && !roles.Contains("Feature Editor", StringComparer.OrdinalIgnoreCase))
+                            {
+                                roles.Add("Feature Editor");
+                            }
+                            else if (fr.ActionRole == BcpActionRole.Readonly && !roles.Contains("Read Only", StringComparer.OrdinalIgnoreCase))
+                            {
+                                roles.Add("Read Only");
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore if tenant DB table is not migrated yet
+                    }
+                }
                 if (roles.Count == 0)
                 {
                     roles.Add("Member");
                 }
 
+                var expandedClaims = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 foreach (var role in roles)
+                {
+                    expandedClaims.Add(role);
+                    var spaceless = role.Replace(" ", "");
+                    expandedClaims.Add(spaceless);
+                }
+
+                foreach (var role in expandedClaims)
                 {
                     claims.Add(new Claim(ClaimTypes.Role, role));
                     claims.Add(new Claim("role", role));

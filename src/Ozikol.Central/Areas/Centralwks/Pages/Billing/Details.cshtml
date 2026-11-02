@@ -5,7 +5,8 @@
     ViewData["BreadcrumbSection"] = "Billing";
 
     var isCompleted = string.Equals(Model.Transaction.Status, "Completed", StringComparison.OrdinalIgnoreCase);
-    var isPending = string.Equals(Model.Transaction.Status, "Pending", StringComparison.OrdinalIgnoreCase);
+    var isAwaitingVerification = string.Equals(Model.Transaction.Status, "AwaitingVerification", StringComparison.OrdinalIgnoreCase);
+    var isPending = string.Equals(Model.Transaction.Status, "Pending", StringComparison.OrdinalIgnoreCase) || isAwaitingVerification;
     var isRefunded = string.Equals(Model.Transaction.Status, "Refunded", StringComparison.OrdinalIgnoreCase);
     var isFailed = string.Equals(Model.Transaction.Status, "Failed", StringComparison.OrdinalIgnoreCase);
 
@@ -14,13 +15,13 @@
 
 <div class="admin-page-header">
     <div class="admin-title-group">
-        <h1 class="admin-title">Invoice & Settlement Details</h1>
+        <h1 class="admin-title">Invoice &amp; Settlement Details</h1>
         <p class="admin-subtitle">Master ledger transaction reference #@(Model.Transaction.InvoiceNumber ?? Model.Transaction.Id.ToString())</p>
     </div>
     <div class="admin-actions">
-        <a href="/centralwks/billing" class="btn-admin btn-admin-secondary">
+        <a href="/centralwks/subscriptions" class="btn-admin btn-admin-secondary">
             <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
-            Back to Ledger
+            Back to Subscriptions
         </a>
         <button onclick="window.print()" class="btn-admin btn-admin-secondary">
             <span class="material-symbols-outlined" style="font-size: 16px;">print</span>
@@ -48,7 +49,7 @@
                         <span class="material-symbols-outlined" style="color: var(--admin-primary); font-size: 28px;">bolt</span> OZIKOL
                     </div>
                     <p style="font-size: 13px; color: var(--admin-text-muted); margin: 4px 0 0 0;">Autonomous Multi-Tenant Cloud</p>
-                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Central Financial & Settlement Portal</p>
+                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Central Financial &amp; Settlement Portal</p>
                 </div>
                 <div style="text-align: right;">
                     <div style="font-size: 20px; font-weight: 700; color: var(--admin-text); text-transform: uppercase; letter-spacing: 1px;">INVOICE</div>
@@ -118,14 +119,14 @@
                             }
                             else
                             {
-                                <div style="font-weight: 700; color: var(--admin-text);">Platform License / Manual Adjustment</div>
+                                <div style="font-weight: 700; color: var(--admin-text);">Capability Subscription / Platform License</div>
                                 <div style="font-size: 12px; color: var(--admin-text-muted); margin-top: 2px;">
                                     @(Model.Transaction.Notes ?? "General ledger credit or settlement")
                                 </div>
                             }
                         </td>
                         <td style="padding: 16px 8px; text-align: center; color: var(--admin-text-muted); font-size: 13px;">
-                            @(Model.Transaction.FeatureSubscription?.DurationType.ToString() ?? "Ad-hoc")
+                            @(Model.Transaction.BillingCadence ?? Model.Transaction.FeatureSubscription?.DurationType.ToString() ?? "Monthly")
                         </td>
                         <td style="padding: 16px 8px; text-align: right; font-weight: 700; font-size: 15px; color: @(Model.Transaction.Amount >= 0 ? "var(--admin-text)" : "var(--admin-danger)");">
                             @Model.Transaction.Amount.ToString("N2")
@@ -144,6 +145,15 @@
 
             @* Payment Verification & Audit Reference *@
             <div style="background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-sm); padding: 16px;">
+                @if (!string.IsNullOrWhiteSpace(Model.Transaction.PaymentProofRef))
+                {
+                    <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--admin-border);">
+                        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #059669; margin-bottom: 4px;">Submitted Bank Transfer / Deposit Proof</div>
+                        <div style="font-family: monospace; font-size: 15px; font-weight: 800; color: #0f172a;">
+                            @Model.Transaction.PaymentProofRef
+                        </div>
+                    </div>
+                }
                 <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--admin-text-muted); margin-bottom: 6px;">Provider Audit Hash / Reference</div>
                 <div style="font-family: monospace; font-size: 13px; color: var(--admin-info); word-break: break-all;">
                     @(Model.Transaction.TransactionRef ?? "N/A — No external transaction reference logged")
@@ -166,7 +176,7 @@
                 </div>
                 <div>
                     <h3 class="card-header-title">Status Management</h3>
-                    <p class="card-header-subtitle">Update settlement status.</p>
+                    <p class="card-header-subtitle">Confirm payment and activate capabilities.</p>
                 </div>
             </div>
 
@@ -175,9 +185,9 @@
                 {
                     <form method="post" asp-page-handler="UpdateStatus" asp-route-id="@Model.Transaction.Id" asp-route-newStatus="Completed">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;" onclick="return confirm('Confirm settlement and mark transaction as Completed?')">
+                        <button type="submit" class="btn-admin btn-admin-primary" style="width: 100%; justify-content: center; display: inline-flex; align-items: center; gap: 6px;" onclick="return confirm('Confirm bank settlement, mark invoice as Completed, and activate tenant capabilities?')">
                             <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
-                            Mark as Completed (Settled)
+                            @(isAwaitingVerification ? "Confirm Deposit & Activate Capabilities" : "Mark as Completed (Settled)")
                         </button>
                     </form>
 

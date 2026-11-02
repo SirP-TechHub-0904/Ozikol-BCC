@@ -28,7 +28,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// Tenant ID to edit.
         /// </summary>
         [BindProperty(SupportsGet = true)]
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         /// <summary>
         /// The tenant entity being edited.

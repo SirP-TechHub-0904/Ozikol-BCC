@@ -107,10 +107,10 @@ public class PricingModel : PageModel
         TotalFeaturesCount = _currencyService.GetActiveFeaturesCount();
         TotalSuitesCount = _currencyService.GetActiveSuitesCount();
 
-        // 2. Query compulsory features list & stats dynamically from master catalog
+        // 2. Query compulsory features list & stats dynamically from master catalog (without publish restriction)
         CompulsoryFeatures = await _dbContext.MasterFeatureCatalogs
             .AsNoTracking()
-            .Where(f => f.IsCompulsory && f.IsActive)
+            .Where(f => f.IsCompulsory)
             .OrderBy(f => f.SortOrder)
             .ToListAsync();
 

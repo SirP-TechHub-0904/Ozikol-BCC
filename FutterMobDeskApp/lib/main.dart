@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'core/config/single_tenant_config.dart';
+import 'core/constants/api_constants.dart';
+import 'core/services/app_logger.dart';
 import 'core/storage/secure_storage_service.dart';
 import 'core/storage/tenant_cache_service.dart';
 import 'core/network/api_client.dart';
@@ -20,6 +24,7 @@ import 'core/services/client_config_service.dart';
 import 'core/services/realtime_sync_service.dart';
 import 'core/services/windows_clipboard_fix.dart';
 import 'core/services/windows_jump_list_service.dart';
+import 'core/localization/language_provider.dart';
 import 'core/widgets/desktop_title_bar.dart';
 import 'core/widgets/maintenance_screen.dart';
 
@@ -55,7 +60,7 @@ void main(List<String> args) async {
         backgroundColor: Colors.white,
         skipTaskbar: false,
         titleBarStyle: TitleBarStyle.hidden,
-        title: 'Ozikol',
+        title: 'Business Command Center',
       );
       await windowManager.waitUntilReadyToShow(windowOptions, () async {
         await windowManager.show();
@@ -66,8 +71,19 @@ void main(List<String> args) async {
     }
   }
 
+  // Dynamically resolve local Android dev host (127.0.0.1 for adb reverse on physical device, 10.0.2.2 for emulator)
+  if (!kIsWeb && Platform.isAndroid) {
+    await ApiConstants.resolveAndroidHost();
+  }
+
   // Initialize secure storage service and multi-tenant cache
   final storageService = await SecureStorageService.create();
+  await SingleTenantConfig.initialize(storageService);
+  if (SingleTenantConfig.isLocked && !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
+    try {
+      await windowManager.setTitle('${SingleTenantConfig.organizationName} - Command Center');
+    } catch (_) {}
+  }
   final cacheService = await TenantCacheService.create(storageService);
   final apiClient = ApiClient(storageService);
   final crashReporter = CrashReporterService(apiClient, storageService, cacheService);
@@ -99,17 +115,45 @@ void main(List<String> args) async {
   // Initialize startup stability monitor
   await crashReporter.initStartupCrashMonitor();
 
-  // Wire global crash telemetry
+  // Print startup environment diagnostics to developer console
+  if (kDebugMode) {
+    final platformName = kIsWeb ? 'Web' : Platform.operatingSystem;
+    final isMobile = !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+    debugPrint('\n======================================================');
+    debugPrint('🚀 [OZIKOL BCC STARTUP] Platform: $platformName (${isMobile ? "Mobile" : "Desktop"})');
+    debugPrint('🔗 API Base URL: ${apiClient.dio.options.baseUrl}');
+    debugPrint('🏢 Active Tenant Key: ${storageService.getActiveTenantKey() ?? "None"}');
+    debugPrint('======================================================\n');
+  }
+
+  // Wire global crash telemetry & console logging
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
+    debugPrint('\n======================================================');
+    debugPrint('🚨 [FLUTTER FRAMEWORK ERROR]');
+    debugPrint('Exception: ${details.exception}');
+    debugPrint('Library: ${details.library ?? "unknown"}');
+    debugPrint('Context: ${details.context?.toDescription() ?? "none"}');
+    if (details.stack != null) {
+      debugPrint('StackTrace:\n${details.stack}');
+    }
+    debugPrint('======================================================\n');
+    AppLogger.error('FlutterError', 'Framework error: ${details.exception}', details.exception, details.stack);
     crashReporter.reportCrash(details.exception, details.stack);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('\n======================================================');
+    debugPrint('🚨 [PLATFORM DISPATCHER EXCEPTION]');
+    debugPrint('Error: $error');
+    debugPrint('StackTrace:\n$stack');
+    debugPrint('======================================================\n');
+    AppLogger.error('PlatformDispatcher', 'Platform exception: $error', error, stack);
     crashReporter.reportCrash(error, stack);
     return true;
   };
 
+  // Launch application in the root zone matching WidgetsFlutterBinding.ensureInitialized
   runApp(
     ProviderScope(
       overrides: [
@@ -132,6 +176,7 @@ class OzikolApp extends ConsumerWidget {
     final configAsync = ref.watch(clientConfigProvider);
     final crashReporter = ref.watch(crashReporterServiceProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final currentLang = ref.watch(languageProvider);
 
     // Synchronize duplex real-time push connection with active workspace session
     ref.listen<WorkspaceState>(workspaceStateProvider, (previous, next) {
@@ -145,24 +190,37 @@ class OzikolApp extends ConsumerWidget {
     });
 
     return MaterialApp(
-      title: 'Ozikol BCC',
+      title: 'Business Command Center',
+      locale: Locale(currentLang),
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      scrollBehavior: const MaterialScrollBehavior().copyWith(
+        overscroll: false,
+        physics: const ClampingScrollPhysics(),
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.trackpad,
+          PointerDeviceKind.stylus,
+        },
+      ),
       builder: (context, child) {
         final content = child ?? const SizedBox.shrink();
         final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
         final activeWs = workspaceState.hasActiveSession ? workspaceState.activeWorkspace : null;
+        final brandingWs = activeWs ??
+            workspaceState.pendingWorkspace ??
+            (SingleTenantConfig.isLocked ? SingleTenantConfig.buildLockedWorkspace() : null);
 
         Widget body = isDesktop
             ? Column(
                 children: [
                   DesktopTitleBar(
-                    title: activeWs != null ? '${activeWs.displayName} - Ozikol BCC' : 'Ozikol BCC',
-                    iconUrl: activeWs?.iconUrl,
-                    logoUrl: activeWs?.logoUrl,
+                    title: brandingWs != null ? '${brandingWs.displayName} - Command Center' : 'Business Command Center',
+                    iconUrl: brandingWs?.iconUrl,
+                    logoUrl: brandingWs?.logoUrl,
                   ),
                   Expanded(child: content),
                 ],
@@ -222,6 +280,11 @@ class OzikolApp extends ConsumerWidget {
           if (workspaceState.hasActiveSession) {
             return const DashboardShellScreen();
           }
+          if (SingleTenantConfig.isLocked) {
+            return WorkspaceLoginScreen(
+              workspace: workspaceState.pendingWorkspace ?? SingleTenantConfig.buildLockedWorkspace(),
+            );
+          }
           if (workspaceState.shouldBypassEntryScreen && workspaceState.pendingWorkspace != null) {
             return WorkspaceLoginScreen(workspace: workspaceState.pendingWorkspace!);
           }
@@ -234,6 +297,11 @@ class OzikolApp extends ConsumerWidget {
           // If config fetch fails, continue safely with cached/default state
           if (workspaceState.hasActiveSession) {
             return const DashboardShellScreen();
+          }
+          if (SingleTenantConfig.isLocked) {
+            return WorkspaceLoginScreen(
+              workspace: workspaceState.pendingWorkspace ?? SingleTenantConfig.buildLockedWorkspace(),
+            );
           }
           if (workspaceState.shouldBypassEntryScreen && workspaceState.pendingWorkspace != null) {
             return WorkspaceLoginScreen(workspace: workspaceState.pendingWorkspace!);

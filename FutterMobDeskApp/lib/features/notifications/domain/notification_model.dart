@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Canonical 6-tier platform notification and alert severity hierarchy across web, mobile, and desktop.
 enum NotificationSeverity {
   error(1, 'Error', Color(0xFFF06548), Icons.error_outline_rounded),
-  failed(2, 'Failed', Color(0xFFF7B84B), Icons.warning_amber_rounded),
+  failed(2, 'Warning', Color(0xFFF7B84B), Icons.warning_amber_rounded),
   success(3, 'Success', Color(0xFF0AB39C), Icons.check_circle_outline_rounded),
   newFeature(4, 'New Feature', Color(0xFF38BDF8), Icons.auto_awesome_rounded),
   update(5, 'Update', Color(0xFF1F6BFF), Icons.info_outline_rounded),
@@ -22,6 +22,7 @@ enum NotificationSeverity {
     return switch (normalized) {
       'error' => NotificationSeverity.error,
       'failed' => NotificationSeverity.failed,
+      'warning' => NotificationSeverity.failed,
       'success' => NotificationSeverity.success,
       'newfeature' => NotificationSeverity.newFeature,
       'update' => NotificationSeverity.update,
@@ -76,28 +77,35 @@ class NotificationItem {
   });
 
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
-    final rawSeverity = json['severity']?.toString();
-    final rawSeverityCode = json['severityCode'] as int?;
+    final rawSeverity = (json['severity'] ?? json['Severity'])?.toString();
+    final rawSeverityCode = (json['severityCode'] ?? json['SeverityCode']) as int?;
 
     final severity = rawSeverityCode != null
         ? NotificationSeverity.fromCode(rawSeverityCode)
         : NotificationSeverity.fromString(rawSeverity);
 
     return NotificationItem(
-      id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      message: json['message']?.toString() ?? '',
-      actionUrl: json['actionUrl']?.toString(),
-      isRead: json['isRead'] == true,
-      module: json['module']?.toString() ?? 'General',
-      icon: json['icon']?.toString(),
-      category: json['category']?.toString() ?? 'General',
-      priority: json['priority']?.toString() ?? 'Normal',
+      id: (json['id'] ?? json['Id'])?.toString() ?? '',
+      title: (json['title'] ?? json['Title'])?.toString() ?? '',
+      message: (json['message'] ?? json['Message'])?.toString() ?? '',
+      actionUrl: (json['actionUrl'] ?? json['ActionUrl'])?.toString(),
+      isRead: json['isRead'] == true || json['IsRead'] == true,
+      module: (json['module'] ?? json['Module'])?.toString() ?? 'General',
+      icon: (json['icon'] ?? json['Icon'])?.toString(),
+      category: (json['category'] ?? json['Category'])?.toString() ?? 'General',
+      priority: (json['priority'] ?? json['Priority'])?.toString() ?? 'Normal',
       severity: severity,
-      metadataJson: json['metadataJson']?.toString(),
-      isBroadcast: json['isBroadcast'] == true,
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
+      metadataJson: (json['metadataJson'] ?? json['MetadataJson'])?.toString(),
+      isBroadcast: json['isBroadcast'] == true || json['IsBroadcast'] == true,
+      createdAt: (json['createdAt'] ?? json['CreatedAt']) != null
+          ? () {
+              final raw = (json['createdAt'] ?? json['CreatedAt']);
+              if (raw is DateTime) return raw.toLocal();
+              final str = raw.toString().trim();
+              if (str.isEmpty) return DateTime.now();
+              final normalized = (str.endsWith('Z') || str.contains('+')) ? str : '${str}Z';
+              return (DateTime.tryParse(normalized) ?? DateTime.now()).toLocal();
+            }()
           : DateTime.now(),
     );
   }

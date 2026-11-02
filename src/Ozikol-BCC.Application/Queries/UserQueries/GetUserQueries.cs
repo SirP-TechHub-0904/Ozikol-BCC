@@ -29,6 +29,26 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
         public bool EmailConfirmed { get; set; }
         public bool PhoneNumberConfirmed { get; set; }
         public List<string> Roles { get; set; } = new();
+
+        /// <summary>
+        /// Count of failed password attempts recorded for security lockout evaluation.
+        /// </summary>
+        public int AccessFailedCount { get; set; }
+
+        /// <summary>
+        /// The end timestamp of temporary security lockout, if active.
+        /// </summary>
+        public DateTimeOffset? LockoutEnd { get; set; }
+
+        /// <summary>
+        /// True if the user account is actively locked out due to security policies.
+        /// </summary>
+        public bool IsLockedOut { get; set; }
+
+        /// <summary>
+        /// True if the user account is flagged as suspicious (e.g. repeated failed logins or active lockout).
+        /// </summary>
+        public bool IsSuspicious { get; set; }
     }
 
     public class GetUserListQuery : IRequest<List<UserDto>> { }
@@ -82,6 +102,9 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                         ? $"{u.FullName}, {suffix}".Trim()
                         : u.FullName;
 
+                    var isLocked = u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow;
+                    var isSuspicious = isLocked || u.AccessFailedCount > 0;
+
                     return new UserDto
                     {
                         Id = u.Id,
@@ -105,7 +128,11 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                         CategoryIcon = u.BcpUserCategory?.Icon,
                         EmailConfirmed = u.EmailConfirmed,
                         PhoneNumberConfirmed = u.PhoneNumberConfirmed,
-                        Roles = rolesByUser.TryGetValue(u.Id, out var rList) ? rList : new List<string> { "Member" }
+                        Roles = rolesByUser.TryGetValue(u.Id, out var rList) ? rList : new List<string> { "Member" },
+                        AccessFailedCount = u.AccessFailedCount,
+                        LockoutEnd = u.LockoutEnd,
+                        IsLockedOut = isLocked,
+                        IsSuspicious = isSuspicious
                     };
                 }).ToList();
         }
@@ -160,6 +187,9 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                 ? $"{u.FullName}, {suffix}".Trim()
                 : u.FullName;
 
+            var isLocked = u.LockoutEnd != null && u.LockoutEnd > DateTimeOffset.UtcNow;
+            var isSuspicious = isLocked || u.AccessFailedCount > 0;
+
             return new UserDto
             {
                 Id = u.Id,
@@ -181,7 +211,11 @@ namespace Ozikol_BCC.Application.Queries.UserQueries
                 CategoryName = u.BcpUserCategory?.Name,
                 CategoryColor = u.BcpUserCategory?.ColorCode,
                 CategoryIcon = u.BcpUserCategory?.Icon,
-                Roles = roles.Count > 0 ? roles : new List<string> { "Member" }
+                Roles = roles.Count > 0 ? roles : new List<string> { "Member" },
+                AccessFailedCount = u.AccessFailedCount,
+                LockoutEnd = u.LockoutEnd,
+                IsLockedOut = isLocked,
+                IsSuspicious = isSuspicious
             };
         }
     }

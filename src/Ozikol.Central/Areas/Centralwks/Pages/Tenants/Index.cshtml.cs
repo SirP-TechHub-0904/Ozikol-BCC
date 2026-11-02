@@ -108,6 +108,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         public List<MasterTenantCatalog> Tenants { get; set; } = new();
 
         /// <summary>
+        /// Lookup mapping ISO 4217 currency code (e.g. "USD", "NGN") to its currency symbol (e.g. "$", "₦").
+        /// </summary>
+        public Dictionary<string, string> CurrencySymbols { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
         /// Handles HTTP GET requests to retrieve paginated tenant records and suite metrics.
         /// </summary>
         public async Task OnGetAsync()
@@ -115,6 +120,22 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
             // Normalize page size
             if (PageSize <= 0) PageSize = 10;
             if (PageNumber <= 0) PageNumber = 1;
+
+            try
+            {
+                var rates = await _dbContext.MasterCurrencyRates.AsNoTracking().ToListAsync();
+                foreach (var r in rates)
+                {
+                    if (!string.IsNullOrWhiteSpace(r.CurrencyCode))
+                    {
+                        CurrencySymbols[r.CurrencyCode.Trim().ToUpperInvariant()] = r.CurrencySymbol;
+                    }
+                }
+            }
+            catch
+            {
+                CurrencySymbols["USD"] = "$";
+            }
 
             var oneWeekAgo = DateTime.UtcNow.AddDays(-7);
 
@@ -180,7 +201,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// </summary>
         /// <param name="id">Tenant catalog ID.</param>
         /// <param name="reason">Reason for suspending the tenant.</param>
-        public async Task<IActionResult> OnPostSuspendAsync(int id, string? reason)
+        public async Task<IActionResult> OnPostSuspendAsync(Guid id, string? reason)
         {
             var tenant = await _dbContext.MasterTenantCatalogs.FindAsync(id);
             if (tenant == null)
@@ -244,7 +265,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// Handles HTTP POST requests to reactivate a suspended tenant organization.
         /// </summary>
         /// <param name="id">Tenant catalog ID.</param>
-        public async Task<IActionResult> OnPostReactivateAsync(int id)
+        public async Task<IActionResult> OnPostReactivateAsync(Guid id)
         {
             var tenant = await _dbContext.MasterTenantCatalogs.FindAsync(id);
             if (tenant == null)
@@ -307,7 +328,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// </summary>
         /// <param name="id">Tenant catalog ID.</param>
         /// <param name="reason">Reason for deactivating/soft-deleting the tenant.</param>
-        public async Task<IActionResult> OnPostSoftDeleteAsync(int id, string? reason)
+        public async Task<IActionResult> OnPostSoftDeleteAsync(Guid id, string? reason)
         {
             var tenant = await _dbContext.MasterTenantCatalogs.FindAsync(id);
             if (tenant == null)

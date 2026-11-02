@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { TranslationService } from '../../../core/services/translation.service';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { PageHeaderComponent, PageHeaderButton } from '../../../shared/components/page-header/page-header.component';
 
 /**
@@ -46,15 +48,15 @@ interface RoleMemberItem {
 @Component({
   selector: 'app-identity-roles',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent],
+  imports: [CommonModule, FormsModule, RouterModule, PageHeaderComponent, TranslatePipe],
   template: `
     <div class="identity-roles-page">
       <!-- Standardized Page Header -->
       <app-page-header
-        eyebrow="ACCESS CONTROL & GOVERNANCE"
+        [eyebrow]="'identity.roles.eyebrow' | translate:'ACCESS CONTROL & GOVERNANCE'"
         icon="shield_person"
-        title="System Roles & Authority Matrix"
-        [subtitle]="'Manage the ' + (rolesCatalog.length || (isSuperAdmin ? 8 : 7)) + ' enterprise roles organized into System & Feature Authority and Operational Access Levels.'"
+        [title]="'identity.roles.title' | translate:'System Roles & Authority Matrix'"
+        [subtitle]="('identity.roles.subtitle_prefix' | translate:'Manage the ') + (rolesCatalog.length || (isSuperAdmin ? 8 : 7)) + ('identity.roles.subtitle_suffix' | translate:' enterprise roles organized into System & Feature Authority and Operational Access Levels.')"
         [buttons]="headerButtons"
         [loading]="isLoading"
       ></app-page-header>
@@ -76,12 +78,12 @@ interface RoleMemberItem {
             </div>
             <div class="stat-meta">
               <span class="stat-val">{{ rolesCatalog.length || (isSuperAdmin ? 8 : 7) }}</span>
-              <span class="stat-lbl">Enterprise Roles</span>
+              <span class="stat-lbl">{{ 'identity.roles.enterprise_roles' | translate:'Enterprise Roles' }}</span>
             </div>
           </div>
           <span class="active-indicator-pill indicator-all" *ngIf="activeFilter === 'all'">
             <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
-            <span>All</span>
+            <span>{{ 'identity.roles.all' | translate:'All' }}</span>
           </span>
         </div>
 
@@ -100,12 +102,12 @@ interface RoleMemberItem {
             </div>
             <div class="stat-meta">
               <span class="stat-val">{{ systemFeatureRoles.length }}</span>
-              <span class="stat-lbl">Authority & Feature Roles</span>
+              <span class="stat-lbl">{{ 'identity.roles.authority_feature_roles' | translate:'Authority & Feature Roles' }}</span>
             </div>
           </div>
           <span class="active-indicator-pill indicator-system" *ngIf="activeFilter === 'system_feature'">
             <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
-            <span>Filtered</span>
+            <span>{{ 'identity.roles.filtered' | translate:'Filtered' }}</span>
           </span>
         </div>
 
@@ -124,12 +126,12 @@ interface RoleMemberItem {
             </div>
             <div class="stat-meta">
               <span class="stat-val">{{ operationalLevelRoles.length }}</span>
-              <span class="stat-lbl">Operational Action Levels</span>
+              <span class="stat-lbl">{{ 'identity.roles.operational_levels' | translate:'Operational Action Levels' }}</span>
             </div>
           </div>
           <span class="active-indicator-pill indicator-operational" *ngIf="activeFilter === 'operational_level'">
             <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
-            <span>Filtered</span>
+            <span>{{ 'identity.roles.filtered' | translate:'Filtered' }}</span>
           </span>
         </div>
 
@@ -148,12 +150,12 @@ interface RoleMemberItem {
             </div>
             <div class="stat-meta">
               <span class="stat-val">{{ totalAssignedCount }}</span>
-              <span class="stat-lbl">Assigned Personnel</span>
+              <span class="stat-lbl">{{ 'identity.roles.assigned_personnel' | translate:'Assigned Personnel' }}</span>
             </div>
           </div>
           <span class="active-indicator-pill indicator-assigned" *ngIf="activeFilter === 'assigned'">
             <span class="material-symbols-outlined" style="font-size: 13px;">check</span>
-            <span>Roster</span>
+            <span>{{ 'identity.roles.roster' | translate:'Roster' }}</span>
           </span>
         </div>
       </div>
@@ -167,7 +169,7 @@ interface RoleMemberItem {
           (click)="setFilter('all')"
         >
           <span class="material-symbols-outlined">dataset</span>
-          <span>All Roles ({{ rolesCatalog.length }})</span>
+          <span>{{ 'identity.roles.tab_all' | translate:'All Roles' }} ({{ rolesCatalog.length }})</span>
         </button>
         <button 
           type="button" 
@@ -176,7 +178,7 @@ interface RoleMemberItem {
           (click)="setFilter('system_feature')"
         >
           <span class="material-symbols-outlined">shield_person</span>
-          <span>System & Feature Authority ({{ systemFeatureRoles.length }})</span>
+          <span>{{ 'identity.roles.tab_authority' | translate:'System & Feature Authority' }} ({{ systemFeatureRoles.length }})</span>
         </button>
         <button 
           type="button" 
@@ -185,7 +187,7 @@ interface RoleMemberItem {
           (click)="setFilter('operational_level')"
         >
           <span class="material-symbols-outlined">tune</span>
-          <span>Operational Access Levels ({{ operationalLevelRoles.length }})</span>
+          <span>{{ 'identity.roles.tab_operational' | translate:'Operational Access Levels' }} ({{ operationalLevelRoles.length }})</span>
         </button>
         <button 
           type="button" 
@@ -194,7 +196,7 @@ interface RoleMemberItem {
           (click)="setFilter('assigned')"
         >
           <span class="material-symbols-outlined">groups</span>
-          <span>Assigned Personnel ({{ totalAssignedCount }})</span>
+          <span>{{ 'identity.roles.tab_assigned' | translate:'Assigned Personnel' }} ({{ totalAssignedCount }})</span>
         </button>
       </div>
 
@@ -207,15 +209,15 @@ interface RoleMemberItem {
             </div>
             <div>
               <div class="header-title-row">
-                <h3>System & Feature Authority Roles</h3>
+                <h3>{{ 'identity.roles.authority_title' | translate:'System & Feature Authority Roles' }}</h3>
                 <span class="section-count-badge badge-admin">{{ systemFeatureRoles.length }} Roles</span>
               </div>
-              <p>Sovereign platform, identity governance, and feature domain authority roles that govern workspace administration.</p>
+              <p>{{ 'identity.roles.authority_desc' | translate:'Sovereign platform, identity governance, and feature domain authority roles that govern workspace administration.' }}</p>
             </div>
           </div>
           <button type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role assignments">
             <span class="material-symbols-outlined">refresh</span>
-            <span>Refresh</span>
+            <span>{{ 'identity.roles.btn_refresh' | translate:'Refresh' }}</span>
           </button>
         </div>
 
@@ -223,11 +225,11 @@ interface RoleMemberItem {
           <table class="roles-data-table">
             <thead>
               <tr>
-                <th style="min-width: 220px;">Role & Authority Tier</th>
-                <th style="min-width: 280px;">Scope & Governance Boundaries</th>
-                <th style="width: 140px; text-align: center;">Personnel</th>
-                <th style="width: 200px;">Assigned Members Preview</th>
-                <th style="width: 190px; text-align: right; white-space: nowrap;">Action</th>
+                <th style="min-width: 220px;">{{ 'identity.roles.th_role_tier' | translate:'Role & Authority Tier' }}</th>
+                <th style="min-width: 280px;">{{ 'identity.roles.th_scope_boundaries' | translate:'Scope & Governance Boundaries' }}</th>
+                <th style="width: 140px; text-align: center;">{{ 'identity.roles.th_personnel' | translate:'Personnel' }}</th>
+                <th style="width: 200px;">{{ 'identity.roles.th_members_preview' | translate:'Assigned Members Preview' }}</th>
+                <th style="width: 190px; text-align: right; white-space: nowrap;">{{ 'identity.roles.th_action' | translate:'Action' }}</th>
               </tr>
             </thead>
             <tbody>
@@ -241,7 +243,7 @@ interface RoleMemberItem {
                     <div class="role-title-box">
                       <span class="role-name">{{ role.name }}</span>
                       <span class="role-pill-badge" [ngClass]="role.badge">
-                        {{ role.canAssign ? 'System Authority' : 'Root Sovereign' }}
+                        {{ role.canAssign ? ('identity.roles.system_authority' | translate:'System Authority') : ('identity.roles.root_sovereign' | translate:'Root Sovereign') }}
                       </span>
                     </div>
                   </div>
@@ -284,7 +286,7 @@ interface RoleMemberItem {
                     </span>
                   </div>
                   <div class="no-members-text" *ngIf="role.memberCount === 0">
-                    <span>No members assigned</span>
+                    <span>{{ 'identity.roles.no_members' | translate:'No members assigned' }}</span>
                   </div>
                 </td>
 
@@ -293,7 +295,7 @@ interface RoleMemberItem {
                   <!-- SuperAdmin Locked State -->
                   <div *ngIf="!role.canAssign" class="locked-chip" title="Root account authority cannot be transferred or assigned to other users.">
                     <span class="material-symbols-outlined">lock</span>
-                    <span>Root Account Only</span>
+                    <span>{{ 'identity.roles.root_account_only' | translate:'Root Account Only' }}</span>
                   </div>
 
                   <!-- Manage Members Modal Trigger -->
@@ -304,7 +306,7 @@ interface RoleMemberItem {
                     (click)="openManageModal(role)"
                   >
                     <span class="material-symbols-outlined btn-icon">group_add</span>
-                    <span class="btn-text">Manage Members</span>
+                    <span class="btn-text">{{ 'identity.roles.btn_manage_members' | translate:'Manage Members' }}</span>
                   </button>
                 </td>
               </tr>
@@ -322,15 +324,15 @@ interface RoleMemberItem {
             </div>
             <div>
               <div class="header-title-row">
-                <h3>Operational Access Levels</h3>
+                <h3>{{ 'identity.roles.operational_title' | translate:'Operational Access Levels' }}</h3>
                 <span class="section-count-badge badge-editor">{{ operationalLevelRoles.length }} Levels</span>
               </div>
-              <p>Granular operational scopes governing content creation, data records, and read-only observation across features.</p>
+              <p>{{ 'identity.roles.operational_desc' | translate:'Granular operational scopes governing content creation, data records, and read-only observation across features.' }}</p>
             </div>
           </div>
           <button *ngIf="activeFilter === 'operational_level'" type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role assignments">
             <span class="material-symbols-outlined">refresh</span>
-            <span>Refresh</span>
+            <span>{{ 'identity.roles.btn_refresh' | translate:'Refresh' }}</span>
           </button>
         </div>
 
@@ -338,11 +340,11 @@ interface RoleMemberItem {
           <table class="roles-data-table">
             <thead>
               <tr>
-                <th style="min-width: 220px;">Operational Level</th>
-                <th style="min-width: 280px;">Scope & Operational Action Boundaries</th>
-                <th style="width: 140px; text-align: center;">Personnel</th>
-                <th style="width: 200px;">Assigned Members Preview</th>
-                <th style="width: 190px; text-align: right; white-space: nowrap;">Action</th>
+                <th style="min-width: 220px;">{{ 'identity.roles.th_role_tier' | translate:'Operational Level' }}</th>
+                <th style="min-width: 280px;">{{ 'identity.roles.th_scope_boundaries' | translate:'Scope & Operational Action Boundaries' }}</th>
+                <th style="width: 140px; text-align: center;">{{ 'identity.roles.th_personnel' | translate:'Personnel' }}</th>
+                <th style="width: 200px;">{{ 'identity.roles.th_members_preview' | translate:'Assigned Members Preview' }}</th>
+                <th style="width: 190px; text-align: right; white-space: nowrap;">{{ 'identity.roles.th_action' | translate:'Action' }}</th>
               </tr>
             </thead>
             <tbody>
@@ -356,7 +358,7 @@ interface RoleMemberItem {
                     <div class="role-title-box">
                       <span class="role-name">{{ role.name }}</span>
                       <span class="role-pill-badge" [ngClass]="role.badge">
-                        Operational Level
+                        {{ 'identity.roles.operational_level' | translate:'Operational Level' }}
                       </span>
                     </div>
                   </div>
@@ -399,7 +401,7 @@ interface RoleMemberItem {
                     </span>
                   </div>
                   <div class="no-members-text" *ngIf="role.memberCount === 0">
-                    <span>No members assigned</span>
+                    <span>{{ 'identity.roles.no_members' | translate:'No members assigned' }}</span>
                   </div>
                 </td>
 
@@ -412,7 +414,7 @@ interface RoleMemberItem {
                     (click)="openManageModal(role)"
                   >
                     <span class="material-symbols-outlined btn-icon">group_add</span>
-                    <span class="btn-text">Manage Members</span>
+                    <span class="btn-text">{{ 'identity.roles.btn_manage_members' | translate:'Manage Members' }}</span>
                   </button>
                 </td>
               </tr>
@@ -430,15 +432,15 @@ interface RoleMemberItem {
             </div>
             <div>
               <div class="header-title-row">
-                <h3>Assigned Personnel Roster</h3>
+                <h3>{{ 'identity.roles.assigned_title' | translate:'Assigned Personnel Roster' }}</h3>
                 <span class="section-count-badge badge-member">{{ allAssignedMembers.length }} Members</span>
               </div>
-              <p>Complete directory of all workspace personnel currently holding active system or operational roles.</p>
+              <p>{{ 'identity.roles.assigned_desc' | translate:'Complete directory of all workspace personnel currently holding active system or operational roles.' }}</p>
             </div>
           </div>
           <button type="button" class="btn btn-outline btn-sm" (click)="loadRoleCatalog()" title="Refresh role assignments">
             <span class="material-symbols-outlined">refresh</span>
-            <span>Refresh</span>
+            <span>{{ 'identity.roles.btn_refresh' | translate:'Refresh' }}</span>
           </button>
         </div>
 
@@ -447,10 +449,10 @@ interface RoleMemberItem {
           <table class="roles-data-table">
             <thead>
               <tr>
-                <th style="min-width: 240px;">Personnel</th>
-                <th style="min-width: 200px;">Assigned Role</th>
-                <th style="min-width: 240px;">Scope & Module Boundaries</th>
-                <th style="width: 190px; text-align: right; white-space: nowrap;">Actions</th>
+                <th style="min-width: 240px;">{{ 'identity.roles.th_personnel' | translate:'Personnel' }}</th>
+                <th style="min-width: 200px;">{{ 'identity.roles.th_role_tier' | translate:'Assigned Role' }}</th>
+                <th style="min-width: 240px;">{{ 'identity.roles.th_scope_boundaries' | translate:'Scope & Module Boundaries' }}</th>
+                <th style="width: 190px; text-align: right; white-space: nowrap;">{{ 'identity.roles.th_action' | translate:'Actions' }}</th>
               </tr>
             </thead>
             <tbody>
@@ -491,7 +493,7 @@ interface RoleMemberItem {
                     style="margin-right: 8px;"
                   >
                     <span class="material-symbols-outlined btn-icon">edit</span>
-                    <span class="btn-text">Manage</span>
+                    <span class="btn-text">{{ 'identity.roles.btn_manage_members' | translate:'Manage' }}</span>
                   </button>
                   <button
                     type="button"
@@ -500,7 +502,7 @@ interface RoleMemberItem {
                     (click)="unassignRoleFromUser(item.member.userId, item.member.fullName, item.role)"
                   >
                     <span class="material-symbols-outlined">person_remove</span>
-                    <span>Remove</span>
+                    <span>{{ 'identity.roles.modal_btn_remove' | translate:'Remove' }}</span>
                   </button>
                 </td>
               </tr>
@@ -513,16 +515,16 @@ interface RoleMemberItem {
           <div class="empty-icon-wrap">
             <span class="material-symbols-outlined">group_off</span>
           </div>
-          <h4>No Personnel Assigned Yet</h4>
-          <p>Zero members currently hold administrative or operational roles in this workspace. Select an authority or operational role below to assign personnel.</p>
+          <h4>{{ 'identity.roles.no_personnel_yet' | translate:'No Personnel Assigned Yet' }}</h4>
+          <p>{{ 'identity.roles.no_personnel_desc' | translate:'Zero members currently hold administrative or operational roles in this workspace. Select an authority or operational role below to assign personnel.' }}</p>
           <div class="empty-actions">
             <button type="button" class="btn btn-primary" (click)="setFilter('all')">
               <span class="material-symbols-outlined">visibility</span>
-              <span>View All Roles & Assign</span>
+              <span>{{ 'identity.roles.btn_view_all_assign' | translate:'View All Roles & Assign' }}</span>
             </button>
             <a routerLink="/admin/users/list" class="btn btn-outline">
               <span class="material-symbols-outlined">person_add</span>
-              <span>User Directory</span>
+              <span>{{ 'identity.roles.btn_user_directory' | translate:'User Directory' }}</span>
             </a>
           </div>
         </div>
@@ -537,7 +539,7 @@ interface RoleMemberItem {
                 <span class="material-symbols-outlined">{{ activeModalRole.icon }}</span>
               </div>
               <div>
-                <h3>Manage Personnel: {{ activeModalRole.name }}</h3>
+                <h3>{{ 'identity.roles.modal_manage_title' | translate:'Manage Personnel:' }} {{ activeModalRole.name }}</h3>
                 <p>{{ activeModalRole.scope }}</p>
               </div>
             </div>
@@ -560,13 +562,13 @@ interface RoleMemberItem {
 
             <!-- Assignment Form Section -->
             <div class="assign-section">
-              <h4 class="section-title">Assign Member to this Role</h4>
+              <h4 class="section-title">{{ 'identity.roles.modal_assign_title' | translate:'Assign Member to this Role' }}</h4>
               <div class="assign-form-grid" [class.has-feature-select]="activeModalRole.name === 'Feature Editor'">
                 <!-- User Select Dropdown -->
                 <div class="form-group">
-                  <label>Select Member *</label>
+                  <label>{{ 'identity.roles.modal_select_member' | translate:'Select Member *' }}</label>
                   <select [(ngModel)]="selectedUserId" class="form-control">
-                    <option value="">Choose a member to assign...</option>
+                    <option value="">{{ 'identity.roles.modal_choose_member' | translate:'Choose a member to assign...' }}</option>
                     <option *ngFor="let u of assignableUsers" [value]="u.id">
                       {{ u.fullName }} ({{ u.email }}) {{ u.memberId ? '• ' + u.memberId : '' }}
                     </option>
@@ -575,7 +577,7 @@ interface RoleMemberItem {
 
                 <!-- Feature Area Selector (Shown only for Feature Editor) -->
                 <div class="form-group" *ngIf="activeModalRole.name === 'Feature Editor'">
-                  <label>Feature Scope Module *</label>
+                  <label>{{ 'identity.roles.modal_scope_module' | translate:'Feature Scope Module *' }}</label>
                   <select [(ngModel)]="selectedFeatureName" class="form-control">
                     <option value="UserManager">User Management (UserManager)</option>
                     <option value="ContentManager">Content & Web Pages (CMS)</option>
@@ -593,7 +595,7 @@ interface RoleMemberItem {
                     (click)="assignRoleToUser()"
                   >
                     <span *ngIf="!isAssigning" class="material-symbols-outlined">person_add</span>
-                    <span>{{ isAssigning ? 'Assigning...' : 'Assign Role' }}</span>
+                    <span>{{ isAssigning ? ('identity.roles.modal_assigning' | translate:'Assigning...') : ('identity.roles.modal_btn_assign' | translate:'Assign Role') }}</span>
                   </button>
                 </div>
               </div>
@@ -602,7 +604,7 @@ interface RoleMemberItem {
             <!-- Assigned Members List Section -->
             <div class="assigned-list-section">
               <div class="section-header-row">
-                <h4 class="section-title">Currently Assigned Personnel ({{ activeModalRole.members.length }})</h4>
+                <h4 class="section-title">{{ 'identity.roles.modal_current_assigned' | translate:'Currently Assigned Personnel' }} ({{ activeModalRole.members.length }})</h4>
               </div>
 
               <div class="assigned-members-scroll">
@@ -631,20 +633,20 @@ interface RoleMemberItem {
                     (click)="unassignRoleFromUser(m.userId, m.fullName)"
                   >
                     <span class="material-symbols-outlined">person_remove</span>
-                    <span>Remove</span>
+                    <span>{{ 'identity.roles.modal_btn_remove' | translate:'Remove' }}</span>
                   </button>
                 </div>
 
                 <div class="empty-assigned" *ngIf="activeModalRole.members.length === 0">
                   <span class="material-symbols-outlined">group_off</span>
-                  <p>No personnel currently hold the {{ activeModalRole.name }} role.</p>
+                  <p>{{ 'identity.roles.modal_empty_assigned' | translate:'No personnel currently hold the role.' }}</p>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline" (click)="closeManageModal()">Close</button>
+            <button type="button" class="btn btn-outline" (click)="closeManageModal()">{{ 'identity.roles.modal_btn_close' | translate:'Close' }}</button>
           </div>
         </div>
       </div>
@@ -1348,24 +1350,27 @@ export class IdentityRolesComponent implements OnInit {
   selectedUserId: string = '';
   selectedFeatureName: string = 'UserManager';
 
-  headerButtons: PageHeaderButton[] = [
-    {
-      text: 'User Directory',
-      icon: 'groups',
-      isPrimary: false,
-      routerLink: '/admin/users/list'
-    },
-    {
-      text: 'Identity Dashboard',
-      icon: 'admin_panel_settings',
-      isPrimary: false,
-      routerLink: '/identity/console'
-    }
-  ];
+  get headerButtons(): PageHeaderButton[] {
+    return [
+      {
+        text: this.translationService.translate('identity.roles.btn_user_directory', 'User Directory'),
+        icon: 'groups',
+        isPrimary: false,
+        routerLink: '/admin/users/list'
+      },
+      {
+        text: this.translationService.translate('nav.identity_dashboard', 'Identity Dashboard'),
+        icon: 'admin_panel_settings',
+        isPrimary: false,
+        routerLink: '/identity/console'
+      }
+    ];
+  }
 
   constructor(
     private api: ApiService,
-    private toast: ToastService
+    private toast: ToastService,
+    private translationService: TranslationService
   ) {}
 
   ngOnInit(): void {

@@ -50,8 +50,46 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label asp-for="Input.ExpiresAtUtc" class="form-label">Expiration Date UTC <span class="required">*</span></label>
-                        <input asp-for="Input.ExpiresAtUtc" type="datetime-local" class="form-control" value="@Model.Input.ExpiresAtUtc.ToString("yyyy-MM-ddTHH:mm")" />
+                        <input asp-for="Input.ExpiresAtUtc" id="Input_ExpiresAtUtc" type="datetime-local" class="form-control" value="@Model.Input.ExpiresAtUtc.ToString("yyyy-MM-ddTHH:mm")" />
                         <span asp-validation-for="Input.ExpiresAtUtc" class="field-validation-error"></span>
+
+                        @* ── Quick Renewal Days & Testing Shortcuts ── *@
+                        <div style="margin-top: 10px; padding: 12px; border-radius: 8px; background: rgba(245, 158, 11, 0.06); border: 1px dashed rgba(245, 158, 11, 0.3);">
+                            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--admin-warning); margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
+                                <span class="material-symbols-outlined" style="font-size: 15px;">bolt</span>
+                                Quick Renewal Days (Calculates from Now)
+                            </div>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="font-size: 11px; padding: 3px 8px; font-weight: 700; color: var(--admin-warning); display: inline-flex; align-items: center; gap: 4px;" onclick="setExpiryDays(2)" title="Set expiry to 2 days for quick testing of renewal notices & warnings">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">bolt</span>
+                                    <span>2 Days (Test)</span>
+                                </button>
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="font-size: 11px; padding: 3px 8px;" onclick="setExpiryDays(7)">
+                                    7 Days (Trial)
+                                </button>
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="setExpiryDays(30)">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">calendar_month</span>
+                                    <span>30 Days (Monthly)</span>
+                                </button>
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="setExpiryDays(90)">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">calendar_month</span>
+                                    <span>90 Days (Quarterly)</span>
+                                </button>
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="font-size: 11px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px;" onclick="setExpiryDays(365)">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">event_repeat</span>
+                                    <span>365 Days (Yearly)</span>
+                                </button>
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="font-size: 11px; padding: 3px 8px; color: var(--admin-danger); display: inline-flex; align-items: center; gap: 4px;" onclick="setExpiryDays(-1)">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">warning</span>
+                                    <span>-1 Day (Expired)</span>
+                                </button>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                                <input type="number" id="custom-days-input" class="form-control" style="width: 100px; height: 30px; font-size: 12px; padding: 2px 8px;" placeholder="e.g. 2" />
+                                <span style="font-size: 12px; color: var(--admin-text-muted);">days</span>
+                                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="height: 30px; font-size: 11.5px;" onclick="applyCustomDays()">Apply to Field</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -93,7 +131,7 @@
             </div>
         </div>
 
-        @* Associated Entities *@
+        @* Associated Entities & Immediate Testing Controls *@
         <div>
             <div class="admin-card">
                 <div class="admin-card-header">
@@ -122,6 +160,90 @@
                     </div>
                 </div>
             </div>
+
+            @* ── Instant Server-Side Testing Actions ── *@
+            <div class="admin-card" style="margin-top: 16px; border-left: 4px solid var(--admin-warning);">
+                <div class="admin-card-header">
+                    <h2 class="admin-card-title" style="display: flex; align-items: center; gap: 8px; font-size: 14px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: var(--admin-warning);">science</span> Instant Expiry Testing
+                    </h2>
+                </div>
+                <div class="admin-card-body" style="display: flex; flex-direction: column; gap: 10px;">
+                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 0;">
+                        Immediately updates database expiration to test renewal notice alerts, countdown badges, or overdue enforcement.
+                    </p>
+
+                    <button type="submit" form="form-test-2d" class="btn-admin btn-admin-warning btn-admin-sm" style="width: 100%; justify-content: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">bolt</span>
+                        <span>Set Expiry to 2 Days</span>
+                    </button>
+
+                    <button type="submit" form="form-test-30d" class="btn-admin btn-admin-secondary btn-admin-sm" style="width: 100%; justify-content: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">calendar_month</span>
+                        <span>Reset to 30 Days (Monthly)</span>
+                    </button>
+
+                    <button type="submit" form="form-test-365d" class="btn-admin btn-admin-secondary btn-admin-sm" style="width: 100%; justify-content: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">event_repeat</span>
+                        <span>Reset to 365 Days (Yearly)</span>
+                    </button>
+
+                    <button type="submit" form="form-test-expired" class="btn-admin btn-admin-danger btn-admin-sm" style="width: 100%; justify-content: center;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">warning</span>
+                        ⚠️ Simulate Expired (-1 Day)
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </form>
+
+@* Standalone Hidden Forms for Instant 1-Click Server-Side Tests *@
+<form id="form-test-2d" method="post" asp-page-handler="SetExpiryDays" asp-route-id="@Model.Id" asp-route-days="2" onsubmit="return confirm('Immediately set expiry to 2 days from now for renewal testing?');" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+<form id="form-test-30d" method="post" asp-page-handler="SetExpiryDays" asp-route-id="@Model.Id" asp-route-days="30" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+<form id="form-test-365d" method="post" asp-page-handler="SetExpiryDays" asp-route-id="@Model.Id" asp-route-days="365" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+<form id="form-test-expired" method="post" asp-page-handler="SetExpiryDays" asp-route-id="@Model.Id" asp-route-days="-1" onsubmit="return confirm('Simulate expired/overdue state (-1 day)?');" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function setExpiryDays(days) {
+            const now = new Date();
+            now.setDate(now.getDate() + days);
+            
+            const year = now.getUTCFullYear();
+            const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(now.getUTCDate()).padStart(2, '0');
+            const hours = String(now.getUTCHours()).padStart(2, '0');
+            const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+            
+            const formatted = `${year}-${month}-${day}T${hours}:${minutes}`;
+            const input = document.getElementById('Input_ExpiresAtUtc');
+            if (input) {
+                input.value = formatted;
+                input.style.borderColor = 'var(--admin-warning)';
+                input.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.2)';
+                setTimeout(() => { 
+                    input.style.borderColor = ''; 
+                    input.style.boxShadow = '';
+                }, 1200);
+            }
+        }
+
+        function applyCustomDays() {
+            const val = document.getElementById('custom-days-input').value;
+            const days = parseInt(val, 10);
+            if (!isNaN(days)) {
+                setExpiryDays(days);
+            }
+        }
+    </script>
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/language_provider.dart';
 import '../theme/app_colors.dart';
 
 /// Leading button modes for [AppTopBar].
@@ -198,14 +199,14 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
         return IconButton(
           icon: leadingWidget ?? Icon(Icons.menu_rounded, color: fgColor),
           onPressed: onLeadingPressed ?? () => Scaffold.of(context).openDrawer(),
-          tooltip: 'Open navigation',
+          tooltip: context.trc('ui.open_navigation', fallback: 'Open navigation'),
         );
 
       case AppTopBarLeadingType.back:
         return IconButton(
           icon: leadingWidget ?? Icon(Icons.arrow_back_ios_new_rounded, color: fgColor, size: 20),
           onPressed: onLeadingPressed ?? () => Navigator.of(context).maybePop(),
-          tooltip: 'Back',
+          tooltip: context.trc('shell.back', fallback: 'Back'),
         );
 
       case AppTopBarLeadingType.avatar:
@@ -227,8 +228,8 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             if (leadingBadge != null)
               Positioned(
-                top: -2,
-                right: -2,
+                top: 0,
+                right: 0,
                 child: leadingBadge!,
               ),
           ],
@@ -260,8 +261,8 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         if (action.badge != null)
           Positioned(
-            top: 6,
-            right: 6,
+            top: 2,
+            right: 2,
             child: action.badge!,
           ),
       ],

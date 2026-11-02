@@ -52,7 +52,7 @@ namespace Ozikol_BCC.Infrastructure.TenantSupport
     }
 
     /// <summary>
-    /// Notice alerting administrators of an expiring or expired feature subscription.
+    /// Notice alerting administrators of an expiring or expired feature subscription or free trial.
     /// Strictly visible to tenant administrators only.
     /// </summary>
     public class FeatureExpirationNoticeDto
@@ -63,8 +63,33 @@ namespace Ozikol_BCC.Infrastructure.TenantSupport
         public DateTime ExpiresAtUtc { get; set; }
         public int DaysRemaining { get; set; }
         public bool IsExpired { get; set; }
-        public string Severity { get; set; } = "Warning"; // "Warning" (<=14d), "Urgent" (<=3d), "Critical" (expired)
+        public string Severity { get; set; } = "Warning"; // "Warning" (<=30d), "Urgent" (<=3d), "Critical" (expired)
         public string NoticeMessage { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Amount due to renew this capability in the tenant's active running currency.
+        /// </summary>
+        public decimal RenewalPrice { get; set; }
+
+        /// <summary>
+        /// ISO 4217 currency code for the tenant (e.g. "NGN", "USD").
+        /// </summary>
+        public string CurrencyCode { get; set; } = "USD";
+
+        /// <summary>
+        /// Currency symbol for the tenant (e.g. "₦", "$").
+        /// </summary>
+        public string CurrencySymbol { get; set; } = "$";
+
+        /// <summary>
+        /// Billing cadence for renewal ("Monthly", "Quarterly", "Yearly").
+        /// </summary>
+        public string BillingCadence { get; set; } = "Monthly";
+
+        /// <summary>
+        /// True when the expiring entitlement is a First-Time Free Trial.
+        /// </summary>
+        public bool IsTrialPeriod { get; set; }
     }
 
     /// <summary>
@@ -102,13 +127,13 @@ namespace Ozikol_BCC.Infrastructure.TenantSupport
         Task<bool> IsFeatureActiveAsync(string tenantKey, string featureCode, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Retrieves upcoming expiration notices for licensed features.
+        /// Retrieves upcoming expiration notices for licensed features and free trials (within 30 days or overdue).
         /// Strictly visible to administrators.
         /// </summary>
         /// <param name="tenantKey">The unique tenant key.</param>
-        /// <param name="daysThreshold">Days threshold for expiration warnings (defaults to 14 days).</param>
+        /// <param name="daysThreshold">Days threshold for expiration warnings (defaults to 30 days).</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>List of expiration notices sorted by urgency.</returns>
-        Task<List<FeatureExpirationNoticeDto>> GetExpiringFeaturesAsync(string tenantKey, int daysThreshold = 14, CancellationToken cancellationToken = default);
+        Task<List<FeatureExpirationNoticeDto>> GetExpiringFeaturesAsync(string tenantKey, int daysThreshold = 30, CancellationToken cancellationToken = default);
     }
 }

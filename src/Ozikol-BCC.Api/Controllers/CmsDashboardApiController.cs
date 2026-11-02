@@ -14,7 +14,7 @@ namespace Ozikol_BCC.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Tags("CMS Studio Analytics & Dashboard")]
-    [Authorize(Roles = "SuperAdmin,Admin,CmsManager,ContentManager")]
+    [Authorize(Roles = "SuperAdmin,Admin,CmsManager,ContentManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
     public class CmsDashboardApiController : ControllerBase
     {
         private readonly DashboardDbContext _context;

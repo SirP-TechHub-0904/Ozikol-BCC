@@ -49,10 +49,20 @@ class AuthService {
 
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
+        Map<String, dynamic>? resultMap;
         if (data is Map && data['data'] is Map) {
-          return Map<String, dynamic>.from(data['data'] as Map);
+          resultMap = Map<String, dynamic>.from(data['data'] as Map);
         } else if (data is Map) {
-          return Map<String, dynamic>.from(data);
+          resultMap = Map<String, dynamic>.from(data);
+        }
+
+        if (resultMap != null) {
+          // Extract trust token from body or response header if provided by backend
+          final headerToken = response.headers.value('x-device-trust-token');
+          if (headerToken != null && headerToken.isNotEmpty && resultMap['trustToken'] == null) {
+            resultMap['trustToken'] = headerToken;
+          }
+          return resultMap;
         }
       }
       throw Exception('Verification failed. Please check the code and try again.');
@@ -81,8 +91,7 @@ class AuthService {
       } else if (data is String && data.isNotEmpty) {
         msg = data;
       }
-      final underlyingError = e.error?.toString() ?? e.message;
-      throw Exception(msg ?? (e.response != null ? 'Server error (${e.response?.statusCode}): ${e.response?.statusMessage}' : 'Network error: ${underlyingError ?? "connection aborted"}'));
+      throw Exception(msg ?? (e.response != null ? 'Unable to sign in right now. Please try again.' : 'Unable to connect. Please check your network connection.'));
     }
   }
 
@@ -112,9 +121,16 @@ class AuthService {
       }
       return 'Verification code resent.';
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.response == null) {
+        throw Exception('Unable to connect. Please check your network connection.');
+      }
       final msg = e.response?.data is Map && e.response?.data['message'] != null
           ? e.response?.data['message'].toString()
-          : 'Unable to resend code at this time.';
+          : 'Unable to resend code right now. Please try again.';
       throw Exception(msg);
     }
   }
@@ -142,10 +158,21 @@ class AuthService {
       }
       return 'If an account exists, a reset code has been sent.';
     } on DioException catch (e) {
-      final msg = e.response?.data is Map && e.response?.data['message'] != null
-          ? e.response?.data['message'].toString()
-          : 'Unable to dispatch reset instructions.';
-      throw Exception(msg);
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.response == null) {
+        throw Exception('Unable to connect. Please check your network connection.');
+      }
+      final data = e.response?.data;
+      String? msg;
+      if (data is Map) {
+        msg = data['message']?.toString() ??
+            data['Message']?.toString() ??
+            data['error']?.toString();
+      }
+      throw Exception(msg ?? 'Unable to send reset instructions right now. Please try again.');
     }
   }
 
@@ -168,6 +195,7 @@ class AuthService {
         ApiConstants.resetPasswordEndpoint,
         data: {
           'email': email.trim(),
+          'otp': token.trim(),
           'token': token.trim(),
           'newPassword': newPassword,
         },
@@ -180,9 +208,16 @@ class AuthService {
       }
       return 'Password updated.';
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.response == null) {
+        throw Exception('Unable to connect. Please check your network connection.');
+      }
       final msg = e.response?.data is Map && e.response?.data['message'] != null
           ? e.response?.data['message'].toString()
-          : 'Failed to reset password. Please check the code.';
+          : 'Unable to reset password. Please check the code and try again.';
       throw Exception(msg);
     }
   }
@@ -210,12 +245,19 @@ class AuthService {
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Failed to update password.');
+        throw Exception('Unable to update password. Please try again.');
       }
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.response == null) {
+        throw Exception('Unable to connect. Please check your network connection.');
+      }
       final msg = e.response?.data is Map && e.response?.data['message'] != null
           ? e.response?.data['message'].toString()
-          : 'Unable to update password. Please ensure it meets complexity standards.';
+          : 'Unable to update password. Please ensure it meets security requirements.';
       throw Exception(msg);
     }
   }
@@ -243,12 +285,19 @@ class AuthService {
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Failed to change password.');
+        throw Exception('Unable to change password. Please try again.');
       }
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.response == null) {
+        throw Exception('Unable to connect. Please check your network connection.');
+      }
       final msg = e.response?.data is Map && e.response?.data['message'] != null
           ? e.response?.data['message'].toString()
-          : 'Unable to change password. Please verify current credentials.';
+          : 'Unable to change password. Please check your current password.';
       throw Exception(msg);
     }
   }
@@ -305,11 +354,18 @@ class AuthService {
           return Map<String, dynamic>.from(data);
         }
       }
-      throw Exception('Failed to initialize 2FA enrollment.');
+      throw Exception('Unable to set up verification right now. Please try again.');
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.response == null) {
+        throw Exception('Unable to connect. Please check your network connection.');
+      }
       final msg = e.response?.data is Map && e.response?.data['message'] != null
           ? e.response?.data['message'].toString()
-          : 'Unable to configure 2FA provider.';
+          : 'Unable to configure verification provider right now.';
       throw Exception(msg);
     }
   }
@@ -337,12 +393,19 @@ class AuthService {
       );
 
       if (response.statusCode != 200) {
-        throw Exception('Failed to verify 2FA code.');
+        throw Exception('Unable to verify code. Please try again.');
       }
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError ||
+          e.response == null) {
+        throw Exception('Unable to connect. Please check your network connection.');
+      }
       final msg = e.response?.data is Map && e.response?.data['message'] != null
           ? e.response?.data['message'].toString()
-          : 'Invalid 2FA verification code.';
+          : 'Invalid verification code. Please check your code and try again.';
       throw Exception(msg);
     }
   }

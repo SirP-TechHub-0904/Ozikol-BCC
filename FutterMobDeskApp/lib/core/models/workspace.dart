@@ -127,15 +127,20 @@ class Workspace {
       (effectivePermissions['features'] is Map &&
           (effectivePermissions['features'] as Map).isNotEmpty) ||
       userRoles.any((r) => [
+            'usermanager',
             'identitymanager',
             'cmsmanager',
             'editor',
-            'featureedit'
+            'featureedit',
+            'systemadministrator'
           ].contains(r.toLowerCase()));
 
   /// Verifies if a modular capability is active and licensed for this tenant organization
-  bool isFeatureActive(String code) =>
-      licensedFeatures.isEmpty || licensedFeatures.contains(code);
+  bool isFeatureActive(String code) {
+    if (code.trim().isEmpty) return false;
+    final target = code.trim().toLowerCase();
+    return licensedFeatures.any((f) => f.trim().toLowerCase() == target);
+  }
 
   /// Checks if the user has mutation/editing permission for a given feature code
   bool canEditFeature(String code) {

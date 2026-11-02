@@ -46,6 +46,12 @@ public class MasterCurrencyRate
     public decimal RateFromUsd { get; set; }
 
     /// <summary>
+    /// Optional Value Added Tax (VAT) percentage applied to billing invoices in this currency (e.g. 7.5 for 7.5%).
+    /// When 0 or less, VAT is omitted from invoices. When greater than 0, VAT is automatically calculated and added.
+    /// </summary>
+    public decimal VatPercentage { get; set; } = 0m;
+
+    /// <summary>
     /// Indicates whether this currency serves as the global pricing baseline (USD = true).
     /// </summary>
     public bool IsBaseCurrency { get; set; }

@@ -57,7 +57,7 @@ namespace Ozikol.MasterDomain.Models
         /// Optional target tenant catalog ID if this execution targeted a specific tenant.
         /// </summary>
         [ForeignKey("TargetTenantCatalog")]
-        public int? TargetTenantCatalogId { get; set; }
+        public Guid? TargetTenantCatalogId { get; set; }
 
         /// <summary>
         /// Navigation property to the target tenant organization.

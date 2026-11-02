@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -12,7 +13,8 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 {
     /// <summary>
-    /// PageModel modifying modular capability configurations, pricing tiers in USD base currency, and metering models.
+    /// PageModel modifying modular capability configurations, Full Title, Sidebar Menu Title, Suite assignment,
+    /// pricing tiers in USD base currency, and metering models.
     /// </summary>
     public class EditModel : PageModel
     {
@@ -20,7 +22,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         private readonly ICurrencyService _currencyService;
 
         /// <summary>
-        /// The 10 canonical official Feature Suites of the Ozikol platform.
+        /// The 11 canonical official Feature Suites of the Ozikol platform.
         /// </summary>
         public static readonly string[] CanonicalSuites = new[]
         {
@@ -33,7 +35,8 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             "Communication, AI & Support",
             "Compliance, Learning & Certification",
             "Demographics & Civic Census",
-            "Life Events & Publications"
+            "Life Events & Publications",
+            "Workspace"
         };
 
         /// <summary>
@@ -59,6 +62,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public MasterFeatureCatalog Feature { get; set; } = null!;
 
         /// <summary>
+        /// Available suites loaded from <see cref="MasterFeatureSuites"/>.
+        /// </summary>
+        public List<MasterFeatureSuite> Suites { get; set; } = new();
+
+        /// <summary>
         /// Exchange rate multipliers for live client-side currency conversion.
         /// </summary>
         public decimal NgnRate => _currencyService.GetExchangeRate("NGN");
@@ -72,6 +80,28 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public FeatureEditInputModel Input { get; set; } = new();
 
         /// <summary>
+        /// Loads all suites from MasterFeatureSuites with fallback to canonical defaults.
+        /// </summary>
+        private async Task LoadSuitesAsync()
+        {
+            try
+            {
+                Suites = await _dbContext.MasterFeatureSuites
+                    .AsNoTracking()
+                    .OrderBy(s => s.SortOrder)
+                    .ToListAsync();
+                if (Suites.Count == 0)
+                {
+                    Suites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+                }
+            }
+            catch
+            {
+                Suites = MasterFeatureSuiteDefaults.GetDefaultSuites();
+            }
+        }
+
+        /// <summary>
         /// Converts a USD amount to formatted regional currency for preview.
         /// </summary>
         public string FormatPreview(decimal usdAmount, string currencyCode) => _currencyService.FormatUsdConverted(usdAmount, currencyCode);
@@ -81,6 +111,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// </summary>
         public async Task<IActionResult> OnGetAsync()
         {
+            await LoadSuitesAsync();
             var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(Id);
             if (feature == null)
             {
@@ -109,7 +140,9 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             Input = new FeatureEditInputModel
             {
                 Name = feature.Name,
+                MenuTitle = MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(feature.FeatureCode, feature.MenuTitle, feature.Name),
                 Category = feature.Category,
+                MasterFeatureSuiteId = feature.MasterFeatureSuiteId ?? MasterFeatureSuiteDefaults.ResolveSuiteId(feature.Category),
                 Description = feature.Description,
                 Icon = feature.Icon,
                 BillingType = (int)feature.BillingType,
@@ -124,8 +157,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 MeterUnitName = feature.MeterUnitName,
                 MeterUnitPrice = feature.MeterUnitPrice,
                 MeterBatchSize = feature.MeterBlockSize,
+                FreeTrialDays = feature.FreeTrialDays,
                 DisplayOrder = feature.SortOrder,
-                IsActive = feature.IsActive
+                IsActive = feature.IsActive,
+                IsPublished = feature.IsActive,
+                IsAvailableForUse = feature.IsAvailableForUse,
+                IsInBeta = feature.IsInBeta
             };
 
             return Page();
@@ -136,6 +173,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// </summary>
         public async Task<IActionResult> OnPostAsync()
         {
+            await LoadSuitesAsync();
             var feature = await _dbContext.MasterFeatureCatalogs.FindAsync(Id);
             if (feature == null)
             {
@@ -151,7 +189,25 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
 
             feature.Name = Input.Name.Trim();
-            feature.Category = Input.Category.Trim();
+            feature.MenuTitle = !string.IsNullOrWhiteSpace(Input.MenuTitle)
+                ? Input.MenuTitle.Trim()
+                : MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(feature.FeatureCode, null, feature.Name);
+
+            var matchedSuite = Suites.FirstOrDefault(s =>
+                (Input.MasterFeatureSuiteId.HasValue && s.Id == Input.MasterFeatureSuiteId.Value) ||
+                string.Equals(s.Name, Input.Category?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (matchedSuite != null)
+            {
+                feature.MasterFeatureSuiteId = matchedSuite.Id;
+                feature.Category = matchedSuite.Name;
+            }
+            else
+            {
+                feature.Category = Input.Category.Trim();
+                feature.MasterFeatureSuiteId = MasterFeatureSuiteDefaults.ResolveSuiteId(feature.Category);
+            }
+
             feature.Description = Input.Description?.Trim();
             feature.Icon = Input.Icon?.Trim();
             feature.BillingType = (FeatureBillingType)Input.BillingType;
@@ -165,7 +221,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             }
             else
             {
-                // Monthly recurring with calculated percentage discounts
                 var monthly = Math.Max(0m, Input.MonthlyPrice);
                 var qDisc = Math.Clamp(Input.QuarterlyDiscountPercent, 0, 100);
                 var yDisc = Math.Clamp(Input.YearlyDiscountPercent, 0, 100);
@@ -180,8 +235,55 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             feature.MeterUnitName = Input.IsMetered ? Input.MeterUnitName?.Trim() : null;
             feature.MeterUnitPrice = Input.IsMetered ? Input.MeterUnitPrice : 0m;
             feature.MeterBlockSize = Input.IsMetered && Input.MeterBatchSize > 0 ? Input.MeterBatchSize : 1;
+            feature.FreeTrialDays = Math.Clamp(Input.FreeTrialDays, 0, 365);
+            var previousOrder = feature.SortOrder;
             feature.SortOrder = Input.DisplayOrder;
-            feature.IsActive = Input.IsActive;
+            feature.IsActive = Input.IsPublished;
+            feature.IsPublished = Input.IsPublished;
+            feature.IsAvailableForUse = Input.IsAvailableForUse;
+
+            // If SortOrder changed, rearrange all features sequentially (1..N) without duplicates
+            if (Input.DisplayOrder > 0 && Input.DisplayOrder != previousOrder)
+            {
+                var suiteOrderLookup = Suites.ToDictionary(s => s.Id, s => s.SortOrder);
+                var suiteNameLookup = Suites
+                    .GroupBy(s => s.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(g => g.Key, g => g.First().SortOrder, StringComparer.OrdinalIgnoreCase);
+
+                int ResolveSuiteSort(MasterFeatureCatalog f)
+                {
+                    if (f.MasterFeatureSuiteId.HasValue && suiteOrderLookup.TryGetValue(f.MasterFeatureSuiteId.Value, out var byId))
+                        return byId;
+                    if (!string.IsNullOrWhiteSpace(f.Category) && suiteNameLookup.TryGetValue(f.Category.Trim(), out var byName))
+                        return byName;
+                    return 999;
+                }
+
+                var allOthers = await _dbContext.MasterFeatureCatalogs
+                    .Where(f => f.Id != feature.Id)
+                    .ToListAsync();
+
+                var orderedList = allOthers
+                    .OrderBy(f => ResolveSuiteSort(f))
+                    .ThenBy(f => f.SortOrder)
+                    .ThenBy(f => f.Name)
+                    .ToList();
+
+                int targetIdx = Math.Clamp(Input.DisplayOrder - 1, 0, orderedList.Count);
+                orderedList.Insert(targetIdx, feature);
+
+                var finalOrdered = orderedList
+                    .Select((f, idx) => new { Feature = f, RequestedIdx = idx })
+                    .OrderBy(x => ResolveSuiteSort(x.Feature))
+                    .ThenBy(x => x.RequestedIdx)
+                    .Select(x => x.Feature)
+                    .ToList();
+
+                for (int i = 0; i < finalOrdered.Count; i++)
+                {
+                    finalOrdered[i].SortOrder = i + 1;
+                }
+            }
 
             _dbContext.MasterAuditLogs.Add(new MasterAuditLog
             {
@@ -190,7 +292,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 Action = "Update",
                 EntityType = "Feature",
                 EntityId = feature.Id.ToString(),
-                Summary = $"Updated capability '{feature.Name}' ({feature.FeatureCode}) specifications and pricing",
+                Summary = $"Updated capability '{feature.Name}' (Menu: '{feature.MenuTitle}', Code: {feature.FeatureCode})",
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString(),
                 CreatedUtc = DateTime.UtcNow
@@ -199,7 +301,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             await _dbContext.SaveChangesAsync();
             _currencyService.InvalidatePricingCache();
 
-            TempData["Success"] = $"Capability '{feature.Name}' updated successfully.";
+            TempData["Success"] = $"Capability '{feature.Name}' (Menu Title: '{feature.MenuTitle}') updated successfully.";
             return RedirectToPage("/Features/Details", new { id = feature.Id });
         }
 
@@ -208,9 +310,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// </summary>
         public class FeatureEditInputModel
         {
-            [Required(ErrorMessage = "Capability name is required.")]
+            [Required(ErrorMessage = "Capability full title is required.")]
             [StringLength(120)]
             public string Name { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Sidebar Menu Title is required.")]
+            [StringLength(60)]
+            public string MenuTitle { get; set; } = string.Empty;
+
+            public Guid? MasterFeatureSuiteId { get; set; }
 
             [Required(ErrorMessage = "Category is required.")]
             [StringLength(60)]
@@ -224,9 +332,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
             public int BillingType { get; set; } = 1;
 
-            /// <summary>
-            /// Billing cadence: "Yearly" (Annual fixed subscription) or "Monthly".
-            /// </summary>
             public string BillingCadence { get; set; } = "Yearly";
 
             [Range(0, 100000)]
@@ -255,9 +360,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
             public int MeterBatchSize { get; set; } = 1;
 
+            /// <summary>
+            /// Number of free trial days granted to a tenant the first time they activate and test this capability before payment (General Mode).
+            /// </summary>
+            [Range(0, 365)]
+            public int FreeTrialDays { get; set; } = 14;
+
             public int DisplayOrder { get; set; }
 
             public bool IsActive { get; set; } = true;
+
+            public bool IsPublished { get; set; } = true;
+
+            public bool IsAvailableForUse { get; set; } = false;
+
+            public bool IsInBeta { get; set; } = false;
         }
     }
 }

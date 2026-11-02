@@ -21,7 +21,7 @@ public class MasterBillingTransaction
     /// <summary>
     /// Foreign key to the tenant this transaction belongs to.
     /// </summary>
-    public int MasterTenantCatalogId { get; set; }
+    public Guid MasterTenantCatalogId { get; set; }
 
     /// <summary>
     /// Optional foreign key to the specific feature subscription this payment covers.
@@ -76,6 +76,32 @@ public class MasterBillingTransaction
     /// </summary>
     [MaxLength(500)]
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// Optional comma-separated list of canonical feature codes covered by this invoice
+    /// (supports both single capability renewals and consolidated multi-feature renewals).
+    /// </summary>
+    [MaxLength(500)]
+    public string? FeatureCodesCsv { get; set; }
+
+    /// <summary>
+    /// Billing duration cadence covered by this transaction (Monthly, Quarterly, Yearly).
+    /// </summary>
+    [MaxLength(30)]
+    public string? BillingCadence { get; set; }
+
+    /// <summary>
+    /// Serialized JSON array of invoice line items with per-capability duration (1 Month, 3 Months, 1 Year),
+    /// unit pricing, and calculated annual/quarterly discount savings.
+    /// </summary>
+    [MaxLength(4000)]
+    public string? LineItemsJson { get; set; }
+
+    /// <summary>
+    /// Optional bank transfer reference, narration, or payment receipt note submitted by the tenant for Direct Bank Deposit verification.
+    /// </summary>
+    [MaxLength(250)]
+    public string? PaymentProofRef { get; set; }
 
     /// <summary>
     /// UTC timestamp when this transaction was created.

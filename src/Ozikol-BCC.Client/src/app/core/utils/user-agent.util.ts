@@ -6,9 +6,10 @@ export interface ClientDeviceTelemetry {
   browserVersion: string;
   osName: string;
   deviceType: 'desktop' | 'mobile' | 'tablet';
-  displayTitle: string; // e.g. "Google Chrome on Windows 10/11"
-  displayDetails: string; // e.g. "Google Chrome 155 • Desktop"
-  icon: string; // Material Symbols icon: "desktop_windows", "laptop_mac", "smartphone", "tablet", "terminal"
+  clientType: 'web' | 'desktop' | 'mobile';
+  displayTitle: string; // e.g. "Google Chrome on Windows 10/11", "Desktop App on Windows"
+  displayDetails: string; // e.g. "Google Chrome 130 • Desktop Browser", "Desktop App • Desktop"
+  icon: string; // Material Symbols icon: "language", "desktop_windows", "laptop_mac", "smartphone", "tablet", "terminal"
 }
 
 /**
@@ -23,27 +24,64 @@ export function parseUserAgent(userAgent: string | undefined | null): ClientDevi
       browserVersion: '',
       osName: 'Unknown OS',
       deviceType: 'desktop',
+      clientType: 'web',
       displayTitle: 'Web Browser Session',
       displayDetails: 'Desktop Browser',
-      icon: 'computer'
+      icon: 'language'
     };
   }
 
   const ua = userAgent.trim();
 
-  // If already a pre-formatted friendly title (e.g. "Google Chrome on Windows 10/11")
+  // 1. Check for native Ozikol BCC desktop and mobile applications
+  if (/BCC-Client|OzikolBCC-Flutter|Flutter/i.test(ua)) {
+    const isMobile = /Mobile|Android|iOS/i.test(ua);
+    const isApple = /iOS|macOS/i.test(ua);
+    const os = /Android/i.test(ua) ? 'Android' :
+               /iOS/i.test(ua) ? 'iOS' :
+               /Windows/i.test(ua) ? 'Windows' :
+               /macOS/i.test(ua) ? 'macOS' :
+               /Linux/i.test(ua) ? 'Linux' : 'Device';
+    const browserName = isMobile ? 'Mobile App' : 'Desktop App';
+    const deviceType: 'desktop' | 'mobile' = isMobile ? 'mobile' : 'desktop';
+    const clientType: 'desktop' | 'mobile' = isMobile ? 'mobile' : 'desktop';
+    const icon = isMobile ? 'smartphone' : (isApple ? 'laptop_mac' : (os === 'Linux' ? 'terminal' : 'desktop_windows'));
+
+    return {
+      browserName,
+      browserVersion: '1.0',
+      osName: os,
+      deviceType,
+      clientType,
+      displayTitle: `${browserName} on ${os}`,
+      displayDetails: `${browserName} • ${deviceType === 'mobile' ? 'Mobile' : 'Desktop'}`,
+      icon
+    };
+  }
+
+  // 2. If already a pre-formatted friendly title (e.g. "Google Chrome on Windows 10/11", "Desktop App on Windows")
   if (!ua.toLowerCase().startsWith('mozilla/') && ua.includes(' on ')) {
     const parts = ua.split(' on ');
-    const isMobile = /mobile|phone|android|iphone/i.test(ua);
+    const firstPart = parts[0] || 'Web Browser';
+    const secondPart = parts[1] || 'Device';
+    const isDesktopApp = /Desktop App/i.test(firstPart);
+    const isMobileApp = /Mobile App/i.test(firstPart);
+    const isMobile = isMobileApp || /mobile|phone|android|iphone/i.test(ua);
     const isTablet = /tablet|ipad/i.test(ua);
+    const deviceType: 'desktop' | 'mobile' | 'tablet' = isMobile ? 'mobile' : (isTablet ? 'tablet' : 'desktop');
+    const clientType: 'web' | 'desktop' | 'mobile' = isDesktopApp ? 'desktop' : (isMobileApp ? 'mobile' : 'web');
+    const icon = isDesktopApp ? (secondPart.includes('macOS') ? 'laptop_mac' : (secondPart.includes('Linux') ? 'terminal' : 'desktop_windows')) :
+                 (isMobile ? 'smartphone' : (isTablet ? 'tablet' : 'language'));
+
     return {
-      browserName: parts[0] || 'Web Browser',
+      browserName: firstPart,
       browserVersion: '',
-      osName: parts[1] || 'Device',
-      deviceType: isMobile ? 'mobile' : (isTablet ? 'tablet' : 'desktop'),
+      osName: secondPart,
+      deviceType,
+      clientType,
       displayTitle: ua,
-      displayDetails: `${parts[0] || 'Browser'} • ${isMobile ? 'Mobile' : (isTablet ? 'Tablet' : 'Desktop')}`,
-      icon: isMobile ? 'smartphone' : (isTablet ? 'tablet' : 'desktop_windows')
+      displayDetails: `${firstPart} • ${isMobile ? 'Mobile' : (isTablet ? 'Tablet' : (isDesktopApp ? 'Desktop' : 'Desktop Browser'))}`,
+      icon
     };
   }
 
@@ -133,16 +171,18 @@ export function parseUserAgent(userAgent: string | undefined | null): ClientDevi
   const verSnippet = browserVersion ? ` ${browserVersion}` : '';
   const displayTitle = `${browserName} on ${osName}`;
   const deviceTypeLabel = deviceType === 'mobile' ? 'Mobile' : (deviceType === 'tablet' ? 'Tablet' : 'Desktop');
-  const displayDetails = `${browserName}${verSnippet} • ${deviceTypeLabel}`;
+  const displayDetails = `${browserName}${verSnippet} • ${deviceTypeLabel} Browser`;
+  const resolvedIcon = deviceType === 'mobile' ? 'smartphone' : (deviceType === 'tablet' ? 'tablet' : 'language');
 
   return {
     browserName,
     browserVersion,
     osName,
     deviceType,
+    clientType: 'web',
     displayTitle,
     displayDetails,
-    icon
+    icon: resolvedIcon
   };
 }
 

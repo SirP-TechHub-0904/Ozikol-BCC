@@ -6,6 +6,7 @@ import { Title, Meta } from '@angular/platform-browser';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { environment } from '../../../../environments/environment';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 /**
  * Interface representing dynamic registration form field schema from backend.
@@ -49,13 +50,13 @@ interface WizardStep {
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="oz-onboarding-shell">
       <!-- Dedicated Standalone Top Navigation Bar -->
       <header class="oz-onboarding-topbar">
         <div class="topbar-inner">
-          <a routerLink="/" class="topbar-brand" [title]="brandName + ' - Return to Home'">
+          <a routerLink="/" class="topbar-brand" [title]="(brandName || 'Workspace') + ' - ' + ('auth.return_to_home' | translate:'Return to Home')">
             <!-- Official Brand Logo: When a tenant has uploaded their brand logo, render it cleanly with no duplicate text -->
             <img 
               *ngIf="logoUrl" 
@@ -70,15 +71,15 @@ interface WizardStep {
               </div>
               <div class="brand-text-col">
                 <span class="brand-name">{{ brandName || 'Workspace' }}</span>
-                <span class="brand-badge">Member Registration</span>
+                <span class="brand-badge">{{ 'auth.member_registration' | translate:'Member Registration' }}</span>
               </div>
             </div>
           </a>
 
           <div class="topbar-right">
-            <span class="signin-hint">Already have an account?</span>
+            <span class="signin-hint">{{ 'auth.already_have_account_q' | translate:'Already have an account?' }}</span>
             <a routerLink="/auth/login" class="btn-signin-link">
-              <span>Sign In</span>
+              <span>{{ 'auth.sign_in' | translate:'Sign In' }}</span>
               <span class="material-symbols-outlined">arrow_forward</span>
             </a>
           </div>
@@ -95,8 +96,8 @@ interface WizardStep {
               <div class="hero-avatar">
                 <span class="material-symbols-outlined">person_add</span>
               </div>
-              <h1 class="hero-title">{{ policy.formTitle || 'Create Your Account' }}</h1>
-              <p class="hero-subtitle" *ngIf="!policy.welcomeMessage">Join our member directory and workspace portal.</p>
+              <h1 class="hero-title">{{ policy.formTitle || ('auth.create_your_account' | translate:'Create Your Account') }}</h1>
+              <p class="hero-subtitle" *ngIf="!policy.welcomeMessage">{{ 'auth.join_member_directory' | translate:'Join our member directory and workspace portal.' }}</p>
               <div class="hero-welcome-badge" *ngIf="policy.welcomeMessage">
                 <span class="material-symbols-outlined icon-chip">info</span>
                 <span>{{ policy.welcomeMessage }}</span>
@@ -108,12 +109,12 @@ interface WizardStep {
               <div class="disabled-icon-wrap">
                 <span class="material-symbols-outlined">lock_clock</span>
               </div>
-              <h3>Registration Closed</h3>
-              <p>Public member onboarding is currently disabled by the administration for this organization.</p>
-              <p class="sub-tip">If you have an invitation code or existing account, you may sign in below.</p>
+              <h3>{{ 'auth.registration_closed' | translate:'Registration Closed' }}</h3>
+              <p>{{ 'auth.registration_closed_msg' | translate:'Public member onboarding is currently disabled by the administration for this organization.' }}</p>
+              <p class="sub-tip">{{ 'auth.invitation_code_tip' | translate:'If you have an invitation code or existing account, you may sign in below.' }}</p>
               <a routerLink="/auth/login" class="btn-signin-redirect">
                 <span class="material-symbols-outlined">login</span>
-                <span>Go to Member Sign In</span>
+                <span>{{ 'auth.go_to_member_signin' | translate:'Go to Member Sign In' }}</span>
               </a>
             </div>
 
@@ -122,32 +123,32 @@ interface WizardStep {
               <div class="approval-icon-wrap">
                 <span class="material-symbols-outlined">hourglass_top</span>
               </div>
-              <span class="status-pill">Pending Verification</span>
-              <h3>Application Received!</h3>
+              <span class="status-pill">{{ 'auth.pending_verification' | translate:'Pending Verification' }}</span>
+              <h3>{{ 'auth.application_received' | translate:'Application Received!' }}</h3>
               <p class="approval-message">{{ successNotice }}</p>
               <div class="member-meta-box">
                 <div class="meta-row">
-                  <span class="meta-label">Applicant:</span>
+                  <span class="meta-label">{{ 'auth.applicant' | translate:'Applicant:' }}</span>
                   <span class="meta-val">{{ registeredName }}</span>
                 </div>
                 <div class="meta-row">
-                  <span class="meta-label">Email:</span>
+                  <span class="meta-label">{{ 'auth.email' | translate:'Email:' }}</span>
                   <span class="meta-val">{{ registeredEmail }}</span>
                 </div>
                 <div class="meta-row" *ngIf="model.organizationType">
-                  <span class="meta-label">Sector:</span>
+                  <span class="meta-label">{{ 'auth.sector' | translate:'Sector:' }}</span>
                   <span class="meta-val">{{ model.organizationType }}</span>
                 </div>
               </div>
-              <p class="sub-tip">You will receive an automated email confirmation once an administrator reviews and approves your account.</p>
+              <p class="sub-tip">{{ 'auth.approval_email_tip' | translate:'You will receive an automated email confirmation once an administrator reviews and approves your account.' }}</p>
               <div class="approval-actions">
                 <a routerLink="/auth/login" class="btn-signin-redirect">
                   <span class="material-symbols-outlined">login</span>
-                  <span>Back to Sign In</span>
+                  <span>{{ 'auth.back_to_signin' | translate:'Back to Sign In' }}</span>
                 </a>
                 <a routerLink="/" class="back-link">
                   <span class="material-symbols-outlined">arrow_back</span>
-                  <span>Return to Home</span>
+                  <span>{{ 'auth.return_to_home' | translate:'Return to Home' }}</span>
                 </a>
               </div>
             </div>
@@ -157,31 +158,31 @@ interface WizardStep {
               <div class="approval-icon-wrap success-icon-wrap">
                 <span class="material-symbols-outlined">verified</span>
               </div>
-              <span class="status-pill status-pill-success">Account Activated</span>
-              <h3>Registration Complete!</h3>
+              <span class="status-pill status-pill-success">{{ 'auth.account_activated' | translate:'Account Activated' }}</span>
+              <h3>{{ 'auth.registration_complete' | translate:'Registration Complete!' }}</h3>
               <p class="approval-message">{{ successNotice || policy.successMessage || 'Welcome to our workspace! Your account has been registered and verified successfully.' }}</p>
               <div class="member-meta-box">
                 <div class="meta-row">
-                  <span class="meta-label">Member:</span>
+                  <span class="meta-label">{{ 'auth.applicant' | translate:'Member:' }}</span>
                   <span class="meta-val">{{ registeredName }}</span>
                 </div>
                 <div class="meta-row">
-                  <span class="meta-label">Email:</span>
+                  <span class="meta-label">{{ 'auth.email' | translate:'Email:' }}</span>
                   <span class="meta-val">{{ registeredEmail }}</span>
                 </div>
                 <div class="meta-row" *ngIf="model.organizationType">
-                  <span class="meta-label">Sector:</span>
+                  <span class="meta-label">{{ 'auth.sector' | translate:'Sector:' }}</span>
                   <span class="meta-val">{{ model.organizationType }}</span>
                 </div>
               </div>
               <div class="approval-actions">
                 <a [routerLink]="directLoginToken ? '/users/workspace' : '/auth/login'" class="btn-signin-redirect">
                   <span class="material-symbols-outlined">{{ directLoginToken ? 'rocket_launch' : 'login' }}</span>
-                  <span>{{ directLoginToken ? 'Launch Member Workspace' : 'Sign In to Portal' }}</span>
+                  <span>{{ directLoginToken ? ('auth.launch_member_workspace' | translate:'Launch Member Workspace') : ('auth.sign_in_to_portal' | translate:'Sign In to Portal') }}</span>
                 </a>
                 <a routerLink="/" class="back-link">
                   <span class="material-symbols-outlined">arrow_back</span>
-                  <span>Return to Home</span>
+                  <span>{{ 'auth.return_to_home' | translate:'Return to Home' }}</span>
                 </a>
               </div>
             </div>
@@ -189,7 +190,7 @@ interface WizardStep {
             <!-- Loading Skeleton State -->
             <div *ngIf="isLoadingSchema" class="loading-state-box">
               <div class="spinner-large"></div>
-              <p>Preparing registration form schema...</p>
+              <p>{{ 'auth.preparing_schema' | translate:'Preparing registration form schema...' }}</p>
             </div>
 
             <!-- Active Registration Form Container -->
@@ -205,12 +206,12 @@ interface WizardStep {
               <div *ngIf="draftRestored" class="draft-banner fade-in">
                 <div class="draft-info">
                   <span class="material-symbols-outlined draft-icon">bookmark_added</span>
-                  <span>Draft restored from your previous session.</span>
+                  <span>{{ 'auth.draft_restored' | translate:'Draft restored from your previous session.' }}</span>
                 </div>
                 <div class="draft-actions">
-                  <button type="button" class="btn-clear-draft" (click)="clearDraft()" title="Discard draft and start fresh">
+                  <button type="button" class="btn-clear-draft" (click)="clearDraft()" [title]="'auth.start_fresh' | translate:'Discard draft and start fresh'">
                     <span class="material-symbols-outlined">restart_alt</span>
-                    <span>Start Fresh</span>
+                    <span>{{ 'auth.start_fresh' | translate:'Start Fresh' }}</span>
                   </button>
                 </div>
               </div>
@@ -223,7 +224,7 @@ interface WizardStep {
                 <!-- Section 1: Account Credentials -->
                 <div class="stream-section">
                   <div class="section-divider">
-                    <span class="divider-title">Account Credentials</span>
+                    <span class="divider-title">{{ 'auth.account_credentials' | translate:'Account Credentials' }}</span>
                   </div>
 
                   <div class="name-row-flex">

@@ -115,6 +115,43 @@ class SecureStorageService {
     return match.copyWith(authToken: token);
   }
 
+  /// <summary>
+  /// Retrieves the stored encrypted authentication token for a specific tenant workspace if any.
+  /// </summary>
+  /// <param name="tenantKey">Target tenant partition key.</param>
+  /// <returns>Decrypted JWT Bearer token or null if unauthenticated.</returns>
+  Future<String?> getAuthToken(String tenantKey) async {
+    final tokenKey = '$_tokenPrefix${tenantKey.toLowerCase()}';
+    final token = _secureStorage != null
+        ? await _secureStorage.read(key: tokenKey)
+        : _memoryStore[tokenKey];
+
+    if (token != null && token.trim().isNotEmpty) return token.trim();
+
+    // Fall back to checking the enrolled workspace entry
+    final list = await getWorkspaces();
+    final match = list.where((w) => w.tenantKey.toLowerCase() == tenantKey.toLowerCase()).firstOrNull;
+    if (match?.authToken != null && match!.authToken!.trim().isNotEmpty) {
+      return match.authToken!.trim();
+    }
+
+    return null;
+  }
+
+  /// <summary>
+  /// Retrieves an enrolled workspace model fully hydrated with its decrypted authentication token.
+  /// </summary>
+  /// <param name="tenantKey">Target tenant partition key.</param>
+  /// <returns>Workspace model with populated authToken, or null if not enrolled.</returns>
+  Future<Workspace?> getWorkspaceWithToken(String tenantKey) async {
+    final list = await getWorkspaces();
+    final match = list.where((w) => w.tenantKey.toLowerCase() == tenantKey.toLowerCase()).firstOrNull;
+    if (match == null) return null;
+
+    final token = await getAuthToken(tenantKey);
+    return match.copyWith(authToken: token);
+  }
+
   /// Removes an enrolled workspace
   Future<void> removeWorkspace(String tenantKey) async {
     final list = await getWorkspaces();
@@ -248,6 +285,79 @@ class SecureStorageService {
   Future<void> clearRememberedOrganization() async {
     await setRememberedOrganizationCode(null);
     await saveRememberedWorkspace(null);
+  }
+
+  static const String _rememberUserLoginPrefix = 'ozikol_remember_login_';
+  static const String _rememberedEmailPrefix = 'ozikol_remembered_email_';
+
+  /// <summary>
+  /// Checks whether "Remember me in future login" is enabled for a given tenant workspace or globally.
+  /// </summary>
+  /// <param name="tenantKey">Optional tenant partition identifier.</param>
+  /// <returns>True if remember me is enabled (defaults to true).</returns>
+  bool isRememberLoginEnabled([String? tenantKey]) {
+    final key = tenantKey != null && tenantKey.isNotEmpty
+        ? '$_rememberUserLoginPrefix$tenantKey'
+        : 'ozikol_remember_login_global';
+    if (_prefs != null) {
+      return _prefs.getBool(key) ?? true;
+    }
+    return _memoryStore[key] != 'false';
+  }
+
+  /// <summary>
+  /// Persists whether "Remember me in future login" is enabled.
+  /// </summary>
+  /// <param name="enabled">True to enable, false to disable.</param>
+  /// <param name="tenantKey">Optional tenant partition identifier.</param>
+  Future<void> setRememberLoginEnabled(bool enabled, [String? tenantKey]) async {
+    final key = tenantKey != null && tenantKey.isNotEmpty
+        ? '$_rememberUserLoginPrefix$tenantKey'
+        : 'ozikol_remember_login_global';
+    if (_prefs != null) {
+      await _prefs.setBool(key, enabled);
+    } else {
+      _memoryStore[key] = enabled.toString();
+    }
+  }
+
+  /// <summary>
+  /// Retrieves the saved email address for future login.
+  /// </summary>
+  /// <param name="tenantKey">Optional tenant partition identifier.</param>
+  /// <returns>Remembered work email string or null if not saved.</returns>
+  String? getRememberedEmail([String? tenantKey]) {
+    final key = tenantKey != null && tenantKey.isNotEmpty
+        ? '$_rememberedEmailPrefix$tenantKey'
+        : 'ozikol_remembered_email_global';
+    if (_prefs != null) {
+      return _prefs.getString(key);
+    }
+    return _memoryStore[key];
+  }
+
+  /// <summary>
+  /// Persists or clears the remembered email address for future login.
+  /// </summary>
+  /// <param name="email">Email address to remember, or null to clear.</param>
+  /// <param name="tenantKey">Optional tenant partition identifier.</param>
+  Future<void> setRememberedEmail(String? email, [String? tenantKey]) async {
+    final key = tenantKey != null && tenantKey.isNotEmpty
+        ? '$_rememberedEmailPrefix$tenantKey'
+        : 'ozikol_remembered_email_global';
+    if (_prefs != null) {
+      if (email == null || email.trim().isEmpty) {
+        await _prefs.remove(key);
+      } else {
+        await _prefs.setString(key, email.trim());
+      }
+    } else {
+      if (email == null || email.trim().isEmpty) {
+        _memoryStore.remove(key);
+      } else {
+        _memoryStore[key] = email.trim();
+      }
+    }
   }
 
   static const String _clientConfigKey = 'ozikol_cached_client_config_json';
@@ -395,6 +505,57 @@ class SecureStorageService {
       }
     }
     return deviceId;
+  }
+
+  static const String _deviceTrustTokenPrefix = 'ozikol_device_trust_token_';
+  static const String _deviceTrustTokenGlobal = 'ozikol_device_trust_token_global';
+
+  /// Retrieves the saved device trust token for the specified tenant or globally.
+  Future<String?> getDeviceTrustToken([String? tenantKey]) async {
+    final key = tenantKey != null && tenantKey.isNotEmpty
+        ? '$_deviceTrustTokenPrefix$tenantKey'
+        : _deviceTrustTokenGlobal;
+
+    if (_secureStorage != null) {
+      final token = await _secureStorage.read(key: key);
+      if (token != null && token.isNotEmpty) return token;
+      if (tenantKey != null) {
+        return await _secureStorage.read(key: _deviceTrustTokenGlobal);
+      }
+      return null;
+    }
+    return _memoryStore[key] ?? _memoryStore[_deviceTrustTokenGlobal];
+  }
+
+  /// Persists the device trust token for the specified tenant and globally.
+  Future<void> setDeviceTrustToken(String token, [String? tenantKey]) async {
+    final trimmed = token.trim();
+    if (_secureStorage != null) {
+      if (tenantKey != null && tenantKey.isNotEmpty) {
+        await _secureStorage.write(key: '$_deviceTrustTokenPrefix$tenantKey', value: trimmed);
+      }
+      await _secureStorage.write(key: _deviceTrustTokenGlobal, value: trimmed);
+    } else {
+      if (tenantKey != null && tenantKey.isNotEmpty) {
+        _memoryStore['$_deviceTrustTokenPrefix$tenantKey'] = trimmed;
+      }
+      _memoryStore[_deviceTrustTokenGlobal] = trimmed;
+    }
+  }
+
+  /// Clears the device trust token.
+  Future<void> clearDeviceTrustToken([String? tenantKey]) async {
+    if (_secureStorage != null) {
+      if (tenantKey != null && tenantKey.isNotEmpty) {
+        await _secureStorage.delete(key: '$_deviceTrustTokenPrefix$tenantKey');
+      }
+      await _secureStorage.delete(key: _deviceTrustTokenGlobal);
+    } else {
+      if (tenantKey != null && tenantKey.isNotEmpty) {
+        _memoryStore.remove('$_deviceTrustTokenPrefix$tenantKey');
+      }
+      _memoryStore.remove(_deviceTrustTokenGlobal);
+    }
   }
 
   static String _generateUuidV4() {

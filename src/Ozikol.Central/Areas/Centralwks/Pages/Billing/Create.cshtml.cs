@@ -57,11 +57,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Billing
         /// <param name="tenantId">Optional pre-selected tenant identifier.</param>
         /// <param name="subscriptionId">Optional pre-selected subscription identifier.</param>
         /// <returns>Page result rendering the form.</returns>
-        public async Task<IActionResult> OnGetAsync(int? tenantId = null, Guid? subscriptionId = null)
+        public async Task<IActionResult> OnGetAsync(Guid? tenantId = null, Guid? subscriptionId = null)
         {
             await PopulateDropdownsAsync();
 
-            if (tenantId.HasValue)
+            if (tenantId.HasValue && tenantId.Value != Guid.Empty)
             {
                 Input.TenantId = tenantId.Value;
             }
@@ -95,12 +95,31 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Billing
                 return Page();
             }
 
-            // Generate next sequential invoice number format: INV-YYYYMM-XXXXX
-            var currentMonthPrefix = $"INV-{DateTime.UtcNow:yyyyMM}-";
-            var monthlyCount = await _dbContext.MasterBillingTransactions
-                .CountAsync(t => t.InvoiceNumber != null && t.InvoiceNumber.StartsWith(currentMonthPrefix));
+            // Generate next sequential pure numeric invoice number format: YYYYMMNNNNN (e.g. 20261000001)
+            var ym = $"{DateTime.UtcNow:yyyyMM}";
+            var legacyPrefix = $"INV-{ym}-";
+            var existingNumbers = await _dbContext.MasterBillingTransactions
+                .AsNoTracking()
+                .Where(t => t.InvoiceNumber != null &&
+                            (t.InvoiceNumber.StartsWith(ym) || t.InvoiceNumber.StartsWith(legacyPrefix)))
+                .Select(t => t.InvoiceNumber!)
+                .ToListAsync();
 
-            var invoiceNumber = $"{currentMonthPrefix}{(monthlyCount + 1):D5}";
+            int maxSeq = 0;
+            foreach (var raw in existingNumbers)
+            {
+                var digits = new string(raw.Where(char.IsDigit).ToArray());
+                if (digits.StartsWith(ym) && digits.Length > ym.Length)
+                {
+                    var seqPart = digits[ym.Length..];
+                    if (int.TryParse(seqPart, out int parsed) && parsed > maxSeq)
+                    {
+                        maxSeq = parsed;
+                    }
+                }
+            }
+
+            var invoiceNumber = $"{ym}{(maxSeq + 1):D5}";
 
             var transaction = new MasterBillingTransaction
             {
@@ -164,7 +183,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Billing
             /// </summary>
             [Required(ErrorMessage = "Please select a tenant organization.")]
             [Display(Name = "Tenant Organization")]
-            public int TenantId { get; set; }
+            public Guid TenantId { get; set; }
 
             /// <summary>
             /// Optional linked feature subscription ID.

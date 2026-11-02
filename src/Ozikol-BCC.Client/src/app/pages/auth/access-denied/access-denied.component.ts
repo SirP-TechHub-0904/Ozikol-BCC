@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
+import { TranslationService } from '../../../core/services/translation.service';
 import { 
   getStoredUserRoles, 
   getUserPrimaryRoleName, 
@@ -18,7 +20,7 @@ import {
 @Component({
   selector: 'app-access-denied',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TranslatePipe],
   template: `
     <div class="denied-container">
       <div class="denied-card">
@@ -29,40 +31,32 @@ import {
 
         <div class="role-chip" [class.chip-member]="isMember" [class.chip-admin]="isAdmin">
           <span class="pulse-indicator"></span>
-          <span>Role Profile: <strong>{{ userRoleName }}</strong></span>
+          <span>{{ 'auth.role_profile' | translate:'Role Profile:' }} <strong>{{ userRoleName }}</strong></span>
         </div>
 
-        <h1 class="denied-title">Access Restricted</h1>
+        <h1 class="denied-title">{{ 'auth.access_restricted' | translate:'Access Restricted' }}</h1>
 
         <!-- Contextual Message Based on User's Current Role -->
         <p class="denied-subtitle" *ngIf="isMember">
-          Your account is registered with <strong>Member</strong> privileges for the personal workspace portal.
-          Administrative console modules require operational management authority.
+          {{ 'auth.member_privilege_msg' | translate:'Your account is registered with Member privileges for the personal workspace portal. Administrative console modules require operational management authority.' }}
         </p>
 
         <p class="denied-subtitle" *ngIf="!isMember && isUserManager">
-          Your account is configured with the <strong>User Manager</strong> role. 
-          You do not have administrative permissions to access the 
-          <strong *ngIf="attemptedSectionName">{{ attemptedSectionName }}</strong>
-          <span *ngIf="!attemptedSectionName">requested security module</span>.
+          {{ 'auth.user_manager_privilege_msg' | translate:'Your account is configured with the User Manager role. You do not have administrative permissions to access the requested security module.' }}
         </p>
 
         <p class="denied-subtitle" *ngIf="!isMember && isIdentityManager">
-          Your account is configured with the <strong>Identity Manager</strong> role. 
-          You do not have permissions to access the 
-          <strong *ngIf="attemptedSectionName">{{ attemptedSectionName }}</strong>
-          <span *ngIf="!attemptedSectionName">requested module</span>.
+          {{ 'auth.identity_manager_privilege_msg' | translate:'Your account is configured with the Identity Manager role. You do not have permissions to access the requested module.' }}
         </p>
 
         <p class="denied-subtitle" *ngIf="!isMember && !isUserManager && !isIdentityManager">
-          You do not have the required operational permissions to access this administrative resource. 
-          Please sign in with an authorized account or contact your platform administrator.
+          {{ 'auth.default_privilege_msg' | translate:'You do not have the required operational permissions to access this administrative resource. Please sign in with an authorized account or contact your platform administrator.' }}
         </p>
 
         <!-- Attempted Target Diagnostics (Subtle) -->
         <div class="target-indicator" *ngIf="attemptedUrl">
           <span class="material-symbols-outlined lock-tag-icon">lock</span>
-          <span class="target-text">Restricted Route: <code>{{ attemptedUrl }}</code></span>
+          <span class="target-text">{{ 'auth.restricted_route' | translate:'Restricted Route:' }} <code>{{ attemptedUrl }}</code></span>
         </div>
 
         <!-- Dynamic Action Triggers -->
@@ -74,12 +68,12 @@ import {
 
           <button type="button" (click)="signOutAndSwitchAccount()" class="btn-secondary">
             <span class="material-symbols-outlined">switch_account</span>
-            <span>Sign In with Different Account</span>
+            <span>{{ 'auth.sign_in_diff_account' | translate:'Sign In with Different Account' }}</span>
           </button>
 
           <a routerLink="/" class="btn-home-link">
             <span class="material-symbols-outlined">arrow_back</span>
-            <span>Return to Public Home</span>
+            <span>{{ 'auth.return_public_home' | translate:'Return to Public Home' }}</span>
           </a>
         </div>
       </div>
@@ -303,7 +297,8 @@ export class AccessDeniedComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private translationService: TranslationService
   ) {}
 
   ngOnInit(): void {
@@ -329,10 +324,10 @@ export class AccessDeniedComponent implements OnInit {
   }
 
   get primaryActionLabel(): string {
-    if (this.isMember) return 'Return to Member Workspace';
-    if (this.isUserManager) return 'Go to User Management';
-    if (this.isIdentityManager) return 'Go to Identity Console';
-    return 'Return to Dashboard';
+    if (this.isMember) return this.translationService.translate('auth.return_member_workspace', 'Return to Member Workspace');
+    if (this.isUserManager) return this.translationService.translate('auth.go_to_user_management', 'Go to User Management');
+    if (this.isIdentityManager) return this.translationService.translate('auth.go_to_identity_console', 'Go to Identity Console');
+    return this.translationService.translate('auth.return_to_dashboard', 'Return to Dashboard');
   }
 
   get primaryActionIcon(): string {

@@ -85,12 +85,16 @@ class AccountRepository {
   }
 
   /// <summary>
-  /// Fetches a server-side paginated list of security login audit history entries.
+  /// Fetches the personal activity audit trail and security history for the authenticated user,
+  /// including operational tasks, security events, and authentication challenges within the 30-day retention window.
   /// </summary>
-  Future<Map<String, dynamic>> getLoginHistory({int page = 1, int pageSize = 10}) async {
+  /// <param name="page">Current 1-based page index (defaults to 1).</param>
+  /// <param name="pageSize">Number of records per page (defaults to 10).</param>
+  /// <returns>Paged collection of operational and security activity records with retention metadata.</returns>
+  Future<Map<String, dynamic>> getMyActivity({int page = 1, int pageSize = 10}) async {
     try {
       final response = await _dio.get(
-        'api/IdentityApi/account/login-history',
+        'api/IdentityApi/account/my-activity',
         queryParameters: {'page': page, 'pageSize': pageSize},
       );
       if (response.statusCode == 200 && response.data != null) {
@@ -101,10 +105,18 @@ class AccountRepository {
           return Map<String, dynamic>.from(data);
         }
       }
-      return {'items': [], 'totalCount': 0, 'page': page, 'pageSize': pageSize, 'totalPages': 1};
+      return {'items': [], 'totalCount': 0, 'page': page, 'pageSize': pageSize, 'totalPages': 1, 'hasOlderRecords': false};
     } catch (_) {
-      return {'items': [], 'totalCount': 0, 'page': page, 'pageSize': pageSize, 'totalPages': 1};
+      return {'items': [], 'totalCount': 0, 'page': page, 'pageSize': pageSize, 'totalPages': 1, 'hasOlderRecords': false};
     }
+  }
+
+  /// <summary>
+  /// Fetches a server-side paginated list of security login audit history entries.
+  /// Delegates directly to [getMyActivity] for unified operational and security activity feed.
+  /// </summary>
+  Future<Map<String, dynamic>> getLoginHistory({int page = 1, int pageSize = 10}) async {
+    return getMyActivity(page: page, pageSize: pageSize);
   }
 
   /// <summary>
@@ -252,21 +264,63 @@ class AccountRepository {
   }
 
   /// <summary>
-  /// Sends an invitation to join the workspace with a predefined role.
+  /// Sends an invitation to join the workspace with a predefined role, modular scope, and expiration.
   /// </summary>
-  Future<bool> sendInvitation({required String email, required String role, String? categoryId}) async {
+  /// <param name="email">Recipient prospective member email address.</param>
+  /// <param name="role">Primary authority role to provision.</param>
+  /// <param name="actionRole">Optional operational access level (GlobalEditor, FeatureEditor, Readonly).</param>
+  /// <param name="featureArea">Optional capability domain key when FeatureEditor is selected.</param>
+  /// <param name="categoryId">Optional user directory category identifier.</param>
+  /// <param name="expirationDays">Invitation token lifetime in days (defaults to 7).</param>
+  /// <param name="customMessage">Optional personal welcome note from the administrator.</param>
+  /// <returns>A map containing success status, generated token/invitationUrl, and feedback message.</returns>
+  Future<Map<String, dynamic>> sendInvitation({
+    required String email,
+    required String role,
+    String? actionRole,
+    String? featureArea,
+    String? categoryId,
+    int expirationDays = 7,
+    String? customMessage,
+  }) async {
     try {
       final response = await _dio.post(
         'api/IdentityApi/invitations',
         data: {
           'email': email.trim(),
           'role': role,
+          'actionRole': actionRole,
+          'featureArea': featureArea,
           'categoryId': categoryId,
+          'expirationDays': expirationDays,
+          'customMessage': customMessage,
         },
       );
-      return response.statusCode == 200 || response.statusCode == 201;
-    } catch (_) {
-      return false;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data is Map && data['data'] != null) {
+          final payload = Map<String, dynamic>.from(data['data'] as Map);
+          return {
+            'success': true,
+            'data': payload,
+            'invitationUrl': payload['invitationUrl']?.toString(),
+            'token': payload['token']?.toString(),
+            'message': data['message']?.toString() ?? 'Invitation dispatched successfully.',
+          };
+        }
+        return {'success': true, 'message': 'Invitation dispatched successfully.'};
+      }
+      return {
+        'success': false,
+        'message': response.data?['message']?.toString() ?? 'Failed to send invitation',
+      };
+    } on DioException catch (dioErr) {
+      final errorMsg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': errorMsg ?? 'Network error'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
     }
   }
 
@@ -619,6 +673,211 @@ class AccountRepository {
   }
 
   /// <summary>
+  /// Requests a 6-digit email confirmation code sent to the member's current email.
+  /// </summary>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> requestEmailVerification() async {
+    try {
+      final response = await _dio.post('api/PortalUsersApi/request-email-verification');
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Verification code sent to your email address.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to send verification code'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Confirms member's current email address using the 6-digit OTP code.
+  /// </summary>
+  /// <param name="otpCode">6-digit confirmation code.</param>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> confirmEmailVerification(String otpCode) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/confirm-email-verification',
+        data: {'otpCode': otpCode.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Email verified successfully.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to verify email'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Requests a 6-digit SMS verification code sent to the member's current phone number.
+  /// </summary>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> requestPhoneVerification() async {
+    try {
+      final response = await _dio.post('api/PortalUsersApi/request-phone-verification');
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Verification code sent to your mobile phone via SMS.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to send SMS verification code'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Confirms member's current mobile phone using the 6-digit SMS OTP code.
+  /// </summary>
+  /// <param name="otpCode">6-digit SMS verification code.</param>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> confirmPhoneVerification(String otpCode) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/confirm-phone-verification',
+        data: {'otpCode': otpCode.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Phone number verified successfully.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to verify phone number'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Requests a 6-digit confirmation code sent to the new email address for updating account email.
+  /// </summary>
+  /// <param name="newEmail">The prospective new email address.</param>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> requestEmailChangeOtp(String newEmail) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/request-email-change-otp',
+        data: {'newEmail': newEmail.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Verification code sent to your new email address.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to send email change verification code'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Confirms email change with the 6-digit OTP code and updates the account email.
+  /// </summary>
+  /// <param name="newEmail">The new verified email address.</param>
+  /// <param name="otp">6-digit confirmation code.</param>
+  /// <returns>A map containing success flag, updated email, and server response message.</returns>
+  Future<Map<String, dynamic>> confirmEmailChange(String newEmail, String otp) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/confirm-email-change',
+        data: {'newEmail': newEmail.trim(), 'otp': otp.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Email address verified and updated successfully.',
+        'newEmail': newEmail.trim(),
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to confirm email change'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Requests a 6-digit SMS confirmation code sent to the new mobile phone for updating phone number.
+  /// </summary>
+  /// <param name="newPhoneNumber">The prospective new phone number.</param>
+  /// <returns>A map containing success flag and server response message.</returns>
+  Future<Map<String, dynamic>> requestPhoneChangeOtp(String newPhoneNumber) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/request-phone-change-otp',
+        data: {'newPhoneNumber': newPhoneNumber.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'SMS verification code sent to your new mobile phone.',
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to send SMS verification code'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  /// <summary>
+  /// Confirms mobile phone change with the 6-digit SMS OTP code and updates the account phone number.
+  /// </summary>
+  /// <param name="newPhoneNumber">The new verified phone number.</param>
+  /// <param name="otp">6-digit SMS confirmation code.</param>
+  /// <returns>A map containing success flag, updated phone number, and server response message.</returns>
+  Future<Map<String, dynamic>> confirmPhoneChange(String newPhoneNumber, String otp) async {
+    try {
+      final response = await _dio.post(
+        'api/PortalUsersApi/confirm-phone-change',
+        data: {'newPhoneNumber': newPhoneNumber.trim(), 'otp': otp.trim()},
+      );
+      final msg = response.data is Map ? response.data['message']?.toString() : null;
+      return {
+        'success': response.statusCode == 200,
+        'message': msg ?? 'Mobile phone verified and updated successfully.',
+        'newPhoneNumber': newPhoneNumber.trim(),
+      };
+    } on DioException catch (dioErr) {
+      final msg = dioErr.response?.data is Map
+          ? (dioErr.response?.data['message']?.toString() ?? dioErr.message)
+          : dioErr.message;
+      return {'success': false, 'message': msg ?? 'Failed to confirm mobile phone change'};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+
+  /// <summary>
   /// Fetches personal security and workspace activity audit log history.
   /// </summary>
   Future<List<Map<String, dynamic>>> getPersonalActivity() async {
@@ -682,12 +941,18 @@ class AccountRepository {
   /// <summary>
   /// Creates a new user profile with role assignment.
   /// </summary>
-  Future<bool> createUser(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>?> createUser(Map<String, dynamic> data) async {
     try {
       final response = await _dio.post('api/UsersApi', data: data);
-      return response.statusCode == 200 || response.statusCode == 201;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.data is Map && response.data['data'] is Map) {
+          return Map<String, dynamic>.from(response.data['data'] as Map);
+        }
+        return {'success': true};
+      }
+      return null;
     } catch (_) {
-      return false;
+      return null;
     }
   }
 
@@ -877,13 +1142,19 @@ class AccountRepository {
 
   /// <summary>
   /// Saves the self-registration and onboarding policy.
+  /// Uses PUT with fallback to POST to match the backend registration policy endpoint.
   /// </summary>
   Future<bool> saveRegistrationPolicy(Map<String, dynamic> policy) async {
     try {
-      final response = await _dio.post('api/RegistrationFormApi/policy', data: policy);
+      final response = await _dio.put('api/RegistrationFormApi/policy', data: policy);
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
-      return false;
+      try {
+        final fallback = await _dio.post('api/RegistrationFormApi/policy', data: policy);
+        return fallback.statusCode == 200 || fallback.statusCode == 204;
+      } catch (_) {
+        return false;
+      }
     }
   }
 
@@ -924,6 +1195,34 @@ class AccountRepository {
   }
 
   /// <summary>
+  /// Applies a pre-configured industry onboarding template archetype.
+  /// </summary>
+  Future<bool> applyRegistrationTemplate({
+    required String templateKey,
+    required String mode,
+    required String layoutMode,
+    required bool applyLayoutMode,
+    String? defaultIndustrySector,
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/RegistrationFormApi/apply-template',
+        data: {
+          'templateKey': templateKey,
+          'mode': mode,
+          'layoutMode': layoutMode,
+          'applyLayoutMode': applyLayoutMode,
+          if (defaultIndustrySector != null && defaultIndustrySector.isNotEmpty)
+            'defaultIndustrySector': defaultIndustrySector,
+        },
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
   /// Retrieves branding, authentication screen layout, and wallpaper settings.
   /// </summary>
   Future<Map<String, dynamic>> getBrandSettings() async {
@@ -956,11 +1255,48 @@ class AccountRepository {
   }
 
   /// <summary>
+  /// Uploads a branding asset (e.g. background wallpaper image) to Cloudinary and returns its secure URL.
+  /// </summary>
+  /// <param name="fileBytes">Binary bytes of the image file.</param>
+  /// <param name="fileName">Original name of the image file.</param>
+  /// <param name="assetType">Type of branding asset ('bg', 'logo', 'icon').</param>
+  /// <param name="folder">Storage folder path (defaults to 'brand-assets').</param>
+  /// <returns>A map containing the uploaded URL and storage key, or null on failure.</returns>
+  Future<Map<String, dynamic>?> uploadAsset({
+    required List<int> fileBytes,
+    required String fileName,
+    String assetType = 'bg',
+    String folder = 'brand-assets',
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(fileBytes, filename: fileName),
+        'folder': folder,
+      });
+      final response = await _dio.post(
+        'api/SettingsApi/upload-asset?assetType=$assetType',
+        data: formData,
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// <summary>
   /// Retrieves performance evaluation metric indicators.
   /// </summary>
   Future<List<Map<String, dynamic>>> getKpiIndicators() async {
     try {
-      final response = await _dio.get('api/UsersApi/kpi/indicators');
+      final response = await _dio.get('api/UsersApi/kpi-indicators');
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         List<dynamic> list = [];
@@ -982,7 +1318,7 @@ class AccountRepository {
   /// </summary>
   Future<bool> createKpiIndicator(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post('api/UsersApi/kpi/indicators', data: data);
+      final response = await _dio.post('api/UsersApi/kpi-indicators', data: data);
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (_) {
       return false;
@@ -994,7 +1330,7 @@ class AccountRepository {
   /// </summary>
   Future<bool> updateKpiIndicator(String id, Map<String, dynamic> data) async {
     try {
-      final response = await _dio.put('api/UsersApi/kpi/indicators/$id', data: data);
+      final response = await _dio.put('api/UsersApi/kpi-indicators/$id', data: data);
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
       return false;
@@ -1006,7 +1342,7 @@ class AccountRepository {
   /// </summary>
   Future<bool> deleteKpiIndicator(String id) async {
     try {
-      final response = await _dio.delete('api/UsersApi/kpi/indicators/$id');
+      final response = await _dio.delete('api/UsersApi/kpi-indicators/$id');
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
       return false;
@@ -1018,7 +1354,7 @@ class AccountRepository {
   /// </summary>
   Future<List<Map<String, dynamic>>> getKpiPeriods() async {
     try {
-      final response = await _dio.get('api/UsersApi/kpi/periods');
+      final response = await _dio.get('api/UsersApi/kpi-periods');
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         List<dynamic> list = [];
@@ -1040,8 +1376,20 @@ class AccountRepository {
   /// </summary>
   Future<bool> createKpiPeriod(String title, String description) async {
     try {
-      final response = await _dio.post('api/UsersApi/kpi/periods', data: {'title': title, 'description': description});
+      final response = await _dio.post('api/UsersApi/kpi-periods', data: {'title': title, 'description': description});
       return response.statusCode == 200 || response.statusCode == 201;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Deletes a KPI evaluation period.
+  /// </summary>
+  Future<bool> deleteKpiPeriod(String id) async {
+    try {
+      final response = await _dio.delete('api/UsersApi/kpi-periods/$id');
+      return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
       return false;
     }
@@ -1052,7 +1400,7 @@ class AccountRepository {
   /// </summary>
   Future<List<Map<String, dynamic>>> getKpiLeaderboard(String period) async {
     try {
-      final response = await _dio.get('api/UsersApi/kpi/leaderboard', queryParameters: {'period': period});
+      final response = await _dio.get('api/UsersApi/kpi-leaderboard', queryParameters: {'period': period});
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data;
         List<dynamic> list = [];
@@ -1074,10 +1422,32 @@ class AccountRepository {
   /// </summary>
   Future<bool> gradeMemberKpi(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post('api/UsersApi/kpi/grade', data: data);
-      return response.statusCode == 200 || response.statusCode == 204;
+      final response = await _dio.post('api/UsersApi/kpi-scores/batch', data: data);
+      return response.statusCode == 200 || response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// <summary>
+  /// Retrieves evaluation scorecards for a specific member profile.
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getUserKpiScores(String profileId) async {
+    try {
+      final response = await _dio.get('api/UsersApi/kpi-scores/user/$profileId');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        List<dynamic> list = [];
+        if (data is Map && data['data'] is List) {
+          list = data['data'] as List;
+        } else if (data is List) {
+          list = data;
+        }
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
     }
   }
 
@@ -1110,6 +1480,407 @@ class AccountRepository {
       return response.statusCode == 200 || response.statusCode == 204;
     } catch (_) {
       return false;
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // SECURITY & AUDIT + ERROR CODES (Suite 14)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// <summary>
+  /// Fetches paginated workspace-wide security audit logs from `GET api/IdentityApi/security-audit`.
+  /// </summary>
+  Future<Map<String, dynamic>> getSecurityAuditLogs({
+    int page = 1,
+    int pageSize = 25,
+    String? search,
+    String? module,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'pageSize': pageSize,
+      };
+      if (search != null && search.trim().isNotEmpty) {
+        queryParams['search'] = search.trim();
+      }
+      if (module != null && module.trim().isNotEmpty && module != 'all') {
+        queryParams['module'] = module.trim();
+      }
+      final response = await _dio.get(
+        'api/IdentityApi/security-audit',
+        queryParameters: queryParams,
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        if (data is Map && data['data'] is Map) {
+          return Map<String, dynamic>.from(data['data'] as Map);
+        } else if (data is Map) {
+          return Map<String, dynamic>.from(data);
+        }
+      }
+      return {
+        'items': <dynamic>[],
+        'modules': <dynamic>[],
+        'totalCount': 0,
+        'page': page,
+        'pageSize': pageSize,
+        'totalPages': 1,
+      };
+    } catch (_) {
+      return {
+        'items': <dynamic>[],
+        'modules': <dynamic>[],
+        'totalCount': 0,
+        'page': page,
+        'pageSize': pageSize,
+        'totalPages': 1,
+      };
+    }
+  }
+
+  /// <summary>
+  /// Deletes a single security audit log entry (`DELETE api/IdentityApi/security-audit/{id}`).
+  /// </summary>
+  Future<Map<String, dynamic>> deleteSecurityAuditLog(String id) async {
+    try {
+      final response = await _dio.delete('api/IdentityApi/security-audit/$id');
+      final ok = response.statusCode == 200 || response.statusCode == 204;
+      final msg = (response.data is Map) ? response.data['message']?.toString() : null;
+      return {'success': ok, 'message': msg};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not delete audit log record.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not delete audit log record.'};
+    }
+  }
+
+  /// <summary>
+  /// Deletes multiple security audit log entries in bulk (`POST api/IdentityApi/security-audit/bulk-delete`).
+  /// </summary>
+  Future<Map<String, dynamic>> bulkDeleteSecurityAuditLogs(List<String> ids) async {
+    try {
+      final response = await _dio.post(
+        'api/IdentityApi/security-audit/bulk-delete',
+        data: ids,
+      );
+      final ok = response.statusCode == 200 || response.statusCode == 204;
+      final msg = (response.data is Map) ? response.data['message']?.toString() : null;
+      return {'success': ok, 'message': msg};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Failed to delete selected logs.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Failed to delete selected logs.'};
+    }
+  }
+
+  /// <summary>
+  /// Fetches the standardized client error codes catalog from `GET api/error-codes`.
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getErrorCodesCatalog() async {
+    try {
+      final response = await _dio.get('api/error-codes');
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data;
+        List<dynamic> list = [];
+        if (data is Map && (data['data'] is List || data['Data'] is List)) {
+          list = (data['data'] ?? data['Data']) as List;
+        } else if (data is List) {
+          list = data;
+        }
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // BILLING, FEATURES & SUBSCRIPTIONS (Suite 13)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// <summary>
+  /// Retrieves the live feature billing snapshot for the active workspace (`GET api/billing/features`).
+  /// </summary>
+  Future<Map<String, dynamic>> getBillingFeaturesSnapshot() async {
+    try {
+      final response = await _dio.get('api/billing/features');
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        if (body is Map && body['data'] is Map) {
+          return Map<String, dynamic>.from(body['data'] as Map);
+        } else if (body is Map) {
+          return Map<String, dynamic>.from(body);
+        }
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// <summary>
+  /// Installs/activates or deactivates a workspace capability (`POST api/billing/features/toggle-active`).
+  /// </summary>
+  Future<Map<String, dynamic>> toggleBillingFeatureActive({
+    required String featureId,
+    required String featureCode,
+    bool? setActive,
+    String cadence = 'Monthly',
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/billing/features/toggle-active',
+        data: {
+          'featureId': featureId,
+          'featureCode': featureCode,
+          if (setActive != null) 'setActive': setActive,
+          'cadence': cadence,
+        },
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        return {
+          'success': ok,
+          'message': body['message']?.toString(),
+          'data': body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null,
+        };
+      }
+      return {'success': false, 'message': 'Could not update capability status.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not update feature status.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not update feature status.'};
+    }
+  }
+
+  /// <summary>
+  /// Lists all billing invoices generated for the workspace (`GET api/billing/invoices`).
+  /// </summary>
+  Future<List<Map<String, dynamic>>> getBillingInvoices() async {
+    try {
+      final response = await _dio.get('api/billing/invoices');
+      if (response.statusCode == 200 && response.data != null) {
+        final body = response.data;
+        List<dynamic> list = [];
+        if (body is Map && body['data'] is List) {
+          list = body['data'] as List;
+        } else if (body is List) {
+          list = body;
+        }
+        return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /// <summary>
+  /// Prepares/generates an invoice for one or more capabilities (`POST api/billing/invoices/prepare`).
+  /// </summary>
+  Future<Map<String, dynamic>> prepareBillingInvoice({
+    required List<String> featureCodes,
+    String? cadence,
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/billing/invoices/prepare',
+        data: {
+          'featureCodes': featureCodes,
+          if (cadence != null) 'cadence': cadence,
+        },
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok && dataMap != null && dataMap['invoiceId'] != null,
+          'invoiceId': dataMap?['invoiceId']?.toString(),
+          'invoiceNumber': dataMap?['invoiceNumber']?.toString(),
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'message': 'Could not prepare invoice.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not prepare invoice.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not prepare invoice.'};
+    }
+  }
+
+  /// <summary>
+  /// Retrieves full invoice detail and payment gateway options (`GET api/billing/invoices/{invoiceId}`).
+  /// </summary>
+  Future<Map<String, dynamic>> getBillingInvoiceDetail(String invoiceId) async {
+    try {
+      final response = await _dio.get('api/billing/invoices/$invoiceId');
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok && dataMap != null,
+          'data': dataMap,
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'message': 'Could not load invoice details.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not load invoice details.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not load invoice details.'};
+    }
+  }
+
+  /// <summary>
+  /// Updates billing duration cadence ('Monthly', 'Quarterly', 'Yearly') on a pending invoice line item
+  /// (`POST api/billing/invoices/{invoiceId}/cadence`).
+  /// </summary>
+  Future<Map<String, dynamic>> updateBillingInvoiceLineCadence({
+    required String invoiceId,
+    required String cadence,
+    String? featureCode,
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/billing/invoices/$invoiceId/cadence',
+        data: {
+          if (featureCode != null) 'featureCode': featureCode,
+          'cadence': cadence,
+        },
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok && dataMap != null,
+          'data': dataMap,
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'message': 'Could not update billing duration.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not update billing duration.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not update billing duration.'};
+    }
+  }
+
+  /// <summary>
+  /// Initializes Paystack checkout for a specific invoice (`POST api/billing/invoices/{invoiceId}/pay/paystack`).
+  /// </summary>
+  Future<Map<String, dynamic>> payBillingInvoiceWithPaystack(String invoiceId) async {
+    try {
+      final response = await _dio.post('api/billing/invoices/$invoiceId/pay/paystack', data: {});
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok && dataMap != null,
+          'data': dataMap,
+          'errorCode': body['errorCode']?.toString(),
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'errorCode': 'ERR-3001', 'message': 'Paystack unavailable.'};
+    } on DioException catch (e) {
+      final errCode = (e.response?.data is Map)
+          ? e.response?.data['errorCode']?.toString()
+          : 'ERR-3001';
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'errorCode': errCode ?? 'ERR-3001', 'message': msg ?? 'Paystack unavailable.'};
+    } catch (_) {
+      return {'success': false, 'errorCode': 'ERR-3001', 'message': 'Paystack unavailable.'};
+    }
+  }
+
+  /// <summary>
+  /// Verifies a completed Paystack payment reference (`POST api/billing/features/paystack/verify`).
+  /// </summary>
+  Future<Map<String, dynamic>> verifyPaystackFeaturePayment(String reference) async {
+    try {
+      final response = await _dio.post(
+        'api/billing/features/paystack/verify',
+        data: {'reference': reference},
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok,
+          'data': dataMap,
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'message': 'Could not verify Paystack transaction.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Error verifying Paystack transaction with server.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Error verifying Paystack transaction with server.'};
+    }
+  }
+
+  /// <summary>
+  /// Submits a Direct Bank Deposit transfer reference / proof for a specific invoice
+  /// (`POST api/billing/invoices/{invoiceId}/pay/bank-deposit`).
+  /// </summary>
+  Future<Map<String, dynamic>> submitBillingInvoiceBankDeposit({
+    required String invoiceId,
+    required String transferReference,
+  }) async {
+    try {
+      final response = await _dio.post(
+        'api/billing/invoices/$invoiceId/pay/bank-deposit',
+        data: {'transferReference': transferReference},
+      );
+      if (response.statusCode == 200 && response.data is Map) {
+        final body = Map<String, dynamic>.from(response.data as Map);
+        final ok = body['success'] == true || body['isSuccess'] == true;
+        final dataMap = body['data'] is Map ? Map<String, dynamic>.from(body['data'] as Map) : null;
+        return {
+          'success': ok && dataMap != null,
+          'data': dataMap,
+          'message': body['message']?.toString(),
+        };
+      }
+      return {'success': false, 'message': 'Could not submit bank transfer reference.'};
+    } on DioException catch (e) {
+      final msg = (e.response?.data is Map)
+          ? e.response?.data['message']?.toString()
+          : null;
+      return {'success': false, 'message': msg ?? 'Could not submit bank transfer reference.'};
+    } catch (_) {
+      return {'success': false, 'message': 'Could not submit bank transfer reference.'};
     }
   }
 }

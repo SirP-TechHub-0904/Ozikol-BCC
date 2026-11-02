@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../localization/language_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_colors.dart';
 import '../theme/theme_provider.dart';
@@ -157,21 +158,21 @@ class ThemeModeSwitcher extends ConsumerWidget {
         children: [
           _buildPillSegment(
             icon: Icons.light_mode_rounded,
-            tooltip: 'Light Mode',
+            tooltip: context.trc('ui.light_mode', fallback: 'Light Mode'),
             isSelected: currentMode == ThemeMode.light,
             isDark: isDark,
             onTap: () => notifier.setThemeMode(ThemeMode.light),
           ),
           _buildPillSegment(
             icon: Icons.brightness_auto_rounded,
-            tooltip: 'System Default',
+            tooltip: context.trc('ui.system_default', fallback: 'System Default'),
             isSelected: currentMode == ThemeMode.system,
             isDark: isDark,
             onTap: () => notifier.setThemeMode(ThemeMode.system),
           ),
           _buildPillSegment(
             icon: Icons.dark_mode_rounded,
-            tooltip: 'Dark Mode',
+            tooltip: context.trc('ui.dark_mode', fallback: 'Dark Mode'),
             isSelected: currentMode == ThemeMode.dark,
             isDark: isDark,
             onTap: () => notifier.setThemeMode(ThemeMode.dark),

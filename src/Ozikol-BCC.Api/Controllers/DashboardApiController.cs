@@ -10,7 +10,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
+    [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,CmsManager,ContentManager,CommerceManager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
     [Tags("Admin Dashboard & Analytics")]
     public class DashboardApiController : ControllerBase
     {
@@ -40,7 +40,7 @@ namespace Ozikol_BCC.Api.Controllers
 
         public class MasterTenantDetailsDto
         {
-            public int Id { get; set; }
+            public Guid Id { get; set; }
             public string TenantKey { get; set; } = string.Empty;
             public string OrganizationName { get; set; } = string.Empty;
             public string PrimaryDomain { get; set; } = string.Empty;
@@ -124,6 +124,12 @@ namespace Ozikol_BCC.Api.Controllers
             MasterTenantDetailsDto? tenantDetails = null;
             if (masterTenant != null)
             {
+                if (!masterTenant.LastAccessedUtc.HasValue || (DateTime.UtcNow - masterTenant.LastAccessedUtc.Value).TotalMinutes >= 1)
+                {
+                    masterTenant.LastAccessedUtc = DateTime.UtcNow;
+                    await _masterCatalogDbContext.SaveChangesAsync();
+                }
+
                 tenantDetails = new MasterTenantDetailsDto
                 {
                     Id = masterTenant.Id,
@@ -249,7 +255,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// <param name="request">Payload containing tenant key and desired custom domain.</param>
         /// <returns>Updated master tenant info response.</returns>
         [HttpPut("update-custom-domain")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateCustomDomain([FromBody] UpdateCustomDomainRequest request)
         {
             var host = HttpContext.Request.Host.ToString();

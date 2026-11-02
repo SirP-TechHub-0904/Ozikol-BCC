@@ -7,6 +7,81 @@
 #include "flutter/generated_plugin_registrant.h"
 #include "jump_list_manager.h"
 
+namespace {
+HHOOK g_keyboard_hook = nullptr;
+bool g_kiosk_lockdown_active = false;
+
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+  if (nCode == HC_ACTION && g_kiosk_lockdown_active) {
+    const auto* p = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
+    if (p != nullptr) {
+      const DWORD vk = p->vkCode;
+      const bool alt_down = (p->flags & LLKHF_ALTDOWN) != 0 ||
+                            (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
+      const bool ctrl_down = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+      const bool shift_down = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+
+      // 1. Block Left & Right Windows Keys (Start Menu, Win+D, Win+E, Win+R, Win+Tab, Win+X, etc.)
+      if (vk == VK_LWIN || vk == VK_RWIN || vk == VK_APPS) {
+        return 1;
+      }
+      // 2. Block Alt+Tab, Alt+Esc, Alt+F4, Alt+Space
+      if (alt_down && (vk == VK_TAB || vk == VK_ESCAPE || vk == VK_F4 || vk == VK_SPACE)) {
+        return 1;
+      }
+      // 3. Block Ctrl+Esc (Start Menu) and Ctrl+Shift+Esc (Task Manager)
+      if (ctrl_down && vk == VK_ESCAPE) {
+        return 1;
+      }
+      if (ctrl_down && shift_down && vk == VK_ESCAPE) {
+        return 1;
+      }
+      // 4. Block F11 (Fullscreen toggle escape)
+      if (vk == VK_F11) {
+        return 1;
+      }
+    }
+  }
+  return CallNextHookEx(g_keyboard_hook, nCode, wParam, lParam);
+}
+
+void SetWindowsKeyboardLockdown(HWND hwnd, bool enable, bool force_topmost) {
+  g_kiosk_lockdown_active = enable;
+  if (enable) {
+    if (g_keyboard_hook == nullptr) {
+      g_keyboard_hook = SetWindowsHookExW(
+          WH_KEYBOARD_LL, LowLevelKeyboardProc, GetModuleHandle(nullptr), 0);
+    }
+    if (hwnd != nullptr) {
+      ShowWindow(hwnd, SW_RESTORE);
+      SetWindowPos(hwnd, force_topmost ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+      SetForegroundWindow(hwnd);
+    }
+  } else {
+    if (g_keyboard_hook != nullptr) {
+      UnhookWindowsHookEx(g_keyboard_hook);
+      g_keyboard_hook = nullptr;
+    }
+    if (hwnd != nullptr) {
+      SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0,
+                   SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+    }
+  }
+}
+
+int GetWindowsSystemIdleSeconds() {
+  LASTINPUTINFO lii{};
+  lii.cbSize = sizeof(LASTINPUTINFO);
+  if (GetLastInputInfo(&lii)) {
+    DWORD now = GetTickCount();
+    DWORD elapsed_ms = (now >= lii.dwTime) ? (now - lii.dwTime) : 0;
+    return static_cast<int>(elapsed_ms / 1000);
+  }
+  return 0;
+}
+}  // namespace
+
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
 
@@ -75,6 +150,45 @@ bool FlutterWindow::OnCreate() {
         }
       });
 
+  // Initialize Workstation Kiosk Lockdown & OS Idle Detection MethodChannel
+  kiosk_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(),
+      "com.ozikol.bcc/kiosk",
+      &flutter::StandardMethodCodec::GetInstance());
+
+  HWND self_hwnd = GetHandle();
+  kiosk_channel_->SetMethodCallHandler(
+      [self_hwnd](const flutter::MethodCall<flutter::EncodableValue>& call,
+                  std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+        if (call.method_name() == "setLockdownMode") {
+          bool enable = false;
+          bool topmost = false;
+          if (const auto* b = std::get_if<bool>(call.arguments())) {
+            enable = *b;
+          } else if (const auto* m = std::get_if<flutter::EncodableMap>(call.arguments())) {
+            auto it = m->find(flutter::EncodableValue("enabled"));
+            if (it != m->end()) {
+              if (const auto* bv = std::get_if<bool>(&it->second)) {
+                enable = *bv;
+              }
+            }
+            auto it_top = m->find(flutter::EncodableValue("topmost"));
+            if (it_top != m->end()) {
+              if (const auto* tv = std::get_if<bool>(&it_top->second)) {
+                topmost = *tv;
+              }
+            }
+          }
+          SetWindowsKeyboardLockdown(self_hwnd, enable, topmost);
+          result->Success(flutter::EncodableValue(true));
+        } else if (call.method_name() == "getSystemIdleSeconds") {
+          int idle_secs = GetWindowsSystemIdleSeconds();
+          result->Success(flutter::EncodableValue(idle_secs));
+        } else {
+          result->NotImplemented();
+        }
+      });
+
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();
   });
@@ -88,6 +202,10 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  SetWindowsKeyboardLockdown(nullptr, false, false);
+  if (kiosk_channel_) {
+    kiosk_channel_ = nullptr;
+  }
   if (jump_list_channel_) {
     jump_list_channel_ = nullptr;
   }
@@ -103,6 +221,19 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  if (g_kiosk_lockdown_active) {
+    if (message == WM_CLOSE) {
+      return 0;
+    }
+    if (message == WM_SYSCOMMAND) {
+      const WPARAM cmd = wparam & 0xFFF0;
+      if (cmd == SC_CLOSE || cmd == SC_MINIMIZE || cmd == SC_RESTORE ||
+          cmd == SC_TASKLIST || cmd == SC_KEYMENU) {
+        return 0;
+      }
+    }
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =

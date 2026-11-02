@@ -1161,6 +1161,11 @@ namespace Ozikol_BCC.Domain.Enum
             Failed = 2,
 
             /// <summary>
+            /// Warning severity alias for failed/degraded security operations.
+            /// </summary>
+            Warning = 2,
+
+            /// <summary>
             /// Operation completed successfully, subscription renewed, member verified.
             /// Standard Color Token: #0AB39C (Teal), Icon: check_circle.
             /// </summary>
@@ -1177,6 +1182,11 @@ namespace Ozikol_BCC.Domain.Enum
             /// Standard Color Token: #1F6BFF (Royal Blue), Icon: info_outline.
             /// </summary>
             Update = 5,
+
+            /// <summary>
+            /// Info severity alias for informational updates and system notices.
+            /// </summary>
+            Info = 5,
 
             /// <summary>
             /// Scheduled maintenance window, server upgrade, cold-start advisories.

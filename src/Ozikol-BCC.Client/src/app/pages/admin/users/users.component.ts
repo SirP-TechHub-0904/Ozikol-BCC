@@ -598,7 +598,7 @@ Chart.register(...registerables);
               </select>
             </div>
 
-            <!-- Password Provisioning -->
+            <!-- Security & Password Credentials -->
             <div class="form-section-divider">
               <span>Security & Password Credentials</span>
             </div>

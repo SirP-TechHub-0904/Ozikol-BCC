@@ -43,6 +43,23 @@ public class TenantOnboardingRequest
     /// Optional promotional coupon or voucher code entered during registration (e.g. "LAUNCH100").
     /// </summary>
     public string? CouponCode { get; set; }
+
+    /// <summary>
+    /// Whether to automatically provision the turnkey default website suite (templates, pages, 10 sections, blogs, forms).
+    /// Defaults to true so the public site is immediately live and populated.
+    /// </summary>
+    public bool SeedDefaultWebsite { get; set; } = true;
+
+    /// <summary>
+    /// Regionally detected or explicitly selected ISO 4217 currency code (e.g. "NGN", "USD", "GBP").
+    /// Resolved automatically in the background via <see cref="ICurrencyService"/> if not supplied.
+    /// </summary>
+    public string? CurrencyCode { get; set; }
+
+    /// <summary>
+    /// Currency symbol corresponding to <see cref="CurrencyCode"/> (e.g. "₦", "$", "£").
+    /// </summary>
+    public string? CurrencySymbol { get; set; }
 }
 
 public class TenantOnboardingResult
@@ -396,6 +413,31 @@ public class TenantOnboardingService : ITenantOnboardingService
                 _logger.LogInformation("   └── Referred By Partner: {PartnerCode}", cleanReferralCode);
             }
 
+            // Resolve regional currency in the background via ICurrencyService if not already specified on the request
+            string resolvedCurrencyCode = string.IsNullOrWhiteSpace(request.CurrencyCode) ? "USD" : request.CurrencyCode.Trim().ToUpperInvariant();
+            string resolvedCurrencySymbol = string.IsNullOrWhiteSpace(request.CurrencySymbol) ? "$" : request.CurrencySymbol.Trim();
+            try
+            {
+                var currencySvc = _serviceProvider.GetService<ICurrencyService>();
+                var httpContext = _serviceProvider.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>()?.HttpContext;
+                if (currencySvc != null)
+                {
+                    if (string.IsNullOrWhiteSpace(request.CurrencyCode) && httpContext != null)
+                    {
+                        resolvedCurrencyCode = currencySvc.ResolveCurrencyCodeFromRequest(httpContext);
+                    }
+                    var currencyInfo = currencySvc.ResolveCurrency(resolvedCurrencyCode);
+                    resolvedCurrencyCode = currencyInfo.Code;
+                    resolvedCurrencySymbol = currencyInfo.Symbol;
+                }
+            }
+            catch
+            {
+                // Fallback to USD ($) if regional lookup encounters an error
+            }
+            request.CurrencyCode = resolvedCurrencyCode;
+            request.CurrencySymbol = resolvedCurrencySymbol;
+
             // Step A: Execute SQL DDL via Master DB Connection (Create Login, DB, User)
             await CreateDatabaseAndSqlLoginAsync(masterConnStr, dbName, sqlUsername, sqlPassword, cancellationToken);
 
@@ -417,6 +459,7 @@ public class TenantOnboardingService : ITenantOnboardingService
                 ConnectionString = dedicatedTenantConnStr,
                 AdminEmail = request.AdminEmail,
                 ReferredByPartnerCode = cleanReferralCode,
+                DefaultCurrencyCode = resolvedCurrencyCode,
                 IsActive = true,
                 CreatedUtc = DateTime.UtcNow
             };
@@ -469,94 +512,8 @@ public class TenantOnboardingService : ITenantOnboardingService
                 }
             }
 
-            // Step F: Automatically Provision Compulsory Core Feature Subscriptions ($0 / Annual Base Plan)
-            var compulsoryFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
-                .AsNoTracking()
-                .Where(f => f.IsCompulsory && f.IsActive)
-                .ToListAsync(cancellationToken);
-
-            foreach (var coreFeature in compulsoryFeatures)
-            {
-                _masterCatalogDbContext.MasterTenantFeatureSubscriptions.Add(new MasterTenantFeatureSubscription
-                {
-                    Id = Guid.NewGuid(),
-                    MasterTenantCatalogId = catalogEntry.Id,
-                    MasterFeatureCatalogId = coreFeature.Id,
-                    DurationType = SubscriptionBillingDuration.Yearly,
-                    RecurringPrice = 0.00m,
-                    StartsAtUtc = now,
-                    ExpiresAtUtc = trialOffsetDate.AddYears(1), // 1-Year maximum annual renewal
-                    AutoRenew = true,
-                    IsActive = true,
-                    Status = "Active",
-                    CreatedUtc = now
-                });
-            }
-
-            // Step G: Provision Optional Add-on Features Selected by Tenant with Per-Feature Cadence & Single Line-Item Pricing
-            var selectedFeatureGuids = (request.SelectedFeatureIds ?? new List<Guid>())
-                .Distinct()
-                .Where(id => compulsoryFeatures.All(c => c.Id != id))
-                .ToList();
-
-            if (selectedFeatureGuids.Count > 0)
-            {
-                var selectedFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
-                    .Where(f => selectedFeatureGuids.Contains(f.Id) && f.IsActive)
-                    .ToListAsync(cancellationToken);
-
-                foreach (var addon in selectedFeatures)
-                {
-                    // Check user-selected billing cadence for this specific feature ("Monthly" vs "Yearly")
-                    bool isYearly = false;
-                    if (request.SelectedFeatureCadences != null &&
-                        request.SelectedFeatureCadences.TryGetValue(addon.Id, out var cadenceStr))
-                    {
-                        isYearly = cadenceStr.Equals("Yearly", StringComparison.OrdinalIgnoreCase);
-                    }
-
-                    var durationType = isYearly ? SubscriptionBillingDuration.Yearly : SubscriptionBillingDuration.Monthly;
-                    var basePrice = isYearly
-                        ? (addon.YearlyPrice > 0 ? addon.YearlyPrice : addon.MonthlyPrice * 10)
-                        : addon.MonthlyPrice;
-
-                    decimal effectivePrice = basePrice;
-
-                    // Evaluate single line-item coupon discount if applicable
-                    if (appliedCoupon != null)
-                    {
-                        bool couponApplies = !appliedCoupon.SpecificFeatureId.HasValue || appliedCoupon.SpecificFeatureId.Value == addon.Id;
-                        if (couponApplies)
-                        {
-                            if (appliedCoupon.IsPercentage)
-                            {
-                                effectivePrice = Math.Max(0.00m, basePrice * (1m - (appliedCoupon.DiscountPercentage / 100m)));
-                            }
-                            else
-                            {
-                                effectivePrice = Math.Max(0.00m, basePrice - appliedCoupon.DiscountAmount);
-                            }
-                        }
-                    }
-
-                    var expiryDate = isYearly ? trialOffsetDate.AddYears(1) : trialOffsetDate.AddMonths(1);
-
-                    _masterCatalogDbContext.MasterTenantFeatureSubscriptions.Add(new MasterTenantFeatureSubscription
-                    {
-                        Id = Guid.NewGuid(),
-                        MasterTenantCatalogId = catalogEntry.Id,
-                        MasterFeatureCatalogId = addon.Id,
-                        DurationType = durationType,
-                        RecurringPrice = effectivePrice,
-                        StartsAtUtc = now,
-                        ExpiresAtUtc = expiryDate,
-                        AutoRenew = true,
-                        IsActive = true,
-                        Status = "Active",
-                        CreatedUtc = now
-                    });
-                }
-            }
+            // Step F & G: On setup, NO feature is enabled by default.
+            // The tenant administrator activates desired modular capabilities directly from /billing/features after setup.
 
             // Step H: Redeem Promotional Coupon if provided
             if (appliedCoupon != null)
@@ -603,13 +560,16 @@ public class TenantOnboardingService : ITenantOnboardingService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "🔥 Failed to onboard tenant [{TenantKey}]", cleanKey);
+            _logger.LogError(ex, "Failed to onboard tenant [{TenantKey}]", cleanKey);
+            var detailedMsg = ex.InnerException != null
+                ? $"{ex.Message} -> {ex.InnerException.Message}"
+                : ex.Message;
             return new TenantOnboardingResult
             {
                 Success = false,
                 TenantKey = cleanKey,
                 OrganizationName = request.OrganizationName,
-                Message = $"Onboarding failed: {ex.Message}",
+                Message = $"Onboarding failed: {detailedMsg}",
                 ErrorDetail = ex.ToString()
             };
         }
@@ -806,23 +766,39 @@ public class TenantOnboardingService : ITenantOnboardingService
                 });
             }
 
-            // 4. Seed MisConfigurationSettings
+            // 4. Seed MisConfigurationSettings with resolved regional currency
             if (!await dbContext.MisConfigurationSettings.AnyAsync(cancellationToken))
             {
                 dbContext.MisConfigurationSettings.Add(new MisConfigurationSetting
                 {
                     Id = Guid.NewGuid(),
-                    CurrencyCode = "USD",
-                    CurrencySymbol = "$"
+                    CurrencyCode = string.IsNullOrWhiteSpace(request.CurrencyCode) ? "USD" : request.CurrencyCode.Trim().ToUpperInvariant(),
+                    CurrencySymbol = string.IsNullOrWhiteSpace(request.CurrencySymbol) ? "$" : request.CurrencySymbol.Trim()
                 });
             }
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            // 5. Turnkey Website Suite and Theme Templates are intentionally deferred to the GetStarted portal.
-            // If the user selects "Seed Default Website Suite", SeedTenantDefaultWebsiteAsync seeds both templates and turnkey content.
-            // If the user selects "Start with Blank Canvas", the workspace remains completely empty (0 templates, 0 content).
-            _logger.LogInformation("🚀 Tenant database provisioned cleanly for [{TenantKey}]. Website templates and content deferred to user onboarding choice.", request.TenantKey);
+            // 5. Automatically seed turnkey Corporate Suite website templates, 10 body sections, web pages, forms, and code injections
+            if (request.SeedDefaultWebsite)
+            {
+                try
+                {
+                    await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedDefaultWebsiteSuiteAsync(
+                        dbContext,
+                        request.OrganizationName,
+                        cancellationToken);
+                    _logger.LogInformation("✅ Turnkey default website suite, templates, and 10 body sections successfully seeded during onboarding for tenant [{TenantKey}]", request.TenantKey);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "⚠️ Failed to automatically seed default website suite for tenant [{TenantKey}]: {Message}", request.TenantKey, ex.Message);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("ℹ️ Tenant database provisioned in blank canvas mode for [{TenantKey}] as requested.", request.TenantKey);
+            }
         }
     }
 
@@ -835,26 +811,43 @@ public class TenantOnboardingService : ITenantOnboardingService
     /// <returns>True if seeded successfully; false otherwise.</returns>
     public async Task<bool> SeedTenantDefaultWebsiteAsync(string tenantKey, string? orgName = null, CancellationToken cancellationToken = default)
     {
-        var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
-            .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
-        if (catalog == null) return false;
-
-        string tenantConnStr = catalog.ConnectionString;
-        var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-        optionsBuilder.UseSqlServer(tenantConnStr)
-            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
-
-        using var scope = _serviceProvider.CreateScope();
-        var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
-        using (tenantProvider.BeginScope(tenantConnStr))
+        try
         {
-            var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
-            await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedDefaultWebsiteSuiteAsync(
-                dbContext,
-                orgName ?? catalog.OrganizationName,
-                cancellationToken);
+            _logger.LogInformation("🌱 [TenantOnboardingService] SeedTenantDefaultWebsiteAsync invoked for [{TenantKey}]. Finding master catalog entry...", tenantKey);
+            var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
+                .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
+            if (catalog == null)
+            {
+                _logger.LogWarning("❌ [TenantOnboardingService] SeedTenantDefaultWebsiteAsync: Tenant key [{TenantKey}] not found in master catalog!", tenantKey);
+                return false;
+            }
+
+            string tenantConnStr = catalog.ConnectionString;
+            _logger.LogInformation("🌱 [TenantOnboardingService] Target tenant database: [{DatabaseName}]. Executing SeedDefaultWebsiteSuiteAsync...", catalog.DatabaseName);
+
+            var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
+            optionsBuilder.UseSqlServer(tenantConnStr)
+                .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+
+            using var scope = _serviceProvider.CreateScope();
+            var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+            using (tenantProvider.BeginScope(tenantConnStr))
+            {
+                var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
+                await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.SeedDefaultWebsiteSuiteAsync(
+                    dbContext,
+                    orgName ?? catalog.OrganizationName,
+                    cancellationToken);
+            }
+
+            _logger.LogInformation("✅ [TenantOnboardingService] SUCCESS: Turnkey default website suite successfully seeded for tenant [{TenantKey}]!", tenantKey);
+            return true;
         }
-        return true;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ [TenantOnboardingService] FAILED: Exception seeding default website suite for tenant [{TenantKey}]: {Message}", tenantKey, ex.Message);
+            return false;
+        }
     }
 
     /// <summary>
@@ -865,24 +858,38 @@ public class TenantOnboardingService : ITenantOnboardingService
     /// <returns>True if marked successfully; false otherwise.</returns>
     public async Task<bool> SkipTenantDefaultWebsiteAsync(string tenantKey, CancellationToken cancellationToken = default)
     {
-        var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
-            .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
-        if (catalog == null) return false;
-
-        string tenantConnStr = catalog.ConnectionString;
-        var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
-        optionsBuilder.UseSqlServer(tenantConnStr)
-            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
-
-        using var scope = _serviceProvider.CreateScope();
-        var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
-        using (tenantProvider.BeginScope(tenantConnStr))
+        try
         {
-            var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
-            await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.ResetToBlankCanvasAsync(
-                dbContext,
-                cancellationToken);
+            var catalog = await _masterCatalogDbContext.MasterTenantCatalogs
+                .FirstOrDefaultAsync(t => t.TenantKey == tenantKey.ToLowerInvariant().Trim(), cancellationToken);
+            if (catalog == null)
+            {
+                _logger.LogWarning("SkipTenantDefaultWebsiteAsync: Tenant key [{TenantKey}] not found in master catalog.", tenantKey);
+                return false;
+            }
+
+            string tenantConnStr = catalog.ConnectionString;
+            var optionsBuilder = new DbContextOptionsBuilder<DashboardDbContext>();
+            optionsBuilder.UseSqlServer(tenantConnStr)
+                .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+
+            using var scope = _serviceProvider.CreateScope();
+            var tenantProvider = scope.ServiceProvider.GetRequiredService<ITenantProvider>();
+            using (tenantProvider.BeginScope(tenantConnStr))
+            {
+                var dbContext = new DashboardDbContext(optionsBuilder.Options, tenantProvider, null);
+                await Ozikol_BCC.Persistence.EF.SQL.Infrastructure.TenantDefaultWebsiteSeeder.ResetToBlankCanvasAsync(
+                    dbContext,
+                    cancellationToken);
+            }
+
+            _logger.LogInformation("⚪ Blank canvas configured successfully for tenant [{TenantKey}].", tenantKey);
+            return true;
         }
-        return true;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Failed to configure blank canvas for tenant [{TenantKey}]: {Message}", tenantKey, ex.Message);
+            return false;
+        }
     }
 }

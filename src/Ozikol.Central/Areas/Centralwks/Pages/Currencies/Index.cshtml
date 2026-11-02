@@ -1,104 +1,129 @@
 @page
 @model Ozikol.Central.Areas.Centralwks.Pages.Currencies.IndexModel
 @{
-    ViewData["Title"] = "Platform Currencies & FX Rates";
-    ViewData["BreadcrumbSection"] = "Platform Core";
+    ViewData["Title"] = "Manage Currencies & Exchange Rates";
+    ViewData["BreadcrumbSection"] = "System";
 }
 
 <div class="admin-page-header">
     <div class="admin-title-group">
-        <h1 class="admin-title">Currencies & FX Rates</h1>
-        <p class="admin-subtitle">Manage global currencies, exchange rates against base USD, culture string formatting, and GeoIP detection mappings.</p>
+        <h1 class="admin-title">Manage Currencies &amp; Exchange Rates</h1>
+        <p class="admin-subtitle">Create any global currency, configure its exchange rate relative to <strong>1.00 USD ($)</strong>, and manage the default platform currency.</p>
     </div>
-    <div class="admin-actions">
-        <a href="/centralwks/currencies/create" class="btn-admin btn-admin-primary">
-            <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
-            Add Currency
+    <div class="admin-actions" style="display: flex; gap: 10px;">
+        <a href="/centralwks/platform-settings" class="btn-admin btn-admin-secondary">
+            <span class="material-symbols-outlined" style="font-size: 16px;">settings</span>
+            <span>Platform Settings</span>
         </a>
+        <button type="button" onclick="openQuickCreateCurrencyModal()" class="btn-admin btn-admin-primary">
+            <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+            <span>Add Currency &amp; Exchange Rate</span>
+        </button>
     </div>
 </div>
 
 @if (!string.IsNullOrEmpty(Model.StatusMessage))
 {
-    <div class="alert alert-info" style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.25); color: var(--admin-info); border-radius: var(--radius-sm); padding: 12px 18px; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
-        <span class="material-symbols-outlined" style="font-size: 18px;">info</span>
-        <span>@Model.StatusMessage</span>
+    <div class="admin-alert admin-alert-info" style="margin-bottom: 20px;">
+        <span class="material-symbols-outlined alert-icon">info</span>
+        <span class="alert-message">@Model.StatusMessage</span>
     </div>
 }
 
-@* ── Currency Metrics Cards ── *@
-<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-primary" style="width: 40px; height: 40px;">
-            <span class="material-symbols-outlined" style="font-size: 20px;">currency_exchange</span>
+@* ── 4 Currency & Exchange Governance KPI Cards ── *@
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div class="stat-card" style="padding: 18px 20px;">
+        <div class="stat-icon-wrapper stat-icon-primary">
+            <span class="material-symbols-outlined">currency_exchange</span>
         </div>
         <div class="stat-details">
-            <span class="stat-label">Total Currencies</span>
-            <span class="stat-value" style="font-size: 22px;">@Model.TotalCount</span>
+            <span class="stat-label">Total Configured Currencies</span>
+            <span class="stat-value">@Model.TotalCount</span>
+            <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">Available for Central &amp; Tenants</span>
         </div>
     </div>
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 40px; height: 40px;">
-            <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+
+    <div class="stat-card" style="padding: 18px 20px;">
+        <div class="stat-icon-wrapper stat-icon-success">
+            <span class="material-symbols-outlined">check_circle</span>
         </div>
         <div class="stat-details">
-            <span class="stat-label">Active for Checkout</span>
-            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">@Model.ActiveCount</span>
+            <span class="stat-label">Active / Inactive</span>
+            <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 2px;">
+                <span class="stat-value" style="color: #059669;">@Model.ActiveCount</span>
+                <span style="font-size: 16px; color: #cbd5e1; font-weight: 700;">/</span>
+                <span class="stat-value" style="color: #dc2626;">@Model.InactiveCount</span>
+            </div>
+            <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">Live across Central &amp; Tenant Billing</span>
         </div>
     </div>
-    <div class="stat-card" style="padding: 16px;">
-        <div class="stat-icon-wrapper stat-icon-warning" style="width: 40px; height: 40px;">
-            <span class="material-symbols-outlined" style="font-size: 20px;">star</span>
+
+    <div class="stat-card" style="padding: 18px 20px;">
+        <div class="stat-icon-wrapper" style="background: rgba(0, 80, 229, 0.12); color: #0050E5;">
+            <span class="material-symbols-outlined">payments</span>
         </div>
         <div class="stat-details">
-            <span class="stat-label">Base Pricing Currency</span>
-            <span class="stat-value" style="font-size: 22px; color: var(--admin-warning);">@Model.BaseCurrencyCode</span>
+            <span class="stat-label">Default System Currency (Website)</span>
+            <span class="stat-value" style="color: #0050E5;">@Model.DefaultDisplayCurrencyCode (@Model.DefaultDisplayCurrencySymbol)</span>
+            <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">Shows in all Central amount places</span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="padding: 18px 20px;">
+        <div class="stat-icon-wrapper stat-icon-warning">
+            <span class="material-symbols-outlined">anchor</span>
+        </div>
+        <div class="stat-details">
+            <span class="stat-label">Default Exchange Rate Base</span>
+            <span class="stat-value" style="color: #d97706;">@Model.BaseCurrencyCode (@Model.BaseCurrencySymbol) = 1.00</span>
+            <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">All exchange rates convert from 1 @Model.BaseCurrencyCode</span>
         </div>
     </div>
 </div>
 
-@* ── Filters ── *@
-<div class="admin-card" style="margin-bottom: 24px; padding: 16px 20px;">
-    <form method="get" style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
-        <div style="flex: 1; min-width: 240px; position: relative;">
-            <span class="material-symbols-outlined" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--admin-text-muted); font-size: 18px; pointer-events: none;">search</span>
-            <input type="text" name="Search" value="@Model.Search" placeholder="Search by code (e.g. NGN, EUR), name, symbol, or country code..." 
-                   class="form-control" style="padding-left: 38px; height: 38px; font-size: 13px;" />
+@* ── Sleek Filter Toolbar ── *@
+<div class="admin-card" style="margin-bottom: 20px; padding: 14px 20px;">
+    <form method="get" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 0;">
+        <div style="flex: 1; min-width: 240px; max-width: 380px; position: relative;">
+            <span class="material-symbols-outlined" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 18px; pointer-events: none;">search</span>
+            <input type="text" name="Search" value="@Model.Search" placeholder="Search currency code (e.g. USD, NGN, GBP), symbol, or name..."
+                   style="width: 100%; height: 38px; padding: 0 12px 0 38px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 13px; box-sizing: border-box; outline: none;" />
         </div>
-        <div style="min-width: 150px;">
-            <select name="Status" class="form-select" style="height: 38px; font-size: 13px;">
-                <option value="">All Statuses</option>
-                <option value="active" selected="@(Model.Status == "active")">Active Only</option>
-                <option value="inactive" selected="@(Model.Status == "inactive")">Inactive Only</option>
-            </select>
-        </div>
-        <button type="submit" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px;">
-            <span class="material-symbols-outlined" style="font-size: 16px;">filter_alt</span>
-            Filter
+
+        <select name="Status" onchange="this.form.submit()" class="form-select" style="height: 38px; border-radius: 10px; font-size: 12.5px; font-weight: 600; width: 170px;">
+            <option value="">All Statuses (@Model.TotalCount)</option>
+            <option value="active" selected="@(Model.Status == "active")">Active (@Model.ActiveCount)</option>
+            <option value="inactive" selected="@(Model.Status == "inactive")">Inactive (@Model.InactiveCount)</option>
+        </select>
+
+        <button type="submit" class="btn-admin btn-admin-primary btn-admin-sm" style="height: 38px; padding: 0 16px; border-radius: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 16px;">filter_list</span>
+            <span>Filter</span>
         </button>
+
         @if (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.Status))
         {
-            <a href="/centralwks/currencies" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 14px; color: var(--admin-danger); display: inline-flex; align-items: center; gap: 4px;">
+            <a href="/centralwks/currencies" class="btn-admin btn-admin-secondary btn-admin-sm" style="height: 38px; padding: 0 12px; border-radius: 10px; color: #dc2626;">
                 <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
-                Clear
+                <span>Reset</span>
             </a>
         }
     </form>
 </div>
 
-@* ── Currencies Table ── *@
+@* ── Currencies & Exchange Rate Table ── *@
 <div class="admin-card">
-    <div class="admin-table-wrapper">
+    <div class="table-responsive">
         <table class="admin-table">
             <thead>
                 <tr>
-                    <th style="width: 60px; text-align: center;">Order</th>
-                    <th>Currency</th>
+                    <th style="width: 55px; text-align: center;">S/N</th>
+                    <th>Currency &amp; Name</th>
                     <th>Symbol</th>
-                    <th>Rate Multiplier (from 1 USD)</th>
-                    <th>Culture Format</th>
-                    <th>Mapped Countries</th>
-                    <th>Role</th>
+                    <th>Exchange Rate to 1 USD ($)</th>
+                    <th>VAT (%)</th>
+                    <th>Live Conversion Preview</th>
+                    <th>Default / Role</th>
                     <th>Status</th>
                     <th style="text-align: right;">Actions</th>
                 </tr>
@@ -106,75 +131,101 @@
             <tbody>
                 @if (Model.Currencies.Any())
                 {
-                    @foreach (var c in Model.Currencies)
+                    @for (int i = 0; i < Model.Currencies.Count; i++)
                     {
+                        var c = Model.Currencies[i];
+                        var tenUsdConverted = 10.0m * c.RateFromUsd;
                         <tr>
-                            <td style="text-align: center; font-family: monospace; color: var(--admin-text-muted); font-size: 12px; font-weight: 600;">
-                                @c.SortOrder
+                            <td style="text-align: center;">
+                                <span class="badge" style="background: #f1f5f9; color: #475569; font-weight: 700; font-size: 11px;">@(i + 1)</span>
                             </td>
                             <td>
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="width: 36px; height: 36px; border-radius: var(--radius-sm); background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.25); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--admin-indigo); font-size: 13.5px;">
+                                    <div style="width: 38px; height: 38px; border-radius: 10px; background: @(c.IsBaseCurrency ? "#eff6ff" : "#f8fafc"); border: 1px solid @(c.IsBaseCurrency ? "#bfdbfe" : "#e2e8f0"); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #0050E5; font-size: 14px;">
                                         @c.CurrencySymbol
                                     </div>
                                     <div>
-                                        <div style="font-weight: 700; color: var(--admin-text); font-size: 13.5px;">@c.CurrencyCode</div>
-                                        <div style="font-size: 12px; color: var(--admin-text-muted);">@c.DisplayName</div>
+                                        <div style="font-weight: 800; color: #0f172a; font-size: 13.5px;">@c.CurrencyCode</div>
+                                        <div style="font-size: 12px; color: #64748b;">@c.DisplayName</div>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <span style="font-size: 15px; font-weight: 700; color: var(--admin-text);">
-                                    @c.CurrencySymbol
-                                </span>
+                                <span style="font-size: 15px; font-weight: 800; color: #0f172a;">@c.CurrencySymbol</span>
                             </td>
                             <td>
-                                <span style="font-family: monospace; font-size: 13.5px; font-weight: 700; color: @(c.IsBaseCurrency ? "var(--admin-primary)" : "var(--admin-text)");">
-                                    @c.RateFromUsd.ToString("N4")
-                                </span>
                                 @if (c.IsBaseCurrency)
                                 {
-                                    <span style="font-size: 11px; color: var(--admin-primary); font-weight: 600; margin-left: 4px;">(Base)</span>
-                                }
-                            </td>
-                            <td>
-                                <code style="font-size: 11.5px; padding: 2px 6px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: 4px; color: var(--admin-info); font-weight: 600;">
-                                    @c.CultureName
-                                </code>
-                            </td>
-                            <td>
-                                @if (!string.IsNullOrWhiteSpace(c.AssociatedCountryCodes))
-                                {
-                                    <div style="display: flex; gap: 4px; flex-wrap: wrap; max-width: 220px;">
-                                        @foreach (var code in c.AssociatedCountryCodes.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(4))
-                                        {
-                                            <span style="font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); color: var(--admin-text); font-family: monospace;">
-                                                @code
-                                            </span>
-                                        }
-                                        @if (c.AssociatedCountryCodes.Split(',').Length > 4)
-                                        {
-                                            <span style="font-size: 10.5px; color: var(--admin-text-muted); font-weight: 500;">+@(c.AssociatedCountryCodes.Split(',').Length - 4) more</span>
-                                        }
+                                    <div style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;">
+                                        <span style="font-family: monospace; font-size: 13.5px; font-weight: 800; color: #0050E5;">1.0000</span>
+                                        <span style="font-size: 11px; font-weight: 700; color: #0050E5;">(Base Dollar)</span>
                                     </div>
                                 }
                                 else
                                 {
-                                    <span style="font-size: 12px; color: var(--admin-text-muted); font-style: italic;">None</span>
+                                    <form method="post" asp-page-handler="UpdateRate" style="display: inline-flex; align-items: center; gap: 6px; margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@c.Id" />
+                                        <span style="font-size: 11.5px; font-weight: 700; color: #64748b;">1 USD =</span>
+                                        <input type="number" name="rateFromUsd" step="0.0001" min="0.0001" value="@c.RateFromUsd.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)"
+                                               style="width: 115px; height: 32px; padding: 0 8px; border-radius: 7px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 13px; font-weight: 700; color: #0f172a;" />
+                                        <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="height: 32px; padding: 0 10px; font-size: 11.5px; font-weight: 700; color: #0050E5;" title="Save Exchange Rate to 1 USD">
+                                            Save Rate
+                                        </button>
+                                    </form>
                                 }
                             </td>
                             <td>
-                                @if (c.IsBaseCurrency)
-                                {
-                                    <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                                        <span class="material-symbols-outlined" style="font-size: 12px;">star</span>
-                                        Global Base
+                                <form method="post" asp-page-handler="UpdateVat" style="display: inline-flex; align-items: center; gap: 6px; margin: 0;">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@c.Id" />
+                                    <input type="number" name="vatPercentage" step="0.01" min="0" max="100"
+                                           value="@(c.VatPercentage > 0 ? c.VatPercentage.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                           placeholder="0"
+                                           style="width: 72px; height: 32px; padding: 0 8px; border-radius: 7px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 13px; font-weight: 700; color: #0f172a;" />
+                                    <span style="font-size: 12px; font-weight: 700; color: #64748b;">%</span>
+                                    <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="height: 32px; padding: 0 10px; font-size: 11.5px; font-weight: 700; color: #0050E5;" title="Save VAT Percentage (leave empty or 0 to remove VAT)">
+                                        Save VAT
+                                    </button>
+                                </form>
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 2px;">
+                                    <span style="font-size: 12.5px; font-weight: 700; color: #0f172a;">
+                                        $1.00 USD = <span style="color: #0050E5;">@c.CurrencySymbol@c.RateFromUsd.ToString("N2") @c.CurrencyCode</span>
                                     </span>
-                                }
-                                else
-                                {
-                                    <span class="badge badge-secondary" style="font-size: 11px; font-weight: 600;">Regional</span>
-                                }
+                                    <span style="font-size: 11px; color: #64748b;">
+                                        $10.00 USD = @c.CurrencySymbol@tenUsdConverted.ToString("N2") @c.CurrencyCode
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 5px; align-items: flex-start;">
+                                    @if (string.Equals(c.CurrencyCode, Model.DefaultDisplayCurrencyCode, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <span class="badge" style="background: rgba(0, 80, 229, 0.12); color: #0050E5; border: 1px solid rgba(0, 80, 229, 0.28); font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span>
+                                            Default System Currency
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <form method="post" asp-page-handler="SetDefaultCurrency" asp-route-id="@c.Id" style="margin: 0; display: inline;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="font-size: 11px; padding: 3px 9px; font-weight: 700; color: #0050E5;" title="Display all amounts across Central in @c.CurrencyCode (@c.CurrencySymbol) by default">
+                                                Set as Default Currency
+                                            </button>
+                                        </form>
+                                    }
+
+                                    @if (c.IsBaseCurrency)
+                                    {
+                                        <span class="badge" style="background: #fef3c7; color: #d97706; border: 1px solid #fde68a; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 12px;">anchor</span>
+                                            Default Exchange Rate (1.00)
+                                        </span>
+                                    }
+                                </div>
                             </td>
                             <td>
                                 @if (c.IsActive)
@@ -193,22 +244,20 @@
                                 }
                             </td>
                             <td style="text-align: right;">
-                                <div style="display: inline-flex; gap: 4px; align-items: center;">
-                                    <a href="/centralwks/currencies/details/@c.Id" class="btn-admin btn-admin-secondary btn-admin-sm" style="padding: 4px 8px;" title="View Details">
-                                        <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
-                                    </a>
-                                    <a href="/centralwks/currencies/edit/@c.Id" class="btn-admin btn-admin-secondary btn-admin-sm" style="padding: 4px 8px;" title="Edit Currency">
+                                <div style="display: inline-flex; gap: 6px; align-items: center;">
+                                    <a href="/centralwks/currencies/edit/@c.Id" class="btn-admin btn-admin-secondary btn-admin-sm" style="padding: 4px 10px;" title="Edit Currency Details">
                                         <span class="material-symbols-outlined" style="font-size: 15px;">edit</span>
+                                        <span>Edit</span>
                                     </a>
                                     @if (!c.IsBaseCurrency)
                                     {
-                                        <form method="post" asp-page-handler="ToggleActive" asp-route-id="@c.Id" style="display: inline;">
+                                        <form method="post" asp-page-handler="ToggleActive" asp-route-id="@c.Id" style="display: inline; margin: 0;">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" style="padding: 4px 8px;" title="@(c.IsActive ? "Deactivate" : "Activate")">
                                                 <span class="material-symbols-outlined" style="font-size: 15px;">@(c.IsActive ? "pause_circle" : "play_circle")</span>
                                             </button>
                                         </form>
-                                        <form method="post" asp-page-handler="Delete" asp-route-id="@c.Id" style="display: inline;" onsubmit="return confirm('Permanently delete currency @c.CurrencyCode?');">
+                                        <form method="post" asp-page-handler="Delete" asp-route-id="@c.Id" style="display: inline; margin: 0;" onsubmit="return confirm('Delete currency @c.CurrencyCode?');">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="btn-admin btn-admin-danger btn-admin-sm" style="padding: 4px 8px;" title="Delete Currency">
                                                 <span class="material-symbols-outlined" style="font-size: 15px;">delete</span>
@@ -223,10 +272,10 @@
                 else
                 {
                     <tr>
-                        <td colspan="9" style="text-align: center; padding: 48px; color: var(--admin-text-muted);">
-                            <span class="material-symbols-outlined" style="font-size: 36px; color: var(--admin-text-muted); margin-bottom: 8px; display: block;">currency_exchange</span>
-                            <div style="font-size: 15px; font-weight: 600; color: var(--admin-text);">No Currencies Found</div>
-                            <div style="font-size: 13px; margin-top: 4px;">Try refining your search filter or add a new currency.</div>
+                        <td colspan="8" style="text-align: center; padding: 48px; color: #64748b;">
+                            <span class="material-symbols-outlined" style="font-size: 38px; color: #94a3b8; margin-bottom: 8px; display: block;">currency_exchange</span>
+                            <div style="font-size: 15px; font-weight: 700; color: #0f172a;">No Currencies Found</div>
+                            <div style="font-size: 13px; margin-top: 4px;">Click <strong>Add Currency &amp; Exchange Rate</strong> above to add your first currency.</div>
                         </td>
                     </tr>
                 }
@@ -235,3 +284,111 @@
     </div>
 </div>
 
+@* ── Quick Add Currency & Exchange Rate to USD Modal ── *@
+<div id="quickCurrencyModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 480px; width: 100%; border: 1px solid #e2e8f0; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.22); overflow: hidden;">
+        <div style="padding: 18px 22px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 36px; height: 36px; border-radius: 9px; background: #eff6ff; color: #0050E5; display: flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">currency_exchange</span>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">Add Currency &amp; Exchange Rate</h3>
+                    <span style="font-size: 11.5px; color: #64748b;">Set exchange rate relative to 1.00 USD ($)</span>
+                </div>
+            </div>
+            <button type="button" onclick="closeQuickCreateCurrencyModal()" style="background: none; border: none; cursor: pointer; color: #64748b;">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <form method="post" asp-page-handler="QuickCreate" style="margin: 0; padding: 22px;">
+            @Html.AntiForgeryToken()
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Currency Code (ISO) *</label>
+                    <input type="text" name="currencyCode" id="qcCode" placeholder="e.g. NGN, GBP, EUR" required maxlength="10"
+                           oninput="updateQuickModalPreview()"
+                           style="width: 100%; height: 38px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; text-transform: uppercase; font-weight: 700; box-sizing: border-box;" />
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Currency Symbol *</label>
+                    <input type="text" name="currencySymbol" id="qcSymbol" placeholder="e.g. ₦, £, €, $" required maxlength="10"
+                           oninput="updateQuickModalPreview()"
+                           style="width: 100%; height: 38px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 700; box-sizing: border-box;" />
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Currency Display Name *</label>
+                <input type="text" name="displayName" placeholder="e.g. Nigerian Naira, British Pound, Euro" required maxlength="100"
+                       style="width: 100%; height: 38px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box;" />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Exchange Rate to 1.00 USD ($) *</label>
+                    <input type="number" name="rateFromUsd" id="qcRate" step="0.0001" min="0.0001" value="1.0000" required
+                           oninput="updateQuickModalPreview()"
+                           style="width: 100%; height: 38px; padding: 0 12px; border-radius: 8px; border: 1px solid #0050E5; font-family: monospace; font-size: 14px; font-weight: 800; box-sizing: border-box;" />
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">VAT (%) (Optional)</label>
+                    <input type="number" name="vatPercentage" id="qcVat" step="0.01" min="0" max="100" placeholder="e.g. 7.5 (empty or 0 = no VAT)"
+                           style="width: 100%; height: 38px; padding: 0 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: monospace; font-size: 13.5px; font-weight: 700; box-sizing: border-box;" />
+                </div>
+            </div>
+            <div id="qcPreviewBox" style="margin-bottom: 14px; padding: 8px 12px; border-radius: 8px; background: #eff6ff; border: 1px solid #bfdbfe; font-size: 12px; font-weight: 700; color: #0050E5;">
+                Preview: $1.00 USD = $1.00 USD • $10.00 USD = $10.00 USD
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                <div>
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 5px;">Culture Code (Optional)</label>
+                    <input type="text" name="cultureName" placeholder="e.g. en-NG, en-GB" value="en-US"
+                           style="width: 100%; height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 12.5px; box-sizing: border-box;" />
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 5px;">Country ISO Codes (Optional)</label>
+                    <input type="text" name="countryCodes" placeholder="e.g. NG or GB"
+                           style="width: 100%; height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 12.5px; text-transform: uppercase; box-sizing: border-box;" />
+                </div>
+            </div>
+
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 18px;">
+                <input type="checkbox" name="isBaseCurrency" value="true" style="width: 16px; height: 16px; accent-color: #0050E5;" />
+                <span style="font-size: 12.5px; font-weight: 700; color: #0f172a;">Set as Default Base Currency (locks rate to 1.0000)</span>
+            </label>
+
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-admin btn-admin-secondary" onclick="closeQuickCreateCurrencyModal()">Cancel</button>
+                <button type="submit" class="btn-admin btn-admin-primary">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">save</span>
+                    <span>Create Currency</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openQuickCreateCurrencyModal() {
+        document.getElementById('quickCurrencyModal').style.display = 'flex';
+        updateQuickModalPreview();
+    }
+
+    function closeQuickCreateCurrencyModal() {
+        document.getElementById('quickCurrencyModal').style.display = 'none';
+    }
+
+    function updateQuickModalPreview() {
+        const code = (document.getElementById('qcCode').value || 'CUR').toUpperCase();
+        const sym = document.getElementById('qcSymbol').value || '$';
+        const rate = parseFloat(document.getElementById('qcRate').value) || 1;
+        const ten = (10 * rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const one = rate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+        document.getElementById('qcPreviewBox').textContent =
+            `Preview: $1.00 USD = ${sym}${one} ${code} • $10.00 USD = ${sym}${ten} ${code}`;
+    }
+</script>

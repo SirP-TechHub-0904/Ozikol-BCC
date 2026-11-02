@@ -1,346 +1,900 @@
 @page
 @model Ozikol.Central.Areas.Centralwks.Pages.Subscriptions.IndexModel
+@using System.Text.Json
 @{
     ViewData["Title"] = "Tenant Subscriptions & Billing";
     ViewData["BreadcrumbSection"] = "Platform Core";
+
+    int startRow = Model.TotalCount == 0 ? 0 : ((Model.PageNumber - 1) * Model.PageSize) + 1;
+    int endRow = Math.Min(Model.PageNumber * Model.PageSize, Model.TotalCount);
 }
 
-<!-- Page Header -->
-<div class="admin-page-header">
-    <div class="admin-title-group">
-        <h1 class="admin-title">Tenant Subscriptions &amp; Billing Posture</h1>
-        <p class="admin-subtitle">Cross-tenant aggregation of contracted modular capabilities, feature expiration horizons (30d, 60d, >60d), renewal telemetry, and granular line-item billing.</p>
-    </div>
-    <div class="admin-actions">
-        <a href="/centralwks/billing/create" class="btn-admin btn-admin-secondary">
-            <span class="material-symbols-outlined" style="font-size: 18px;">receipt</span>
-            Record Billing Invoice
-        </a>
-        <a href="/centralwks/tenants" class="btn-admin btn-admin-primary">
-            <span class="material-symbols-outlined" style="font-size: 18px;">domain</span>
-            Manage Tenants
-        </a>
-    </div>
-</div>
+<style>
+    .sub-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
 
-<!-- Alerts -->
-@if (TempData["Success"] != null)
-{
-    <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.25); color: var(--admin-success); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-        <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
-        <span>@TempData["Success"]</span>
-    </div>
-}
+    .sub-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+        gap: 16px;
+    }
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.25); color: var(--admin-danger); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-        <span class="material-symbols-outlined" style="font-size: 20px;">error</span>
-        <span>@TempData["Error"]</span>
-    </div>
-}
+    .sub-kpi-card {
+        background: var(--admin-bg-surface, #ffffff);
+        border: 1px solid var(--admin-border, #e2e8f0);
+        border-radius: 14px;
+        padding: 18px 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
 
-<!-- Executive Stat Ribbon -->
-<div class="stat-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
-    <div class="stat-card" style="padding: 18px 20px;">
-        <div class="stat-icon-wrapper stat-icon-success" style="width: 44px; height: 44px;">
-            <span class="material-symbols-outlined" style="font-size: 22px;">payments</span>
+    .sub-kpi-card:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+    }
+
+    .sub-kpi-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .sub-kpi-body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .sub-kpi-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+    }
+
+    .sub-kpi-val {
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1.15;
+        color: #0f172a;
+        letter-spacing: -0.02em;
+    }
+
+    .sub-kpi-sub {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .sub-card {
+        background: var(--admin-bg-surface, #ffffff);
+        border: 1px solid var(--admin-border, #e2e8f0);
+        border-radius: 14px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+        overflow: hidden;
+    }
+
+    .sub-toolbar {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--admin-border, #e2e8f0);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+        background: #ffffff;
+    }
+
+    .sub-filter-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        flex: 1;
+        margin: 0;
+    }
+
+    .sub-search-wrap {
+        position: relative;
+        flex: 1 1 260px;
+        max-width: 360px;
+        min-width: 220px;
+    }
+
+    .sub-search-wrap .material-symbols-outlined {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 18px;
+        color: #94a3b8;
+        pointer-events: none;
+    }
+
+    .sub-search-input {
+        width: 100%;
+        height: 38px;
+        padding: 0 12px 0 38px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 500;
+        outline: none;
+        box-sizing: border-box;
+        transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .sub-search-input:focus {
+        background: #ffffff;
+        border-color: #0050E5;
+        box-shadow: 0 0 0 3px rgba(0, 80, 229, 0.1);
+    }
+
+    .sub-select {
+        height: 38px;
+        padding: 0 32px 0 12px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        background-color: #f8fafc;
+        color: #0f172a;
+        font-size: 12.5px;
+        font-weight: 600;
+        outline: none;
+        cursor: pointer;
+    }
+
+    .sub-select:focus {
+        background-color: #ffffff;
+        border-color: #0050E5;
+    }
+
+    .sub-btn-filter {
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 10px;
+        border: 1px solid #0050E5;
+        background: #0050E5;
+        color: #ffffff;
+        font-size: 12.5px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+    .sub-btn-clear {
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 10px;
+        border: 1px solid #fecaca;
+        background: #fef2f2;
+        color: #dc2626;
+        font-size: 12.5px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        text-decoration: none;
+    }
+
+    .sub-pagination-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 14px 20px;
+        border-top: 1px solid var(--admin-border, #e2e8f0);
+        background: #f8fafc;
+    }
+
+    .sub-page-btn {
+        min-width: 34px;
+        height: 34px;
+        padding: 0 10px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        color: #334155;
+        font-size: 12.5px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        text-decoration: none;
+    }
+
+    .sub-page-btn.active {
+        background: #0050E5;
+        border-color: #0050E5;
+        color: #ffffff;
+    }
+
+    .sub-page-btn.disabled {
+        opacity: 0.45;
+        pointer-events: none;
+        background: #f1f5f9;
+    }
+
+    .ri-tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #64748b;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .ri-tab-btn.active {
+        color: #0050E5;
+        border-bottom-color: #0050E5;
+    }
+</style>
+
+<div class="sub-shell">
+    @* ── Page Header ── *@
+    <div class="admin-page-header" style="margin-bottom: 0;">
+        <div class="admin-title-group">
+            <h1 class="admin-title">Tenant Subscriptions &amp; Billing</h1>
+            <p class="admin-subtitle">View each tenant organization's last payment, next payment amount in their running currency, and active capability count. Click <strong>Inspect</strong> for expiry horizons and sent renewal emails.</p>
         </div>
-        <div class="stat-details">
-            <span class="stat-label">Platform MRR</span>
-            <span class="stat-value" style="font-size: 22px; color: var(--admin-success);">$@Model.TotalPlatformMRR.ToString("N2")</span>
-            <span class="stat-subtext">Active contracted monthly run-rate</span>
+        <div class="admin-actions" style="display: flex; gap: 8px;">
+            <a href="/centralwks/billing/create" class="btn-admin btn-admin-secondary">
+                <span class="material-symbols-outlined" style="font-size: 18px;">receipt</span>
+                Record Billing Invoice
+            </a>
+            <a href="/centralwks/features/analytics" class="btn-admin btn-admin-primary">
+                <span class="material-symbols-outlined" style="font-size: 18px;">analytics</span>
+                Feature Adoption Matrix
+            </a>
         </div>
     </div>
 
-    <div class="stat-card" style="padding: 18px 20px;">
-        <div class="stat-icon-wrapper stat-icon-indigo" style="width: 44px; height: 44px;">
-            <span class="material-symbols-outlined" style="font-size: 22px;">domain</span>
-        </div>
-        <div class="stat-details">
-            <span class="stat-label">Subscribed Tenants</span>
-            <span class="stat-value" style="font-size: 22px; color: var(--admin-indigo);">@Model.ActiveSubscribedTenantsCount</span>
-            <span class="stat-subtext">Tenants with active capabilities</span>
-        </div>
-    </div>
-
-    <div class="stat-card" style="padding: 18px 20px;">
-        <div class="stat-icon-wrapper stat-icon-warning" style="width: 44px; height: 44px;">
-            <span class="material-symbols-outlined" style="font-size: 22px;">hourglass_top</span>
-        </div>
-        <div class="stat-details">
-            <span class="stat-label">Expiring in ≤30 Days</span>
-            <span class="stat-value" style="font-size: 22px; color: var(--admin-warning);">@Model.DueWithin30DaysCount</span>
-            <span class="stat-subtext">Tenants with renewals in next month</span>
-        </div>
-    </div>
-
-    <div class="stat-card" style="padding: 18px 20px;">
-        <div class="stat-icon-wrapper @(Model.OverdueTenantsCount > 0 ? "stat-icon-primary" : "stat-icon-info")" style="width: 44px; height: 44px;">
-            <span class="material-symbols-outlined" style="font-size: 22px;">warning</span>
-        </div>
-        <div class="stat-details">
-            <span class="stat-label">Overdue / Action Needed</span>
-            <span class="stat-value" style="font-size: 22px; color: @(Model.OverdueTenantsCount > 0 ? "var(--admin-danger)" : "var(--admin-text)");">@Model.OverdueTenantsCount</span>
-            <span class="stat-subtext">Expired or past due subscriptions</span>
-        </div>
-    </div>
-</div>
-
-<!-- Filter Tabs & Search Toolbar -->
-<div class="admin-card" style="margin-bottom: 24px;">
-    <div style="border-bottom: 1px solid var(--admin-border); padding: 0 20px; display: flex; align-items: center; gap: 8px; overflow-x: auto;">
-        <a href="?search=@Model.Search" class="nav-tab @(string.IsNullOrEmpty(Model.Filter) ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(string.IsNullOrEmpty(Model.Filter) ? "var(--admin-primary)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(string.IsNullOrEmpty(Model.Filter) ? "var(--admin-primary)" : "transparent");">
-            All Tenants
-            <span class="badge" style="background: var(--admin-bg-hover); font-size: 11px;">@Model.TotalCount</span>
-        </a>
-        <a href="?filter=expiring_30d&search=@Model.Search" class="nav-tab @(Model.Filter == "expiring_30d" || Model.Filter == "expiring_soon" ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(Model.Filter == "expiring_30d" || Model.Filter == "expiring_soon" ? "var(--admin-warning)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.Filter == "expiring_30d" || Model.Filter == "expiring_soon" ? "var(--admin-warning)" : "transparent");">
-            Expiring in ≤30d
-            @if (Model.DueWithin30DaysCount > 0)
-            {
-                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--admin-warning); font-size: 11px;">@Model.DueWithin30DaysCount</span>
-            }
-        </a>
-        <a href="?filter=expiring_60d&search=@Model.Search" class="nav-tab @(Model.Filter == "expiring_60d" ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(Model.Filter == "expiring_60d" ? "#3b82f6" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.Filter == "expiring_60d" ? "#3b82f6" : "transparent");">
-            Expiring in 31–60d
-            @if (Model.DueWithin60DaysCount > 0)
-            {
-                <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6; font-size: 11px;">@Model.DueWithin60DaysCount</span>
-            }
-        </a>
-        <a href="?filter=healthy&search=@Model.Search" class="nav-tab @(Model.Filter == "healthy" || Model.Filter == "healthy_60d" ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(Model.Filter == "healthy" || Model.Filter == "healthy_60d" ? "var(--admin-success)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.Filter == "healthy" || Model.Filter == "healthy_60d" ? "var(--admin-success)" : "transparent");">
-            Healthy (>60d / Core)
-            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: var(--admin-success); font-size: 11px;">@Model.HealthyTenantsCount</span>
-        </a>
-        <a href="?filter=overdue&search=@Model.Search" class="nav-tab @(Model.Filter == "overdue" ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(Model.Filter == "overdue" ? "var(--admin-danger)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.Filter == "overdue" ? "var(--admin-danger)" : "transparent");">
-            Overdue
-            @if (Model.OverdueTenantsCount > 0)
-            {
-                <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--admin-danger); font-size: 11px;">@Model.OverdueTenantsCount</span>
-            }
-        </a>
-        <a href="?filter=no_subscriptions&search=@Model.Search" class="nav-tab @(Model.Filter == "no_subscriptions" ? "active" : "")" style="padding: 14px 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none; color: @(Model.Filter == "no_subscriptions" ? "var(--admin-primary)" : "var(--admin-text-muted)"); border-bottom: 2px solid @(Model.Filter == "no_subscriptions" ? "var(--admin-primary)" : "transparent");">
-            No Subscriptions
-        </a>
-    </div>
-
-    <div class="table-toolbar" style="padding: 16px 20px;">
-        <form method="get" class="table-filters" style="flex: 1; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <input type="hidden" name="filter" value="@Model.Filter" />
-            <div class="table-search-box" style="flex: 1; min-width: 260px; position: relative;">
-                <span class="material-symbols-outlined search-icon" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--admin-text-muted);">search</span>
-                <input type="text" name="search" value="@Model.Search" placeholder="Search tenant organization, key, domain, or feature..." class="form-control" style="padding-left: 36px; height: 38px;" />
+    @if (Model.PendingBankDeposits.Any())
+    {
+        <div class="sub-card" style="border: 1.5px solid #f59e0b; background: #fffbeb;">
+            <div style="padding: 14px 20px; border-bottom: 1px solid #fde68a; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 34px; height: 34px; border-radius: 9px; background: #f59e0b; color: #ffffff; display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">account_balance</span>
+                    </div>
+                    <div>
+                        <div style="font-size: 14px; font-weight: 800; color: #92400e;">
+                            Direct Bank Deposit Proofs Awaiting Confirmation (@Model.PendingBankDeposits.Count)
+                        </div>
+                        <div style="font-size: 12px; color: #b45309;">
+                            Verify the bank transfer reference below and click <strong>Confirm &amp; Activate</strong> to unlock the tenant's capabilities.
+                        </div>
+                    </div>
+                </div>
             </div>
+            <div class="table-responsive" style="background: #ffffff;">
+                <table class="admin-table" style="margin: 0;">
+                    <thead>
+                        <tr>
+                            <th>INVOICE #</th>
+                            <th>TENANT</th>
+                            <th>SUBMITTED TRANSFER REF</th>
+                            <th>DESCRIPTION</th>
+                            <th style="text-align: right;">AMOUNT</th>
+                            <th>SUBMITTED</th>
+                            <th style="text-align: right;">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var dep in Model.PendingBankDeposits)
+                        {
+                            <tr>
+                                <td>
+                                    <a href="/centralwks/billing/details/@dep.Id" style="font-family: monospace; font-weight: 800; color: #0050E5; text-decoration: none;">
+                                        @dep.InvoiceNumber
+                                    </a>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 700; color: #0f172a;">@(dep.Tenant?.OrganizationName ?? "Tenant")</div>
+                                    <div style="font-size: 11.5px; color: #64748b;">@(dep.Tenant?.PrimaryDomain)</div>
+                                </td>
+                                <td>
+                                    <span style="font-family: monospace; font-size: 12.5px; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">
+                                        @(dep.PaymentProofRef ?? dep.TransactionRef)
+                                    </span>
+                                </td>
+                                <td style="font-size: 12.5px; color: #334155; max-width: 280px;">@dep.Notes</td>
+                                <td style="text-align: right; font-weight: 800; color: #0f172a; white-space: nowrap;">
+                                    @dep.Currency @dep.Amount.ToString("N2")
+                                </td>
+                                <td style="font-size: 12px; color: #64748b; white-space: nowrap;">
+                                    @((dep.UpdatedUtc ?? dep.CreatedUtc).ToString("MMM dd, HH:mm")) UTC
+                                </td>
+                                <td style="text-align: right; white-space: nowrap;">
+                                    <div style="display: inline-flex; align-items: center; gap: 6px;">
+                                        <form method="post" asp-page-handler="ApproveBankDeposit" asp-route-invoiceId="@dep.Id" style="margin: 0;">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-admin btn-admin-primary" style="height: 30px; padding: 0 12px; font-size: 12px; font-weight: 700;" onclick="return confirm('Confirm bank transfer @(dep.PaymentProofRef) and activate capabilities for @(dep.Tenant?.OrganizationName)?')">
+                                                <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
+                                                Confirm &amp; Activate
+                                            </button>
+                                        </form>
+                                        <a href="/centralwks/billing/details/@dep.Id" class="btn-admin btn-admin-secondary" style="height: 30px; padding: 0 10px; font-size: 12px; text-decoration: none;">
+                                            Inspect
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
 
-            <button type="submit" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px;">
-                <span class="material-symbols-outlined" style="font-size: 16px;">filter_alt</span>
-                Filter
-            </button>
+    @* ── 4 Multi-Window Revenue & Expiration KPI Cards ── *@
+    <div class="sub-kpi-grid">
+        @* Card 1: Platform Monthly Revenue (MRR) & Paid vs Free Tenants *@
+        <div class="sub-kpi-card">
+            <div class="sub-kpi-icon" style="background: #eff6ff; color: #0050E5;">
+                <span class="material-symbols-outlined" style="font-size: 24px;">payments</span>
+            </div>
+            <div class="sub-kpi-body">
+                <span class="sub-kpi-label">Platform Monthly Revenue (MRR)</span>
+                <div style="display: flex; align-items: baseline; gap: 6px;">
+                    <a href="/centralwks/subscriptions?tierFilter=paid" style="text-decoration: none;">
+                        <span class="sub-kpi-val" style="color: #0050E5;" data-usd-amount="@Model.TotalPlatformMRR.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-usd-suffix="/mo">$@Model.TotalPlatformMRR.ToString("N2")<span style="font-size: 12px; font-weight: 600; color: #64748b;">/mo</span></span>
+                    </a>
+                </div>
+                <div class="sub-kpi-sub">
+                    <span style="color: #059669;"><strong>@Model.PaidTenantsCount</strong> Paid Tenants (@Model.TotalPaidAddonsCount Add-ons)</span>
+                    <span>•</span>
+                    <span><strong>@Model.FreeTenantsCount</strong> Free</span>
+                </div>
+            </div>
+        </div>
 
-            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Filter))
-            {
-                <a href="/centralwks/subscriptions" class="btn-admin btn-admin-secondary" style="height: 38px; padding: 0 14px; color: var(--admin-danger); display: inline-flex; align-items: center; gap: 6px;">
-                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
-                    Reset
-                </a>
-            }
-        </form>
+        @* Card 2: Pending Payment in <= 30 Days *@
+        <div class="sub-kpi-card">
+            <div class="sub-kpi-icon" style="background: rgba(245, 158, 11, 0.14); color: #d97706;">
+                <span class="material-symbols-outlined" style="font-size: 24px;">hourglass_top</span>
+            </div>
+            <div class="sub-kpi-body">
+                <span class="sub-kpi-label">Pending Renewal in ≤ 30 Days</span>
+                <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                    <a href="/centralwks/subscriptions?filter=expiring_30d" style="text-decoration: none;">
+                        <span class="sub-kpi-val" style="color: #d97706;" data-usd-amount="@Model.TotalPending30DaysUsd.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)">$@Model.TotalPending30DaysUsd.ToString("N2")</span>
+                    </a>
+                </div>
+                <div class="sub-kpi-sub">
+                    <span><strong>@Model.TotalFeaturesExpiring30Days</strong> Features across <strong>@Model.DueWithin30DaysCount</strong> Tenants</span>
+                </div>
+            </div>
+        </div>
 
-        <div style="font-size: 12.5px; color: var(--admin-text-muted);">
-            Showing <strong>@Model.Tenants.Count</strong> of <strong>@Model.TotalCount</strong> tenant organizations
+        @* Card 3: Pending Payment in 31 - 60 Days *@
+        <div class="sub-kpi-card">
+            <div class="sub-kpi-icon" style="background: rgba(59, 130, 246, 0.12); color: #2563eb;">
+                <span class="material-symbols-outlined" style="font-size: 24px;">event_upcoming</span>
+            </div>
+            <div class="sub-kpi-body">
+                <span class="sub-kpi-label">Pending Renewal in 31–60 Days</span>
+                <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+                    <a href="/centralwks/subscriptions?filter=expiring_60d" style="text-decoration: none;">
+                        <span class="sub-kpi-val" style="color: #2563eb;" data-usd-amount="@Model.TotalPending60DaysUsd.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)">$@Model.TotalPending60DaysUsd.ToString("N2")</span>
+                    </a>
+                </div>
+                <div class="sub-kpi-sub">
+                    <span><strong>@Model.TotalFeaturesExpiring60Days</strong> Features across <strong>@Model.DueWithin60DaysCount</strong> Tenants</span>
+                </div>
+            </div>
+        </div>
+
+        @* Card 4: Overdue / Healthy (>60d) *@
+        <div class="sub-kpi-card">
+            <div class="sub-kpi-icon" style="background: @(Model.OverdueTenantsCount > 0 ? "rgba(239, 68, 68, 0.12)" : "#ecfdf5"); color: @(Model.OverdueTenantsCount > 0 ? "#dc2626" : "#059669");">
+                <span class="material-symbols-outlined" style="font-size: 24px;">@(Model.OverdueTenantsCount > 0 ? "warning" : "verified")</span>
+            </div>
+            <div class="sub-kpi-body">
+                <span class="sub-kpi-label">Overdue / Healthy (&gt;60d)</span>
+                <div style="display: flex; align-items: baseline; gap: 8px;">
+                    <a href="/centralwks/subscriptions?filter=overdue" style="text-decoration: none;" title="Filter Overdue Tenants">
+                        <span class="sub-kpi-val" style="color: #dc2626;">@Model.OverdueTenantsCount</span>
+                    </a>
+                    <span style="font-size: 16px; color: #cbd5e1;">/</span>
+                    <a href="/centralwks/subscriptions?filter=healthy" style="text-decoration: none;" title="Filter Healthy Tenants">
+                        <span class="sub-kpi-val" style="color: #059669;">@Model.HealthyTenantsCount</span>
+                    </a>
+                </div>
+                <div class="sub-kpi-sub">
+                    <span style="color: #dc2626;"><strong>@Model.TotalOverdueFeatures</strong> Overdue (<span data-usd-amount="@Model.TotalOverdueUsd.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)">$@Model.TotalOverdueUsd.ToString("N2")</span>)</span>
+                    <span>•</span>
+                    <span style="color: #059669;"><strong>@Model.HealthyTenantsCount</strong> Healthy</span>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Tenant Subscriptions Matrix Table -->
-    <div class="table-responsive">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th style="width: 50px; text-align: center;">S/N</th>
-                    <th>Tenant Organization</th>
-                    <th>Next Billing Amount</th>
-                    <th>Date of Next Billing</th>
-                    <th>Feature Expiration Posture (30d / 60d / >60d)</th>
-                    <th>Notification Status / Count</th>
-                    <th style="text-align: right; width: 120px;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model.Tenants.Any())
-                {
-                    @for (int i = 0; i < Model.Tenants.Count; i++)
-                    {
-                        var tenant = Model.Tenants[i];
-                        var sn = (Model.PageNumber - 1) * Model.PageSize + (i + 1);
+    @* ── Main Subscriptions Card with Search, Filter & Clean 6-Column Table ── *@
+    <div class="sub-card">
+        <div class="sub-toolbar">
+            <form method="get" class="sub-filter-form">
+                <input type="hidden" name="pageSize" value="@Model.PageSize" />
 
-                        <tr>
-                            <td style="text-align: center;">
-                                <span class="badge" style="background: var(--admin-bg-hover); color: var(--admin-text-muted); font-weight: 600; font-size: 11.5px;">@sn</span>
-                            </td>
-                            <td>
-                                <div>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <a href="/centralwks/subscriptions/details?tenantId=@tenant.TenantId" style="color: var(--admin-text); font-weight: 700; text-decoration: none; font-size: 14px;">
-                                            @tenant.OrganizationName
-                                        </a>
-                                        @if (tenant.IsTenantSuspended)
-                                        {
-                                            <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--admin-danger); font-size: 10px; padding: 1px 6px;">Suspended</span>
-                                        }
+                <div class="sub-search-wrap">
+                    <span class="material-symbols-outlined">search</span>
+                    <input type="text" name="search" value="@Model.Search" placeholder="Search tenant name or key..." class="sub-search-input" />
+                </div>
+
+                <select name="filter" class="sub-select" onchange="this.form.submit()">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.Filter))">All Renewal Windows (@Model.TotalAllTenantsCount)</option>
+                    <option value="expiring_30d" selected="@(Model.Filter == "expiring_30d")">Pending in ≤ 30 Days (@Model.DueWithin30DaysCount)</option>
+                    <option value="expiring_60d" selected="@(Model.Filter == "expiring_60d")">Pending in 31–60 Days (@Model.DueWithin60DaysCount)</option>
+                    <option value="overdue" selected="@(Model.Filter == "overdue")">Overdue (@Model.OverdueTenantsCount)</option>
+                    <option value="healthy" selected="@(Model.Filter == "healthy")">Healthy &gt; 60 Days (@Model.HealthyTenantsCount)</option>
+                </select>
+
+                <select name="tierFilter" class="sub-select" onchange="this.form.submit()">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.TierFilter))">All Tiers</option>
+                    <option value="paid" selected="@(Model.TierFilter == "paid")">Paid Subscribers (@Model.PaidTenantsCount)</option>
+                    <option value="free" selected="@(Model.TierFilter == "free")">Free Core (@Model.FreeTenantsCount)</option>
+                    <option value="custom_pricing" selected="@(Model.TierFilter == "custom_pricing")">Custom Pricing</option>
+                </select>
+
+                <button type="submit" class="sub-btn-filter">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">search</span>
+                    Search
+                </button>
+
+                @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.Filter) || !string.IsNullOrEmpty(Model.TierFilter))
+                {
+                    <a href="/centralwks/subscriptions?pageSize=@Model.PageSize" class="sub-btn-clear">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">close</span>
+                        Reset
+                    </a>
+                }
+            </form>
+
+            <div style="font-size: 12.5px; color: #64748b; font-weight: 500; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+                Showing <strong>@startRow–@endRow</strong> of <strong>@Model.TotalCount</strong> tenants
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th style="width: 56px; text-align: center;">S/N</th>
+                        <th>Tenant Organization</th>
+                        <th>Last Paid</th>
+                        <th>Next Payment Amount</th>
+                        <th>Total Features</th>
+                        <th style="text-align: right; width: 190px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Tenants.Any())
+                    {
+                        @for (int i = 0; i < Model.Tenants.Count; i++)
+                        {
+                            var t = Model.Tenants[i];
+                            int sn = ((Model.PageNumber - 1) * Model.PageSize) + i + 1;
+
+                            <tr>
+                                @* 1. S/N *@
+                                <td style="text-align: center; color: #64748b; font-weight: 700; font-size: 12.5px;">
+                                    @sn
+                                </td>
+
+                                @* 2. Tenant Organization (Clickable Name to Details + small font tenantKey only) *@
+                                <td>
+                                    <a href="/centralwks/subscriptions/details?tenantId=@t.TenantId"
+                                       style="color: #0f172a; font-weight: 700; text-decoration: none; font-size: 14px; display: inline-block;">
+                                        @t.OrganizationName
+                                    </a>
+                                    <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">
+                                        @t.TenantKey
                                     </div>
-                                    <div style="font-size: 11.5px; color: var(--admin-text-dim); margin-top: 2px; display: flex; align-items: center; gap: 8px;">
-                                        <code style="background: var(--admin-bg-surface-elevated); padding: 1px 4px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">@tenant.TenantKey</code>
-                                        <span>•</span>
-                                        <span>@tenant.PrimaryDomain</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div>
-                                    @if (tenant.ActiveFeaturesCount > 0)
+                                </td>
+
+                                @* 3. Last Paid (in Tenant's Own Running Currency + small font date) *@
+                                <td>
+                                    @if (t.LastPaidDateUtc.HasValue)
                                     {
-                                        <div style="font-weight: 700; color: var(--admin-text); font-size: 15px; letter-spacing: -0.02em;">
-                                            $@tenant.NextBillingAmount.ToString("N2")
+                                        <div style="font-size: 14px; font-weight: 700; color: #0f172a;">
+                                            @t.CurrencySymbol@t.LastPaidTenantAmount.ToString("N2")
                                         </div>
-                                        <div style="font-size: 11px; color: var(--admin-success); font-weight: 500; display: inline-flex; align-items: center; gap: 4px; margin-top: 2px;">
-                                            <span class="material-symbols-outlined" style="font-size: 13px;">check_circle</span>
-                                            @tenant.ActiveFeaturesCount @(tenant.ActiveFeaturesCount == 1 ? "Active Capability" : "Active Capabilities")
+                                        <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">
+                                            @t.LastPaidDateUtc.Value.ToString("MMM dd, yyyy")
                                         </div>
                                     }
                                     else
                                     {
-                                        <div style="color: var(--admin-text-dim); font-size: 13px; font-weight: 500;">
-                                            $0.00
-                                        </div>
-                                        <div style="font-size: 11px; color: var(--admin-text-dim); margin-top: 2px;">
-                                            No active capabilities
-                                        </div>
+                                        <div style="font-size: 14px; font-weight: 700; color: #94a3b8;">—</div>
+                                        <div style="font-size: 11.5px; color: #94a3b8; margin-top: 2px;">No payment yet</div>
                                     }
-                                </div>
-                            </td>
-                            <td>
-                                @if (tenant.NextBillingDateUtc.HasValue)
-                                {
-                                    <div style="font-weight: 600; color: var(--admin-text); font-size: 13px;">
-                                        @tenant.NextBillingDateUtc.Value.ToString("MMM dd, yyyy")
-                                    </div>
-                                    <div style="font-size: 11px; color: var(--admin-text-dim);">
-                                        Earliest renewal cycle
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span style="color: var(--admin-text-dim); font-size: 12.5px;">Perpetual Platform</span>
-                                }
-                            </td>
-                            <td>
-                                @if (tenant.ActiveFeaturesCount > 0)
-                                {
-                                    <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
-                                        @if (tenant.OverdueCount > 0)
-                                        {
-                                            <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--admin-danger); font-size: 11px; font-weight: 700; padding: 3px 7px;">
-                                                @tenant.OverdueCount Overdue
-                                            </span>
-                                        }
-                                        <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--admin-warning); font-size: 11px; font-weight: 600; padding: 3px 7px;" title="Features expiring within 30 days">
-                                            @tenant.Expiring30DaysCount in ≤30d
-                                        </span>
-                                        <span class="badge" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6; font-size: 11px; font-weight: 600; padding: 3px 7px;" title="Features expiring between 31 and 60 days">
-                                            @tenant.Expiring60DaysCount in 31–60d
-                                        </span>
-                                        <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: var(--admin-success); font-size: 11px; font-weight: 600; padding: 3px 7px;" title="Features expiring beyond 60 days or Core Perpetual Platform">
-                                            @tenant.Beyond60DaysCount >60d / Core
-                                        </span>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="badge" style="background: var(--admin-bg-surface-elevated); color: var(--admin-text-dim); font-size: 11px;">No Subscriptions</span>
-                                }
-                            </td>
-                            <td>
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <div>
-                                        @if (tenant.NotificationCount > 0)
-                                        {
-                                            <span class="badge" style="background: rgba(99, 102, 241, 0.12); color: var(--admin-indigo); font-size: 11.5px; font-weight: 600; padding: 3px 8px;">
-                                                <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: middle;">mail</span>
-                                                @tenant.NotificationStatus
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge" style="background: var(--admin-bg-surface-elevated); color: var(--admin-text-muted); font-size: 11.5px; padding: 3px 8px; border: 1px solid var(--admin-border);">
-                                                <span class="material-symbols-outlined" style="font-size: 13px; vertical-align: middle; color: var(--admin-text-dim);">schedule_send</span>
-                                                @tenant.NotificationStatus
-                                            </span>
-                                        }
-                                    </div>
+                                </td>
 
-                                    @if (!string.IsNullOrWhiteSpace(tenant.AdminEmail) && tenant.ActiveFeaturesCount > 0)
-                                    {
-                                        <form method="post" asp-page-handler="SendRenewalNotice" asp-route-tenantId="@tenant.TenantId" style="display: inline; margin: 0;">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn-admin-icon" title="Send manual renewal reminder notice now" onclick="return confirm('Send renewal reminder email to @tenant.AdminEmail?');">
-                                                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--admin-indigo);">send</span>
-                                            </button>
-                                        </form>
-                                    }
+                                @* 4. Next Payment Amount (in Tenant's Own Running Currency + small font date) *@
+                                <td>
+                                    <div style="font-size: 14px; font-weight: 700; color: #0f172a;">
+                                        @t.CurrencySymbol@t.NextPaymentTenantAmount.ToString("N2")
+                                    </div>
+                                    <div style="font-size: 11.5px; color: #64748b; margin-top: 2px;">
+                                        @(t.NextBillingDateUtc.HasValue ? t.NextBillingDateUtc.Value.ToString("MMM dd, yyyy") : "Free Core")
+                                    </div>
+                                </td>
+
+                                @* 5. Total Features (Active / Not Active only) *@
+                                <td>
+                                    <span style="font-size: 13.5px; font-weight: 700; color: #059669;">@t.ActiveFeaturesCount Active</span>
+                                    <span style="color: #cbd5e1; margin: 0 4px;">/</span>
+                                    <span style="font-size: 12.5px; font-weight: 600; color: #64748b;">@t.InactiveFeaturesCount Not Active</span>
+                                </td>
+
+                                @* 6. Actions (Inspect & Manage) *@
+                                <td style="text-align: right;">
+                                    <div style="display: inline-flex; align-items: center; gap: 6px;">
+                                        <button type="button"
+                                                class="btn-admin btn-admin-secondary btn-admin-sm"
+                                                onclick='openRenewalInspectModal(@Html.Raw(JsonSerializer.Serialize(t.OrganizationName)), @Html.Raw(JsonSerializer.Serialize(t.TenantKey)), "@t.TenantId", @Html.Raw(JsonSerializer.Serialize(t.AdminEmail ?? "")), @Html.Raw(JsonSerializer.Serialize(t.DefaultCurrencyCode)), @Html.Raw(JsonSerializer.Serialize(t.CurrencySymbol)), @Html.Raw(t.FeaturesJson), @Html.Raw(t.SentEmailsJson))'
+                                                title="Inspect overdue/upcoming renewals and sent emails">
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span>
+                                            Inspect
+                                        </button>
+                                        <a href="/centralwks/tenants/features?tenantId=@t.TenantId"
+                                           class="btn-admin btn-admin-primary btn-admin-sm"
+                                           title="Manage Tenant Features &amp; Pricing">
+                                            <span class="material-symbols-outlined" style="font-size: 15px;">tune</span>
+                                            Manage
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state" style="padding: 48px 20px; text-align: center;">
+                                    <span class="material-symbols-outlined" style="font-size: 40px; color: #94a3b8; margin-bottom: 8px; display: block;">receipt_long</span>
+                                    <h3 style="font-size: 15.5px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0;">No Tenant Subscriptions Match Your Search</h3>
+                                    <p style="font-size: 13px; color: #64748b; margin: 0;">Try clearing the search box or switching the filter.</p>
                                 </div>
-                            </td>
-                            <td style="text-align: right;">
-                                <a href="/centralwks/subscriptions/details?tenantId=@tenant.TenantId" class="btn-admin btn-admin-primary btn-admin-sm" style="display: inline-flex; align-items: center; gap: 6px;">
-                                    <span class="material-symbols-outlined" style="font-size: 16px;">receipt_long</span>
-                                    Details
-                                </a>
                             </td>
                         </tr>
                     }
-                }
-                else
-                {
-                    <tr>
-                        <td colspan="7">
-                            <div class="empty-state" style="padding: 48px; text-align: center;">
-                                <span class="material-symbols-outlined" style="font-size: 42px; color: var(--admin-text-dim); margin-bottom: 12px; display: block;">receipt_long</span>
-                                <h3 class="empty-state-title" style="font-size: 16px; font-weight: 700; color: var(--admin-text); margin-bottom: 6px;">No Subscriptions Found</h3>
-                                <p class="empty-state-desc" style="font-size: 13px; color: var(--admin-text-muted); max-width: 420px; margin: 0 auto;">No tenant organizations match your current search or filter criteria.</p>
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </tbody>
+            </table>
+        </div>
 
-    <!-- Pagination -->
-    @if (Model.TotalPages > 1)
-    {
-        <div class="table-pagination" style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--admin-border);">
-            <div style="font-size: 13px; color: var(--admin-text-muted);">
-                Page <strong>@Model.PageNumber</strong> of <strong>@Model.TotalPages</strong>
+        @* ── Pagination Footer (10 / 20 / 50 per page) ── *@
+        <div class="sub-pagination-bar">
+            <div style="display: flex; align-items: center; gap: 12px; font-size: 12.5px; color: #64748b; font-weight: 500;">
+                <span>Showing <strong>@startRow</strong> to <strong>@endRow</strong> of <strong>@Model.TotalCount</strong> tenants</span>
+                <form method="get" style="display: inline-flex; align-items: center; gap: 6px; margin: 0;">
+                    <input type="hidden" name="search" value="@Model.Search" />
+                    <input type="hidden" name="filter" value="@Model.Filter" />
+                    <input type="hidden" name="tierFilter" value="@Model.TierFilter" />
+                    <input type="hidden" name="pageNumber" value="1" />
+                    <label style="font-size: 12px; color: #64748b;">Rows:</label>
+                    <select name="pageSize" onchange="this.form.submit()" class="sub-select" style="height: 32px; padding: 0 24px 0 10px; font-size: 12px;">
+                        <option value="10" selected="@(Model.PageSize == 10)">10 / page</option>
+                        <option value="20" selected="@(Model.PageSize == 20)">20 / page</option>
+                        <option value="50" selected="@(Model.PageSize == 50)">50 / page</option>
+                    </select>
+                </form>
             </div>
-            <div style="display: flex; gap: 6px;">
-                @if (Model.PageNumber > 1)
-                {
-                    <a href="?pageNumber=@(Model.PageNumber - 1)&filter=@Model.Filter&search=@Model.Search" class="btn-admin btn-admin-secondary btn-admin-sm">
-                        Previous
-                    </a>
+
+            <div style="display: flex; align-items: center; gap: 6px;">
+                @{
+                    string BuildSubPageUrl(int targetPage) =>
+                        $"/centralwks/subscriptions?pageNumber={targetPage}&pageSize={Model.PageSize}&search={Uri.EscapeDataString(Model.Search ?? "")}&filter={Uri.EscapeDataString(Model.Filter ?? "")}&tierFilter={Uri.EscapeDataString(Model.TierFilter ?? "")}";
                 }
-                @for (int p = Math.Max(1, Model.PageNumber - 2); p <= Math.Min(Model.TotalPages, Model.PageNumber + 2); p++)
+                <a href="@BuildSubPageUrl(Math.Max(1, Model.PageNumber - 1))" class="sub-page-btn @(Model.PageNumber <= 1 ? "disabled" : "")">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">chevron_left</span>
+                    Prev
+                </a>
+
+                @for (int p = 1; p <= Model.TotalPages; p++)
                 {
-                    <a href="?pageNumber=@p&filter=@Model.Filter&search=@Model.Search" class="btn-admin @(p == Model.PageNumber ? "btn-admin-primary" : "btn-admin-secondary") btn-admin-sm">
-                        @p
-                    </a>
+                    if (p == 1 || p == Model.TotalPages || Math.Abs(p - Model.PageNumber) <= 2)
+                    {
+                        <a href="@BuildSubPageUrl(p)" class="sub-page-btn @(p == Model.PageNumber ? "active" : "")">@p</a>
+                    }
+                    else if (Math.Abs(p - Model.PageNumber) == 3)
+                    {
+                        <span style="color: #94a3b8; padding: 0 4px;">…</span>
+                    }
                 }
-                @if (Model.PageNumber < Model.TotalPages)
-                {
-                    <a href="?pageNumber=@(Model.PageNumber + 1)&filter=@Model.Filter&search=@Model.Search" class="btn-admin btn-admin-secondary btn-admin-sm">
-                        Next
-                    </a>
-                }
+
+                <a href="@BuildSubPageUrl(Math.Min(Model.TotalPages, Model.PageNumber + 1))" class="sub-page-btn @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
+                    Next
+                    <span class="material-symbols-outlined" style="font-size: 16px;">chevron_right</span>
+                </a>
             </div>
         </div>
-    }
+    </div>
 </div>
+
+@* ── Inspect Modal: Overdue / <=30d / 31-60d / >60d Breakdown + Sent Renewal Emails ── *@
+<div id="renewalInspectModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 9999; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+    <div style="background: #ffffff; border-radius: 16px; max-width: 880px; width: 100%; max-height: 88vh; display: flex; flex-direction: column; border: 1px solid #e2e8f0; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.22); overflow: hidden;">
+        @* Modal Header *@
+        <div style="padding: 18px 22px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <h3 id="riModalOrgName" style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a;">Tenant Renewals</h3>
+                    <code id="riModalTenantKey" style="font-size: 11.5px; padding: 2px 7px; background: #eff6ff; color: #0050E5; border-radius: 5px; font-weight: 700;"></code>
+                    <span id="riModalCurrencyBadge" style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #ecfeff; color: #0284c7; border: 1px solid #bae6fd;"></span>
+                </div>
+                <p style="margin: 3px 0 0 0; font-size: 12px; color: #64748b;">Overdue, ≤30 Days, 31–60 Days, &gt;60 Days renewal horizons and sent email history in the tenant's running currency.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <a id="riModalDetailsLink" href="#" class="btn-admin btn-admin-secondary btn-admin-sm">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">receipt_long</span>
+                    Details
+                </a>
+                <a id="riModalManageLink" href="#" class="btn-admin btn-admin-primary btn-admin-sm">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">tune</span>
+                    Manage
+                </a>
+                <button type="button" onclick="closeRenewalInspectModal()" style="background: none; border: none; cursor: pointer; color: #64748b;">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+        </div>
+
+        @* Modal Top Tabs: [ Subscribed Features & Horizons ] vs [ Renewal Emails Sent ] *@
+        <div style="padding: 0 22px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; background: #ffffff;">
+            <button type="button" id="riTabFeaturesBtn" class="ri-tab-btn active" onclick="switchInspectTab('features')">
+                <span class="material-symbols-outlined" style="font-size: 17px;">layers</span>
+                Expiry Horizons &amp; Features (<span id="riTabFeaturesCount">0</span>)
+            </button>
+            <button type="button" id="riTabEmailsBtn" class="ri-tab-btn" onclick="switchInspectTab('emails')">
+                <span class="material-symbols-outlined" style="font-size: 17px;">mail</span>
+                Renewal Emails Sent (<span id="riTabEmailsCount">0</span>)
+            </button>
+        </div>
+
+        @* TAB 1: Features & Renewal Horizons *@
+        <div id="riPanelFeatures" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+            <div style="padding: 12px 22px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #f8fafc;">
+                <button type="button" class="ri-filter-btn btn-admin btn-admin-secondary btn-admin-sm" data-bucket="All" onclick="filterRenewalModal('All')">All Active (<span id="riCountAll">0</span>)</button>
+                <button type="button" class="ri-filter-btn btn-admin btn-admin-secondary btn-admin-sm" data-bucket="Overdue" onclick="filterRenewalModal('Overdue')" style="color: #dc2626;">Overdue (<span id="riCountOverdue">0</span>)</button>
+                <button type="button" class="ri-filter-btn btn-admin btn-admin-secondary btn-admin-sm" data-bucket="Expiring30d" onclick="filterRenewalModal('Expiring30d')" style="color: #d97706;">Pending ≤ 30 Days (<span id="riCount30d">0</span>)</button>
+                <button type="button" class="ri-filter-btn btn-admin btn-admin-secondary btn-admin-sm" data-bucket="Expiring60d" onclick="filterRenewalModal('Expiring60d')" style="color: #2563eb;">Pending 31–60 Days (<span id="riCount60d">0</span>)</button>
+                <button type="button" class="ri-filter-btn btn-admin btn-admin-secondary btn-admin-sm" data-bucket="HealthyPaid" onclick="filterRenewalModal('HealthyPaid')" style="color: #059669;">Healthy Paid &gt;60d (<span id="riCountHealthy">0</span>)</button>
+                <button type="button" class="ri-filter-btn btn-admin btn-admin-secondary btn-admin-sm" data-bucket="Core" onclick="filterRenewalModal('Core')">Free Core (<span id="riCountCore">0</span>)</button>
+            </div>
+
+            <div style="padding: 0; overflow-y: auto; flex: 1;">
+                <table class="admin-table" style="margin: 0;">
+                    <thead>
+                        <tr>
+                            <th>Capability</th>
+                            <th>Renewal Horizon</th>
+                            <th>Expiration Date</th>
+                            <th>Billing Cycle</th>
+                            <th style="text-align: right;">Amount (Tenant Currency)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="riModalTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        @* TAB 2: Sent Renewal Emails & Live Email Viewer *@
+        <div id="riPanelEmails" style="display: none; flex-direction: column; flex: 1; min-height: 0; overflow-y: auto;">
+            <div style="padding: 14px 22px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                <div style="font-size: 12.5px; color: #475569;">
+                    Recipient Admin Email: <strong id="riEmailRecipientLabel" style="color: #0f172a;">—</strong>
+                </div>
+                <form method="post" asp-page-handler="SendRenewalNotice" style="margin: 0;">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="tenantId" id="riSendEmailTenantId" value="" />
+                    <button type="submit" id="riSendEmailBtn" class="btn-admin btn-admin-primary btn-admin-sm">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">send</span>
+                        Send Renewal Reminder Email
+                    </button>
+                </form>
+            </div>
+
+            @* Selected Sent Email Body Reader *@
+            <div id="riEmailViewerCard" style="display: none; margin: 16px 22px 0 22px; border: 1px solid #bfdbfe; border-radius: 12px; background: #ffffff; overflow: hidden;">
+                <div style="padding: 12px 16px; background: #eff6ff; border-bottom: 1px solid #bfdbfe; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <div>
+                        <div id="riViewerSubject" style="font-size: 13.5px; font-weight: 800; color: #0f172a;"></div>
+                        <div id="riViewerMeta" style="font-size: 11.5px; color: #475569; margin-top: 2px;"></div>
+                    </div>
+                    <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="document.getElementById('riEmailViewerCard').style.display='none'">
+                        Close Preview
+                    </button>
+                </div>
+                <div id="riViewerBody" style="padding: 16px; font-size: 13px; color: #1e293b; line-height: 1.6; max-height: 260px; overflow-y: auto;"></div>
+            </div>
+
+            <div style="padding: 0;">
+                <table class="admin-table" style="margin: 0;">
+                    <thead>
+                        <tr>
+                            <th>Date Sent</th>
+                            <th>Recipient</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="riEmailsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentModalFeatures = [];
+        let currentModalEmails = [];
+        let currentModalCurrencySymbol = '$';
+        let currentModalCurrencyCode = 'USD';
+        let currentModalBucket = 'All';
+
+        function openRenewalInspectModal(orgName, tenantKey, tenantId, adminEmail, currCode, currSymbol, features, sentEmails) {
+            currentModalFeatures = features || [];
+            currentModalEmails = sentEmails || [];
+            currentModalCurrencyCode = currCode || 'USD';
+            currentModalCurrencySymbol = currSymbol || '$';
+            currentModalBucket = 'All';
+
+            document.getElementById('riModalOrgName').textContent = orgName;
+            document.getElementById('riModalTenantKey').textContent = tenantKey;
+            document.getElementById('riModalCurrencyBadge').textContent = currentModalCurrencyCode + ' (' + currentModalCurrencySymbol + ')';
+            document.getElementById('riModalManageLink').href = '/centralwks/tenants/features?tenantId=' + tenantId;
+            document.getElementById('riModalDetailsLink').href = '/centralwks/subscriptions/details?tenantId=' + tenantId;
+
+            document.getElementById('riTabFeaturesCount').textContent = currentModalFeatures.length;
+            document.getElementById('riTabEmailsCount').textContent = currentModalEmails.length;
+
+            // Populate counts on horizon buttons
+            document.getElementById('riCountAll').textContent = currentModalFeatures.length;
+            document.getElementById('riCountOverdue').textContent = currentModalFeatures.filter(f => f.horizonBucket === 'Overdue').length;
+            document.getElementById('riCount30d').textContent = currentModalFeatures.filter(f => f.horizonBucket === 'Expiring30d').length;
+            document.getElementById('riCount60d').textContent = currentModalFeatures.filter(f => f.horizonBucket === 'Expiring60d').length;
+            document.getElementById('riCountHealthy').textContent = currentModalFeatures.filter(f => f.horizonBucket === 'HealthyPaid').length;
+            document.getElementById('riCountCore').textContent = currentModalFeatures.filter(f => f.horizonBucket === 'Core').length;
+
+            // Populate email tab
+            document.getElementById('riEmailRecipientLabel').textContent = adminEmail || 'No email configured';
+            document.getElementById('riSendEmailTenantId').value = tenantId;
+            document.getElementById('riSendEmailBtn').disabled = !adminEmail;
+            document.getElementById('riEmailViewerCard').style.display = 'none';
+
+            renderSentEmailsTable();
+            switchInspectTab('features');
+            filterRenewalModal('All');
+
+            document.getElementById('renewalInspectModal').style.display = 'flex';
+        }
+
+        function closeRenewalInspectModal() {
+            document.getElementById('renewalInspectModal').style.display = 'none';
+        }
+
+        function switchInspectTab(tab) {
+            const isFeatures = tab === 'features';
+            document.getElementById('riTabFeaturesBtn').classList.toggle('active', isFeatures);
+            document.getElementById('riTabEmailsBtn').classList.toggle('active', !isFeatures);
+            document.getElementById('riPanelFeatures').style.display = isFeatures ? 'flex' : 'none';
+            document.getElementById('riPanelEmails').style.display = isFeatures ? 'none' : 'flex';
+        }
+
+        function formatTenantMoney(amount) {
+            const num = Number(amount || 0);
+            return currentModalCurrencySymbol + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function filterRenewalModal(bucket) {
+            currentModalBucket = bucket;
+            document.querySelectorAll('.ri-filter-btn').forEach(btn => {
+                const isActive = btn.getAttribute('data-bucket') === bucket;
+                btn.style.background = isActive ? '#eff6ff' : '';
+                btn.style.borderColor = isActive ? '#0050E5' : '';
+            });
+
+            const tbody = document.getElementById('riModalTableBody');
+            const list = bucket === 'All'
+                ? currentModalFeatures
+                : currentModalFeatures.filter(f => f.horizonBucket === bucket);
+
+            if (!list.length) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 32px; color:#64748b;">No capabilities in this renewal window.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(f => {
+                let badgeHtml = '';
+                if (f.horizonBucket === 'Overdue') {
+                    badgeHtml = '<span class="badge" style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; font-size:11px; font-weight:700;">Overdue (' + Math.abs(f.featureDaysRemaining) + 'd past)</span>';
+                } else if (f.horizonBucket === 'Expiring30d') {
+                    badgeHtml = '<span class="badge" style="background:#fffbeb; color:#d97706; border:1px solid #fde68a; font-size:11px; font-weight:700;">Pending ≤30d (' + f.featureDaysRemaining + 'd left)</span>';
+                } else if (f.horizonBucket === 'Expiring60d') {
+                    badgeHtml = '<span class="badge" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; font-size:11px; font-weight:700;">Pending 31–60d (' + f.featureDaysRemaining + 'd left)</span>';
+                } else if (f.horizonBucket === 'HealthyPaid') {
+                    badgeHtml = '<span class="badge" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:11px; font-weight:700;">Healthy (' + f.featureDaysRemaining + 'd left)</span>';
+                } else {
+                    badgeHtml = '<span class="badge" style="background:#f1f5f9; color:#475569; font-size:11px; font-weight:600;">Compulsory Core</span>';
+                }
+
+                const expDate = f.isCorePerpetual
+                    ? '<span style="color:#64748b; font-size:12px;">Perpetual Core</span>'
+                    : '<strong style="color:#0f172a; font-size:12.5px;">' + new Date(f.expiresAtUtc).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) + '</strong>';
+
+                const priceHtml = f.effectivePriceTenant > 0
+                    ? '<strong style="font-size:13px; color:#0f172a;">' + formatTenantMoney(f.effectivePriceTenant) + '</strong>' +
+                      (f.hasCustomPrice ? ' <span class="badge" style="background:#eff6ff; color:#0050E5; font-size:10px;">Custom</span>' : '')
+                    : '<span style="color:#059669; font-weight:700; font-size:12px;">Included Free</span>';
+
+                return '<tr>' +
+                    '<td><div style="font-weight:700; color:#0f172a; font-size:13px;">' + f.featureName + '</div><div style="font-size:11px; color:#64748b;"><code>' + f.featureCode + '</code> • ' + f.category + '</div></td>' +
+                    '<td>' + badgeHtml + '</td>' +
+                    '<td>' + expDate + '</td>' +
+                    '<td><span style="font-size:12px; color:#475569; font-weight:600;">' + f.durationType + '</span></td>' +
+                    '<td style="text-align:right;">' + priceHtml + '</td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        function renderSentEmailsTable() {
+            const tbody = document.getElementById('riEmailsTableBody');
+            if (!currentModalEmails.length) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 36px; color:#64748b;">No renewal or billing emails have been sent to this tenant yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = currentModalEmails.map((em, idx) => {
+                return '<tr>' +
+                    '<td style="font-size:12px; color:#475569; white-space:nowrap;">' + (em.sentFormatted || new Date(em.sentAtUtc).toLocaleString()) + '</td>' +
+                    '<td style="font-size:12.5px; color:#0f172a; font-weight:600;">' + em.recipientEmail + '</td>' +
+                    '<td style="font-size:12.5px; color:#0f172a; font-weight:700;">' + em.subject + '</td>' +
+                    '<td><span class="badge" style="background:#ecfdf5; color:#059669; font-size:11px; font-weight:700;">' + (em.status || 'Sent') + '</span></td>' +
+                    '<td style="text-align:right;">' +
+                        '<button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" onclick="viewSentEmailBody(' + idx + ')">' +
+                            '<span class="material-symbols-outlined" style="font-size:14px;">mark_email_read</span> View Email' +
+                        '</button>' +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        function viewSentEmailBody(idx) {
+            const em = currentModalEmails[idx];
+            if (!em) return;
+            document.getElementById('riViewerSubject').textContent = em.subject;
+            document.getElementById('riViewerMeta').textContent = 'To: ' + em.recipientEmail + ' • Sent: ' + (em.sentFormatted || new Date(em.sentAtUtc).toLocaleString()) + ' • Provider: ' + (em.provider || 'Postmark');
+            document.getElementById('riViewerBody').innerHTML = em.bodyHtml || '<p style="color:#64748b;">No email body content recorded.</p>';
+            document.getElementById('riEmailViewerCard').style.display = 'block';
+        }
+    </script>
+}

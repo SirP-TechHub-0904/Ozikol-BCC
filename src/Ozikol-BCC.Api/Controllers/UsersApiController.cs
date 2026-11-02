@@ -20,7 +20,7 @@ namespace Ozikol_BCC.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+    [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
     [Tags("5. Admin User Management & Directory")]
     public class UsersApiController : ControllerBase
     {
@@ -265,7 +265,14 @@ namespace Ozikol_BCC.Api.Controllers
 
             if (!string.IsNullOrWhiteSpace(status) && status != "All")
             {
-                query = query.Where(u => string.Equals(u.UserStatus, status, StringComparison.OrdinalIgnoreCase));
+                if (string.Equals(status, "Suspicious", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(u => u.IsSuspicious);
+                }
+                else
+                {
+                    query = query.Where(u => string.Equals(u.UserStatus, status, StringComparison.OrdinalIgnoreCase));
+                }
             }
 
             return Ok(ApiResponse<IEnumerable<UserDto>>.SuccessResponse(query.ToList(), "User directory retrieved successfully."));
@@ -549,7 +556,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Creates a new user profile with role assignment.
         /// </summary>
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Email))
@@ -673,7 +680,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Resets a user's password directly from the Admin console with temporary password and email instructions.
         /// </summary>
         [HttpPut("{id}/reset-password")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> AdminResetPassword(string id, [FromBody] AdminResetPasswordRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.NewPassword))
@@ -759,7 +766,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Generates a secure ASP.NET Identity tokenized password setup/activation link.
         /// </summary>
         [HttpPost("{id}/generate-reset-link")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GeneratePasswordResetLink(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -786,17 +793,42 @@ namespace Ozikol_BCC.Api.Controllers
 
         /// <summary>
         /// Updates profile information for a user (MemberId is immutable).
+        /// Captures property-level previous vs new string diffs for the audit log.
         /// </summary>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProfile(string id, [FromBody] UpdateUserProfileRequest request)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
+            var user = await _dbContext.Users.Include(u => u.BcpUserCategory).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null) return NotFound(ApiResponse<object>.FailureResponse("User not found."));
 
-            user.FirstName = request.FirstName?.Trim();
-            user.LastName = request.LastName?.Trim();
-            user.Title = request.Title?.Trim();
-            if (request.Gender.HasValue) user.Gender = request.Gender.Value;
+            var profileDiffs = new List<string>();
+
+            var trimmedFirst = request.FirstName?.Trim();
+            if (trimmedFirst != null && user.FirstName != trimmedFirst)
+            {
+                profileDiffs.Add($"FirstName: '{user.FirstName}' ➔ '{trimmedFirst}'");
+                user.FirstName = trimmedFirst;
+            }
+
+            var trimmedLast = request.LastName?.Trim();
+            if (trimmedLast != null && user.LastName != trimmedLast)
+            {
+                profileDiffs.Add($"LastName: '{user.LastName}' ➔ '{trimmedLast}'");
+                user.LastName = trimmedLast;
+            }
+
+            var trimmedTitle = request.Title?.Trim();
+            if (trimmedTitle != null && user.Title != trimmedTitle)
+            {
+                profileDiffs.Add($"Title: '{user.Title}' ➔ '{trimmedTitle}'");
+                user.Title = trimmedTitle;
+            }
+
+            if (request.Gender.HasValue && user.Gender != request.Gender.Value)
+            {
+                profileDiffs.Add($"Gender: '{user.Gender}' ➔ '{request.Gender.Value}'");
+                user.Gender = request.Gender.Value;
+            }
 
             if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
             {
@@ -805,23 +837,39 @@ namespace Ozikol_BCC.Api.Controllers
                 if (phoneExists)
                     return BadRequest(ApiResponse<object>.FailureResponse($"A member with phone number '{trimmedPhone}' is already registered."));
 
-                // If phone number changed, reset phone verification status
                 if (user.PhoneNumber != trimmedPhone)
                 {
+                    profileDiffs.Add($"Phone: '{user.PhoneNumber}' ➔ '{trimmedPhone}'");
                     user.PhoneNumber = trimmedPhone;
                     user.PhoneNumberConfirmed = false;
                 }
             }
-            else
+            else if (!string.IsNullOrEmpty(user.PhoneNumber))
             {
+                profileDiffs.Add($"Phone: '{user.PhoneNumber}' ➔ 'null'");
                 user.PhoneNumber = null;
                 user.PhoneNumberConfirmed = false;
             }
 
-            user.Designation = request.Designation?.Trim();
-            user.AvatarUrl = request.AvatarUrl;
-            if (request.BcpUserCategoryId.HasValue) user.BcpUserCategoryId = request.BcpUserCategoryId;
-            // NOTE: MemberId is permanently immutable and cannot be updated once created.
+            var trimmedDesignation = request.Designation?.Trim();
+            if (trimmedDesignation != null && user.Designation != trimmedDesignation)
+            {
+                profileDiffs.Add($"Designation: '{user.Designation}' ➔ '{trimmedDesignation}'");
+                user.Designation = trimmedDesignation;
+            }
+
+            if (request.AvatarUrl != null && user.AvatarUrl != request.AvatarUrl)
+            {
+                profileDiffs.Add($"Avatar: updated");
+                user.AvatarUrl = request.AvatarUrl;
+            }
+
+            if (request.BcpUserCategoryId.HasValue && user.BcpUserCategoryId != request.BcpUserCategoryId.Value)
+            {
+                var newCat = await _dbContext.BcpUserCategories.FirstOrDefaultAsync(c => c.Id == request.BcpUserCategoryId.Value);
+                profileDiffs.Add($"Category: '{user.BcpUserCategory?.Name ?? "Unassigned"}' ➔ '{newCat?.Name ?? "Unassigned"}'");
+                user.BcpUserCategoryId = request.BcpUserCategoryId;
+            }
 
             if (request.Suffix != null)
             {
@@ -841,14 +889,19 @@ namespace Ozikol_BCC.Api.Controllers
                 }
 
                 var currentRoles = await _userManager.GetRolesAsync(user);
-                await _userManager.RemoveFromRolesAsync(user, currentRoles);
-                if (await _roleManager.RoleExistsAsync(request.Role))
+                if (!currentRoles.Contains(request.Role))
                 {
-                    await _userManager.AddToRoleAsync(user, request.Role);
+                    profileDiffs.Add($"Role: '{string.Join(",", currentRoles)}' ➔ '{request.Role}'");
+                    await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                    if (await _roleManager.RoleExistsAsync(request.Role))
+                    {
+                        await _userManager.AddToRoleAsync(user, request.Role);
+                    }
                 }
             }
 
-            await LogActivityAsync("Update Profile", $"Updated profile for '{user.FullName}'", user.Id, user.FullName);
+            var diffSummary = profileDiffs.Count > 0 ? $"Updated profile for '{user.FullName}': [{string.Join(", ", profileDiffs)}]" : $"Updated profile for '{user.FullName}' (no field changes)";
+            await LogActivityAsync("Update Profile", diffSummary, user.Id, user.FullName, profileDiffs.Count > 0 ? JsonSerializer.Serialize(new { changes = profileDiffs }) : null);
             return Ok(ApiResponse<object>.SuccessResponse(null, "User profile updated successfully."));
         }
 
@@ -856,7 +909,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Toggles user account status (Active vs Suspended).
         /// </summary>
         [HttpPut("{id}/status")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> ToggleUserStatus(string id, [FromBody] UpdateUserStatusRequest request)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
@@ -881,7 +934,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Assigns category tier to a user.
         /// </summary>
         [HttpPut("{id}/category")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> AssignUserCategory(string id, [FromBody] AssignCategoryRequest request)
         {
             var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id);
@@ -960,7 +1013,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Creates a new user category tier.
         /// </summary>
         [HttpPost("categories")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> CreateCategory([FromBody] CreateUserCategoryRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Name))
@@ -986,23 +1039,59 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Updates an existing category tier.
+        /// Updates an existing category tier and records property diffs in audit logs.
         /// </summary>
         [HttpPut("categories/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] CreateUserCategoryRequest request)
         {
             var existing = await _dbContext.BcpUserCategories.FirstOrDefaultAsync(c => c.Id == id);
             if (existing == null) return NotFound(ApiResponse<object>.FailureResponse("Category not found."));
 
-            existing.Name = request.Name?.Trim() ?? existing.Name;
-            existing.Description = request.Description?.Trim();
-            existing.ColorCode = !string.IsNullOrWhiteSpace(request.ColorCode) ? request.ColorCode : existing.ColorCode;
-            existing.Icon = !string.IsNullOrWhiteSpace(request.Icon) ? request.Icon : existing.Icon;
-            existing.SortOrder = request.SortOrder;
-            if (request.IsActive.HasValue) existing.IsActive = request.IsActive.Value;
+            var catDiffs = new List<string>();
+            var trimmedName = request.Name?.Trim();
+            if (trimmedName != null && existing.Name != trimmedName)
+            {
+                catDiffs.Add($"Name: '{existing.Name}' ➔ '{trimmedName}'");
+                existing.Name = trimmedName;
+            }
+
+            var trimmedDesc = request.Description?.Trim();
+            if (existing.Description != trimmedDesc)
+            {
+                catDiffs.Add($"Description: '{existing.Description}' ➔ '{trimmedDesc}'");
+                existing.Description = trimmedDesc;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.ColorCode) && existing.ColorCode != request.ColorCode)
+            {
+                catDiffs.Add($"Color: '{existing.ColorCode}' ➔ '{request.ColorCode}'");
+                existing.ColorCode = request.ColorCode;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Icon) && existing.Icon != request.Icon)
+            {
+                catDiffs.Add($"Icon: '{existing.Icon}' ➔ '{request.Icon}'");
+                existing.Icon = request.Icon;
+            }
+
+            if (existing.SortOrder != request.SortOrder)
+            {
+                catDiffs.Add($"SortOrder: '{existing.SortOrder}' ➔ '{request.SortOrder}'");
+                existing.SortOrder = request.SortOrder;
+            }
+
+            if (request.IsActive.HasValue && existing.IsActive != request.IsActive.Value)
+            {
+                catDiffs.Add($"IsActive: '{existing.IsActive}' ➔ '{request.IsActive.Value}'");
+                existing.IsActive = request.IsActive.Value;
+            }
 
             await _dbContext.SaveChangesAsync();
+
+            var catSummary = catDiffs.Count > 0 ? $"Updated category tier '{existing.Name}': [{string.Join(", ", catDiffs)}]" : $"Updated category tier '{existing.Name}' (no changes)";
+            await LogActivityAsync("Update Category", catSummary, null, null, catDiffs.Count > 0 ? JsonSerializer.Serialize(new { changes = catDiffs }) : null);
+
             return Ok(ApiResponse<object>.SuccessResponse(existing, "Category updated successfully."));
         }
 
@@ -1010,7 +1099,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Deletes a category tier if no active members are assigned.
         /// </summary>
         [HttpDelete("categories/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> DeleteCategory(Guid id)
         {
             var existing = await _dbContext.BcpUserCategories.FirstOrDefaultAsync(c => c.Id == id);
@@ -1037,6 +1126,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves all KPI Indicator definitions.
         /// </summary>
         [HttpGet("kpi-indicators")]
+        [HttpGet("kpi/indicators")]
         public async Task<IActionResult> GetKpiIndicators()
         {
             var indicators = await _dbContext.BcpKpiIndicators
@@ -1125,7 +1215,8 @@ namespace Ozikol_BCC.Api.Controllers
         /// Defines a new KPI Indicator metric.
         /// </summary>
         [HttpPost("kpi-indicators")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [HttpPost("kpi/indicators")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> CreateKpiIndicator([FromBody] CreateKpiIndicatorRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Title))
@@ -1155,7 +1246,8 @@ namespace Ozikol_BCC.Api.Controllers
         /// Updates a KPI Indicator metric.
         /// </summary>
         [HttpPut("kpi-indicators/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [HttpPut("kpi/indicators/{id:guid}")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateKpiIndicator(Guid id, [FromBody] CreateKpiIndicatorRequest request)
         {
             var existing = await _dbContext.BcpKpiIndicators.FirstOrDefaultAsync(k => k.Id == id);
@@ -1177,7 +1269,8 @@ namespace Ozikol_BCC.Api.Controllers
         /// Deletes a KPI Indicator metric.
         /// </summary>
         [HttpDelete("kpi-indicators/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [HttpDelete("kpi/indicators/{id:guid}")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> DeleteKpiIndicator(Guid id)
         {
             var existing = await _dbContext.BcpKpiIndicators.FirstOrDefaultAsync(k => k.Id == id);
@@ -1198,15 +1291,42 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         /// <summary>
-        /// Retrieves evaluation periods (e.g. 2026 Q3, August 2026).
+        /// Retrieves evaluation periods (e.g. 2026 Q4, 2026 Q3, Annual 2026).
         /// </summary>
         [HttpGet("kpi-periods")]
+        [HttpGet("kpi/periods")]
         public async Task<IActionResult> GetKpiPeriods()
         {
             var savedPeriods = await _dbContext.BcpKpiPeriods
-                .AsNoTracking()
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
+
+            var existingTitles = savedPeriods.Select(p => p.Title).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var defaultPeriods = new List<BcpKpiPeriod>
+            {
+                new BcpKpiPeriod { Id = Guid.NewGuid(), Title = "2026 Q4", Description = "Fourth Quarter Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-1) },
+                new BcpKpiPeriod { Id = Guid.NewGuid(), Title = "2026 Q3", Description = "Third Quarter Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-90) },
+                new BcpKpiPeriod { Id = Guid.NewGuid(), Title = "2026 Q2", Description = "Second Quarter Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-180) },
+                new BcpKpiPeriod { Id = Guid.NewGuid(), Title = "Annual 2026", Description = "Annual Performance Review", IsActive = true, CreatedAt = DateTime.UtcNow.AddDays(-300) }
+            };
+
+            bool needsSave = false;
+            foreach (var dp in defaultPeriods)
+            {
+                if (!existingTitles.Contains(dp.Title))
+                {
+                    _dbContext.BcpKpiPeriods.Add(dp);
+                    savedPeriods.Add(dp);
+                    existingTitles.Add(dp.Title);
+                    needsSave = true;
+                }
+            }
+
+            if (needsSave)
+            {
+                await _dbContext.SaveChangesAsync();
+            }
 
             var scorePeriods = await _dbContext.BcpKpiUserScores
                 .AsNoTracking()
@@ -1214,28 +1334,19 @@ namespace Ozikol_BCC.Api.Controllers
                 .Distinct()
                 .ToListAsync();
 
-            var existingTitles = savedPeriods.Select(p => p.Title).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            var allPeriods = new List<object>();
-            foreach (var p in savedPeriods)
-            {
-                allPeriods.Add(new { p.Id, p.Title, p.Description, p.IsActive, p.CreatedAt });
-            }
-
             foreach (var sp in scorePeriods)
             {
                 if (!string.IsNullOrWhiteSpace(sp) && !existingTitles.Contains(sp))
                 {
-                    allPeriods.Add(new { Id = Guid.NewGuid(), Title = sp, Description = "Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow });
+                    savedPeriods.Add(new BcpKpiPeriod { Id = Guid.NewGuid(), Title = sp, Description = "Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow });
                     existingTitles.Add(sp);
                 }
             }
 
-            if (allPeriods.Count == 0)
-            {
-                var currentQ = $"{DateTime.UtcNow.Year} Q{(DateTime.UtcNow.Month - 1) / 3 + 1}";
-                allPeriods.Add(new { Id = Guid.NewGuid(), Title = currentQ, Description = "Current Evaluation Cycle", IsActive = true, CreatedAt = DateTime.UtcNow });
-            }
+            var allPeriods = savedPeriods
+                .OrderByDescending(p => p.CreatedAt)
+                .Select(p => new { p.Id, p.Title, p.Description, p.IsActive, p.CreatedAt })
+                .ToList();
 
             return Ok(ApiResponse<object>.SuccessResponse(allPeriods, "KPI periods retrieved."));
         }
@@ -1244,7 +1355,8 @@ namespace Ozikol_BCC.Api.Controllers
         /// Creates an evaluation period.
         /// </summary>
         [HttpPost("kpi-periods")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [HttpPost("kpi/periods")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> CreateKpiPeriod([FromBody] CreateKpiPeriodRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Title))
@@ -1277,7 +1389,8 @@ namespace Ozikol_BCC.Api.Controllers
         /// Deletes an evaluation period.
         /// </summary>
         [HttpDelete("kpi-periods/{id:guid}")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [HttpDelete("kpi/periods/{id:guid}")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> DeleteKpiPeriod(Guid id)
         {
             var period = await _dbContext.BcpKpiPeriods.FirstOrDefaultAsync(p => p.Id == id);
@@ -1301,7 +1414,8 @@ namespace Ozikol_BCC.Api.Controllers
         /// Submits batch evaluation scores for multiple indicators on a user.
         /// </summary>
         [HttpPost("kpi-scores/batch")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [HttpPost("kpi/grade")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> SubmitBatchKpiScores([FromBody] BatchScoreSubmissionRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.ProfileId) || string.IsNullOrWhiteSpace(request.Period))
@@ -1312,7 +1426,25 @@ namespace Ozikol_BCC.Api.Controllers
 
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Admin";
 
-            foreach (var item in request.Scores)
+            var scoresToProcess = request.Scores ?? new List<KpiScoreItem>();
+            if (scoresToProcess.Count == 0 && request.Score.HasValue)
+            {
+                var indicators = await _dbContext.BcpKpiIndicators.Where(k => k.IsActive).OrderBy(k => k.SortOrder).ToListAsync();
+                if (indicators.Count > 0)
+                {
+                    var targetIndicator = request.IndicatorId.HasValue
+                        ? indicators.FirstOrDefault(i => i.Id == request.IndicatorId.Value) ?? indicators[0]
+                        : indicators[0];
+                    scoresToProcess.Add(new KpiScoreItem
+                    {
+                        IndicatorId = targetIndicator.Id,
+                        Score = request.Score.Value,
+                        Remarks = request.Remarks ?? request.Notes
+                    });
+                }
+            }
+
+            foreach (var item in scoresToProcess)
             {
                 var existingScore = await _dbContext.BcpKpiUserScores
                     .FirstOrDefaultAsync(s => s.ProfileId == request.ProfileId && s.BcpKpiIndicatorId == item.IndicatorId && s.Period == request.Period);
@@ -1383,6 +1515,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Performance Leaderboard ranking for a period.
         /// </summary>
         [HttpGet("kpi-leaderboard")]
+        [HttpGet("kpi/leaderboard")]
         public async Task<IActionResult> GetKpiLeaderboard([FromQuery] string? period)
         {
             var query = _dbContext.BcpKpiUserScores
@@ -1422,7 +1555,7 @@ namespace Ozikol_BCC.Api.Controllers
         // =========================================================================
 
         [HttpGet("{id}/notes")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GetUserNotes(string id)
         {
             var rawNotes = await _dbContext.BcpUserNotes
@@ -1450,7 +1583,7 @@ namespace Ozikol_BCC.Api.Controllers
         }
 
         [HttpPost("{id}/notes")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> AddUserNote(string id, [FromBody] AddNoteRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Note))
@@ -1494,7 +1627,7 @@ namespace Ozikol_BCC.Api.Controllers
         // =========================================================================
 
         [HttpGet("activity-logs")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GetActivityLogs([FromQuery] string? search, [FromQuery] string? module, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
             var query = _dbContext.BcpActivityLogs.AsNoTracking().AsQueryable();
@@ -1532,7 +1665,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Retrieves the active Member ID configuration rules and live previews for all 10 formats.
         /// </summary>
         [HttpGet("member-id-config")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> GetMemberIdConfig()
         {
             var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -1584,7 +1717,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Updates the tenant's Member ID generation format rules and login policies.
         /// </summary>
         [HttpPut("member-id-config")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateMemberIdConfig([FromBody] UpdateMemberIdConfigRequest request)
         {
             var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -1739,7 +1872,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Updates the tenant's User Manager preferences (Titles, Suffix, Member ID rules, and Policies).
         /// </summary>
         [HttpPut("settings")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> UpdateUserSettings([FromBody] UpdateUserSettingsRequest request)
         {
             var setting = await _dbContext.MisConfigurationSettings.FirstOrDefaultAsync();
@@ -1868,7 +2001,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Generates real-time format previews based on custom transient parameters.
         /// </summary>
         [HttpGet("member-id-config/preview")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> PreviewMemberIdFormats([FromQuery] string? prefix, [FromQuery] int? startNumber, [FromQuery] int? padding, [FromQuery] string? delimiter)
         {
             var previews = await _memberIdGenerator.GetFormatPreviewsAsync(prefix, startNumber, padding, delimiter);
@@ -1883,7 +2016,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Sends a 6-digit email confirmation OTP to the member.
         /// </summary>
         [HttpPost("{id}/send-email-otp")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Member")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only,Member")]
         public async Task<IActionResult> SendEmailOtp(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -1904,7 +2037,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Verifies a 6-digit email confirmation OTP.
         /// </summary>
         [HttpPost("{id}/verify-email-otp")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Member")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only,Member")]
         public async Task<IActionResult> VerifyEmailOtp(string id, [FromBody] VerifyOtpRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.OtpCode))
@@ -1918,6 +2051,16 @@ namespace Ozikol_BCC.Api.Controllers
 
             var user = await _userManager.FindByIdAsync(id);
             await LogActivityAsync("Verify Email OTP", $"Verified email address for '{user?.FullName}'", id, user?.FullName);
+
+            await NotifyUserAsync(
+                id,
+                "Email Address Verified",
+                $"Your email address '{user?.Email}' was verified successfully.",
+                "/identity/console/account?tab=overview",
+                NotificationSeverity.Success,
+                "mark_email_read"
+            );
+
             return Ok(ApiResponse<object>.SuccessResponse(new { emailConfirmed = true }, result.Message));
         }
 
@@ -1925,7 +2068,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Sends a 6-digit SMS phone confirmation OTP to the member.
         /// </summary>
         [HttpPost("{id}/send-phone-otp")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Member")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only,Member")]
         public async Task<IActionResult> SendPhoneOtp(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -1946,7 +2089,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Verifies a 6-digit phone confirmation OTP.
         /// </summary>
         [HttpPost("{id}/verify-phone-otp")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Member")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only,Member")]
         public async Task<IActionResult> VerifyPhoneOtp(string id, [FromBody] VerifyOtpRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.OtpCode))
@@ -1960,6 +2103,16 @@ namespace Ozikol_BCC.Api.Controllers
 
             var user = await _userManager.FindByIdAsync(id);
             await LogActivityAsync("Verify Phone OTP", $"Verified phone number for '{user?.FullName}'", id, user?.FullName);
+
+            await NotifyUserAsync(
+                id,
+                "Phone Number Verified",
+                $"Your mobile phone number '{user?.PhoneNumber}' was verified successfully.",
+                "/identity/console/account?tab=overview",
+                NotificationSeverity.Success,
+                "verified"
+            );
+
             return Ok(ApiResponse<object>.SuccessResponse(new { phoneNumberConfirmed = true }, result.Message));
         }
 
@@ -1967,7 +2120,7 @@ namespace Ozikol_BCC.Api.Controllers
         /// Allows administrator to toggle verification status directly.
         /// </summary>
         [HttpPost("{id}/toggle-verification")]
-        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager")]
+        [Authorize(Roles = "SuperAdmin,Admin,IdentityManager,Identity Manager,UserManager,User Manager,GlobalEditor,Global Editor,FeatureEditor,Feature Editor,ReadOnly,Read Only")]
         public async Task<IActionResult> ToggleVerification(string id, [FromBody] ToggleVerificationRequest request)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -2145,25 +2298,45 @@ namespace Ozikol_BCC.Api.Controllers
             }
         }
 
-        private async Task LogActivityAsync(string actionType, string description, string? targetProfileId, string? targetFullName)
+        /// <summary>
+        /// Logs a business activity or administrative database change into [dbo].[BcpActivityLogs].
+        /// </summary>
+        /// <param name="actionType">The high-level action category (e.g., 'Update Profile', 'Create User').</param>
+        /// <param name="description">Human-readable description including property diffs ('old' ➔ 'new').</param>
+        /// <param name="targetProfileId">The user ID affected by this change, if applicable.</param>
+        /// <param name="targetFullName">The full name of the user affected by this change.</param>
+        /// <param name="metadataJson">Optional JSON metadata capturing property diffs or structured state.</param>
+        private async Task LogActivityAsync(string actionType, string description, string? targetProfileId, string? targetFullName, string? metadataJson = null)
         {
             try
             {
                 var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var currentUserName = User.Identity?.Name ?? "Administrator";
+                var currentUserEmail = User.FindFirst(ClaimTypes.Email)?.Value
+                    ?? User.FindFirst("email")?.Value
+                    ?? (User.Identity?.Name?.Contains('@') == true ? User.Identity.Name : null);
                 var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+                var systemId = Request.Headers["X-System-Id"].FirstOrDefault()
+                    ?? Request.Headers["X-Device-Id"].FirstOrDefault();
+                var userAgent = Request.Headers["User-Agent"].FirstOrDefault();
+
+                var desc = description.Length > 1000 ? description.Substring(0, 997) + "..." : description;
 
                 _dbContext.BcpActivityLogs.Add(new BcpActivityLog
                 {
-                    Id = Guid.NewGuid(),
+                    Id = Guid.CreateVersion7(),
                     ActionType = actionType,
-                    Description = description,
+                    Description = desc,
                     PerformedByProfileId = currentUserId,
                     PerformedByFullName = currentUserName,
+                    PerformedByUserEmail = currentUserEmail,
                     TargetProfileId = targetProfileId,
                     TargetFullName = targetFullName,
                     Module = "User Management",
                     IpAddress = ip,
+                    SystemId = systemId,
+                    UserAgent = userAgent,
+                    MetadataJson = metadataJson,
                     Date = DateTime.UtcNow
                 });
                 await _dbContext.SaveChangesAsync();
@@ -2279,7 +2452,12 @@ namespace Ozikol_BCC.Api.Controllers
     {
         public string ProfileId { get; set; } = string.Empty;
         public string Period { get; set; } = string.Empty;
-        public List<KpiScoreItem> Scores { get; set; } = new();
+        public List<KpiScoreItem>? Scores { get; set; } = new();
+
+        public Guid? IndicatorId { get; set; }
+        public decimal? Score { get; set; }
+        public string? Remarks { get; set; }
+        public string? Notes { get; set; }
     }
 
     public class KpiScoreItem

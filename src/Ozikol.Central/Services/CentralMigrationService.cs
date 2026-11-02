@@ -49,7 +49,7 @@ public class TenantTableStat
 
 public class TenantMigrationSummary
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string TenantKey { get; set; } = string.Empty;
     public string OrganizationName { get; set; } = string.Empty;
     public string PrimaryDomain { get; set; } = string.Empty;

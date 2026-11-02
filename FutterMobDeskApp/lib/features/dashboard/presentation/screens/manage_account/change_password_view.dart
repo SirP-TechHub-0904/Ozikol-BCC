@@ -1,18 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../../../core/widgets/custom_text_field.dart';
 import '../../../../../core/widgets/primary_button.dart';
+import '../../../../notifications/data/notification_service.dart';
 import '../../../../workspace_auth/data/auth_service.dart';
+import '../../../../workspace_auth/state/workspace_state.dart';
+import 'widgets/account_security_header.dart';
 
 /// Screen enabling authenticated members to update their account password.
 class ChangePasswordView extends ConsumerStatefulWidget {
   /// The active workspace context.
   final Workspace? workspace;
 
+  /// Callback to switch account navigation tabs.
+  final ValueChanged<String>? onSelectTab;
+
   /// Creates a [ChangePasswordView].
-  const ChangePasswordView({super.key, this.workspace});
+  const ChangePasswordView({
+    super.key,
+    this.workspace,
+    this.onSelectTab,
+  });
 
   @override
   ConsumerState<ChangePasswordView> createState() => _ChangePasswordViewState();
@@ -56,28 +67,76 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
     super.dispose();
   }
 
+  /// Displays a floating bottom SnackBar notification for user action feedback.
+  ///
+  /// <param name="message">The status message to present.</param>
+  /// <param name="isSuccess">True if operation succeeded, false if error.</param>
+  void _showBottomAlert(String message, {required bool isSuccess}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isSuccess ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isSuccess ? AppColors.success : AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  /// Validates and submits the password change request to the API, displaying
+  /// immediate dual-level feedback (inline card alert and bottom floating notification).
   Future<void> _handleChangePassword() async {
     final oldPassword = _oldPasswordController.text;
     final newPassword = _newPasswordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
     if (oldPassword.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your current active password.');
+      final msg = 'account.enter_current_password'.tr(ref, fallback: 'Please enter your current active password.');
+      setState(() => _errorMessage = msg);
+      _showBottomAlert(msg, isSuccess: false);
       return;
     }
 
     if (!_hasMinLength || !_hasUppercase || !_hasNumber || !_hasSpecialChar) {
-      setState(() => _errorMessage = 'New password does not satisfy all complexity requirements.');
+      final msg = 'account.complexity_unmet'.tr(ref, fallback: 'New password does not satisfy all complexity requirements.');
+      setState(() => _errorMessage = msg);
+      _showBottomAlert(msg, isSuccess: false);
       return;
     }
 
     if (newPassword != confirmPassword) {
-      setState(() => _errorMessage = 'New password and confirmation do not match.');
+      final msg = 'account.passwords_do_not_match'.tr(ref, fallback: 'New password and confirmation do not match.');
+      setState(() => _errorMessage = msg);
+      _showBottomAlert(msg, isSuccess: false);
       return;
     }
 
     if (newPassword == oldPassword) {
-      setState(() => _errorMessage = 'New password cannot be identical to your current password.');
+      final msg = 'account.passwords_identical'.tr(ref, fallback: 'New password cannot be identical to your current password.');
+      setState(() => _errorMessage = msg);
+      _showBottomAlert(msg, isSuccess: false);
       return;
     }
 
@@ -99,15 +158,24 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
       _newPasswordController.clear();
       _confirmPasswordController.clear();
 
+      final successMsg = 'account.password_update_success'.tr(ref, fallback: 'Your password was successfully updated.');
       setState(() {
         _isSubmitting = false;
-        _successMessage = 'Your password was successfully updated.';
+        _successMessage = successMsg;
       });
+
+      // Show bottom alert banner so user doesn't need to scroll to top
+      _showBottomAlert(successMsg, isSuccess: true);
+
+      // Synchronize in-app notification center feed immediately
+      ref.read(notificationProvider.notifier).loadFeed();
     } catch (e) {
+      final errorMsg = WorkspaceNotifier.sanitizeError(e);
       setState(() {
         _isSubmitting = false;
-        _errorMessage = e.toString().replaceFirst('Exception: ', '').trim();
+        _errorMessage = errorMsg;
       });
+      _showBottomAlert(errorMsg, isSuccess: false);
     }
   }
 
@@ -144,45 +212,13 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Card
-          Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.key_outlined, size: 26, color: AppColors.primary),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Update Password',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Change your workspace account password to maintain security standards.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          // Unified Account Header & Navigation Tabs
+          AccountSecurityHeader(
+            activeTab: 'password',
+            onSelectTab: widget.onSelectTab,
+            workspace: widget.workspace,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Success / Error Banner
           if (_successMessage != null) ...[
@@ -233,84 +269,141 @@ class _ChangePasswordViewState extends ConsumerState<ChangePasswordView> {
             const SizedBox(height: 16),
           ],
 
-          // Password Form Card
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+          // Password Form Section Card matching Web DOM
+          AccountSectionCard(
+            icon: Icons.key_rounded,
+            title: 'account.update_password'.tr(ref, fallback: 'Change Account Password'),
+            description: 'account.change_password_desc'.tr(ref, fallback: 'Update your administrator password regularly to maintain workspace security.'),
+            action: Tooltip(
+              message: 'account.password_requirements'.tr(ref, fallback: 'Password Requirements'),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.primary),
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CustomTextField(
-                  controller: _oldPasswordController,
-                  label: 'Current Active Password',
-                  placeholder: '••••••••',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
-                  isPassword: true,
-                ),
-                const SizedBox(height: 16),
-                CustomTextField(
-                  controller: _newPasswordController,
-                  label: 'New Password',
-                  placeholder: 'Create a strong password',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
-                  isPassword: true,
-                ),
-                const SizedBox(height: 12),
-
-                // Complexity Checklist
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(8),
+            child: AutofillGroup(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CustomTextField(
+                    controller: _oldPasswordController,
+                    label: 'account.current_password'.tr(ref, fallback: 'Current Password'),
+                    placeholder: '••••••••',
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
+                    isPassword: true,
+                    showPasteButton: true,
+                    autofillHints: const [AutofillHints.password],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Password Requirements:',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
+                  const SizedBox(height: 16),
+                  CustomTextField(
+                    controller: _newPasswordController,
+                    label: 'account.new_password'.tr(ref, fallback: 'New Password'),
+                    placeholder: 'ui.create_strong_password'.tr(ref, fallback: 'Create a strong password'),
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
+                    isPassword: true,
+                    showPasteButton: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Complexity Checklist
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${'account.password_requirements'.tr(ref, fallback: 'Password Requirements')}:',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? AppColors.gray400 : AppColors.gray600,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      _buildComplexityRow('At least 8 characters', _hasMinLength),
-                      _buildComplexityRow('At least one uppercase letter (A-Z)', _hasUppercase),
-                      _buildComplexityRow('At least one numeric digit (0-9)', _hasNumber),
-                      _buildComplexityRow('At least one special symbol (!@#\$%)', _hasSpecialChar),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                CustomTextField(
-                  controller: _confirmPasswordController,
-                  label: 'Confirm New Password',
-                  placeholder: 'Re-enter your new password',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
-                  isPassword: true,
-                  onSubmitted: (_) => _handleChangePassword(),
-                ),
-                const SizedBox(height: 24),
-
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: SizedBox(
-                    width: 170,
-                    child: PrimaryButton(
-                      text: 'Update Password',
-                      isLoading: _isSubmitting,
-                      onPressed: _handleChangePassword,
+                        const SizedBox(height: 6),
+                        _buildComplexityRow('account.req_length'.tr(ref, fallback: 'At least 8 characters'), _hasMinLength),
+                        _buildComplexityRow('account.req_uppercase'.tr(ref, fallback: 'At least one uppercase letter (A-Z)'), _hasUppercase),
+                        _buildComplexityRow('account.req_number'.tr(ref, fallback: 'At least one numeric digit (0-9)'), _hasNumber),
+                        _buildComplexityRow('account.req_special'.tr(ref, fallback: 'At least one special symbol (!@#\$%)'), _hasSpecialChar),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+
+                  CustomTextField(
+                    controller: _confirmPasswordController,
+                    label: 'account.confirm_password'.tr(ref, fallback: 'Confirm New Password'),
+                    placeholder: 'auth.reenter_new_password'.tr(ref, fallback: 'Re-enter your new password'),
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20, color: AppColors.primary),
+                    isPassword: true,
+                    showPasteButton: true,
+                    autofillHints: const [AutofillHints.newPassword],
+                    onSubmitted: (_) => _handleChangePassword(),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Bottom inline alert directly above the action button so user sees immediate feedback without scrolling
+                  if (_successMessage != null || _errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      decoration: BoxDecoration(
+                        color: (_successMessage != null ? AppColors.success : AppColors.error).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: (_successMessage != null ? AppColors.success : AppColors.error).withValues(alpha: 0.35),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _successMessage != null ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
+                            size: 18,
+                            color: _successMessage != null ? AppColors.success : AppColors.error,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _successMessage ?? _errorMessage!,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: _successMessage != null ? AppColors.success : AppColors.error,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile = constraints.maxWidth < 450;
+                      return Align(
+                        alignment: isMobile ? Alignment.center : Alignment.centerRight,
+                        child: SizedBox(
+                          width: isMobile ? double.infinity : null,
+                          child: PrimaryButton(
+                            isFullWidth: isMobile,
+                            text: 'account.update_password'.tr(ref, fallback: 'Update Password'),
+                            isLoading: _isSubmitting,
+                            onPressed: _handleChangePassword,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ],

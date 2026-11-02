@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -121,67 +121,71 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 }
             }
 
-            // 2. Seed single official root SuperAdmin account
-            if (userManager != null)
+            // 2. Seed single official root SuperAdmin account using environment-supplied bootstrap secret (never hardcoded)
+            var initialSuperAdminPassword = Environment.GetEnvironmentVariable("CENTRAL_SUPERADMIN_INITIAL_PASSWORD");
+            if (!string.IsNullOrWhiteSpace(initialSuperAdminPassword))
             {
-                var existingUser = await userManager.FindByEmailAsync(primarySuperAdminEmail);
-                if (existingUser == null)
+                if (userManager != null)
                 {
-                    var superAdmin = new CentralUser
+                    var existingUser = await userManager.FindByEmailAsync(primarySuperAdminEmail);
+                    if (existingUser == null)
                     {
-                        UserName = primarySuperAdminEmail,
-                        Email = primarySuperAdminEmail,
-                        EmailConfirmed = true,
-                        FirstName = "Ozikol",
-                        LastName = "SuperAdmin",
-                        Department = "Global DevOps & Architecture",
-                        IsActive = true,
-                        CreatedUtc = DateTime.UtcNow
-                    };
+                        var superAdmin = new CentralUser
+                        {
+                            UserName = primarySuperAdminEmail,
+                            Email = primarySuperAdminEmail,
+                            EmailConfirmed = true,
+                            FirstName = "Ozikol",
+                            LastName = "SuperAdmin",
+                            Department = "Global DevOps & Architecture",
+                            IsActive = true,
+                            CreatedUtc = DateTime.UtcNow
+                        };
 
-                    var createResult = await userManager.CreateAsync(superAdmin, "[REDACTED_BOOTSTRAP_PASSWORD]");
-                    if (createResult.Succeeded)
-                    {
-                        await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
+                        var createResult = await userManager.CreateAsync(superAdmin, initialSuperAdminPassword);
+                        if (createResult.Succeeded)
+                        {
+                            await userManager.AddToRoleAsync(superAdmin, "SuperAdmin");
+                        }
                     }
                 }
-            }
-            else
-            {
-                // Fallback direct creation when executed in headless migrator contexts
-                if (!await dbContext.Users.AnyAsync(u => u.NormalizedEmail == primarySuperAdminEmail.ToUpperInvariant(), ct))
+                else
                 {
-                    var hasher = new PasswordHasher<CentralUser>();
-                    var superAdmin = new CentralUser
+                    // Fallback direct creation when executed in headless migrator contexts
+                    if (!await dbContext.Users.AnyAsync(u => u.NormalizedEmail == primarySuperAdminEmail.ToUpperInvariant(), ct))
                     {
-                        Id = Guid.NewGuid().ToString(),
-                        UserName = primarySuperAdminEmail,
-                        NormalizedUserName = primarySuperAdminEmail.ToUpperInvariant(),
-                        Email = primarySuperAdminEmail,
-                        NormalizedEmail = primarySuperAdminEmail.ToUpperInvariant(),
-                        EmailConfirmed = true,
-                        FirstName = "Ozikol",
-                        LastName = "SuperAdmin",
-                        Department = "Global DevOps & Architecture",
-                        IsActive = true,
-                        SecurityStamp = Guid.NewGuid().ToString(),
-                        ConcurrencyStamp = Guid.NewGuid().ToString(),
-                        CreatedUtc = DateTime.UtcNow
-                    };
-                    superAdmin.PasswordHash = hasher.HashPassword(superAdmin, "[REDACTED_BOOTSTRAP_PASSWORD]");
-
-                    dbContext.Users.Add(superAdmin);
-                    await dbContext.SaveChangesAsync(ct);
-
-                    var superAdminRole = await dbContext.Roles.FirstOrDefaultAsync(r => r.NormalizedName == "SUPERADMIN", ct);
-                    if (superAdminRole != null)
-                    {
-                        dbContext.UserRoles.Add(new IdentityUserRole<string>
+                        var hasher = new PasswordHasher<CentralUser>();
+                        var superAdmin = new CentralUser
                         {
-                            UserId = superAdmin.Id,
-                            RoleId = superAdminRole.Id
-                        });
+                            Id = Guid.NewGuid().ToString(),
+                            UserName = primarySuperAdminEmail,
+                            NormalizedUserName = primarySuperAdminEmail.ToUpperInvariant(),
+                            Email = primarySuperAdminEmail,
+                            NormalizedEmail = primarySuperAdminEmail.ToUpperInvariant(),
+                            EmailConfirmed = true,
+                            FirstName = "Ozikol",
+                            LastName = "SuperAdmin",
+                            Department = "Global DevOps & Architecture",
+                            IsActive = true,
+                            SecurityStamp = Guid.NewGuid().ToString(),
+                            ConcurrencyStamp = Guid.NewGuid().ToString(),
+                            CreatedUtc = DateTime.UtcNow
+                        };
+                        superAdmin.PasswordHash = hasher.HashPassword(superAdmin, initialSuperAdminPassword);
+
+                        dbContext.Users.Add(superAdmin);
                         await dbContext.SaveChangesAsync(ct);
+
+                        var superAdminRole = await dbContext.Roles.FirstOrDefaultAsync(r => r.NormalizedName == "SUPERADMIN", ct);
+                        if (superAdminRole != null)
+                        {
+                            dbContext.UserRoles.Add(new IdentityUserRole<string>
+                            {
+                                UserId = superAdmin.Id,
+                                RoleId = superAdminRole.Id
+                            });
+                            await dbContext.SaveChangesAsync(ct);
+                        }
                     }
                 }
             }
@@ -375,9 +379,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     TicketAutoCloseHours = 24,
                     EnableTicketAutoClose = true,
                     SupportCategories = "Support, Sales, Billing, Partnership, Enterprise, General, Security & Compliance",
-                    CloudinaryCloudName = "pcbhnjad",
-                    CloudinaryApiKey = "159842435718116",
-                    CloudinaryApiSecret = "[REDACTED_CLOUDINARY_SECRET]",
+                    // Resolve media storage credentials strictly from environment variables (never hardcoded in source)
+                    CloudinaryCloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME"),
+                    CloudinaryApiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY"),
+                    CloudinaryApiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET"),
                     UpdatedUtc = DateTime.UtcNow
                 };
 
@@ -393,11 +398,12 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     modified = true;
                 }
 
-                if (string.IsNullOrWhiteSpace(existingSetting.CloudinaryCloudName))
+                var envCloudName = Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME");
+                if (string.IsNullOrWhiteSpace(existingSetting.CloudinaryCloudName) && !string.IsNullOrWhiteSpace(envCloudName))
                 {
-                    existingSetting.CloudinaryCloudName = "pcbhnjad";
-                    existingSetting.CloudinaryApiKey = "159842435718116";
-                    existingSetting.CloudinaryApiSecret = "[REDACTED_CLOUDINARY_SECRET]";
+                    existingSetting.CloudinaryCloudName = envCloudName;
+                    existingSetting.CloudinaryApiKey = Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY");
+                    existingSetting.CloudinaryApiSecret = Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET");
                     modified = true;
                 }
 
@@ -1533,7 +1539,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 1,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -1550,7 +1557,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 2,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -1567,7 +1575,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 3,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -1711,7 +1720,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 11,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -1838,7 +1848,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 18,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -1999,7 +2010,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 27,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -2016,7 +2028,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     YearlyPrice = 0.74m,
                     IsMetered = false,
                     SortOrder = 28,
-                    IsActive = true
+                    IsActive = true,
+                    IsAvailableForUse = true
                 },
                 new MasterFeatureCatalog
                 {
@@ -2318,11 +2331,52 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                     IsMetered = false,
                     SortOrder = 45,
                     IsActive = true
+                },
+
+                // =========================================================================
+                // Suite 11: Workspace
+                // =========================================================================
+                new MasterFeatureCatalog
+                {
+                    FeatureCode = "bcp-workspace",
+                    Name = "Workspace (Desktop only)",
+                    MenuTitle = "Workspace (Desktop only)",
+                    Category = "Workspace",
+                    MasterFeatureSuiteId = MasterFeatureSuiteDefaults.SuiteKId,
+                    Description = "Manage workplace operations, desktop app access, and connected workspace stations.",
+                    Icon = "desktop_windows",
+                    RoutePrefix = "/workspace/console",
+                    IsCompulsory = false,
+                    BillingType = FeatureBillingType.FlatSubscription,
+                    MonthlyPrice = 0.00m,
+                    QuarterlyPrice = 0.00m,
+                    YearlyPrice = 0.74m,
+                    IsMetered = false,
+                    SortOrder = 46,
+                    IsActive = true,
+                    IsPublished = true,
+                    IsAvailableForUse = false
                 }
             };
 
+            // 1. Ensure all 10 canonical MasterFeatureSuites exist
+            foreach (var suite in MasterFeatureSuiteDefaults.GetDefaultSuites())
+            {
+                var existingSuite = await dbContext.MasterFeatureSuites
+                    .FirstOrDefaultAsync(s => s.Id == suite.Id || s.SuiteCode == suite.SuiteCode, ct);
+                if (existingSuite == null)
+                {
+                    dbContext.MasterFeatureSuites.Add(suite);
+                }
+            }
+            await dbContext.SaveChangesAsync(ct);
+
+            // 2. Ensure all 45 canonical MasterFeatureCatalogs exist and have MenuTitle + MasterFeatureSuiteId linked
             foreach (var feat in defaultFeatures)
             {
+                feat.MenuTitle = MasterFeatureSuiteDefaults.ResolveFeatureMenuTitle(feat.FeatureCode, feat.MenuTitle, feat.Name);
+                feat.MasterFeatureSuiteId = MasterFeatureSuiteDefaults.ResolveSuiteId(feat.Category);
+
                 var existing = await dbContext.MasterFeatureCatalogs
                     .FirstOrDefaultAsync(f => f.FeatureCode == feat.FeatureCode, ct);
 
@@ -2330,8 +2384,17 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Seeding
                 {
                     dbContext.MasterFeatureCatalogs.Add(feat);
                 }
-                // If existing, do not overwrite database configuration (IsCompulsory, custom pricing, etc.)
-                // to preserve tenant/database customization without runtime drift.
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(existing.MenuTitle))
+                    {
+                        existing.MenuTitle = feat.MenuTitle;
+                    }
+                    if (existing.MasterFeatureSuiteId == null)
+                    {
+                        existing.MasterFeatureSuiteId = feat.MasterFeatureSuiteId;
+                    }
+                }
             }
 
             await dbContext.SaveChangesAsync(ct);

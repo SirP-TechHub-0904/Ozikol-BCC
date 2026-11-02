@@ -4,12 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { TenantStateService } from '../../../core/services/tenant-state.service';
+import { MultiWorkspaceService } from '../../../core/services/multi-workspace.service';
 import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../../core/utils/user-role.utils';
+import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslatePipe],
   template: `
     <div class="login-container">
       <!-- Dedicated Workspace Not Found State -->
@@ -17,7 +19,7 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
         <div class="brand-avatar" style="margin: 0 auto 18px; width: 64px; height: 64px; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 18px; display: flex; align-items: center; justify-content: center;">
           <span class="material-symbols-outlined" style="font-size: 32px; color: #dc2626;">domain_disabled</span>
         </div>
-        <h2 class="title" style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 6px;">Workspace not found.</h2>
+        <h2 class="title" style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 6px;">{{ 'auth.workspace_not_found' | translate:'Workspace not found.' }}</h2>
       </div>
 
       <!-- Standard Login Card -->
@@ -38,7 +40,7 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
             </span>
           </div>
 
-          <h2 class="title">{{ loginTitle || 'Sign In' }}</h2>
+          <h2 class="title">{{ loginTitle || ('auth.sign_in' | translate:'Sign In') }}</h2>
           <p class="subtitle" *ngIf="loginNote">{{ loginNote }}</p>
         </div>
 
@@ -51,7 +53,7 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
         <!-- Form -->
         <form (ngSubmit)="onLogin()" method="post" action="javascript:void(0);" class="login-form">
           <div class="form-group">
-            <label for="email">Email Address</label>
+            <label for="email">{{ 'auth.email_address' | translate:'Email Address' }}</label>
             <div class="input-wrapper">
               <span class="material-symbols-outlined input-icon">mail</span>
               <input
@@ -68,8 +70,8 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
 
           <div class="form-group">
             <div class="label-row">
-              <label for="password">Password</label>
-              <a routerLink="/auth/reset-password" class="forgot-link">Forgot password?</a>
+              <label for="password">{{ 'auth.password' | translate:'Password' }}</label>
+              <a routerLink="/auth/reset-password" class="forgot-link">{{ 'auth.forgot_password' | translate:'Forgot password?' }}</a>
             </div>
             <div class="input-wrapper">
               <span class="material-symbols-outlined input-icon">key</span>
@@ -99,22 +101,22 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
           <div class="remember-row">
             <label class="remember-label">
               <input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe" />
-              <span>Remember this device</span>
+              <span>{{ 'auth.remember_device' | translate:'Remember this device' }}</span>
             </label>
           </div>
 
           <button type="submit" [disabled]="loading" class="btn-submit">
             <span *ngIf="loading" class="spinner"></span>
             <span *ngIf="!loading" class="material-symbols-outlined">login</span>
-            <span>{{ loading ? 'Authenticating...' : (loginButtonText || 'Sign In') }}</span>
+            <span>{{ loading ? ('auth.authenticating' | translate:'Authenticating...') : (loginButtonText || ('auth.sign_in' | translate:'Sign In')) }}</span>
           </button>
         </form>
 
         <div class="card-footer">
-          <p class="signup-prompt" *ngIf="allowPublicRegistration">Need a new account? <a routerLink="/auth/register" class="register-link">Register here</a></p>
+          <p class="signup-prompt" *ngIf="allowPublicRegistration">{{ 'auth.need_new_account' | translate:'Need a new account?' }} <a routerLink="/auth/register" class="register-link">{{ 'auth.register_here' | translate:'Register here' }}</a></p>
           <a routerLink="/" class="back-link">
             <span class="material-symbols-outlined">arrow_back</span>
-            Return to Home
+            {{ 'auth.return_to_home' | translate:'Return to Home' }}
           </a>
         </div>
       </div>
@@ -139,8 +141,8 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
             <div class="force-modal-avatar">
               <span class="material-symbols-outlined">lock_reset</span>
             </div>
-            <h3 class="force-modal-title">Temporary Password Detected</h3>
-            <p class="force-modal-subtitle">For your security, please update your temporary credentials to a permanent password before accessing the portal.</p>
+            <h3 class="force-modal-title">{{ 'auth.temporary_pwd_detected' | translate:'Temporary Password Detected' }}</h3>
+            <p class="force-modal-subtitle">{{ 'auth.temporary_pwd_notice' | translate:'For your security, please update your temporary credentials to a permanent password before accessing the portal.' }}</p>
           </div>
 
           <div *ngIf="forceChangeError" class="force-error-banner">
@@ -150,10 +152,10 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
 
           <form (ngSubmit)="onForceChangePassword()" class="force-modal-form">
             <div class="force-form-group">
-              <label class="force-label">New Permanent Password *</label>
+              <label class="force-label">{{ 'auth.new_permanent_password' | translate:'New Permanent Password *' }}</label>
               <div class="force-input-wrapper">
                 <span class="material-symbols-outlined force-input-icon">key</span>
-                <input [type]="showNewPassword ? 'text' : 'password'" [(ngModel)]="newPermanentPassword" name="newPermanentPassword" placeholder="Enter new permanent password" required />
+                <input [type]="showNewPassword ? 'text' : 'password'" [(ngModel)]="newPermanentPassword" name="newPermanentPassword" [placeholder]="'auth.enter_new_perm_pwd' | translate:'Enter new permanent password'" required />
                 <button type="button" class="force-toggle-pwd-btn" (click)="showNewPassword = !showNewPassword">
                   <span class="material-symbols-outlined">{{ showNewPassword ? 'visibility_off' : 'visibility' }}</span>
                 </button>
@@ -162,47 +164,47 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
 
             <!-- Live Password Complexity Checklist -->
             <div class="password-rules-box">
-              <span class="rules-box-title">Password Complexity Requirements:</span>
+              <span class="rules-box-title">{{ 'auth.pwd_complexity_reqs' | translate:'Password Complexity Requirements:' }}</span>
               <div class="rules-list">
                 <div class="rule-chip" [class.rule-passed]="newPermanentPassword.length >= 8">
                   <span class="material-symbols-outlined rule-icon">{{ newPermanentPassword.length >= 8 ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                  <span>8+ Chars</span>
+                  <span>{{ 'auth.eight_plus_chars' | translate:'8+ Chars' }}</span>
                 </div>
                 <div class="rule-chip" [class.rule-passed]="hasUpperCase()">
                   <span class="material-symbols-outlined rule-icon">{{ hasUpperCase() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                  <span>Uppercase (A-Z)</span>
+                  <span>{{ 'auth.uppercase' | translate:'Uppercase (A-Z)' }}</span>
                 </div>
                 <div class="rule-chip" [class.rule-passed]="hasLowerCase()">
                   <span class="material-symbols-outlined rule-icon">{{ hasLowerCase() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                  <span>Lowercase (a-z)</span>
+                  <span>{{ 'auth.lowercase' | translate:'Lowercase (a-z)' }}</span>
                 </div>
                 <div class="rule-chip" [class.rule-passed]="hasNumber()">
                   <span class="material-symbols-outlined rule-icon">{{ hasNumber() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                  <span>Number (0-9)</span>
+                  <span>{{ 'auth.number' | translate:'Number (0-9)' }}</span>
                 </div>
                 <div class="rule-chip" [class.rule-passed]="hasSpecial()">
                   <span class="material-symbols-outlined rule-icon">{{ hasSpecial() ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                  <span>Special (!&#64;#$...)</span>
+                  <span>{{ 'auth.special_char' | translate:'Special (!@#$...)' }}</span>
                 </div>
               </div>
             </div>
 
             <div class="force-form-group">
-              <label class="force-label">Confirm Permanent Password *</label>
+              <label class="force-label">{{ 'auth.confirm_permanent_password' | translate:'Confirm Permanent Password *' }}</label>
               <div class="force-input-wrapper">
                 <span class="material-symbols-outlined force-input-icon">check_circle</span>
-                <input [type]="showNewPassword ? 'text' : 'password'" [(ngModel)]="confirmPermanentPassword" name="confirmPermanentPassword" placeholder="Confirm new permanent password" required />
+                <input [type]="showNewPassword ? 'text' : 'password'" [(ngModel)]="confirmPermanentPassword" name="confirmPermanentPassword" [placeholder]="'auth.confirm_new_perm_pwd' | translate:'Confirm new permanent password'" required />
               </div>
               <div *ngIf="confirmPermanentPassword && newPermanentPassword !== confirmPermanentPassword" class="password-mismatch-hint">
                 <span class="material-symbols-outlined" style="font-size:14px;">warning</span>
-                <span>Passwords do not match</span>
+                <span>{{ 'auth.passwords_do_not_match' | translate:'Passwords do not match' }}</span>
               </div>
             </div>
 
             <button type="submit" [disabled]="forceChangeLoading || !isPasswordValid()" class="force-btn-submit">
               <span *ngIf="forceChangeLoading" class="spinner"></span>
               <span *ngIf="!forceChangeLoading" class="material-symbols-outlined">verified_user</span>
-              <span>{{ forceChangeLoading ? 'Updating Password...' : 'Save & Enter Dashboard' }}</span>
+              <span>{{ forceChangeLoading ? ('auth.updating_password' | translate:'Updating Password...') : ('auth.save_enter_dashboard' | translate:'Save & Enter Dashboard') }}</span>
             </button>
           </form>
         </div>
@@ -228,8 +230,8 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
             <div class="force-modal-avatar">
               <span class="material-symbols-outlined">mark_email_unread</span>
             </div>
-            <h3 class="force-modal-title">Verify Email Address</h3>
-            <p class="force-modal-subtitle">A 6-digit verification OTP code was sent to <strong>{{ email }}</strong>. Enter the code below to verify your account.</p>
+            <h3 class="force-modal-title">{{ 'auth.verify_email_address' | translate:'Verify Email Address' }}</h3>
+            <p class="force-modal-subtitle">{{ 'auth.six_digit_otp_sent_to' | translate:'A 6-digit verification OTP code was sent to' }} <strong>{{ email }}</strong>. {{ 'auth.enter_code_below' | translate:'Enter the code below to verify your account.' }}</p>
           </div>
 
           <div *ngIf="otpError" class="force-error-banner">
@@ -239,7 +241,7 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
 
           <form (ngSubmit)="onVerifyOtp()" class="force-modal-form">
             <div class="force-form-group">
-              <label class="force-label">6-Digit Verification Code</label>
+              <label class="force-label">{{ 'auth.six_digit_verification_code' | translate:'6-Digit Verification Code' }}</label>
               <div class="force-input-wrapper">
                 <span class="material-symbols-outlined force-input-icon">pin</span>
                 <input type="text" maxlength="6" [(ngModel)]="otpCode" name="otpCode" placeholder="123456" style="letter-spacing:4px; font-size:18px; font-weight:700; text-align:center;" required />
@@ -249,7 +251,7 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
             <button type="submit" [disabled]="otpLoading || otpCode.length < 6" class="force-btn-submit">
               <span *ngIf="otpLoading" class="spinner"></span>
               <span *ngIf="!otpLoading" class="material-symbols-outlined">check</span>
-              <span>{{ otpLoading ? 'Verifying...' : 'Verify & Continue' }}</span>
+              <span>{{ otpLoading ? ('auth.verifying' | translate:'Verifying...') : ('auth.verify_and_continue' | translate:'Verify & Continue') }}</span>
             </button>
 
             <button 
@@ -261,8 +263,8 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
             >
               <span *ngIf="otpResendLoading" class="spinner" style="width:14px; height:14px; border-width:2px;"></span>
               <span *ngIf="!otpResendLoading" class="material-symbols-outlined" style="font-size:16px;">autorenew</span>
-              <span *ngIf="otpResendCountdown > 0">Resend Code in {{ otpResendCountdown }}s</span>
-              <span *ngIf="otpResendCountdown === 0 && !otpResendLoading">Didn't receive code? Resend Code</span>
+              <span *ngIf="otpResendCountdown > 0">{{ 'auth.resend_code_in' | translate:'Resend Code in' }} {{ otpResendCountdown }}s</span>
+              <span *ngIf="otpResendCountdown === 0 && !otpResendLoading">{{ 'auth.didnt_receive_code' | translate:"Didn't receive code? Resend Code" }}</span>
             </button>
 
             <button 
@@ -272,7 +274,7 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
               style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; background: #f8fafc; color: #475569; border: 1.5px solid #cbd5e1; cursor: pointer; transition: all 0.2s ease; margin-top: 6px; box-sizing: border-box;"
             >
               <span class="material-symbols-outlined" style="font-size: 18px; color: #0050e5;">arrow_back</span>
-              <span>Back to Login</span>
+              <span>{{ 'auth.back_to_login' | translate:'Back to Login' }}</span>
             </button>
           </form>
         </div>
@@ -298,9 +300,9 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
             <div class="force-modal-avatar" style="background:#0050e5; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
               <span class="material-symbols-outlined" style="color:#fff; font-size:28px;">security</span>
             </div>
-            <h3 class="force-modal-title" style="margin-top: 10px;">Two-Factor Verification</h3>
+            <h3 class="force-modal-title" style="margin-top: 10px;">{{ 'auth.two_factor_verification' | translate:'Two-Factor Verification' }}</h3>
             <p class="force-modal-subtitle">
-              Your account requires MFA. Enter the verification code from your <strong>{{ mfaProviderLabel }}</strong>.
+              {{ 'auth.account_requires_mfa' | translate:'Your account requires MFA. Enter the verification code from your' }} <strong>{{ mfaProviderLabel }}</strong>.
             </p>
           </div>
 
@@ -316,14 +318,14 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
 
           <form (ngSubmit)="onVerifyLoginMfa()" class="force-modal-form">
             <div class="force-form-group">
-              <label class="force-label">Verification Code / Backup Recovery Key</label>
+              <label class="force-label">{{ 'auth.verification_code_or_backup' | translate:'Verification Code / Backup Recovery Key' }}</label>
               <div class="force-input-wrapper">
                 <span class="material-symbols-outlined force-input-icon">pin</span>
                 <input 
                   type="text" 
                   [(ngModel)]="mfaCode" 
                   name="mfaCode" 
-                  placeholder="6-digit code or backup key" 
+                  [placeholder]="'auth.code_or_backup_placeholder' | translate:'6-digit code or backup key'" 
                   style="letter-spacing:2px; font-size:16px; font-weight:700; text-align:center;" 
                   required 
                 />
@@ -334,14 +336,14 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
             <div class="remember-row" style="margin-bottom:16px; display: flex; align-items: center;">
               <label class="remember-label" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #94a3b8; cursor: pointer;">
                 <input type="checkbox" [(ngModel)]="trustThisDevice" name="trustThisDevice" />
-                <span>Trust this device for 30 days</span>
+                <span>{{ 'auth.trust_device_thirty_days' | translate:'Trust this device for 30 days' }}</span>
               </label>
             </div>
 
             <button type="submit" [disabled]="mfaLoading || !mfaCode || mfaCode.trim().length < 4" class="force-btn-submit" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 14px; background: #0050e5; color: #fff; border: none; cursor: pointer; margin-bottom: 8px;">
               <span *ngIf="mfaLoading" class="spinner"></span>
               <span *ngIf="!mfaLoading" class="material-symbols-outlined">verified_user</span>
-              <span>{{ mfaLoading ? 'Verifying...' : 'Verify & Sign In' }}</span>
+              <span>{{ mfaLoading ? ('auth.verifying' | translate:'Verifying...') : ('auth.verify_and_sign_in' | translate:'Verify & Sign In') }}</span>
             </button>
 
             <!-- 60-Second Cooldown Resend for SMS / Email Only -->
@@ -355,13 +357,13 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
             >
               <span *ngIf="mfaResendLoading" class="spinner" style="width:14px; height:14px; border-width:2px;"></span>
               <span *ngIf="!mfaResendLoading" class="material-symbols-outlined" style="font-size:16px;">autorenew</span>
-              <span *ngIf="mfaResendCountdown > 0">Resend Code in {{ mfaResendCountdown }}s</span>
-              <span *ngIf="mfaResendCountdown === 0 && !mfaResendLoading">Didn't receive code? Resend Code</span>
+              <span *ngIf="mfaResendCountdown > 0">{{ 'auth.resend_code_in' | translate:'Resend Code in' }} {{ mfaResendCountdown }}s</span>
+              <span *ngIf="mfaResendCountdown === 0 && !mfaResendLoading">{{ 'auth.didnt_receive_code' | translate:"Didn't receive code? Resend Code" }}</span>
             </button>
 
             <!-- Tip for TOTP / Authenticator App Users -->
             <p *ngIf="!canResendMfaCode()" style="margin: 4px auto 10px auto; font-size: 12px; color: #64748b; text-align: center; line-height: 1.4;">
-              Codes rotate automatically every 30 seconds in your app. You can also enter one of your single-use backup recovery keys.
+              {{ 'auth.totp_rotate_tip' | translate:'Codes rotate automatically every 30 seconds in your app. You can also enter one of your single-use backup recovery keys.' }}
             </p>
 
             <button 
@@ -371,7 +373,7 @@ import { getReturnUrlForRole, getStoredUserRoles, canAccessRoute } from '../../.
               style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; background: #f8fafc; color: #475569; border: 1.5px solid #cbd5e1; cursor: pointer; transition: all 0.2s ease; margin-top: 4px; box-sizing: border-box;"
             >
               <span class="material-symbols-outlined" style="font-size: 18px; color: #0050e5;">arrow_back</span>
-              <span>Back to Login</span>
+              <span>{{ 'auth.back_to_login' | translate:'Back to Login' }}</span>
             </button>
           </form>
         </div>
@@ -935,7 +937,8 @@ export class LoginComponent implements OnInit {
     private api: ApiService, 
     private router: Router,
     private route: ActivatedRoute,
-    private tenantState: TenantStateService
+    private tenantState: TenantStateService,
+    private multiWorkspace: MultiWorkspaceService
   ) {}
 
   ngOnInit(): void {
@@ -1205,6 +1208,15 @@ export class LoginComponent implements OnInit {
     if (data.roles && Array.isArray(data.roles)) {
       localStorage.setItem('user_roles', JSON.stringify(data.roles));
     }
+    this.multiWorkspace.saveSession({
+      tenantKey: data.tenantKey || localStorage.getItem('tenant_key') || '',
+      token: data.token,
+      fullName: data.fullName,
+      email: data.email,
+      roles: data.roles,
+      organizationName: this.brandCompanyName,
+      brandLogoUrl: this.brandLogoUrl
+    });
     this.promptBrowserSavePassword();
   }
 

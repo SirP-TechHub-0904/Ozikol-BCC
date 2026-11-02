@@ -1,3 +1,4 @@
+import '../localization/language_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/app_update_info.dart';
@@ -44,7 +45,7 @@ class UpdateBanner extends ConsumerWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Ozikol BCC v${updateInfo.latestVersion} is available.',
+                'Business Command Center v${updateInfo.latestVersion} is available.',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -61,8 +62,8 @@ class UpdateBanner extends ConsumerWidget {
                   color: AppColors.primary,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text(
-                  'Update Now',
+                child: Text(
+                  context.trc('sh.update_now', fallback: 'Update Now'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -126,7 +127,7 @@ class _UpdateModalDialogState extends ConsumerState<_UpdateModalDialog> {
     if (!success && mounted) {
       setState(() {
         _isDownloading = false;
-        _errorMessage = 'Failed to download or launch the installer. Please try again.';
+        _errorMessage = context.trc('sh.update_failed', fallback: 'Failed to download or launch the installer. Please try again.');
       });
     }
   }
@@ -184,21 +185,21 @@ class _UpdateModalDialogState extends ConsumerState<_UpdateModalDialog> {
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: AppColors.warning.withAlpha(80)),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 16),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Mandatory update required for platform security and database sync.',
+                          context.trc('sh.update_mandatory', fallback: 'Mandatory update required for platform security and data synchronization.'),
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
                         ),
                       ),
                     ],
                   ),
                 ),
-              const Text(
-                'Release Notes:',
+              Text(
+                context.trc('sh.release_notes', fallback: 'Release Notes:'),
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
@@ -236,7 +237,7 @@ class _UpdateModalDialogState extends ConsumerState<_UpdateModalDialog> {
                   child: Text(
                     _progress > 0
                         ? 'Downloading installer: ${(_progress * 100).toInt()}%'
-                        : 'Preparing installer package...',
+                        : context.trc('sh.preparing', fallback: 'Preparing installer package...'),
                     style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
                   ),
                 ),
@@ -255,7 +256,7 @@ class _UpdateModalDialogState extends ConsumerState<_UpdateModalDialog> {
           if (!info.isMandatory && !_isDownloading)
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Later'),
+              child: Text(context.trc('sh.later', fallback: 'Later')),
             ),
           ElevatedButton(
             onPressed: _isDownloading ? null : _startUpdate,
@@ -271,7 +272,7 @@ class _UpdateModalDialogState extends ConsumerState<_UpdateModalDialog> {
                     height: 14,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
-                : const Text('Update & Restart', style: TextStyle(fontWeight: FontWeight.w700)),
+                : Text(context.trc('sh.update_restart', fallback: 'Update & Restart'), style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),

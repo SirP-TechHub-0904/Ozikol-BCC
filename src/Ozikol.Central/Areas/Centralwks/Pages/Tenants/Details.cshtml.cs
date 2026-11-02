@@ -51,7 +51,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// Tenant identifier from query string.
         /// </summary>
         [BindProperty(SupportsGet = true)]
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         /// <summary>
         /// The loaded tenant catalog entity.
@@ -72,6 +72,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
         /// Immutable audit log history tracking who performed actions on this tenant.
         /// </summary>
         public List<MasterAuditLog> AuditLogs { get; set; } = new();
+
+        /// <summary>
+        /// Tenant-isolated API error logs capturing CustomError, RealError, and ErrorCode ("ERR-XXXX").
+        /// </summary>
+        public List<MasterApiErrorLog> ApiErrorLogs { get; set; } = new();
 
         /// <summary>
         /// Physical database resource consumption and table metrics.
@@ -98,7 +103,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
 
             // 1. Build Feature Subscriptions Matrix
             var allFeatures = await _dbContext.MasterFeatureCatalogs
-                .Where(f => f.IsActive)
+                .Where(f => f.IsActive && f.IsPublished)
                 .OrderBy(f => f.Category)
                 .ThenBy(f => f.Name)
                 .ToListAsync();
@@ -129,6 +134,21 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Tenants
                 .OrderByDescending(a => a.CreatedUtc)
                 .Take(30)
                 .ToListAsync();
+
+            // 3b. Load Tenant-Isolated API Error Logs (CustomError + RealError + ErrorCode)
+            try
+            {
+                ApiErrorLogs = await _dbContext.MasterApiErrorLogs
+                    .AsNoTracking()
+                    .Where(e => e.MasterTenantCatalogId == Id || e.TenantKey == tenant.TenantKey)
+                    .OrderByDescending(e => e.CreatedUtc)
+                    .Take(50)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "MasterApiErrorLogs table may be pending migration.");
+            }
 
             // 4. Load Real-Time Database Metrics & Table Breakdown
             try

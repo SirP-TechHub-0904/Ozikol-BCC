@@ -243,6 +243,46 @@
             </p>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
+            <!-- Bulk Test Renewal Days Trigger -->
+            <div style="position: relative; display: inline-block;">
+                <button type="button" class="btn-admin btn-admin-secondary btn-admin-sm" style="border-color: rgba(245, 158, 11, 0.4); color: var(--admin-warning);" onclick="var m = document.getElementById('bulk-test-menu'); m.style.display = m.style.display === 'block' ? 'none' : 'block';">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">bolt</span>
+                    Test Renewal Days
+                    <span class="material-symbols-outlined" style="font-size: 14px;">arrow_drop_down</span>
+                </button>
+                <div id="bulk-test-menu" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 4px; z-index: 1000; min-width: 240px; background: var(--admin-bg-surface-elevated, #ffffff); border: 1px solid var(--admin-border); border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); padding: 8px 0;">
+                    <div style="padding: 6px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--admin-text-dim); border-bottom: 1px solid var(--admin-border); margin-bottom: 4px;">Set All Features Expiry</div>
+                    <form method="post" asp-page-handler="SetAllFeaturesExpiryDays" asp-route-tenantId="@Model.Tenant.Id" asp-route-days="2" style="margin: 0;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" style="width: 100%; text-align: left; padding: 8px 14px; font-size: 12.5px; background: none; border: none; cursor: pointer; color: var(--admin-warning); font-weight: 700; display: flex; align-items: center; gap: 8px;" onclick="return confirm('Bulk set ALL feature subscriptions to expire in 2 days for renewal testing?');">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">bolt</span>
+                            <span>All Features to 2 Days</span>
+                        </button>
+                    </form>
+                    <form method="post" asp-page-handler="SetAllFeaturesExpiryDays" asp-route-tenantId="@Model.Tenant.Id" asp-route-days="30" style="margin: 0;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" style="width: 100%; text-align: left; padding: 8px 14px; font-size: 12.5px; background: none; border: none; cursor: pointer; color: var(--admin-text); display: flex; align-items: center; gap: 8px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">calendar_month</span>
+                            <span>Reset All to 30 Days (Monthly)</span>
+                        </button>
+                    </form>
+                    <form method="post" asp-page-handler="SetAllFeaturesExpiryDays" asp-route-tenantId="@Model.Tenant.Id" asp-route-days="365" style="margin: 0;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" style="width: 100%; text-align: left; padding: 8px 14px; font-size: 12.5px; background: none; border: none; cursor: pointer; color: var(--admin-text); display: flex; align-items: center; gap: 8px;">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">event_repeat</span>
+                            <span>Reset All to 365 Days (Yearly)</span>
+                        </button>
+                    </form>
+                    <form method="post" asp-page-handler="SetAllFeaturesExpiryDays" asp-route-tenantId="@Model.Tenant.Id" asp-route-days="-1" style="margin: 0;">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" style="width: 100%; text-align: left; padding: 8px 14px; font-size: 12.5px; background: none; border: none; cursor: pointer; color: var(--admin-danger); display: flex; align-items: center; gap: 8px;" onclick="return confirm('Simulate overdue/expired status for ALL features (-1 day)?');">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">warning</span>
+                            ⚠️ Simulate All Expired (-1 Day)
+                        </button>
+                    </form>
+                </div>
+            </div>
+
             <a href="/centralwks/tenants/features?tenantId=@Model.Tenant.Id" class="btn-admin btn-admin-secondary btn-admin-sm">
                 <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
                 Add / Manage Features
@@ -471,6 +511,13 @@
                             </td>
                             <td style="text-align: right;">
                                 <div style="display: inline-flex; align-items: center; gap: 6px;">
+                                    <form method="post" asp-page-handler="SetFeatureExpiryDays" asp-route-subscriptionId="@feat.SubscriptionId" asp-route-tenantId="@Model.Tenant.Id" asp-route-days="2" style="display: inline; margin: 0;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-admin btn-admin-secondary btn-admin-sm" title="Quick Test: Set expiry to 2 days from now" onclick="return confirm('Set expiry to 2 days from now for @feat.FeatureName to test renewal?');" style="color: var(--admin-warning); font-weight: 700; padding: 3px 8px; border-color: rgba(245, 158, 11, 0.4); display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="material-symbols-outlined" style="font-size: 14px;">bolt</span>
+                                            <span>2d</span>
+                                        </button>
+                                    </form>
                                     <a href="/centralwks/subscriptions/edit?id=@feat.SubscriptionId" class="btn-admin btn-admin-secondary btn-admin-sm" title="Edit Subscription Terms & Pricing">
                                         <span class="material-symbols-outlined" style="font-size: 15px;">edit</span>
                                     </a>
@@ -587,3 +634,18 @@
         </table>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('bulk-test-menu');
+            if (menu && menu.style.display === 'block') {
+                const trigger = e.target.closest('button[onclick*="bulk-test-menu"]');
+                const inside = e.target.closest('#bulk-test-menu');
+                if (!trigger && !inside) {
+                    menu.style.display = 'none';
+                }
+            }
+        });
+    </script>
+}

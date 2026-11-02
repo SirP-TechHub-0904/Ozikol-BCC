@@ -184,10 +184,16 @@ class _OzLangSwitcherState extends ConsumerState<OzLangSwitcher> {
     if (button == null) return;
 
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final Offset buttonTopLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final Size buttonSize = button.size;
+
+    // Anchor menu directly beneath the trigger button with a 6px vertical offset:
     final RelativeRect position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+      Rect.fromLTWH(
+        buttonTopLeft.dx,
+        buttonTopLeft.dy + buttonSize.height + 6,
+        buttonSize.width,
+        0,
       ),
       Offset.zero & overlay.size,
     );
@@ -199,12 +205,7 @@ class _OzLangSwitcherState extends ConsumerState<OzLangSwitcher> {
 
     final selected = await showMenu<String>(
       context: context,
-      position: RelativeRect.fromLTRB(
-        position.left,
-        position.bottom + 6,
-        position.right,
-        position.bottom + 200,
-      ),
+      position: position,
       color: isDark ? const Color(0xFF18191F) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -250,8 +251,8 @@ class _OzLangSwitcherState extends ConsumerState<OzLangSwitcher> {
       setState(() => _isMenuOpen = false);
     }
 
-    if (selected != null) {
-      await ref.read(languageProvider.notifier).setLanguage(selected);
+    if (selected != null && context.mounted) {
+      await _confirmAndSetLanguage(context, selected);
     }
   }
 
@@ -314,9 +315,11 @@ class _OzLangSwitcherState extends ConsumerState<OzLangSwitcher> {
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                       child: InkWell(
-                        onTap: () {
+                        onTap: () async {
                           Navigator.of(bottomSheetContext).pop();
-                          ref.read(languageProvider.notifier).setLanguage(lang.code);
+                          if (context.mounted) {
+                            await _confirmAndSetLanguage(context, lang.code);
+                          }
                         },
                         borderRadius: BorderRadius.circular(12),
                         child: Padding(
@@ -376,5 +379,147 @@ class _OzLangSwitcherState extends ConsumerState<OzLangSwitcher> {
         );
       },
     );
+  }
+
+  /// <summary>
+  /// Displays a modal confirmation dialog before applying system-wide language changes.
+  /// When confirmed, updates persistent local storage and translates all UI chrome immediately.
+  /// </summary>
+  /// <param name="context">The active BuildContext.</param>
+  /// <param name="newCode">The target language code ('en', 'fr', 'es', 'de').</param>
+  Future<void> _confirmAndSetLanguage(BuildContext context, String newCode) async {
+    final currentCode = ref.read(languageProvider);
+    if (newCode == currentCode) return;
+
+    final targetLang = AppTranslations.getLanguage(newCode);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.translate_rounded, color: AppColors.primary, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'shell.confirm_lang_title'.tr(ref, fallback: 'Change System Language?'),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'shell.confirm_lang_desc'.tr(
+                ref,
+                fallback: 'Do you want to switch the interface language? All screens, navigation menus, and workspace labels will translate immediately.',
+              ),
+              style: TextStyle(
+                fontSize: 13,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Text(targetLang.flag, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          targetLang.nativeName,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          targetLang.name,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      targetLang.code.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: Text(
+              'btn.cancel'.tr(ref, fallback: 'Cancel'),
+              style: TextStyle(
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: Text(
+              'shell.confirm_lang_btn'.tr(ref, fallback: 'Change Language'),
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await ref.read(languageProvider.notifier).setLanguage(newCode);
+    }
   }
 }

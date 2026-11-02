@@ -157,7 +157,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Jobs
             public BackgroundJobScope Scope { get; set; } = BackgroundJobScope.Tenant;
 
             [Display(Name = "Target Tenant Organization")]
-            public int? TargetTenantCatalogId { get; set; }
+            public Guid? TargetTenantCatalogId { get; set; }
 
             [Display(Name = "Execution Interval (Seconds)")]
             public int IntervalSeconds { get; set; } = 3600;

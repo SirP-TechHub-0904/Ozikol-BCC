@@ -52,6 +52,11 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
         public string? StatusMessage { get; set; }
 
         /// <summary>
+        /// Active currencies loaded from MasterCurrencyRates for the Default System Currency selector.
+        /// </summary>
+        public System.Collections.Generic.List<MasterCurrencyRate> AvailableCurrencies { get; set; } = new();
+
+        /// <summary>
         /// Form input model for global platform settings.
         /// </summary>
         public class SettingsInputModel
@@ -101,11 +106,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             [Range(1, 365, ErrorMessage = "Trial period must be between 1 and 365 days.")]
             public int DefaultTrialDays { get; set; } = 14;
 
-            /// <summary>Gets or sets the global fallback currency code.</summary>
-            [Required(ErrorMessage = "Default currency code is required.")]
-            [MaxLength(10)]
-            public string DefaultCurrencyCode { get; set; } = "USD";
-
             /// <summary>Gets or sets comma-separated support category list.</summary>
             public string SupportCategories { get; set; } = "Support, Sales, Billing, Partnership, Enterprise, General";
 
@@ -144,6 +144,74 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             /// <summary>Gets or sets Master platform Cloudinary API Secret.</summary>
             [MaxLength(255)]
             public string? CloudinaryApiSecret { get; set; }
+
+            /// <summary>Gets or sets whether Central Paystack checkout is enabled for workspace capability subscriptions &amp; renewals.</summary>
+            public bool EnablePaystack { get; set; } = true;
+
+            /// <summary>Gets or sets Central Paystack Public Key (pk_live_... or pk_test_...).</summary>
+            [MaxLength(255)]
+            public string? PaystackPublicKey { get; set; }
+
+            /// <summary>Gets or sets Central Paystack Secret Key (sk_live_... or sk_test_...).</summary>
+            [MaxLength(255)]
+            public string? PaystackSecretKey { get; set; }
+
+            /// <summary>Gets or sets Central Paystack Webhook Secret for HMAC-SHA512 signature validation.</summary>
+            [MaxLength(255)]
+            public string? PaystackWebhookSecret { get; set; }
+
+            /// <summary>Gets or sets whether Central Flutterwave checkout is enabled for workspace capability subscriptions &amp; renewals.</summary>
+            public bool EnableFlutterwave { get; set; } = false;
+
+            /// <summary>Gets or sets Central Flutterwave Public Key (FLWPUBK_LIVE-... or FLWPUBK_TEST-...).</summary>
+            [MaxLength(255)]
+            public string? FlutterwavePublicKey { get; set; }
+
+            /// <summary>Gets or sets Central Flutterwave Secret Key (FLWSECK_LIVE-... or FLWSECK_TEST-...).</summary>
+            [MaxLength(255)]
+            public string? FlutterwaveSecretKey { get; set; }
+
+            /// <summary>Gets or sets Central Flutterwave Webhook Secret Hash.</summary>
+            [MaxLength(255)]
+            public string? FlutterwaveWebhookSecret { get; set; }
+
+            /// <summary>Gets or sets whether Central Stripe checkout is enabled for workspace capability subscriptions &amp; renewals.</summary>
+            public bool EnableStripe { get; set; } = false;
+
+            /// <summary>Gets or sets Central Stripe Publishable Key (pk_live_... or pk_test_...).</summary>
+            [MaxLength(255)]
+            public string? StripePublishableKey { get; set; }
+
+            /// <summary>Gets or sets Central Stripe Secret Key (sk_live_... or sk_test_...).</summary>
+            [MaxLength(255)]
+            public string? StripeSecretKey { get; set; }
+
+            /// <summary>Gets or sets Central Stripe Webhook Signing Secret (whsec_...).</summary>
+            [MaxLength(255)]
+            public string? StripeWebhookSecret { get; set; }
+
+            /// <summary>Gets or sets whether Direct Bank Deposit / Wire Transfer is enabled on Central invoices.</summary>
+            public bool EnableBankDeposit { get; set; } = true;
+
+            /// <summary>Gets or sets the beneficiary bank institution name for Direct Bank Deposit.</summary>
+            [MaxLength(150)]
+            public string? BankDepositBankName { get; set; }
+
+            /// <summary>Gets or sets the beneficiary corporate account name for Direct Bank Deposit.</summary>
+            [MaxLength(150)]
+            public string? BankDepositAccountName { get; set; }
+
+            /// <summary>Gets or sets the beneficiary account number or IBAN for Direct Bank Deposit.</summary>
+            [MaxLength(100)]
+            public string? BankDepositAccountNumber { get; set; }
+
+            /// <summary>Gets or sets the optional routing number, sort code, or SWIFT/BIC code for Direct Bank Deposit.</summary>
+            [MaxLength(100)]
+            public string? BankDepositSortCodeOrSwift { get; set; }
+
+            /// <summary>Gets or sets custom payment narration or verification instructions for Direct Bank Deposit.</summary>
+            [MaxLength(500)]
+            public string? BankDepositInstructions { get; set; }
 
             /// <summary>Gets or sets whether platform-wide maintenance mode is engaged.</summary>
             public bool IsMaintenanceMode { get; set; } = false;
@@ -208,7 +276,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 TicketAutoCloseHours = settings.TicketAutoCloseHours,
                 EnableTicketAutoClose = settings.EnableTicketAutoClose,
                 DefaultTrialDays = settings.DefaultTrialDays > 0 ? settings.DefaultTrialDays : 14,
-                DefaultCurrencyCode = !string.IsNullOrWhiteSpace(settings.DefaultCurrencyCode) ? settings.DefaultCurrencyCode : "USD",
                 SupportCategories = settings.SupportCategories,
                 MongoLogsConnectionString = settings.MongoLogsConnectionString,
                 MongoLogsDatabaseName = !string.IsNullOrWhiteSpace(settings.MongoLogsDatabaseName) ? settings.MongoLogsDatabaseName : "OzikolLogsDb",
@@ -219,6 +286,24 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 CloudinaryCloudName = settings.CloudinaryCloudName,
                 CloudinaryApiKey = settings.CloudinaryApiKey,
                 CloudinaryApiSecret = settings.CloudinaryApiSecret,
+                EnablePaystack = settings.EnablePaystack,
+                PaystackPublicKey = settings.PaystackPublicKey,
+                PaystackSecretKey = settings.PaystackSecretKey,
+                PaystackWebhookSecret = settings.PaystackWebhookSecret,
+                EnableFlutterwave = settings.EnableFlutterwave,
+                FlutterwavePublicKey = settings.FlutterwavePublicKey,
+                FlutterwaveSecretKey = settings.FlutterwaveSecretKey,
+                FlutterwaveWebhookSecret = settings.FlutterwaveWebhookSecret,
+                EnableStripe = settings.EnableStripe,
+                StripePublishableKey = settings.StripePublishableKey,
+                StripeSecretKey = settings.StripeSecretKey,
+                StripeWebhookSecret = settings.StripeWebhookSecret,
+                EnableBankDeposit = settings.EnableBankDeposit,
+                BankDepositBankName = settings.BankDepositBankName,
+                BankDepositAccountName = settings.BankDepositAccountName,
+                BankDepositAccountNumber = settings.BankDepositAccountNumber,
+                BankDepositSortCodeOrSwift = settings.BankDepositSortCodeOrSwift,
+                BankDepositInstructions = settings.BankDepositInstructions,
                 IsMaintenanceMode = settings.IsMaintenanceMode,
                 MaintenanceMessage = settings.MaintenanceMessage,
                 MinimumAppVersion = !string.IsNullOrWhiteSpace(settings.MinimumAppVersion) ? settings.MinimumAppVersion : "1.0.0"
@@ -255,7 +340,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             settings.TicketAutoCloseHours = Input.TicketAutoCloseHours;
             settings.EnableTicketAutoClose = Input.EnableTicketAutoClose;
             settings.DefaultTrialDays = Input.DefaultTrialDays;
-            settings.DefaultCurrencyCode = Input.DefaultCurrencyCode?.Trim().ToUpperInvariant() ?? "USD";
             settings.SupportCategories = Input.SupportCategories.Trim();
 
             // Guard against accidental secret wipeouts when re-submitting settings
@@ -277,6 +361,46 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
                 settings.CloudinaryApiSecret = Input.CloudinaryApiSecret.Trim();
             }
 
+            settings.EnablePaystack = Input.EnablePaystack;
+            settings.PaystackPublicKey = Input.PaystackPublicKey?.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.PaystackSecretKey))
+            {
+                settings.PaystackSecretKey = Input.PaystackSecretKey.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(Input.PaystackWebhookSecret))
+            {
+                settings.PaystackWebhookSecret = Input.PaystackWebhookSecret.Trim();
+            }
+
+            settings.EnableFlutterwave = Input.EnableFlutterwave;
+            settings.FlutterwavePublicKey = Input.FlutterwavePublicKey?.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.FlutterwaveSecretKey))
+            {
+                settings.FlutterwaveSecretKey = Input.FlutterwaveSecretKey.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(Input.FlutterwaveWebhookSecret))
+            {
+                settings.FlutterwaveWebhookSecret = Input.FlutterwaveWebhookSecret.Trim();
+            }
+
+            settings.EnableStripe = Input.EnableStripe;
+            settings.StripePublishableKey = Input.StripePublishableKey?.Trim();
+            if (!string.IsNullOrWhiteSpace(Input.StripeSecretKey))
+            {
+                settings.StripeSecretKey = Input.StripeSecretKey.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(Input.StripeWebhookSecret))
+            {
+                settings.StripeWebhookSecret = Input.StripeWebhookSecret.Trim();
+            }
+
+            settings.EnableBankDeposit = Input.EnableBankDeposit;
+            settings.BankDepositBankName = Input.BankDepositBankName?.Trim();
+            settings.BankDepositAccountName = Input.BankDepositAccountName?.Trim();
+            settings.BankDepositAccountNumber = Input.BankDepositAccountNumber?.Trim();
+            settings.BankDepositSortCodeOrSwift = Input.BankDepositSortCodeOrSwift?.Trim();
+            settings.BankDepositInstructions = Input.BankDepositInstructions?.Trim();
+
             settings.IsMaintenanceMode = Input.IsMaintenanceMode;
             settings.MaintenanceMessage = Input.MaintenanceMessage?.Trim();
             settings.MinimumAppVersion = string.IsNullOrWhiteSpace(Input.MinimumAppVersion) ? "1.0.0" : Input.MinimumAppVersion.Trim();
@@ -291,6 +415,63 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.PlatformSettings
             StatusMessage = "Global platform settings saved successfully.";
 
             return RedirectToPage();
+        }
+
+        /// <summary>
+        /// Handles AJAX POST request to test the Central Paystack Secret Key live against Paystack's API.
+        /// </summary>
+        public async Task<IActionResult> OnPostTestPaystackConnectionAsync([FromForm] string? secretKey)
+        {
+            var targetSecret = secretKey?.Trim();
+            if (string.IsNullOrWhiteSpace(targetSecret))
+            {
+                var settings = await _context.MasterPlatformSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == 1);
+                targetSecret = settings?.PaystackSecretKey?.Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(targetSecret))
+            {
+                return new JsonResult(new { success = false, message = "No Paystack Secret Key provided or saved in Central Settings." });
+            }
+
+            try
+            {
+                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                using var req = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Post, "https://api.paystack.co/transaction/initialize");
+                req.Headers.Add("Authorization", $"Bearer {targetSecret}");
+                var probePayload = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    email = "billing@company.com",
+                    amount = 10000,
+                    currency = "NGN"
+                });
+                req.Content = new System.Net.Http.StringContent(probePayload, System.Text.Encoding.UTF8, "application/json");
+
+                var resp = await http.SendAsync(req);
+                var body = await resp.Content.ReadAsStringAsync();
+                if (resp.IsSuccessStatusCode)
+                {
+                    var keyMode = targetSecret.StartsWith("sk_live_", StringComparison.OrdinalIgnoreCase) ? "LIVE Mode" : "TEST Mode";
+                    return new JsonResult(new { success = true, message = $"Paystack key verified ({keyMode})! Ready for payments." });
+                }
+
+                string paystackMsg = $"HTTP {(int)resp.StatusCode}";
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(body);
+                    if (doc.RootElement.TryGetProperty("message", out var msgProp) && !string.IsNullOrWhiteSpace(msgProp.GetString()))
+                    {
+                        paystackMsg = msgProp.GetString()!;
+                    }
+                }
+                catch { }
+
+                return new JsonResult(new { success = false, message = $"Paystack rejected key: {paystackMsg}" });
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { success = false, message = $"Paystack connection error: {ex.Message}" });
+            }
         }
 
         /// <summary>

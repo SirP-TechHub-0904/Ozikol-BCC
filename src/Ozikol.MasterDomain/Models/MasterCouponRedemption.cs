@@ -32,7 +32,7 @@ namespace Ozikol.MasterDomain.Models
         /// Foreign key linking to the tenant organization that redeemed the coupon.
         /// </summary>
         [ForeignKey("MasterTenantCatalog")]
-        public int MasterTenantCatalogId { get; set; }
+        public Guid MasterTenantCatalogId { get; set; }
 
         /// <summary>
         /// Navigation property to the tenant organization entity.

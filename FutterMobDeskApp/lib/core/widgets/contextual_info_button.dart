@@ -1,3 +1,4 @@
+import '../localization/language_provider.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
@@ -88,14 +89,14 @@ class ContextualInfoButton extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: _buildPillars(isDark),
+                children: _buildPillars(context, isDark),
               ),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Got it'),
+              child: Text(context.trc('sh.got_it', fallback: 'Got it')),
             ),
           ],
         ),
@@ -147,7 +148,7 @@ class ContextualInfoButton extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 18),
-                ..._buildPillars(isDark),
+                ..._buildPillars(context, isDark),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
@@ -159,7 +160,7 @@ class ContextualInfoButton extends StatelessWidget {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text('Dismiss', style: TextStyle(fontWeight: FontWeight.w700)),
+                    child: Text(context.trc('sh.dismiss', fallback: 'Dismiss'), style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],
@@ -170,11 +171,11 @@ class ContextualInfoButton extends StatelessWidget {
     }
   }
 
-  List<Widget> _buildPillars(bool isDark) {
+  List<Widget> _buildPillars(BuildContext context, bool isDark) {
     return [
       _buildPillarSection(
         icon: Icons.track_changes_rounded,
-        label: 'Purpose & Overview',
+        label: context.trc('sh.purpose_overview', fallback: 'Purpose & Overview'),
         content: purpose,
         accentColor: AppColors.primary,
         isDark: isDark,
@@ -183,7 +184,7 @@ class ContextualInfoButton extends StatelessWidget {
         const SizedBox(height: 14),
         _buildPillarSection(
           icon: Icons.edit_note_rounded,
-          label: 'Guidelines & Formats',
+          label: context.trc('sh.guidelines', fallback: 'Guidelines & Formats'),
           content: expectedInputs!,
           accentColor: AppColors.info,
           isDark: isDark,
@@ -193,7 +194,7 @@ class ContextualInfoButton extends StatelessWidget {
         const SizedBox(height: 14),
         _buildPillarSection(
           icon: Icons.bolt_rounded,
-          label: 'Business Impact',
+          label: context.trc('sh.business_impact', fallback: 'Business Impact'),
           content: impact!,
           accentColor: AppColors.warning,
           isDark: isDark,
@@ -203,7 +204,7 @@ class ContextualInfoButton extends StatelessWidget {
         const SizedBox(height: 14),
         _buildPillarSection(
           icon: Icons.verified_user_rounded,
-          label: 'Best Practices',
+          label: context.trc('sh.best_practices', fallback: 'Best Practices'),
           content: bestPractices!,
           accentColor: AppColors.success,
           isDark: isDark,

@@ -18,7 +18,11 @@ namespace Ozikol_BCC.Api.Services
     /// </summary>
     public class TenantFeatureGateService : ITenantFeatureGateService
     {
-        private const string CacheKeyPrefix = "tenant_feature_entitlements_";
+        /// <summary>
+        /// Memory cache key prefix for tenant entitlements. Public so billing services can invalidate
+        /// a tenant's cached entitlements immediately when subscriptions change.
+        /// </summary>
+        public const string CacheKeyPrefix = "tenant_feature_entitlements_";
         private readonly MasterCatalogDbContext _masterCatalogDbContext;
         private readonly IMemoryCache _memoryCache;
         private readonly ILogger<TenantFeatureGateService> _logger;
@@ -62,7 +66,7 @@ namespace Ozikol_BCC.Api.Services
 
             var allActiveFeatures = await _masterCatalogDbContext.MasterFeatureCatalogs
                 .AsNoTracking()
-                .Where(f => f.IsActive)
+                .Where(f => f.IsActive && f.IsPublished)
                 .ToListAsync(cancellationToken);
 
             var entitlements = new TenantFeatureEntitlementsDto
@@ -73,8 +77,30 @@ namespace Ozikol_BCC.Api.Services
             var now = DateTime.UtcNow;
             var subscriptionsByFeatureCode = tenant?.FeatureSubscriptions?
                 .Where(s => s.MasterFeatureCatalog != null)
-                .ToDictionary(s => s.MasterFeatureCatalog.FeatureCode, s => s, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(s => s.MasterFeatureCatalog.FeatureCode, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(x => x.ExpiresAtUtc).First(), StringComparer.OrdinalIgnoreCase)
                 ?? new Dictionary<string, MasterTenantFeatureSubscription>(StringComparer.OrdinalIgnoreCase);
+
+            string currCode = !string.IsNullOrWhiteSpace(tenant?.DefaultCurrencyCode)
+                ? tenant!.DefaultCurrencyCode.Trim().ToUpperInvariant()
+                : "USD";
+            string currSymbol = "$";
+            decimal currRate = 1.0m;
+            try
+            {
+                var rateObj = await _masterCatalogDbContext.MasterCurrencyRates
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.IsActive && r.CurrencyCode.ToUpper() == currCode, cancellationToken);
+                if (rateObj != null)
+                {
+                    currSymbol = !string.IsNullOrWhiteSpace(rateObj.CurrencySymbol) ? rateObj.CurrencySymbol : "$";
+                    currRate = rateObj.RateFromUsd > 0 ? rateObj.RateFromUsd : 1.0m;
+                }
+            }
+            catch
+            {
+                // Fallback to USD if currency table is unavailable
+            }
 
             foreach (var feature in allActiveFeatures)
             {
@@ -82,27 +108,31 @@ namespace Ozikol_BCC.Api.Services
                 bool isActive = false;
                 DateTime? expiresAt = null;
                 int? daysRemaining = null;
-                string status = "Inactive";
+                string status = "Not Active";
 
-                if (feature.IsCompulsory)
-                {
-                    // Compulsory core platform features are always active and never expire
-                    isActive = true;
-                    status = "Active";
-                }
-                else if (isSubscribed && sub != null)
+                // On setup, no feature is enabled by default. A feature is only active when explicitly activated by the tenant admin or Central operator.
+                if (isSubscribed && sub != null)
                 {
                     expiresAt = sub.ExpiresAtUtc;
                     daysRemaining = (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays);
-                    status = sub.Status;
+                    status = string.IsNullOrWhiteSpace(sub.Status) ? (sub.IsActive ? "Active" : "Not Active") : sub.Status;
 
-                    if (sub.IsActive && string.Equals(sub.Status, "Active", StringComparison.OrdinalIgnoreCase) && sub.ExpiresAtUtc > now)
+                    if (sub.IsActive &&
+                        !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase) &&
+                        (feature.IsCompulsory || sub.ExpiresAtUtc > now))
                     {
                         isActive = true;
+                        status = "Active";
                     }
-                    else if (sub.ExpiresAtUtc <= now)
+                    else if (!feature.IsCompulsory && sub.IsActive && sub.ExpiresAtUtc <= now)
                     {
                         status = "Expired";
+                    }
+                    else
+                    {
+                        status = "Not Active";
                     }
                 }
 
@@ -123,19 +153,28 @@ namespace Ozikol_BCC.Api.Services
                     Status = status
                 };
 
-                // Build expiration notice if applicable (non-compulsory, licensed subscription approaching expiry or expired)
-                if (isSubscribed && sub != null && sub.IsActive && !feature.IsCompulsory)
+                // Build expiration notice if applicable (non-compulsory, licensed subscription or free trial within 30 days of expiry or expired)
+                if (isSubscribed && sub != null && sub.IsActive &&
+                    !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(sub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase) &&
+                    !feature.IsCompulsory)
                 {
                     var rem = (int)Math.Ceiling((sub.ExpiresAtUtc - now).TotalDays);
-                    if (rem <= 14)
+                    if (rem <= 30)
                     {
                         bool isExpired = rem <= 0;
                         string severity = isExpired ? "Critical" : (rem <= 3 ? "Urgent" : "Warning");
+                        decimal baseUsd = (tenant?.UseCustomPricing == true && sub.CustomPriceOverride != null)
+                            ? sub.CustomPriceOverride.Value
+                            : (sub.RecurringPrice > 0 ? sub.RecurringPrice : feature.MonthlyPrice);
+                        decimal renewalPrice = Math.Round(baseUsd * currRate, 2);
+
                         string message = isExpired
-                            ? $"Subscription for '{feature.Name}' has expired. Renew subscription to restore access."
+                            ? $"{(sub.IsTrialPeriod ? "Free trial" : "Subscription")} for '{feature.Name}' has expired. Renew ({currSymbol}{renewalPrice:N2}) to restore access."
                             : (rem == 1
-                                ? $"Subscription for '{feature.Name}' expires tomorrow. Renew to prevent disruption."
-                                : $"Subscription for '{feature.Name}' expires in {rem} days.");
+                                ? $"{(sub.IsTrialPeriod ? "Free trial" : "Subscription")} for '{feature.Name}' expires in 24 hours. Renew ({currSymbol}{renewalPrice:N2}) to prevent disruption."
+                                : $"{(sub.IsTrialPeriod ? "Free trial" : "Subscription")} for '{feature.Name}' expires in {rem} days ({currSymbol}{renewalPrice:N2}).");
 
                         entitlements.ExpirationNotices.Add(new FeatureExpirationNoticeDto
                         {
@@ -146,11 +185,21 @@ namespace Ozikol_BCC.Api.Services
                             DaysRemaining = rem,
                             IsExpired = isExpired,
                             Severity = severity,
-                            NoticeMessage = message
+                            NoticeMessage = message,
+                            RenewalPrice = renewalPrice,
+                            CurrencyCode = currCode,
+                            CurrencySymbol = currSymbol,
+                            BillingCadence = sub.DurationType.ToString(),
+                            IsTrialPeriod = sub.IsTrialPeriod
                         });
                     }
                 }
             }
+
+            entitlements.ExpirationNotices = entitlements.ExpirationNotices
+                .OrderBy(n => n.DaysRemaining)
+                .ThenBy(n => n.FeatureName)
+                .ToList();
 
             // Cache for 60 seconds so Central modifications propagate near-instantaneously
             _memoryCache.Set(cacheKey, entitlements, new MemoryCacheEntryOptions
@@ -172,10 +221,12 @@ namespace Ozikol_BCC.Api.Services
         }
 
         /// <inheritdoc />
-        public async Task<List<FeatureExpirationNoticeDto>> GetExpiringFeaturesAsync(string tenantKey, int daysThreshold = 14, CancellationToken cancellationToken = default)
+        public async Task<List<FeatureExpirationNoticeDto>> GetExpiringFeaturesAsync(string tenantKey, int daysThreshold = 30, CancellationToken cancellationToken = default)
         {
             var entitlements = await GetTenantFeatureEntitlementsAsync(tenantKey, cancellationToken);
-            return entitlements.ExpirationNotices;
+            return entitlements.ExpirationNotices
+                .Where(n => n.DaysRemaining <= daysThreshold)
+                .ToList();
         }
     }
 }

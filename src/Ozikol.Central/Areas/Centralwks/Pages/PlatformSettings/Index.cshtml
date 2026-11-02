@@ -30,7 +30,7 @@
     @Html.AntiForgeryToken()
     <div style="display: flex; flex-direction: column; gap: 24px; width: 100%;">
 
-        @* ── Section 1: Onboarding, Free Trial & Currency ── *@
+        @* ── Section 1: Onboarding & Free Trial Duration ── *@
         <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
                 <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.25); color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
@@ -38,58 +38,33 @@
                 </div>
                 <div>
                     <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Workspace Onboarding &amp; Free Trial Duration</h2>
-                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Configure the default trial length granted to new customer workspaces and fallback platform currency.</p>
+                    <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Configure the default trial length granted to new customer workspaces upon registration.</p>
                 </div>
             </div>
 
             <div style="padding: 24px; background: var(--admin-bg-surface);">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px;">
-                    <div>
-                        <label asp-for="Input.DefaultTrialDays" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
-                            Default Free Trial (Days) <span style="color: var(--admin-danger);">*</span>
-                        </label>
-                        <div style="display: flex; gap: 10px; align-items: center;">
-                            <input id="trialDaysInput" asp-for="Input.DefaultTrialDays" type="number" min="1" max="365" class="form-control" 
-                                   style="width: 140px; font-weight: 600; font-size: 14px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
-                            <span style="font-size: 13.5px; color: var(--admin-text-muted); font-weight: 500;">days</span>
-                        </div>
-                        <span asp-validation-for="Input.DefaultTrialDays" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                <div>
+                    <label asp-for="Input.DefaultTrialDays" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                        Default Free Trial (Days) <span style="color: var(--admin-danger);">*</span>
+                    </label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input id="trialDaysInput" asp-for="Input.DefaultTrialDays" type="number" min="1" max="365" class="form-control" 
+                               style="width: 140px; font-weight: 600; font-size: 14px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border);" />
+                        <span style="font-size: 13.5px; color: var(--admin-text-muted); font-weight: 500;">days</span>
+                    </div>
+                    <span asp-validation-for="Input.DefaultTrialDays" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
 
-                        <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;" id="trialPresetsGroup">
-                            <button type="button" onclick="setTrialDays(14)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="14" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">14 Days</button>
-                            <button type="button" onclick="setTrialDays(30)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="30" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">30 Days</button>
-                            <button type="button" onclick="setTrialDays(40)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="40" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">40 Days</button>
-                            <button type="button" onclick="setTrialDays(60)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="60" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">60 Days</button>
-                            <button type="button" onclick="setTrialDays(90)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="90" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">90 Days</button>
-                        </div>
-
-                        <p style="font-size: 12px; color: var(--admin-text-muted); margin: 12px 0 0 0; line-height: 1.55;">
-                            Applied automatically when a customer registers at <code>/en/auth/get-started</code> without a coupon code. Applying a promotional coupon will override this with the coupon's specific trial days.
-                        </p>
+                    <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;" id="trialPresetsGroup">
+                        <button type="button" onclick="setTrialDays(14)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="14" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">14 Days</button>
+                        <button type="button" onclick="setTrialDays(30)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="30" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">30 Days</button>
+                        <button type="button" onclick="setTrialDays(40)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="40" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">40 Days</button>
+                        <button type="button" onclick="setTrialDays(60)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="60" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">60 Days</button>
+                        <button type="button" onclick="setTrialDays(90)" class="btn-admin btn-admin-secondary trial-preset-btn" data-days="90" style="padding: 5px 14px; font-size: 12.5px; border-radius: var(--radius-sm); border: 1px solid var(--admin-border);">90 Days</button>
                     </div>
 
-                    <div>
-                        <label asp-for="Input.DefaultCurrencyCode" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
-                            Default Fallback Currency <span style="color: var(--admin-danger);">*</span>
-                        </label>
-                        <select asp-for="Input.DefaultCurrencyCode" class="form-select" style="font-size: 14px; background: var(--admin-bg-surface); border: 1px solid var(--admin-border);">
-                            <option value="USD">USD ($) - US Dollar</option>
-                            <option value="NGN">NGN (₦) - Nigerian Naira</option>
-                            <option value="GBP">GBP (£) - British Pound</option>
-                            <option value="EUR">EUR (€) - Euro</option>
-                            <option value="GHS">GHS (GH₵) - Ghanaian Cedi</option>
-                            <option value="KES">KES (KSh) - Kenyan Shilling</option>
-                            <option value="ZAR">ZAR (R) - South African Rand</option>
-                            <option value="CAD">CAD (CA$) - Canadian Dollar</option>
-                            <option value="AED">AED - UAE Dirham</option>
-                            <option value="INR">INR (₹) - Indian Rupee</option>
-                        </select>
-                        <span asp-validation-for="Input.DefaultCurrencyCode" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
-
-                        <p style="font-size: 12px; color: var(--admin-text-muted); margin: 12px 0 0 0; line-height: 1.55;">
-                            Fallback regional currency when visitor geolocation is indeterminate. Pricing amounts are dynamically calculated from the sum of active modular features.
-                        </p>
-                    </div>
+                    <p style="font-size: 12px; color: var(--admin-text-muted); margin: 12px 0 0 0; line-height: 1.55;">
+                        Applied automatically when a customer registers at <code>/en/auth/get-started</code> without a coupon code. Applying a promotional coupon will override this with the coupon's specific trial days.
+                    </p>
                 </div>
             </div>
         </div>
@@ -439,6 +414,303 @@
             </div>
         </div>
 
+        @* ── Section 7.5: Central Payment Gateway (Paystack — Platform Subscription & Capability Billing) ── *@
+        <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated); flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 14px;">
+                    <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: rgba(0, 80, 229, 0.12); border: 1px solid rgba(0, 80, 229, 0.25); color: #0050e5; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 22px;">payments</span>
+                    </div>
+                    <div>
+                        <h2 style="font-size: 15.5px; font-weight: 600; color: var(--admin-text); margin: 0; letter-spacing: -0.01em;">Central Payment Gateways &amp; Bank Deposit (Platform Subscriptions &amp; Capability Billing)</h2>
+                        <p style="font-size: 12.5px; color: var(--admin-text-muted); margin: 2px 0 0 0;">Configure Paystack, Flutterwave, Stripe, and Direct Bank Deposit for tenant invoice settlements. Enabled gateways without keys appear disabled ("Not Available") on tenant invoices.</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    @if (!string.IsNullOrEmpty(Model.Input.PaystackSecretKey) && !string.IsNullOrEmpty(Model.Input.PaystackPublicKey))
+                    {
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px;">
+                            <span style="width: 6px; height: 6px; border-radius: 50%; background: #059669;"></span>
+                            @(Model.Input.PaystackSecretKey.StartsWith("sk_live_", StringComparison.OrdinalIgnoreCase) ? "Central Paystack LIVE Configured" : "Central Paystack TEST Configured")
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge" style="background: rgba(245, 158, 11, 0.12); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.25); font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px;">
+                            Keys Not Configured
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <div style="padding: 24px; background: var(--admin-bg-surface);">
+                <div style="padding: 14px 18px; margin-bottom: 20px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input type="checkbox" id="Input_EnablePaystack" asp-for="Input.EnablePaystack" class="form-check-input" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--admin-primary);" />
+                        <label for="Input_EnablePaystack" style="font-size: 13.5px; font-weight: 600; color: var(--admin-text); cursor: pointer; margin: 0;">
+                            Enable Central Paystack Inline Checkout for Workspace Capability Subscriptions &amp; Renewals
+                        </label>
+                    </div>
+                    <span style="font-size: 12px; color: var(--admin-text-muted);">Isolated from each tenant's own Paystack keys</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <label asp-for="Input.PaystackPublicKey" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                            Central Paystack Public Key
+                        </label>
+                        <input asp-for="Input.PaystackPublicKey" class="form-control" placeholder="e.g. pk_live_000000000000000000000000"
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px;" />
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Used to launch the Paystack Inline Form popup in tenant billing consoles.</span>
+                        <span asp-validation-for="Input.PaystackPublicKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label asp-for="Input.PaystackSecretKey" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                Central Paystack Secret Key
+                            </label>
+                            @if (!string.IsNullOrEmpty(Model.Input.PaystackSecretKey))
+                            {
+                                <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;">
+                                    Saved in Master DB
+                                </span>
+                            }
+                        </div>
+                        <div style="position: relative;">
+                            <input asp-for="Input.PaystackSecretKey" value="@Model.Input.PaystackSecretKey" id="paystackSecretInput" type="password" class="form-control"
+                                   placeholder="e.g. sk_live_000000000000000000000000"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px; padding-right: 42px;" />
+                            <button type="button" onclick="togglePasswordVisibility('paystackSecretInput', this)"
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            </button>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 8px;">
+                            <span style="font-size: 12px; color: var(--admin-text-muted);">Never exposed to client browsers. Queried strictly inside server DB.</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <button type="button" id="btnTestPaystack" onclick="testPaystackConnection()" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 4px 12px; border: 1px solid var(--admin-border); display: inline-flex; align-items: center; gap: 6px;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
+                                    <span>Test Paystack Key</span>
+                                </button>
+                                <span id="paystackTestStatus" style="font-size: 12px; font-weight: 600;"></span>
+                            </div>
+                        </div>
+                        <span asp-validation-for="Input.PaystackSecretKey" style="color: var(--admin-danger); font-size: 12px; margin-top: 4px; display: block;"></span>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label asp-for="Input.PaystackWebhookSecret" style="font-size: 13px; font-weight: 600; color: var(--admin-text); margin: 0;">
+                                Central Webhook Secret (Optional)
+                            </label>
+                            <span style="font-size: 11px; color: var(--admin-text-muted);">Defaults to Secret Key</span>
+                        </div>
+                        <div style="position: relative;">
+                            <input asp-for="Input.PaystackWebhookSecret" value="@Model.Input.PaystackWebhookSecret" id="paystackWebhookInput" type="password" class="form-control"
+                                   placeholder="e.g. sk_live_000000000000000000000000"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px; padding-right: 42px;" />
+                            <button type="button" onclick="togglePasswordVisibility('paystackWebhookInput', this)"
+                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            </button>
+                        </div>
+                        <span style="font-size: 12px; color: var(--admin-text-muted); margin-top: 4px; display: block;">Used to verify HMAC-SHA512 signatures on Central webhook callbacks.</span>
+                    </div>
+                </div>
+
+                <div style="padding: 14px 18px; background: rgba(0, 80, 229, 0.06); border: 1px solid rgba(0, 80, 229, 0.2); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; color: #0050e5; flex-shrink: 0; margin-top: 2px;">webhook</span>
+                        <div style="font-size: 12.5px; color: var(--admin-text); line-height: 1.55;">
+                            <strong>Your Central Paystack Webhook Endpoint:</strong> Paste this URL in your Paystack Dashboard (<em>Settings &rarr; API Keys &amp; Webhooks</em>) to reconcile Central subscription invoices automatically:<br />
+                            <code id="centralWebhookUrlText" style="font-weight: 700; color: #0050e5;">@( $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/api/paystack-webhook/central" )</code>
+                            <span style="color: var(--admin-text-muted); margin-left: 8px;">(Tenants use their own separate webhook: <code>/api/paystack-webhook/tenant/{tenantKey}</code>)</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="copyCentralWebhookUrl()" class="btn-admin btn-admin-secondary" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--admin-border); display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">content_copy</span>
+                        <span id="copyWebhookBtnLabel">Copy Webhook URL</span>
+                    </button>
+                </div>
+
+                @* ── Gateway 2: Flutterwave ── *@
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--admin-border);">
+                    <div style="padding: 14px 18px; margin-bottom: 18px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <input type="checkbox" id="Input_EnableFlutterwave" asp-for="Input.EnableFlutterwave" class="form-check-input" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--admin-primary);" />
+                            <label for="Input_EnableFlutterwave" style="font-size: 13.5px; font-weight: 600; color: var(--admin-text); cursor: pointer; margin: 0;">
+                                Enable Flutterwave Payment Gateway on Tenant Invoices
+                            </label>
+                        </div>
+                        @if (Model.Input.EnableFlutterwave && (string.IsNullOrWhiteSpace(Model.Input.FlutterwavePublicKey) || string.IsNullOrWhiteSpace(Model.Input.FlutterwaveSecretKey)))
+                        {
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.14); color: #d97706; font-size: 11px; font-weight: 700;">Enabled — Keys Not Configured (Shows as "Not Available" on Invoices)</span>
+                        }
+                        else if (Model.Input.EnableFlutterwave)
+                        {
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.14); color: #059669; font-size: 11px; font-weight: 700;">Enabled &amp; Configured</span>
+                        }
+                        else
+                        {
+                            <span style="font-size: 12px; color: var(--admin-text-muted);">Disabled (Hidden on Tenant Invoices)</span>
+                        }
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                        <div>
+                            <label asp-for="Input.FlutterwavePublicKey" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                                Central Flutterwave Public Key
+                            </label>
+                            <input asp-for="Input.FlutterwavePublicKey" class="form-control" placeholder="e.g. FLWPUBK_LIVE-00000000000000000000-X"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px;" />
+                        </div>
+                        <div>
+                            <label asp-for="Input.FlutterwaveSecretKey" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                                Central Flutterwave Secret Key
+                            </label>
+                            <div style="position: relative;">
+                                <input asp-for="Input.FlutterwaveSecretKey" value="@Model.Input.FlutterwaveSecretKey" id="flwSecretInput" type="password" class="form-control"
+                                       placeholder="e.g. FLWSECK_LIVE-00000000000000000000-X"
+                                       style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px; padding-right: 42px;" />
+                                <button type="button" onclick="togglePasswordVisibility('flwSecretInput', this)"
+                                        style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label asp-for="Input.FlutterwaveWebhookSecret" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                                Flutterwave Webhook Secret Hash (Optional)
+                            </label>
+                            <input asp-for="Input.FlutterwaveWebhookSecret" value="@Model.Input.FlutterwaveWebhookSecret" type="password" class="form-control"
+                                   placeholder="e.g. whsec_hash_000000000000"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px;" />
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Gateway 3: Stripe ── *@
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--admin-border);">
+                    <div style="padding: 14px 18px; margin-bottom: 18px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <input type="checkbox" id="Input_EnableStripe" asp-for="Input.EnableStripe" class="form-check-input" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--admin-primary);" />
+                            <label for="Input_EnableStripe" style="font-size: 13.5px; font-weight: 600; color: var(--admin-text); cursor: pointer; margin: 0;">
+                                Enable Stripe Payment Gateway on Tenant Invoices
+                            </label>
+                        </div>
+                        @if (Model.Input.EnableStripe && (string.IsNullOrWhiteSpace(Model.Input.StripePublishableKey) || string.IsNullOrWhiteSpace(Model.Input.StripeSecretKey)))
+                        {
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.14); color: #d97706; font-size: 11px; font-weight: 700;">Enabled — Keys Not Configured (Shows as "Not Available" on Invoices)</span>
+                        }
+                        else if (Model.Input.EnableStripe)
+                        {
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.14); color: #059669; font-size: 11px; font-weight: 700;">Enabled &amp; Configured</span>
+                        }
+                        else
+                        {
+                            <span style="font-size: 12px; color: var(--admin-text-muted);">Disabled (Hidden on Tenant Invoices)</span>
+                        }
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                        <div>
+                            <label asp-for="Input.StripePublishableKey" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                                Central Stripe Publishable Key
+                            </label>
+                            <input asp-for="Input.StripePublishableKey" class="form-control" placeholder="e.g. pk_live_000000000000000000000000"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px;" />
+                        </div>
+                        <div>
+                            <label asp-for="Input.StripeSecretKey" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                                Central Stripe Secret Key
+                            </label>
+                            <div style="position: relative;">
+                                <input asp-for="Input.StripeSecretKey" value="@Model.Input.StripeSecretKey" id="stripeSecretInput" type="password" class="form-control"
+                                       placeholder="e.g. sk_live_000000000000000000000000"
+                                       style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px; padding-right: 42px;" />
+                                <button type="button" onclick="togglePasswordVisibility('stripeSecretInput', this)"
+                                        style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--admin-text-muted); cursor: pointer; display: flex; align-items: center;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label asp-for="Input.StripeWebhookSecret" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 8px;">
+                                Stripe Webhook Signing Secret (Optional)
+                            </label>
+                            <input asp-for="Input.StripeWebhookSecret" value="@Model.Input.StripeWebhookSecret" type="password" class="form-control"
+                                   placeholder="e.g. whsec_000000000000000000000000"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px;" />
+                        </div>
+                    </div>
+                </div>
+
+                @* ── Gateway 4: Direct Bank Deposit / Wire Transfer ── *@
+                <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--admin-border);">
+                    <div style="padding: 14px 18px; margin-bottom: 18px; background: var(--admin-bg-surface-elevated); border: 1px solid var(--admin-border); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <input type="checkbox" id="Input_EnableBankDeposit" asp-for="Input.EnableBankDeposit" class="form-check-input" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--admin-primary);" />
+                            <label for="Input_EnableBankDeposit" style="font-size: 13.5px; font-weight: 600; color: var(--admin-text); cursor: pointer; margin: 0;">
+                                Enable Direct Bank Deposit / Wire Transfer on Tenant Invoices
+                            </label>
+                        </div>
+                        @if (Model.Input.EnableBankDeposit && (string.IsNullOrWhiteSpace(Model.Input.BankDepositBankName) || string.IsNullOrWhiteSpace(Model.Input.BankDepositAccountNumber)))
+                        {
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.14); color: #d97706; font-size: 11px; font-weight: 700;">Enabled — Account Not Configured (Shows as "Not Available" on Invoices)</span>
+                        }
+                        else if (Model.Input.EnableBankDeposit)
+                        {
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.14); color: #059669; font-size: 11px; font-weight: 700;">Enabled &amp; Configured</span>
+                        }
+                        else
+                        {
+                            <span style="font-size: 12px; color: var(--admin-text-muted);">Disabled (Hidden on Tenant Invoices)</span>
+                        }
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                        <div>
+                            <label asp-for="Input.BankDepositBankName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                                Bank Institution Name
+                            </label>
+                            <input asp-for="Input.BankDepositBankName" class="form-control" placeholder="e.g. Commercial Bank"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-size: 13px;" />
+                        </div>
+                        <div>
+                            <label asp-for="Input.BankDepositAccountName" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                                Beneficiary Account Name
+                            </label>
+                            <input asp-for="Input.BankDepositAccountName" class="form-control" placeholder="e.g. Corporate Billing Account"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-size: 13px;" />
+                        </div>
+                        <div>
+                            <label asp-for="Input.BankDepositAccountNumber" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                                Account Number / IBAN
+                            </label>
+                            <input asp-for="Input.BankDepositAccountNumber" class="form-control" placeholder="e.g. 0000000000"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px;" />
+                        </div>
+                        <div>
+                            <label asp-for="Input.BankDepositSortCodeOrSwift" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                                Sort Code / Routing / SWIFT (Optional)
+                            </label>
+                            <input asp-for="Input.BankDepositSortCodeOrSwift" class="form-control" placeholder="e.g. SWIFT / Sort Code"
+                                   style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-family: monospace; font-size: 13px;" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label asp-for="Input.BankDepositInstructions" style="display: block; font-size: 13px; font-weight: 600; color: var(--admin-text); margin-bottom: 6px;">
+                            Deposit Instructions &amp; Narration Notice (Optional)
+                        </label>
+                        <input asp-for="Input.BankDepositInstructions" class="form-control" placeholder="e.g. Include your Invoice Number in the transfer narration and submit your payment reference."
+                               style="background: var(--admin-bg-surface); border: 1px solid var(--admin-border); font-size: 13px;" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @* ── Section 8: Maintenance Mode & Version Governance ── *@
         <div class="admin-card" style="width: 100%; margin-bottom: 0; background: var(--admin-bg-surface); border: 1px solid var(--admin-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div style="display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid var(--admin-border); background: var(--admin-bg-surface-elevated);">
@@ -580,6 +852,58 @@
         } finally {
             btn.disabled = false;
         }
+    }
+
+    async function testPaystackConnection() {
+        var input = document.getElementById('paystackSecretInput');
+        var btn = document.getElementById('btnTestPaystack');
+        var status = document.getElementById('paystackTestStatus');
+        if (!input || !status) return;
+
+        var secretKey = input.value.trim();
+        status.style.color = 'var(--admin-text-muted)';
+        status.textContent = 'Verifying with Paystack...';
+        if (btn) btn.disabled = true;
+
+        var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        var formData = new FormData();
+        formData.append('secretKey', secretKey);
+
+        try {
+            var response = await fetch('/centralwks/platform-settings?handler=TestPaystackConnection', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                body: formData
+            });
+
+            var result = await response.json();
+            if (result.success) {
+                status.style.color = '#059669';
+                status.textContent = '✓ ' + result.message;
+            } else {
+                status.style.color = '#dc2626';
+                status.textContent = '✗ ' + result.message;
+            }
+        } catch (err) {
+            status.style.color = '#dc2626';
+            status.textContent = '✗ Network error testing Paystack key.';
+        } finally {
+            if (btn) btn.disabled = false;
+        }
+    }
+
+    function copyCentralWebhookUrl() {
+        var el = document.getElementById('centralWebhookUrlText');
+        var lbl = document.getElementById('copyWebhookBtnLabel');
+        if (!el) return;
+        navigator.clipboard.writeText(el.textContent.trim()).then(function () {
+            if (lbl) {
+                lbl.textContent = 'Copied!';
+                setTimeout(function () { lbl.textContent = 'Copy Webhook URL'; }, 2000);
+            }
+        });
     }
 
     document.addEventListener('DOMContentLoaded', function() {

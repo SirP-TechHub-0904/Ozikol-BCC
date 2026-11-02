@@ -5,6 +5,8 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { SignalRService } from '../../../core/services/signalr.service';
+import { TranslationService } from '../../../core/services/translation.service';
 import { TranslatePipe } from '../../../core/pipes/translate.pipe';
 import { parseUserAgent, formatClientIpAddress } from '../../../core/utils/user-agent.util';
 
@@ -15,9 +17,17 @@ interface ActiveSessionItem {
   sessionId: string;
   device: string;
   browser: string;
+  browserName?: string;
+  clientType?: string;
+  operatingSystem?: string;
+  deviceType?: string;
+  icon?: string;
+  rawDevice?: string;
   ipAddress: string;
   lastActive: string;
   isCurrent: boolean;
+  isTrusted?: boolean;
+  createdAt?: string;
 }
 
 /**
@@ -26,9 +36,19 @@ interface ActiveSessionItem {
 interface LoginAuditItem {
   id: string;
   email: string;
+  actionType?: string;
   status: string;
+  description?: string;
+  module?: string;
   ipAddress: string;
   userAgent: string;
+  device?: string;
+  browser?: string;
+  browserName?: string;
+  clientType?: string;
+  icon?: string;
+  isTrusted?: boolean;
+  date?: string;
   timestamp: string;
 }
 
@@ -71,18 +91,6 @@ interface AccountSummary {
           <div>
             <h1 class="page-title">{{ 'account.title' | translate }}</h1>
             <p class="page-sub">{{ 'account.subtitle' | translate }}</p>
-          </div>
-        </div>
-        <div class="header-right" *ngIf="summary?.email">
-          <div class="user-pill">
-            <div class="user-avatar-small" *ngIf="!summary?.avatarUrl">
-              {{ (summary?.fullName || 'User').substring(0, 2).toUpperCase() }}
-            </div>
-            <img [src]="summary?.avatarUrl" class="user-avatar-img" *ngIf="summary?.avatarUrl" alt="Avatar" />
-            <div class="user-meta">
-              <span class="meta-name">{{ summary?.fullName || summary?.email }}</span>
-              <span class="meta-role">{{ (summary?.roles && summary!.roles!.length > 0) ? summary!.roles![0] : 'Administrator' }}</span>
-            </div>
           </div>
         </div>
       </div>
@@ -441,18 +449,39 @@ interface AccountSummary {
 
             <div class="devices-grid" *ngIf="sessions.length > 0">
               <div class="device-card" *ngFor="let s of sessions" [class.current-device]="s.isCurrent">
-                <div class="device-icon-wrap">
-                  <span class="material-symbols-outlined">{{ getDeviceIcon(s.device) }}</span>
+                <div class="device-icon-wrap" [class.trusted-wrap]="s.isTrusted">
+                  <span class="material-symbols-outlined">{{ s.icon || getDeviceIcon(s.rawDevice || s.device) }}</span>
                 </div>
                 <div class="device-info">
                   <div class="device-name-row">
-                    <span class="device-name">{{ formatDeviceTitle(s.device) }}</span>
+                    <span class="device-name">{{ s.device || formatDeviceTitle(s.rawDevice || s.device) }}</span>
                     <span class="badge-current" *ngIf="s.isCurrent">{{ 'account.this_device' | translate }}</span>
+                    <span class="badge-activity" [class.badge-active]="isSessionActive(s)" [class.badge-idle]="!isSessionActive(s)">
+                      <span class="activity-dot"></span>
+                      <span>{{ (isSessionActive(s) ? 'account.active_now' : 'account.idle') | translate }}</span>
+                    </span>
+                    <span class="badge-trusted" *ngIf="s.isTrusted" title="2FA verification bypassed on this trusted device">
+                      <span class="material-symbols-outlined">verified_user</span>
+                      <span>Trusted Device</span>
+                    </span>
                   </div>
                   <div class="device-meta-row">
-                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">language</span>{{ formatBrowserDetails(s.device) }}</span>
-                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">router</span>{{ formatIpAddress(s.ipAddress) }}</span>
-                    <span class="meta-tag"><span class="material-symbols-outlined meta-sub-icon">schedule</span>{{ formatRelativeTime(s.lastActive) }}</span>
+                    <span class="meta-tag">
+                      <span class="material-symbols-outlined meta-sub-icon">{{ getDeviceSubIcon(s.rawDevice || s.device) }}</span>
+                      {{ s.browser || formatBrowserDetails(s.rawDevice || s.device) }}
+                    </span>
+                    <span class="meta-tag">
+                      <span class="material-symbols-outlined meta-sub-icon">router</span>
+                      {{ formatIpAddress(s.ipAddress) }}
+                    </span>
+                    <span class="meta-tag" *ngIf="s.createdAt" [title]="'account.logged_in_since' | translate">
+                      <span class="material-symbols-outlined meta-sub-icon">login</span>
+                      {{ 'account.logged_in_since' | translate }}: {{ formatExactDateTime(s.createdAt) }}
+                    </span>
+                    <span class="meta-tag" [title]="'account.last_active' | translate">
+                      <span class="material-symbols-outlined meta-sub-icon">schedule</span>
+                      {{ 'account.last_active' | translate }}: {{ formatExactDateTime(s.lastActive) }}
+                    </span>
                   </div>
                 </div>
                 <div class="device-actions" *ngIf="!s.isCurrent">
@@ -470,26 +499,41 @@ interface AccountSummary {
           </div>
         </section>
 
-        <!-- TAB 4: LOGIN ACTIVITY -->
+        <!-- TAB 4: MY ACTIVITY -->
         <section class="card-section animate-fade" *ngIf="activeTab === 'activity'">
           <div class="section-card-head">
             <div class="card-title-group">
               <span class="material-symbols-outlined head-icon text-primary">history</span>
               <div>
-                <h2 class="card-title">{{ 'nav.login_history' | translate }}</h2>
-                <p class="card-desc">Audit trail of recent authentication challenges, timestamps, and network IP addresses.</p>
+                <h2 class="card-title">{{ 'account.tab_activity' | translate }}</h2>
+                <p class="card-desc">{{ 'account.activity_desc' | translate }}</p>
               </div>
             </div>
             <div class="head-actions-wrap">
-              <span class="counter-badge" *ngIf="loginTotalCount > 0">{{ loginTotalCount }} {{ 'nav.login_history' | translate }}</span>
+              <span class="counter-badge" *ngIf="loginTotalCount > 0">{{ loginTotalCount }} {{ 'account.tab_activity' | translate }}</span>
               <button type="button" class="btn-secondary" (click)="loadLoginHistory(loginPage)" [disabled]="loadingLogs">
                 <span class="material-symbols-outlined" [class.spin-icon]="loadingLogs">refresh</span>
-                <span>Refresh</span>
+                <span>{{ 'audit.refresh' | translate:'Refresh' }}</span>
               </button>
             </div>
           </div>
 
           <div class="card-body">
+            <!-- 30-Day Retention & Archival Banner -->
+            <div class="retention-banner">
+              <div class="retention-info">
+                <span class="material-symbols-outlined retention-icon">schedule</span>
+                <div>
+                  <span class="retention-title">{{ 'account.activity_retention_notice' | translate }}</span>
+                  <span class="retention-sub" *ngIf="hasOlderRecords">{{ 'audit.archival_sub' | translate:'Archival records older than 30 days are secured in deep retention.' }}</span>
+                </div>
+              </div>
+              <button type="button" class="btn-contact-admin" (click)="contactAdminForArchives()">
+                <span class="material-symbols-outlined">support_agent</span>
+                <span>{{ 'account.contact_admin' | translate }}</span>
+              </button>
+            </div>
+
             <div class="empty-state" *ngIf="loginLogs.length === 0 && !loadingLogs">
               <span class="material-symbols-outlined empty-icon">manage_search</span>
               <p>{{ 'account.no_history' | translate }}</p>
@@ -499,28 +543,44 @@ interface AccountSummary {
               <table class="account-table">
                 <thead>
                   <tr>
-                    <th>Status</th>
-                    <th>IP Address</th>
-                    <th>Browser / Device</th>
-                    <th>Timestamp</th>
+                    <th>{{ 'audit.th_action_status' | translate:'Action & Status' }}</th>
+                    <th>{{ 'audit.th_desc_module' | translate:'Description / Module' }}</th>
+                    <th>{{ 'audit.th_ip' | translate:'IP Address' }}</th>
+                    <th>{{ 'audit.th_browser_device' | translate:'Browser / Device' }}</th>
+                    <th>{{ 'audit.th_timestamp' | translate:'Timestamp' }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr *ngFor="let log of loginLogs">
                     <td>
-                      <span class="log-status-pill" [ngClass]="getStatusClass(log.status)">
-                        <span class="material-symbols-outlined">{{ getStatusIcon(log.status) }}</span>
-                        {{ log.status }}
-                      </span>
+                      <div class="log-status-col">
+                        <span class="log-status-pill" [ngClass]="getStatusClass(log.actionType || log.status)">
+                          <span class="material-symbols-outlined">{{ getStatusIcon(log.actionType || log.status) }}</span>
+                          {{ translationService.translateDynamic(log.actionType || log.status) }}
+                        </span>
+                        <span class="badge-trusted-pill" *ngIf="log.isTrusted || (log.status && log.status.includes('Trusted'))">
+                          <span class="material-symbols-outlined">verified_user</span>
+                          <span>{{ 'audit.trusted' | translate:'Trusted' }}</span>
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="log-desc-col">
+                        <span class="log-desc-text">{{ translationService.translateDynamic(log.description || log.actionType || log.status) }}</span>
+                        <span class="log-module-badge" *ngIf="log.module">{{ translationService.translateDynamic(log.module) }}</span>
+                      </div>
                     </td>
                     <td><code>{{ formatIpAddress(log.ipAddress) }}</code></td>
                     <td class="log-agent" [title]="log.userAgent">
                       <div class="log-agent-wrap">
-                        <span class="log-device-main">{{ formatDeviceTitle(log.userAgent) }}</span>
-                        <span class="log-device-sub">{{ formatBrowserDetails(log.userAgent) }}</span>
+                        <div class="log-agent-head">
+                          <span class="material-symbols-outlined log-device-icon">{{ log.icon || getDeviceIcon(log.userAgent) }}</span>
+                          <span class="log-device-main">{{ log.device || formatDeviceTitle(log.userAgent) }}</span>
+                        </div>
+                        <span class="log-device-sub">{{ log.browser || formatBrowserDetails(log.userAgent) }}</span>
                       </div>
                     </td>
-                    <td>{{ formatDateTime(log.timestamp) }}</td>
+                    <td>{{ formatDateTime(log.timestamp || log.date) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -528,23 +588,23 @@ interface AccountSummary {
               <!-- Pagination Toolbar -->
               <div class="pagination-footer" *ngIf="loginTotalCount > 0">
                 <div class="page-size-selector">
-                  <span>Show</span>
+                  <span>{{ 'audit.show' | translate:'Show' }}</span>
                   <select [ngModel]="loginPageSize" (ngModelChange)="onLoginPageSizeChange($event)">
                     <option [ngValue]="10">10</option>
                     <option [ngValue]="25">25</option>
                     <option [ngValue]="50">50</option>
                   </select>
-                  <span>entries per page</span>
+                  <span>{{ 'audit.entries_per_page' | translate:'entries per page' }}</span>
                   <span class="entries-info">
-                    (Showing {{ (loginPage - 1) * loginPageSize + 1 }} to {{ getLoginEndIndex() }} of {{ loginTotalCount }} records)
+                    ({{ 'audit.showing' | translate:'Showing' }} {{ (loginPage - 1) * loginPageSize + 1 }} {{ 'audit.to' | translate:'to' }} {{ getLoginEndIndex() }} {{ 'audit.of' | translate:'of' }} {{ loginTotalCount }} {{ 'audit.records' | translate:'records' }})
                   </span>
                 </div>
 
                 <div class="pagination-controls" *ngIf="loginTotalPages > 1">
-                  <button type="button" class="page-btn" [disabled]="loginPage === 1" (click)="setLoginPage(1)" title="First Page">
+                  <button type="button" class="page-btn" [disabled]="loginPage === 1" (click)="setLoginPage(1)">
                     <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
                   </button>
-                  <button type="button" class="page-btn" [disabled]="loginPage === 1" (click)="setLoginPage(loginPage - 1)" title="Previous Page">
+                  <button type="button" class="page-btn" [disabled]="loginPage === 1" (click)="setLoginPage(loginPage - 1)">
                     <span class="material-symbols-outlined">chevron_left</span>
                   </button>
 
@@ -560,10 +620,10 @@ interface AccountSummary {
                     </button>
                   </ng-container>
 
-                  <button type="button" class="page-btn" [disabled]="loginPage === loginTotalPages" (click)="setLoginPage(loginPage + 1)" title="Next Page">
+                  <button type="button" class="page-btn" [disabled]="loginPage === loginTotalPages" (click)="setLoginPage(loginPage + 1)">
                     <span class="material-symbols-outlined">chevron_right</span>
                   </button>
-                  <button type="button" class="page-btn" [disabled]="loginPage === loginTotalPages" (click)="setLoginPage(loginTotalPages)" title="Last Page">
+                  <button type="button" class="page-btn" [disabled]="loginPage === loginTotalPages" (click)="setLoginPage(loginTotalPages)">
                     <span class="material-symbols-outlined">keyboard_double_arrow_right</span>
                   </button>
                 </div>
@@ -1213,10 +1273,54 @@ interface AccountSummary {
       padding: 2px 8px;
       border-radius: 20px;
     }
+    .badge-trusted {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .badge-trusted .material-symbols-outlined {
+      font-size: 13px;
+    }
+    .badge-activity {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .badge-activity.badge-active {
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-activity.badge-idle {
+      background: rgba(245, 158, 11, 0.12);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .activity-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .device-icon-wrap.trusted-wrap {
+      border: 1.5px solid rgba(16, 185, 129, 0.35);
+    }
     .device-meta-row {
       display: flex;
       align-items: center;
-      gap: 16px;
+      flex-wrap: wrap;
+      gap: 14px;
       font-size: 12px;
       color: #64748b;
     }
@@ -1273,14 +1377,44 @@ interface AccountSummary {
       border-bottom: 1px solid #f1f5f9;
       color: #1e293b;
     }
+    .log-status-col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .badge-trusted-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.12);
+      color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    .badge-trusted-pill .material-symbols-outlined {
+      font-size: 11px;
+    }
     .log-agent {
-      min-width: 200px;
-      max-width: 320px;
+      min-width: 220px;
+      max-width: 360px;
     }
     .log-agent-wrap {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
+    }
+    .log-agent-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .log-device-icon {
+      font-size: 16px;
+      color: #0050e5;
     }
     .log-device-main {
       font-weight: 600;
@@ -1290,6 +1424,7 @@ interface AccountSummary {
     .log-device-sub {
       font-size: 11.5px;
       color: #64748b;
+      padding-left: 22px;
     }
     .log-status-pill {
       display: inline-flex;
@@ -1314,6 +1449,78 @@ interface AccountSummary {
     .log-info {
       background: rgba(0, 80, 229, 0.1);
       color: #0050e5;
+    }
+
+    .retention-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 18px;
+      margin-bottom: 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+    }
+    .retention-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .retention-icon {
+      font-size: 22px;
+      color: #0050e5;
+    }
+    .retention-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      display: block;
+    }
+    .retention-sub {
+      font-size: 11.5px;
+      color: #64748b;
+      display: block;
+    }
+    .btn-contact-admin {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #0050e5;
+      background: rgba(0, 80, 229, 0.08);
+      border: 1px solid rgba(0, 80, 229, 0.25);
+      border-radius: 8px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .btn-contact-admin:hover {
+      background: rgba(0, 80, 229, 0.16);
+      border-color: #0050e5;
+    }
+    .log-desc-col {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-desc-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .log-module-badge {
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      background: #f1f5f9;
+      color: #475569;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
     }
 
     /* Table Pagination Toolbar */
@@ -1525,17 +1732,22 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   loginPageSize: number = 10;
   loginTotalCount: number = 0;
   loginTotalPages: number = 1;
+  hasOlderRecords: boolean = false;
+  retentionNotice: string = '';
 
   /** Account profile summary state */
   summary: AccountSummary | null = null;
 
   private routeSub?: Subscription;
+  private signalRSub?: Subscription;
 
   constructor(
     private readonly api: ApiService,
     private readonly toast: ToastService,
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly signalR: SignalRService,
+    public readonly translationService: TranslationService
   ) {}
 
   ngOnInit(): void {
@@ -1551,10 +1763,30 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
     this.loadMfaStatus();
     this.loadSessions();
     this.loadLoginHistory();
+
+    // Listen to real-time session revocation events via SignalR
+    this.signalRSub = this.signalR.sessionRevoked$.subscribe((data: any) => {
+      const token = localStorage.getItem('access_token');
+      if (token && data?.terminatedJwtIds?.length) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const myJti = payload?.jti;
+          if (myJti && data.terminatedJwtIds.includes(myJti)) {
+            this.toast.warning('Your session was terminated remotely from another device.', 'Session Terminated');
+            localStorage.removeItem('access_token');
+            this.router.navigate(['/auth/login'], { queryParams: { sessionTerminated: 'true' } });
+            return;
+          }
+        } catch {}
+      }
+      this.loadSessions();
+      this.loadAccountSummary();
+    });
   }
 
   ngOnDestroy(): void {
     this.routeSub?.unsubscribe();
+    this.signalRSub?.unsubscribe();
   }
 
   /**
@@ -1856,26 +2088,51 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.loadingLogs = false;
         if (Array.isArray(res?.data)) {
-          this.loginLogs = res.data;
-          this.loginTotalCount = res.data.length;
+          this.loginLogs = res.data.filter((item: any) => {
+            const desc = String(item?.description || '').trim();
+            return !(desc.toLowerCase().includes('[viewcount:') && !desc.includes(', '));
+          });
+          this.loginTotalCount = this.loginLogs.length;
           this.loginPage = 1;
           this.loginTotalPages = 1;
+          this.hasOlderRecords = false;
         } else if (res?.data?.items) {
-          this.loginLogs = res.data.items;
-          this.loginTotalCount = res.data.totalCount ?? this.loginLogs.length;
+          this.loginLogs = res.data.items.filter((item: any) => {
+            const desc = String(item?.description || '').trim();
+            return !(desc.toLowerCase().includes('[viewcount:') && !desc.includes(', '));
+          });
+          this.loginTotalCount = Math.max(0, (res.data.totalCount ?? res.data.items.length) - (res.data.items.length - this.loginLogs.length));
           this.loginPage = res.data.page ?? page;
           this.loginPageSize = res.data.pageSize ?? this.loginPageSize;
           this.loginTotalPages = res.data.totalPages ?? Math.max(1, Math.ceil(this.loginTotalCount / this.loginPageSize));
+          this.hasOlderRecords = !!res.data.hasOlderRecords;
+          this.retentionNotice = res.data.retentionNotice || '';
         } else {
           this.loginLogs = [];
           this.loginTotalCount = 0;
           this.loginTotalPages = 1;
+          this.hasOlderRecords = false;
         }
+        const dynamicStrings: string[] = [];
+        for (const l of this.loginLogs) {
+          if (l.actionType) dynamicStrings.push(l.actionType);
+          if (l.status) dynamicStrings.push(l.status);
+          if (l.description) dynamicStrings.push(l.description);
+          if (l.module) dynamicStrings.push(l.module);
+        }
+        this.translationService.registerDynamicTexts(dynamicStrings);
       },
       error: () => {
         this.loadingLogs = false;
       }
     });
+  }
+
+  /**
+   * Guides the user on how to request deep archival activity records beyond 30 days.
+   */
+  contactAdminForArchives(): void {
+    this.toast.info('To request archival activity records older than 30 days, please contact your workspace Super Administrator.', 'Archival Records');
   }
 
   /**
@@ -1958,6 +2215,17 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Returns a secondary sub-icon for metadata tag (language for browser, terminal/desktop for native apps).
+   * @param device Device name or user agent string.
+   */
+  getDeviceSubIcon(device: string | undefined | null): string {
+    const parsed = parseUserAgent(device);
+    if (parsed.clientType === 'desktop') return 'terminal';
+    if (parsed.clientType === 'mobile') return 'smartphone';
+    return 'language';
+  }
+
+  /**
    * Formats a raw user agent string into a concise readable label.
    * @param ua User agent string.
    */
@@ -1971,9 +2239,9 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
    */
   getStatusIcon(status: string): string {
     const s = (status || '').toLowerCase();
-    if (s.includes('success') || s.includes('granted')) return 'check_circle';
+    if (s.includes('success') || s.includes('granted') || s.includes('installed') || s.includes('enabled') || s.includes('activated')) return 'check_circle';
     if (s.includes('fail') || s.includes('denied')) return 'cancel';
-    if (s.includes('revoked') || s.includes('terminated')) return 'block';
+    if (s.includes('revoked') || s.includes('terminated') || s.includes('deactivated') || s.includes('disabled') || s.includes('deleted') || s.includes('removed')) return 'block';
     return 'info';
   }
 
@@ -1983,8 +2251,8 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
    */
   getStatusClass(status: string): string {
     const s = (status || '').toLowerCase();
-    if (s.includes('success') || s.includes('granted')) return 'log-good';
-    if (s.includes('fail') || s.includes('denied') || s.includes('revoked')) return 'log-bad';
+    if (s.includes('success') || s.includes('granted') || s.includes('installed') || s.includes('enabled') || s.includes('activated')) return 'log-good';
+    if (s.includes('fail') || s.includes('denied') || s.includes('revoked') || s.includes('deactivated') || s.includes('disabled') || s.includes('deleted') || s.includes('removed')) return 'log-bad';
     return 'log-info';
   }
 
@@ -2007,22 +2275,50 @@ export class IdentityAccountComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Formats an ISO date string into readable date and time.
+   * Formats an ISO date string into readable local date and exact time.
+   * Ensures UTC representation is correctly converted to the device's local timezone.
    * @param dateStr ISO date string.
    */
-  formatDateTime(dateStr: string): string {
+  formatExactDateTime(dateStr: string): string {
     if (!dateStr) return '—';
     try {
-      const d = new Date(dateStr);
+      const utcStr = (dateStr.endsWith('Z') || dateStr.includes('+')) ? dateStr : `${dateStr}Z`;
+      const d = new Date(utcStr);
       return d.toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
       });
     } catch {
       return dateStr;
+    }
+  }
+
+  /**
+   * Alias for formatExactDateTime for audit log table timestamp formatting.
+   * @param dateStr ISO date string.
+   */
+  formatDateTime(dateStr: string | undefined | null): string {
+    return this.formatExactDateTime(dateStr || '');
+  }
+
+  /**
+   * Evaluates if a device session is actively used (within 15m) or currently active.
+   * @param s The session item.
+   */
+  isSessionActive(s: any): boolean {
+    if (!s) return false;
+    if (s.isCurrent) return true;
+    if (!s.lastActive) return false;
+    try {
+      const utcStr = (s.lastActive.endsWith('Z') || s.lastActive.includes('+')) ? s.lastActive : `${s.lastActive}Z`;
+      const last = new Date(utcStr).getTime();
+      return (Date.now() - last) <= 15 * 60 * 1000;
+    } catch {
+      return false;
     }
   }
 }

@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/central_adjuster.dart';
 import '../../../data/account_repository.dart';
 
 /// Screen presenting the full Member Management & Directory Hub dashboard overview.
@@ -37,8 +39,10 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
     _loadStats();
   }
 
-  Future<void> _loadStats() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadStats({bool isPullToRefresh = false}) async {
+    if (!isPullToRefresh) {
+      setState(() => _isLoading = true);
+    }
     try {
       final repo = ref.read(accountRepositoryProvider);
       final res = await repo.getDashboardStats();
@@ -110,12 +114,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
     final recentRegistrations = List<Map<String, dynamic>>.from(_stats['recentRegistrations'] ?? []);
     final recentLogs = List<Map<String, dynamic>>.from(_stats['recentLogs'] ?? []);
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1100;
-    final isTablet = screenWidth >= 700;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+    return CentralAdjuster.pageShell(
+      onRefresh: () => _loadStats(isPullToRefresh: true),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -130,8 +130,6 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           // ===================================================================
           _buildRow1Metrics(
             isDark: isDark,
-            isDesktop: isDesktop,
-            isTablet: isTablet,
             totalMembers: totalMembers,
             activeMembers: activeMembers,
             suspiciousAccounts: suspiciousAccounts,
@@ -142,43 +140,15 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           // ===================================================================
           // ROW 2: DEMOGRAPHICS (MALE/FEMALE) & MEMBERSHIP PLAN QUOTA
           // ===================================================================
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildGenderDemographicsCard(
-                    isDark: isDark,
-                    maleCount: maleMembers,
-                    femaleCount: femaleMembers,
-                    malePercent: malePercent,
-                    femalePercent: femalePercent,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: _buildPlanQuotaCard(
-                    isDark: isDark,
-                    planType: planType,
-                    usedSeats: usedSeats,
-                    maximumUsers: maximumUsers,
-                    isUnlimited: isUnlimited,
-                    remainingSeats: remainingSeats,
-                    seatUsagePercent: seatUsagePercent,
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            _buildGenderDemographicsCard(
+          CentralAdjuster.split(
+            first: _buildGenderDemographicsCard(
               isDark: isDark,
               maleCount: maleMembers,
               femaleCount: femaleMembers,
               malePercent: malePercent,
               femalePercent: femalePercent,
             ),
-            const SizedBox(height: 18),
-            _buildPlanQuotaCard(
+            second: _buildPlanQuotaCard(
               isDark: isDark,
               planType: planType,
               usedSeats: usedSeats,
@@ -187,116 +157,54 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
               remainingSeats: remainingSeats,
               seatUsagePercent: seatUsagePercent,
             ),
-          ],
+          ),
           const SizedBox(height: 20),
 
           // ===================================================================
           // ROW 3: 50% GROWTH TREND + 50% BEST PERFORMING KPI BAR CHART
           // ===================================================================
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildGrowthTrendCard(
-                    isDark: isDark,
-                    labels: growthLabels,
-                    counts: growthCounts,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: _buildKpiComparisonCard(
-                    isDark: isDark,
-                    labels: kpiBarLabels,
-                    scores: kpiBarScores,
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            _buildGrowthTrendCard(
+          CentralAdjuster.split(
+            first: _buildGrowthTrendCard(
               isDark: isDark,
               labels: growthLabels,
               counts: growthCounts,
             ),
-            const SizedBox(height: 18),
-            _buildKpiComparisonCard(
+            second: _buildKpiComparisonCard(
               isDark: isDark,
               labels: kpiBarLabels,
               scores: kpiBarScores,
             ),
-          ],
+          ),
           const SizedBox(height: 20),
 
           // ===================================================================
           // ROW 4: KPI LEADERBOARD & PERFORMANCE HEALTH
           // ===================================================================
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildLeaderboardCard(
-                    isDark: isDark,
-                    leaderboard: leaderboard,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: _buildKpiHealthCard(
-                    isDark: isDark,
-                    avgOrgScore: avgOrgScore,
-                    indicatorsCount: indicatorsCount,
-                    evaluatedMembersCount: evaluatedMembersCount,
-                    totalEvaluations: totalEvaluations,
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            _buildLeaderboardCard(
+          CentralAdjuster.split(
+            first: _buildLeaderboardCard(
               isDark: isDark,
               leaderboard: leaderboard,
             ),
-            const SizedBox(height: 18),
-            _buildKpiHealthCard(
+            second: _buildKpiHealthCard(
               isDark: isDark,
               avgOrgScore: avgOrgScore,
               indicatorsCount: indicatorsCount,
               evaluatedMembersCount: evaluatedMembersCount,
               totalEvaluations: totalEvaluations,
             ),
-          ],
+          ),
           const SizedBox(height: 20),
 
           // ===================================================================
           // ROW 5: QUICK ACTIONS & RECENTLY ONBOARDED MEMBERS
           // ===================================================================
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _buildQuickActionsCard(isDark: isDark),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: _buildRecentRegistrationsCard(
-                    isDark: isDark,
-                    registrations: recentRegistrations,
-                  ),
-                ),
-              ],
-            )
-          else ...[
-            _buildQuickActionsCard(isDark: isDark),
-            const SizedBox(height: 18),
-            _buildRecentRegistrationsCard(
+          CentralAdjuster.split(
+            first: _buildQuickActionsCard(isDark: isDark),
+            second: _buildRecentRegistrationsCard(
               isDark: isDark,
               registrations: recentRegistrations,
             ),
-          ],
+          ),
           const SizedBox(height: 20),
 
           // ===================================================================
@@ -312,110 +220,100 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   // PAGE HEADER (1-to-1 with Angular AppPageHeader)
   // ===========================================================================
   Widget _buildPageHeader(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
-        ),
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 16,
-        runSpacing: 12,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.groups_rounded, color: AppColors.primary, size: 24),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'USER MANAGEMENT & DIRECTORY',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.06,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
-                        ),
+    final isMobile = CentralAdjuster.isMobile(context);
+
+    final actions = isMobile
+        ? <Widget>[
+            // Mobile full-width balanced button row (50% width each, no refresh button)
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 35,
+                    child: OutlinedButton.icon(
+                      onPressed: () => widget.onNavigateToTab?.call(1),
+                      icon: const Icon(Icons.table_view_rounded, size: 14),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('dashboard.directory_register'.tr(ref, fallback: 'Directory Register')),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Member Management & Directory Hub',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                        side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Executive real-time intelligence, demographic distributions, category tiers, KPI scorecards, and forensic audit logs.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SizedBox(
+                    height: 35,
+                    child: FilledButton.icon(
+                      onPressed: () => widget.onNavigateToTab?.call(16),
+                      icon: const Icon(Icons.person_add_rounded, size: 14),
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('dashboard.add_member'.tr(ref, fallback: 'Add Member')),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ],
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => widget.onNavigateToTab?.call(1),
-                icon: const Icon(Icons.table_view_rounded, size: 16),
-                label: const Text('Directory Register'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                  side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
                 ),
+              ],
+            ),
+          ]
+        : <Widget>[
+            OutlinedButton.icon(
+              onPressed: () => widget.onNavigateToTab?.call(1),
+              icon: const Icon(Icons.table_view_rounded, size: 16),
+              label: Text('dashboard.directory_register'.tr(ref, fallback: 'Directory Register')),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(width: 10),
-              FilledButton.icon(
-                onPressed: () => widget.onNavigateToTab?.call(1),
-                icon: const Icon(Icons.person_add_rounded, size: 16),
-                label: const Text('Add Member'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                ),
+            ),
+            FilledButton.icon(
+              onPressed: () => widget.onNavigateToTab?.call(16),
+              icon: const Icon(Icons.person_add_rounded, size: 16),
+              label: Text('dashboard.add_member'.tr(ref, fallback: 'Add Member')),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                tooltip: 'Refresh Intelligence',
-                onPressed: _loadStats,
-              ),
-            ],
-          ),
-        ],
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              tooltip: 'dashboard.refresh_intel'.tr(ref, fallback: 'Refresh Intelligence'),
+              onPressed: () => _loadStats(isPullToRefresh: true),
+            ),
+          ];
+
+    return CentralAdjuster.pageHeader(
+      icon: Icons.groups_rounded,
+      eyebrow: 'dashboard.eyebrow'.tr(ref, fallback: 'User Management & Directory'),
+      title: 'dashboard.title'.tr(ref, fallback: 'Member Management & Directory Hub'),
+      subtitle: 'dashboard.subtitle'.tr(
+        ref,
+        fallback:
+            'Executive real-time intelligence, demographic distributions, category tiers, KPI scorecards, and forensic audit logs.',
       ),
+      isDark: isDark,
+      actions: actions,
     );
   }
 
@@ -424,152 +322,50 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   // ===========================================================================
   Widget _buildRow1Metrics({
     required bool isDark,
-    required bool isDesktop,
-    required bool isTablet,
     required int totalMembers,
     required int activeMembers,
     required int suspiciousAccounts,
     required int suspendedMembers,
   }) {
-    final crossAxisCount = isDesktop ? 4 : (isTablet ? 2 : 1);
-
-    return GridView.count(
-      crossAxisCount: crossAxisCount,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: isDesktop ? 1.75 : (isTablet ? 2.0 : 2.5),
-      children: [
-        _buildStatCard(
-          isDark: isDark,
-          title: 'Total Members',
+    return CentralAdjuster.metricGrid(
+      cards: [
+        CentralAdjuster.metricCard(
+          title: 'dashboard.total_members'.tr(ref, fallback: 'Total Members'),
           value: totalMembers.toString(),
-          subtext: 'Registered Profiles • View All →',
+          subtext: 'dashboard.view_all'.tr(ref, fallback: 'Registered Profiles • View All →'),
           icon: Icons.groups_rounded,
           gradientColors: const [Color(0xFF0050E5), Color(0xFF3B82F6)],
-          onTap: () => widget.onNavigateToTab?.call(1),
+          onTap: () => widget.onNavigateToTab?.call(1, filterStatus: 'All'),
         ),
-        _buildStatCard(
-          isDark: isDark,
-          title: 'Active Accounts',
+        CentralAdjuster.metricCard(
+          title: 'dashboard.active_accounts'.tr(ref, fallback: 'Active Accounts'),
           value: activeMembers.toString(),
-          subtext: 'Good Standing • Filter →',
+          subtext: 'dashboard.filter_active'.tr(ref, fallback: 'Good Standing • Filter →'),
           icon: Icons.verified_user_rounded,
           gradientColors: const [Color(0xFF10B981), Color(0xFF059669)],
           valueColor: const Color(0xFF10B981),
           onTap: () => widget.onNavigateToTab?.call(1, filterStatus: 'Active'),
         ),
-        _buildStatCard(
-          isDark: isDark,
-          title: 'Suspicious / Flagged',
+        CentralAdjuster.metricCard(
+          title: 'dashboard.suspicious_flagged'.tr(ref, fallback: 'Suspicious / Flagged'),
           value: suspiciousAccounts.toString(),
-          subtext: 'Lockouts & Logins • Filter →',
+          subtext: 'dashboard.filter_suspicious'.tr(ref, fallback: 'Lockouts & Logins • Filter →'),
           icon: Icons.gpp_maybe_rounded,
           gradientColors: const [Color(0xFFE11D48), Color(0xFFF43F5E)],
           valueColor: const Color(0xFFE11D48),
           isAlert: suspiciousAccounts > 0,
           onTap: () => widget.onNavigateToTab?.call(1, filterStatus: 'Suspicious'),
         ),
-        _buildStatCard(
-          isDark: isDark,
-          title: 'Suspended',
+        CentralAdjuster.metricCard(
+          title: 'dashboard.suspended'.tr(ref, fallback: 'Suspended'),
           value: suspendedMembers.toString(),
-          subtext: 'Access Restricted • Filter →',
+          subtext: 'dashboard.filter_suspended'.tr(ref, fallback: 'Access Restricted • Filter →'),
           icon: Icons.block_rounded,
           gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
           valueColor: const Color(0xFFF59E0B),
           onTap: () => widget.onNavigateToTab?.call(1, filterStatus: 'Suspended'),
         ),
       ],
-    );
-  }
-
-  Widget _buildStatCard({
-    required bool isDark,
-    required String title,
-    required String value,
-    required String subtext,
-    required IconData icon,
-    required List<Color> gradientColors,
-    Color? valueColor,
-    bool isAlert = false,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isAlert
-              ? (isDark ? const Color(0xFF38151D) : const Color(0xFFFFF1F2))
-              : (isDark ? AppColors.surfaceDark : AppColors.surfaceLight),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isAlert
-                ? const Color(0xFFFECDD3)
-                : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: gradientColors,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.gray400 : AppColors.gray600,
-                      letterSpacing: 0.05,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: valueColor ?? (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtext,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      color: isDark ? AppColors.gray500 : AppColors.gray500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -585,17 +381,17 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   }) {
     return _buildPanelCard(
       isDark: isDark,
-      title: 'Gender Demographic Distribution',
-      subtitle: 'Dual roster ratio • Blue (Left) & Pink (Right)',
+      title: 'dashboard.gender_dist'.tr(ref, fallback: 'Gender Demographic Distribution'),
+      subtitle: 'dashboard.gender_subtitle'.tr(ref, fallback: 'Dual roster ratio • Blue (Left) & Pink (Right)'),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
           color: const Color(0xFFEFF6FF),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: const Text(
-          '100% Total Ratio',
-          style: TextStyle(
+        child: Text(
+          'dashboard.total_ratio'.tr(ref, fallback: '100% Total Ratio'),
+          style: const TextStyle(
             fontSize: 10.5,
             fontWeight: FontWeight.w700,
             color: Color(0xFF0050E5),
@@ -624,7 +420,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Male: $maleCount',
+                        '${'dashboard.male'.tr(ref, fallback: 'Male')}: $maleCount',
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark ? AppColors.gray300 : const Color(0xFF334155),
@@ -658,7 +454,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                     Icon(Icons.transgender_rounded, size: 14, color: isDark ? AppColors.gray400 : const Color(0xFF94A3B8)),
                     const SizedBox(width: 4),
                     Text(
-                      'ROSTER SPLIT',
+                      'dashboard.roster_split'.tr(ref, fallback: 'ROSTER SPLIT'),
                       style: TextStyle(
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
@@ -677,7 +473,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        'Female: $femaleCount',
+                        '${'dashboard.female'.tr(ref, fallback: 'Female')}: $femaleCount',
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark ? AppColors.gray300 : const Color(0xFF334155),
@@ -746,28 +542,40 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '♂ Male $malePercent%',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF64748B),
+              Flexible(
+                child: Text(
+                  '♂ ${'dashboard.male'.tr(ref, fallback: 'Male')} $malePercent%',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
               ),
-              const Text(
-                '100% Total Representation',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF94A3B8),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  'dashboard.total_representation'.tr(ref, fallback: '100% Total Representation'),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF94A3B8),
+                  ),
                 ),
               ),
-              Text(
-                'Female $femalePercent% ♀',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF64748B),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  '${'dashboard.female'.tr(ref, fallback: 'Female')} $femalePercent% ♀',
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
               ),
             ],
@@ -798,8 +606,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
 
     return _buildPanelCard(
       isDark: isDark,
-      title: 'Membership Plan & Capacity Quota',
-      subtitle: 'Tenant platform subscription and seat limit allocation',
+      title: 'dashboard.capacity_quota'.tr(ref, fallback: 'Membership Plan & Capacity Quota'),
+      subtitle: 'dashboard.capacity_subtitle'.tr(ref, fallback: 'Tenant platform subscription and seat limit allocation'),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
@@ -808,7 +616,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           border: Border.all(color: const Color(0xFFBBF7D0)),
         ),
         child: Text(
-          '$planType Tier'.toUpperCase(),
+          '$planType ${'dashboard.corporate_tier'.tr(ref, fallback: 'TIER')}'.toUpperCase(),
           style: const TextStyle(
             fontSize: 10.5,
             fontWeight: FontWeight.w700,
@@ -825,7 +633,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'ALLOCATED SEATS',
+                    'dashboard.allocated_seats'.tr(ref, fallback: 'ALLOCATED SEATS'),
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
@@ -861,7 +669,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'REMAINING ALLOWANCE',
+                    'dashboard.remaining_allowance'.tr(ref, fallback: 'REMAINING ALLOWANCE'),
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
@@ -870,7 +678,9 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    isUnlimited ? 'Unlimited Seats' : '$remainingSeats Seats Left',
+                    isUnlimited
+                        ? 'dashboard.unlimited_seats'.tr(ref, fallback: 'Unlimited Seats')
+                        : '$remainingSeats ${'dashboard.seats_left'.tr(ref, fallback: 'Seats Left')}',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -901,19 +711,31 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                isUnlimited ? 'Enterprise Unlimited' : '$seatUsagePercent% Capacity Used',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF475569),
+              Flexible(
+                child: Text(
+                  isUnlimited
+                      ? 'dashboard.enterprise_unlimited'.tr(ref, fallback: 'Enterprise Unlimited')
+                      : '$seatUsagePercent% ${'dashboard.capacity_used'.tr(ref, fallback: 'Capacity Used')}',
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF475569),
+                  ),
                 ),
               ),
-              Text(
-                isUnlimited ? 'Full Platform Unrestricted' : 'Hard Cap Enforced by Central Admin',
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  color: Color(0xFF94A3B8),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  isUnlimited
+                      ? 'dashboard.full_platform_unrestricted'.tr(ref, fallback: 'Full Platform Unrestricted')
+                      : 'dashboard.hard_cap_enforced'.tr(ref, fallback: 'Hard Cap Enforced by Central Admin'),
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: Color(0xFF94A3B8),
+                  ),
                 ),
               ),
             ],
@@ -933,17 +755,17 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   }) {
     return _buildPanelCard(
       isDark: isDark,
-      title: 'Member Registration & Growth Trend',
-      subtitle: '6-month onboarding curve and profile acquisition velocity',
+      title: 'dashboard.growth_trend'.tr(ref, fallback: 'Member Registration & Growth Trend'),
+      subtitle: 'dashboard.growth_subtitle'.tr(ref, fallback: '6-month onboarding curve and profile acquisition velocity'),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
           color: const Color(0xFFEFF6FF),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: const Text(
-          'Past 6 Months',
-          style: TextStyle(
+        child: Text(
+          'dashboard.past_6_months'.tr(ref, fallback: 'Past 6 Months'),
+          style: const TextStyle(
             fontSize: 10.5,
             fontWeight: FontWeight.w700,
             color: Color(0xFF0050E5),
@@ -992,8 +814,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   }) {
     return _buildPanelCard(
       isDark: isDark,
-      title: 'Best Performing Members (KPI Scorecards)',
-      subtitle: 'Performance evaluation comparison across top member profiles',
+      title: 'dashboard.scorecards'.tr(ref, fallback: 'Best Performing Members (KPI Scorecards)'),
+      subtitle: 'dashboard.scorecards_subtitle'.tr(ref, fallback: 'Performance evaluation comparison across top member profiles'),
       trailing: TextButton(
         onPressed: () => widget.onNavigateToTab?.call(5),
         style: TextButton.styleFrom(
@@ -1001,9 +823,9 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        child: const Text(
-          'KPI Hub →',
-          style: TextStyle(
+        child: Text(
+          'dashboard.kpi_hub'.tr(ref, fallback: 'KPI Hub →'),
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: Color(0xFF0050E5),
@@ -1019,7 +841,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                     Icon(Icons.military_tech_rounded, size: 36, color: isDark ? AppColors.gray600 : AppColors.gray300),
                     const SizedBox(height: 8),
                     Text(
-                      'No evaluated member scorecards yet.',
+                      'dashboard.no_scorecards'.tr(ref, fallback: 'No evaluated member scorecards yet.'),
                       style: TextStyle(
                         fontSize: 12.5,
                         color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -1094,8 +916,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   }) {
     return _buildPanelCard(
       isDark: isDark,
-      title: 'Top Performing Members (Leaderboard)',
-      subtitle: 'Highest average composite scores recorded in evaluations',
+      title: 'dashboard.leaderboard'.tr(ref, fallback: 'Top Performing Members (Leaderboard)'),
+      subtitle: 'dashboard.leaderboard_subtitle'.tr(ref, fallback: 'Highest average composite scores recorded in evaluations'),
       trailing: TextButton(
         onPressed: () => widget.onNavigateToTab?.call(5),
         style: TextButton.styleFrom(
@@ -1103,9 +925,9 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        child: const Text(
-          'Full Leaderboard →',
-          style: TextStyle(
+        child: Text(
+          'dashboard.full_leaderboard'.tr(ref, fallback: 'Full Leaderboard →'),
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: Color(0xFF0050E5),
@@ -1120,14 +942,14 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                   children: [
                     const Icon(Icons.military_tech_rounded, size: 36, color: Color(0xFFCBD5E1)),
                     const SizedBox(height: 8),
-                    const Text(
-                      'No KPI evaluation scorecards submitted yet.',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                    Text(
+                      'dashboard.no_leaderboard'.tr(ref, fallback: 'No KPI evaluation scorecards submitted yet.'),
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
                     ),
                     const SizedBox(height: 12),
                     OutlinedButton(
                       onPressed: () => widget.onNavigateToTab?.call(5),
-                      child: const Text('Open KPI Hub', style: TextStyle(fontSize: 12)),
+                      child: Text('dashboard.open_kpi_hub'.tr(ref, fallback: 'Open KPI Hub'), style: const TextStyle(fontSize: 12)),
                     ),
                   ],
                 ),
@@ -1210,7 +1032,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                       const SizedBox(width: 10),
                       IconButton(
                         icon: const Icon(Icons.assignment_turned_in_rounded, size: 18),
-                        tooltip: 'Grade Member',
+                        tooltip: 'dashboard.grade_member'.tr(ref, fallback: 'Grade Member'),
                         color: const Color(0xFF0050E5),
                         onPressed: () => widget.onNavigateToTab?.call(5),
                       ),
@@ -1234,8 +1056,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   }) {
     return _buildPanelCard(
       isDark: isDark,
-      title: 'KPI Organizational Performance Health',
-      subtitle: 'Summary of active metric indicators and evaluation coverage',
+      title: 'dashboard.org_health'.tr(ref, fallback: 'KPI Organizational Performance Health'),
+      subtitle: 'dashboard.org_health_subtitle'.tr(ref, fallback: 'Summary of active metric indicators and evaluation coverage'),
       trailing: TextButton(
         onPressed: () => widget.onNavigateToTab?.call(5),
         style: TextButton.styleFrom(
@@ -1243,48 +1065,46 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        child: const Text(
-          '+ Add Metric',
-          style: TextStyle(
+        child: Text(
+          'dashboard.add_metric'.tr(ref, fallback: '+ Add Metric'),
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: Color(0xFF0050E5),
           ),
         ),
       ),
-      child: GridView.count(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        childAspectRatio: 1.55,
+      child: CentralAdjuster.grid(
+        minItemWidth: 160,
+        spacing: 12,
+        runSpacing: 12,
+        maxColumns: 2,
         children: [
           _buildHealthTile(
             isDark: isDark,
-            label: 'Avg Organization Score',
+            label: 'dashboard.avg_org_score'.tr(ref, fallback: 'Avg Organization Score'),
             value: '${avgOrgScore.toStringAsFixed(1)}%',
-            subtext: 'Across All Evaluations',
+            subtext: 'dashboard.across_evaluations'.tr(ref, fallback: 'Across All Evaluations'),
             valueColor: const Color(0xFF0050E5),
           ),
           _buildHealthTile(
             isDark: isDark,
-            label: 'Active KPI Indicators',
+            label: 'dashboard.active_kpi_indicators'.tr(ref, fallback: 'Active KPI Indicators'),
             value: indicatorsCount.toString(),
-            subtext: 'Configured Rubrics',
+            subtext: 'dashboard.configured_rubrics'.tr(ref, fallback: 'Configured Rubrics'),
           ),
           _buildHealthTile(
             isDark: isDark,
-            label: 'Evaluated Headcount',
+            label: 'dashboard.evaluated_headcount'.tr(ref, fallback: 'Evaluated Headcount'),
             value: evaluatedMembersCount.toString(),
-            subtext: 'Members Assessed',
+            subtext: 'dashboard.members_assessed'.tr(ref, fallback: 'Members Assessed'),
             valueColor: const Color(0xFF10B981),
           ),
           _buildHealthTile(
             isDark: isDark,
-            label: 'Total Scorecards',
+            label: 'dashboard.total_scorecards'.tr(ref, fallback: 'Total Scorecards'),
             value: totalEvaluations.toString(),
-            subtext: 'Historical Submissions',
+            subtext: 'dashboard.historical_submissions'.tr(ref, fallback: 'Historical Submissions'),
             valueColor: const Color(0xFF8B5CF6),
           ),
         ],
@@ -1353,16 +1173,16 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   Widget _buildQuickActionsCard({required bool isDark}) {
     return _buildPanelCard(
       isDark: isDark,
-      title: 'Quick Action Center',
-      subtitle: 'Fast shortcuts for member administration',
+      title: 'dashboard.quick_actions_title'.tr(ref, fallback: 'Quick Action Center'),
+      subtitle: 'dashboard.quick_actions_subtitle'.tr(ref, fallback: 'Fast shortcuts for member administration'),
       child: Column(
         children: [
           _buildActionTile(
             isDark: isDark,
             icon: Icons.person_add_rounded,
             iconColor: const Color(0xFF0050E5),
-            title: 'Add New Member',
-            desc: 'Provision an account with temporary credentials',
+            title: 'dashboard.qa_add_member'.tr(ref, fallback: 'Add New Member'),
+            desc: 'dashboard.qa_add_member_desc'.tr(ref, fallback: 'Add a new member with temporary login credentials'),
             onTap: () => widget.onNavigateToTab?.call(1),
           ),
           const SizedBox(height: 10),
@@ -1370,8 +1190,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
             isDark: isDark,
             icon: Icons.add_circle_rounded,
             iconColor: const Color(0xFF8B5CF6),
-            title: 'Create Category Tier',
-            desc: 'Add department, faculty, or tier grouping',
+            title: 'dashboard.qa_create_tier'.tr(ref, fallback: 'Create Category Tier'),
+            desc: 'dashboard.qa_create_tier_desc'.tr(ref, fallback: 'Add department, faculty, or tier grouping'),
             onTap: () => widget.onNavigateToTab?.call(2),
           ),
           const SizedBox(height: 10),
@@ -1379,8 +1199,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
             isDark: isDark,
             icon: Icons.table_view_rounded,
             iconColor: const Color(0xFF10B981),
-            title: 'Export Member Directory',
-            desc: 'Generate PDF, Excel, and Word registers',
+            title: 'dashboard.qa_export_directory'.tr(ref, fallback: 'Export Member Directory'),
+            desc: 'dashboard.qa_export_directory_desc'.tr(ref, fallback: 'Generate PDF, Excel, and Word registers'),
             onTap: () => widget.onNavigateToTab?.call(1),
           ),
           const SizedBox(height: 10),
@@ -1388,8 +1208,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
             isDark: isDark,
             icon: Icons.analytics_rounded,
             iconColor: const Color(0xFF6366F1),
-            title: 'Evaluate KPI Scores',
-            desc: 'Review leaderboards and batch grade scorecards',
+            title: 'dashboard.qa_evaluate_kpis'.tr(ref, fallback: 'Evaluate KPI Scores'),
+            desc: 'dashboard.qa_evaluate_kpis_desc'.tr(ref, fallback: 'Review leaderboards and batch grade scorecards'),
             onTap: () => widget.onNavigateToTab?.call(5),
           ),
         ],
@@ -1467,8 +1287,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   }) {
     return _buildPanelCard(
       isDark: isDark,
-      title: 'Recently Onboarded Members',
-      subtitle: 'Latest organizational accounts registered in tenant',
+      title: 'dashboard.recent_onboarded_title'.tr(ref, fallback: 'Recently Onboarded Members'),
+      subtitle: 'dashboard.recent_onboarded_subtitle'.tr(ref, fallback: 'Latest organizational accounts registered in tenant'),
       trailing: TextButton(
         onPressed: () => widget.onNavigateToTab?.call(1),
         style: TextButton.styleFrom(
@@ -1476,9 +1296,9 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        child: const Text(
-          'View All →',
-          style: TextStyle(
+        child: Text(
+          'dashboard.view_all_short'.tr(ref, fallback: 'View All →'),
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: Color(0xFF0050E5),
@@ -1486,12 +1306,12 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
         ),
       ),
       child: registrations.isEmpty
-          ? const Center(
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 28),
+                padding: const EdgeInsets.symmetric(vertical: 28),
                 child: Text(
-                  'No organizational members registered yet.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                  'dashboard.no_members_registered'.tr(ref, fallback: 'No organizational members registered yet.'),
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
                 ),
               ),
             )
@@ -1579,7 +1399,7 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
-                        child: const Text('Details', style: TextStyle(fontSize: 11)),
+                        child: Text('dashboard.details'.tr(ref, fallback: 'Details'), style: const TextStyle(fontSize: 11)),
                       ),
                     ],
                   ),
@@ -1598,8 +1418,8 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
   }) {
     return _buildPanelCard(
       isDark: isDark,
-      title: 'Recent Security & Forensic Audit Trail',
-      subtitle: 'Real-time authentication, password lifecycle, and permission logs',
+      title: 'dashboard.audit_trail_title'.tr(ref, fallback: 'Recent Security & Forensic Audit Trail'),
+      subtitle: 'dashboard.audit_trail_subtitle'.tr(ref, fallback: 'Real-time authentication, password lifecycle, and permission logs'),
       trailing: TextButton(
         onPressed: () => widget.onNavigateToTab?.call(15), // Activity Logs tab
         style: TextButton.styleFrom(
@@ -1607,9 +1427,9 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        child: const Text(
-          'Full Audit Logs →',
-          style: TextStyle(
+        child: Text(
+          'dashboard.full_audit_logs'.tr(ref, fallback: 'Full Audit Logs →'),
+          style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: Color(0xFF0050E5),
@@ -1617,12 +1437,12 @@ class _UserDashboardOverviewViewState extends ConsumerState<UserDashboardOvervie
         ),
       ),
       child: logs.isEmpty
-          ? const Center(
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+                padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Text(
-                  'No activity logs recorded yet.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                  'dashboard.no_activity_logs'.tr(ref, fallback: 'No activity logs recorded yet.'),
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
                 ),
               ),
             )

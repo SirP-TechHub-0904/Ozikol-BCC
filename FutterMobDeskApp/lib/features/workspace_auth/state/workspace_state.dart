@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/config/single_tenant_config.dart';
 import '../../../core/models/workspace.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/windows_jump_list_service.dart';
@@ -9,6 +11,43 @@ import '../../../core/widgets/tenant_cached_image.dart';
 import '../data/workspace_repository.dart';
 
 export '../../../core/storage/secure_storage_service.dart' show storageServiceProvider;
+
+/// <summary>
+/// Status outcome of attempting to switch into an enrolled organization workspace.
+/// </summary>
+enum WorkspaceSwitchStatus {
+  /// An active, valid authentication session was verified on the device or server.
+  authenticated,
+
+  /// No active session was found, or the previous credentials have expired.
+  requiresLogin,
+}
+
+/// <summary>
+/// Structured result returned by workspace switching and validation operations.
+/// </summary>
+class WorkspaceSwitchResult {
+  /// The operational outcome status.
+  final WorkspaceSwitchStatus status;
+
+  /// The target workspace model reflecting either authenticated or pending credentials.
+  final Workspace workspace;
+
+  /// Optional contextual message describing the transition.
+  final String? message;
+
+  /// <summary>
+  /// Creates a new [WorkspaceSwitchResult].
+  /// </summary>
+  const WorkspaceSwitchResult({
+    required this.status,
+    required this.workspace,
+    this.message,
+  });
+
+  /// Whether an active authenticated session was confirmed.
+  bool get isAuthenticated => status == WorkspaceSwitchStatus.authenticated;
+}
 
 /// State of the multi-workspace management engine
 class WorkspaceState {
@@ -177,6 +216,11 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
         }
       }
 
+      if (SingleTenantConfig.isLocked && (active == null || !active.isAuthenticated)) {
+        bypassTarget ??= SingleTenantConfig.buildLockedWorkspace(active);
+        bypass = true;
+      }
+
       _syncJumpList(workspaces);
 
       state = state.copyWith(
@@ -203,7 +247,7 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
       state = state.copyWith(
         isInitializing: false,
         isLoading: false,
-        errorMessage: e.toString(),
+        errorMessage: sanitizeError(e),
       );
     }
   }
@@ -384,6 +428,15 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
   /// <param name="clearRemembered">Whether to wipe the remembered organization bypass preferences from local device storage.</param>
   /// <returns>A future that completes when storage has been updated.</returns>
   Future<void> cancelBypass({bool clearRemembered = true}) async {
+    if (SingleTenantConfig.isLocked) {
+      state = state.copyWith(
+        shouldBypassEntryScreen: true,
+        pendingWorkspace: state.pendingWorkspace ?? SingleTenantConfig.buildLockedWorkspace(state.activeWorkspace),
+        clearError: true,
+      );
+      return;
+    }
+
     // 1. Immediately reset in-memory bypass and pending workspace state synchronously
     state = state.copyWith(
       shouldBypassEntryScreen: false,
@@ -481,7 +534,17 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
       final effectivePerms = (result['effectivePermissions'] as Map<String, dynamic>?) ?? {};
       final licensedFeatures = (result['licensedTenantFeatures'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
       final canAccessAdmin = (effectivePerms['canAccessAdminConsole'] == true) ||
-          roles.any((r) => ['superadmin', 'admin', 'identitymanager', 'cmsmanager', 'editor', 'featureedit'].contains(r.toLowerCase()));
+          roles.any((r) => [
+                'superadmin',
+                'admin',
+                'administrator',
+                'usermanager',
+                'identitymanager',
+                'cmsmanager',
+                'editor',
+                'featureedit',
+                'systemadministrator'
+              ].contains(r.toLowerCase().trim()));
       final defaultMode = canAccessAdmin ? 'administration' : 'workspace';
 
       final updatedWorkspace = workspace.copyWith(
@@ -529,20 +592,92 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     }
   }
 
-  /// Sanitizes any raw system or database error messages into clean, custom user-facing notices
-  String _sanitizeError(dynamic e) {
-    final raw = e.toString().replaceFirst('Exception: ', '').trim();
-    if (raw.toLowerCase().contains('master catalog') ||
-        raw.toLowerCase().contains('masterdb') ||
-        raw.toLowerCase().contains('master db') ||
-        raw.toLowerCase().contains('master database') ||
-        raw.toLowerCase().contains('[tenantresolution]') ||
-        raw.toLowerCase().contains('sqlexception') ||
-        raw.toLowerCase().contains('invalidoperationexception')) {
-      return 'Workspace could not be found. Please check your access code or web address.';
+  /// Sanitizes any raw system, network, server, or database error messages into friendly, user-facing notices.
+  /// Guarantees that internal database terminology, server jargon, and product branding (Ozikol) are never exposed.
+  static String sanitizeError(dynamic e) {
+    if (e == null) return 'Something went wrong. Please try again in a few moments.';
+    var raw = e.toString().replaceFirst('Exception: ', '').trim();
+    final lower = raw.toLowerCase();
+
+    // Check for connection / network / server reachability issues
+    if (lower.contains('unable to connect') ||
+        lower.contains('connection timeout') ||
+        lower.contains('connection error') ||
+        lower.contains('connection refused') ||
+        lower.contains('connection reset') ||
+        lower.contains('connection closed') ||
+        lower.contains('connection aborted') ||
+        lower.contains('network error') ||
+        lower.contains('network is unreachable') ||
+        lower.contains('socketexception') ||
+        lower.contains('handshakeexception') ||
+        lower.contains('clientexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('offline') ||
+        lower.contains('timed out') ||
+        lower.contains('ozikol server') ||
+        lower.contains('authentication server') ||
+        lower.contains('server timeout') ||
+        lower.contains('server unreachable') ||
+        lower.contains('could not connect to server')) {
+      return 'Unable to connect. Please check your network connection.';
     }
-    return raw;
+
+    // Check for workspace / tenant resolution issues
+    if (lower.contains('master catalog') ||
+        lower.contains('masterdb') ||
+        lower.contains('master db') ||
+        lower.contains('master database') ||
+        lower.contains('[tenantresolution]') ||
+        lower.contains('could not be found') ||
+        lower.contains('workspace not found') ||
+        lower.contains('tenant not found') ||
+        lower.contains('not found')) {
+      return 'Workspace could not be found.';
+    }
+
+    // Check for internal server, database, or SQL errors
+    if (lower.contains('sql') ||
+        lower.contains('database') ||
+        lower.contains('db query') ||
+        lower.contains('internal server error') ||
+        lower.contains('server error') ||
+        lower.contains('server rejected') ||
+        lower.contains('exception') ||
+        lower.contains('stack trace') ||
+        lower.contains('nullreference') ||
+        lower.contains('http 500') ||
+        lower.contains('status code of 500') ||
+        lower.contains('status code of 502') ||
+        lower.contains('status code of 503')) {
+      return 'Something went wrong. Please try again in a few moments.';
+    }
+
+    // Strict guarantee: Ozikol brand name must NEVER appear in user-facing error text
+    if (lower.contains('ozikol')) {
+      if (lower.contains('connect') || lower.contains('network') || lower.contains('server')) {
+        return 'Unable to connect. Please check your network connection.';
+      }
+      return 'Workspace could not be found.';
+    }
+
+    // Clean any low-level Dio/HTTP error prefixes
+    if (raw.startsWith('DioException [') || raw.contains('HttpException:') || raw.contains('ClientException:')) {
+      return 'Unable to connect. Please check your network connection.';
+    }
+
+    // Strip any stray internal words or brand mentions if somehow still present
+    raw = raw.replaceAll(RegExp(r'\bozikol\b\s*', caseSensitive: false), '')
+             .replaceAll(RegExp(r'\bserver\b', caseSensitive: false), 'service')
+             .replaceAll(RegExp(r'\bsql\b', caseSensitive: false), 'data')
+             .replaceAll(RegExp(r'\bdatabase\b', caseSensitive: false), 'workspace')
+             .trim();
+
+    return raw.isNotEmpty ? raw : 'Something went wrong. Please try again.';
   }
+
+  /// Instance delegation for backward compatibility
+  String _sanitizeError(dynamic e) => sanitizeError(e);
 
   /// Sets an authenticated workspace as active, updates disk storage, syncs enrolled list,
   /// and updates the in-memory state so the dashboard immediately switches to this workspace.
@@ -567,21 +702,194 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
     );
   }
 
-  /// Switches active workspace context to another enrolled organization
-  Future<void> switchWorkspace(String tenantKey) async {
+  /// <summary>
+  /// Validates whether an encoded JWT token has exceeded its expiration timestamp.
+  /// </summary>
+  /// <param name="token">Raw JWT Bearer string.</param>
+  /// <returns>True if expired or malformed; false if still within valid lifespan.</returns>
+  bool _isTokenExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return false;
+      final normalized = base64Url.normalize(parts[1]);
+      final payloadString = utf8.decode(base64Url.decode(normalized));
+      final payload = jsonDecode(payloadString);
+      if (payload is Map && payload['exp'] != null) {
+        final exp = payload['exp'];
+        final expSeconds = exp is int ? exp : int.tryParse(exp.toString());
+        if (expSeconds != null) {
+          final expiryDate = DateTime.fromMillisecondsSinceEpoch(expSeconds * 1000);
+          // Allow a 30 second safety margin for clock skew
+          return DateTime.now().isAfter(expiryDate.subtract(const Duration(seconds: 30)));
+        }
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// <summary>
+  /// Evaluates whether an enrolled workspace has an active, valid authentication session.
+  /// If valid, authenticates and switches active system context immediately.
+  /// If not found or expired, establishes the workspace as pending and routes to its login flow.
+  /// </summary>
+  /// <param name="target">The workspace to inspect and switch into.</param>
+  /// <returns>A [WorkspaceSwitchResult] containing status, updated workspace, and feedback message.</returns>
+  Future<WorkspaceSwitchResult> verifyAndSwitchWorkspace(Workspace target) async {
+    final hydrated = await _storageService.getWorkspaceWithToken(target.tenantKey) ?? target;
+    final token = hydrated.authToken ?? await _storageService.getAuthToken(target.tenantKey);
+
+    // 1. Check if token exists
+    if (token == null || token.trim().isEmpty) {
+      await _storageService.setActiveTenantKey(target.tenantKey);
+      final unauthTarget = hydrated.copyWith(clearAuthToken: true);
+
+      state = state.copyWith(
+        clearActive: true,
+        pendingWorkspace: unauthTarget,
+        shouldBypassEntryScreen: true,
+      );
+
+      _probeAndApplyBranding(unauthTarget, isPending: true);
+
+      return WorkspaceSwitchResult(
+        status: WorkspaceSwitchStatus.requiresLogin,
+        workspace: unauthTarget,
+        message: 'No active session found for this workspace. Please sign in.',
+      );
+    }
+
+    // 2. Check if token is expired locally
+    if (_isTokenExpired(token)) {
+      await _storageService.clearAuthToken(target.tenantKey);
+      await _storageService.setActiveTenantKey(target.tenantKey);
+      final unauthTarget = hydrated.copyWith(clearAuthToken: true);
+
+      state = state.copyWith(
+        clearActive: true,
+        pendingWorkspace: unauthTarget,
+        shouldBypassEntryScreen: true,
+      );
+
+      _probeAndApplyBranding(unauthTarget, isPending: true);
+
+      return WorkspaceSwitchResult(
+        status: WorkspaceSwitchStatus.requiresLogin,
+        workspace: unauthTarget,
+        message: 'Your previous session has expired. Please sign in.',
+      );
+    }
+
+    // 3. Probe the server to verify live session and refresh claims
+    Workspace authenticatedWs = hydrated.copyWith(authToken: token);
+    try {
+      final session = await _repository.verifySession(
+        target.tenantKey,
+        token,
+        domain: target.customDomain ?? target.primaryDomain,
+      );
+
+      if (session != null) {
+        final freshToken = session['token']?.toString() ?? token;
+        final roles = (session['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? hydrated.userRoles;
+        final effectivePerms = (session['effectivePermissions'] as Map<String, dynamic>?) ?? hydrated.effectivePermissions;
+        final licensedFeatures = (session['licensedTenantFeatures'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? hydrated.licensedFeatures;
+
+        final canAccessAdmin = (effectivePerms['canAccessAdminConsole'] == true) ||
+            roles.any((r) => [
+                  'superadmin',
+                  'admin',
+                  'administrator',
+                  'usermanager',
+                  'identitymanager',
+                  'cmsmanager',
+                  'editor',
+                  'featureedit',
+                  'systemadministrator'
+                ].contains(r.toLowerCase().trim()));
+        final defaultMode = canAccessAdmin ? 'administration' : 'workspace';
+
+        authenticatedWs = hydrated.copyWith(
+          authToken: freshToken,
+          userId: session['userId']?.toString() ?? hydrated.userId,
+          userEmail: session['email']?.toString() ?? hydrated.userEmail,
+          userFullName: session['fullName']?.toString() ?? hydrated.userFullName,
+          userRoles: roles,
+          effectivePermissions: effectivePerms,
+          licensedFeatures: licensedFeatures,
+          activeConsoleMode: defaultMode,
+          lastAccessed: DateTime.now(),
+        );
+      } else {
+        // Explicit 401 or rejection by server
+        await _storageService.clearAuthToken(target.tenantKey);
+        await _storageService.setActiveTenantKey(target.tenantKey);
+        final unauthTarget = hydrated.copyWith(clearAuthToken: true);
+
+        state = state.copyWith(
+          clearActive: true,
+          pendingWorkspace: unauthTarget,
+          shouldBypassEntryScreen: true,
+        );
+
+        _probeAndApplyBranding(unauthTarget, isPending: true);
+
+        return WorkspaceSwitchResult(
+          status: WorkspaceSwitchStatus.requiresLogin,
+          workspace: unauthTarget,
+          message: 'Active session not found or revoked. Please sign in.',
+        );
+      }
+    } catch (_) {
+      // Network unreachable / offline fallback - local unexpired token is respected
+      authenticatedWs = hydrated.copyWith(authToken: token, lastAccessed: DateTime.now());
+    }
+
+    // 4. Activate the verified session
+    await _storageService.saveWorkspace(authenticatedWs);
+    await _storageService.setActiveTenantKey(authenticatedWs.tenantKey);
+
+    if (state.rememberOrganization) {
+      await _storageService.setRememberOrganizationEnabled(true);
+      await _storageService.setRememberedOrganizationCode(authenticatedWs.tenantKey);
+      await _storageService.saveRememberedWorkspace(authenticatedWs);
+    }
+
+    final updatedList = await _storageService.getWorkspaces();
+    _syncJumpList(updatedList);
+
+    state = state.copyWith(
+      isLoading: false,
+      activeWorkspace: authenticatedWs,
+      enrolledWorkspaces: updatedList,
+      clearPending: true,
+      shouldBypassEntryScreen: false,
+    );
+
+    _probeAndApplyBranding(authenticatedWs, isPending: false);
+
+    return WorkspaceSwitchResult(
+      status: WorkspaceSwitchStatus.authenticated,
+      workspace: authenticatedWs,
+      message: 'Active session verified. Welcome back!',
+    );
+  }
+
+  /// <summary>
+  /// Switches active workspace context to another enrolled organization after verifying active session status.
+  /// </summary>
+  /// <param name="tenantKey">The target tenant partition key.</param>
+  Future<WorkspaceSwitchResult?> switchWorkspace(String tenantKey) async {
     final list = await _storageService.getWorkspaces();
     final match = list
         .where((w) => w.tenantKey.toLowerCase() == tenantKey.toLowerCase())
         .firstOrNull;
 
     if (match != null) {
-      await _storageService.setActiveTenantKey(match.tenantKey);
-      final active = await _storageService.getActiveWorkspace();
-      state = state.copyWith(
-        activeWorkspace: active,
-        enrolledWorkspaces: list,
-      );
+      return await verifyAndSwitchWorkspace(match);
     }
+    return null;
   }
 
   /// Signs out of the active user session in the specified workspace without removing the workspace enrollment.
@@ -600,6 +908,17 @@ class WorkspaceNotifier extends StateNotifier<WorkspaceState> {
       pendingWorkspace: targetWorkspace,
       shouldBypassEntryScreen: true,
     );
+  }
+
+  /// <summary>
+  /// Signs out of the current active workspace session if one is currently active.
+  /// </summary>
+  /// <returns>A future that completes when the session has been terminated.</returns>
+  Future<void> signOut() async {
+    final activeKey = state.activeWorkspace?.tenantKey;
+    if (activeKey != null && activeKey.isNotEmpty) {
+      await signOutSession(activeKey);
+    }
   }
 
   /// Signs out of the specified workspace, purges its partitioned cache, and removes session

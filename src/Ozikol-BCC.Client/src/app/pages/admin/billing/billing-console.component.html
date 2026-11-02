@@ -1,0 +1,2040 @@
+<div class="billing-page-container">
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ── PAGE 1: /billing/features (Capabilities Directory: Simple & Detailed) ─ -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  @if (activePage === 'features') {
+    <!-- Top Material Design Page Header -->
+    <div class="page-header">
+      <div class="header-titles">
+        <div class="breadcrumb">
+          <a routerLink="/dashboard/console">Command Center</a>
+          <span class="sep">/</span>
+          <span>Billing &amp; Subscriptions</span>
+          <span class="sep">/</span>
+          <span class="current">Workspace Features &amp; Capabilities</span>
+        </div>
+        <div class="title-row">
+          <h1>Workspace Features &amp; Capabilities</h1>
+          <button
+            type="button"
+            class="info-trigger-btn"
+            (click)="openInfoModal()"
+            title="About Workspace Features & Capabilities"
+          >
+            <span class="material-symbols-outlined">info</span>
+          </button>
+        </div>
+        <p class="subtitle">
+          Install and activate modular capabilities for your workspace. Installed capabilities appear immediately in your sidebar navigation menu.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <span
+          class="badge-pill-md badge-compulsory"
+          title="Workspace Billing Currency"
+        >
+          <span class="material-symbols-outlined">payments</span>
+          <span>{{ currencyCode }} ({{ currencySymbol }})</span>
+        </span>
+
+        <button
+          type="button"
+          class="btn btn-outline"
+          (click)="loadSnapshot()"
+          [disabled]="isLoading"
+        >
+          <span class="material-symbols-outlined" [class.spin]="isLoading">refresh</span>
+          <span>{{ 'audit.refresh' | translate:'Refresh' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <!-- ── DEDICATED FEATURE DETAILS VIEW (/billing/features?feature=<code>) ── -->
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    @if (selectedFeatureDetail) {
+      <div class="toolbar-card" style="margin-bottom: 18px; padding: 14px 20px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <button
+            type="button"
+            class="btn btn-outline"
+            (click)="closeFeatureDetail()"
+            style="display: inline-flex; align-items: center; gap: 6px; font-weight: 700;"
+          >
+            <span class="material-symbols-outlined">arrow_back</span>
+            <span>Back to All Features</span>
+          </button>
+
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span class="badge-pill-md badge-billing">
+              <span class="material-symbols-outlined">category</span>
+              <span>Suite {{ selectedFeatureDetail.suiteLetter || getSuiteLetter(selectedFeatureDetail.category) }}: {{ selectedFeatureDetail.category }}</span>
+            </span>
+
+            @if (selectedFeatureDetail.isActive) {
+              <span class="badge-pill-md badge-available">
+                <span class="material-symbols-outlined">check_circle</span>
+                <span>{{ selectedFeatureDetail.isTrialPeriod ? ('Active in Menu (Free Trial — ' + (selectedFeatureDetail.daysRemaining || selectedFeatureDetail.effectiveFreeTrialDays || 14) + 'd left)') : 'Active in Workspace Menu' }}</span>
+              </span>
+            } @else if (selectedFeatureDetail.isAvailableForUse) {
+              <span class="badge-pill-md badge-optional">
+                <span class="material-symbols-outlined">lock</span>
+                <span>Available — Not Active (Locked in Menu)</span>
+              </span>
+              @if (selectedFeatureDetail.isEligibleForFreeTrial && (selectedFeatureDetail.effectiveFreeTrialDays || 0) > 0) {
+                <span class="badge-pill-md" style="background: rgba(124, 58, 237, 0.12); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
+                  <span class="material-symbols-outlined">redeem</span>
+                  <span>{{ selectedFeatureDetail.effectiveFreeTrialDays }} Days Free Trial Before Payment</span>
+                </span>
+              }
+            } @else {
+              <span class="badge-pill-md badge-coming-soon">
+                <span class="material-symbols-outlined">schedule</span>
+                <span>Coming Soon</span>
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card" style="padding: 28px; margin-bottom: 24px;">
+        <!-- Top Hero Row: Icon, Title, Suite, Price & Primary Install Button -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0;">
+          <div style="display: flex; align-items: flex-start; gap: 18px; max-width: 720px;">
+            <div
+              class="feature-icon-box"
+              [class.icon-available]="selectedFeatureDetail.isAvailableForUse"
+              style="width: 60px; height: 60px; border-radius: 16px; flex-shrink: 0;"
+            >
+              <span class="material-symbols-outlined" style="font-size: 30px;">{{ selectedFeatureDetail.icon || 'extension' }}</span>
+            </div>
+
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px;">
+                @if (selectedFeatureDetail.serialNo) {
+                  <span class="serial-badge">#{{ selectedFeatureDetail.serialNo }}</span>
+                }
+                <h2 style="margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;">
+                  {{ selectedFeatureDetail.name }}
+                </h2>
+                <code class="feature-code-pill">{{ selectedFeatureDetail.featureCode }}</code>
+              </div>
+
+              <div style="font-size: 13.5px; font-weight: 700; color: #0050e5; margin-bottom: 10px;">
+                Suite {{ selectedFeatureDetail.suiteLetter || getSuiteLetter(selectedFeatureDetail.category) }} &bull; {{ selectedFeatureDetail.category }}
+              </div>
+
+              <p style="margin: 0; font-size: 15px; line-height: 1.65; color: #334155;">
+                {{ selectedFeatureDetail.description }}
+              </p>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 10px; min-width: 220px;">
+            <div style="text-align: right;">
+              <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+                Subscription Rate ({{ currencyCode }})
+              </div>
+              <div style="font-size: 22px; font-weight: 800; color: #0f172a;">
+                {{ selectedFeatureDetail.monthlyPrice > 0 ? (formatAmount(selectedFeatureDetail.monthlyPrice) + '/mo') : 'Included Free' }}
+              </div>
+              @if (!selectedFeatureDetail.isCompulsory && (selectedFeatureDetail.effectiveFreeTrialDays || 0) > 0) {
+                <div style="font-size: 12px; font-weight: 700; color: #6d28d9; margin-top: 3px; display: inline-flex; align-items: center; gap: 4px;">
+                  <span class="material-symbols-outlined" style="font-size: 14px;">redeem</span>
+                  @if (selectedFeatureDetail.isTrialPeriod) {
+                    <span>Free Trial Active ({{ selectedFeatureDetail.daysRemaining || selectedFeatureDetail.effectiveFreeTrialDays }} days left)</span>
+                  } @else if (selectedFeatureDetail.isEligibleForFreeTrial) {
+                    <span>{{ selectedFeatureDetail.effectiveFreeTrialDays }} Days Free First-Time Test</span>
+                  } @else {
+                    <span>{{ selectedFeatureDetail.effectiveFreeTrialDays }}d Free Trial (Already Used)</span>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (selectedFeatureDetail.isActive) {
+              @if (hasFeatureExpirationInfo(selectedFeatureDetail)) {
+                <div style="font-size: 12px; font-weight: 700; text-align: right; color: #0f172a;">
+                  <span>{{ 'billing.expires' | translate:'Expires' }}: {{ getFeatureExpirationDateText(selectedFeatureDetail) }}</span>
+                  @if (getFeatureDaysRemainingText(selectedFeatureDetail)) {
+                    <span style="font-size: 10px; font-weight: 500; margin-left: 4px; white-space: nowrap;" [style.color]="isFeatureExpiringWithinMonth(selectedFeatureDetail) ? '#b45309' : '#059669'">({{ getFeatureDaysRemainingText(selectedFeatureDetail) }})</span>
+                  }
+                </div>
+              }
+              <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: nowrap;">
+                @if (isFeatureExpiringWithinMonth(selectedFeatureDetail)) {
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-sm-action"
+                    [disabled]="payingFeatureCode === selectedFeatureDetail.featureCode || togglingFeatureCode === selectedFeatureDetail.featureCode"
+                    (click)="payAndRenewFeature(selectedFeatureDetail)"
+                  >
+                    <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === selectedFeatureDetail.featureCode">
+                      {{ payingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'receipt_long' }}
+                    </span>
+                    <span>{{ 'billing.view_invoice' | translate:'View Invoice' }}</span>
+                  </button>
+                }
+                <button
+                  type="button"
+                  class="btn btn-outline btn-sm-action"
+                  [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode"
+                  (click)="toggleFeatureInstall(selectedFeatureDetail, false)"
+                >
+                  <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === selectedFeatureDetail.featureCode">
+                    {{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'toggle_off' }}
+                  </span>
+                  <span>{{ togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Updating...' : 'Deactivate Feature' }}</span>
+                </button>
+              </div>
+            } @else if (selectedFeatureDetail.isAvailableForUse) {
+              <button
+                type="button"
+                class="btn btn-primary"
+                style="width: 100%; justify-content: center; padding: 11px 20px; font-weight: 700; font-size: 14px;"
+                [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode || payingFeatureCode === selectedFeatureDetail.featureCode"
+                (click)="toggleFeatureInstall(selectedFeatureDetail, true)"
+              >
+                <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === selectedFeatureDetail.featureCode || payingFeatureCode === selectedFeatureDetail.featureCode">
+                  {{ (togglingFeatureCode === selectedFeatureDetail.featureCode || payingFeatureCode === selectedFeatureDetail.featureCode) ? 'sync' : (selectedFeatureDetail.isEligibleForFreeTrial ? 'redeem' : (getFeatureDisplayAmount(selectedFeatureDetail) > 0 && !selectedFeatureDetail.isCompulsory ? 'payments' : 'download_done')) }}
+                </span>
+                <span>
+                  {{ payingFeatureCode === selectedFeatureDetail.featureCode ? 'Opening Paystack...' : (togglingFeatureCode === selectedFeatureDetail.featureCode ? 'Installing...' : (selectedFeatureDetail.isEligibleForFreeTrial ? ('Start ' + selectedFeatureDetail.effectiveFreeTrialDays + '-Day Free Trial & Activate') : (getFeatureDisplayAmount(selectedFeatureDetail) > 0 && !selectedFeatureDetail.isCompulsory ? ('Pay & Activate (' + formatAmount(getFeatureDisplayAmount(selectedFeatureDetail)) + ')') : 'Install & Activate Now'))) }}
+                </span>
+              </button>
+            } @else {
+              <span class="badge-pill-md badge-coming-soon" style="padding: 9px 16px; font-size: 13px;">
+                <span class="material-symbols-outlined">schedule</span>
+                <span>Coming Soon — In Platform Rollout</span>
+              </span>
+            }
+          </div>
+        </div>
+
+        <!-- Middle Section: What You Can Do With This Capability -->
+        <div style="padding: 24px 0; border-bottom: 1px solid #e2e8f0;">
+          <h3 style="margin: 0 0 14px; font-size: 16px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="color: #0050e5; font-size: 20px;">verified</span>
+            <span>What You Can Do With {{ selectedFeatureDetail.name }}</span>
+          </h3>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px;">
+            @for (point of getFeatureCapabilitiesList(selectedFeatureDetail); track point) {
+              <div style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
+                <span class="material-symbols-outlined" style="color: #0050e5; font-size: 20px; margin-top: 1px; flex-shrink: 0;">check_circle</span>
+                <span style="font-size: 13.5px; line-height: 1.55; color: #1e293b; font-weight: 500;">{{ point }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Bottom Specification Grid -->
+        <div style="padding-top: 24px;">
+          <h3 style="margin: 0 0 14px; font-size: 15px; font-weight: 800; color: #0f172a;">
+            Capability Specification &amp; Workspace Posture
+          </h3>
+
+          <div class="detail-spec-grid">
+            <div class="spec-box">
+              <span class="spec-label">Platform Suite (Full Title)</span>
+              <span class="spec-val">
+                Suite {{ selectedFeatureDetail.suiteLetter || getSuiteLetter(selectedFeatureDetail.category) }}: {{ selectedFeatureDetail.category }}
+              </span>
+            </div>
+            <div class="spec-box">
+              <span class="spec-label">Sidebar Menu Label</span>
+              <span class="spec-val" style="color: #0050e5; font-weight: 700;">
+                {{ selectedFeatureDetail.menuTitle || selectedFeatureDetail.name }}
+              </span>
+            </div>
+            <div class="spec-box">
+              <span class="spec-label">Monthly Rate ({{ currencyCode }})</span>
+              <span class="spec-val">
+                {{ selectedFeatureDetail.monthlyPrice > 0 ? (formatAmount(selectedFeatureDetail.monthlyPrice) + '/mo') : ('Included Free (' + formatAmount(0) + ')') }}
+              </span>
+            </div>
+            <div class="spec-box">
+              <span class="spec-label">Annual Rate ({{ currencyCode }})</span>
+              <span class="spec-val">
+                {{ selectedFeatureDetail.yearlyPrice > 0 ? (formatAmount(selectedFeatureDetail.yearlyPrice) + '/yr') : ('Included Free (' + formatAmount(0) + ')') }}
+              </span>
+            </div>
+            <div class="spec-box">
+              <span class="spec-label">First-Time Free Trial</span>
+              <span class="spec-val" style="color: #6d28d9; font-weight: 700;">
+                @if (selectedFeatureDetail.isCompulsory) {
+                  <span>Always Included Free</span>
+                } @else if ((selectedFeatureDetail.effectiveFreeTrialDays || 0) > 0) {
+                  <span>{{ selectedFeatureDetail.effectiveFreeTrialDays }} Days Free Before Payment ({{ selectedFeatureDetail.hasCustomFreeTrialOverride ? 'Custom Mode' : 'General Mode' }})</span>
+                } @else {
+                  <span>0 Days (Immediate Payment)</span>
+                }
+              </span>
+            </div>
+            <div class="spec-box">
+              <span class="spec-label">Sidebar Menu Status</span>
+              <span class="spec-val" [style.color]="selectedFeatureDetail.isActive ? '#059669' : (selectedFeatureDetail.isAvailableForUse ? '#d97706' : '#64748b')">
+                {{ selectedFeatureDetail.isActive ? 'Unlocked & Active in Sidebar' : (selectedFeatureDetail.isAvailableForUse ? 'Locked in Sidebar (Click Install to Unlock)' : 'Coming Soon Badge in Sidebar') }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ── Primary 2-Tab Switcher: Simple View vs Detailed View ── -->
+    @if (!selectedFeatureDetail) {
+    <div class="features-mode-tabs-bar">
+      <div class="features-mode-tabs-left">
+        <button
+          type="button"
+          class="mode-tab-btn"
+          [class.active]="featuresTab === 'simple'"
+          (click)="featuresTab = 'simple'"
+        >
+          <span class="material-symbols-outlined">checklist</span>
+          <span>Simple View</span>
+          <span class="mode-tab-count">{{ activeCapabilitiesCount }} Active / {{ totalCapabilitiesCount }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="mode-tab-btn"
+          [class.active]="featuresTab === 'detailed'"
+          (click)="featuresTab = 'detailed'"
+        >
+          <span class="material-symbols-outlined">dashboard_customize</span>
+          <span>Detailed View</span>
+          <span class="mode-tab-count">{{ totalSuitesCount }} Suites</span>
+        </button>
+      </div>
+
+      <div class="features-mode-tabs-right">
+        @if (snapshot.useCustomAvailability) {
+          <span class="badge-pill-md badge-available" title="Custom Availability policy is active for this workspace">
+            <span class="material-symbols-outlined">verified</span>
+            <span>Custom Workspace Availability ({{ availableForUseCount }} Available)</span>
+          </span>
+        }
+        @if (snapshot.useCustomPricing) {
+          <span class="badge-pill-md badge-compulsory" title="Custom Pricing policy is active for this workspace">
+            <span class="material-symbols-outlined">sell</span>
+            <span>Custom Workspace Pricing</span>
+          </span>
+        }
+      </div>
+    </div>
+    }
+
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <!-- ── TAB 1: SIMPLE VIEW (S/N, Feature Title, Suite, Status, Install) ───── -->
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    @if (!selectedFeatureDetail && featuresTab === 'simple') {
+      <div class="toolbar-card" style="margin-bottom: 16px;">
+        <div class="toolbar-row">
+          <div class="toolbar-filters">
+            <div class="search-box">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input
+                type="text"
+                [(ngModel)]="searchQuery"
+                class="search-input"
+                placeholder="Search feature title or suite..."
+                autocomplete="off"
+              />
+              @if (searchQuery) {
+                <button type="button" class="clear-search-btn" (click)="searchQuery = ''" title="Clear search">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              }
+            </div>
+
+            <select [(ngModel)]="selectedSuite" class="filter-select select-suite">
+              <option value="" [textContent]="'All Suites (' + canonicalSuiteOptions.length + ')'"></option>
+              @for (s of canonicalSuiteOptions; track s.name) {
+                <option [value]="s.name" [textContent]="'Suite ' + s.letter + ': ' + s.name + ' (' + s.count + ')'"></option>
+              }
+            </select>
+
+            <select [(ngModel)]="statusFilter" class="filter-select select-availability">
+              <option value="all" [textContent]="'All Status (' + totalCapabilitiesCount + ')'"></option>
+              <option value="active" [textContent]="'Active / Installed (' + activeCapabilitiesCount + ')'"></option>
+              <option value="not_active" [textContent]="'Available — Not Active (' + (availableForUseCount - activeCapabilitiesCount) + ')'"></option>
+              @if (comingSoonCount > 0) {
+                <option value="coming_soon" [textContent]="'Coming Soon (' + comingSoonCount + ')'"></option>
+              }
+            </select>
+
+            @if (hasActiveFilters) {
+              <button type="button" class="btn btn-outline btn-reset" (click)="resetFilters()">
+                <span class="material-symbols-outlined">filter_alt_off</span>
+                <span>Reset</span>
+              </button>
+            }
+          </div>
+
+          <div class="toolbar-right">
+            <div class="counter-pill">
+              <span class="material-symbols-outlined">check_circle</span>
+              <span><strong>{{ activeCapabilitiesCount }}</strong> Active in Menu &bull; Showing <strong>{{ filteredFeatures.length }}</strong> of <strong>{{ totalCapabilitiesCount }}</strong></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        @if (filteredFeatures.length > 0) {
+          <div class="table-responsive">
+            <table class="bcp-table">
+              <thead>
+                <tr>
+                  <th style="width: 72px;" class="sortable-th" (click)="toggleSort('serialNo')">
+                    <span class="th-sort-wrap">
+                      <span>S/N</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'serialNo'">{{ getSortIcon('serialNo') }}</span>
+                    </span>
+                  </th>
+                  <th class="sortable-th" (click)="toggleSort('name')">
+                    <span class="th-sort-wrap">
+                      <span>FEATURE</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'name'">{{ getSortIcon('name') }}</span>
+                    </span>
+                  </th>
+                  <th class="sortable-th" (click)="toggleSort('suite')">
+                    <span class="th-sort-wrap">
+                      <span>SUITE</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'suite'">{{ getSortIcon('suite') }}</span>
+                    </span>
+                  </th>
+                  <th class="sortable-th" (click)="toggleSort('amount')">
+                    <span class="th-sort-wrap">
+                      <span>AMOUNT</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'amount'">{{ getSortIcon('amount') }}</span>
+                    </span>
+                  </th>
+                  <th class="sortable-th" (click)="toggleSort('duration')">
+                    <span class="th-sort-wrap">
+                      <span>DURATION</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'duration'">{{ getSortIcon('duration') }}</span>
+                    </span>
+                  </th>
+                  <th>
+                    <span>{{ 'billing.expiring_date' | translate:'EXPIRING DATE' }}</span>
+                  </th>
+                  <th class="sortable-th" (click)="toggleSort('status')">
+                    <span class="th-sort-wrap">
+                      <span>STATUS</span>
+                      <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'status'">{{ getSortIcon('status') }}</span>
+                    </span>
+                  </th>
+                  <th style="text-align: right; width: 320px;">ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (feat of filteredFeatures; track feat.featureCode) {
+                  <tr [class.row-coming-soon]="!feat.isAvailableForUse">
+                    <td>
+                      <span class="sn-pill">{{ feat.serialNo }}</span>
+                    </td>
+                    <td>
+                      <div class="table-feat-cell">
+                        <div class="table-feat-icon" [class.icon-available]="feat.isActive || feat.isAvailableForUse">
+                          <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
+                        </div>
+                        <div>
+                          <div class="table-feat-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="suite-table-label">
+                        <strong>Suite {{ feat.suiteLetter }}:</strong> {{ feat.category }}
+                      </span>
+                    </td>
+                    <td>
+                      @if (getFeatureDisplayAmount(feat) > 0) {
+                        <strong style="color: #0f172a; font-weight: 800;">{{ formatAmount(getFeatureDisplayAmount(feat)) }}</strong>
+                      } @else {
+                        <span class="price-included">
+                          <span class="material-symbols-outlined">check_circle</span>
+                          <span>Included Free</span>
+                        </span>
+                      }
+                    </td>
+                    <td>
+                      <span class="badge-pill-md badge-billing">
+                        <span class="material-symbols-outlined">event_repeat</span>
+                        <span>{{ getFeatureDurationLabel(feat) }}</span>
+                      </span>
+                    </td>
+                    <td style="white-space: nowrap;">
+                      @if (feat.isActive && hasFeatureExpirationInfo(feat)) {
+                        <div style="display: flex; flex-direction: column; gap: 1px; line-height: 1.25;">
+                          @if (getFeatureExpirationDateText(feat)) {
+                            <strong style="font-size: 12px; color: #0f172a; white-space: nowrap;">{{ getFeatureExpirationDateText(feat) }}</strong>
+                          }
+                          @if (getFeatureDaysRemainingText(feat)) {
+                            <span style="font-size: 10px; font-weight: 500; white-space: nowrap;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#059669'">
+                              ({{ getFeatureDaysRemainingText(feat) }})
+                            </span>
+                          }
+                        </div>
+                      } @else if (feat.isActive && getFeatureDisplayAmount(feat) <= 0) {
+                        <span style="font-size: 11.5px; font-weight: 600; color: #059669; white-space: nowrap;">Lifetime / Free</span>
+                      } @else {
+                        <span style="color: #94a3b8; font-weight: 600;">—</span>
+                      }
+                    </td>
+                    <td>
+                      @if (feat.isActive) {
+                        <span class="badge-pill-md badge-available">
+                          <span class="material-symbols-outlined">check_circle</span>
+                          <span>{{ feat.isTrialPeriod ? ('Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 14) + 'd left)') : 'Active' }}</span>
+                        </span>
+                      } @else if (feat.isAvailableForUse) {
+                        <span class="badge-pill-md badge-optional">
+                          <span class="material-symbols-outlined">lock</span>
+                          <span>Not Active</span>
+                        </span>
+                        @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0) {
+                          <span class="badge-pill-md" style="margin-left: 6px; background: rgba(124, 58, 237, 0.1); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
+                            <span class="material-symbols-outlined">redeem</span>
+                            <span>{{ feat.effectiveFreeTrialDays }}d Free Trial</span>
+                          </span>
+                        }
+                      } @else {
+                        <span class="badge-pill-md badge-coming-soon">
+                          <span class="material-symbols-outlined">schedule</span>
+                          <span>Coming Soon</span>
+                        </span>
+                      }
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                      <div style="display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: nowrap;">
+                        @if (isFeatureExpiringWithinMonth(feat)) {
+                          <button
+                            type="button"
+                            class="btn btn-primary btn-sm-action"
+                            [disabled]="payingFeatureCode === feat.featureCode || togglingFeatureCode === feat.featureCode"
+                            (click)="payAndRenewFeature(feat)"
+                          >
+                            <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === feat.featureCode">
+                              {{ payingFeatureCode === feat.featureCode ? 'sync' : 'receipt_long' }}
+                            </span>
+                            <span>{{ 'billing.view_invoice' | translate:'View Invoice' }}</span>
+                          </button>
+                        }
+
+                        <button
+                          type="button"
+                          class="btn-details"
+                          (click)="openFeatureDetail(feat)"
+                          title="View Feature Details, Suite & Capabilities"
+                        >
+                          <span class="material-symbols-outlined">visibility</span>
+                          <span>Details</span>
+                        </button>
+
+                        @if (feat.isActive) {
+                          <button
+                            type="button"
+                            class="btn btn-outline btn-sm-action"
+                            [disabled]="togglingFeatureCode === feat.featureCode"
+                            (click)="toggleFeatureInstall(feat, false)"
+                            title="Deactivate and lock in sidebar menu"
+                          >
+                            <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode">
+                              {{ togglingFeatureCode === feat.featureCode ? 'sync' : 'toggle_off' }}
+                            </span>
+                            <span>{{ togglingFeatureCode === feat.featureCode ? 'Updating...' : 'Deactivate' }}</span>
+                          </button>
+                        } @else if (feat.isAvailableForUse) {
+                          <button
+                            type="button"
+                            class="btn btn-primary btn-sm-action"
+                            [disabled]="togglingFeatureCode === feat.featureCode || payingFeatureCode === feat.featureCode"
+                            (click)="toggleFeatureInstall(feat, true)"
+                            title="Install and unlock in sidebar menu"
+                          >
+                            <span class="material-symbols-outlined" [class.spin]="togglingFeatureCode === feat.featureCode || payingFeatureCode === feat.featureCode">
+                              {{ (togglingFeatureCode === feat.featureCode || payingFeatureCode === feat.featureCode) ? 'sync' : (feat.isEligibleForFreeTrial ? 'redeem' : (getFeatureDisplayAmount(feat) > 0 && !feat.isCompulsory ? 'payments' : 'download_done')) }}
+                            </span>
+                            <span>
+                              {{ payingFeatureCode === feat.featureCode ? 'Opening Paystack...' : (togglingFeatureCode === feat.featureCode ? 'Installing...' : (feat.isEligibleForFreeTrial ? ('Start ' + feat.effectiveFreeTrialDays + 'd Free Trial') : (getFeatureDisplayAmount(feat) > 0 && !feat.isCompulsory ? 'Pay & Activate' : 'Install & Activate'))) }}
+                            </span>
+                          </button>
+                        } @else {
+                          <span class="badge-pill-md badge-coming-soon" style="opacity: 0.75;">
+                            <span class="material-symbols-outlined">lock_clock</span>
+                            <span>Coming Soon</span>
+                          </span>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="empty-catalog-card">
+            <span class="material-symbols-outlined empty-icon">search_off</span>
+            <h3>No Matching Features Found</h3>
+            <p>No capabilities match your current search or filter criteria.</p>
+            <button type="button" class="btn btn-primary" (click)="resetFilters()">Reset Filters</button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    <!-- ── TAB 2: DETAILED VIEW (5 KPI Cards + Suite Cards + Full Table) ──────── -->
+    <!-- ════════════════════════════════════════════════════════════════════════ -->
+    @if (!selectedFeatureDetail && featuresTab === 'detailed') {
+      <!-- 5 Comprehensive Smart KPI Cards Row -->
+      <div class="metrics-grid">
+        <!-- Card 1: Canonical Suites -->
+        <div
+          class="metric-card clickable"
+          (click)="resetFilters()"
+          role="button"
+          tabindex="0"
+          title="Click to show all suites"
+        >
+          <div class="card-top">
+            <div class="card-icon bg-blue">
+              <span class="material-symbols-outlined">category</span>
+            </div>
+            <span class="card-chip chip-blue">Suite A – Suite J</span>
+          </div>
+          <div class="card-value">{{ totalSuitesCount }}</div>
+          <div class="card-label">Canonical Platform Suites</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ activeCapabilitiesCount }}</strong> Installed &amp; Active</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Total Capabilities -->
+        <div
+          class="metric-card clickable"
+          [class.active-card]="availabilityFilter === 'all' && tierFilter === 'all' && selectedSuite === ''"
+          (click)="resetFilters()"
+          role="button"
+          tabindex="0"
+          title="Show all capabilities"
+        >
+          <div class="card-top">
+            <div class="card-icon bg-purple">
+              <span class="material-symbols-outlined">extension</span>
+            </div>
+            <span class="card-chip chip-purple">{{ snapshot.useCustomAvailability ? 'Custom Catalog' : 'Standard Catalog' }}</span>
+          </div>
+          <div class="card-value">{{ totalCapabilitiesCount }}</div>
+          <div class="card-label">Total Modular Capabilities</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-blue"><span class="dot bg-blue"></span> <strong>{{ compulsoryCount }}</strong> Compulsory Core</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Available for Use -->
+        <div
+          class="metric-card clickable"
+          [class.active-card]="availabilityFilter === 'available'"
+          (click)="filterByAvailability('available')"
+          role="button"
+          tabindex="0"
+          title="Click to filter capabilities that are Available for Use"
+        >
+          <div class="card-top">
+            <div class="card-icon bg-green">
+              <span class="material-symbols-outlined">verified</span>
+            </div>
+            <span class="card-chip chip-green">Ready Now</span>
+          </div>
+          <div class="card-value text-green">{{ availableForUseCount }}</div>
+          <div class="card-label">Available for Use</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ activeCapabilitiesCount }}</strong> Active in Menu</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Coming Soon -->
+        <div
+          class="metric-card clickable"
+          [class.active-card]="availabilityFilter === 'coming_soon'"
+          (click)="filterByAvailability('coming_soon')"
+          role="button"
+          tabindex="0"
+          title="Click to filter capabilities marked Coming Soon"
+        >
+          <div class="card-top">
+            <div class="card-icon bg-amber">
+              <span class="material-symbols-outlined">schedule</span>
+            </div>
+            <span class="card-chip chip-amber">In Rollout</span>
+          </div>
+          <div class="card-value text-amber">{{ comingSoonCount }}</div>
+          <div class="card-label">Coming Soon</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-amber"><span class="dot bg-amber"></span> Scheduled Platform Release</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 5: Active Recurring Spend -->
+        <div
+          class="metric-card clickable"
+          [class.active-card]="tierFilter === 'compulsory'"
+          (click)="filterByTier('compulsory')"
+          role="button"
+          tabindex="0"
+          title="Click to filter Compulsory Baseline Core capabilities"
+        >
+          <div class="card-top">
+            <div class="card-icon bg-teal">
+              <span class="material-symbols-outlined">workspace_premium</span>
+            </div>
+            <span class="card-chip chip-teal">{{ currencyCode }} ({{ currencySymbol }})</span>
+          </div>
+          <div class="card-value">{{ formatAmount(snapshot.totalRecurringMonthly) }}<span class="unit-sm">/mo</span></div>
+          <div class="card-label">Active Recurring Spend</div>
+          <div class="card-breakdown">
+            <div class="breakdown-row">
+              <span class="text-green"><span class="dot bg-green"></span> <strong>{{ compulsoryCount }}</strong> Baseline Core Included Free</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search, Suite Filter & View Switcher Toolbar Card -->
+      <div class="toolbar-card">
+        <div class="toolbar-row">
+          <div class="toolbar-filters">
+            <div class="search-box">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input
+                type="text"
+                [(ngModel)]="searchQuery"
+                class="search-input"
+                placeholder="Search by name, code..."
+                autocomplete="off"
+              />
+              @if (searchQuery) {
+                <button type="button" class="clear-search-btn" (click)="searchQuery = ''" title="Clear search">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              }
+            </div>
+
+            <select [(ngModel)]="selectedSuite" class="filter-select select-suite">
+              <option value="" [textContent]="'All Suites (' + canonicalSuiteOptions.length + ')'"></option>
+              @for (s of canonicalSuiteOptions; track s.name) {
+                <option [value]="s.name" [textContent]="'Suite ' + s.letter + ': ' + s.name + ' (' + s.count + ')'"></option>
+              }
+            </select>
+
+            <select [(ngModel)]="availabilityFilter" class="filter-select select-availability">
+              <option value="all" [textContent]="'All Availability (' + totalCapabilitiesCount + ')'"></option>
+              <option value="available" [textContent]="'Available for Use (' + availableForUseCount + ')'"></option>
+              @if (!snapshot.useCustomAvailability) {
+                <option value="coming_soon" [textContent]="'Coming Soon (' + comingSoonCount + ')'"></option>
+              }
+            </select>
+
+            <select [(ngModel)]="tierFilter" class="filter-select select-tier">
+              <option value="all">All Tier Classes</option>
+              <option value="compulsory">Compulsory Core</option>
+              <option value="optional">Optional Add-on</option>
+            </select>
+
+            @if (hasActiveFilters) {
+              <button type="button" class="btn btn-outline btn-reset" (click)="resetFilters()">
+                <span class="material-symbols-outlined">filter_alt_off</span>
+                <span>Reset</span>
+              </button>
+            }
+          </div>
+
+          <div class="toolbar-right">
+            <div class="counter-pill">
+              <span class="material-symbols-outlined">format_list_bulleted</span>
+              <span>Showing <strong>{{ filteredFeatures.length }}</strong> of <strong>{{ totalCapabilitiesCount }}</strong> capabilities</span>
+            </div>
+
+            <div class="view-mode-toggle">
+              <button
+                type="button"
+                class="btn-view-toggle"
+                [class.active]="viewMode === 'cards'"
+                (click)="viewMode = 'cards'"
+                title="Suite Cards View"
+              >
+                <span class="material-symbols-outlined">grid_view</span>
+                <span>Cards</span>
+              </button>
+              <button
+                type="button"
+                class="btn-view-toggle"
+                [class.active]="viewMode === 'table'"
+                (click)="viewMode = 'table'"
+                title="Compact Data Table View"
+              >
+                <span class="material-symbols-outlined">table_rows</span>
+                <span>Table</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW MODE A: SUITE CARDS VIEW -->
+      @if (viewMode === 'cards') {
+        @if (groupedSuites.length > 0) {
+          <div class="suites-container">
+            @for (group of groupedSuites; track group.suiteName) {
+              <section class="suite-group-section">
+                <div class="suite-header-bar">
+                  <div class="suite-header-left">
+                    <span class="suite-letter-badge">Suite {{ group.suiteLetter }}</span>
+                    <h2 class="suite-title-text">{{ group.suiteName }}</h2>
+                  </div>
+
+                  <div class="suite-header-right">
+                    @if (group.availableCount > 0) {
+                      <span class="suite-meta-pill pill-available">
+                        <span class="material-symbols-outlined">verified</span>
+                        <span>{{ group.availableCount }} Available for Use</span>
+                      </span>
+                    }
+                    @if (group.comingSoonCount > 0) {
+                      <span class="suite-meta-pill pill-soon">
+                        <span class="material-symbols-outlined">schedule</span>
+                        <span>{{ group.comingSoonCount }} Coming Soon</span>
+                      </span>
+                    }
+                    <span class="suite-meta-pill pill-total">
+                      <span class="material-symbols-outlined">layers</span>
+                      <span>{{ group.features.length }} Capabilities</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="suite-feature-grid">
+                  @for (feat of group.features; track feat.featureCode) {
+                    <div
+                      class="feature-card"
+                      [class.card-available]="feat.isAvailableForUse"
+                      [class.card-coming-soon]="!feat.isAvailableForUse"
+                    >
+                      <div>
+                        <div class="feature-card-top">
+                          <div class="feature-icon-box" [class.icon-available]="feat.isAvailableForUse">
+                            <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
+                          </div>
+
+                          <div class="feature-title-block">
+                            <div class="title-line">
+                              <span class="serial-badge">#{{ feat.serialNo }}</span>
+                              <h3 class="feature-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</h3>
+                            </div>
+                            <code class="feature-code-pill">{{ feat.featureCode }}</code>
+                          </div>
+                        </div>
+
+                        <p class="feature-desc">
+                          {{ feat.description || 'Core sovereign capability for enterprise workspace operations.' }}
+                        </p>
+
+                        <div class="feature-badges-row">
+                          @if (feat.isActive) {
+                            <span class="badge-pill-md badge-available">
+                              <span class="material-symbols-outlined">check_circle</span>
+                              <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || feat.effectiveFreeTrialDays || 14) + 'd left)') : 'Active in Menu' }}</span>
+                            </span>
+                            @if (hasFeatureExpirationInfo(feat)) {
+                              <span class="badge-pill-md" [style.background]="isFeatureExpiringWithinMonth(feat) ? 'rgba(245, 158, 11, 0.14)' : '#f1f5f9'" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#475569'" [style.border]="isFeatureExpiringWithinMonth(feat) ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid #cbd5e1'">
+                                <span class="material-symbols-outlined">event</span>
+                                <span>
+                                  @if (getFeatureExpirationDateText(feat)) {
+                                    {{ getFeatureExpirationDateText(feat) }}
+                                  }
+                                  @if (getFeatureDaysRemainingText(feat)) {
+                                    <span style="font-size: 9.5px; font-weight: 500;">({{ getFeatureDaysRemainingText(feat) }})</span>
+                                  }
+                                </span>
+                              </span>
+                            }
+                          } @else if (feat.isAvailableForUse) {
+                            <span class="badge-pill-md badge-optional">
+                              <span class="material-symbols-outlined">verified</span>
+                              <span>Available for Use</span>
+                            </span>
+                          } @else {
+                            <span class="badge-pill-md badge-coming-soon">
+                              <span class="material-symbols-outlined">schedule</span>
+                              <span>Coming Soon</span>
+                            </span>
+                          }
+
+                          @if (feat.isCompulsory) {
+                            <span class="badge-pill-md badge-compulsory">
+                              <span class="material-symbols-outlined">lock</span>
+                              <span>Compulsory Core</span>
+                            </span>
+                          } @else {
+                            <span class="badge-pill-md badge-optional">
+                              <span>Optional Add-on</span>
+                            </span>
+                            @if (feat.isEligibleForFreeTrial && (feat.effectiveFreeTrialDays || 0) > 0) {
+                              <span class="badge-pill-md" style="background: rgba(124, 58, 237, 0.1); color: #6d28d9; border: 1px solid rgba(124, 58, 237, 0.25);">
+                                <span class="material-symbols-outlined">redeem</span>
+                                <span>{{ feat.effectiveFreeTrialDays }}d Free Trial</span>
+                              </span>
+                            }
+                          }
+                        </div>
+                      </div>
+
+                      <div class="feature-card-footer">
+                        <div class="price-tag">
+                          @if (feat.monthlyPrice > 0) {
+                            <span class="price-paid">{{ formatAmount(feat.monthlyPrice) }}/mo</span>
+                          } @else if ((feat.yearlyPrice || 0) > 0) {
+                            <span class="price-paid">{{ formatAmount(feat.yearlyPrice!) }}/yr <small style="font-size: 10.5px; color: #b45309; font-weight: 700;">(Yearly Only)</small></span>
+                          } @else {
+                            <span class="price-included">
+                              <span class="material-symbols-outlined">check_circle</span>
+                              <span>Included Free</span>
+                            </span>
+                          }
+                        </div>
+
+                        <div class="card-actions" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                          @if (feat.isActive) {
+                            @if (isFeatureExpiringWithinMonth(feat)) {
+                              <button
+                                type="button"
+                                class="btn btn-primary btn-sm-action"
+                                [disabled]="payingFeatureCode === feat.featureCode || togglingFeatureCode === feat.featureCode"
+                                (click)="payAndRenewFeature(feat)"
+                              >
+                                <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === feat.featureCode">
+                                  {{ payingFeatureCode === feat.featureCode ? 'sync' : 'receipt_long' }}
+                                </span>
+                                <span>{{ 'billing.view_invoice' | translate:'View Invoice' }}</span>
+                              </button>
+                            }
+                            <button
+                              type="button"
+                              class="btn btn-outline btn-sm-action"
+                              [disabled]="togglingFeatureCode === feat.featureCode"
+                              (click)="toggleFeatureInstall(feat, false)"
+                            >
+                              <span class="material-symbols-outlined">toggle_off</span>
+                              <span>Deactivate</span>
+                            </button>
+                          } @else if (feat.isAvailableForUse) {
+                            <button
+                              type="button"
+                              class="btn btn-primary btn-sm-action"
+                              [disabled]="togglingFeatureCode === feat.featureCode"
+                              (click)="toggleFeatureInstall(feat, true)"
+                            >
+                              <span class="material-symbols-outlined">{{ feat.isEligibleForFreeTrial ? 'redeem' : 'download_done' }}</span>
+                              <span>{{ feat.isEligibleForFreeTrial ? ('Start ' + feat.effectiveFreeTrialDays + 'd Trial') : 'Install' }}</span>
+                            </button>
+                          }
+                          <button
+                            type="button"
+                            class="btn-details"
+                            (click)="openFeatureDetail(feat)"
+                            title="Inspect Capability Specification"
+                          >
+                            <span class="material-symbols-outlined">visibility</span>
+                            <span>Details</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </section>
+            }
+          </div>
+        } @else {
+          <div class="empty-catalog-card">
+            <span class="material-symbols-outlined empty-icon">search_off</span>
+            <h3>No Matching Capabilities Found</h3>
+            <p>No platform capabilities match your current search or filter criteria.</p>
+            <button type="button" class="btn btn-primary" (click)="resetFilters()">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>Reset All Filters</span>
+            </button>
+          </div>
+        }
+      }
+
+      <!-- VIEW MODE B: DETAILED TABLE VIEW -->
+      @if (viewMode === 'table') {
+        <div class="table-card">
+          @if (filteredFeatures.length > 0) {
+            <div class="table-responsive">
+              <table class="bcp-table">
+                <thead>
+                  <tr>
+                    <th style="width: 72px;" class="sortable-th" (click)="toggleSort('serialNo')">
+                      <span class="th-sort-wrap">
+                        <span>S/N</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'serialNo'">{{ getSortIcon('serialNo') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('name')">
+                      <span class="th-sort-wrap">
+                        <span>CAPABILITY</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'name'">{{ getSortIcon('name') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('suite')">
+                      <span class="th-sort-wrap">
+                        <span>SUITE</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'suite'">{{ getSortIcon('suite') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('status')">
+                      <span class="th-sort-wrap">
+                        <span>STATUS</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'status'">{{ getSortIcon('status') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('tier')">
+                      <span class="th-sort-wrap">
+                        <span>TIER CLASS</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'tier'">{{ getSortIcon('tier') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('amount')">
+                      <span class="th-sort-wrap">
+                        <span>AMOUNT</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'amount'">{{ getSortIcon('amount') }}</span>
+                      </span>
+                    </th>
+                    <th class="sortable-th" (click)="toggleSort('duration')">
+                      <span class="th-sort-wrap">
+                        <span>DURATION</span>
+                        <span class="material-symbols-outlined sort-icon" [class.active]="sortColumn === 'duration'">{{ getSortIcon('duration') }}</span>
+                      </span>
+                    </th>
+                    <th>
+                      <span>{{ 'billing.expiring_date' | translate:'EXPIRING DATE' }}</span>
+                    </th>
+                    <th style="text-align: right;">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (feat of filteredFeatures; track feat.featureCode) {
+                    <tr [class.row-coming-soon]="!feat.isAvailableForUse">
+                      <td>
+                        <span class="sn-pill">{{ feat.serialNo }}</span>
+                      </td>
+                      <td>
+                        <div class="table-feat-cell">
+                          <div class="table-feat-icon" [class.icon-available]="feat.isAvailableForUse">
+                            <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
+                          </div>
+                          <div>
+                            <div class="table-feat-name" (click)="openFeatureDetail(feat)">{{ feat.name }}</div>
+                            <code class="feature-code-pill">{{ feat.featureCode }}</code>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="suite-table-label">
+                          <strong>Suite {{ feat.suiteLetter }}:</strong> {{ feat.category }}
+                        </span>
+                      </td>
+                      <td>
+                        @if (feat.isActive) {
+                          <span class="badge-pill-md badge-available">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            <span>Active</span>
+                          </span>
+                        } @else if (feat.isAvailableForUse) {
+                          <span class="badge-pill-md badge-optional">
+                            <span class="material-symbols-outlined">verified</span>
+                            <span>Available (Not Active)</span>
+                          </span>
+                        } @else {
+                          <span class="badge-pill-md badge-coming-soon">
+                            <span class="material-symbols-outlined">schedule</span>
+                            <span>Coming Soon</span>
+                          </span>
+                        }
+                      </td>
+                      <td>
+                        @if (feat.isCompulsory) {
+                          <span class="badge-pill-md badge-compulsory">
+                            <span class="material-symbols-outlined">lock</span>
+                            <span>Compulsory Core</span>
+                          </span>
+                        } @else {
+                          <span class="badge-pill-md badge-optional">Optional Add-on</span>
+                        }
+                      </td>
+                      <td>
+                        @if (getFeatureDisplayAmount(feat) > 0) {
+                          <strong style="color: #0f172a; font-weight: 800;">{{ formatAmount(getFeatureDisplayAmount(feat)) }}</strong>
+                        } @else {
+                          <span class="price-included">
+                            <span class="material-symbols-outlined">check_circle</span>
+                            <span>Included Free</span>
+                          </span>
+                        }
+                      </td>
+                      <td>
+                        <span class="badge-pill-md badge-billing">
+                          <span class="material-symbols-outlined">event_repeat</span>
+                          <span>{{ getFeatureDurationLabel(feat) }}</span>
+                        </span>
+                      </td>
+                      <td style="white-space: nowrap;">
+                        @if (feat.isActive && hasFeatureExpirationInfo(feat)) {
+                          <div style="display: flex; flex-direction: column; gap: 1px; line-height: 1.25;">
+                            @if (getFeatureExpirationDateText(feat)) {
+                              <strong style="font-size: 12px; color: #0f172a; white-space: nowrap;">{{ getFeatureExpirationDateText(feat) }}</strong>
+                            }
+                            @if (getFeatureDaysRemainingText(feat)) {
+                              <span style="font-size: 10px; font-weight: 500; white-space: nowrap;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#059669'">
+                                ({{ getFeatureDaysRemainingText(feat) }})
+                              </span>
+                            }
+                          </div>
+                        } @else if (feat.isActive && getFeatureDisplayAmount(feat) <= 0) {
+                          <span style="font-size: 11.5px; font-weight: 600; color: #059669; white-space: nowrap;">Lifetime / Free</span>
+                        } @else {
+                          <span style="color: #94a3b8; font-weight: 600;">—</span>
+                        }
+                      </td>
+                      <td style="text-align: right; white-space: nowrap;">
+                        <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; justify-content: flex-end;">
+                          @if (feat.isActive) {
+                            @if (isFeatureExpiringWithinMonth(feat)) {
+                              <button
+                                type="button"
+                                class="btn btn-primary btn-sm-action"
+                                [disabled]="payingFeatureCode === feat.featureCode || togglingFeatureCode === feat.featureCode"
+                                (click)="payAndRenewFeature(feat)"
+                              >
+                                <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === feat.featureCode">
+                                  {{ payingFeatureCode === feat.featureCode ? 'sync' : 'receipt_long' }}
+                                </span>
+                                <span>{{ 'billing.view_invoice' | translate:'View Invoice' }}</span>
+                              </button>
+                            }
+                            <button
+                              type="button"
+                              class="btn btn-outline btn-sm-action"
+                              [disabled]="togglingFeatureCode === feat.featureCode"
+                              (click)="toggleFeatureInstall(feat, false)"
+                            >
+                              <span>Deactivate</span>
+                            </button>
+                          } @else if (feat.isAvailableForUse) {
+                            <button
+                              type="button"
+                              class="btn btn-primary btn-sm-action"
+                              [disabled]="togglingFeatureCode === feat.featureCode"
+                              (click)="toggleFeatureInstall(feat, true)"
+                            >
+                              <span>Install &amp; Activate</span>
+                            </button>
+                          }
+                          <button type="button" class="btn-details" (click)="openFeatureDetail(feat)">
+                            <span class="material-symbols-outlined">visibility</span>
+                            <span>Details</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-catalog-card">
+              <span class="material-symbols-outlined empty-icon">search_off</span>
+              <h3>No Matching Capabilities Found</h3>
+              <p>Try clearing your search filter or selecting a different suite.</p>
+              <button type="button" class="btn btn-primary" (click)="resetFilters()">Reset Filters</button>
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ── PAGE 2: /billing/subscriptions (Active Subscriptions & Invoices) ──── -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  @if (activePage === 'subscriptions') {
+    <div class="page-header">
+      <div class="header-titles">
+        <div class="breadcrumb">
+          <a routerLink="/dashboard/console">Command Center</a>
+          <span class="sep">/</span>
+          <span>Billing &amp; Subscriptions</span>
+          <span class="sep">/</span>
+          <span class="current">Subscriptions &amp; Invoices</span>
+        </div>
+        <div class="title-row">
+          <h1>Active Subscriptions &amp; Billing Invoices</h1>
+        </div>
+        <p class="subtitle">
+          Review your currently installed workspace capabilities, auto-renewal preferences, and historical billing invoices.
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <a routerLink="/billing/features" class="btn btn-primary" style="text-decoration: none;">
+          <span class="material-symbols-outlined">add_circle</span>
+          <span>Install More Features</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Active Installed Capabilities Table -->
+    <div class="table-card" style="margin-bottom: 24px;">
+      <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">Installed &amp; Active Capabilities ({{ activeInstalledFeatures.length }})</h3>
+          <p style="margin: 3px 0 0; font-size: 12.5px; color: #64748b;">Capabilities currently active and displayed in your workspace navigation menu.</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          @if (expiringOrExpiredFeatures.length > 1 && totalExpiringAmountDue > 0) {
+            <button
+              type="button"
+              class="btn btn-primary btn-sm-action"
+              [disabled]="isPayingAllDue"
+              (click)="payAllExpiringFeatures()"
+              title="Generate consolidated renewal invoice for all expiring/overdue features"
+            >
+              <span class="material-symbols-outlined" [class.spin]="isPayingAllDue">{{ isPayingAllDue ? 'sync' : 'receipt_long' }}</span>
+              <span>{{ isPayingAllDue ? 'Preparing Invoice...' : ('Renew All Expiring Features (' + formatAmount(totalExpiringAmountDue) + ')') }}</span>
+            </button>
+          }
+          <span class="badge-pill-md badge-available">Monthly Spend: {{ formatAmount(snapshot.totalRecurringMonthly) }}/mo</span>
+        </div>
+      </div>
+
+      @if (activeInstalledFeatures.length > 0) {
+        <div class="table-responsive">
+          <table class="bcp-table">
+            <thead>
+              <tr>
+                <th style="width: 64px;">S/N</th>
+                <th>FEATURE</th>
+                <th>SUITE</th>
+                <th>RATE</th>
+                <th>STATUS</th>
+                <th style="text-align: right;">ACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (feat of activeInstalledFeatures; track feat.featureCode; let i = $index) {
+                <tr>
+                  <td><span class="sn-pill">{{ i + 1 }}</span></td>
+                  <td>
+                    <div class="table-feat-cell">
+                      <div class="table-feat-icon icon-available">
+                        <span class="material-symbols-outlined">{{ feat.icon || 'extension' }}</span>
+                      </div>
+                      <div>
+                        <div class="table-feat-name">{{ feat.name }}</div>
+                        <code class="feature-code-pill">{{ feat.featureCode }}</code>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="suite-table-label">
+                      <strong>Suite {{ feat.suiteLetter }}:</strong> {{ feat.category }}
+                    </span>
+                  </td>
+                  <td>
+                    @if (feat.monthlyPrice > 0) {
+                      <strong>{{ formatAmount(feat.monthlyPrice) }}/mo</strong>
+                      @if ((feat.yearlyPrice || 0) > 0) {
+                        <div style="font-size: 11px; color: #64748b;">or {{ formatAmount(feat.yearlyPrice!) }}/yr</div>
+                      }
+                    } @else if ((feat.yearlyPrice || 0) > 0) {
+                      <strong>{{ formatAmount(feat.yearlyPrice!) }}/yr</strong>
+                      <div style="font-size: 10.5px; font-weight: 700; color: #b45309;">Yearly Only</div>
+                    } @else {
+                      <span class="price-included">Free / Included</span>
+                    }
+                  </td>
+                  <td>
+                    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                      @if (feat.status === 'Expired' || ((feat.daysRemaining ?? 999) <= 0 && !feat.isCompulsory)) {
+                        <span class="badge-pill-md" style="background: rgba(239, 68, 68, 0.14); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.35);">
+                          <span class="material-symbols-outlined">error</span>
+                          <span>{{ (feat.daysRemaining ?? 0) < 0 ? (((feat.daysRemaining || 0) * -1) + 'd Overdue — Payment Due') : 'Expired Today — Payment Due' }}</span>
+                        </span>
+                      } @else if (!feat.isCompulsory && (feat.daysRemaining ?? 999) <= 30) {
+                        <span class="badge-pill-md" style="background: rgba(245, 158, 11, 0.14); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.35);">
+                          <span class="material-symbols-outlined">schedule</span>
+                          <span>{{ feat.isTrialPeriod ? 'Free Trial' : 'Active' }} &bull; {{ feat.daysRemaining }}d Left</span>
+                        </span>
+                      } @else {
+                        <span class="badge-pill-md badge-available">
+                          <span class="material-symbols-outlined">check_circle</span>
+                          <span>{{ feat.isTrialPeriod ? ('Active Trial (' + (feat.daysRemaining || 14) + 'd left)') : 'Active' }}</span>
+                        </span>
+                      }
+                      @if (hasFeatureExpirationInfo(feat)) {
+                        <span style="font-size: 11.5px; font-weight: 700; color: #0f172a; white-space: nowrap;">
+                          @if (getFeatureExpirationDateText(feat)) {
+                            <span>{{ getFeatureExpirationDateText(feat) }}</span>
+                          }
+                          @if (getFeatureDaysRemainingText(feat)) {
+                            <span style="font-size: 10px; font-weight: 500; margin-left: 3px;" [style.color]="isFeatureExpiringWithinMonth(feat) ? '#b45309' : '#059669'">({{ getFeatureDaysRemainingText(feat) }})</span>
+                          }
+                        </span>
+                      }
+                    </div>
+                  </td>
+                  <td style="text-align: right; white-space: nowrap;">
+                    <div style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: nowrap; justify-content: flex-end;">
+                      @if (isFeatureExpiringWithinMonth(feat)) {
+                        <button
+                          type="button"
+                          class="btn btn-primary btn-sm-action"
+                          [disabled]="payingFeatureCode === feat.featureCode || togglingFeatureCode === feat.featureCode"
+                          (click)="payAndRenewFeature(feat)"
+                        >
+                          <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === feat.featureCode">
+                            {{ payingFeatureCode === feat.featureCode ? 'sync' : 'receipt_long' }}
+                          </span>
+                          <span>{{ 'billing.view_invoice' | translate:'View Invoice' }}</span>
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="btn btn-outline btn-sm-action"
+                        [disabled]="togglingFeatureCode === feat.featureCode"
+                        (click)="toggleFeatureInstall(feat, false)"
+                      >
+                        <span class="material-symbols-outlined">toggle_off</span>
+                        <span>Deactivate</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-catalog-card">
+          <span class="material-symbols-outlined empty-icon">layers</span>
+          <h3>No Modular Capabilities Installed Yet</h3>
+          <p>Go to the Features directory to install and activate capabilities for your workspace menu.</p>
+          <a routerLink="/billing/features" class="btn btn-primary" style="text-decoration: none;">Browse &amp; Install Features</a>
+        </div>
+      }
+    </div>
+
+    <!-- Invoices Ledger Table -->
+    <div class="table-card">
+      <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">Billing Invoices &amp; Receipts ({{ invoices.length }})</h3>
+          <p style="margin: 3px 0 0; font-size: 12.5px; color: #64748b;">Historical invoice ledger for your workspace subscriptions. Click any invoice to view details or complete payment.</p>
+        </div>
+        <button type="button" class="btn btn-outline" (click)="loadInvoices()">
+          <span class="material-symbols-outlined">refresh</span>
+          <span>Refresh Invoices</span>
+        </button>
+      </div>
+
+      @if (filteredInvoices.length > 0) {
+        <div class="table-responsive">
+          <table class="bcp-table">
+            <thead>
+              <tr>
+                <th>INVOICE #</th>
+                <th>DESCRIPTION</th>
+                <th>AMOUNT</th>
+                <th>STATUS</th>
+                <th>DATE</th>
+                <th style="text-align: right;">ACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (inv of filteredInvoices; track inv.id) {
+                <tr (click)="openInvoiceDetail(inv)" style="cursor: pointer;" title="Click to open full invoice &amp; payment page">
+                  <td><code>{{ inv.invoiceNumber || inv.id }}</code></td>
+                  <td><strong>{{ inv.description }}</strong></td>
+                  <td><strong>{{ formatAmount(inv.amount) }}</strong></td>
+                  <td>
+                    <span class="badge-pill-md" [class.badge-available]="inv.status === 'Completed'" [class.badge-coming-soon]="inv.status !== 'Completed'">
+                      {{ inv.status }}
+                    </span>
+                  </td>
+                  <td>{{ inv.createdUtc | date:'mediumDate' }}</td>
+                  <td style="text-align: right;" (click)="$event.stopPropagation()">
+                    <button type="button" class="btn btn-outline btn-sm-action" (click)="openInvoiceDetail(inv)">
+                      <span class="material-symbols-outlined">{{ inv.status === 'Completed' ? 'receipt_long' : 'payments' }}</span>
+                      <span>{{ inv.status === 'Completed' ? 'View Receipt' : 'View & Pay Invoice' }}</span>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-catalog-card">
+          <span class="material-symbols-outlined empty-icon">receipt_long</span>
+          <h3>No Billing Invoices Yet</h3>
+          <p>Invoices generated for paid add-on subscriptions will appear here.</p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ── PAGE 3: /billing/invoices/:id (Dedicated Full-Page Invoice & Checkout)  -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  @if (activePage === 'invoice-detail') {
+    <div class="page-header">
+      <div class="header-titles">
+        <div class="breadcrumb">
+          <a routerLink="/dashboard/console">{{ 'nav.command_center' | translate:'Command Center' }}</a>
+          <span class="sep">/</span>
+          <a routerLink="/billing/subscriptions">{{ 'nav.feature_billing' | translate:'Billing & Subscriptions' }}</a>
+          <span class="sep">/</span>
+          <span class="current">{{ invoiceDetail?.invoiceNumber || activeInvoiceId }}</span>
+        </div>
+        <div class="title-row">
+          <h1>{{ 'billing.invoice_checkout_title' | translate:'Invoice & Payment Checkout' }}</h1>
+        </div>
+        <p class="subtitle">
+          {{ 'billing.invoice_checkout_subtitle' | translate:'Review your capability renewal items, adjust billing duration, and select a payment method.' }}
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="btn btn-outline" (click)="closeInvoiceDetail()">
+          <span class="material-symbols-outlined">arrow_back</span>
+          <span>{{ 'billing.back_to_subscriptions' | translate:'Back to Subscriptions & Invoices' }}</span>
+        </button>
+      </div>
+    </div>
+
+    @if (isLoadingInvoiceDetail) {
+      <div class="table-card" style="padding: 48px 24px; text-align: center;">
+        <span class="material-symbols-outlined spin" style="font-size: 36px; color: #0050E5;">sync</span>
+        <h3 style="margin: 12px 0 4px; font-size: 16px; font-weight: 800; color: #0f172a;">{{ translationService.translateDynamic('Loading Invoice...') }}</h3>
+      </div>
+    } @else if (invoiceDetail) {
+      <!-- Invoice Top Summary Card -->
+      <div class="table-card" style="margin-bottom: 22px; padding: 22px 24px;">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 18px; border-bottom: 1px solid #e2e8f0; padding-bottom: 18px; margin-bottom: 18px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b;">
+                {{ 'billing.invoice_number' | translate:'INVOICE NUMBER' }}
+              </span>
+              @if (invoiceDetail.status === 'Completed') {
+                <span class="badge-pill-md badge-available">
+                  <span class="material-symbols-outlined">verified</span>
+                  <span>{{ 'billing.paid_activated' | translate:'Paid & Activated' }}</span>
+                </span>
+              } @else if (invoiceDetail.status === 'AwaitingVerification') {
+                <span class="badge-pill-md" style="background: rgba(245, 158, 11, 0.14); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.35);">
+                  <span class="material-symbols-outlined">hourglass_top</span>
+                  <span>{{ 'billing.awaiting_verification' | translate:'Awaiting Bank Verification' }}</span>
+                </span>
+              } @else {
+                <span class="badge-pill-md badge-optional">
+                  <span class="material-symbols-outlined">pending_actions</span>
+                  <span>{{ 'billing.pending_payment' | translate:'Pending Payment' }}</span>
+                </span>
+              }
+            </div>
+            <h2 style="margin: 6px 0 4px; font-size: 22px; font-weight: 800; color: #0f172a; font-family: monospace;">{{ invoiceDetail.invoiceNumber }}</h2>
+            <p style="margin: 0; font-size: 13px; color: #475569;">{{ translationService.translateDynamic(invoiceDetail.notes || '') }}</p>
+          </div>
+
+          <div style="text-align: right;">
+            <div style="font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: #64748b;">
+              {{ 'billing.total_amount_due' | translate:'TOTAL AMOUNT DUE' }} ({{ invoiceDetail.currency }})
+            </div>
+            <div style="font-size: 28px; font-weight: 900; color: #0050E5; line-height: 1.2; margin-top: 2px;">
+              {{ formatAmount(invoiceDetail.totalAmount) }}
+            </div>
+            @if (invoiceDetail.totalSavingsAmount > 0) {
+              <div style="margin-top: 4px;">
+                <span class="badge-pill-md badge-available" style="font-size: 11px;">
+                  <span class="material-symbols-outlined" style="font-size: 14px;">savings</span>
+                  <span>{{ translationService.translateDynamic('Savings') }}: {{ formatAmount(invoiceDetail.totalSavingsAmount) }}</span>
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 13px;">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">{{ 'billing.billed_organization' | translate:'Billed Organization' }}</div>
+            <div style="font-weight: 700; color: #0f172a; margin-top: 3px;">{{ invoiceDetail.organizationName }}</div>
+            <div style="color: #64748b; font-size: 12px;">{{ invoiceDetail.billingEmail }}</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">{{ 'billing.issue_date' | translate:'Issue Date' }}</div>
+            <div style="font-weight: 700; color: #0f172a; margin-top: 3px;">{{ invoiceDetail.createdUtc | date:'medium' }}</div>
+          </div>
+          @if (invoiceDetail.status === 'Completed' && invoiceDetail.updatedUtc) {
+            <div>
+              <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">{{ 'billing.paid_date' | translate:'Paid Date' }}</div>
+              <div style="font-weight: 700; color: #15803d; margin-top: 3px;">{{ invoiceDetail.updatedUtc | date:'medium' }}</div>
+            </div>
+          }
+          @if (invoiceDetail.reference) {
+            <div>
+              <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">{{ 'billing.payment_reference' | translate:'Payment Reference' }}</div>
+              <div style="font-weight: 700; color: #0f172a; font-family: monospace; margin-top: 3px;">{{ invoiceDetail.reference }}</div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Itemized Capabilities & Dynamic Billing Duration Table -->
+      <div class="table-card" style="margin-bottom: 24px;">
+        <div style="padding: 18px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="margin: 0; font-size: 15.5px; font-weight: 800; color: #0f172a;">
+              {{ 'billing.itemized_capabilities' | translate:'Itemized Capabilities on this Invoice' }} ({{ invoiceDetail.lineItems.length }})
+            </h3>
+          </div>
+          @if (updatingCadenceFeatureCode !== null) {
+            <span class="badge-pill-md badge-compulsory">
+              <span class="material-symbols-outlined spin">sync</span>
+              <span>{{ translationService.translateDynamic('Updating...') }}</span>
+            </span>
+          }
+        </div>
+
+        <div class="table-responsive">
+          <table class="bcp-table">
+            <thead>
+              <tr>
+                <th style="width: 56px;">S/N</th>
+                <th>{{ 'billing.capability' | translate:'CAPABILITY' }}</th>
+                <th>{{ 'billing.base_rates' | translate:'BASE RATES' }}</th>
+                <th>{{ 'billing.billing_duration' | translate:'BILLING DURATION' }}</th>
+                <th>{{ 'billing.discount_savings' | translate:'DISCOUNT / SAVINGS' }}</th>
+                <th style="text-align: right;">{{ 'billing.line_total' | translate:'LINE TOTAL' }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (line of invoiceDetail.lineItems; track line.featureCode; let idx = $index) {
+                <tr>
+                  <td><span class="sn-pill">{{ idx + 1 }}</span></td>
+                  <td>
+                    <div class="table-feat-cell">
+                      <div class="table-feat-icon icon-available">
+                        <span class="material-symbols-outlined">{{ line.icon || 'extension' }}</span>
+                      </div>
+                      <div>
+                        <div class="table-feat-name">{{ translationService.translateDynamic(line.featureName) }}</div>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                          <code class="feature-code-pill">{{ line.featureCode }}</code>
+                          <span style="font-size: 11px; color: #64748b;">{{ translationService.translateDynamic(line.category) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    @if (line.isYearlyOnly) {
+                      <div style="font-weight: 700; color: #0f172a;">{{ formatAmount(line.yearlyPrice) }}/yr</div>
+                      <span style="font-size: 11px; font-weight: 700; color: #b45309;">{{ translationService.translateDynamic('Yearly Only') }}</span>
+                    } @else {
+                      <div style="font-weight: 700; color: #0f172a;">{{ formatAmount(line.monthlyPrice) }}/mo</div>
+                      @if (line.yearlyPrice > 0) {
+                        <div style="font-size: 11.5px; color: #64748b;">
+                          {{ formatAmount(line.yearlyPrice) }}/yr
+                          @if (line.yearlyDiscountPercent > 0) {
+                            <span style="color: #15803d; font-weight: 700;">(-{{ line.yearlyDiscountPercent }}%)</span>
+                          }
+                        </div>
+                      }
+                    }
+                  </td>
+                  <td>
+                    @if (invoiceDetail.status !== 'Completed' && line.supportedCadences.length > 1) {
+                      <select
+                        class="filter-select"
+                        style="min-width: 195px; font-weight: 700;"
+                        [ngModel]="line.selectedCadence"
+                        (ngModelChange)="onChangeInvoiceLineCadence(line, $event)"
+                        [disabled]="updatingCadenceFeatureCode !== null || isProcessingGatewayPayment"
+                      >
+                        @for (cad of line.supportedCadences; track cad) {
+                          <option [value]="cad">
+                            @if (cad === 'Monthly') {
+                              {{ translationService.translateDynamic('1 Month') }} ({{ formatAmount(line.monthlyPrice) }})
+                            } @else if (cad === 'Quarterly') {
+                              {{ translationService.translateDynamic('3 Months') }} ({{ formatAmount(line.quarterlyPrice) }})
+                            } @else if (cad === 'Yearly') {
+                              {{ translationService.translateDynamic('1 Year') }} ({{ formatAmount(line.yearlyPrice) }}){{ line.yearlyDiscountPercent > 0 ? (' (-' + line.yearlyDiscountPercent + '%)') : '' }}
+                            }
+                          </option>
+                        }
+                      </select>
+                    } @else {
+                      <span class="badge-pill-md badge-billing">
+                        <span class="material-symbols-outlined">event_repeat</span>
+                        <span>
+                          @if (line.isYearlyOnly || line.selectedCadence === 'Yearly') {
+                            {{ translationService.translateDynamic('1 Year') }}
+                          } @else if (line.selectedCadence === 'Quarterly') {
+                            {{ translationService.translateDynamic('3 Months') }}
+                          } @else {
+                            {{ translationService.translateDynamic('1 Month') }}
+                          }
+                        </span>
+                      </span>
+                    }
+                  </td>
+                  <td>
+                    @if (line.appliedSavingsAmount > 0) {
+                      <span class="badge-pill-md badge-available">
+                        <span class="material-symbols-outlined">loyalty</span>
+                        <span>-{{ line.appliedDiscountPercent }}% ({{ formatAmount(line.appliedSavingsAmount) }})</span>
+                      </span>
+                    } @else {
+                      <span style="font-size: 12px; color: #94a3b8;">—</span>
+                    }
+                  </td>
+                  <td style="text-align: right;">
+                    <strong style="font-size: 15px; color: #0f172a;">{{ formatAmount(line.lineTotal) }}</strong>
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              @if (invoiceDetail.totalSavingsAmount > 0) {
+                <tr style="background: #f8fafc;">
+                  <td colspan="5" style="text-align: right; font-weight: 700; color: #475569;">{{ translationService.translateDynamic('Subtotal') }}:</td>
+                  <td style="text-align: right; font-weight: 700; color: #64748b; text-decoration: line-through;">{{ formatAmount(invoiceDetail.subtotalBeforeDiscount) }}</td>
+                </tr>
+                <tr style="background: #f0fdf4;">
+                  <td colspan="5" style="text-align: right; font-weight: 700; color: #15803d;">{{ translationService.translateDynamic('Discount') }}:</td>
+                  <td style="text-align: right; font-weight: 800; color: #15803d;">-{{ formatAmount(invoiceDetail.totalSavingsAmount) }}</td>
+                </tr>
+              }
+              @if ((invoiceDetail.vatPercentage || 0) > 0 && (invoiceDetail.vatAmount || 0) > 0) {
+                <tr style="background: #f8fafc;">
+                  <td colspan="5" style="text-align: right; font-weight: 700; color: #475569;">{{ 'billing.subtotal' | translate:'Subtotal' }}:</td>
+                  <td style="text-align: right; font-weight: 700; color: #0f172a;">{{ formatAmount(invoiceDetail.subtotalAmount || (invoiceDetail.totalAmount - (invoiceDetail.vatAmount || 0))) }}</td>
+                </tr>
+                <tr style="background: #f8fafc;">
+                  <td colspan="5" style="text-align: right; font-weight: 700; color: #475569;">{{ 'billing.vat' | translate:'VAT' }} ({{ invoiceDetail.vatPercentage }}%):</td>
+                  <td style="text-align: right; font-weight: 700; color: #0f172a;">{{ formatAmount(invoiceDetail.vatAmount || 0) }}</td>
+                </tr>
+              }
+              <tr style="background: #f8fafc; border-top: 2px solid #cbd5e1;">
+                <td colspan="5" style="text-align: right; font-size: 14px; font-weight: 800; color: #0f172a;">{{ 'billing.total_amount_due' | translate:'TOTAL AMOUNT DUE' }} ({{ invoiceDetail.currency }}):</td>
+                <td style="text-align: right; font-size: 18px; font-weight: 900; color: #0050E5;">{{ formatAmount(invoiceDetail.totalAmount) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Available Payment Methods Section (Only shown when invoice is not yet Completed) -->
+      @if (invoiceDetail.status !== 'Completed') {
+        <div class="table-card" style="padding: 22px 24px; margin-bottom: 24px;">
+          <div style="margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a;">
+              {{ 'billing.select_payment_method' | translate:'Select Payment Method' }}
+            </h3>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">
+              {{ 'billing.select_payment_method_desc' | translate:'Choose a payment method to complete your payment.' }}
+            </p>
+          </div>
+
+          @if (invoiceDetail.paymentMethods.length > 0) {
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px;">
+              @for (method of invoiceDetail.paymentMethods; track method.providerCode) {
+                <div
+                  (click)="selectPaymentGateway(method)"
+                  [style.cursor]="method.isConfigured ? 'pointer' : 'not-allowed'"
+                  [style.opacity]="method.isConfigured ? '1' : '0.6'"
+                  [style.border]="selectedGatewayCode === method.providerCode && method.isConfigured ? '2px solid #0050E5' : '1px solid #cbd5e1'"
+                  [style.background]="selectedGatewayCode === method.providerCode && method.isConfigured ? 'rgba(0, 80, 229, 0.04)' : '#ffffff'"
+                  style="border-radius: 12px; padding: 16px; transition: all 0.15s ease; display: flex; flex-direction: column; justify-content: space-between; gap: 8px;"
+                >
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <div style="width: 38px; height: 38px; border-radius: 9px; background: rgba(0, 80, 229, 0.08); color: #0050E5; display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined">{{ method.icon || 'payments' }}</span>
+                      </div>
+                      <strong style="font-size: 14.5px; color: #0f172a;">
+                        {{ getGatewayCleanName(method) }}
+                      </strong>
+                    </div>
+                    @if (method.isConfigured) {
+                      <span class="badge-pill-md badge-available" style="font-size: 10.5px;">
+                        <span class="material-symbols-outlined" style="font-size: 13px;">
+                          {{ selectedGatewayCode === method.providerCode ? 'radio_button_checked' : 'check_circle' }}
+                        </span>
+                        <span>{{ selectedGatewayCode === method.providerCode ? ('billing.selected' | translate:'Selected') : ('billing.available' | translate:'Available') }}</span>
+                      </span>
+                    } @else {
+                      <span class="badge-pill-md" style="font-size: 10.5px; background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.25);">
+                        <span class="material-symbols-outlined" style="font-size: 13px;">block</span>
+                        <span>{{ 'billing.not_enabled_badge' | translate:'Not Enabled' }}</span>
+                      </span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Selected Gateway Checkout Panel -->
+            @if (activeSelectedGateway) {
+              @if (activeSelectedGateway.providerCode === 'BankDeposit') {
+                <div style="border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; background: #f8fafc;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px;">
+                    <h4 style="margin: 0; font-size: 14.5px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+                      <span class="material-symbols-outlined" style="color: #0050E5;">account_balance</span>
+                      <span>{{ 'billing.direct_bank_deposit' | translate:'Direct Bank Deposit' }}</span>
+                    </h4>
+                    @if (invoiceDetail.status === 'AwaitingVerification') {
+                      <span class="badge-pill-md" style="background: rgba(16, 185, 129, 0.14); color: #059669; border: 1px solid rgba(16, 185, 129, 0.35);">
+                        <span class="material-symbols-outlined">task_alt</span>
+                        <span>{{ 'billing.proof_submitted_badge' | translate:'Deposit Proof Submitted — Awaiting Confirmation' }}</span>
+                      </span>
+                    }
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin-bottom: 14px; background: #ffffff; padding: 14px; border-radius: 9px; border: 1px solid #e2e8f0;">
+                    <div>
+                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">{{ translationService.translateDynamic('Bank Name') }}</div>
+                      <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ activeSelectedGateway.bankName }}</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">{{ translationService.translateDynamic('Account Name') }}</div>
+                      <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-top: 2px;">{{ activeSelectedGateway.accountName }}</div>
+                    </div>
+                    <div>
+                      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">{{ translationService.translateDynamic('Account Number') }}</div>
+                      <div style="font-size: 15px; font-weight: 900; color: #0050E5; font-family: monospace; margin-top: 2px;">{{ activeSelectedGateway.accountNumber }}</div>
+                    </div>
+                    @if (activeSelectedGateway.sortCodeOrSwift) {
+                      <div>
+                        <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase;">{{ translationService.translateDynamic('Sort Code / SWIFT') }}</div>
+                        <div style="font-size: 14px; font-weight: 800; color: #0f172a; font-family: monospace; margin-top: 2px;">{{ activeSelectedGateway.sortCodeOrSwift }}</div>
+                      </div>
+                    }
+                  </div>
+
+                  @if (activeSelectedGateway.instructions) {
+                    <p style="margin: 0 0 14px; font-size: 12.5px; color: #475569; background: #eff6ff; border: 1px solid #bfdbfe; padding: 10px 12px; border-radius: 8px;">
+                      {{ translationService.translateDynamic(activeSelectedGateway.instructions) }}
+                    </p>
+                  }
+
+                  @if (invoiceDetail.status === 'AwaitingVerification' && !isEditingBankDepositProof) {
+                    <div style="background: #ecfdf5; border: 1.5px solid #6ee7b7; border-radius: 10px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                      <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1 1 320px;">
+                        <div style="width: 40px; height: 40px; border-radius: 10px; background: #10b981; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                          <span class="material-symbols-outlined" style="font-size: 22px;">verified</span>
+                        </div>
+                        <div>
+                          <div style="font-size: 14px; font-weight: 800; color: #065f46;">
+                            {{ 'billing.deposit_proof_received_title' | translate:'Bank Deposit Reference Submitted — Awaiting Verification' }}
+                          </div>
+                          <div style="font-size: 12.5px; color: #047857; margin-top: 3px; line-height: 1.5;">
+                            {{ 'billing.deposit_proof_received_desc' | translate:'Your transfer reference has been recorded. Your subscribed capabilities will be unlocked and activated automatically once your bank transfer is confirmed.' }}
+                          </div>
+                          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
+                            <span style="font-size: 12px; font-weight: 700; color: #065f46; background: #ffffff; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 6px; font-family: monospace;">
+                              Ref: {{ invoiceDetail.paymentProofRef || invoiceDetail.reference }}
+                            </span>
+                            @if (invoiceDetail.reference && invoiceDetail.paymentProofRef && invoiceDetail.reference !== invoiceDetail.paymentProofRef) {
+                              <span style="font-size: 11.5px; font-weight: 600; color: #047857; font-family: monospace;">
+                                ({{ invoiceDetail.reference }})
+                              </span>
+                            }
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <button
+                          type="button"
+                          class="btn btn-outline"
+                          style="height: 38px; padding: 0 14px; font-size: 12.5px; font-weight: 700; background: #ffffff;"
+                          (click)="isEditingBankDepositProof = true"
+                        >
+                          <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+                          <span>{{ 'billing.update_reference' | translate:'Update Reference' }}</span>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-primary"
+                          style="height: 38px; padding: 0 16px; font-size: 12.5px; font-weight: 700;"
+                          (click)="closeInvoiceDetail()"
+                        >
+                          <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                          <span>{{ 'billing.done_view_invoices' | translate:'Done — View Invoices' }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  } @else {
+                    <div>
+                      <label style="display: block; font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+                        {{ 'billing.transfer_reference' | translate:'Transfer Reference / Teller / Session ID' }}
+                      </label>
+                      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <input
+                          type="text"
+                          [(ngModel)]="bankDepositReferenceInput"
+                          style="flex: 1 1 280px; min-width: 220px; height: 42px; padding: 0 14px; border: 1.5px solid #cbd5e1; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: #0f172a; background: #ffffff; outline: none; box-sizing: border-box;"
+                          placeholder="e.g. TRF-000000000000"
+                        />
+                        <button
+                          type="button"
+                          class="btn btn-primary"
+                          style="height: 42px; padding: 0 20px; border-radius: 9px; font-size: 13.5px; font-weight: 700; white-space: nowrap; flex-shrink: 0; display: inline-flex; align-items: center; gap: 8px; box-sizing: border-box;"
+                          [disabled]="isProcessingGatewayPayment || !bankDepositReferenceInput.trim()"
+                          (click)="submitBankDepositProof()"
+                        >
+                          <span class="material-symbols-outlined" [class.spin]="isProcessingGatewayPayment" style="font-size: 18px;">
+                            {{ isProcessingGatewayPayment ? 'sync' : 'upload_file' }}
+                          </span>
+                          <span>{{ 'billing.submit_deposit_proof' | translate:'Submit Deposit Proof' }} ({{ formatAmount(invoiceDetail.totalAmount) }})</span>
+                        </button>
+                        @if (invoiceDetail.status === 'AwaitingVerification' && isEditingBankDepositProof) {
+                          <button
+                            type="button"
+                            class="btn btn-outline"
+                            style="height: 42px; padding: 0 14px; border-radius: 9px; font-size: 13px; font-weight: 700; background: #ffffff; box-sizing: border-box;"
+                            (click)="isEditingBankDepositProof = false"
+                          >
+                            <span>{{ 'common.cancel' | translate:'Cancel' }}</span>
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div style="display: flex; align-items: center; justify-content: flex-end; padding-top: 4px;">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    style="padding: 11px 24px; font-size: 14px; font-weight: 800;"
+                    [disabled]="isProcessingGatewayPayment || updatingCadenceFeatureCode !== null"
+                    (click)="proceedWithSelectedGatewayPayment()"
+                  >
+                    <span class="material-symbols-outlined" [class.spin]="isProcessingGatewayPayment">
+                      {{ isProcessingGatewayPayment ? 'sync' : 'lock' }}
+                    </span>
+                    <span>
+                      {{ 'billing.pay_with' | translate:'Pay with' }} {{ getGatewayCleanName(activeSelectedGateway) }} ({{ formatAmount(invoiceDetail.totalAmount) }})
+                    </span>
+                  </button>
+                </div>
+              }
+            }
+          }
+        </div>
+      }
+    } @else {
+      <div class="empty-catalog-card" style="padding: 36px 24px;">
+        <span class="material-symbols-outlined empty-icon">receipt_long</span>
+        <h3>{{ translationService.translateDynamic('Unable to Load Invoice Details') }}</h3>
+        <div style="display: inline-flex; gap: 10px; margin-top: 8px;">
+          @if (activeInvoiceId) {
+            <button type="button" class="btn btn-primary" (click)="loadInvoiceDetailPage(activeInvoiceId)">
+              <span class="material-symbols-outlined">refresh</span>
+              <span>{{ translationService.translateDynamic('Retry') }}</span>
+            </button>
+          }
+          <button type="button" class="btn btn-outline" (click)="closeInvoiceDetail()">
+            <span>{{ 'billing.back_to_subscriptions' | translate:'Back to Subscriptions & Invoices' }}</span>
+          </button>
+        </div>
+      </div>
+    }
+  }
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+<!-- ── MODAL: CAPABILITY SPECIFICATION DETAILS ─────────────────────────────── -->
+<!-- ══════════════════════════════════════════════════════════════════════════ -->
+@if (showFeatureDetailModal && selectedFeatureDetail) {
+  <div class="modal-backdrop-custom" (click)="closeFeatureDetail()">
+    <div class="modal-card-custom" (click)="$event.stopPropagation()">
+      <div class="modal-header-custom">
+        <div class="modal-title-row">
+          <div class="feature-icon-box" [class.icon-available]="selectedFeatureDetail.isAvailableForUse">
+            <span class="material-symbols-outlined">{{ selectedFeatureDetail.icon || 'extension' }}</span>
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              @if (selectedFeatureDetail.serialNo) {
+                <span class="serial-badge">#{{ selectedFeatureDetail.serialNo }}</span>
+              }
+              <h3 class="modal-title-custom">{{ selectedFeatureDetail.name }}</h3>
+            </div>
+            <code class="feature-code-pill">{{ selectedFeatureDetail.featureCode }}</code>
+          </div>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeFeatureDetail()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body-custom">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+          @if (selectedFeatureDetail.isActive) {
+            <span class="badge-pill-md badge-available">
+              <span class="material-symbols-outlined">check_circle</span>
+              <span>Active in Workspace Menu</span>
+            </span>
+          } @else if (selectedFeatureDetail.isAvailableForUse) {
+            <span class="badge-pill-md badge-optional">
+              <span class="material-symbols-outlined">verified</span>
+              <span>Available to Install</span>
+            </span>
+          } @else {
+            <span class="badge-pill-md badge-coming-soon">
+              <span class="material-symbols-outlined">schedule</span>
+              <span>Coming Soon</span>
+            </span>
+          }
+
+          <span class="badge-pill-md badge-billing">
+            Suite {{ selectedFeatureDetail.suiteLetter || getSuiteLetter(selectedFeatureDetail.category) }}: {{ selectedFeatureDetail.category }}
+          </span>
+        </div>
+
+        <p style="font-size: 14px; color: #334155; line-height: 1.6; margin: 0 0 20px;">
+          {{ selectedFeatureDetail.description }}
+        </p>
+
+        <div class="detail-spec-grid">
+          <div class="spec-box">
+            <span class="spec-label">Monthly Rate ({{ currencyCode }})</span>
+            <span class="spec-val">
+              {{ selectedFeatureDetail.monthlyPrice > 0 ? (formatAmount(selectedFeatureDetail.monthlyPrice) + '/mo') : ('Included Free (' + formatAmount(0) + ')') }}
+            </span>
+          </div>
+          <div class="spec-box">
+            <span class="spec-label">Annual Rate ({{ currencyCode }})</span>
+            <span class="spec-val">
+              {{ selectedFeatureDetail.yearlyPrice > 0 ? (formatAmount(selectedFeatureDetail.yearlyPrice) + '/yr') : ('Included Free (' + formatAmount(0) + ')') }}
+            </span>
+          </div>
+          <div class="spec-box">
+            <span class="spec-label">Menu Visibility Status</span>
+            <span class="spec-val" [style.color]="selectedFeatureDetail.isActive ? '#059669' : '#64748b'">
+              {{ selectedFeatureDetail.isActive ? 'Installed & Visible in Sidebar' : (selectedFeatureDetail.isAvailableForUse ? 'Not Installed' : 'Coming Soon') }}
+            </span>
+          </div>
+          <div class="spec-box">
+            <span class="spec-label">Catalog Mode</span>
+            <span class="spec-val">
+              {{ snapshot.useCustomAvailability ? 'Custom Workspace Catalog' : 'Standard Workspace Catalog' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer-custom" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <div style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          @if (selectedFeatureDetail.isActive) {
+            @if (isFeatureExpiringWithinMonth(selectedFeatureDetail)) {
+              <button
+                type="button"
+                class="btn btn-primary"
+                [disabled]="payingFeatureCode === selectedFeatureDetail.featureCode || togglingFeatureCode === selectedFeatureDetail.featureCode"
+                (click)="payAndRenewFeature(selectedFeatureDetail)"
+              >
+                <span class="material-symbols-outlined" [class.spin]="payingFeatureCode === selectedFeatureDetail.featureCode">
+                  {{ payingFeatureCode === selectedFeatureDetail.featureCode ? 'sync' : 'receipt_long' }}
+                </span>
+                <span>{{ 'billing.view_invoice' | translate:'View Invoice' }}</span>
+              </button>
+            }
+            <button
+              type="button"
+              class="btn btn-outline"
+              [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode"
+              (click)="toggleFeatureInstall(selectedFeatureDetail, false)"
+            >
+              <span class="material-symbols-outlined">toggle_off</span>
+              <span>Deactivate from Menu</span>
+            </button>
+          } @else if (selectedFeatureDetail.isAvailableForUse) {
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="togglingFeatureCode === selectedFeatureDetail.featureCode"
+              (click)="toggleFeatureInstall(selectedFeatureDetail, true)"
+            >
+              <span class="material-symbols-outlined">download_done</span>
+              <span>Install &amp; Activate in Menu</span>
+            </button>
+          }
+        </div>
+        <button type="button" class="btn btn-outline" (click)="closeFeatureDetail()">
+          <span>Close</span>
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Contextual Info Modal ── -->
+@if (showInfoModal) {
+  <div class="modal-backdrop-custom" (click)="closeInfoModal()">
+    <div class="modal-card-custom" (click)="$event.stopPropagation()">
+      <div class="modal-header-custom">
+        <div class="modal-title-row">
+          <div class="feature-icon-box icon-available">
+            <span class="material-symbols-outlined">info</span>
+          </div>
+          <h3 class="modal-title-custom">About Workspace Features &amp; Capabilities</h3>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeInfoModal()">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body-custom" style="font-size: 13.5px; line-height: 1.6; color: #334155;">
+        <p style="margin: 0 0 12px;">
+          <strong>1. Simple View vs. Detailed View:</strong> Use <strong>Simple View</strong> to quickly browse features by S/N, Title, Suite, and Status, and click <strong>Install &amp; Activate</strong> to add any available capability directly into your workspace navigation menu.
+        </p>
+        <p style="margin: 0 0 12px;">
+          <strong>2. Instant Menu Activation:</strong> Installed capabilities appear immediately in your sidebar navigation menu with real-time updates.
+        </p>
+      </div>
+
+      <div class="modal-footer-custom">
+        <button type="button" class="btn btn-primary" (click)="closeInfoModal()">Got It</button>
+      </div>
+    </div>
+  </div>
+}

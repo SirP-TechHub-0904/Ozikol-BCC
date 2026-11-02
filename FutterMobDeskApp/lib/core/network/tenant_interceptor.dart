@@ -46,10 +46,12 @@ class TenantInterceptor extends Interceptor {
             activeWorkspace.customDomain ?? activeWorkspace.primaryDomain;
       }
 
-      final isAuthPath = options.path.contains('/login') ||
-          options.path.contains('/password/') ||
-          options.path.contains('/verify-otp') ||
-          options.path.contains('/resend-otp');
+      final normalizedPath = options.path.toLowerCase();
+      final isAuthPath = normalizedPath.contains('/auth/login') ||
+          normalizedPath.contains('/auth/password/request-otp') ||
+          normalizedPath.contains('/auth/password/reset-with-otp') ||
+          normalizedPath.contains('/auth/verify-otp') ||
+          normalizedPath.contains('/auth/resend-otp');
 
       if (!isAuthPath &&
           activeWorkspace.authToken != null &&
@@ -57,6 +59,13 @@ class TenantInterceptor extends Interceptor {
           !options.headers.containsKey(ApiConstants.headerAuthorization)) {
         options.headers[ApiConstants.headerAuthorization] = 'Bearer ${activeWorkspace.authToken}';
       }
+    }
+
+    // 3. Inject Device Trust Token for seamless 2FA bypass on trusted devices
+    final effectiveTenantKey = options.headers[ApiConstants.headerTenantKey]?.toString() ?? activeWorkspace?.tenantKey;
+    final trustToken = await _storageService.getDeviceTrustToken(effectiveTenantKey);
+    if (trustToken != null && trustToken.isNotEmpty && !options.headers.containsKey('X-Device-Trust-Token')) {
+      options.headers['X-Device-Trust-Token'] = trustToken;
     }
 
     // Always accept application/json

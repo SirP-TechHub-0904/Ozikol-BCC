@@ -10,7 +10,10 @@ import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/tenant_avatar.dart';
 import '../../../core/widgets/theme_mode_switcher.dart';
+import '../../../core/widgets/oz_lang_switcher.dart';
+import '../../../core/localization/language_provider.dart';
 import '../state/workspace_state.dart';
+import 'widgets/workspace_switch_dialog.dart';
 import 'workspace_login_screen.dart';
 
 /// Clean, responsive Landing & Workspace Entry Screen for Mobile and Desktop.
@@ -34,29 +37,28 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
   bool _isOnline = true;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
-  static const List<_FeatureSlide> _slides = [
+  List<_FeatureSlide> _getSlides(WidgetRef ref) => [
     _FeatureSlide(
-      badgeText: 'WORKSPACE',
-      title: 'All Your Work in One Place',
-      subtitle:
-          'Connect to your organization and access your tools, projects, and team data in one simple workspace.',
+      badgeText: 'auth.workspace_pill'.tr(ref, fallback: 'WORKSPACE'),
+      title: 'auth.slide1_title'.tr(ref, fallback: 'All Your Work in One Place'),
+      subtitle: 'auth.slide1_desc'.tr(ref, fallback: 'Connect to your organization and access your tools, projects, and team data in one simple workspace.'),
       icon: Icons.business_center_rounded,
     ),
     _FeatureSlide(
-      badgeText: 'NOTIFICATIONS',
-      title: 'Stay Updated in Real Time',
-      subtitle:
-          'Receive instant notifications, alerts, and messages across email, in-app feeds, and chat right as they happen.',
+      badgeText: 'auth.notifications_pill'.tr(ref, fallback: 'NOTIFICATIONS'),
+      title: 'auth.slide2_title'.tr(ref, fallback: 'Stay Updated in Real Time'),
+      subtitle: 'auth.slide2_desc'.tr(ref, fallback: 'Receive instant notifications, alerts, and messages across email, in-app feeds, and chat right as they happen.'),
       icon: Icons.notifications_active_rounded,
     ),
     _FeatureSlide(
-      badgeText: 'SYNC & SPEED',
-      title: 'Fast and Reliable Everywhere',
-      subtitle:
-          'Everything stays in sync across your desktop, phone, and tablet so you can work seamlessly without interruption.',
+      badgeText: 'auth.sync_speed_pill'.tr(ref, fallback: 'SYNC & SPEED'),
+      title: 'auth.slide3_title'.tr(ref, fallback: 'Fast and Reliable Everywhere'),
+      subtitle: 'auth.slide3_desc'.tr(ref, fallback: 'Everything stays in sync across your desktop, phone, and tablet so you can work seamlessly without interruption.'),
       icon: Icons.bolt_rounded,
     ),
   ];
+
+  List<_FeatureSlide> get _slides => _getSlides(ref);
 
   @override
   void initState() {
@@ -133,24 +135,24 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     AppTourDialog.show(
       context,
       screenKey: 'workspace_landing',
-      screenTitle: 'Workspace Access & Landing Tour',
-      steps: const [
+      screenTitle: 'entry.tour_title'.tr(ref, fallback: 'Workspace Access & Landing Tour'),
+      steps: [
         TourStep(
-          title: 'Enter Organization Access Code or URL',
+          title: 'entry.tour1_title'.tr(ref, fallback: 'Enter Organization Access Code or URL'),
           description:
-              'Type your organization access code or custom URL (e.g. access code or domain.com) to securely connect to your workspace.',
+              'entry.tour1_desc'.tr(ref, fallback: 'Type your organization access code or custom URL (e.g. access code or domain.com) to securely connect to your workspace.'),
           icon: Icons.apartment_rounded,
         ),
         TourStep(
-          title: 'Direct Multi-Tenant Security',
+          title: 'entry.tour2_title'.tr(ref, fallback: 'Direct Multi-Tenant Security'),
           description:
-              'Each workspace connects to an isolated database partition with custom security policies and branding.',
+              'entry.tour2_desc'.tr(ref, fallback: 'Each workspace connects to an isolated secure partition with custom security policies and branding.'),
           icon: Icons.security_rounded,
         ),
         TourStep(
-          title: 'Instant Multi-Workspace Switching',
+          title: 'entry.tour3_title'.tr(ref, fallback: 'Instant Multi-Workspace Switching'),
           description:
-              'Seamlessly jump between multiple enrolled organizations without re-entering credentials.',
+              'entry.tour3_desc'.tr(ref, fallback: 'Seamlessly jump between multiple enrolled organizations without re-entering credentials.'),
           icon: Icons.swap_horiz_rounded,
         ),
       ],
@@ -171,6 +173,21 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
     if (directCode == null && !_formKey.currentState!.validate()) return;
     if (code.isEmpty) return;
 
+    // 1. If an enrolled workspace matches and already has an active authenticated session,
+    // transition directly into that workspace without requiring re-authentication.
+    final enrolled = ref.read(workspaceStateProvider).enrolledWorkspaces;
+    final matchingActive = enrolled.where((w) =>
+        w.tenantKey.toLowerCase() == code.toLowerCase() ||
+        w.primaryDomain.toLowerCase() == code.toLowerCase() ||
+        (w.customDomain != null && w.customDomain!.toLowerCase() == code.toLowerCase())
+    ).firstOrNull;
+
+    if (matchingActive != null && matchingActive.isAuthenticated) {
+      await showWorkspaceSwitchDialog(context, matchingActive);
+      return;
+    }
+
+    // 2. Otherwise verify workspace with the backend and show login screen
     final notifier = ref.read(workspaceStateProvider.notifier);
     final resolved = await notifier.verifyWorkspace(code, remember: _rememberOrganization);
 
@@ -219,10 +236,10 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Remove Workspace',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                'auth.remove_confirm_title'.tr(ref, fallback: 'Remove Workspace'),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -239,7 +256,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(false),
             child: Text(
-              'Cancel',
+              'auth.cancel'.tr(ref, fallback: 'Cancel'),
               style: TextStyle(
                 color: isDark ? AppColors.gray400 : AppColors.gray600,
                 fontWeight: FontWeight.w600,
@@ -256,9 +273,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               ),
             ),
             onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: const Text(
-              'Remove',
-              style: TextStyle(fontWeight: FontWeight.w600),
+            child: Text(
+              'auth.remove'.tr(ref, fallback: 'Remove'),
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -280,13 +297,20 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
   Widget _buildEnrolledWorkspaceCard(Workspace ws, bool isDark) {
     final borderColor = isDark ? AppColors.outlineDark : AppColors.outlineLight;
     final cardBg = isDark ? AppColors.surfaceVariantDark.withAlpha(140) : AppColors.gray50;
+    final isAuthed = ws.isAuthenticated;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _handleContinue(ws.tenantKey),
+          onTap: () {
+            if (isAuthed) {
+              showWorkspaceSwitchDialog(context, ws);
+            } else {
+              _handleContinue(ws.tenantKey);
+            }
+          },
           borderRadius: BorderRadius.circular(14),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -294,7 +318,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               color: cardBg,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: borderColor,
+                color: isAuthed ? const Color(0xFF10B981).withAlpha(isDark ? 80 : 60) : borderColor,
                 width: 1,
               ),
             ),
@@ -317,23 +341,68 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        ws.displayName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              ws.displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
+                              ),
+                            ),
+                          ),
+                          if (isAuthed) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withAlpha(isDark ? 35 : 20),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFF10B981).withAlpha(80)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF10B981),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'auth.logged_in'.tr(ref, fallback: 'Logged In'),
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Connected Workspace',
+                        isAuthed
+                            ? (ws.userEmail != null && ws.userEmail!.isNotEmpty
+                                ? '${'auth.signed_in_as'.tr(ref, fallback: 'Signed in as')} ${ws.userEmail}'
+                                : 'auth.active_session'.tr(ref, fallback: 'Active session • Tap to open'))
+                            : 'auth.sign_in_required'.tr(ref, fallback: 'Sign in required'),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: isDark ? AppColors.gray400 : AppColors.gray500,
+                          color: isAuthed
+                              ? (isDark ? const Color(0xFF34D399) : const Color(0xFF059669))
+                              : (isDark ? AppColors.gray400 : AppColors.gray500),
                         ),
                       ),
                     ],
@@ -344,7 +413,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
                 // 3-Dot Options Dropdown (Refined micro-button matching border lines)
                 PopupMenuButton<String>(
-                  tooltip: 'Workspace options',
+                  tooltip: 'auth.options'.tr(ref, fallback: 'Workspace options'),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
@@ -358,8 +427,12 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                   shadowColor: Colors.black.withAlpha(30),
                   offset: const Offset(0, 38),
                   onSelected: (action) {
-                    if (action == 'continue') {
+                    if (action == 'switch') {
+                      showWorkspaceSwitchDialog(context, ws);
+                    } else if (action == 'login') {
                       _handleContinue(ws.tenantKey);
+                    } else if (action == 'signout') {
+                      ref.read(workspaceStateProvider.notifier).signOutSession(ws.tenantKey);
                     } else if (action == 'remove') {
                       _confirmRemoveWorkspace(ws);
                     }
@@ -384,40 +457,112 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                     ),
                   ),
                   itemBuilder: (context) => [
-                    PopupMenuItem<String>(
-                      value: 'continue',
-                      height: 38,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: isDark ? AppColors.primary.withAlpha(35) : const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Center(
-                              child: Icon(
-                                Icons.login_rounded,
-                                size: 14,
-                                color: AppColors.primary,
+                    if (isAuthed) ...[
+                      PopupMenuItem<String>(
+                        value: 'switch',
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.primary.withAlpha(35) : const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.space_dashboard_rounded,
+                                  size: 14,
+                                  color: AppColors.primary,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'Continue',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : AppColors.gray900,
-                              letterSpacing: 0.1,
+                            const SizedBox(width: 10),
+                            Text(
+                              'shell.switch_workspace'.tr(ref, fallback: 'Switch to Workspace'),
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : AppColors.gray900,
+                                letterSpacing: 0.1,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                      _CustomMenuDivider(isDark: isDark),
+                      PopupMenuItem<String>(
+                        value: 'signout',
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isDark ? const Color(0xFFF59E0B).withAlpha(35) : const Color(0xFFFFFBEB),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.logout_rounded,
+                                  size: 14,
+                                  color: Color(0xFFD97706),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'shell.sign_out'.tr(ref, fallback: 'Sign Out Session'),
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309),
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      PopupMenuItem<String>(
+                        value: 'login',
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.primary.withAlpha(35) : const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.login_rounded,
+                                  size: 14,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'auth.continue'.tr(ref, fallback: 'Continue'),
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white : AppColors.gray900,
+                                letterSpacing: 0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     _CustomMenuDivider(isDark: isDark),
                     PopupMenuItem<String>(
                       value: 'remove',
@@ -441,9 +586,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const Text(
-                            'Remove Workspace',
-                            style: TextStyle(
+                          Text(
+                            'auth.remove_workspace'.tr(ref, fallback: 'Remove Workspace'),
+                            style: const TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
                               color: AppColors.error,
@@ -494,7 +639,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               const SizedBox(width: 10),
               Flexible(
                 child: Text(
-                  'Remember this organization in future',
+                  'auth.remember_org'.tr(ref, fallback: 'Remember this organization in future'),
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -511,18 +656,22 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageProvider);
     final state = ref.watch(workspaceStateProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth >= 900;
-          return isDesktop
-              ? _buildDesktopLayout(context, state, isDark)
-              : _buildMobileLayout(context, state, isDark);
-        },
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 900;
+            return isDesktop
+                ? _buildDesktopLayout(context, state, isDark)
+                : _buildMobileLayout(context, state, isDark);
+          },
+        ),
       ),
     );
   }
@@ -556,13 +705,17 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                 Positioned(
                   top: -80,
                   left: -60,
-                  child: Container(
-                    width: 380,
-                    height: 380,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [Colors.white.withAlpha(25), Colors.transparent],
+                  child: IgnorePointer(
+                    child: ExcludeSemantics(
+                      child: Container(
+                        width: 380,
+                        height: 380,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [Colors.white.withAlpha(25), Colors.transparent],
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -690,11 +843,11 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                         // 3 Bottom Cards (Plain, Natural English)
                         Row(
                           children: [
-                            _buildFeatureCard('Fast & Secure', 'Encrypted workspace', Icons.shield_outlined),
+                            _buildFeatureCard('entry.feat1_title'.tr(ref, fallback: 'Fast & Secure'), 'entry.feat1_sub'.tr(ref, fallback: 'Encrypted workspace'), Icons.shield_outlined),
                             const SizedBox(width: 14),
-                            _buildFeatureCard('Always Synced', 'Across all devices', Icons.sync_rounded),
+                            _buildFeatureCard('entry.feat2_title'.tr(ref, fallback: 'Always Synced'), 'entry.feat2_sub'.tr(ref, fallback: 'Across all devices'), Icons.sync_rounded),
                             const SizedBox(width: 14),
-                            _buildFeatureCard('24/7 Available', 'Work anytime', Icons.access_time_rounded),
+                            _buildFeatureCard('entry.feat3_title'.tr(ref, fallback: '24/7 Available'), 'entry.feat3_sub'.tr(ref, fallback: 'Work anytime'), Icons.access_time_rounded),
                           ],
                         ),
                       ],
@@ -743,7 +896,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                _isOnline ? 'Online' : 'Offline',
+                                _isOnline ? 'entry.online'.tr(ref, fallback: 'Online') : 'entry.offline'.tr(ref, fallback: 'Offline'),
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -756,10 +909,12 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                           ),
                         ),
                         const SizedBox(width: 10),
+                        const OzLangSwitcher(compact: true),
+                        const SizedBox(width: 8),
                         const ThemeModeSwitcher(compact: true),
                         const SizedBox(width: 8),
                         Tooltip(
-                          message: 'Replay Tour Guide',
+                          message: 'entry.replay_tour'.tr(ref, fallback: 'Replay Tour Guide'),
                           child: IconButton(
                             icon: Icon(
                               Icons.help_outline_rounded,
@@ -782,14 +937,15 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                           constraints: const BoxConstraints(maxWidth: 440),
                           child: Form(
                             key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
+                            child: AutofillGroup(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
                                 // Header with Title & Contextual Info Icon
                                 Row(
                                   children: [
                                     Text(
-                                      'Enter Workspace',
+                                      'auth.enter_workspace'.tr(ref, fallback: 'Enter Workspace'),
                                       style: TextStyle(
                                         fontSize: 26,
                                         fontWeight: FontWeight.w800,
@@ -798,18 +954,18 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    const ContextualInfoButton(
-                                      title: 'Workspace Resolution',
-                                      purpose: 'Connects this client application to your isolated tenant database and permissions layer.',
-                                      expectedInputs: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).',
-                                      impact: 'Loads your organization security policies, tenant branding, and routes notifications appropriately.',
-                                      bestPractices: 'Contact your organization administrator if you are unsure of your access code.',
+                                    ContextualInfoButton(
+                                      title: 'entry.ctx_title'.tr(ref, fallback: 'Workspace Resolution'),
+                                      purpose: 'entry.ctx_purpose'.tr(ref, fallback: 'Connects this client application to your isolated organization workspace and permissions layer.'),
+                                      expectedInputs: 'entry.ctx_inputs'.tr(ref, fallback: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).'),
+                                      impact: 'entry.ctx_impact'.tr(ref, fallback: 'Loads your organization security policies, tenant branding, and routes notifications appropriately.'),
+                                      bestPractices: 'entry.ctx_best'.tr(ref, fallback: 'Contact your organization administrator if you are unsure of your access code.'),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Sign in using your organization access code or custom URL.',
+                                  'entry.subtitle'.tr(ref, fallback: 'Sign in using your organization access code or custom URL.'),
                                   style: TextStyle(
                                     fontSize: 14,
                                     height: 1.4,
@@ -850,15 +1006,16 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                 // Input Field with requested placeholder and label
                                 CustomTextField(
                                   controller: _controller,
-                                  label: 'Organization Code',
+                                  label: 'auth.org_code_label'.tr(ref, fallback: 'Organization Code'),
                                   placeholder: 'e.g. access code or url',
                                   prefixIcon: const Icon(Icons.apartment_rounded, size: 20, color: AppColors.primary),
                                   showPasteButton: true,
+                                  autofillHints: const [AutofillHints.organizationName, AutofillHints.url],
                                   textInputAction: TextInputAction.done,
                                   onSubmitted: (_) => _handleContinue(),
                                   validator: (val) {
                                     if (val == null || val.trim().isEmpty) {
-                                      return 'Please enter your organization code.';
+                                      return 'entry.code_required'.tr(ref, fallback: 'Please enter your organization code.');
                                     }
                                     return null;
                                   },
@@ -877,7 +1034,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
-                                        'Enter your organization access code or custom URL.',
+                                        'auth.enter_workspace_desc'.tr(ref, fallback: 'Enter your organization access code or custom URL.'),
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: isDark ? AppColors.gray400 : AppColors.gray500,
@@ -894,7 +1051,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
                                 // Continue Action Button
                                 PrimaryButton(
-                                  text: 'Continue',
+                                  text: 'auth.continue'.tr(ref, fallback: 'Continue'),
                                   height: 52,
                                   borderRadius: 14,
                                   isLoading: state.isLoading,
@@ -911,7 +1068,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                       Padding(
                                         padding: const EdgeInsets.symmetric(horizontal: 12),
                                         child: Text(
-                                          'PREVIOUSLY CONNECTED',
+                                          'entry.previous'.tr(ref, fallback: 'PREVIOUSLY CONNECTED'),
                                           style: TextStyle(
                                             fontSize: 11,
                                             fontWeight: FontWeight.w700,
@@ -935,27 +1092,28 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                       ),
                     ),
                   ),
+                ),
 
-                  // Bottom Brand Footer (Clean, no internal server route exposed)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'Powered by Ozikol',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? AppColors.gray500 : AppColors.gray400,
-                        letterSpacing: 0.3,
-                      ),
+                // Bottom Brand Footer (Clean, no internal server route exposed)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'auth.powered_by'.tr(ref, fallback: 'Powered by Ozikol'),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? AppColors.gray500 : AppColors.gray400,
+                      letterSpacing: 0.3,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
-      ],
-    );
+      ),
+    ],
+  );
   }
 
   // =========================================================================
@@ -977,13 +1135,10 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
             child: Row(
               children: [
                 Image.asset(
-                  isDark ? 'assets/images/ozikol-white.png' : 'assets/images/ozikol.png',
-                  height: 26,
+                  isDark ? 'assets/images/oz-logo-white.png' : 'assets/images/oz-logo.png',
+                  height: 28,
+                  width: 28,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) => const Text(
-                    'OZIKOL',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.8),
-                  ),
                 ),
                 const Spacer(),
                 // Online/Offline Status Dot
@@ -1006,7 +1161,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        _isOnline ? 'Online' : 'Offline',
+                        _isOnline
+                            ? 'auth.online'.tr(ref, fallback: 'entry.online'.tr(ref, fallback: 'Online'))
+                            : 'auth.offline'.tr(ref, fallback: 'entry.offline'.tr(ref, fallback: 'Offline')),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -1017,11 +1174,13 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                   ),
                 ),
                 const SizedBox(width: 6),
+                const OzLangSwitcher(compact: true),
+                const SizedBox(width: 6),
                 const ThemeModeSwitcher(compact: true),
                 IconButton(
                   icon: const Icon(Icons.help_outline_rounded, size: 20),
                   onPressed: _openTourGuide,
-                  tooltip: 'Tour Guide',
+                  tooltip: 'auth.tour_guide'.tr(ref, fallback: 'Tour Guide'),
                 ),
               ],
             ),
@@ -1034,105 +1193,112 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
               child: Column(
                 children: [
                   // Feature Carousel
-                  SizedBox(
-                    height: (screenHeight * 0.28).clamp(180.0, 230.0),
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: _slides.length,
-                      onPageChanged: (index) {
-                        setState(() => _carouselIndex = index);
-                      },
-                      itemBuilder: (context, index) {
-                        final slide = _slides[index];
-                        return Container(
-                          padding: const EdgeInsets.all(18),
-                          margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: isDark
-                                  ? [AppColors.surfaceDark, AppColors.surfaceVariantDark]
-                                  : [const Color(0xFFF1F6FF), const Color(0xFFE6F0FF)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: isDark ? AppColors.outlineDark : const Color(0xFFD6E4FF),
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 38,
-                                    height: 38,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary.withAlpha(isDark ? 50 : 25),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(slide.icon, color: AppColors.primary, size: 20),
+                  Builder(builder: (context) {
+                    final slides = _getSlides(ref);
+                    return Column(
+                      children: [
+                        SizedBox(
+                          height: (screenHeight * 0.28).clamp(180.0, 230.0),
+                          child: PageView.builder(
+                            controller: _pageController,
+                            itemCount: slides.length,
+                            onPageChanged: (index) {
+                              setState(() => _carouselIndex = index);
+                            },
+                            itemBuilder: (context, index) {
+                              final slide = slides[index];
+                              return Container(
+                                padding: const EdgeInsets.all(18),
+                                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: isDark
+                                        ? [AppColors.surfaceDark, AppColors.surfaceVariantDark]
+                                        : [const Color(0xFFF1F6FF), const Color(0xFFE6F0FF)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    slide.badgeText,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.primary,
-                                      letterSpacing: 0.5,
-                                    ),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: isDark ? AppColors.outlineDark : const Color(0xFFD6E4FF),
                                   ),
-                                ],
-                              ),
-                              const Spacer(),
-                              Text(
-                                slide.title,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                slide.subtitle,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  height: 1.4,
-                                  color: isDark ? AppColors.gray400 : AppColors.gray700,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 38,
+                                          height: 38,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withAlpha(isDark ? 50 : 25),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: Icon(slide.icon, color: AppColors.primary, size: 20),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          slide.badgeText,
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.primary,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      slide.title,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? AppColors.onBackgroundDark : AppColors.gray950,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      slide.subtitle,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        height: 1.4,
+                                        color: isDark ? AppColors.gray400 : AppColors.gray700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
-                  ),
+                        ),
 
-                  // Carousel Indicators
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(_slides.length, (index) {
-                        final active = index == _carouselIndex;
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
-                          width: active ? 22 : 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: active ? AppColors.primary : (isDark ? AppColors.outlineDark : AppColors.gray300),
-                            borderRadius: BorderRadius.circular(3),
+                        // Carousel Indicators
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(slides.length, (index) {
+                              final active = index == _carouselIndex;
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 250),
+                                margin: const EdgeInsets.symmetric(horizontal: 3),
+                                width: active ? 22 : 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: active ? AppColors.primary : (isDark ? AppColors.outlineDark : AppColors.gray300),
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              );
+                            }),
                           ),
-                        );
-                      }),
-                    ),
-                  ),
+                        ),
+                      ],
+                    );
+                  }),
 
                   const SizedBox(height: 8),
 
@@ -1155,13 +1321,14 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                     ),
                     child: Form(
                       key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
+                      child: AutofillGroup(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
                           Row(
                             children: [
                               Text(
-                                'Enter Workspace',
+                                'auth.enter_workspace'.tr(ref, fallback: 'auth.enter_workspace'.tr(ref, fallback: 'Enter Workspace')),
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w800,
@@ -1169,16 +1336,16 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              const ContextualInfoButton(
-                                title: 'Workspace Resolution',
-                                purpose: 'Connects your device to your isolated tenant database.',
-                                expectedInputs: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).',
+                              ContextualInfoButton(
+                                title: 'entry.ctx_title'.tr(ref, fallback: 'Workspace Resolution'),
+                                purpose: 'entry.ctx_purpose_short'.tr(ref, fallback: 'Connects your device to your isolated organization workspace.'),
+                                expectedInputs: 'entry.ctx_inputs'.tr(ref, fallback: 'Enter your organization access code or custom domain URL (e.g. access code or domain.com).'),
                               ),
                             ],
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Enter your organization access code or custom URL.',
+                            'auth.enter_workspace_desc'.tr(ref, fallback: 'auth.enter_workspace_desc'.tr(ref, fallback: 'Enter your organization access code or custom URL.')),
                             style: TextStyle(
                               fontSize: 13,
                               color: isDark ? AppColors.gray400 : AppColors.gray600,
@@ -1205,15 +1372,16 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
 
                           CustomTextField(
                             controller: _controller,
-                            label: 'Organization Code',
-                            placeholder: 'e.g. access code or url',
+                            label: 'auth.org_code_label'.tr(ref, fallback: 'Organization Code'),
+                            placeholder: 'auth.org_code_placeholder'.tr(ref, fallback: 'e.g. access code or url'),
                             prefixIcon: const Icon(Icons.apartment_rounded, size: 20, color: AppColors.primary),
                             showPasteButton: true,
+                            autofillHints: const [AutofillHints.organizationName, AutofillHints.url],
                             textInputAction: TextInputAction.done,
                             onSubmitted: (_) => _handleContinue(),
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) {
-                                return 'Please enter your organization code.';
+                                return 'auth.org_code_required'.tr(ref, fallback: 'entry.code_required'.tr(ref, fallback: 'Please enter your organization code.'));
                               }
                               return null;
                             },
@@ -1222,7 +1390,9 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                           const SizedBox(height: 18),
 
                           PrimaryButton(
-                            text: 'Continue',
+                            text: state.isLoading
+                                ? 'auth.verifying'.tr(ref, fallback: 'Verifying...')
+                                : 'auth.continue'.tr(ref, fallback: 'Continue'),
                             height: 50,
                             borderRadius: 14,
                             isLoading: state.isLoading,
@@ -1236,7 +1406,7 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                             const Divider(),
                             const SizedBox(height: 8),
                             Text(
-                              'Previously Connected Workspaces:',
+                              'auth.previously_connected_title'.tr(ref, fallback: 'Previously Connected Workspaces:'),
                               style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? AppColors.gray400 : AppColors.gray600),
                             ),
                             const SizedBox(height: 8),
@@ -1250,10 +1420,11 @@ class _WorkspaceEntryScreenState extends ConsumerState<WorkspaceEntryScreen> {
                       ),
                     ),
                   ),
+                ),
 
                   const SizedBox(height: 20),
                   Text(
-                    'Powered by Ozikol',
+                    'auth.powered_by'.tr(ref, fallback: 'auth.powered_by'.tr(ref, fallback: 'Powered by Ozikol')),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,

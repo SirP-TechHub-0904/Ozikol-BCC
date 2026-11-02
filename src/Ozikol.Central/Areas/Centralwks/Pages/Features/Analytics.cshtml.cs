@@ -12,12 +12,43 @@ using Ozikol.MasterPersistence.EF.MasterSQL;
 namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 {
     /// <summary>
-    /// PageModel providing comprehensive tenant feature adoption telemetry, running capability tracking,
-    /// activity usage levels, last used timestamps, and recurring subscription revenue (MRR) analytics.
+    /// PageModel providing comprehensive tenant feature adoption telemetry, per-tenant active/inactive tracking,
+    /// General vs. Custom Pricing and Availability policy visibility, pagination, and recurring subscription revenue (MRR) analytics.
     /// </summary>
     public class AnalyticsModel : PageModel
     {
         private readonly MasterCatalogDbContext _dbContext;
+
+        /// <summary>
+        /// Canonical 10-suite sequence matching the Master Feature Catalog (/centralwks/features).
+        /// </summary>
+        public static readonly (string Code, string Name)[] CanonicalSuites = new[]
+        {
+            ("SUITE A", "People, Community & Collaboration"),
+            ("SUITE B", "Workforce, Rota & Scheduling"),
+            ("SUITE C", "Reports, Forms & Analytics"),
+            ("SUITE D", "Events & Training Management"),
+            ("SUITE E", "Finance & Commercial Revenue"),
+            ("SUITE F", "Operations & Workflows"),
+            ("SUITE G", "Communication, AI & Support"),
+            ("SUITE H", "Compliance, Learning & Certification"),
+            ("SUITE I", "Demographics & Civic Census"),
+            ("SUITE J", "Life Events & Publications")
+        };
+
+        /// <summary>
+        /// Default live feature codes when the IsAvailableForUse database column has not yet been migrated.
+        /// </summary>
+        private static readonly HashSet<string> DefaultAvailableCodes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "bcp-community-messenger",
+            "bcp-committees",
+            "bcp-alumni-directory",
+            "bcp-form-builder",
+            "bcp-store-ecommerce",
+            "bcp-ai-smart-assist",
+            "bcp-mass-communication"
+        };
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AnalyticsModel"/> class.
@@ -29,54 +60,129 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         }
 
         /// <summary>
-        /// Search keyword filter for feature name, code, or description.
+        /// Search keyword filter for feature name, code, or description on Tab 2.
         /// </summary>
         [BindProperty(SupportsGet = true)]
         public string? Search { get; set; }
 
         /// <summary>
-        /// Search keyword filter for tenant organization or domain.
+        /// Search keyword filter for tenant organization, key, domain, or email on Tab 1.
         /// </summary>
         [BindProperty(SupportsGet = true)]
         public string? TenantSearch { get; set; }
 
         /// <summary>
-        /// Category / Suite filter.
+        /// Category / Suite filter on Tab 2.
         /// </summary>
         [BindProperty(SupportsGet = true)]
         public string? Category { get; set; }
 
         /// <summary>
-        /// Usage activity level filter (e.g. All, High, Active, Moderate, Dormant).
+        /// Usage activity level filter on Tab 1 (All, High Activity, Active, Moderate, Dormant).
         /// </summary>
         [BindProperty(SupportsGet = true)]
         public string? UsageFilter { get; set; }
 
         /// <summary>
-        /// Active navigation tab (tenants, ranking, inspector).
+        /// Pricing &amp; Availability policy filter on Tab 1 (All, CustomPricing, GeneralPricing, CustomAvailability, PaidTier, FreeTier).
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public string? PolicyFilter { get; set; }
+
+        /// <summary>
+        /// Active navigation tab (tenants or ranking).
         /// </summary>
         [BindProperty(SupportsGet = true)]
         public string ActiveTab { get; set; } = "tenants";
 
         /// <summary>
-        /// Total capabilities in catalog (e.g. 37).
+        /// Current page number for the Tenants table (1-based).
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public int PageNumber { get; set; } = 1;
+
+        /// <summary>
+        /// Page size (rows per page) for the Tenants table.
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public int PageSize { get; set; } = 10;
+
+        /// <summary>
+        /// Current page number for the Capabilities Ranking table (1-based).
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public int FeaturePageNumber { get; set; } = 1;
+
+        /// <summary>
+        /// Page size (rows per page) for the Capabilities Ranking table.
+        /// </summary>
+        [BindProperty(SupportsGet = true)]
+        public int FeaturePageSize { get; set; } = 10;
+
+        /// <summary>
+        /// Total capabilities in catalog.
         /// </summary>
         public int TotalCapabilities { get; set; }
 
         /// <summary>
-        /// Total compulsory base capabilities (e.g. 27).
+        /// Total compulsory base capabilities.
         /// </summary>
         public int TotalCompulsoryFeatures { get; set; }
 
         /// <summary>
-        /// Total optional add-on capabilities (e.g. 10).
+        /// Total optional add-on capabilities.
         /// </summary>
         public int TotalOptionalFeatures { get; set; }
 
         /// <summary>
-        /// Total active tenant organizations in master catalog.
+        /// Total capabilities available for immediate use.
+        /// </summary>
+        public int AvailableForUseCount { get; set; }
+
+        /// <summary>
+        /// Total capabilities marked as Coming Soon.
+        /// </summary>
+        public int ComingSoonCount { get; set; }
+
+        /// <summary>
+        /// Total tenant organizations in master catalog.
         /// </summary>
         public int TotalTenants { get; set; }
+
+        /// <summary>
+        /// Count of active (non-suspended) tenant organizations.
+        /// </summary>
+        public int ActiveTenantsCount { get; set; }
+
+        /// <summary>
+        /// Count of suspended or inactive tenant organizations.
+        /// </summary>
+        public int SuspendedTenantsCount { get; set; }
+
+        /// <summary>
+        /// Count of tenants generating paid recurring monthly revenue.
+        /// </summary>
+        public int PaidTierTenantsCount { get; set; }
+
+        /// <summary>
+        /// Count of tenants on the $0.00 Free Tier.
+        /// </summary>
+        public int FreeTierTenantsCount { get; set; }
+
+        /// <summary>
+        /// Count of tenants using Custom Pricing (or having custom feature price overrides).
+        /// </summary>
+        public int CustomPricingTenantsCount { get; set; }
+
+        /// <summary>
+        /// Count of tenants using Custom Availability (or having custom feature availability overrides).
+        /// </summary>
+        public int CustomAvailabilityTenantsCount { get; set; }
+
+        /// <summary>
+        /// Total active paid add-on subscriptions across all tenants.
+        /// </summary>
+        public int TotalPaidAddonSubscriptions { get; set; }
 
         /// <summary>
         /// Platform-wide average feature adoption percentage.
@@ -89,186 +195,315 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public decimal TotalSubscriptionMrr { get; set; }
 
         /// <summary>
-        /// Selected tenant organization ID for granular deep-dive inspection.
-        /// </summary>
-        [BindProperty(SupportsGet = true)]
-        public int? SelectedTenantId { get; set; }
-
-        /// <summary>
-        /// Selectable list of tenant organizations across the platform.
-        /// </summary>
-        public List<MasterTenantCatalog> TenantOptions { get; set; } = new();
-
-        /// <summary>
-        /// Currently inspected tenant catalog entity.
-        /// </summary>
-        public MasterTenantCatalog? InspectedTenant { get; set; }
-
-        /// <summary>
-        /// Granular list of all tenants with their running features and activity levels.
+        /// Full filtered list of tenants with their running features and policies.
         /// </summary>
         public List<TenantFeatureUsageSummaryDto> AllTenantsFeatureMatrix { get; set; } = new();
 
         /// <summary>
-        /// Features currently active for the inspected tenant organization.
+        /// Current page slice of tenants for the table.
         /// </summary>
-        public List<TenantFeatureUsageItemDto> TenantActiveFeatures { get; set; } = new();
+        public List<TenantFeatureUsageSummaryDto> PaginatedTenants { get; set; } = new();
 
         /// <summary>
-        /// Features utilized, subscribed, or tested by the inspected tenant in the last 365 days.
+        /// Total number of filtered tenants before pagination.
         /// </summary>
-        public List<TenantFeatureUsageItemDto> Tenant365DayUsageHistory { get; set; } = new();
+        public int TotalFilteredTenants { get; set; }
 
         /// <summary>
-        /// Count of high-performing features (adoption >= 70%).
+        /// Total pages for the Tenants table.
         /// </summary>
-        public int HighPerformingCount { get; set; }
+        public int TotalTenantPages { get; set; }
 
         /// <summary>
-        /// Count of moderate-performing features (adoption between 30% and 69%).
-        /// </summary>
-        public int ModerateCount { get; set; }
-
-        /// <summary>
-        /// Count of underperforming features (adoption between 1% and 29%).
-        /// </summary>
-        public int UnderperformingCount { get; set; }
-
-        /// <summary>
-        /// Count of zero-adoption features (0 subscribers).
-        /// </summary>
-        public int ZeroAdoptionCount { get; set; }
-
-        /// <summary>
-        /// The most adopted optional feature across tenants.
-        /// </summary>
-        public FeatureAdoptionMetricDto? TopPerformingFeature { get; set; }
-
-        /// <summary>
-        /// The least adopted optional feature across tenants.
-        /// </summary>
-        public FeatureAdoptionMetricDto? LowestPerformingFeature { get; set; }
-
-        /// <summary>
-        /// List of distinct categories for filtering.
+        /// List of distinct suite categories in canonical order.
         /// </summary>
         public List<string> Categories { get; set; } = new();
 
         /// <summary>
-        /// Granular list of all features with adoption and revenue metrics.
+        /// Full filtered list of all features with adoption and revenue metrics.
         /// </summary>
         public List<FeatureAdoptionMetricDto> RankedFeatures { get; set; } = new();
 
         /// <summary>
-        /// Category-level distribution items for summary metrics and visualizations.
+        /// Current page slice of ranked features for Tab 2.
+        /// </summary>
+        public List<FeatureAdoptionMetricDto> PaginatedRankedFeatures { get; set; } = new();
+
+        /// <summary>
+        /// Total number of filtered features before pagination.
+        /// </summary>
+        public int TotalFilteredFeatures { get; set; }
+
+        /// <summary>
+        /// Total pages for the Capabilities Ranking table.
+        /// </summary>
+        public int TotalFeaturePages { get; set; }
+
+        /// <summary>
+        /// Category-level distribution items for summary metrics.
         /// </summary>
         public List<CategoryDistributionDto> CategoryDistributions { get; set; } = new();
 
         /// <summary>
-        /// Handles HTTP GET requests to calculate tenant feature adoption telemetry and prepare visualization datasets.
+        /// Resolves the canonical suite code (e.g. SUITE A) and sort index for a category name.
+        /// </summary>
+        public static (string Code, int Order) GetSuiteMetadata(string? category)
+        {
+            if (string.IsNullOrWhiteSpace(category)) return ("SUITE", 999);
+            var idx = Array.FindIndex(CanonicalSuites, s => s.Name.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase));
+            return idx >= 0 ? (CanonicalSuites[idx].Code, idx) : ("SUITE", 500);
+        }
+
+        /// <summary>
+        /// Handles HTTP GET requests to calculate tenant feature adoption telemetry, custom pricing/availability policies, and pagination.
         /// </summary>
         public async Task OnGetAsync()
         {
-            var allTenants = await _dbContext.MasterTenantCatalogs
-                .AsNoTracking()
-                .Include(t => t.FeatureSubscriptions)
-                    .ThenInclude(s => s.MasterFeatureCatalog)
-                .Where(t => !t.IsDeleted)
-                .OrderBy(t => t.OrganizationName)
-                .ToListAsync();
+            if (ActiveTab != "tenants" && ActiveTab != "ranking")
+            {
+                ActiveTab = "tenants";
+            }
+
+            PageSize = PageSize switch { 10 => 10, 20 => 20, 50 => 50, _ => 10 };
+            FeaturePageSize = FeaturePageSize switch { 10 => 10, 20 => 20, 50 => 50, _ => 10 };
+            if (PageNumber < 1) PageNumber = 1;
+            if (FeaturePageNumber < 1) FeaturePageNumber = 1;
+
+            List<MasterTenantCatalog> allTenants;
+            try
+            {
+                allTenants = await _dbContext.MasterTenantCatalogs
+                    .AsNoTracking()
+                    .Include(t => t.FeatureSubscriptions)
+                        .ThenInclude(s => s.MasterFeatureCatalog)
+                    .Where(t => !t.IsDeleted)
+                    .OrderBy(t => t.OrganizationName)
+                    .ToListAsync();
+            }
+            catch
+            {
+                // Graceful fallback if UseCustomPricing / UseCustomAvailability / IsAvailableForUseOverride columns are pending migration
+                allTenants = await _dbContext.MasterTenantCatalogs
+                    .AsNoTracking()
+                    .Where(t => !t.IsDeleted)
+                    .OrderBy(t => t.OrganizationName)
+                    .Select(t => new MasterTenantCatalog
+                    {
+                        Id = t.Id,
+                        OrganizationName = t.OrganizationName,
+                        TenantKey = t.TenantKey,
+                        PrimaryDomain = t.PrimaryDomain,
+                        AdminEmail = t.AdminEmail,
+                        IsActive = t.IsActive,
+                        IsSuspended = t.IsSuspended,
+                        UseCustomPricing = false,
+                        UseCustomAvailability = false,
+                        DefaultCurrencyCode = "USD",
+                        CreatedUtc = t.CreatedUtc,
+                        LastAccessedUtc = t.LastAccessedUtc,
+                        FeatureSubscriptions = t.FeatureSubscriptions.Select(s => new MasterTenantFeatureSubscription
+                        {
+                            Id = s.Id,
+                            MasterTenantCatalogId = s.MasterTenantCatalogId,
+                            MasterFeatureCatalogId = s.MasterFeatureCatalogId,
+                            IsActive = s.IsActive,
+                            Status = s.Status,
+                            DurationType = s.DurationType,
+                            RecurringPrice = s.RecurringPrice,
+                            CustomPriceOverride = s.CustomPriceOverride,
+                            IsAvailableForUseOverride = null,
+                            StartsAtUtc = s.StartsAtUtc,
+                            ExpiresAtUtc = s.ExpiresAtUtc
+                        }).ToList()
+                    })
+                    .ToListAsync();
+            }
 
             TotalTenants = allTenants.Count;
-            TenantOptions = allTenants.Where(t => t.IsActive).ToList();
+            ActiveTenantsCount = allTenants.Count(t => t.IsActive && !t.IsSuspended);
+            SuspendedTenantsCount = TotalTenants - ActiveTenantsCount;
 
-            var allFeatures = await _dbContext.MasterFeatureCatalogs
-                .AsNoTracking()
-                .OrderBy(f => f.SortOrder)
-                .ToListAsync();
+            List<MasterFeatureCatalog> rawFeatures;
+            bool usedFeatureFallback = false;
+            try
+            {
+                rawFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.IsActive && f.IsPublished)
+                    .ToListAsync();
+            }
+            catch
+            {
+                usedFeatureFallback = true;
+                rawFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .Select(f => new MasterFeatureCatalog
+                    {
+                        Id = f.Id,
+                        FeatureCode = f.FeatureCode,
+                        Name = f.Name,
+                        Category = f.Category,
+                        Description = f.Description,
+                        Icon = f.Icon,
+                        IsCompulsory = f.IsCompulsory,
+                        MonthlyPrice = f.MonthlyPrice,
+                        QuarterlyPrice = f.QuarterlyPrice,
+                        YearlyPrice = f.YearlyPrice,
+                        IsActive = f.IsActive,
+                        IsPublished = f.IsActive,
+                        SortOrder = f.SortOrder
+                    })
+                    .ToListAsync();
+            }
+
+            if (usedFeatureFallback)
+            {
+                foreach (var f in rawFeatures)
+                {
+                    f.IsAvailableForUse = DefaultAvailableCodes.Contains(f.FeatureCode);
+                    f.IsPublished = f.IsActive;
+                }
+            }
+
+            var allFeatures = rawFeatures
+                .OrderBy(f => GetSuiteMetadata(f.Category).Order)
+                .ThenBy(f => f.SortOrder)
+                .ThenBy(f => f.Name)
+                .ToList();
 
             TotalCapabilities = allFeatures.Count;
             TotalCompulsoryFeatures = allFeatures.Count(f => f.IsCompulsory);
             TotalOptionalFeatures = allFeatures.Count(f => !f.IsCompulsory);
+            AvailableForUseCount = allFeatures.Count(f => f.IsAvailableForUse);
+            ComingSoonCount = TotalCapabilities - AvailableForUseCount;
 
-            Categories = allFeatures.Select(f => f.Category).Distinct().OrderBy(c => c).ToList();
+            Categories = CanonicalSuites.Select(s => s.Name).ToList();
+
+            // Load currency exchange rates for tenant default currency resolution
+            Dictionary<string, MasterCurrencyRate> currencyLookup;
+            try
+            {
+                var rates = await _dbContext.MasterCurrencyRates.AsNoTracking().ToListAsync();
+                currencyLookup = rates
+                    .GroupBy(r => r.CurrencyCode.ToUpperInvariant())
+                    .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                currencyLookup = new Dictionary<string, MasterCurrencyRate>(StringComparer.OrdinalIgnoreCase);
+            }
 
             // 1. Build All Tenants & Feature Usage Matrix
             var matrixList = new List<TenantFeatureUsageSummaryDto>();
-            var now = DateTime.UtcNow;
 
             foreach (var tenant in allTenants)
             {
-                var activeSubs = tenant.FeatureSubscriptions.Where(s => s.IsActive).ToList();
-                var subscribedFeatureIds = new HashSet<Guid>(activeSubs.Select(s => s.MasterFeatureCatalogId));
+                var subsByFeatureId = tenant.FeatureSubscriptions
+                    .GroupBy(s => s.MasterFeatureCatalogId)
+                    .ToDictionary(g => g.Key, g => g.OrderByDescending(s => s.ExpiresAtUtc).First());
 
                 var (usageLevel, usageColor) = DetermineUsageLevel(tenant.LastAccessedUtc, tenant.IsActive, tenant.IsSuspended);
                 var isTenantIdle = usageLevel == "Dormant" || usageLevel == "Inactive" || usageLevel == "Suspended";
                 var relativeTime = FormatRelativeTime(tenant.LastAccessedUtc);
 
-                // Running Add-ons
-                var activeAddons = allFeatures
-                    .Where(f => !f.IsCompulsory && subscribedFeatureIds.Contains(f.Id))
-                    .Select(f =>
-                    {
-                        var sub = activeSubs.First(s => s.MasterFeatureCatalogId == f.Id);
-                        return new ActiveFeaturePillDto
-                        {
-                            FeatureId = f.Id,
-                            Name = f.Name,
-                            FeatureCode = f.FeatureCode,
-                            Category = f.Category,
-                            Icon = string.IsNullOrEmpty(f.Icon) ? "extension" : f.Icon,
-                            Price = sub.RecurringPrice,
-                            Duration = sub.DurationType.ToString(),
-                            IsIdle = isTenantIdle
-                        };
-                    }).ToList();
-
-                var compulsoryCount = TotalCompulsoryFeatures;
-                var addonCount = activeAddons.Count;
-                var totalActiveCount = compulsoryCount + addonCount;
-                var adoptionPercent = TotalCapabilities > 0 ? ((double)totalActiveCount / TotalCapabilities) * 100.0 : 0.0;
-
-                // MRR for this tenant
+                int activeCompulsoryCount = 0;
+                int activeAddonCount = 0;
+                int customPriceCount = 0;
+                int customAvailCount = 0;
                 decimal tenantMrr = 0.00m;
-                foreach (var s in activeSubs)
-                {
-                    if (s.DurationType == SubscriptionBillingDuration.Monthly)
-                    {
-                        tenantMrr += s.RecurringPrice;
-                    }
-                    else if (s.DurationType == SubscriptionBillingDuration.Quarterly)
-                    {
-                        tenantMrr += s.RecurringPrice / 3.0m;
-                    }
-                    else if (s.DurationType == SubscriptionBillingDuration.Yearly)
-                    {
-                        tenantMrr += s.RecurringPrice / 12.0m;
-                    }
-                }
+                var activeAddons = new List<ActiveFeaturePillDto>();
+                var fullFeatureList = new List<TenantFeatureDetailDto>();
 
-                // Build complete list of 37 features for zero-reload modal breakdown
-                var fullFeatureList = allFeatures.Select(f =>
+                foreach (var f in allFeatures)
                 {
-                    var isSubscribed = subscribedFeatureIds.Contains(f.Id);
-                    var isRunning = f.IsCompulsory || isSubscribed;
-                    var sub = activeSubs.FirstOrDefault(s => s.MasterFeatureCatalogId == f.Id);
+                    subsByFeatureId.TryGetValue(f.Id, out var sub);
+                    // On setup, no feature is enabled by default. Only explicitly activated subscriptions are running.
+                    bool isRunning = sub != null &&
+                                     sub.IsActive &&
+                                     !string.Equals(sub.Status, "Suspended", StringComparison.OrdinalIgnoreCase) &&
+                                     !string.Equals(sub.Status, "Inactive", StringComparison.OrdinalIgnoreCase);
 
-                    return new TenantFeatureDetailDto
+                    if (sub?.CustomPriceOverride != null) customPriceCount++;
+                    if (sub?.IsAvailableForUseOverride != null) customAvailCount++;
+
+                    decimal effectiveMonthly = (tenant.UseCustomPricing && sub?.CustomPriceOverride != null)
+                        ? sub.CustomPriceOverride.Value
+                        : (sub?.CustomPriceOverride ?? f.MonthlyPrice);
+
+                    if (isRunning)
+                    {
+                        if (f.IsCompulsory)
+                        {
+                            activeCompulsoryCount++;
+                            if (tenant.UseCustomPricing && sub?.CustomPriceOverride != null && sub.CustomPriceOverride.Value > 0)
+                            {
+                                tenantMrr += sub.CustomPriceOverride.Value;
+                            }
+                        }
+                        else
+                        {
+                            activeAddonCount++;
+                            decimal subPrice = (tenant.UseCustomPricing && sub?.CustomPriceOverride != null)
+                                ? sub.CustomPriceOverride.Value
+                                : (sub!.RecurringPrice > 0 ? sub.RecurringPrice : f.MonthlyPrice);
+
+                            if (sub.DurationType == SubscriptionBillingDuration.Quarterly)
+                                tenantMrr += subPrice / 3.0m;
+                            else if (sub.DurationType == SubscriptionBillingDuration.Yearly)
+                                tenantMrr += subPrice / 12.0m;
+                            else
+                                tenantMrr += subPrice;
+
+                            activeAddons.Add(new ActiveFeaturePillDto
+                            {
+                                FeatureId = f.Id,
+                                Name = f.Name,
+                                FeatureCode = f.FeatureCode,
+                                Category = f.Category,
+                                Icon = string.IsNullOrEmpty(f.Icon) ? "extension" : f.Icon,
+                                Price = subPrice,
+                                Duration = sub.DurationType.ToString(),
+                                IsIdle = isTenantIdle
+                            });
+                        }
+                    }
+
+                    bool isAvailForTenant = (tenant.UseCustomAvailability && sub?.IsAvailableForUseOverride != null)
+                        ? sub.IsAvailableForUseOverride.Value
+                        : f.IsAvailableForUse;
+
+                    fullFeatureList.Add(new TenantFeatureDetailDto
                     {
                         FeatureId = f.Id,
                         Name = f.Name,
                         FeatureCode = f.FeatureCode,
                         Category = f.Category,
+                        SuiteCode = GetSuiteMetadata(f.Category).Code,
                         Icon = string.IsNullOrEmpty(f.Icon) ? "extension" : f.Icon,
                         IsCompulsory = f.IsCompulsory,
                         IsActive = isRunning,
-                        Status = isRunning ? (f.IsCompulsory ? "Included Base" : "Subscribed") : "Not Subscribed",
+                        IsAvailableForUse = isAvailForTenant,
+                        HasCustomPrice = sub?.CustomPriceOverride != null,
+                        Status = isRunning ? (f.IsCompulsory ? "Active (Core)" : "Active (Subscribed)") : "Not Active",
                         MonthlyPrice = f.MonthlyPrice,
-                        RecurringPrice = sub?.RecurringPrice ?? 0.00m,
+                        RecurringPrice = effectiveMonthly,
                         Duration = sub?.DurationType.ToString() ?? "Monthly",
                         ExpiresAtUtc = sub?.ExpiresAtUtc
-                    };
-                }).OrderBy(f => f.Category).ThenBy(f => f.Name).ToList();
+                    });
+                }
+
+                var totalActiveCount = activeCompulsoryCount + activeAddonCount;
+                var adoptionPercent = TotalCapabilities > 0 ? ((double)totalActiveCount / TotalCapabilities) * 100.0 : 0.0;
+
+                var tenantCurrCode = string.IsNullOrWhiteSpace(tenant.DefaultCurrencyCode) ? "USD" : tenant.DefaultCurrencyCode.Trim().ToUpperInvariant();
+                string tenantCurrSymbol = "$";
+                decimal tenantCurrRate = 1.0m;
+                if (currencyLookup.TryGetValue(tenantCurrCode, out var matchedRate))
+                {
+                    tenantCurrSymbol = matchedRate.CurrencySymbol;
+                    tenantCurrRate = matchedRate.RateFromUsd > 0 ? matchedRate.RateFromUsd : 1.0m;
+                }
 
                 matrixList.Add(new TenantFeatureUsageSummaryDto
                 {
@@ -279,20 +514,37 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                     AdminEmail = tenant.AdminEmail,
                     IsActive = tenant.IsActive,
                     IsSuspended = tenant.IsSuspended,
+                    UseCustomPricing = tenant.UseCustomPricing || customPriceCount > 0,
+                    CustomPricedFeaturesCount = customPriceCount,
+                    UseCustomAvailability = tenant.UseCustomAvailability || customAvailCount > 0,
+                    CustomAvailabilityFeaturesCount = customAvailCount,
+                    DefaultCurrencyCode = tenantCurrCode,
+                    CurrencySymbol = tenantCurrSymbol,
+                    ExchangeRateFromUsd = tenantCurrRate,
                     CreatedUtc = tenant.CreatedUtc,
                     LastAccessedUtc = tenant.LastAccessedUtc,
                     LastUsedDisplay = relativeTime,
                     UsageLevel = usageLevel,
                     UsageLevelColor = usageColor,
-                    CompulsoryFeaturesCount = compulsoryCount,
-                    SubscribedAddonsCount = addonCount,
+                    CompulsoryFeaturesCount = activeCompulsoryCount,
+                    SubscribedAddonsCount = activeAddonCount,
                     TotalActiveFeaturesCount = totalActiveCount,
+                    InactiveFeaturesCount = Math.Max(0, TotalCapabilities - totalActiveCount),
                     AdoptionPercentage = adoptionPercent,
-                    MonthlyRevenueMrr = tenantMrr,
+                    MonthlyRevenueMrr = Math.Round(tenantMrr, 2),
                     ActiveAddons = activeAddons,
                     AllFeaturesJson = JsonSerializer.Serialize(fullFeatureList, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })
                 });
             }
+
+            // Global KPI counters
+            PaidTierTenantsCount = matrixList.Count(t => t.MonthlyRevenueMrr > 0);
+            FreeTierTenantsCount = matrixList.Count - PaidTierTenantsCount;
+            CustomPricingTenantsCount = matrixList.Count(t => t.UseCustomPricing);
+            CustomAvailabilityTenantsCount = matrixList.Count(t => t.UseCustomAvailability);
+            TotalPaidAddonSubscriptions = matrixList.Sum(t => t.SubscribedAddonsCount);
+            TotalSubscriptionMrr = matrixList.Sum(m => m.MonthlyRevenueMrr);
+            AverageAdoptionRate = matrixList.Any() ? matrixList.Average(m => m.AdoptionPercentage) : 0.0;
 
             // Apply Tenant Matrix Search & Filters
             var filteredMatrix = matrixList.AsEnumerable();
@@ -312,12 +564,35 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 filteredMatrix = filteredMatrix.Where(t => t.UsageLevel.Equals(UsageFilter, StringComparison.OrdinalIgnoreCase));
             }
 
+            if (!string.IsNullOrWhiteSpace(PolicyFilter) && !PolicyFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
+            {
+                filteredMatrix = PolicyFilter switch
+                {
+                    "CustomPricing" => filteredMatrix.Where(t => t.UseCustomPricing),
+                    "GeneralPricing" => filteredMatrix.Where(t => !t.UseCustomPricing),
+                    "CustomAvailability" => filteredMatrix.Where(t => t.UseCustomAvailability),
+                    "PaidTier" => filteredMatrix.Where(t => t.MonthlyRevenueMrr > 0),
+                    "FreeTier" => filteredMatrix.Where(t => t.MonthlyRevenueMrr <= 0),
+                    _ => filteredMatrix
+                };
+            }
+
             AllTenantsFeatureMatrix = filteredMatrix
-                .OrderByDescending(t => t.LastAccessedUtc ?? DateTime.MinValue)
+                .OrderByDescending(t => t.MonthlyRevenueMrr)
+                .ThenByDescending(t => t.LastAccessedUtc ?? DateTime.MinValue)
                 .ThenBy(t => t.OrganizationName)
                 .ToList();
 
-            // 2. Load all active subscriptions across the platform for feature-level metrics
+            TotalFilteredTenants = AllTenantsFeatureMatrix.Count;
+            TotalTenantPages = Math.Max(1, (int)Math.Ceiling(TotalFilteredTenants / (double)PageSize));
+            if (PageNumber > TotalTenantPages) PageNumber = TotalTenantPages;
+
+            PaginatedTenants = AllTenantsFeatureMatrix
+                .Skip((PageNumber - 1) * PageSize)
+                .Take(PageSize)
+                .ToList();
+
+            // 2. Build Metrics for Each Capability (Tab 2)
             var activeSubscriptions = allTenants
                 .SelectMany(t => t.FeatureSubscriptions)
                 .Where(s => s.IsActive)
@@ -327,36 +602,28 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 .GroupBy(s => s.MasterFeatureCatalogId)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            // Build metrics for each feature
             var metricsList = new List<FeatureAdoptionMetricDto>();
 
             foreach (var feat in allFeatures)
             {
                 subsByFeature.TryGetValue(feat.Id, out var subs);
                 var subCount = subs?.Count ?? 0;
-                
-                // If compulsory, every active tenant is an active user
-                var effectiveSubCount = feat.IsCompulsory ? TotalTenants : subCount;
+
+                var effectiveSubCount = subCount;
                 var adoptionRate = TotalTenants > 0 ? ((double)effectiveSubCount / TotalTenants) * 100.0 : 0.0;
 
-                // Calculate Monthly Equivalent Revenue (MRR)
                 decimal featureMrr = 0.00m;
                 if (subs != null && subs.Any())
                 {
                     foreach (var s in subs)
                     {
-                        if (s.DurationType == SubscriptionBillingDuration.Monthly)
-                        {
-                            featureMrr += s.RecurringPrice;
-                        }
-                        else if (s.DurationType == SubscriptionBillingDuration.Quarterly)
-                        {
-                            featureMrr += s.RecurringPrice / 3.0m;
-                        }
+                        decimal price = s.CustomPriceOverride ?? (s.RecurringPrice > 0 ? s.RecurringPrice : feat.MonthlyPrice);
+                        if (s.DurationType == SubscriptionBillingDuration.Quarterly)
+                            featureMrr += price / 3.0m;
                         else if (s.DurationType == SubscriptionBillingDuration.Yearly)
-                        {
-                            featureMrr += s.RecurringPrice / 12.0m;
-                        }
+                            featureMrr += price / 12.0m;
+                        else
+                            featureMrr += price;
                     }
                 }
 
@@ -365,109 +632,44 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
 
                 if (feat.IsCompulsory)
                 {
-                    classification = "Compulsory Base";
-                    statusColor = "#3b82f6"; // Blue
+                    classification = "Compulsory Core";
+                    statusColor = "#0050E5";
                 }
                 else if (adoptionRate >= 70.0)
                 {
-                    classification = "High Performing";
-                    statusColor = "#10b981"; // Emerald
+                    classification = "High Adoption";
+                    statusColor = "#10b981";
                 }
                 else if (adoptionRate >= 30.0)
                 {
                     classification = "Moderate";
-                    statusColor = "#6366f1"; // Indigo
+                    statusColor = "#6366f1";
                 }
                 else if (subCount > 0)
                 {
-                    classification = "Underperforming";
-                    statusColor = "#f59e0b"; // Amber
+                    classification = "Growing";
+                    statusColor = "#f59e0b";
                 }
                 else
                 {
-                    classification = "Zero Adoption";
-                    statusColor = "#64748b"; // Slate
+                    classification = "0 Subscribers";
+                    statusColor = "#64748b";
                 }
 
-                var activeLiveCount = subs?.Count(s =>
-                {
-                    var t = allTenants.FirstOrDefault(x => x.Id == s.MasterTenantCatalogId);
-                    return t != null && t.IsActive && !t.IsSuspended && t.LastAccessedUtc.HasValue && (DateTime.UtcNow - t.LastAccessedUtc.Value).TotalDays <= 30;
-                }) ?? 0;
+                var (suiteCode, _) = GetSuiteMetadata(feat.Category);
 
                 metricsList.Add(new FeatureAdoptionMetricDto
                 {
                     Feature = feat,
+                    SuiteCode = suiteCode,
                     SubscribersCount = effectiveSubCount,
-                    ActiveLiveUsageCount = activeLiveCount,
                     AdoptionRate = adoptionRate,
-                    MonthlyRecurringRevenue = featureMrr,
+                    MonthlyRecurringRevenue = Math.Round(featureMrr, 2),
                     Classification = classification,
                     StatusColor = statusColor
                 });
             }
 
-            // Summary metrics
-            TotalSubscriptionMrr = matrixList.Sum(m => m.MonthlyRevenueMrr);
-            AverageAdoptionRate = matrixList.Any() ? matrixList.Average(m => m.AdoptionPercentage) : 0.0;
-
-            HighPerformingCount = metricsList.Count(m => !m.Feature.IsCompulsory && m.AdoptionRate >= 70.0);
-            ModerateCount = metricsList.Count(m => !m.Feature.IsCompulsory && m.AdoptionRate >= 30.0 && m.AdoptionRate < 70.0);
-            UnderperformingCount = metricsList.Count(m => !m.Feature.IsCompulsory && m.SubscribersCount > 0 && m.AdoptionRate < 30.0);
-            ZeroAdoptionCount = metricsList.Count(m => !m.Feature.IsCompulsory && m.SubscribersCount == 0);
-
-            // Top performing optional feature strictly requires active subscribers AND confirmed live usage activity
-            TopPerformingFeature = metricsList
-                .Where(m => !m.Feature.IsCompulsory && m.SubscribersCount > 0 && m.ActiveLiveUsageCount > 0)
-                .OrderByDescending(m => m.AdoptionRate)
-                .ThenByDescending(m => m.MonthlyRecurringRevenue)
-                .FirstOrDefault();
-
-            LowestPerformingFeature = metricsList
-                .Where(m => !m.Feature.IsCompulsory && m.SubscribersCount > 0)
-                .OrderBy(m => m.AdoptionRate)
-                .ThenBy(m => m.SubscribersCount)
-                .FirstOrDefault();
-
-            // Category Distributions
-            var categoryColors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "People, Community & Collaboration", "#3b82f6" },
-                { "Workforce, Rota & Scheduling", "#10b981" },
-                { "Reports, Forms & Analytics", "#8b5cf6" },
-                { "Events & Training Management", "#f59e0b" },
-                { "Finance & Commercial Revenue", "#06b6d4" },
-                { "Operations & Workflows", "#ec4899" },
-                { "Communication, AI & Support", "#14b8a6" },
-                { "Compliance, Learning & Certification", "#f97316" },
-                { "Demographics & Civic Census", "#6366f1" },
-                { "Life Events & Publications", "#e11d48" }
-            };
-
-            var catGroups = metricsList.GroupBy(m => m.Feature.Category).ToList();
-            var totalFeaturesCount = metricsList.Count;
-
-            CategoryDistributions = catGroups.Select(g =>
-            {
-                var catName = g.Key;
-                var color = categoryColors.TryGetValue(catName, out var col) ? col : "#64748b";
-                var catMrr = g.Sum(x => x.MonthlyRecurringRevenue);
-                var catSubCount = g.Sum(x => x.SubscribersCount);
-                var avgRate = g.Average(x => x.AdoptionRate);
-
-                return new CategoryDistributionDto
-                {
-                    CategoryName = catName,
-                    Color = color,
-                    FeatureCount = g.Count(),
-                    PercentageOfTotal = totalFeaturesCount > 0 ? ((double)g.Count() / totalFeaturesCount) * 100.0 : 0.0,
-                    TotalSubscribers = catSubCount,
-                    TotalMrr = catMrr,
-                    AverageAdoption = avgRate
-                };
-            }).OrderByDescending(c => c.TotalMrr).ThenByDescending(c => c.AverageAdoption).ToList();
-
-            // Filter for Ranked Features Table
             var filteredRanked = metricsList.AsEnumerable();
 
             if (!string.IsNullOrWhiteSpace(Search))
@@ -476,7 +678,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 filteredRanked = filteredRanked.Where(m =>
                     m.Feature.Name.ToLowerInvariant().Contains(term) ||
                     m.Feature.FeatureCode.ToLowerInvariant().Contains(term) ||
-                    (m.Feature.Description != null && m.Feature.Description.ToLowerInvariant().Contains(term)));
+                    m.Feature.Category.ToLowerInvariant().Contains(term));
             }
 
             if (!string.IsNullOrWhiteSpace(Category))
@@ -484,70 +686,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
                 filteredRanked = filteredRanked.Where(m => m.Feature.Category.Equals(Category, StringComparison.OrdinalIgnoreCase));
             }
 
-            RankedFeatures = filteredRanked
-                .OrderByDescending(m => m.AdoptionRate)
-                .ThenByDescending(m => m.MonthlyRecurringRevenue)
-                .ThenBy(m => m.Feature.Name)
+            RankedFeatures = filteredRanked.ToList();
+            TotalFilteredFeatures = RankedFeatures.Count;
+            TotalFeaturePages = Math.Max(1, (int)Math.Ceiling(TotalFilteredFeatures / (double)FeaturePageSize));
+            if (FeaturePageNumber > TotalFeaturePages) FeaturePageNumber = TotalFeaturePages;
+
+            PaginatedRankedFeatures = RankedFeatures
+                .Skip((FeaturePageNumber - 1) * FeaturePageSize)
+                .Take(FeaturePageSize)
                 .ToList();
-
-            // 3. Load Selected Tenant for Deep-Dive Inspector
-            if (TenantOptions.Any())
-            {
-                var targetTenantId = SelectedTenantId ?? TenantOptions.First().Id;
-                InspectedTenant = allTenants.FirstOrDefault(t => t.Id == targetTenantId) ?? TenantOptions.First();
-                SelectedTenantId = InspectedTenant.Id;
-
-                var tenantSubscriptions = InspectedTenant.FeatureSubscriptions.ToList();
-                var subscribedMap = tenantSubscriptions.ToDictionary(s => s.MasterFeatureCatalogId);
-
-                // Build active features for inspected tenant (Compulsory + Subscribed Add-ons)
-                TenantActiveFeatures = allFeatures
-                    .Where(f => f.IsCompulsory || subscribedMap.ContainsKey(f.Id))
-                    .Select(f =>
-                    {
-                        var isSub = subscribedMap.TryGetValue(f.Id, out var sub);
-                        var active = f.IsCompulsory || (sub?.IsActive ?? false);
-
-                        return new TenantFeatureUsageItemDto
-                        {
-                            SubscriptionId = sub?.Id ?? Guid.Empty,
-                            Feature = f,
-                            Status = active ? (f.IsCompulsory ? "Compulsory Base" : "Active Subscription") : "Inactive",
-                            IsActive = active,
-                            BillingDuration = sub?.DurationType.ToString() ?? "Included",
-                            RecurringPrice = sub?.RecurringPrice ?? 0.00m,
-                            ActivatedUtc = sub?.StartsAtUtc ?? InspectedTenant.CreatedUtc,
-                            ExpiresUtc = sub?.ExpiresAtUtc,
-                            LastAccessedUtc = InspectedTenant.LastAccessedUtc ?? InspectedTenant.CreatedUtc,
-                            DaysActive = (int)Math.Max(1, (DateTime.UtcNow - (sub?.StartsAtUtc ?? InspectedTenant.CreatedUtc)).TotalDays)
-                        };
-                    })
-                    .OrderByDescending(f => f.Feature.IsCompulsory)
-                    .ThenBy(f => f.Feature.Category)
-                    .ThenBy(f => f.Feature.Name)
-                    .ToList();
-
-                // 365-Day Historical Telemetry
-                var cutoffDate = DateTime.UtcNow.AddDays(-365);
-                Tenant365DayUsageHistory = tenantSubscriptions
-                    .Where(s => s.CreatedUtc >= cutoffDate || s.ExpiresAtUtc >= cutoffDate || s.IsActive)
-                    .Select(s => new TenantFeatureUsageItemDto
-                    {
-                        SubscriptionId = s.Id,
-                        Feature = s.MasterFeatureCatalog,
-                        Status = s.Status ?? (s.IsActive ? "Active" : "Expired"),
-                        IsActive = s.IsActive,
-                        BillingDuration = s.DurationType.ToString(),
-                        RecurringPrice = s.RecurringPrice,
-                        ActivatedUtc = s.StartsAtUtc,
-                        ExpiresUtc = s.ExpiresAtUtc,
-                        LastAccessedUtc = InspectedTenant.LastAccessedUtc ?? s.CreatedUtc,
-                        DaysActive = (int)Math.Max(1, ((s.ExpiresAtUtc < DateTime.UtcNow ? s.ExpiresAtUtc : DateTime.UtcNow) - s.StartsAtUtc).TotalDays)
-                    })
-                    .OrderByDescending(f => f.IsActive)
-                    .ThenByDescending(f => f.ActivatedUtc)
-                    .ToList();
-            }
         }
 
         /// <summary>
@@ -555,39 +702,15 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// </summary>
         private static (string Level, string Color) DetermineUsageLevel(DateTime? lastAccessedUtc, bool isActive, bool isSuspended)
         {
-            if (isSuspended)
-            {
-                return ("Suspended", "#ef4444"); // Red
-            }
-
-            if (!isActive)
-            {
-                return ("Inactive", "#94a3b8"); // Slate
-            }
-
-            if (!lastAccessedUtc.HasValue)
-            {
-                return ("Dormant", "#64748b"); // Slate
-            }
+            if (isSuspended) return ("Suspended", "#ef4444");
+            if (!isActive) return ("Inactive", "#94a3b8");
+            if (!lastAccessedUtc.HasValue) return ("Dormant", "#64748b");
 
             var diff = DateTime.UtcNow - lastAccessedUtc.Value;
-
-            if (diff.TotalHours <= 24)
-            {
-                return ("High Activity", "#10b981"); // Green
-            }
-
-            if (diff.TotalDays <= 7)
-            {
-                return ("Active", "#3b82f6"); // Blue
-            }
-
-            if (diff.TotalDays <= 30)
-            {
-                return ("Moderate", "#f59e0b"); // Amber
-            }
-
-            return ("Dormant", "#64748b"); // Slate
+            if (diff.TotalHours <= 24) return ("High Activity", "#10b981");
+            if (diff.TotalDays <= 7) return ("Active", "#0050E5");
+            if (diff.TotalDays <= 30) return ("Moderate", "#f59e0b");
+            return ("Dormant", "#64748b");
         }
 
         /// <summary>
@@ -595,55 +718,37 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         /// </summary>
         private static string FormatRelativeTime(DateTime? utc)
         {
-            if (!utc.HasValue)
-            {
-                return "No recorded activity";
-            }
-
+            if (!utc.HasValue) return "No recorded activity";
             var diff = DateTime.UtcNow - utc.Value;
-
-            if (diff.TotalSeconds < 60)
-            {
-                return "Just now";
-            }
-            if (diff.TotalMinutes < 60)
-            {
-                var mins = (int)diff.TotalMinutes;
-                return $"{mins} min{(mins > 1 ? "s" : "")} ago";
-            }
-            if (diff.TotalHours < 24)
-            {
-                var hours = (int)diff.TotalHours;
-                return $"{hours} hour{(hours > 1 ? "s" : "")} ago";
-            }
-            if (diff.TotalDays < 7)
-            {
-                var days = (int)diff.TotalDays;
-                return $"{days} day{(days > 1 ? "s" : "")} ago";
-            }
-            if (diff.TotalDays < 30)
-            {
-                var weeks = (int)(diff.TotalDays / 7);
-                return $"{weeks} week{(weeks > 1 ? "s" : "")} ago";
-            }
-
+            if (diff.TotalSeconds < 60) return "Just now";
+            if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+            if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+            if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+            if (diff.TotalDays < 30) return $"{(int)(diff.TotalDays / 7)}w ago";
             return utc.Value.ToString("MMM dd, yyyy");
         }
 
         #region DTOs
 
         /// <summary>
-        /// Data Transfer Object capturing aggregate feature usage and activity telemetry for a tenant.
+        /// Data Transfer Object capturing aggregate feature usage, custom pricing/availability policies, and activity telemetry for a tenant.
         /// </summary>
         public class TenantFeatureUsageSummaryDto
         {
-            public int TenantId { get; set; }
+            public Guid TenantId { get; set; }
             public string OrganizationName { get; set; } = string.Empty;
             public string TenantKey { get; set; } = string.Empty;
             public string PrimaryDomain { get; set; } = string.Empty;
             public string? AdminEmail { get; set; }
             public bool IsActive { get; set; }
             public bool IsSuspended { get; set; }
+            public bool UseCustomPricing { get; set; }
+            public int CustomPricedFeaturesCount { get; set; }
+            public bool UseCustomAvailability { get; set; }
+            public int CustomAvailabilityFeaturesCount { get; set; }
+            public string DefaultCurrencyCode { get; set; } = "USD";
+            public string CurrencySymbol { get; set; } = "$";
+            public decimal ExchangeRateFromUsd { get; set; } = 1.0m;
             public DateTime CreatedUtc { get; set; }
             public DateTime? LastAccessedUtc { get; set; }
             public string LastUsedDisplay { get; set; } = "Never";
@@ -652,6 +757,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             public int CompulsoryFeaturesCount { get; set; }
             public int SubscribedAddonsCount { get; set; }
             public int TotalActiveFeaturesCount { get; set; }
+            public int InactiveFeaturesCount { get; set; }
             public double AdoptionPercentage { get; set; }
             public decimal MonthlyRevenueMrr { get; set; }
             public List<ActiveFeaturePillDto> ActiveAddons { get; set; } = new();
@@ -682,9 +788,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             public string Name { get; set; } = string.Empty;
             public string FeatureCode { get; set; } = string.Empty;
             public string Category { get; set; } = string.Empty;
+            public string SuiteCode { get; set; } = "SUITE";
             public string Icon { get; set; } = "extension";
             public bool IsCompulsory { get; set; }
             public bool IsActive { get; set; }
+            public bool IsAvailableForUse { get; set; }
+            public bool HasCustomPrice { get; set; }
             public string Status { get; set; } = string.Empty;
             public decimal MonthlyPrice { get; set; }
             public decimal RecurringPrice { get; set; }
@@ -698,12 +807,12 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
         public class FeatureAdoptionMetricDto
         {
             public MasterFeatureCatalog Feature { get; set; } = null!;
+            public string SuiteCode { get; set; } = "SUITE";
             public int SubscribersCount { get; set; }
-            public int ActiveLiveUsageCount { get; set; }
             public double AdoptionRate { get; set; }
             public decimal MonthlyRecurringRevenue { get; set; }
             public string Classification { get; set; } = "Moderate";
-            public string StatusColor { get; set; } = "#3b82f6";
+            public string StatusColor { get; set; } = "#0050E5";
         }
 
         /// <summary>
@@ -718,23 +827,6 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Features
             public int TotalSubscribers { get; set; }
             public decimal TotalMrr { get; set; }
             public double AverageAdoption { get; set; }
-        }
-
-        /// <summary>
-        /// Telemetry item for tenant's feature subscriptions.
-        /// </summary>
-        public class TenantFeatureUsageItemDto
-        {
-            public Guid SubscriptionId { get; set; }
-            public MasterFeatureCatalog Feature { get; set; } = null!;
-            public string Status { get; set; } = "Active";
-            public bool IsActive { get; set; }
-            public string BillingDuration { get; set; } = "Monthly";
-            public decimal RecurringPrice { get; set; }
-            public DateTime ActivatedUtc { get; set; }
-            public DateTime? ExpiresUtc { get; set; }
-            public DateTime? LastAccessedUtc { get; set; }
-            public int DaysActive { get; set; }
         }
 
         #endregion

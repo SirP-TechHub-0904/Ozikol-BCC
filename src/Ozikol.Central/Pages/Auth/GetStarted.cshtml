@@ -19,7 +19,7 @@
                 <div style="width: 40px; height: 2px; background: #e2e8f0;" id="stepDivider"></div>
                 <div id="stepBadge2" style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; color: #94a3b8; background: #f8fafc; padding: 6px 14px; border-radius: 20px;">
                     <span style="width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span>
-                    Features &amp; Promo
+                    Your Features
                 </div>
             </div>
         </div>
@@ -121,231 +121,100 @@
                     <div class="g-recaptcha" data-sitekey="@Model.RecaptchaSiteKey"></div>
                 </div>
 
-                <button type="button" onclick="goToStep2()" class="btn-auth-submit" style="margin-top: 10px; width: 100%; font-size: 15px; font-weight: 700; padding: 14px;">
-                    Continue to Feature Selection &rarr;
+                <button type="button" onclick="goToStep2()" class="btn-auth-submit" style="margin-top: 10px; width: 100%; font-size: 15px; font-weight: 700; padding: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>Continue to Your Features</span>
+                    <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
                 </button>
             </div>
 
-            @* ── STEP 2: Feature Selection & Voucher / Trial ── *@
+            @* ── STEP 2: Your Features (display-only, no billing) ── *@
             <div id="step2Container" style="display: none;">
                 <div class="auth-header" style="text-align: left; margin-bottom: 20px;">
-                    <h1 class="auth-title" style="font-size: 24px; color: #0f172a; margin: 0 0 6px;">Select Features</h1>
-                    <p class="auth-subtitle" style="margin: 0; color: #64748b;">Review included platform capabilities and apply any promotional discounts.</p>
+                    <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 800; color: var(--ozikol-primary); background: rgba(0, 80, 229, 0.08); padding: 5px 14px; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">verified</span>
+                        <span>@Model.AllFeatures.Count Built-in Capabilities</span>
+                    </div>
+                    <h1 class="auth-title" style="font-size: 25px; font-weight: 900; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.4px;">Everything is included</h1>
+                    <p class="auth-subtitle" style="margin: 0; color: #475569; font-size: 14.5px; line-height: 1.5;">
+                        We have over <strong>@Model.AllFeatures.Count powerful features</strong> ready to support <span id="displayOrgName" style="font-weight: 800; color: #0f172a;">@(string.IsNullOrWhiteSpace(Model.Input.OrganizationName) ? "your organization" : Model.Input.OrganizationName)</span>.
+                    </p>
                 </div>
 
-                @* 1. Included Features (Auto-Included in Base Plan) *@
-                <div style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.06) 0%, rgba(16, 185, 129, 0.06) 100%); border: 1px solid #bfdbfe; border-radius: 14px; padding: 22px; margin-bottom: 24px;">
-                    
-                    @* Center Header: Big, Bold Free Trial Badge & Base Plan Price *@
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <div style="display: inline-flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 900; color: #065f46; background: #ecfdf5; border: 2px solid #10b981; padding: 8px 24px; border-radius: 9999px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.18); margin-bottom: 10px;">
-                            <span class="material-symbols-outlined" style="font-size: 22px; color: #059669;">verified</span>
-                            <span>@Model.TrialDays-Day Free Trial</span>
+                @* Standout, High-Trust "No Credit Card Required" Hero Banner *@
+                <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 40%, #eff6ff 100%); border: 2px solid #10b981; border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 8px 24px -4px rgba(16, 185, 129, 0.16); display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="width: 52px; height: 52px; border-radius: 14px; background: #10b981; color: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); flex-shrink: 0;">
+                            <span class="material-symbols-outlined" style="font-size: 28px;">credit_card_off</span>
                         </div>
-                        <div style="font-size: 22px; font-weight: 900; color: #0f172a; margin-top: 6px; letter-spacing: -0.3px;">
-                            <span>Annual Base Plan: @Model.FormattedBasePlanPrice</span>
-                            <span style="color: #059669; font-weight: 900; margin-left: 8px;">(Pay Nothing Today)</span>
-                        </div>
-                        <p style="font-size: 13.5px; color: #64748b; margin: 8px auto 0 auto; font-weight: 500; max-width: 600px;">
-                            Core foundational capabilities automatically provisioned with dedicated secure cloud infrastructure and daily automated backups.
-                        </p>
-                    </div>
-
-                    @* Alert Note: Request for Free 1-Year Voucher *@
-                    <div style="background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 12px; padding: 14px 20px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.08);">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <span class="material-symbols-outlined" style="font-size: 26px; color: #d97706;">card_giftcard</span>
-                            <div>
-                                <div style="font-size: 14px; font-weight: 800; color: #92400e;">
-                                    @SharedLocalizer["GetStarted_Voucher_Title"]
-                                </div>
-                                <div style="font-size: 13px; font-weight: 500; color: #b45309; margin-top: 2px;">
-                                    @SharedLocalizer["GetStarted_Voucher_Desc"]
-                                </div>
-                            </div>
-                        </div>
-                        <a href="/@currentCulture/vouchers/apply" target="_blank" rel="noopener noreferrer" style="font-size: 13px; font-weight: 800; color: #ffffff; background: #d97706; padding: 8px 16px; border-radius: 8px; text-decoration: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25); transition: background 0.15s ease;">
-                            <span class="material-symbols-outlined" style="font-size: 17px;">redeem</span>
-                            <span>@SharedLocalizer["GetStarted_Voucher_Btn"]</span>
-                            <span style="font-size: 15px;">&rarr;</span>
-                        </a>
-                    </div>
-
-                    @{
-                        // Shared serial counter — continuous numbering across compulsory AND addon feature sections
-                        int featureSerialNo = 0;
-
-                        // Build a letter index (A, B, C...) for all unique suite categories across both sections
-                        var allSuiteCategories = Model.CompulsoryFeatures
-                            .Select(f => f.Category)
-                            .Union(Model.AddonFeatures.Select(f => f.Category))
-                            .OrderBy(c => c)
-                            .ToList();
-                        var suiteLetterMap = new Dictionary<string, char>();
-                        for (int i = 0; i < allSuiteCategories.Count; i++)
-                        {
-                            suiteLetterMap[allSuiteCategories[i]] = (char)('A' + i);
-                        }
-                    }
-
-                    @if (Model.CompulsoryFeatures.Any())
-                    {
-                        var featureGroups = Model.CompulsoryFeatures.GroupBy(f => f.Category).OrderBy(g => g.Key);
-                        <div style="display: flex; flex-direction: column; gap: 22px;">
-                            @foreach (var suite in featureGroups)
-                            {
-                                <div>
-                                    <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px dashed #cbd5e1;">
-                                        <span style="background: var(--ozikol-primary); color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.06em; white-space: nowrap;">Suite @suiteLetterMap[suite.Key]</span>
-                                        <span style="color: #334155;">@suite.Key</span>
-                                    </div>
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-                                        @foreach (var feat in suite)
-                                        {
-                                            featureSerialNo++;
-                                            <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #e2e8f0; padding: 10px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #1e293b;">
-                                                <span style="color: #10b981; font-weight: 800;">✓</span>
-                                                <span>@featureSerialNo. @feat.Name</span>
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-                            <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid #e2e8f0; padding: 10px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600; color: #1e293b;">
-                                <span style="color: #10b981; font-weight: 800;">✓</span>
-                                <span>Identity, RBAC, Cloud Storage, Audit Logs, Backups</span>
-                            </div>
-                        </div>
-                    }
-                </div>
-
-                @* 2. Additional Features (Rendered dynamically only when extra features exist) *@
-                @if (Model.AddonFeatures.Any())
-                {
-                    <div style="margin-bottom: 24px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
-                            <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px;">
-                                <span class="material-symbols-outlined" style="color: var(--ozikol-primary); font-size: 20px;">widgets</span>
-                                Additional Features (@Model.AddonFeatures.Count Available)
-                            </h3>
-                            <div style="font-size: 12px; color: #64748b;">
-                                Select extra capabilities to activate for your organization
-                            </div>
-                        </div>
-
-                        <div style="max-height: 420px; overflow-y: auto; padding: 8px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc;">
-                            @{
-                                var addonGroups = Model.AddonFeatures.GroupBy(f => f.Category).OrderBy(g => g.Key);
-                            }
-                            @foreach (var suite in addonGroups)
-                            {
-                                <div style="margin-bottom: 22px;">
-                                    <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; padding: 6px 12px 8px; border-bottom: 1.5px dashed #cbd5e1;">
-                                        <span style="background: var(--ozikol-primary); color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.06em; white-space: nowrap;">Suite @suiteLetterMap[suite.Key]</span>
-                                        <span style="color: #334155;">@suite.Key</span>
-                                    </div>
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; padding: 0 4px;">
-                                        @foreach (var feat in suite)
-                                        {
-                                            featureSerialNo++;
-                                            var featYearlyPrice = feat.YearlyPrice > 0 ? feat.YearlyPrice : feat.MonthlyPrice * 10;
-                                            <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 14px; transition: all 0.15s ease;" class="feature-card-wrapper" id="card_@feat.Id">
-                                                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; margin: 0;">
-                                                    <input type="checkbox" name="Input.SelectedFeatureIds" value="@feat.Id" id="cb_@feat.Id"
-                                                           data-monthly-price="@feat.MonthlyPrice"
-                                                           data-yearly-price="@featYearlyPrice"
-                                                           onchange="updateCartTotal()"
-                                                           style="width: 18px; height: 18px; margin-top: 2px; accent-color: var(--ozikol-primary); cursor: pointer;" />
-                                                    <div style="flex: 1;">
-                                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                                            <div style="font-size: 13.5px; font-weight: 700; color: #0f172a;">@featureSerialNo. @feat.Name</div>
-                                                            <span id="priceBadge_@feat.Id" style="font-size: 11.5px; font-weight: 700; color: var(--ozikol-primary); background: #eff6ff; padding: 2px 6px; border-radius: 4px; white-space: nowrap;">
-                                                                @(feat.MonthlyPrice == 0 ? "Free" : $"{Model.ActiveCurrencySymbol}{feat.MonthlyPrice:N0}/mo")
-                                                            </span>
-                                                        </div>
-                                                        <div style="font-size: 11.5px; color: #64748b; margin-top: 4px; line-height: 1.4;">
-                                                            @(feat.Description ?? feat.Category)
-                                                        </div>
-                                                    </div>
-                                                </label>
-                                                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                                                    <span style="font-size: 11px; font-weight: 600; color: #64748b;">Billing Cadence:</span>
-                                                    <select class="feature-cadence-select" id="cadence_@feat.Id" data-feature-id="@feat.Id" onchange="onFeatureCadenceChanged('@feat.Id')" style="font-size: 11.5px; font-weight: 700; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #0f172a; cursor: pointer;">
-                                                        <option value="Monthly" data-price="@feat.MonthlyPrice" selected>Monthly (@Model.ActiveCurrencySymbol@feat.MonthlyPrice.ToString("N0")/mo)</option>
-                                                        <option value="Yearly" data-price="@featYearlyPrice">Yearly (@Model.ActiveCurrencySymbol@featYearlyPrice.ToString("N0")/yr — Save 20%)</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
-
-                <input type="hidden" asp-for="Input.FeatureCadencesJson" id="hiddenFeatureCadencesJson" />
-
-                @* 3. Coupon Voucher / Promo Box *@
-                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 24px;">
-                    <label class="form-label" style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 8px;">
-                        Promotional Voucher / Partner Coupon
-                    </label>
-                    <div style="display: flex; gap: 10px;">
-                        <input asp-for="Input.CouponCode" id="inputCouponCode" placeholder="e.g. PROMO-XXXX" 
-                               class="form-input" style="flex: 1; font-family: monospace; font-size: 14px; font-weight: 700; text-transform: uppercase;" />
-                        <button type="button" onclick="applyCouponCode()" class="btn-auth-outline" style="padding: 10px 18px; font-weight: 700; font-size: 13px; white-space: nowrap; border: 1.5px solid var(--ozikol-primary); color: var(--ozikol-primary); background: transparent; border-radius: 8px; cursor: pointer;">
-                            Apply Voucher
-                        </button>
-                    </div>
-                    <div id="couponFeedback" style="font-size: 12.5px; margin-top: 8px; display: none;"></div>
-                </div>
-
-                @* 4. Cart Breakdown & Live Total *@
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 24px;">
-                    <div style="display: flex; justify-content: space-between; font-size: 13.5px; color: #64748b; margin-bottom: 6px;">
-                        <span>Annual Platform Plan</span>
-                        <span id="basePlanDisplay" style="font-weight: 600; color: #0f172a;">@Model.FormattedBasePlanPrice</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; font-size: 13.5px; color: #10b981; font-weight: 600; margin-bottom: 6px;">
-                        <span>Complimentary Free Trial</span>
-                        <span>@Model.TrialDays Days (@Model.ActiveCurrencySymbol 0.00 Due Today)</span>
-                    </div>
-                    @if (Model.AddonFeatures.Any())
-                    {
-                        <div style="display: flex; justify-content: space-between; font-size: 13.5px; color: #64748b; margin-bottom: 6px;">
-                            <span>Selected Additional Features (<span id="selectedCount">0</span> selected)</span>
-                            <span id="addonsTotalDisplay" style="font-weight: 600; color: #0f172a;">@Model.ActiveCurrencySymbol 0.00/mo</span>
-                        </div>
-                    }
-                    <div id="discountRow" style="display: none; justify-content: space-between; font-size: 13.5px; color: #10b981; font-weight: 700; margin-bottom: 6px;">
-                        <span>Promotional Voucher Discount (<span id="discountBadgeText">100% OFF</span>)</span>
-                        <span id="discountAmountDisplay">-@Model.FormattedBasePlanPrice</span>
-                    </div>
-                    <div style="height: 1px; background: #e2e8f0; margin: 10px 0;"></div>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <div style="font-size: 15px; font-weight: 800; color: #0f172a;">Total Due Today</div>
-                            <div id="trialGuaranteeText" style="font-size: 11.5px; color: #10b981; font-weight: 600;">Pay nothing today • Full access for @Model.TrialDays days</div>
-                        </div>
-                        <div id="finalTotalDisplay" style="font-size: 22px; font-weight: 800; color: #10b981;">
-                            @Model.ActiveCurrencySymbol 0.00 Free
+                            <div style="font-size: 18px; font-weight: 900; color: #065f46; letter-spacing: -0.2px;">
+                                No Card Needed · Start Completely Free
+                            </div>
+                            <div style="font-size: 13.5px; font-weight: 500; color: #047857; margin-top: 3px;">
+                                Instant workspace setup with zero financial commitment or hidden charges.
+                            </div>
                         </div>
                     </div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #065f46; background: rgba(16, 185, 129, 0.14); padding: 6px 12px; border-radius: 8px;">
+                            <span style="color: #059669; font-weight: 900;">✓</span> No Payment Details
+                        </div>
+                        <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #065f46; background: rgba(16, 185, 129, 0.14); padding: 6px 12px; border-radius: 8px;">
+                            <span style="color: #059669; font-weight: 900;">✓</span> Instant Setup
+                        </div>
+                    </div>
+                </div>
+
+                @* All active features grouped by suite: numbered, display-only, no checkboxes or prices *@
+                @{
+                    int featureSerialNo = 0;
+                    var featureGroups = Model.AllFeatures
+                        .GroupBy(f => f.Category)
+                        .OrderBy(g => GetStartedModel.GetSuiteOrder(g.Key));
+
+                    var allCategories = featureGroups.Select(g => g.Key).ToList();
+                    var suiteLetterMap = new Dictionary<string, char>();
+                    for (int i = 0; i < allCategories.Count; i++)
+                    {
+                        suiteLetterMap[allCategories[i]] = (char)('A' + i);
+                    }
+                }
+                <div style="max-height: 460px; overflow-y: auto; padding: 16px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; margin-bottom: 24px; display: flex; flex-direction: column; gap: 22px;">
+                    @foreach (var group in featureGroups)
+                    {
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px dashed #cbd5e1; color: #334155;">
+                                <span style="background: var(--ozikol-primary); color: #ffffff; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 4px; letter-spacing: 0.06em; white-space: nowrap;">Suite @(suiteLetterMap.TryGetValue(group.Key, out var letter) ? letter : '•')</span>
+                                <span>@group.Key</span>
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+                                @foreach (var feat in group.OrderBy(f => f.SortOrder).ThenBy(f => f.Name))
+                                {
+                                    featureSerialNo++;
+                                    <div style="display: flex; align-items: flex-start; gap: 10px; background: #ffffff; border: 1px solid #e2e8f0; padding: 12px 14px; border-radius: 10px;">
+                                        <span style="color: #10b981; font-weight: 800; margin-top: 1px;">✓</span>
+                                        <div>
+                                            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">@featureSerialNo. @feat.Name</div>
+                                            @if (!string.IsNullOrWhiteSpace(feat.Description))
+                                            {
+                                                <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; line-height: 1.4;">@feat.Description</div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
                 </div>
 
                 @* Navigation & Submission Buttons *@
                 <div style="display: flex; gap: 12px;">
                     <button type="button" onclick="goToStep1()" class="btn-auth-outline" style="flex: 1; padding: 12px; font-weight: 700; border-radius: 8px; border: 1px solid #cbd5e1; color: #64748b; background: #fff; cursor: pointer;">
-                        &larr; Back to Step 1
+                        &larr; Back
                     </button>
-                    <button type="submit" id="btnSubmit" class="btn-auth-submit" style="flex: 2; padding: 14px; font-size: 15px; font-weight: 700; margin: 0;">
-                        <span id="submitBtnText">🚀 Start @Model.TrialDays-Day Free Trial</span>
+                    <button type="submit" id="btnSubmit" class="btn-auth-submit" style="flex: 2; padding: 14px; font-size: 15px; font-weight: 700; margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">rocket_launch</span>
+                        <span id="submitBtnText">Start for free — No card needed</span>
                     </button>
                 </div>
             </div>
@@ -398,7 +267,8 @@
 
             <div style="display: flex; flex-direction: column; gap: 10px;">
                 <button type="button" id="btnSeedYes" onclick="submitSeedChoice(true)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 13px; background: var(--ozikol-primary, #0050e5); color: #ffffff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 14px var(--ozikol-primary-glow, rgba(0, 80, 229, 0.35)); transition: all 0.2s;">
-                    <span>🚀 Yes, Seed Default Website (Recommended)</span>
+                    <span class="material-symbols-outlined" style="font-size: 19px;">rocket_launch</span>
+                    <span>Yes, Seed Default Website (Recommended)</span>
                 </button>
                 <button type="button" id="btnSeedNo" onclick="submitSeedChoice(false)" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px; background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; border-radius: 12px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
                     <span>No, Start with Blank Slate</span>
@@ -407,7 +277,7 @@
 
             <div id="seedingProgressStatus" style="display: none; margin-top: 16px; font-size: 13px; color: var(--ozikol-primary, #0050e5); font-weight: 600; align-items: center; justify-content: center; gap: 8px;">
                 <div style="width: 14px; height: 14px; border: 2px solid var(--ozikol-primary, #0050e5); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-                <span>Applying turnkey website suite...</span>
+                <span id="seedingProgressMsg">Applying turnkey website suite...</span>
             </div>
         </div>
 
@@ -434,7 +304,6 @@
 </style>
 
 <script>
-let currentDiscountPct = 0; // Default zero discount until valid coupon is entered
 let savedRecaptchaToken = ''; // Stores reCAPTCHA token from Step 1 for use in Step 2 submission
 let slugDebounceTimer = null;
 
@@ -467,13 +336,11 @@ function goToStep2() {
 
     document.getElementById('stepBadge2').style.color = 'var(--ozikol-primary)';
     document.getElementById('stepBadge2').style.background = 'rgba(59, 130, 246, 0.1)';
-    document.getElementById('stepBadge2').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: var(--ozikol-primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span> Features & Promo';
+    document.getElementById('stepBadge2').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: var(--ozikol-primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span> Your Features';
 
-    updateCartTotal();
-
-    const codeInput = document.getElementById('inputCouponCode');
-    if (codeInput && codeInput.value.trim() && currentDiscountPct === 0) {
-        applyCouponCode();
+    const displayEl = document.getElementById('displayOrgName');
+    if (displayEl && orgName) {
+        displayEl.textContent = orgName.value.trim() || 'your organization';
     }
 }
 
@@ -487,7 +354,7 @@ function goToStep1() {
 
     document.getElementById('stepBadge2').style.color = '#94a3b8';
     document.getElementById('stepBadge2').style.background = '#f8fafc';
-    document.getElementById('stepBadge2').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span> Features & Promo';
+    document.getElementById('stepBadge2').innerHTML = '<span style="width: 22px; height: 22px; border-radius: 50%; background: #e2e8f0; color: #64748b; display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">2</span> Your Features';
 }
 
 function handleOrgNameInput(val) {
@@ -500,6 +367,10 @@ function handleOrgNameInput(val) {
             .replace(/-+/g, '-');
         slugInput.value = clean;
         checkSlugAvailability(clean);
+    }
+    const displayEl = document.getElementById('displayOrgName');
+    if (displayEl) {
+        displayEl.textContent = val.trim() || 'your organization';
     }
 }
 
@@ -560,148 +431,6 @@ function togglePasswordVisibility(fieldId, btn) {
     }
 }
 
-async function applyCouponCode() {
-    const codeInput = document.getElementById('inputCouponCode');
-    const feedback = document.getElementById('couponFeedback');
-    const code = (codeInput.value || '').trim();
-
-    if (!code) {
-        feedback.style.display = 'block';
-        feedback.innerHTML = '<span style="color: #ef4444; font-weight: 600;">Please enter a coupon code.</span>';
-        return;
-    }
-
-    try {
-        const resp = await fetch(`?handler=ValidateCoupon&code=${encodeURIComponent(code)}`);
-        const data = await resp.json();
-
-        feedback.style.display = 'block';
-        if (data.valid) {
-            currentDiscountPct = data.discountPercent;
-            feedback.innerHTML = `<span style="color: #10b981; font-weight: 700;">✓ ${data.message}</span>`;
-        } else {
-            currentDiscountPct = 0;
-            feedback.innerHTML = `<span style="color: #ef4444; font-weight: 600;">✗ ${data.message}</span>`;
-        }
-    } catch (e) {
-        feedback.style.display = 'block';
-        feedback.innerHTML = '<span style="color: #ef4444;">Failed to validate coupon.</span>';
-    }
-
-    updateCartTotal();
-}
-
-function onFeatureCadenceChanged(featureId) {
-    const cadenceSelect = document.getElementById(`cadence_${featureId}`);
-    const priceBadge = document.getElementById(`priceBadge_${featureId}`);
-    const currencySymbol = '@Html.Raw(Model.ActiveCurrencySymbol)';
-
-    if (cadenceSelect && priceBadge) {
-        const isYearly = cadenceSelect.value === 'Yearly';
-        const opt = cadenceSelect.options[cadenceSelect.selectedIndex];
-        const price = parseFloat(opt.dataset.price) || 0;
-
-        if (price === 0) {
-            priceBadge.innerText = 'Free';
-        } else if (isYearly) {
-            priceBadge.innerText = `${currencySymbol}${price.toFixed(0)}/yr`;
-        } else {
-            priceBadge.innerText = `${currencySymbol}${price.toFixed(0)}/mo`;
-        }
-    }
-
-    updateCartTotal();
-}
-
-function updateCartTotal() {
-    const checkboxes = document.querySelectorAll('input[name="Input.SelectedFeatureIds"]:checked');
-    let monthlyAddonsTotal = 0;
-    let yearlyAddonsTotal = 0;
-    let monthlyCount = 0;
-    let yearlyCount = 0;
-    const cadencesMap = {};
-
-    checkboxes.forEach(cb => {
-        const featureId = cb.value;
-        const cadenceSelect = document.getElementById(`cadence_${featureId}`);
-        const isYearly = cadenceSelect && cadenceSelect.value === 'Yearly';
-
-        cadencesMap[featureId] = isYearly ? 'Yearly' : 'Monthly';
-
-        if (isYearly) {
-            const price = parseFloat(cb.dataset.yearlyPrice) || 0;
-            yearlyAddonsTotal += price;
-            yearlyCount++;
-        } else {
-            const price = parseFloat(cb.dataset.monthlyPrice) || 0;
-            monthlyAddonsTotal += price;
-            monthlyCount++;
-        }
-    });
-
-    // Serialize cadence choices for backend binding
-    const hiddenCadencesInput = document.getElementById('hiddenFeatureCadencesJson');
-    if (hiddenCadencesInput) {
-        hiddenCadencesInput.value = JSON.stringify(cadencesMap);
-    }
-
-    const basePlan = @Model.BasePlanAnnualPrice;
-    const currencySymbol = '@Html.Raw(Model.ActiveCurrencySymbol)';
-    const trialDays = @Model.TrialDays;
-    const subtotal = basePlan + yearlyAddonsTotal + (monthlyAddonsTotal * 12); // Annualized contract volume
-
-    const selectedCountEl = document.getElementById('selectedCount');
-    if (selectedCountEl) {
-        selectedCountEl.innerText = checkboxes.length;
-    }
-
-    const addonsTotalEl = document.getElementById('addonsTotalDisplay');
-    if (addonsTotalEl) {
-        let textParts = [];
-        if (monthlyCount > 0) textParts.push(`${currencySymbol}${monthlyAddonsTotal.toFixed(2)}/mo (${monthlyCount} monthly)`);
-        if (yearlyCount > 0) textParts.push(`${currencySymbol}${yearlyAddonsTotal.toFixed(2)}/yr (${yearlyCount} yearly)`);
-        addonsTotalEl.innerText = textParts.length > 0 ? textParts.join(' + ') : `${currencySymbol}0.00`;
-    }
-
-    const discountRow = document.getElementById('discountRow');
-    const discountBadgeText = document.getElementById('discountBadgeText');
-    const discountAmountDisplay = document.getElementById('discountAmountDisplay');
-    const finalTotalDisplay = document.getElementById('finalTotalDisplay');
-    const trialGuaranteeText = document.getElementById('trialGuaranteeText');
-    const submitBtnText = document.getElementById('submitBtnText');
-
-    if (currentDiscountPct > 0) {
-        const discountVal = (subtotal * (currentDiscountPct / 100));
-        const finalNet = Math.max(0, subtotal - discountVal);
-
-        discountRow.style.display = 'flex';
-        discountBadgeText.innerText = `${currentDiscountPct}% OFF`;
-        discountAmountDisplay.innerText = `-${currencySymbol}${discountVal.toFixed(2)}`;
-
-        if (finalNet === 0) {
-            finalTotalDisplay.innerHTML = `<span style="color: #10b981;">${currencySymbol}0.00 Free</span>`;
-            if (trialGuaranteeText) {
-                trialGuaranteeText.innerText = 'Promotional voucher applied (100% OFF)';
-            }
-            submitBtnText.innerText = '🚀 Initialize Workspace (Free)';
-        } else {
-            finalTotalDisplay.innerText = `${currencySymbol}${finalNet.toFixed(2)}`;
-            if (trialGuaranteeText) {
-                trialGuaranteeText.innerText = `Promotional voucher applied (${currentDiscountPct}% OFF)`;
-            }
-            submitBtnText.innerText = `🚀 Start ${trialDays}-Day Free Trial`;
-        }
-    } else {
-        discountRow.style.display = 'none';
-        // Free trial default state: $0.00 / ₦0.00 due today during trial period
-        finalTotalDisplay.innerHTML = `<span style="color: #10b981;">${currencySymbol}0.00 Free</span>`;
-        if (trialGuaranteeText) {
-            trialGuaranteeText.innerText = `Pay nothing today • Full access for ${trialDays} days`;
-        }
-        submitBtnText.innerText = `🚀 Start ${trialDays}-Day Free Trial`;
-    }
-}
-
 async function handleOnboardingSubmit(e) {
     e.preventDefault();
     const form = document.getElementById('onboardingForm');
@@ -739,26 +468,28 @@ async function handleOnboardingSubmit(e) {
         const result = await resp.json();
 
         if (result.success) {
+            // Store onboarding result for subsequent seed choice
+            pendingOnboardingResult = result;
+
             const step4 = document.getElementById('step4');
-            if (step4) { step4.style.color = '#10b981'; step4.style.fontWeight = '700'; step4.innerHTML = '<span style="color: #10b981;">✓</span> Workspace Ready!'; }
+            if (step4) {
+                step4.style.color = '#10b981';
+                step4.style.fontWeight = '700';
+                step4.innerHTML = '<span class="material-symbols-outlined" style="color: #10b981; font-size: 18px; vertical-align: middle;">check_circle</span> Workspace & Migrations Ready!';
+            }
 
             const regPwd = document.getElementById('regPassword');
             if (regPwd) {
                 regPwd.value = '';
             }
-            form.reset();
 
-            pendingOnboardingResult = result;
-            const progressView = document.getElementById('provisioningProgressView');
-            const choiceView = document.getElementById('seedChoiceView');
-            if (progressView && choiceView) {
-                setTimeout(() => {
-                    progressView.style.display = 'none';
-                    choiceView.style.display = 'block';
-                }, 700);
-            } else {
-                window.location.href = result.redirectUrl;
-            }
+            // Immediately switch to the interactive seed choice view after migrations finish
+            setTimeout(() => {
+                const progressView = document.getElementById('provisioningProgressView');
+                const choiceView = document.getElementById('seedChoiceView');
+                if (progressView) progressView.style.display = 'none';
+                if (choiceView) choiceView.style.display = 'block';
+            }, 600);
         } else {
             modal.style.display = 'none';
             alert('Setup Notice: ' + (result.message || 'Please verify the highlighted fields and try again.'));
@@ -774,29 +505,65 @@ async function submitSeedChoice(seedDefaults) {
     const btnYes = document.getElementById('btnSeedYes');
     const btnNo = document.getElementById('btnSeedNo');
     const statusNotice = document.getElementById('seedingProgressStatus');
+    const msgEl = document.getElementById('seedingProgressMsg');
 
     if (btnYes) btnYes.disabled = true;
     if (btnNo) btnNo.disabled = true;
     if (statusNotice) statusNotice.style.display = 'inline-flex';
+    if (msgEl) {
+        msgEl.textContent = seedDefaults
+            ? 'Applying turnkey website templates, pages & sections...'
+            : 'Configuring blank canvas workspace...';
+    }
 
     const tenantKey = pendingOnboardingResult?.tenantKey || '';
     const orgName = pendingOnboardingResult?.orgName || '';
     const redirectUrl = pendingOnboardingResult?.redirectUrl || '/';
 
     const handler = seedDefaults ? 'SeedDefaults' : 'SkipDefaults';
-    const postUrl = `${window.location.pathname}?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
+    const pageUrl = window.location.pathname.replace(/\/$/, '');
+    const postUrl = `${pageUrl}?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
 
     try {
         const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
         const token = tokenEl ? tokenEl.value : '';
 
-        await fetch(postUrl, {
+        const formData = new FormData();
+        formData.append('tenantKey', tenantKey);
+        formData.append('orgName', orgName);
+        if (token) {
+            formData.append('__RequestVerificationToken', token);
+        }
+
+        let resp = await fetch(postUrl, {
             method: 'POST',
+            body: formData,
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'RequestVerificationToken': token
+                'RequestVerificationToken': token,
+                'Accept': 'application/json'
             }
         });
+
+        if (!resp.ok) {
+            const fallbackUrl = `/Auth/GetStarted?handler=${handler}&tenantKey=${encodeURIComponent(tenantKey)}&orgName=${encodeURIComponent(orgName)}`;
+            resp = await fetch(fallbackUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'RequestVerificationToken': token,
+                    'Accept': 'application/json'
+                }
+            });
+        }
+
+        if (resp && resp.ok) {
+            const data = await resp.json();
+            console.log('Seed choice outcome:', data);
+        } else {
+            console.warn('Seed choice response status:', resp ? resp.status : 'No response');
+        }
     } catch (e) {
         console.warn('Seeding request notice:', e);
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../localization/language_provider.dart';
 import '../theme/app_colors.dart';
 import 'app_snackbar.dart';
 
@@ -22,6 +23,8 @@ class CustomTextField extends StatefulWidget {
   final bool autofocus;
   final bool enabled;
   final bool showPasteButton;
+  final Iterable<String>? autofillHints;
+  final List<TextInputFormatter>? inputFormatters;
 
   const CustomTextField({
     super.key,
@@ -41,6 +44,8 @@ class CustomTextField extends StatefulWidget {
     this.autofocus = false,
     this.enabled = true,
     this.showPasteButton = false,
+    this.autofillHints,
+    this.inputFormatters,
   });
 
   @override
@@ -90,34 +95,79 @@ class _CustomTextFieldState extends State<CustomTextField> {
   Future<void> _pasteFromClipboard() async {
     try {
       final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-      final pastedText = clipboardData?.text?.trim();
+      var pastedText = clipboardData?.text?.trim();
 
       if (pastedText != null && pastedText.isNotEmpty) {
+        // If this is an OTP or verification code field, extract digits if a full SMS/text message was copied
+        final isOtpField = widget.keyboardType == TextInputType.number ||
+            (widget.autofillHints?.contains(AutofillHints.oneTimeCode) ?? false);
+        if (isOtpField) {
+          // Check for standard 6-digit standalone code
+          final sixDigitMatch = RegExp(r'\b\d{6}\b').firstMatch(pastedText);
+          if (sixDigitMatch != null) {
+            pastedText = sixDigitMatch.group(0)!;
+          } else {
+            // Check for hyphenated codes e.g. 123-456 or 123 456
+            final formattedMatch = RegExp(r'\b\d{3}[-\s]\d{3}\b').firstMatch(pastedText);
+            if (formattedMatch != null) {
+              pastedText = formattedMatch.group(0)!.replaceAll(RegExp(r'[-\s]'), '');
+            } else {
+              // Check for any 4 to 8 digit code sequence in the message
+              final digitMatch = RegExp(r'\b\d{4,8}\b').firstMatch(pastedText);
+              if (digitMatch != null) {
+                pastedText = digitMatch.group(0)!;
+              } else {
+                final digitsOnly = pastedText.replaceAll(RegExp(r'\D'), '');
+                if (digitsOnly.length >= 4 && digitsOnly.length <= 8) {
+                  pastedText = digitsOnly;
+                }
+              }
+            }
+          }
+        }
+
         final ctrl = _effectiveController;
         ctrl.text = pastedText;
         ctrl.selection = TextSelection.collapsed(offset: pastedText.length);
         widget.onChanged?.call(pastedText);
-
-        if (mounted) {
-          AppSnackBar.showInfo(
-            context,
-            'Pasted: ${pastedText.length > 35 ? "${pastedText.substring(0, 35)}..." : pastedText}',
-          );
-        }
       } else {
         if (mounted) {
-          AppSnackBar.showWarning(context, 'Clipboard is empty or does not contain text.');
+          AppSnackBar.showWarning(context, context.trc('ui.clipboard_empty', fallback: 'Clipboard is empty or does not contain text.'));
         }
       }
     } catch (_) {
       if (mounted) {
-        AppSnackBar.showError(context, 'Unable to read from clipboard.');
+        AppSnackBar.showError(context, context.trc('ui.clipboard_error', fallback: 'Unable to read from clipboard.'));
       }
     }
   }
 
   Widget? _buildSuffixIcon(bool isDark) {
     if (widget.isPassword) {
+      if (widget.showPasteButton) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Tooltip(
+              message: context.trc('ui.paste_clipboard', fallback: 'Paste from clipboard'),
+              child: IconButton(
+                icon: const Icon(Icons.content_paste_rounded, size: 18),
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                onPressed: _pasteFromClipboard,
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                _obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                size: 20,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              ),
+              onPressed: () => setState(() => _obscureText = !_obscureText),
+            ),
+          ],
+        );
+      }
+
       return IconButton(
         icon: Icon(
           _obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -137,7 +187,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
 
       if (!hasText) {
         return Tooltip(
-          message: 'Paste from clipboard',
+          message: context.trc('ui.paste_clipboard', fallback: 'Paste from clipboard'),
           child: IconButton(
             icon: const Icon(Icons.content_paste_rounded, size: 20),
             color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
@@ -151,7 +201,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Tooltip(
-            message: 'Clear input',
+            message: context.trc('ui.clear_input', fallback: 'Clear input'),
             child: IconButton(
               icon: const Icon(Icons.close_rounded, size: 18),
               color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
@@ -163,7 +213,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
             ),
           ),
           Tooltip(
-            message: 'Paste to replace',
+            message: context.trc('ui.paste_replace', fallback: 'Paste to replace'),
             child: IconButton(
               icon: const Icon(Icons.content_paste_rounded, size: 18),
               color: AppColors.primary,
@@ -180,10 +230,12 @@ class _CustomTextFieldState extends State<CustomTextField> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final hasMultiSuffix = widget.showPasteButton && !widget.isPassword && _effectiveController.text.isNotEmpty;
+    final hasMultiSuffix = (widget.showPasteButton && !widget.isPassword && _effectiveController.text.isNotEmpty) ||
+        (widget.showPasteButton && widget.isPassword);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           widget.label,
@@ -205,6 +257,8 @@ class _CustomTextFieldState extends State<CustomTextField> {
           onFieldSubmitted: widget.onSubmitted,
           autofocus: widget.autofocus,
           enabled: widget.enabled,
+          autofillHints: widget.autofillHints,
+          inputFormatters: widget.inputFormatters,
           enableInteractiveSelection: true,
           contextMenuBuilder: (BuildContext context, EditableTextState editableTextState) {
             return AdaptiveTextSelectionToolbar.editableText(
@@ -217,6 +271,9 @@ class _CustomTextFieldState extends State<CustomTextField> {
             color: isDark ? AppColors.onBackgroundDark : AppColors.onBackgroundLight,
           ),
           decoration: InputDecoration(
+            isDense: true,
+            constraints: const BoxConstraints(minHeight: 48),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             hintText: widget.placeholder,
             hintStyle: TextStyle(
               fontSize: 13,

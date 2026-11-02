@@ -304,7 +304,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify banner content
-    expect(find.text('Ozikol BCC v1.1.0 is available.'), findsOneWidget);
+    expect(find.text('Business Command Center v1.1.0 is available.'), findsOneWidget);
     expect(find.text('Update Now'), findsOneWidget);
 
     // Tap Update Now to open dialog
@@ -528,7 +528,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify WorkspaceLoginScreen is displayed with Change Organization button
-    final changeOrgFinder = find.text('Change Organization');
+    final changeOrgFinder = find.widgetWithText(TextButton, 'Change Organization');
     expect(changeOrgFinder, findsOneWidget);
     expect(find.text('Sign In to Workspace'), findsOneWidget);
 

@@ -14,7 +14,7 @@ namespace Ozikol.MasterDomain.Models;
 public class MasterTenantCatalog
 {
     [Key]
-    public int Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     /// <summary>
     /// Unique tenant key / subdomain prefix (e.g. "acme", "bcp-main").
@@ -156,6 +156,25 @@ public class MasterTenantCatalog
     /// </summary>
     [MaxLength(500)]
     public string? DeletionReason { get; set; }
+
+    /// <summary>
+    /// Indicates whether this tenant uses custom negotiated per-feature pricing (true)
+    /// or inherits the general Master Catalog pricing (false).
+    /// </summary>
+    public bool UseCustomPricing { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether this tenant uses custom per-feature availability overrides (true)
+    /// or inherits the general Master Catalog Available for Use / Coming Soon status (false).
+    /// </summary>
+    public bool UseCustomAvailability { get; set; } = false;
+
+    /// <summary>
+    /// Default billing and display currency ISO 4217 code for this tenant organization (e.g. "USD", "NGN", "GBP", "EUR").
+    /// Defaults to "USD".
+    /// </summary>
+    [MaxLength(10)]
+    public string DefaultCurrencyCode { get; set; } = "USD";
 
     public ICollection<MasterTenantFeatureSubscription> FeatureSubscriptions { get; set; } = new List<MasterTenantFeatureSubscription>();
 }

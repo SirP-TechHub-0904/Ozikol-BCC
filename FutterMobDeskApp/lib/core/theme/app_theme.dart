@@ -42,6 +42,22 @@ class AppTheme {
         outline: AppColors.outlineLight,
       ),
       textTheme: textTheme,
+      dividerColor: AppColors.outlineLight,
+      dividerTheme: const DividerThemeData(
+        color: AppColors.outlineLight,
+        thickness: 1,
+        space: 1,
+      ),
+      dataTableTheme: DataTableThemeData(
+        dividerThickness: 1.0,
+        headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
+        headingTextStyle: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.05,
+          color: Color(0xFF475569),
+        ),
+      ),
       cardTheme: CardThemeData(
         color: AppColors.surfaceLight,
         elevation: 0,
@@ -113,6 +129,22 @@ class AppTheme {
         outline: AppColors.outlineDark,
       ),
       textTheme: textTheme,
+      dividerColor: AppColors.outlineDark,
+      dividerTheme: const DividerThemeData(
+        color: AppColors.outlineDark,
+        thickness: 1,
+        space: 1,
+      ),
+      dataTableTheme: DataTableThemeData(
+        dividerThickness: 1.0,
+        headingRowColor: WidgetStateProperty.all(const Color(0xFF1E293B)),
+        headingTextStyle: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.05,
+          color: Color(0xFF94A3B8),
+        ),
+      ),
       cardTheme: CardThemeData(
         color: AppColors.surfaceDark,
         elevation: 0,

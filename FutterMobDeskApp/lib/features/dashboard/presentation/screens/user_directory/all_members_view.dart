@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../../core/localization/language_provider.dart';
 import '../../../../../core/models/workspace.dart';
 import '../../../../../core/services/export_service.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/widgets/central_adjuster.dart';
 import '../../../data/account_repository.dart';
 import 'user_create_view.dart';
+import 'user_details_view.dart';
+import 'user_edit_view.dart';
 
 /// <summary>
 /// Full enterprise Member Directory & Register screen with 1-to-1 parity matching the Angular Web client.
@@ -21,11 +24,31 @@ class AllMembersView extends ConsumerStatefulWidget {
   /// Optional callback to navigate to a specific navigation tab index in the shell.
   final ValueChanged<int>? onNavigateToTab;
 
+  /// Optional initial account status filter to pre-select upon navigation.
+  final String? initialStatusFilter;
+
+  /// Optional initial category filter (ID or Name) to pre-select upon navigation.
+  final String? initialCategoryFilter;
+
+  /// Optional callback to navigate back to the previous screen.
+  final VoidCallback? onNavigateBack;
+
+  /// Optional callback to navigate to dedicated full-page member details view.
+  final ValueChanged<Map<String, dynamic>>? onNavigateToMemberDetails;
+
+  /// Optional callback to navigate to dedicated full-page member edit view.
+  final ValueChanged<Map<String, dynamic>>? onNavigateToMemberEdit;
+
   /// Creates an [AllMembersView] instance.
   const AllMembersView({
     super.key,
     this.workspace,
     this.onNavigateToTab,
+    this.initialStatusFilter,
+    this.initialCategoryFilter,
+    this.onNavigateBack,
+    this.onNavigateToMemberDetails,
+    this.onNavigateToMemberEdit,
   });
 
   @override
@@ -59,7 +82,44 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   @override
   void initState() {
     super.initState();
+    _selectedStatusFilter = widget.initialStatusFilter ?? 'All';
+    _selectedCategoryFilter = widget.initialCategoryFilter ?? '';
     _loadData();
+  }
+
+  @override
+  void didUpdateWidget(covariant AllMembersView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    bool shouldReapply = false;
+    if (widget.initialStatusFilter != null && widget.initialStatusFilter != oldWidget.initialStatusFilter) {
+      _selectedStatusFilter = widget.initialStatusFilter!;
+      shouldReapply = true;
+    }
+    if (widget.initialCategoryFilter != oldWidget.initialCategoryFilter) {
+      _selectedCategoryFilter = widget.initialCategoryFilter ?? '';
+      _syncCategoryFilterValue();
+      shouldReapply = true;
+    }
+    if (shouldReapply) {
+      _applyFilters();
+    }
+  }
+
+  /// <summary>
+  /// Ensures _selectedCategoryFilter aligns with a category ID if a name was supplied.
+  /// </summary>
+  void _syncCategoryFilterValue() {
+    if (_selectedCategoryFilter.isNotEmpty && _categories.isNotEmpty) {
+      final query = _selectedCategoryFilter.toLowerCase();
+      for (final c in _categories) {
+        final id = (c['id']?.toString() ?? '').toLowerCase();
+        final name = (c['name']?.toString() ?? '').toLowerCase();
+        if (id == query || name == query) {
+          _selectedCategoryFilter = c['id']?.toString() ?? _selectedCategoryFilter;
+          return;
+        }
+      }
+    }
   }
 
   @override
@@ -96,6 +156,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           _categories = rawCategories;
           _isLoading = false;
         });
+        _syncCategoryFilterValue();
         _applyFilters();
       }
     } catch (_) {
@@ -133,10 +194,20 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     // 2. Category Tier filter
     if (_selectedCategoryFilter.isNotEmpty) {
       final filterVal = _selectedCategoryFilter.toLowerCase();
+      String? matchingName;
+      for (final c in _categories) {
+        if ((c['id']?.toString() ?? '').toLowerCase() == filterVal) {
+          matchingName = (c['name']?.toString() ?? '').toLowerCase();
+          break;
+        }
+      }
+
       list = list.where((u) {
-        final catId = (u['bcpUserCategoryId'] ?? '').toString().toLowerCase();
-        final catName = (u['categoryName'] ?? '').toString().toLowerCase();
-        return catId == filterVal || catName == filterVal;
+        final catId = (u['bcpUserCategoryId'] ?? u['categoryId'] ?? '').toString().toLowerCase();
+        final catName = (u['categoryName'] ?? u['category'] ?? '').toString().toLowerCase();
+        return catId == filterVal ||
+            catName == filterVal ||
+            (matchingName != null && matchingName.isNotEmpty && catName == matchingName);
       }).toList();
     }
 
@@ -148,9 +219,15 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
       }).toList();
     }
 
-    // 4. Account Status filter
+    // 4. Account Status filter (Active, Suspended, or Suspicious / Flagged)
     if (_selectedStatusFilter != 'All') {
       list = list.where((u) {
+        if (_selectedStatusFilter == 'Suspicious') {
+          final accessFailed = (u['accessFailedCount'] as num?)?.toInt() ?? 0;
+          final isLockedOut = u['isLockedOut'] == true;
+          final isSuspicious = u['isSuspicious'] == true;
+          return isSuspicious || isLockedOut || accessFailed > 0;
+        }
         final status = (u['userStatus'] ?? u['status'] ?? 'Active').toString();
         return status.toLowerCase() == _selectedStatusFilter.toLowerCase();
       }).toList();
@@ -312,86 +389,26 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   Future<void> _exportPdf() async {
     final org = widget.workspace?.organizationName ?? 'Business Command Center';
     final filterSum = _searchQuery.isNotEmpty ? 'Search: "$_searchQuery"' : null;
-    await ExportService.printReport(
+    await ExportService.showInAppPdfPreview(
+      context: context,
       title: 'Official Member Directory Register',
       organizationName: org,
       columns: _getExportColumns(),
       data: _filteredUsers,
       filterSummary: filterSum,
     );
-    _showToast('Printable PDF report opened in browser.');
   }
+
+
 
   /// <summary>
-  /// Generates UTF-8 CSV spreadsheet and opens it in system default spreadsheet viewer.
   /// </summary>
-  Future<void> _exportExcel() async {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final path = await ExportService.exportToCsv(
-      filename: 'Member_Directory_$today',
-      columns: _getExportColumns(),
-      data: _filteredUsers,
-    );
-    _showToast(path != null ? 'Spreadsheet exported successfully!' : 'No records to export.');
-  }
-
-  /// <summary>
-  /// Generates Word document (.doc) with complete formatted HTML tables.
-  /// </summary>
-  Future<void> _exportWord() async {
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final org = widget.workspace?.organizationName ?? 'Business Command Center';
-    final path = await ExportService.exportToWord(
-      filename: 'Member_Register_$today',
-      title: 'Official Member Directory Register',
-      organizationName: org,
-      columns: _getExportColumns(),
-      data: _filteredUsers,
-      filterSummary: _searchQuery.isNotEmpty ? 'Search: "$_searchQuery"' : null,
-    );
-    _showToast(path != null ? 'Word document exported successfully!' : 'No records to export.');
-  }
-
-  /// <summary>
-  /// Exports members belonging to a specific organizational category tier.
-  /// </summary>
-  Future<void> _exportSpecificCategory(Map<String, dynamic> cat) async {
-    final catId = cat['id']?.toString() ?? '';
-    final catName = cat['name']?.toString() ?? 'Category';
-    final categoryMembers = _allUsers.where((u) => u['bcpUserCategoryId']?.toString() == catId).toList();
-    final org = widget.workspace?.organizationName ?? 'Business Command Center';
-
-    await ExportService.printReport(
-      title: 'Member Register - $catName',
-      organizationName: org,
-      columns: _getExportColumns(),
-      data: categoryMembers,
-      filterSummary: 'Category: $catName (${categoryMembers.length} members)',
-    );
-    _showToast('Export report for category "$catName" generated.');
-  }
-
-  /// <summary>
-  /// Displays a brief snackbar notification.
-  /// </summary>
-  void _showToast(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+    return CentralAdjuster.pageShell(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -414,110 +431,42 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   // 1. STANDARDIZED PAGE HEADER
   // =========================================================================
 
+  /// <summary>
+  /// Builds the Member Directory header using the shared [PageHeader] mold so
+  /// it adapts consistently across wide, medium and compact window widths.
+  /// </summary>
+  /// <param name="isDark">Unused by the mold (it reads the theme) but kept for call-site parity.</param>
+  /// <returns>The standardized page header widget.</returns>
   Widget _buildPageHeader(bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+    final canGoBack = widget.onNavigateBack != null || widget.onNavigateToTab != null;
+
+    // Step back one level through history; fall back to the Overview tab when
+    // the shell did not supply a history callback.
+    void goBack() {
+      if (widget.onNavigateBack != null) {
+        widget.onNavigateBack!();
+      } else if (widget.onNavigateToTab != null) {
+        widget.onNavigateToTab!(0);
+      }
+    }
+
+    return PageHeader(
+      icon: Icons.groups_rounded,
+      eyebrow: 'dashboard.eyebrow'.tr(ref, fallback: 'User Management & Directory'),
+      title: 'directory.title'.tr(ref, fallback: 'Member Directory & Register'),
+      description: 'directory.description'.tr(
+        ref,
+        fallback: 'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Header Icon Box
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.groups_rounded, size: 26, color: AppColors.primary),
-                ),
-                const SizedBox(width: 16),
-
-                // Title & Eyebrow
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'USER MANAGEMENT & DIRECTORY',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.08,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Member Directory & Register',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Search, filter, paginate, and export official membership rolls across organizational category tiers.',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: isDark ? AppColors.gray400 : AppColors.gray600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Action Buttons Group (Registration Form Builder + Add Member)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        if (widget.onNavigateToTab != null) {
-                          widget.onNavigateToTab!(3); // Registration Form Builder tab index
-                        } else {
-                          _showToast('Registration Form Builder available in sidebar.');
-                        }
-                      },
-                      icon: const Icon(Icons.dynamic_form_outlined, size: 16),
-                      label: const Text('Registration Form Builder'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                        foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton.icon(
-                      onPressed: _navigateToCreateMember,
-                      icon: const Icon(Icons.person_add_rounded, size: 16, color: Colors.white),
-                      label: const Text('Add Member', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (_isLoading)
-            const LinearProgressIndicator(minHeight: 2.5),
-        ],
+      back: canGoBack
+          ? PageHeaderBack.previous(goBack, tooltip: 'shell.back'.tr(ref, fallback: 'Back'))
+          : PageHeaderBack.none,
+      isLoading: _isLoading,
+      primaryAction: PageHeaderAction(
+        label: 'dashboard.add_member'.tr(ref, fallback: 'Add Member'),
+        icon: Icons.person_add_rounded,
+        style: PageHeaderActionStyle.primary,
+        onPressed: _navigateToCreateMember,
       ),
     );
   }
@@ -548,16 +497,17 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           LayoutBuilder(
             builder: (context, constraints) {
               final isWide = constraints.maxWidth > 900;
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  // 1. Search Box
-                  Expanded(
-                    flex: isWide ? 3 : 2,
-                    child: Column(
+              final isCompact = constraints.maxWidth < 750;
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. Search Box
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFilterLabel('SEARCH MEMBERS'),
+                        _buildFilterLabel('directory.search_members'.tr(ref, fallback: 'SEARCH MEMBERS')),
                         const SizedBox(height: 6),
                         SizedBox(
                           height: 40,
@@ -569,7 +519,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                             },
                             style: const TextStyle(fontSize: 13),
                             decoration: InputDecoration(
-                              hintText: 'Search by name, email, ID, or category...',
+                              hintText: 'directory.search_placeholder'.tr(ref, fallback: 'Search by name, email, ID, or category...'),
                               hintStyle: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray500),
                               prefixIcon: const Icon(Icons.search_rounded, size: 18),
                               suffixIcon: _searchController.text.isNotEmpty
@@ -585,7 +535,172 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                                borderSide: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight, width: 1),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight, width: 1),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 2. Category Tier & Assigned Role
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFilterLabel('directory.category_tier'.tr(ref, fallback: 'CATEGORY TIER')),
+                              const SizedBox(height: 6),
+                              _buildDropdownField<String>(
+                                value: _categories.any((c) => (c['id']?.toString() ?? '') == _selectedCategoryFilter)
+                                    ? _selectedCategoryFilter
+                                    : '',
+                                items: [
+                                  DropdownMenuItem(value: '', child: Text('directory.all_categories'.tr(ref, fallback: 'All Categories'))),
+                                  ..._categories.map((c) => DropdownMenuItem(
+                                        value: c['id']?.toString() ?? '',
+                                        child: Text(c['name']?.toString() ?? 'Category'),
+                                      )),
+                                ],
+                                onChanged: (val) {
+                                  setState(() => _selectedCategoryFilter = val ?? '');
+                                  _applyFilters();
+                                },
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFilterLabel('directory.assigned_role'.tr(ref, fallback: 'ASSIGNED ROLE')),
+                              const SizedBox(height: 6),
+                              _buildDropdownField<String>(
+                                value: _selectedRoleFilter,
+                                items: [
+                                  DropdownMenuItem(value: 'All', child: Text('directory.all_roles'.tr(ref, fallback: 'All Roles'))),
+                                  DropdownMenuItem(value: 'Admin', child: Text('rbac.role_admin'.tr(ref, fallback: 'Admin'))),
+                                  DropdownMenuItem(value: 'Global Editor', child: Text('rbac.role_global_editor'.tr(ref, fallback: 'Global Editor'))),
+                                  DropdownMenuItem(value: 'Feature Editor', child: Text('rbac.role_feature_editor'.tr(ref, fallback: 'Feature Editor'))),
+                                  DropdownMenuItem(value: 'Read Only', child: Text('rbac.role_read_only'.tr(ref, fallback: 'Read Only'))),
+                                  DropdownMenuItem(value: 'Member', child: Text('rbac.role_member'.tr(ref, fallback: 'Member'))),
+                                ],
+                                onChanged: (val) {
+                                  setState(() => _selectedRoleFilter = val ?? 'All');
+                                  _applyFilters();
+                                },
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 3. Status & Reset
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFilterLabel('directory.account_status'.tr(ref, fallback: 'ACCOUNT STATUS')),
+                              const SizedBox(height: 6),
+                              _buildDropdownField<String>(
+                                value: _selectedStatusFilter,
+                                items: [
+                                  DropdownMenuItem(value: 'All', child: Text('directory.all_statuses'.tr(ref, fallback: 'All Statuses'))),
+                                  DropdownMenuItem(value: 'Active', child: Text('status.active'.tr(ref, fallback: 'Active'))),
+                                  DropdownMenuItem(value: 'Suspended', child: Text('status.suspended'.tr(ref, fallback: 'Suspended'))),
+                                  DropdownMenuItem(value: 'Suspicious', child: Text('status.suspicious'.tr(ref, fallback: 'Suspicious / Flagged'))),
+                                ],
+                                onChanged: (val) {
+                                  setState(() => _selectedStatusFilter = val ?? 'All');
+                                  _applyFilters();
+                                },
+                                isDark: isDark,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          height: 40,
+                          child: OutlinedButton.icon(
+                            onPressed: _resetFilters,
+                            icon: const Icon(Icons.restart_alt_rounded, size: 16),
+                            label: Text('btn.reset'.tr(ref, fallback: 'Reset')),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              side: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                              foregroundColor: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // 1. Search Box
+                  Expanded(
+                    flex: isWide ? 3 : 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFilterLabel('directory.search_members'.tr(ref, fallback: 'SEARCH MEMBERS')),
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          height: 40,
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (val) {
+                              _searchQuery = val.trim();
+                              _applyFilters();
+                            },
+                            style: const TextStyle(fontSize: 13),
+                            decoration: InputDecoration(
+                              hintText: 'directory.search_placeholder'.tr(ref, fallback: 'Search by name, email, ID, or category...'),
+                              hintStyle: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray500),
+                              prefixIcon: const Icon(Icons.search_rounded, size: 18),
+                              suffixIcon: _searchController.text.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.close_rounded, size: 16),
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        _searchQuery = '';
+                                        _applyFilters();
+                                      },
+                                    )
+                                  : null,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight, width: 1),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight, width: 1),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -605,12 +720,14 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFilterLabel('CATEGORY TIER'),
+                        _buildFilterLabel('directory.category_tier'.tr(ref, fallback: 'CATEGORY TIER')),
                         const SizedBox(height: 6),
                         _buildDropdownField<String>(
-                          value: _selectedCategoryFilter,
+                          value: _categories.any((c) => (c['id']?.toString() ?? '') == _selectedCategoryFilter)
+                              ? _selectedCategoryFilter
+                              : '',
                           items: [
-                            const DropdownMenuItem(value: '', child: Text('All Categories')),
+                            DropdownMenuItem(value: '', child: Text('directory.all_categories'.tr(ref, fallback: 'All Categories'))),
                             ..._categories.map((c) => DropdownMenuItem(
                                   value: c['id']?.toString() ?? '',
                                   child: Text(c['name']?.toString() ?? 'Category'),
@@ -633,17 +750,17 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFilterLabel('ASSIGNED ROLE'),
+                        _buildFilterLabel('directory.assigned_role'.tr(ref, fallback: 'ASSIGNED ROLE')),
                         const SizedBox(height: 6),
                         _buildDropdownField<String>(
                           value: _selectedRoleFilter,
-                          items: const [
-                            DropdownMenuItem(value: 'All', child: Text('All Roles')),
-                            DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                            DropdownMenuItem(value: 'Global Editor', child: Text('Global Editor')),
-                            DropdownMenuItem(value: 'Feature Editor', child: Text('Feature Editor')),
-                            DropdownMenuItem(value: 'Read Only', child: Text('Read Only')),
-                            DropdownMenuItem(value: 'Member', child: Text('Member')),
+                          items: [
+                            DropdownMenuItem(value: 'All', child: Text('directory.all_roles'.tr(ref, fallback: 'All Roles'))),
+                            DropdownMenuItem(value: 'Admin', child: Text('rbac.role_admin'.tr(ref, fallback: 'Admin'))),
+                            DropdownMenuItem(value: 'Global Editor', child: Text('rbac.role_global_editor'.tr(ref, fallback: 'Global Editor'))),
+                            DropdownMenuItem(value: 'Feature Editor', child: Text('rbac.role_feature_editor'.tr(ref, fallback: 'Feature Editor'))),
+                            DropdownMenuItem(value: 'Read Only', child: Text('rbac.role_read_only'.tr(ref, fallback: 'Read Only'))),
+                            DropdownMenuItem(value: 'Member', child: Text('rbac.role_member'.tr(ref, fallback: 'Member'))),
                           ],
                           onChanged: (val) {
                             setState(() => _selectedRoleFilter = val ?? 'All');
@@ -662,14 +779,15 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildFilterLabel('ACCOUNT STATUS'),
+                        _buildFilterLabel('directory.account_status'.tr(ref, fallback: 'ACCOUNT STATUS')),
                         const SizedBox(height: 6),
                         _buildDropdownField<String>(
                           value: _selectedStatusFilter,
-                          items: const [
-                            DropdownMenuItem(value: 'All', child: Text('All Statuses')),
-                            DropdownMenuItem(value: 'Active', child: Text('Active')),
-                            DropdownMenuItem(value: 'Suspended', child: Text('Suspended')),
+                          items: [
+                            DropdownMenuItem(value: 'All', child: Text('directory.all_statuses'.tr(ref, fallback: 'All Statuses'))),
+                            DropdownMenuItem(value: 'Active', child: Text('status.active'.tr(ref, fallback: 'Active'))),
+                            DropdownMenuItem(value: 'Suspended', child: Text('status.suspended'.tr(ref, fallback: 'Suspended'))),
+                            DropdownMenuItem(value: 'Suspicious', child: Text('status.suspicious'.tr(ref, fallback: 'Suspicious / Flagged'))),
                           ],
                           onChanged: (val) {
                             setState(() => _selectedStatusFilter = val ?? 'All');
@@ -688,7 +806,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     child: OutlinedButton.icon(
                       onPressed: _resetFilters,
                       icon: const Icon(Icons.restart_alt_rounded, size: 16),
-                      label: const Text('Reset'),
+                      label: Text('btn.reset'.tr(ref, fallback: 'Reset')),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -703,29 +821,33 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           ),
           const SizedBox(height: 16),
 
-          const Divider(height: 1),
+          Divider(
+            height: 24,
+            thickness: 1,
+            color: isDark ? AppColors.outlineDark : AppColors.outlineLight,
+          ),
           const SizedBox(height: 14),
 
           // Export Row & Counter
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Count Summary
-              RichText(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 550;
+
+              final counterWidget = RichText(
                 text: TextSpan(
                   style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : AppColors.gray600),
                   children: [
-                    const TextSpan(text: 'Showing '),
+                    TextSpan(text: '${'directory.showing'.tr(ref, fallback: 'Showing')} '),
                     TextSpan(
                       text: '${_paginatedUsers.length}',
                       style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
                     ),
-                    const TextSpan(text: ' of '),
+                    TextSpan(text: ' ${'directory.of'.tr(ref, fallback: 'of')} '),
                     TextSpan(
                       text: '${_filteredUsers.length}',
                       style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
                     ),
-                    const TextSpan(text: ' filtered members (Total: '),
+                    TextSpan(text: ' ${'directory.filtered_members'.tr(ref, fallback: 'filtered members (Total:')} '),
                     TextSpan(
                       text: '${_allUsers.length}',
                       style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black),
@@ -733,97 +855,35 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     const TextSpan(text: ')'),
                   ],
                 ),
-              ),
+              );
 
-              // Export Buttons (PDF, Excel, Word, Category Export Menu)
-              Row(
+              final exportBtn = _buildExportButton(
+                icon: Icons.picture_as_pdf_outlined,
+                label: 'directory.export_pdf'.tr(ref, fallback: 'Export PDF'),
+                onTap: _exportPdf,
+                isDark: isDark,
+              );
+
+              if (isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    counterWidget,
+                    const SizedBox(height: 10),
+                    exportBtn,
+                  ],
+                );
+              }
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildExportButton(
-                    icon: Icons.picture_as_pdf_outlined,
-                    label: 'PDF',
-                    onTap: _exportPdf,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildExportButton(
-                    icon: Icons.table_view_outlined,
-                    label: 'Excel',
-                    onTap: _exportExcel,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildExportButton(
-                    icon: Icons.description_outlined,
-                    label: 'Word',
-                    onTap: _exportWord,
-                    isDark: isDark,
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Category Export Menu
-                  PopupMenuButton<Map<String, dynamic>>(
-                    tooltip: 'Export Specific Category',
-                    onSelected: _exportSpecificCategory,
-                    itemBuilder: (context) {
-                      if (_categories.isEmpty) {
-                        return [
-                          const PopupMenuItem(
-                            enabled: false,
-                            child: Text('No categories created', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          )
-                        ];
-                      }
-                      return _categories.map((cat) {
-                        return PopupMenuItem<Map<String, dynamic>>(
-                          value: cat,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Color(int.tryParse(
-                                          (cat['colorCode'] ?? '#0050e5').replaceAll('#', '0xFF')) ??
-                                      0xFF0050E5),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(cat['name']?.toString() ?? 'Category', style: const TextStyle(fontSize: 12.5)),
-                            ],
-                          ),
-                        );
-                      }).toList();
-                    },
-                    child: Container(
-                      height: 32,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceDark : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(7),
-                        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.category_outlined, size: 15, color: isDark ? Colors.white70 : Colors.black87),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Export Category',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white70 : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.expand_more_rounded, size: 16),
-                        ],
-                      ),
-                    ),
-                  ),
+                  Expanded(child: counterWidget),
+                  const SizedBox(width: 12),
+                  exportBtn,
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ],
       ),
@@ -907,69 +967,687 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     );
   }
 
+  /// <summary>
+  /// Navigates to the full-page 360-degree Member Command Center view.
+  /// </summary>
+  void _navigateToMemberDetails(Map<String, dynamic> member) {
+    if (widget.onNavigateToMemberDetails != null) {
+      widget.onNavigateToMemberDetails!(member);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            body: UserDetailsView(
+              workspace: widget.workspace,
+              member: member,
+              onNavigateBack: () => Navigator.of(context).pop(),
+              onNavigateToEdit: (m) => _navigateToMemberEdit(m),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  /// <summary>
+  /// Navigates to the full-page member profile edit view.
+  /// </summary>
+  void _navigateToMemberEdit(Map<String, dynamic> member) {
+    if (widget.onNavigateToMemberEdit != null) {
+      widget.onNavigateToMemberEdit!(member);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => Scaffold(
+            body: UserEditView(
+              workspace: widget.workspace,
+              member: member,
+              onNavigateBack: () => Navigator.of(context).pop(),
+              onUserUpdated: () {
+                Navigator.of(context).pop();
+                _loadData();
+              },
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  /// <summary>
+  /// Compact square icon-only action button used in the table on narrow windows.
+  /// </summary>
+  /// <param name="icon">Icon to display.</param>
+  /// <param name="tooltip">Accessible tooltip label.</param>
+  /// <param name="onTap">Tap handler.</param>
+  /// <param name="isDark">Whether dark mode is active.</param>
+  /// <param name="isPrimary">Use Royal Blue tinted styling when true.</param>
+  /// <returns>The icon action widget.</returns>
+  Widget _buildIconAction({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+    required bool isDark,
+    required bool isPrimary,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: isPrimary ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            border: isPrimary
+                ? null
+                : Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+          ),
+          child: Icon(
+            icon,
+            size: 15,
+            color: isPrimary
+                ? AppColors.primary
+                : (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
+          ),
+        ),
+      ),
+    );
+  }
+
   // =========================================================================
   // 3. ENTERPRISE DATA TABLE WITH SORTING & PAGINATION
   // =========================================================================
 
+  /// <summary>
+  /// Builds the responsive member data table. Resolves a [_MemberTableLayout] tier from
+  /// the available width so narrow desktop windows hide low-priority columns and truncate
+  /// long text instead of producing RenderFlex overflow stripes.
+  /// </summary>
+  /// <param name="isDark">Whether dark mode is active.</param>
+  /// <returns>The adaptive table card widget.</returns>
   Widget _buildDataTable(bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 650) {
+          return _buildMobileMemberList(isDark);
+        }
+        final layout = _MemberTableLayout.forWidth(constraints.maxWidth);
+        return _buildDataTableForLayout(isDark, layout);
+      },
+    );
+  }
+
+  /// <summary>
+  /// Renders responsive member cards on mobile viewports (< 650px).
+  /// </summary>
+  Widget _buildMobileMemberList(bool isDark) {
+    if (_paginatedUsers.isEmpty && !_isLoading) {
+      return Container(
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+        ),
+        child: _buildEmptyState(isDark),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _paginatedUsers.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 10),
+          itemBuilder: (context, idx) {
+            final u = _paginatedUsers[idx];
+            return _buildMobileMemberCard(u, isDark);
+          },
+        ),
+        if (_filteredUsers.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+              ),
+              child: _buildPaginationToolbar(isDark),
+            ),
           ),
         ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Table Scroll View
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 1040),
-              child: DataTable(
-                headingRowHeight: 44,
-                dataRowMinHeight: 64,
-                dataRowMaxHeight: 68,
-                horizontalMargin: 16,
-                columnSpacing: 20,
-                headingRowColor: WidgetStateProperty.all(
-                  isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+      ],
+    );
+  }
+
+  /// <summary>
+  /// Renders a single responsive member card with avatar, designation, roles, contact info, and status pill.
+  /// </summary>
+  Widget _buildMobileMemberCard(Map<String, dynamic> u, bool isDark) {
+    final fullName = (u['fullName'] ?? u['userName'] ?? 'Member').toString();
+    final designation = u['designation']?.toString();
+    final email = (u['email'] ?? '').toString();
+    final emailConfirmed = u['emailConfirmed'] == true;
+    final phoneNumber = u['phoneNumber']?.toString();
+    final memberId = _sanitizeId(u['memberId']?.toString());
+    final categoryName = u['categoryName']?.toString();
+    final categoryColorStr = u['categoryColor']?.toString() ?? '#0050e5';
+    final categoryIconStr = u['categoryIcon']?.toString();
+    final roles = (u['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    final userStatus = (u['userStatus'] ?? u['status'] ?? 'Active').toString();
+    final isSuspended = userStatus.toLowerCase() == 'suspended' || userStatus.toLowerCase() == 'locked';
+    final isSuspiciousAccount = (u['isSuspicious'] == true) ||
+        (u['isLockedOut'] == true) ||
+        (((u['accessFailedCount'] as num?)?.toInt() ?? 0) > 0);
+
+    final categoryColor = Color(int.tryParse(categoryColorStr.replaceAll('#', '0xFF')) ?? 0xFF0050E5);
+
+    final Color badgeColor;
+    final String displayStatus;
+    if (isSuspended) {
+      badgeColor = const Color(0xFFEF4444);
+      displayStatus = 'status.suspended'.tr(ref, fallback: 'Suspended');
+    } else if (isSuspiciousAccount) {
+      badgeColor = const Color(0xFFE11D48);
+      displayStatus = 'status.flagged'.tr(ref, fallback: 'Flagged');
+    } else {
+      badgeColor = const Color(0xFF10B981);
+      displayStatus = userStatus.toLowerCase() == 'active'
+          ? 'status.active'.tr(ref, fallback: 'Active')
+          : userStatus;
+    }
+
+    return Material(
+      color: isDark ? AppColors.surfaceDark : Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: () => _navigateToMemberDetails(u),
+        onLongPress: () => _showMemberActionSheet(u),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSuspended
+                  ? const Color(0xFFEF4444).withValues(alpha: 0.3)
+                  : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.02),
+                blurRadius: 3,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: Avatar, Name + Designation, 3-dots popup
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      gradient: _getGradient(fullName),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      _getInitials(fullName),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fullName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                          ),
+                        ),
+                        if (designation != null && designation.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            designation,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                        if (memberId.isNotEmpty && memberId != '-') ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: isDark ? AppColors.outlineDark : const Color(0xFFCBD5E1)),
+                            ),
+                            child: Text(
+                              memberId,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  // Quick Actions Menu (3 dots)
+                  PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert_rounded,
+                      size: 18,
+                      color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onSelected: (val) {
+                      if (val == 'details') {
+                        _navigateToMemberDetails(u);
+                      } else if (val == 'edit') {
+                        _navigateToMemberEdit(u);
+                      } else if (val == 'actions') {
+                        _showMemberActionSheet(u);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'details',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.visibility_outlined, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Text('btn.details'.tr(ref, fallback: 'Details')),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.edit_outlined, size: 16, color: AppColors.primary),
+                            const SizedBox(width: 8),
+                            Text('btn.edit'.tr(ref, fallback: 'Edit')),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuDivider(),
+                      PopupMenuItem(
+                        value: 'actions',
+                        child: const Row(
+                          children: [
+                            Icon(Icons.touch_app_outlined, size: 16, color: Color(0xFF64748B)),
+                            SizedBox(width: 8),
+                            Text('All Actions...'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Contact Info (Email & Phone)
+              if (email.isNotEmpty)
+                Row(
+                  children: [
+                    Icon(Icons.email_outlined, size: 13, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                    if (emailConfirmed)
+                      const Icon(Icons.verified_rounded, size: 13, color: Color(0xFF10B981)),
+                  ],
                 ),
-                columns: [
-                  _buildSortableColumn('fullName', 'MEMBER NAME'),
-                  _buildSortableColumn('email', 'EMAIL ADDRESS'),
-                  _buildSortableColumn('memberId', 'MEMBER ID'),
-                  _buildSortableColumn('categoryName', 'CATEGORY'),
-                  _buildSortableColumn('roles', 'ROLE'),
-                  _buildSortableColumn('userStatus', 'STATUS'),
-                  const DataColumn(
-                    label: Text(
-                      'ACTIONS',
+              if (phoneNumber != null && phoneNumber.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.phone_outlined, size: 13, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        phoneNumber,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 10),
+
+              // Bottom Metadata Badges: Category, Role, Status
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  // Category Pill
+                  if (categoryName != null && categoryName.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: categoryColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: categoryColor.withValues(alpha: 0.35)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            categoryIconStr != null ? Icons.folder_shared_outlined : Icons.category_outlined,
+                            size: 12,
+                            color: categoryColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            categoryName,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: categoryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'directory.unassigned'.tr(ref, fallback: 'Unassigned'),
+                        style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                      ),
+                    ),
+
+                  // Role Pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: roles.contains('Admin')
+                          ? const Color(0xFFEFF6FF)
+                          : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC)),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: roles.contains('Admin')
+                            ? AppColors.primary.withValues(alpha: 0.3)
+                            : (isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0)),
+                      ),
+                    ),
+                    child: Text(
+                      roles.isNotEmpty ? roles.join(', ') : 'Member',
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.05,
-                        color: Color(0xFF475569),
+                        fontWeight: FontWeight.w600,
+                        color: roles.contains('Admin')
+                            ? AppColors.primary
+                            : (isDark ? AppColors.onSurfaceDark : const Color(0xFF475569)),
                       ),
                     ),
                   ),
+
+                  // Status Pill with Live Dot
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: badgeColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: badgeColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          displayStatus,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: badgeColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
-                rows: _paginatedUsers.isEmpty
-                    ? []
-                    : _paginatedUsers.map((u) {
-                        return _buildDataRow(u, isDark);
-                      }).toList(),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// <summary>
+  /// Displays the interactive on-hold/long-press action sheet for a member on mobile.
+  /// </summary>
+  void _showMemberActionSheet(Map<String, dynamic> u) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fullName = (u['fullName'] ?? u['userName'] ?? 'Member').toString();
+    final email = (u['email'] ?? '').toString();
+    final memberId = _sanitizeId(u['memberId']?.toString());
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? AppColors.surfaceDark : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetCtx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Member Summary Header
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: _getGradient(fullName),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _getInitials(fullName),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            fullName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                            ),
+                          ),
+                          if (email.isNotEmpty)
+                            Text(
+                              email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isDark ? AppColors.gray400 : const Color(0xFF64748B),
+                              ),
+                            ),
+                          if (memberId.isNotEmpty && memberId != '-')
+                            Text(
+                              'ID: $memberId',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Divider(height: 1, color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
+                const SizedBox(height: 8),
+
+                // Action List
+                ListTile(
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.visibility_outlined, color: AppColors.primary, size: 20),
+                  ),
+                  title: Text(
+                    'directory.view_dossier'.tr(ref, fallback: 'View Full Dossier'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'directory.dossier_subtitle'.tr(ref, fallback: 'Open 360° member command center'),
+                    style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded, size: 18),
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    _navigateToMemberDetails(u);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.edit_outlined, color: Color(0xFF10B981), size: 20),
+                  ),
+                  title: Text(
+                    'directory.edit_profile'.tr(ref, fallback: 'Edit Member Profile'),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'directory.edit_subtitle'.tr(ref, fallback: 'Modify member details, roles, and category'),
+                    style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : const Color(0xFF64748B)),
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded, size: 18),
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    _navigateToMemberEdit(u);
+                  },
+                ),
+                const SizedBox(height: 8),
+              ],
             ),
           ),
+        );
+      },
+    );
+  }
 
+  /// <summary>
+  /// Renders the table card for a resolved responsive [layout] tier.
+  /// </summary>
+  /// <param name="isDark">Whether dark mode is active.</param>
+  /// <param name="layout">Responsive column visibility and width caps.</param>
+  /// <returns>The table container widget.</returns>
+  Widget _buildDataTableForLayout(bool isDark, _MemberTableLayout layout) {
+    return CentralAdjuster.tableContainer(
+      // Estimated natural width of the visible columns; the container only scrolls
+      // horizontally if the window is genuinely narrower than this.
+      minWidth: layout.estimatedWidth,
+      numColumns: layout.columnCount,
+      footer: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           // Empty state if no records
           if (_paginatedUsers.isEmpty && !_isLoading)
             _buildEmptyState(isDark),
@@ -979,6 +1657,54 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
             _buildPaginationToolbar(isDark),
         ],
       ),
+      builder: (context, tableWidth, extraSpacing) {
+        return DataTable(
+          headingRowHeight: 44,
+          dataRowMinHeight: 64,
+          dataRowMaxHeight: 68,
+          horizontalMargin: 12,
+          columnSpacing: 12.0 + (extraSpacing * 0.45),
+          dividerThickness: 1.0,
+          border: TableBorder(
+            top: BorderSide.none,
+            bottom: BorderSide(
+              color: isDark ? AppColors.outlineDark : const Color(0xFFE2E8F0),
+              width: 1.0,
+            ),
+            horizontalInside: BorderSide(
+              color: isDark ? AppColors.outlineDark : const Color(0xFFF1F5F9),
+              width: 1.0,
+            ),
+          ),
+          headingRowColor: WidgetStateProperty.all(
+            isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+          ),
+          columns: [
+            _buildSortableColumn('fullName', 'directory.col_name'.tr(ref, fallback: 'MEMBER NAME')),
+            _buildSortableColumn('email', 'directory.col_email'.tr(ref, fallback: 'EMAIL ADDRESS')),
+            if (layout.showMemberId) _buildSortableColumn('memberId', 'directory.col_member_id'.tr(ref, fallback: 'MEMBER ID')),
+            _buildSortableColumn('categoryName', 'directory.col_category'.tr(ref, fallback: 'CATEGORY')),
+            if (layout.showRole) _buildSortableColumn('roles', 'directory.col_role'.tr(ref, fallback: 'ROLE')),
+            _buildSortableColumn('userStatus', 'directory.col_status'.tr(ref, fallback: 'STATUS')),
+            DataColumn(
+              label: Text(
+                'directory.col_actions'.tr(ref, fallback: 'ACTIONS'),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.05,
+                  color: Color(0xFF475569),
+                ),
+              ),
+            ),
+          ],
+          rows: _paginatedUsers.isEmpty
+              ? []
+              : _paginatedUsers.map((u) {
+                  return _buildDataRow(u, isDark, layout);
+                }).toList(),
+        );
+      },
     );
   }
 
@@ -986,35 +1712,39 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     final isSelected = _sortColumn == key;
     return DataColumn(
       onSort: (columnIndex, ascending) => _sortBy(key),
-      label: InkWell(
-        onTap: () => _sortBy(key),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.05,
-                color: Color(0xFF475569),
-              ),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.05,
+              color: Color(0xFF475569),
             ),
-            const SizedBox(width: 4),
-            Icon(
-              isSelected
-                  ? (_sortAsc ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded)
-                  : Icons.unfold_more_rounded,
-              size: 15,
-              color: isSelected ? AppColors.primary : const Color(0xFF94A3B8),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            isSelected
+                ? (_sortAsc ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded)
+                : Icons.unfold_more_rounded,
+            size: 15,
+            color: isSelected ? AppColors.primary : const Color(0xFF94A3B8),
+          ),
+        ],
       ),
     );
   }
 
-  DataRow _buildDataRow(Map<String, dynamic> u, bool isDark) {
+  /// <summary>
+  /// Builds a single member row honoring the responsive [layout] tier.
+  /// </summary>
+  /// <param name="u">Member record.</param>
+  /// <param name="isDark">Whether dark mode is active.</param>
+  /// <param name="layout">Responsive column visibility and width caps.</param>
+  /// <returns>The populated [DataRow].</returns>
+  DataRow _buildDataRow(Map<String, dynamic> u, bool isDark, _MemberTableLayout layout) {
     final fullName = (u['fullName'] ?? u['userName'] ?? 'Member').toString();
     final designation = u['designation']?.toString();
     final email = (u['email'] ?? '').toString();
@@ -1039,6 +1769,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
         // 1. Member Name with Avatar initials & Designation
         DataCell(
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 40,
@@ -1054,28 +1785,41 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    fullName,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-                    ),
-                  ),
-                  if (designation != null && designation.isNotEmpty)
-                    Text(
-                      designation,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
+              // Cap name width so long names ellipsize rather than overflow the cell
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: layout.nameMax),
+                child: Tooltip(
+                  message: fullName,
+                  waitDuration: const Duration(milliseconds: 600),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        fullName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
+                        ),
                       ),
-                    ),
-                ],
+                      if (designation != null && designation.isNotEmpty)
+                        Text(
+                          designation,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -1083,18 +1827,30 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
 
         // 2. Email Address & Verified Badge + Phone
         DataCell(
-          Column(
+          ConstrainedBox(
+            // Cap email width; long addresses ellipsize with full value in tooltip
+            constraints: BoxConstraints(maxWidth: layout.emailMax),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    email,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: isDark ? AppColors.onSurfaceDark : const Color(0xFF1E293B),
+                  Flexible(
+                    child: Tooltip(
+                      message: email,
+                      waitDuration: const Duration(milliseconds: 600),
+                      child: Text(
+                        email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: isDark ? AppColors.onSurfaceDark : const Color(0xFF1E293B),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -1123,9 +1879,11 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                 ),
             ],
           ),
+          ),
         ),
 
-        // 3. Member ID
+        // 3. Member ID (hidden on narrow windows)
+        if (layout.showMemberId)
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1150,6 +1908,8 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
         DataCell(
           categoryName != null && categoryName.isNotEmpty
               ? Container(
+                  // Cap category pill width so long tier names ellipsize
+                  constraints: BoxConstraints(maxWidth: layout.categoryMax),
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                   decoration: BoxDecoration(
                     color: categoryColor.withValues(alpha: 0.12),
@@ -1165,12 +1925,20 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                         color: categoryColor,
                       ),
                       const SizedBox(width: 5),
-                      Text(
-                        categoryName,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: categoryColor,
+                      Flexible(
+                        child: Tooltip(
+                          message: categoryName,
+                          waitDuration: const Duration(milliseconds: 600),
+                          child: Text(
+                            categoryName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: categoryColor,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -1182,11 +1950,15 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                     color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text('Unassigned', style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                  child: Text(
+                    'directory.unassigned'.tr(ref, fallback: 'Unassigned'),
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                  ),
                 ),
         ),
 
-        // 5. Role
+        // 5. Role (hidden on narrow windows)
+        if (layout.showRole)
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1208,36 +1980,59 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           ),
         ),
 
-        // 6. Status with live dot
+        // 6. Status with live dot (Active, Suspended, or Flagged)
         DataCell(
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-            decoration: BoxDecoration(
-              color: (isSuspended ? const Color(0xFFEF4444) : const Color(0xFF10B981)).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: isSuspended ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-                    shape: BoxShape.circle,
-                  ),
+          Builder(
+            builder: (context) {
+              final isSuspiciousAccount = (u['isSuspicious'] == true) ||
+                  (u['isLockedOut'] == true) ||
+                  (((u['accessFailedCount'] as num?)?.toInt() ?? 0) > 0);
+              final Color badgeColor;
+              final String displayStatus;
+
+              if (isSuspended) {
+                badgeColor = const Color(0xFFEF4444);
+                displayStatus = 'status.suspended'.tr(ref, fallback: 'Suspended');
+              } else if (isSuspiciousAccount) {
+                badgeColor = const Color(0xFFE11D48);
+                displayStatus = 'status.flagged'.tr(ref, fallback: 'Flagged');
+              } else {
+                badgeColor = const Color(0xFF10B981);
+                displayStatus = userStatus.toLowerCase() == 'active'
+                    ? 'status.active'.tr(ref, fallback: 'Active')
+                    : userStatus;
+              }
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(100),
                 ),
-                const SizedBox(width: 5),
-                Text(
-                  userStatus,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: isSuspended ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      displayStatus,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: badgeColor,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
 
@@ -1246,11 +2041,29 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (layout.iconOnlyActions) ...[
+                // Compact icon-only actions with tooltips for narrow windows
+                _buildIconAction(
+                  icon: Icons.visibility_outlined,
+                  tooltip: 'btn.details'.tr(ref, fallback: 'Details'),
+                  onTap: () => _navigateToMemberDetails(u),
+                  isDark: isDark,
+                  isPrimary: false,
+                ),
+                const SizedBox(width: 6),
+                _buildIconAction(
+                  icon: Icons.edit_outlined,
+                  tooltip: 'btn.edit'.tr(ref, fallback: 'Edit'),
+                  onTap: () => _navigateToMemberEdit(u),
+                  isDark: isDark,
+                  isPrimary: true,
+                ),
+              ] else ...[
               // Details Button
               OutlinedButton.icon(
-                onPressed: () => _showMemberDossierDialog(u),
+                onPressed: () => _navigateToMemberDetails(u),
                 icon: const Icon(Icons.visibility_outlined, size: 14),
-                label: const Text('Details'),
+                label: Text('btn.details'.tr(ref, fallback: 'Details')),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -1263,9 +2076,9 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
 
               // Edit Button
               ElevatedButton.icon(
-                onPressed: () => _showEditMemberDialog(u),
+                onPressed: () => _navigateToMemberEdit(u),
                 icon: const Icon(Icons.edit_outlined, size: 14, color: AppColors.primary),
-                label: const Text('Edit', style: TextStyle(color: AppColors.primary)),
+                label: Text('btn.edit'.tr(ref, fallback: 'Edit'), style: const TextStyle(color: AppColors.primary)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                   elevation: 0,
@@ -1274,6 +2087,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
                   textStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
                 ),
               ),
+              ],
             ],
           ),
         ),
@@ -1289,7 +2103,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           Icon(Icons.person_search_rounded, size: 48, color: isDark ? AppColors.gray400 : AppColors.gray500),
           const SizedBox(height: 12),
           Text(
-            'No members found matching your search or filters.',
+            'directory.no_members_found'.tr(ref, fallback: 'No members found matching your search or filters.'),
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -1299,7 +2113,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
           const SizedBox(height: 14),
           OutlinedButton(
             onPressed: _resetFilters,
-            child: const Text('Clear Filters'),
+            child: Text('directory.clear_filters'.tr(ref, fallback: 'Clear Filters')),
           ),
         ],
       ),
@@ -1311,101 +2125,117 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   // =========================================================================
 
   Widget _buildPaginationToolbar(bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-        border: Border(top: BorderSide(color: isDark ? AppColors.outlineDark : AppColors.outlineLight)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Entries per page selector
-          Row(
-            children: [
-              Text('Show ', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
-              Container(
-                height: 32,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    value: _pageSize,
-                    items: const [
-                      DropdownMenuItem(value: 10, child: Text('10')),
-                      DropdownMenuItem(value: 25, child: Text('25')),
-                      DropdownMenuItem(value: 50, child: Text('50')),
-                      DropdownMenuItem(value: 100, child: Text('100')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() {
-                          _pageSize = val;
-                          _currentPage = 1;
-                          _updatePagination();
-                        });
-                      }
-                    },
-                    style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
-                  ),
-                ),
-              ),
-              Text(' entries per page', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
-            ],
-          ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 550;
 
-          // Page navigation controls (< [1] [2] >)
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left_rounded, size: 20),
-                onPressed: _currentPage > 1 ? () => _setPage(_currentPage - 1) : null,
+        final perPageWidget = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${'directory.show'.tr(ref, fallback: 'Show')} ', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+            Container(
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.surfaceDark : Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
               ),
-              for (int p = 1; p <= _totalPages; p++)
-                if (p == 1 || p == _totalPages || (p >= _currentPage - 1 && p <= _currentPage + 1))
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: InkWell(
-                      onTap: () => _setPage(p),
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: p == _currentPage ? AppColors.primary : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: p == _currentPage
-                                ? AppColors.primary
-                                : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                          ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: _pageSize,
+                  items: const [
+                    DropdownMenuItem(value: 10, child: Text('10')),
+                    DropdownMenuItem(value: 25, child: Text('25')),
+                    DropdownMenuItem(value: 50, child: Text('50')),
+                    DropdownMenuItem(value: 100, child: Text('100')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setState(() {
+                        _pageSize = val;
+                        _currentPage = 1;
+                        _updatePagination();
+                      });
+                    }
+                  },
+                  style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
+                ),
+              ),
+            ),
+            Text(' ${'directory.entries_per_page'.tr(ref, fallback: 'entries per page')}', style: TextStyle(fontSize: 12.5, color: isDark ? AppColors.gray400 : AppColors.gray600)),
+          ],
+        );
+
+        final pageControlsWidget = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left_rounded, size: 20),
+              onPressed: _currentPage > 1 ? () => _setPage(_currentPage - 1) : null,
+            ),
+            for (int p = 1; p <= _totalPages; p++)
+              if (p == 1 || p == _totalPages || (p >= _currentPage - 1 && p <= _currentPage + 1))
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: InkWell(
+                    onTap: () => _setPage(p),
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: p == _currentPage ? AppColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: p == _currentPage
+                              ? AppColors.primary
+                              : (isDark ? AppColors.outlineDark : AppColors.outlineLight),
                         ),
-                        child: Text(
-                          '$p',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: p == _currentPage
-                                ? Colors.white
-                                : (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
-                          ),
+                      ),
+                      child: Text(
+                        '$p',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: p == _currentPage
+                              ? Colors.white
+                              : (isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight),
                         ),
                       ),
                     ),
                   ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right_rounded, size: 20),
-                onPressed: _currentPage < _totalPages ? () => _setPage(_currentPage + 1) : null,
-              ),
-            ],
+                ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right_rounded, size: 20),
+              onPressed: _currentPage < _totalPages ? () => _setPage(_currentPage + 1) : null,
+            ),
+          ],
+        );
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
           ),
-        ],
-      ),
+          child: isCompact
+              ? Column(
+                  children: [
+                    perPageWidget,
+                    const SizedBox(height: 10),
+                    pageControlsWidget,
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    perPageWidget,
+                    pageControlsWidget,
+                  ],
+                ),
+        );
+      },
     );
   }
 
@@ -1414,7 +2244,7 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
   // =========================================================================
 
   /// <summary>
-  /// Navigates to the dedicated full-page User Provisioning view (matching Angular web route /users/console/create).
+  /// Navigates to the dedicated full-page Create Member view (matching Angular web route /users/console/create).
   /// </summary>
   void _navigateToCreateMember() {
     if (widget.onNavigateToTab != null) {
@@ -1435,548 +2265,75 @@ class _AllMembersViewState extends ConsumerState<AllMembersView> {
     }
   }
 
+}
+
+/// <summary>
+/// Responsive column layout tier for the member directory table.
+/// Hides low-priority columns, caps long text widths, and switches actions to
+/// icon-only buttons as the available table width shrinks on small desktop windows.
+/// </summary>
+class _MemberTableLayout {
+  /// Whether the MEMBER ID column is shown.
+  final bool showMemberId;
+
+  /// Whether the ROLE column is shown.
+  final bool showRole;
+
+  /// Whether Details/Edit render as compact icon-only buttons.
+  final bool iconOnlyActions;
+
+  /// Maximum width of the name/designation text block.
+  final double nameMax;
+
+  /// Maximum width of the email/phone text block.
+  final double emailMax;
+
+  /// Maximum width of the category pill.
+  final double categoryMax;
+
+  const _MemberTableLayout({
+    required this.showMemberId,
+    required this.showRole,
+    required this.iconOnlyActions,
+    required this.nameMax,
+    required this.emailMax,
+    required this.categoryMax,
+  });
+
   /// <summary>
-  /// Displays the Edit Member Profile dialog.
+  /// Resolves the layout tier for the given available table width.
   /// </summary>
-  void _showEditMemberDialog(Map<String, dynamic> member) {
-    final userId = member['id']?.toString() ?? '';
-    final fullName = (member['fullName'] ?? '').toString();
-    final nameParts = fullName.split(' ');
-    final firstNameCtrl = TextEditingController(text: member['firstName']?.toString() ?? (nameParts.isNotEmpty ? nameParts.first : ''));
-    final lastNameCtrl = TextEditingController(text: member['lastName']?.toString() ?? (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : ''));
-    final phoneCtrl = TextEditingController(text: member['phoneNumber']?.toString() ?? '');
-    final designationCtrl = TextEditingController(text: member['designation']?.toString() ?? 'Member');
-
-    String selectedTitle = member['title']?.toString() ?? 'Mr.';
-    String? selectedCategoryId = member['bcpUserCategoryId']?.toString();
-    final existingRoles = (member['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-    String selectedRole = existingRoles.contains('Admin')
-        ? 'Admin'
-        : (existingRoles.contains('Global Editor')
-            ? 'Global Editor'
-            : (existingRoles.contains('Feature Editor')
-                ? 'Feature Editor'
-                : (existingRoles.contains('Read Only') ? 'Read Only' : 'Member')));
-    bool isSaving = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return AlertDialog(
-              backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.edit_outlined, size: 20, color: AppColors.primary),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text('Edit Member Profile', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-                ],
-              ),
-              content: SizedBox(
-                width: 500,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          SizedBox(
-                            width: 80,
-                            child: DropdownButtonFormField<String>(
-                              initialValue: selectedTitle,
-                              decoration: const InputDecoration(labelText: 'Title', contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                              items: const [
-                                DropdownMenuItem(value: 'Mr.', child: Text('Mr.')),
-                                DropdownMenuItem(value: 'Mrs.', child: Text('Mrs.')),
-                                DropdownMenuItem(value: 'Ms.', child: Text('Ms.')),
-                                DropdownMenuItem(value: 'Dr.', child: Text('Dr.')),
-                                DropdownMenuItem(value: 'Engr.', child: Text('Engr.')),
-                                DropdownMenuItem(value: 'Prof.', child: Text('Prof.')),
-                              ],
-                              onChanged: (val) => setModalState(() => selectedTitle = val ?? 'Mr.'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: firstNameCtrl,
-                              decoration: const InputDecoration(labelText: 'First Name *', hintText: 'e.g. First Name'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: TextField(
-                              controller: lastNameCtrl,
-                              decoration: const InputDecoration(labelText: 'Last Name *', hintText: 'e.g. Last Name'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-
-                      TextField(
-                        controller: phoneCtrl,
-                        decoration: const InputDecoration(labelText: 'Phone Number', hintText: 'e.g. +0 (000) 000-0000'),
-                      ),
-                      const SizedBox(height: 14),
-
-                      TextField(
-                        controller: designationCtrl,
-                        decoration: const InputDecoration(labelText: 'Designation / Title', hintText: 'e.g. Lead Developer'),
-                      ),
-                      const SizedBox(height: 14),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: selectedCategoryId,
-                              decoration: const InputDecoration(labelText: 'Category Tier'),
-                              items: [
-                                const DropdownMenuItem(value: null, child: Text('Unassigned')),
-                                ..._categories.map((c) => DropdownMenuItem(
-                                      value: c['id']?.toString(),
-                                      child: Text(c['name']?.toString() ?? 'Category'),
-                                    )),
-                              ],
-                              onChanged: (val) => setModalState(() => selectedCategoryId = val),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: selectedRole,
-                              decoration: const InputDecoration(labelText: 'Assigned Role'),
-                              items: const [
-                                DropdownMenuItem(value: 'Member', child: Text('Member')),
-                                DropdownMenuItem(value: 'Read Only', child: Text('Read Only')),
-                                DropdownMenuItem(value: 'Feature Editor', child: Text('Feature Editor')),
-                                DropdownMenuItem(value: 'Global Editor', child: Text('Global Editor')),
-                                DropdownMenuItem(value: 'Admin', child: Text('Admin')),
-                              ],
-                              onChanged: (val) => setModalState(() => selectedRole = val ?? 'Member'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          setModalState(() => isSaving = true);
-                          final repo = ref.read(accountRepositoryProvider);
-                          final success = await repo.updateUserProfile(userId, {
-                            'firstName': firstNameCtrl.text.trim(),
-                            'lastName': lastNameCtrl.text.trim(),
-                            'title': selectedTitle,
-                            'phoneNumber': phoneCtrl.text.trim().isNotEmpty ? phoneCtrl.text.trim() : null,
-                            'designation': designationCtrl.text.trim(),
-                            'bcpUserCategoryId': selectedCategoryId,
-                            'role': selectedRole,
-                          });
-
-                          if (ctx.mounted) Navigator.of(ctx).pop();
-                          if (success) {
-                            _showToast('Profile updated successfully.');
-                            _loadData();
-                          } else {
-                            _showToast('Failed to update profile.');
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                  child: isSaving
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Save Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              ],
-            );
-          },
-        );
-      },
+  /// <param name="width">Available width of the table card.</param>
+  /// <returns>The matching responsive layout tier.</returns>
+  factory _MemberTableLayout.forWidth(double width) {
+    final isWide = width >= 1150;
+    return _MemberTableLayout(
+      showMemberId: width >= 1000,
+      showRole: width >= 880,
+      iconOnlyActions: width < 1100,
+      nameMax: isWide ? 220 : 160,
+      emailMax: isWide ? 240 : 180,
+      categoryMax: isWide ? 190 : 140,
     );
   }
 
+  /// Number of visible columns.
+  int get columnCount => 5 + (showMemberId ? 1 : 0) + (showRole ? 1 : 0);
+
   /// <summary>
-  /// Displays the comprehensive 360-degree Member Dossier with OTP generation, status toggles, and security actions.
+  /// Conservative estimate of the table natural width for the visible columns
+  /// (margins + capped content widths + base column gaps). Used as the scroll threshold.
   /// </summary>
-  Future<void> _showMemberDossierDialog(Map<String, dynamic> member) async {
-    final userId = member['id']?.toString() ?? '';
-    final fullName = (member['fullName'] ?? member['userName'] ?? 'Member').toString();
-    final repo = ref.read(accountRepositoryProvider);
-
-    // Fetch full 360 dossier from backend
-    final dossier = await repo.getUserDossier(userId);
-    final data = dossier.isNotEmpty ? dossier : member;
-
-    if (!mounted) return;
-
-    String? activeOtp;
-    bool isGeneratingOtp = false;
-    final directPassCtrl = TextEditingController();
-    bool sendEmailOnReset = true;
-    bool isResettingPass = false;
-    String userStatus = (data['userStatus'] ?? member['userStatus'] ?? 'Active').toString();
-    bool isActive = userStatus.toLowerCase() == 'active';
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return AlertDialog(
-              backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              contentPadding: const EdgeInsets.all(24),
-              content: SizedBox(
-                width: 680,
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Header with Avatar & Details
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              gradient: _getGradient(fullName),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              _getInitials(fullName),
-                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        fullName,
-                                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: (isActive ? const Color(0xFF10B981) : const Color(0xFFEF4444)).withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(100),
-                                      ),
-                                      child: Text(
-                                        isActive ? 'Active' : 'Suspended',
-                                        style: TextStyle(
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w700,
-                                          color: isActive ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  data['email']?.toString() ?? '',
-                                  style: TextStyle(fontSize: 13, color: isDark ? AppColors.gray400 : AppColors.gray600),
-                                ),
-                                const SizedBox(height: 6),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  children: [
-                                    if (data['categoryName'] != null)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          data['categoryName'].toString(),
-                                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary),
-                                        ),
-                                      ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-                                      decoration: BoxDecoration(
-                                        color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        _sanitizeId(data['memberId']?.toString()),
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      const Divider(height: 1),
-                      const SizedBox(height: 16),
-
-                      // Information Grid
-                      Wrap(
-                        spacing: 24,
-                        runSpacing: 12,
-                        children: [
-                          _buildDossierInfoItem('Phone Number', data['phoneNumber']?.toString() ?? 'Not provided', isDark),
-                          _buildDossierInfoItem('Designation', data['designation']?.toString() ?? 'Member', isDark),
-                          _buildDossierInfoItem('Assigned Roles', ((data['roles'] as List<dynamic>?)?.join(', ') ?? 'Member'), isDark),
-                          _buildDossierInfoItem('Registration Source', data['registrationSource']?.toString() ?? 'Admin Console', isDark),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // 6-Digit One-Time Activation Passcode (OTP) Section
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.key_rounded, size: 18, color: AppColors.primary),
-                                SizedBox(width: 8),
-                                Text(
-                                  '6-Digit One-Time Activation Passcode (OTP)',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Generate a secure 6-digit code valid for 15 minutes for member account activation or password recovery.',
-                              style: TextStyle(fontSize: 11.5, color: isDark ? AppColors.gray400 : AppColors.gray600),
-                            ),
-                            const SizedBox(height: 10),
-                            if (activeOtp != null) ...[
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      activeOtp!,
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 4,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        Clipboard.setData(ClipboardData(text: activeOtp!));
-                                        _showToast('OTP copied to clipboard.');
-                                      },
-                                      icon: const Icon(Icons.content_copy_rounded, size: 15),
-                                      label: const Text('Copy OTP'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                            ElevatedButton.icon(
-                              onPressed: isGeneratingOtp
-                                  ? null
-                                  : () async {
-                                      setModalState(() => isGeneratingOtp = true);
-                                      final res = await repo.generateUserOtp(userId);
-                                      setModalState(() {
-                                        isGeneratingOtp = false;
-                                        if (res != null && res['otp'] != null) {
-                                          activeOtp = res['otp'].toString();
-                                        }
-                                      });
-                                      _showToast(activeOtp != null
-                                          ? '6-Digit OTP generated and queued for delivery.'
-                                          : 'Failed to generate OTP.');
-                                    },
-                              icon: const Icon(Icons.pin_rounded, size: 16),
-                              label: Text(isGeneratingOtp ? 'Generating...' : 'Generate 6-Digit Reset OTP'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Direct Temporary Password Setter
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: isDark ? AppColors.outlineDark : AppColors.outlineLight),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Set Temporary Password Directly (Admin Override)',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: directPassCtrl,
-                                    decoration: const InputDecoration(
-                                      hintText: 'e.g. TempPass@2026',
-                                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: isResettingPass
-                                      ? null
-                                      : () async {
-                                          final newPass = directPassCtrl.text.trim();
-                                          if (newPass.isEmpty) {
-                                            _showToast('Please enter a temporary password.');
-                                            return;
-                                          }
-                                          setModalState(() => isResettingPass = true);
-                                          final success = await repo.adminResetPassword(
-                                            userId,
-                                            newPass,
-                                            mustChangePassword: true,
-                                            sendEmailNotification: sendEmailOnReset,
-                                          );
-                                          setModalState(() => isResettingPass = false);
-                                          if (success) {
-                                            directPassCtrl.clear();
-                                            _showToast('Temporary password applied.');
-                                          } else {
-                                            _showToast('Failed to apply password.');
-                                          }
-                                        },
-                                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                                  child: const Text('Apply', style: TextStyle(color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Account Status Management (Suspend / Activate)
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: () async {
-                              final newActive = !isActive;
-                              final success = await repo.toggleUserStatus(userId, newActive);
-                              if (success) {
-                                setModalState(() {
-                                  isActive = newActive;
-                                  userStatus = newActive ? 'Active' : 'Suspended';
-                                });
-                                _loadData();
-                                _showToast(newActive ? 'Account reactivated.' : 'Account suspended.');
-                              } else {
-                                _showToast('Failed to update account status.');
-                              }
-                            },
-                            icon: Icon(
-                              isActive ? Icons.block_rounded : Icons.check_circle_outline_rounded,
-                              size: 16,
-                              color: isActive ? AppColors.error : AppColors.success,
-                            ),
-                            label: Text(
-                              isActive ? 'Suspend Account' : 'Reactivate Account',
-                              style: TextStyle(color: isActive ? AppColors.error : AppColors.success),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(ctx).pop(),
-                            child: const Text('Close Dossier'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildDossierInfoItem(String label, String value, bool isDark) {
-    return SizedBox(
-      width: 280,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: isDark ? AppColors.gray400 : AppColors.gray600),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.onSurfaceDark : AppColors.onSurfaceLight,
-            ),
-          ),
-        ],
-      ),
-    );
+  double get estimatedWidth {
+    double w = 24; // horizontal margins (12 * 2)
+    w += 52 + nameMax; // avatar (40) + gap (12) + name block
+    w += emailMax + 20; // email block + verified icon
+    if (showMemberId) w += 110;
+    w += categoryMax;
+    if (showRole) w += 90;
+    w += 95; // status pill
+    w += iconOnlyActions ? 72 : 170; // actions
+    w += (columnCount - 1) * 12; // base column spacing
+    return w;
   }
 }

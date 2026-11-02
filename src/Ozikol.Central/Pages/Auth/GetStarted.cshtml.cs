@@ -78,25 +78,16 @@ namespace Ozikol.Central.Pages
         public string? ReferralCode { get; set; }
 
         /// <summary>
-        /// Optional add-on features selected by the user during Step 2 of registration.
+        /// Whether to automatically provision the turnkey default website suite.
         /// </summary>
-        public List<Guid> SelectedFeatureIds { get; set; } = new();
-
-        /// <summary>
-        /// JSON-serialized dictionary mapping selected feature IDs to their chosen billing frequency ("Monthly" or "Yearly").
-        /// </summary>
-        public string? FeatureCadencesJson { get; set; }
-
-        /// <summary>
-        /// Promotional discount voucher / coupon code entered in Step 2.
-        /// </summary>
-        public string? CouponCode { get; set; }
+        public bool SeedDefaultWebsite { get; set; } = true;
     }
 
     /// <summary>
     /// PageModel orchestrating new organization onboarding, sovereign workspace provisioning, and live address verification.
     /// Integrates dynamic multi-currency regional pricing, configurable trial periods, and Google reCAPTCHA verification.
     /// </summary>
+    [IgnoreAntiforgeryToken]
     public class GetStartedModel : PageModel
     {
         private readonly ITenantOnboardingService _onboardingService;
@@ -150,14 +141,9 @@ namespace Ozikol.Central.Pages
         public GetStartedInputModel Input { get; set; } = new();
 
         /// <summary>
-        /// Core platform features automatically included in the base subscription plan.
+        /// All active platform features, shown display-only in Step 2 (no billing or selection).
         /// </summary>
-        public List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> CompulsoryFeatures { get; set; } = new();
-
-        /// <summary>
-        /// Optional add-on capabilities available for selection during Step 2.
-        /// </summary>
-        public List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> AddonFeatures { get; set; } = new();
+        public List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> AllFeatures { get; set; } = new();
 
         /// <summary>
         /// Gets the public Google reCAPTCHA site key for widget rendering.
@@ -178,16 +164,6 @@ namespace Ozikol.Central.Pages
         /// Gets or sets the visual currency symbol for the current user (e.g. $, ₦, £, €).
         /// </summary>
         public string ActiveCurrencySymbol { get; set; } = "$";
-
-        /// <summary>
-        /// Gets or sets the localized annual base plan price.
-        /// </summary>
-        public decimal BasePlanAnnualPrice { get; set; } = 199.00m;
-
-        /// <summary>
-        /// Gets or sets the formatted annual base plan price string (e.g. "$199.00/yr", "₦250,000/yr").
-        /// </summary>
-        public string FormattedBasePlanPrice { get; set; } = "$199.00/yr";
 
         /// <summary>
         /// User-friendly error message if onboarding or validation encounters an issue.
@@ -215,17 +191,12 @@ namespace Ozikol.Central.Pages
         /// <param name="refCode">Optional partner referral code.</param>
         /// <param name="email">Optional pre-filled email from social identity.</param>
         /// <param name="name">Optional pre-filled full name from social identity.</param>
-        /// <param name="coupon">Optional promotional voucher or coupon code.</param>
-        public async Task OnGetAsync(string? refCode = null, string? email = null, string? name = null, string? org = null, string? coupon = null)
+        /// <param name="org">Optional pre-filled organization name.</param>
+        public async Task OnGetAsync(string? refCode = null, string? email = null, string? name = null, string? org = null)
         {
             if (!string.IsNullOrWhiteSpace(refCode))
             {
                 Input.ReferralCode = refCode.Trim();
-            }
-
-            if (!string.IsNullOrWhiteSpace(coupon))
-            {
-                Input.CouponCode = coupon.Trim();
             }
 
             if (!string.IsNullOrWhiteSpace(email))
@@ -249,14 +220,9 @@ namespace Ozikol.Central.Pages
 
         private async Task LoadCatalogFeaturesAsync()
         {
-            // 1. Resolve user's localized currency via GeoLocation / Cookie / Request headers
+            // 1. Resolve user's localized currency (kept for downstream services; not shown on this page)
             ActiveCurrencyCode = _currencyService.ResolveCurrencyCodeFromRequest(HttpContext, null);
-            var currencyInfo = _currencyService.ResolveCurrency(ActiveCurrencyCode);
-            ActiveCurrencySymbol = currencyInfo.Symbol;
-
-            var priceBook = _currencyService.GetPriceBook(ActiveCurrencyCode);
-            BasePlanAnnualPrice = priceBook.AnnualPrice;
-            FormattedBasePlanPrice = _currencyService.Format(BasePlanAnnualPrice, ActiveCurrencyCode, compact: false) + "/yr";
+            ActiveCurrencySymbol = _currencyService.ResolveCurrency(ActiveCurrencyCode).Symbol;
 
             // 2. Resolve default trial days from MasterPlatformSettings table or fallback configuration
             try
@@ -275,33 +241,43 @@ namespace Ozikol.Central.Pages
                 TrialDays = 14;
             }
 
-            // 3. Query active catalog features
-            var features = await _dbContext.MasterFeatureCatalogs
-                .AsNoTracking()
-                .Where(f => f.IsActive)
-                .OrderBy(f => f.Category)
-                .ThenBy(f => f.Name)
-                .ToListAsync();
+            // 3. Query active catalog features ordered by suite SortOrder, feature SortOrder, and name
+            List<Ozikol.MasterDomain.Models.MasterFeatureCatalog> rawFeatures;
+            try
+            {
+                rawFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Include(f => f.Suite)
+                    .Where(f => f.IsActive)
+                    .ToListAsync();
+            }
+            catch
+            {
+                rawFeatures = await _dbContext.MasterFeatureCatalogs
+                    .AsNoTracking()
+                    .Where(f => f.IsActive)
+                    .ToListAsync();
+            }
 
-            CompulsoryFeatures = features.Where(f => f.IsCompulsory).ToList();
-            AddonFeatures = features.Where(f => !f.IsCompulsory).ToList();
+            // Display-only list aligned with MasterFeatureSuites.SortOrder and MasterFeatureCatalogs.SortOrder
+            AllFeatures = rawFeatures
+                .OrderBy(f => f.Suite?.SortOrder ?? GetSuiteOrder(f.Category))
+                .ThenBy(f => f.SortOrder)
+                .ThenBy(f => f.Name)
+                .ToList();
         }
 
         /// <summary>
-        /// AJAX handler to validate promotional coupon codes in real time.
+        /// Resolves the canonical sequence index for a given suite name matching the CentralWorks catalog.
         /// </summary>
-        /// <param name="code">Promo coupon code string (e.g. "LAUNCH100").</param>
-        /// <returns>JSON result with validity, discount percentage, and message.</returns>
-        public async Task<IActionResult> OnGetValidateCouponAsync(string code)
+        /// <param name="category">The suite or category name.</param>
+        /// <returns>Zero-based canonical sequence index, or 500 if unrecognized.</returns>
+        public static int GetSuiteOrder(string? category)
         {
-            var result = await _onboardingService.ValidateCouponAsync(code);
-            return new JsonResult(new
-            {
-                valid = result.IsValid,
-                discountPercent = result.DiscountPercent,
-                isFree = result.DiscountPercent >= 100.00m,
-                message = result.Message
-            });
+            if (string.IsNullOrWhiteSpace(category)) return 999;
+            var idx = Array.FindIndex(Ozikol.Central.Areas.Centralwks.Pages.Features.IndexModel.CanonicalSuites,
+                s => s.Equals(category.Trim(), StringComparison.OrdinalIgnoreCase));
+            return idx >= 0 ? idx : 500;
         }
 
         /// <summary>
@@ -414,19 +390,6 @@ namespace Ozikol.Central.Pages
             string firstName = nameParts.Length > 0 ? nameParts[0] : "Administrator";
             string lastName = nameParts.Length > 1 ? string.Join(" ", nameParts.Skip(1)) : "Admin";
 
-            var cadencesDict = new Dictionary<Guid, string>();
-            if (!string.IsNullOrWhiteSpace(Input.FeatureCadencesJson))
-            {
-                try
-                {
-                    cadencesDict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<Guid, string>>(Input.FeatureCadencesJson) ?? new();
-                }
-                catch
-                {
-                    // Fallback to empty dictionary if malformed
-                }
-            }
-
             var onboardingRequest = new TenantOnboardingRequest
             {
                 OrganizationName = Input.OrganizationName.Trim(),
@@ -438,10 +401,8 @@ namespace Ozikol.Central.Pages
                 PhoneNumber = string.IsNullOrWhiteSpace(Input.PhoneNumber) ? null : Input.PhoneNumber.Trim(),
                 ReferredBy = string.IsNullOrWhiteSpace(Input.ReferralCode) ? null : Input.ReferralCode.Trim(),
                 Sector = string.IsNullOrWhiteSpace(Input.OrganizationType) ? "Business & Enterprise" : Input.OrganizationType.Trim(),
-                SelectedFeatureIds = Input.SelectedFeatureIds ?? new List<Guid>(),
-                SelectedFeatureCadences = cadencesDict,
                 TrialDays = TrialDays > 0 ? TrialDays : 14,
-                CouponCode = string.IsNullOrWhiteSpace(Input.CouponCode) ? null : Input.CouponCode.Trim()
+                SeedDefaultWebsite = false // Modal prompt decides immediately after migrations!
             };
 
             _logger.LogInformation("Initializing sovereign workspace registration for [{WorkspaceSlug}] - {OrgName}", Input.WorkspaceSlug, Input.OrganizationName);
@@ -554,28 +515,57 @@ namespace Ozikol.Central.Pages
         /// <summary>
         /// AJAX handler: Seeds the turnkey default website suite for the newly provisioned tenant.
         /// </summary>
-        public async Task<IActionResult> OnPostSeedDefaultsAsync([FromQuery] string tenantKey, [FromQuery] string? orgName = null)
+        /// <param name="tenantKey">The tenant identifier passed via query string.</param>
+        /// <param name="orgName">The optional organization name passed via query string.</param>
+        /// <param name="formTenantKey">The optional tenant identifier passed via form body.</param>
+        /// <param name="formOrgName">The optional organization name passed via form body.</param>
+        /// <returns>JSON result indicating outcome and message.</returns>
+        public async Task<IActionResult> OnPostSeedDefaultsAsync(
+            [FromQuery] string? tenantKey = null,
+            [FromQuery] string? orgName = null,
+            [FromForm] string? formTenantKey = null,
+            [FromForm] string? formOrgName = null)
         {
-            if (string.IsNullOrWhiteSpace(tenantKey))
+            var effectiveKey = (!string.IsNullOrWhiteSpace(tenantKey) ? tenantKey : formTenantKey)?.Trim();
+            var effectiveOrg = (!string.IsNullOrWhiteSpace(orgName) ? orgName : formOrgName)?.Trim();
+
+            _logger.LogInformation("==================================================================");
+            _logger.LogInformation("📥 [Central OnPostSeedDefaultsAsync] Request received. TenantKey: '{TenantKey}', OrgName: '{OrgName}'", effectiveKey, effectiveOrg);
+
+            if (string.IsNullOrWhiteSpace(effectiveKey))
             {
+                _logger.LogWarning("❌ [Central OnPostSeedDefaultsAsync] Tenant key is missing from both query and form!");
                 return new JsonResult(new { success = false, message = "Missing tenant key." });
             }
 
-            var success = await _onboardingService.SeedTenantDefaultWebsiteAsync(tenantKey.Trim(), orgName);
+            _logger.LogInformation("🌱 [Central Seeding] Dispatching SeedTenantDefaultWebsiteAsync for [{TenantKey}]...", effectiveKey);
+            var success = await _onboardingService.SeedTenantDefaultWebsiteAsync(effectiveKey, effectiveOrg);
+            _logger.LogInformation("🎯 [Central Seeding] Finished for [{TenantKey}]. Result: {Success}", effectiveKey, success ? "SUCCESS (Turnkey suite active)" : "FAILED");
+            _logger.LogInformation("==================================================================");
+
             return new JsonResult(new { success = success, message = success ? "Default website seeded successfully!" : "Failed to seed default website." });
         }
 
         /// <summary>
         /// AJAX handler: Skips default website seeding and marks tenant in blank canvas mode.
         /// </summary>
-        public async Task<IActionResult> OnPostSkipDefaultsAsync([FromQuery] string tenantKey)
+        /// <param name="tenantKey">The tenant identifier passed via query string.</param>
+        /// <param name="formTenantKey">The optional tenant identifier passed via form body.</param>
+        /// <returns>JSON result indicating outcome and message.</returns>
+        public async Task<IActionResult> OnPostSkipDefaultsAsync(
+            [FromQuery] string? tenantKey = null,
+            [FromForm] string? formTenantKey = null)
         {
-            if (string.IsNullOrWhiteSpace(tenantKey))
+            var effectiveKey = (!string.IsNullOrWhiteSpace(tenantKey) ? tenantKey : formTenantKey)?.Trim();
+
+            if (string.IsNullOrWhiteSpace(effectiveKey))
             {
+                _logger.LogWarning("OnPostSkipDefaultsAsync: Tenant key is missing.");
                 return new JsonResult(new { success = false, message = "Missing tenant key." });
             }
 
-            var success = await _onboardingService.SkipTenantDefaultWebsiteAsync(tenantKey.Trim());
+            _logger.LogInformation("⚪ Marking tenant [{TenantKey}] in blank canvas mode.", effectiveKey);
+            var success = await _onboardingService.SkipTenantDefaultWebsiteAsync(effectiveKey);
             return new JsonResult(new { success = success, message = "Blank canvas initialized." });
         }
     }

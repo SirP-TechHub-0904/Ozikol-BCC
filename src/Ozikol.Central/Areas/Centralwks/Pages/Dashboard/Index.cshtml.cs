@@ -183,7 +183,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Dashboard
                     .Distinct()
                     .ToListAsync();
 
-                var paidSet = new HashSet<int>(paidTenantIds);
+                var paidSet = new HashSet<Guid>(paidTenantIds);
 
                 TotalTenants = allTenants.Count;
                 ActiveTenants = allTenants.Count(t => t.IsActive && !t.IsSuspended);
@@ -512,7 +512,7 @@ namespace Ozikol.Central.Areas.Centralwks.Pages.Dashboard
                                 .Distinct()
                                 .ToListAsync();
 
-                            var paidSet = new HashSet<int>(paidTenantIds);
+                            var paidSet = new HashSet<Guid>(paidTenantIds);
 
                             var tenants = await _dbContext.MasterTenantCatalogs
                                 .Where(t => t.IsActive && !t.IsSuspended)

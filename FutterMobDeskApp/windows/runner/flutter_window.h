@@ -33,6 +33,9 @@ class FlutterWindow : public Win32Window {
 
   // MethodChannel for communicating taskbar jump list actions with Flutter.
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> jump_list_channel_;
+
+  // MethodChannel for enforcing Windows Kiosk key-combination lockdown and OS idle detection.
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> kiosk_channel_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

@@ -66,7 +66,11 @@ export class ApiService {
 
   private buildUrl(path: string): string {
     const base = (this.baseUrl || '').replace(/\/+$/, '');
-    const cleanPath = (path || '').replace(/^\/+/, '');
+    let cleanPath = (path || '').replace(/^\/+/, '');
+    // Guard against accidental double 'api/' prefix when baseUrl already has '/api'
+    if (base.endsWith('/api') && cleanPath.startsWith('api/')) {
+      cleanPath = cleanPath.substring(4);
+    }
     return `${base}/${cleanPath}`;
   }
 

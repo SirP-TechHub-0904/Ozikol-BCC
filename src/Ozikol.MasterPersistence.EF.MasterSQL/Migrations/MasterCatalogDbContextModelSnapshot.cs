@@ -17,7 +17,7 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -492,6 +492,99 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.ToTable("MasterAiApiKeyUsageLogs");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterApiErrorLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CustomError")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ErrorCode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("HttpMethod")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<int>("HttpStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid?>("MasterTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OrganizationName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("RealError")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SourceScope")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("StackTrace")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TenantKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("TraceId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("UserEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedUtc");
+
+                    b.HasIndex("ErrorCode");
+
+                    b.HasIndex("MasterTenantCatalogId");
+
+                    b.HasIndex("SourceScope");
+
+                    b.HasIndex("TenantKey");
+
+                    b.HasIndex("TraceId");
+
+                    b.ToTable("MasterApiErrorLogs");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterAuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -616,8 +709,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<int?>("TargetTenantCatalogId")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("TargetTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("UpdatedUtc")
                         .HasColumnType("datetime2");
@@ -674,8 +767,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<int?>("TargetTenantCatalogId")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("TargetTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("TenantKey")
                         .HasMaxLength(100)
@@ -706,6 +799,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("BillingCadence")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
@@ -714,12 +811,20 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
 
+                    b.Property<string>("FeatureCodesCsv")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("InvoiceNumber")
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
-                    b.Property<int>("MasterTenantCatalogId")
-                        .HasColumnType("int");
+                    b.Property<string>("LineItemsJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<Guid>("MasterTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid?>("MasterTenantFeatureSubscriptionId")
                         .HasColumnType("uniqueidentifier");
@@ -727,6 +832,10 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PaymentProofRef")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<string>("PaymentProvider")
                         .HasMaxLength(50)
@@ -1221,8 +1330,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<Guid?>("MasterFeatureCatalogId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("MasterTenantCatalogId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("MasterTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("OriginalPrice")
                         .HasColumnType("decimal(18,2)");
@@ -1370,6 +1479,12 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("VatPercentage")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(0m);
+
                     b.HasKey("Id");
 
                     b.HasIndex("CurrencyCode")
@@ -1454,6 +1569,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
 
+                    b.Property<int>("FreeTrialDays")
+                        .HasColumnType("int");
+
                     b.Property<string>("Icon")
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
@@ -1464,6 +1582,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsAvailableForUse")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsCompulsory")
                         .HasColumnType("bit");
 
@@ -1472,6 +1593,17 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
                     b.Property<bool>("IsMetered")
                         .HasColumnType("bit");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("MasterFeatureSuiteId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("MenuTitle")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
 
                     b.Property<int>("MeterBlockSize")
                         .HasColumnType("int");
@@ -1519,7 +1651,225 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
                     b.HasIndex("IsCompulsory");
 
+                    b.HasIndex("MasterFeatureSuiteId");
+
                     b.ToTable("MasterFeatureCatalogs");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFeatureSuite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MenuTitle")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SuiteCode")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("SuiteLetter")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsPublished");
+
+                    b.HasIndex("SortOrder");
+
+                    b.HasIndex("SuiteCode")
+                        .IsUnique();
+
+                    b.ToTable("MasterFeatureSuites", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-0001-0000-0000-000000000001"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Real-time team messaging, committees, sub-groups, alumni directories, and confidential whistleblowing channels.",
+                            Icon = "groups",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "People & Community",
+                            Name = "People, Community & Collaboration",
+                            SortOrder = 1,
+                            SuiteCode = "suite-people-community",
+                            SuiteLetter = "A"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0002-0000-0000-000000000002"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Staff and volunteer shift scheduling, shift swaps, leave approvals, biometric/QR attendance, and appointment booking.",
+                            Icon = "calendar_month",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Workforce & Shifts",
+                            Name = "Workforce, Rota & Scheduling",
+                            SortOrder = 2,
+                            SuiteCode = "suite-workforce-rota",
+                            SuiteLetter = "B"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0003-0000-0000-000000000003"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Dynamic form builders, periodic operational reports, opinion poll surveys, and confidential referee verification.",
+                            Icon = "assessment",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Reports & Forms",
+                            Name = "Reports, Forms & Analytics",
+                            SortOrder = 3,
+                            SuiteCode = "suite-reports-forms",
+                            SuiteLetter = "C"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0004-0000-0000-000000000004"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Event registration, multi-tier ticketing, speaker session tracks, and QR badge check-in kiosks.",
+                            Icon = "confirmation_number",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Events & Ticketing",
+                            Name = "Events & Training Management",
+                            SortOrder = 4,
+                            SuiteCode = "suite-events-training",
+                            SuiteLetter = "D"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0005-0000-0000-000000000005"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Membership dues, e-commerce storefront, commercial proposals, grant ledgers, and virtual treasury wallets.",
+                            Icon = "account_balance_wallet",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Finance & Commerce",
+                            Name = "Finance & Commercial Revenue",
+                            SortOrder = 5,
+                            SuiteCode = "suite-finance-revenue",
+                            SuiteLetter = "E"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0006-0000-0000-000000000006"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Applicant tracking, tamper-evident e-voting, equipment logistics, asset inventory, and project Kanban boards.",
+                            Icon = "work",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Operations & Workflows",
+                            Name = "Operations & Workflows",
+                            SortOrder = 6,
+                            SuiteCode = "suite-operations-workflows",
+                            SuiteLetter = "F"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0007-0000-0000-000000000007"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Ozi AI Studio assistant, bulk SMS/Email broadcast studio, helpdesk ticketing, live chat, and video rooms.",
+                            Icon = "campaign",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Communication & AI",
+                            Name = "Communication, AI & Support",
+                            SortOrder = 7,
+                            SuiteCode = "suite-communication-ai",
+                            SuiteLetter = "G"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0008-0000-0000-000000000008"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Encrypted document vaults, LMS training courses, verifiable certificates, visitor gate passes, and KYC vetting.",
+                            Icon = "verified_user",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Compliance & Learning",
+                            Name = "Compliance, Learning & Certification",
+                            SortOrder = 8,
+                            SuiteCode = "suite-compliance-learning",
+                            SuiteLetter = "H"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0009-0000-0000-000000000009"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Household census registries, offline field enumeration, printable digital ID cards, and population intelligence.",
+                            Icon = "map",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Demographics & Census",
+                            Name = "Demographics & Civic Census",
+                            SortOrder = 9,
+                            SuiteCode = "suite-demographics-census",
+                            SuiteLetter = "I"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0010-0000-0000-000000000010"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Digital memorials, wedding and celebration RSVP portals, and interactive 3D page-flip brochures.",
+                            Icon = "celebration",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Life Events & Media",
+                            Name = "Life Events & Publications",
+                            SortOrder = 10,
+                            SuiteCode = "suite-life-events",
+                            SuiteLetter = "J"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-0011-0000-0000-000000000011"),
+                            CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Desktop application workspace and workplace management suite.",
+                            Icon = "desktop_windows",
+                            IsActive = true,
+                            IsPublished = true,
+                            MenuTitle = "Workspace",
+                            Name = "Workspace",
+                            SortOrder = 11,
+                            SuiteCode = "suite-workspace",
+                            SuiteLetter = "K"
+                        });
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFooterColumn", b =>
@@ -2757,6 +3107,26 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<int>("Id")
                         .HasColumnType("int");
 
+                    b.Property<string>("BankDepositAccountName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("BankDepositAccountNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("BankDepositBankName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("BankDepositInstructions")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("BankDepositSortCodeOrSwift")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<string>("CareersAdminEmails")
                         .HasColumnType("nvarchar(max)");
 
@@ -2784,8 +3154,17 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
                     b.Property<string>("DefaultCurrencyCode")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("USD");
+
+                    b.Property<string>("DefaultExchangeRateCurrencyCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("USD");
 
                     b.Property<string>("DefaultFromEmail")
                         .HasMaxLength(150)
@@ -2797,8 +3176,32 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<bool>("EnableAdminNotifications")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("EnableBankDeposit")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("EnableFlutterwave")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("EnablePaystack")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("EnableStripe")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("EnableTicketAutoClose")
                         .HasColumnType("bit");
+
+                    b.Property<string>("FlutterwavePublicKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FlutterwaveSecretKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FlutterwaveWebhookSecret")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<bool>("IsMaintenanceMode")
                         .HasColumnType("bit");
@@ -2833,6 +3236,18 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("PartnerAdminEmails")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("PaystackPublicKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PaystackSecretKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PaystackWebhookSecret")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<string>("PlatformName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -2841,6 +3256,18 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<string>("SentryDsn")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("StripePublishableKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("StripeSecretKey")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("StripeWebhookSecret")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<string>("SupportAdminEmails")
                         .HasColumnType("nvarchar(max)");
@@ -3251,11 +3678,9 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterTenantCatalog", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AdminEmail")
                         .HasMaxLength(256)
@@ -3284,6 +3709,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("DefaultCurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("DeletedBy")
                         .HasMaxLength(200)
@@ -3345,6 +3775,12 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<DateTime?>("UpdatedUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("UseCustomAvailability")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("UseCustomPricing")
+                        .HasColumnType("bit");
+
                     b.Property<string>("WebsiteUrl")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -3380,8 +3816,14 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("CustomFreeTrialDaysOverride")
+                        .HasColumnType("int");
+
                     b.Property<decimal?>("CustomPriceOverride")
                         .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("CustomYearlyPriceOverride")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("DurationType")
@@ -3390,7 +3832,16 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("HasUsedFreeTrial")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("IsAvailableForUseOverride")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsTrialPeriod")
                         .HasColumnType("bit");
 
                     b.Property<DateTime?>("LastRenewedUtc")
@@ -3399,8 +3850,8 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Property<Guid>("MasterFeatureCatalogId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("MasterTenantCatalogId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("MasterTenantCatalogId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<decimal>("RecurringPrice")
                         .HasPrecision(18, 2)
@@ -3747,6 +4198,16 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Navigation("MasterAiApiKey");
                 });
 
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterApiErrorLog", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterTenantCatalog", "TenantCatalog")
+                        .WithMany()
+                        .HasForeignKey("MasterTenantCatalogId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("TenantCatalog");
+                });
+
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterBackgroundJob", b =>
                 {
                     b.HasOne("Ozikol.MasterDomain.Models.MasterTenantCatalog", "TargetTenantCatalog")
@@ -3891,6 +4352,16 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
                     b.Navigation("MasterFeatureCatalog");
 
                     b.Navigation("MasterTenantCatalog");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFeatureCatalog", b =>
+                {
+                    b.HasOne("Ozikol.MasterDomain.Models.MasterFeatureSuite", "Suite")
+                        .WithMany("Features")
+                        .HasForeignKey("MasterFeatureSuiteId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Suite");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFooterColumn", b =>
@@ -4133,6 +4604,11 @@ namespace Ozikol.MasterPersistence.EF.MasterSQL.Migrations
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFeatureCatalog", b =>
                 {
                     b.Navigation("Subscriptions");
+                });
+
+            modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFeatureSuite", b =>
+                {
+                    b.Navigation("Features");
                 });
 
             modelBuilder.Entity("Ozikol.MasterDomain.Models.MasterFooterColumn", b =>

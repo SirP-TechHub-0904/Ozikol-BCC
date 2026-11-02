@@ -99,7 +99,7 @@ namespace Ozikol.MasterDomain.Models
         /// Optional specific tenant catalog ID. If null, the job targets all active tenants (or Central platform).
         /// </summary>
         [ForeignKey("TargetTenantCatalog")]
-        public int? TargetTenantCatalogId { get; set; }
+        public Guid? TargetTenantCatalogId { get; set; }
 
         /// <summary>
         /// Navigation property to the target tenant organization if scoped to a specific tenant.

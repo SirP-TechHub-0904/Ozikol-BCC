@@ -122,11 +122,21 @@ class TenantCachedImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (imageUrl == null || imageUrl!.trim().isEmpty) {
+      final bundled = _tryBuildBundledTenantLogo();
+      if (bundled != null) return bundled;
       return fallbackWidget ?? _buildDefaultFallback(context);
     }
 
+    final raw = imageUrl!.trim();
+    if (!kIsWeb && (raw.startsWith('local:') || raw.startsWith('file://') || File(raw).existsSync())) {
+      final localFile = _resolveLocalFile(raw);
+      if (localFile != null && localFile.existsSync()) {
+        return _wrapLocalFileImage(localFile);
+      }
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final effectiveUrl = normalizeImageUrl(imageUrl!);
+    final effectiveUrl = normalizeImageUrl(raw);
 
     Widget imageWidget = CachedNetworkImage(
       imageUrl: effectiveUrl,
@@ -149,7 +159,8 @@ class TenantCachedImage extends StatelessWidget {
                 ),
               ),
       errorWidget: errorBuilder ??
-          (context, url, error) => fallbackWidget ?? _buildDefaultFallback(context),
+          (context, url, error) =>
+              _tryBuildBundledTenantLogo() ?? fallbackWidget ?? _buildDefaultFallback(context),
     );
 
     if (borderRadius > 0 && imageBuilder == null) {
@@ -160,6 +171,58 @@ class TenantCachedImage extends StatelessWidget {
     }
 
     return imageWidget;
+  }
+
+  File? _resolveLocalFile(String raw) {
+    try {
+      if (raw.startsWith('local:')) {
+        final fileName = raw.substring('local:'.length).trim();
+        final exeDir = File(Platform.resolvedExecutable).parent.path;
+        final candidate = File('$exeDir${Platform.pathSeparator}$fileName');
+        if (candidate.existsSync()) return candidate;
+      } else if (raw.startsWith('file://')) {
+        final candidate = File.fromUri(Uri.parse(raw));
+        if (candidate.existsSync()) return candidate;
+      } else {
+        final candidate = File(raw);
+        if (candidate.existsSync()) return candidate;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Widget? _tryBuildBundledTenantLogo() {
+    if (kIsWeb) return null;
+    try {
+      final exeDir = File(Platform.resolvedExecutable).parent.path;
+      final bundled = File('$exeDir${Platform.pathSeparator}tenant_logo.png');
+      if (bundled.existsSync()) {
+        return _wrapLocalFileImage(bundled);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Widget _wrapLocalFileImage(File file) {
+    if (imageBuilder != null) {
+      return Builder(
+        builder: (ctx) => imageBuilder!(ctx, FileImage(file)),
+      );
+    }
+    Widget img = Image.file(
+      file,
+      width: width,
+      height: height,
+      fit: fit,
+      errorBuilder: (ctx, err, st) => fallbackWidget ?? _buildDefaultFallback(ctx),
+    );
+    if (borderRadius > 0) {
+      img = ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
+        child: img,
+      );
+    }
+    return img;
   }
 
   Widget _buildDefaultFallback(BuildContext context) {
