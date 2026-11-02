@@ -47,15 +47,14 @@ namespace Ozikol_BCC.CloudinaryServices.Services
                 }
             }
 
-            // 2. Resolve credentials from settings, configuration, environment variables, or platform defaults
+            // 2. Resolve credentials strictly from settings, configuration, or environment variables (zero hardcoded secrets)
             var cloudName = FirstNonEmpty(
                 settings?.Value?.CloudName,
                 configuration?["CloudinarySettings:CloudName"],
                 configuration?["CloudinarySettings__CloudName"],
                 configuration?["CLOUDINARY_CLOUD_NAME"],
                 Environment.GetEnvironmentVariable("CloudinarySettings__CloudName"),
-                Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME"),
-                "pcbhnjad"
+                Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME")
             );
 
             var apiKey = FirstNonEmpty(
@@ -64,8 +63,7 @@ namespace Ozikol_BCC.CloudinaryServices.Services
                 configuration?["CloudinarySettings__ApiKey"],
                 configuration?["CLOUDINARY_API_KEY"],
                 Environment.GetEnvironmentVariable("CloudinarySettings__ApiKey"),
-                Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY"),
-                "159842435718116"
+                Environment.GetEnvironmentVariable("CLOUDINARY_API_KEY")
             );
 
             var apiSecret = FirstNonEmpty(
@@ -74,8 +72,7 @@ namespace Ozikol_BCC.CloudinaryServices.Services
                 configuration?["CloudinarySettings__ApiSecret"],
                 configuration?["CLOUDINARY_API_SECRET"],
                 Environment.GetEnvironmentVariable("CloudinarySettings__ApiSecret"),
-                Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET"),
-                "[REDACTED_CLOUDINARY_SECRET]"
+                Environment.GetEnvironmentVariable("CLOUDINARY_API_SECRET")
             );
 
             if (!string.IsNullOrWhiteSpace(cloudName) && !string.IsNullOrWhiteSpace(apiKey) && !string.IsNullOrWhiteSpace(apiSecret))
